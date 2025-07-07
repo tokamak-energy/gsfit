@@ -1,0 +1,42 @@
+[package]
+name = "gsfit_rs"
+version = "0.0.0"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "gsfit_rs"
+
+[dependencies]
+contour = "0.13.1"
+geo = "0.30.0"  # For contour
+geo-types = "0.7.16"  # For contour
+num="0.4.3"
+pyo3 = "0.25.1"  # Communication with Python
+physical_constants = "0.5.0"  # For MU_0
+rayon="1.10.0"
+spec_math = "0.1.6"  # For elliptic integrals
+numpy = "0.25.0"
+ndarray = { version = "0.16.1", features = ["approx"] }
+ndarray-interp = "0.5.0"
+blas-src = { version = "0.11.1", features = ["openblas"] }
+env_logger = "0.11.8"
+log = "0.4.27"
+approx = "0.5.1"
+lapack = "0.20.0"
+ndarray-stats = "0.6.0"
+ode_solvers = "0.6.1"
+ndarray-linalg = {version = "0.17.0", features = ["openblas"]}
+rand = "0.9.1"
+
+[profile.release]
+debug = false
+overflow-checks = true
+opt-level = 3  # Highest optimization level
+lto = true  # Link Time Optimization
+codegen-units = 1  # Fewer units can lead to better optimization
+
+[profile.dev]
+debug = true
+overflow-checks = true

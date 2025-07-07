@@ -1,0 +1,101 @@
+{
+    "RAYON_NUM_THREADS": 32,
+    "database_reader": {
+        "method": "st40_mdsplus",
+        "st40_mdsplus": {
+            "workflow": {
+                "elmag": {
+                    "pulseNo": null,
+                    "run_name": "RUN16",
+                    "usage": "PF and vessel geometry and resistance"
+                },
+                "mag": {
+                    "pulseNo": null,
+                    "run_name": "BEST",
+                    "usage": "Magneitc sensors geometry and measured values"
+                },
+                "psu2coil": {
+                    "pulseNo": null,
+                    "run_name": "RUN02",
+                    "usage": "PF and TF coil currents"
+                }
+            },
+            "isoflux_code_name": null
+        },
+        "freegs": {
+            "workflow": {
+            }
+        },
+        "st40_astra_mdsplus": {
+            "workflow": {
+                "elmag": {
+                    "pulseNo": null,
+                    "run_name": "RUN16",
+                    "usage": "PF and vessel geometry and resistance"
+                },
+                "mag": {
+                    "pulseNo": null,
+                    "run_name": "BEST",
+                    "usage": "Magneitc sensors geometry"
+                },
+                "astra": {
+                    "pulseNo": null,
+                    "run_name": "RUN202",
+                    "usage": "PF and TF measured values, and magneitc sensors measured values"
+                }
+            }
+        }
+    },
+    "database_writer": {
+        "method": "tokamak_energy_mdsplus",
+        "tokamak_energy_mdsplus": {
+        },
+        "tokamak_energy_mdsplus_no_workflow": {
+        },
+        "rtgsfit_mdsplus": {
+        }
+    },
+    "numerics": {
+        "n_iter_max": 25,
+        "gs_error": 5.0e-6,
+        "n_iter_no_vertical_feedback": 1,
+        "n_iter_min": 0,
+        "anderson_mixing": {
+            "use": false,
+            "mixing_from_previous_iter": 0.1
+        },
+        "save_unconverged": false
+    },
+    "type_of_run": {
+        "forward": false,
+        "inverse": true
+    },
+    "grid": {
+        "n_r": 80,
+        "n_z": 161,
+        "r_min": 0.01,
+        "r_max": 1.00,
+        "z_min": -1.0,
+        "z_max": 1.0
+    },
+    "n_psi_n": 100,
+    "timeslices": {
+        "method": "arange",
+        "arange": {
+            "time_start": 10.0e-3,
+            "time_end": 250.0e-3,
+            "dt": 0.5e-3
+        },
+        "linspace": {
+            "time_start": 5.0e-3,
+            "time_end": 250.0e-3,
+            "n_time": 20
+        },
+        "user_defined": [0.20450000000000018]
+    },
+    "initial_guess": {
+        "ip": 425.0e3,
+        "r_cur": 0.45,
+        "z_cur": 0.0
+    }
+}

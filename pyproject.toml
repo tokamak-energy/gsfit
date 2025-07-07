@@ -1,0 +1,80 @@
+[build-system]
+build-backend = "maturin"
+requires = ["maturin>=1.7,<2.0"]
+
+[project]
+authors = [
+    {name = "Peter Buxton", email = "peter.buxton@tokamakenergy.com"},
+]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "f90nml",
+    "matplotlib",
+    "numpy",
+    "scipy",
+    "setuptools_git_versioning",
+    "toml",
+]
+description = "GSFit: Equilibrium reconstruction"
+dynamic = ["version"]
+name = "gsfit"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel",
+    "ipympl",
+    "maturin[patchelf]",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "pytest-mypy",
+    "pytest-xdist",
+    "scipy-stubs",
+    "shapely",
+]
+with_st40_mdsplus = [
+    "st40_database",
+    "standard_utility"
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+python-source = "python"
+python-packages = ["gsfit", "gsfit_rs", "diagnostic_and_simulation_base"]
+gsfit.data = ["gsfit/settings/"]
+
+[tool.mypy]
+ignore_errors = false
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_optional = true
+show_error_codes = true
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+no_implicit_reexport = true
+
+[tool.black]
+line-length = 160
+
+[tool.isort]
+multi_line_output = 3
+
+[tool.ruff]
+line-length = 160
+
+[tool.ruff.lint.isort]
+force-single-line = true
+single-line-exclusions = ["dash"]

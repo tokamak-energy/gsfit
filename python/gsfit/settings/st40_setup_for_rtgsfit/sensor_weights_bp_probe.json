@@ -1,0 +1,274 @@
+{
+    "P101": {
+        "fit_settings": {
+            "expected_value": 0.016727434,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P102": {
+        "fit_settings": {
+            "expected_value": 0.021110956,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P103": {
+        "fit_settings": {
+            "expected_value": 0.02352801,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P104": {
+        "fit_settings": {
+            "expected_value": 0.015929269,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P105": {
+        "fit_settings": {
+            "expected_value": 0.014169007,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P106": {
+        "fit_settings": {
+            "expected_value": 0.025,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P107": {
+        "fit_settings": {
+            "expected_value": 0.001666667,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P108": {
+        "fit_settings": {
+            "expected_value": 0.001666667,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P109": {
+        "fit_settings": {
+            "expected_value": 0.001666667,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P110": {
+        "fit_settings": {
+            "expected_value": 0.001666667,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P111": {
+        "fit_settings": {
+            "expected_value": 0.001682883,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P112": {
+        "fit_settings": {
+            "expected_value": 0.002887004,
+            "weight": 0.2,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P113": {
+        "fit_settings": {
+            "expected_value": 0.004330136,
+            "weight": 0.2,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P114": {
+        "fit_settings": {
+            "expected_value": 0.00574388,
+            "weight": 0.2,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P115": {
+        "fit_settings": {
+            "expected_value": 0.007383445,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P116": {
+        "fit_settings": {
+            "expected_value": 0.008938699,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P117": {
+        "fit_settings": {
+            "expected_value": 0.010049853,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P118": {
+        "fit_settings": {
+            "expected_value": 0.012308801,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P119": {
+        "fit_settings": {
+            "expected_value": 1.0,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P120": {
+        "fit_settings": {
+            "expected_value": 0.010474212,
+            "weight": 0.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P121": {
+        "fit_settings": {
+            "expected_value": 0.008279326,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P122": {
+        "fit_settings": {
+            "expected_value": 0.006132701,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P123": {
+        "fit_settings": {
+            "expected_value": 0.004608339,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P124": {
+        "fit_settings": {
+            "expected_value": 0.002771094,
+            "weight": 0.2,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P125": {
+        "fit_settings": {
+            "expected_value": 0.001666667,
+            "weight": 0.2,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P126": {
+        "fit_settings": {
+            "expected_value": 0.001666667,
+            "weight": 0.5,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P127": {
+        "fit_settings": {
+            "expected_value": 0.001666667,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P128": {
+        "fit_settings": {
+            "expected_value": 0.001666667,
+            "weight": 0.2,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P129": {
+        "fit_settings": {
+            "expected_value": 0.001666667,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P130": {
+        "fit_settings": {
+            "expected_value": 0.025,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P131": {
+        "fit_settings": {
+            "expected_value": 0.015136328,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "P132": {
+        "fit_settings": {
+            "expected_value": 0.014577528,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P133": {
+        "fit_settings": {
+            "expected_value": 0.023541206,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "P134": {
+        "fit_settings": {
+            "expected_value": 0.021329758,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    }
+}

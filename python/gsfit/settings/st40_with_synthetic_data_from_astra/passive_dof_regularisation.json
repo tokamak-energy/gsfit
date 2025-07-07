@@ -1,0 +1,80 @@
+{
+    "BVLTCASE": {
+        "current_distribution_type": "constant_current_density",
+        "include": true,
+        "n_dof": 1,
+        "regularisations":  [[]],
+        "regularisations_weight": [[]]
+    },
+    "BVLBCASE": {
+        "current_distribution_type": "constant_current_density",
+        "include": true,
+        "n_dof": 1,
+        "regularisations":  [[]],
+        "regularisations_weight": [[]]
+    },
+    "DIVPSRT": {
+        "current_distribution_type": "constant_current_density",
+        "include": true,
+        "n_dof": 1,
+        "regularisations":  [[]],
+        "regularisations_weight": [[]]
+    },
+    "DIVPSRB": {
+        "current_distribution_type": "constant_current_density",
+        "include": true,
+        "n_dof": 1,
+        "regularisations":  [[]],
+        "regularisations_weight": [[]]
+    },
+    "HFSPSRT": {
+        "current_distribution_type": "constant_current_density",
+        "include": true,
+        "n_dof": 1,
+        "regularisations":  [[]],
+        "regularisations_weight": [[]]
+    },
+    "HFSPSRB": {
+        "current_distribution_type": "constant_current_density",
+        "include": true,
+        "n_dof": 1,
+        "regularisations":  [[]],
+        "regularisations_weight": [[]]
+    },
+    "IVC": {
+        "current_distribution_type": "eig",
+        "include": true,
+        "n_dof": 15,
+        "regularisations": [
+            [  1.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   1.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   1.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   1.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   1.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   0.0,   1.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   1.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   1.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   1.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   1.0,   0.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   1.0,   0.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   1.0,   0.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   1.0,   0.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   1.0,   0.0],
+            [  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   1.0]
+        ],
+        "regularisations_weight": [
+            15.0,   250.0, 15.0,250.0,  15.0, 250.0,  15.0, 250.0,  15.0, 250.0,  50.0, 250.0,  50.0, 250.0,  50.0
+        ]
+    },
+    "OVC": {
+        "current_distribution_type": "constant_current_density",
+        "include": true,
+        "n_dof": 1,
+        "regularisations": [
+            [1.0]
+        ],
+        "regularisations_weight": [
+            0.1
+        ]
+    }
+}

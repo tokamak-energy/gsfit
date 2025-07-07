@@ -1,0 +1,10 @@
+{
+    "plasma_current_rogowski": {
+        "fit_settings": {
+            "expected_value": 500000.0,
+            "weight": 100.0,
+            "include": true,
+            "comment": ""
+        }
+    }
+}

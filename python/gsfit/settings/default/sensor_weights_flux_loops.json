@@ -1,0 +1,314 @@
+{
+    "L001": {
+        "fit_settings": {
+            "expected_value": 0.113719644,
+            "weight": 30.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L002": {
+        "fit_settings": {
+            "expected_value": 0.100007376,
+            "weight": 60.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L003": {
+        "fit_settings": {
+            "expected_value": 1000.0,
+            "weight": 0.0,
+            "include": false,
+            "comment": "MCT flux loop dead"
+        }
+    },
+    "L004": {
+        "fit_settings": {
+            "expected_value": 0.084038188,
+            "weight": 60.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L005": {
+        "fit_settings": {
+            "expected_value": 0.017162184,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L006": {
+        "fit_settings": {
+            "expected_value": 0.087321376,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L007": {
+        "fit_settings": {
+            "expected_value": 0.041277038,
+            "weight": 20.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L008": {
+        "fit_settings": {
+            "expected_value": 0.126682735,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L009": {
+        "fit_settings": {
+            "expected_value": 0.09294257,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L010": {
+        "fit_settings": {
+            "expected_value": 0.097114053,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L011": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L012": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L013": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L014": {
+        "fit_settings": {
+            "expected_value": 1000.0,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L015": {
+        "fit_settings": {
+            "expected_value": 1000.0,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L016": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L017": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L018": {
+        "fit_settings": {
+            "expected_value": 1000.0,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L019": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L020": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 20.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L021": {
+        "fit_settings": {
+            "expected_value": 0.097758039,
+            "weight": 16.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L022": {
+        "fit_settings": {
+            "expected_value": 0.094437077,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "L023": {
+        "fit_settings": {
+            "expected_value": 0.12803107,
+            "weight": 30.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L024": {
+        "fit_settings": {
+            "expected_value": 0.042032448,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L025": {
+        "fit_settings": {
+            "expected_value": 0.088936234,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L026": {
+        "fit_settings": {
+            "expected_value": 0.017553465,
+            "weight": 6.28,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L027": {
+        "fit_settings": {
+            "expected_value": 0.087513262,
+            "weight": 60.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L029": {
+        "fit_settings": {
+            "expected_value": 0.101245706,
+            "weight": 60.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L030": {
+        "fit_settings": {
+            "expected_value": 0.114159463,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "L101": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 0.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L102": {
+        "fit_settings": {
+            "expected_value": 0.080661769,
+            "weight": 3.14,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "L103": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 6.28,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "L104": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 6.28,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "L105": {
+        "fit_settings": {
+            "expected_value": 0.082451096,
+            "weight": 3.14,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "L106": {
+        "fit_settings": {
+            "expected_value": 0.05,
+            "weight": 0.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "L201": {
+        "fit_settings": {
+            "expected_value": 0.877277014,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "L202": {
+        "fit_settings": {
+            "expected_value": 0.877277014,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "L211": {
+        "fit_settings": {
+            "expected_value": 0.877277014,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "L212": {
+        "fit_settings": {
+            "expected_value": 0.877277014,
+            "weight": 0.0,
+            "include": false,
+            "comment": ""
+        }
+    }
+}

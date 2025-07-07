@@ -1,0 +1,18 @@
+{
+    "method": "efit_polynomial",
+    "efit_polynomial": {
+        "n_dof": 1,
+        "regularizations": [
+            []
+        ]
+    },
+    "liuqe_polynomial": {
+        "n_dof": 2,
+        "regularizations": [
+            [0.0, 0.00004467344]
+        ]
+    },
+    "spline": {
+        "n_dof": 2
+    }
+}
