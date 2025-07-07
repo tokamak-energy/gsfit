@@ -38,7 +38,7 @@ jobs:
             target: ppc64le
     steps:
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libopenblas-dev libssl-dev
+        run: sudo apt-get update && sudo apt-get install -y libopenblas-dev libssl-dev pkg-config openssl
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
