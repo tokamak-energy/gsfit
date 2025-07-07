@@ -45,6 +45,8 @@ jobs:
           python-version: 3.x
       - name: Build wheels
         uses: PyO3/maturin-action@v1
+        env:
+          OPENSSL_DIR: /opt/openssl
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
