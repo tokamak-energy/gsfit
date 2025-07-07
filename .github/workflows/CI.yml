@@ -21,18 +21,18 @@ permissions:
 jobs:
   linux:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/pyo3/maturin
     steps:
-      - name: Install system dependencies
-        run: yum update -y && yum install -y openblas-devel openssl-devel
       - uses: actions/checkout@v4
-      - name: Build wheels (Python 3.11)
-        run: maturin build --release -i python3.11
-      - name: Build wheels (Python 3.12)
-        run: maturin build --release -i python3.12
-      - name: Build wheels (Python 3.13)
-        run: maturin build --release -i python3.13
+      - name: Build in maturin container
+        uses: addnab/docker-run-action@v3
+        with:
+          image: ghcr.io/pyo3/maturin
+          options: -v ${{ github.workspace }}:/workspace -w /workspace
+          run: |
+            yum update -y && yum install -y openblas-devel openssl-devel
+            maturin build --release -i python3.11
+            maturin build --release -i python3.12
+            maturin build --release -i python3.13
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
