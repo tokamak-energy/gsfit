@@ -8,12 +8,12 @@
 GSFit is a modern tokamak equilibrium reconstruction tool for post-shot experimental analysis and scientific interpretation.
 Developed by Tokamak Energy Ltd. for use on ST40, the worlds highest field spherical tokamak.
 
-The Grad-Shafranov equation is the is equilibrium solution to the ideal, single fluid, MHD equations, assuming axysymmetry.
+The Grad-Shafranov equation is the is equilibrium solution to the ideal, single fluid, MHD equations, assuming axisymmetry.
 The Grad-Shafranov equation has two free degrees of freedom, often referred to as the source functions: the pressure gradient `p_prime` and `ff_prime` where `f` gives rise to the the poloidal plasma current. 
-GSFit uses diagnostics, most importantly the magnetics, to symultaneiously solve the non-linear Grad-Shafranov equation while optimising the `p_prime` and `ff_prime` degrees of freedom to minimise the difference between the experimental "measured" values and the "calculated" values.
+GSFit uses diagnostics, most importantly the magnetics, to simultaneously solve the non-linear Grad-Shafranov equation while optimising the `p_prime` and `ff_prime` degrees of freedom to minimise the difference between the experimental "measured" values and the "calculated" values.
 More details about the algorithms used can be found in the excellent paper [J.-M. Moret, *et. al.*, "Tokamak equilibrium reconstruction code LIUQE and its real time implementation", Fusion Eng. Design, 91, 2015](https://doi.org/10.1016/j.fusengdes.2014.09.019).
 
-GSFit's numerical solver is written in Rust for speed and robustness, and the user interface / set-up is written in Python for it's convenience.
+GSFit's numerical solver is written in Rust for speed and robustness, and the user interface / set-up is written in Python for its convenience.
 
 The goal of GSFit is high accuracy, not performance; when something can be calculated accurately, it **should** be calculated accurately regardless of computational cost.
 
@@ -26,23 +26,23 @@ Rust is a compiled, high-performance language, nearly as fast as C and Fortran.
 It includes modern tooling such as a package manager and centralised registry (cargo and [crates.io](https://crates.io/)), autoformatting ([`rustfmt`](https://github.com/rust-lang/rustfmt)), and has [testing built into the language](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html).
 Rust enforces strict ownership rules, making programs extremely memory efficient without requiring any extra effort.
 These rules also eliminate entire classes of memory issues.
-Additionally, Rust has zero-cost abstractions, allowing "implementations", whcih are similar to classes in object-oriented programming, to be used without any performance penalty.
-For more information the official [Rust book](https://doc.rust-lang.org/stable/book/) gives a complet introduction to the language with examples.
+Additionally, Rust has zero-cost abstractions, allowing "implementations", which are similar to classes in object-oriented programming, to be used without any performance penalty.
+For more information the official [Rust book](https://doc.rust-lang.org/stable/book/) gives a complete introduction to the language with examples.
 
 Python is ubiquitous within the fusion industry.
 Using Python allows easy integration into existing workflows, for example in
 [examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb](examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb), we reconstruct an equilibrium using synthetic "measured" data produced by the open source forward Grad-Shafranov solver [FreeGSNKE](https://github.com/FusionComputingLab/freegsnke).
 
-# 1. Instiallation and environment
+# 1. Installation and environment
 
 ## 1.1 Python environment
 Presently, GSFit can be run on Python 3.11, 3.12 and 3.13 (see the banner at the top of this page).
 
-When installing from PyPi, see [section 1.2](#12-installing-from-pypi), you can use the system Python, but it is best practice to use a virtual environment.
+When installing from PyPI, see [section 1.2](#12-installing-from-pypi), you can use the system Python, but it is best practice to use a virtual environment.
 
 There are three main virtual environment providers: [`uv`](https://docs.astral.sh/uv/), [`conda`](https://docs.conda.io/projects/conda/en/latest/index.html), and [`virtualenv`](https://docs.python.org/3/library/venv.html).
 
-`uv` is both an environment and package manager and is the **recomended** option.
+`uv` is both an environment and package manager and is the **recommended** option.
 This is because `uv` can create an environment with any version of Python, the instillation is done within the user's home directory, and `uv` has been specifically designed for speed.
 This makes it simple and quick to test against multiple Python versions.
 
@@ -56,8 +56,8 @@ source venv_gsfit/bin/activate
 ```
 
 
-## 1.2 Installing from PyPi
-GSFit is available on the [PyPi package registry](https://pypi.org/project/gsfit/) as a pre-compiled binary.
+## 1.2 Installing from PyPI
+GSFit is available on the [PyPI package registry](https://pypi.org/project/gsfit/) as a pre-compiled binary.
 The binary is compiled using the "manylinux2014" standard, which typically can be run on any Linux machine newer than 2014.
 
 All of the packages GSFit depends on are listed in the [pyproject.toml](pyproject.toml).
@@ -65,7 +65,7 @@ These are divided into essential packages which are always required for any run 
 An example of optional packages are machine specific database readers.
 
 ```shell
-# Install GSFit from the PyPi package registry, with only the essential packages
+# Install GSFit from the PyPI package registry, with only the essential packages
 uv pip install gsfit
 # or install GSFit with the "developer" packages, such as `pytest` and `mypy`
 uv pip install gsfit[dev]
@@ -76,8 +76,8 @@ uv pip install --reinstall .[with_st40_mdsplus]
 uv pip install --reinstall .[dev,with_st40_mdsplus]
 ```
 
-## 1.3 Compiling and installin from source code
-While GSFit can be installed into the system Python from PyPi, when compiling from source code a virtual environment is <ins>**required**</ins>.
+## 1.3 Compiling and installing from source code
+While GSFit can be installed into the system Python from PyPI, when compiling from source code a virtual environment is <ins>**required**</ins>.
 
 The Rust compiler is easily installed using [`rustup`](https://www.rust-lang.org/tools/install).
 
@@ -100,7 +100,7 @@ uv pip install --reinstall .
 ```
 
 ## 1.4 IDE
-[VS Code](https://code.visualstudio.com/) is the recomended IDE for GSFit.
+[VS Code](https://code.visualstudio.com/) is the recommended IDE for GSFit.
 
 A particularly useful extension is [`rust-analyser`](https://github.com/rust-lang/rust-analyzer), which *"is a part of a larger rls-2.0 effort to create excellent IDE support for Rust."*
 
@@ -123,7 +123,7 @@ python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
 GSFit's solver and numerics are programmed in Rust, with the initialisation done within Python.
 
 The communication between Python and Rust is handled by the [`PyO3`](https://crates.io/crates/pyo3) crate.
-From the Python side the integration is seemless, and a general user would not know if a fuction / class is written in Python or Rust.
+From the Python side the integration is seamless, and a general user would not know if a function / class is written in Python or Rust.
 In a similar way a user interacting with `numpy` does not know if they are calling Python, C or Fortran.
 
 GSFit has the following implementations (which are similar to classes):
@@ -158,9 +158,9 @@ gsfit_controller = Gsfit(
 gsfit_controller.run()
 ```
 
-To improve reliability and tracability the number of arguments needed to initialise the `gsfit_controller` object is <ins>deliberately kept to a minimum</ins>.
+To improve reliability and traceability the number of arguments needed to initialise the `gsfit_controller` object is <ins>deliberately kept to a minimum</ins>.
 The `settings_path="default"` argument tells GSFit to use the settings (JSON files) from this directory [`python/gsfit/settings/default/`](python/gsfit/settings/default/).
-By storing all of the settings needed to run GSFit in JSON files allows changes to be tracked through Git.
+By storing all the settings needed to run GSFit in JSON files allows changes to be tracked through Git.
 
 ## 2.2 Adding a new experimental device or coupling to a new forward Grad-Shafranov code
 The information needed to run GSFit comes from two sources:
@@ -180,7 +180,7 @@ These two sources of information are combined to initialise the Rust objects nee
 Writing to the database is done through [`python/gsfit/database_writers`](python/gsfit/database_writers), in a similar format to `database_readers`.
 
 Included are the settings and readers for ST40's experimental data, and synthetic data produced by [FreeGS](https://github.com/freegs-plasma/freegs) and [FreeGSNKE](https://github.com/FusionComputingLab/freegsnke/) simulations.
-We welcome and are happy to inclue configurations for other devices.
+We welcome and are happy to include configurations for other devices.
 
 ## 2.3 Where are the Green's tables stored?
 We can classify objects as either "current sources" or "sensors".
@@ -193,7 +193,7 @@ Principles about where data should be:
 * "sensors" contain the Greens tables.
 * "current sources" contain the currents.
 
-the sensors and currens are linked by names, every magnetic probe and PF coil must have a unique name.
+the sensors and currents are linked by names; every magnetic probe and PF coil must have a unique name.
 
 <!--
 So the field which `bp_probe` `P101` detects will be:
@@ -210,7 +210,7 @@ For ST40 we have the `BVLT` and `BVLB` PF coils, both connected to the `BVL` PSU
 
 Several equilibrium reconstruction codes treat the PSU current as a measurement with an associated degree of freedom.
 To allow for this degree of freedom we would need to tell GSFit which PF coil is connected to which PSU.
-This is quite burdensom and **to keep GSFit simple to initialise, we have decided to only consider "coils"**.
+This is quite burdensome and **to keep GSFit simple to initialise, we have decided to only consider "coils"**.
 The work-around, if you want to have the PSU currents as a degree of freedom, is to combine all of the PF coils connected to a single power supply into a single coil.
 On ST40 we could create a PF coil called `BVL_combined` which contains both `BVLT` and `BVLB`.
 
