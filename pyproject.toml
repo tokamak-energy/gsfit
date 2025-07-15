@@ -31,6 +31,7 @@ dev = [
     "ipympl",
     "maturin[patchelf]",
     "mypy",
+    "nbval",
     "pytest",
     "pytest-cov",
     "pytest-mypy",
@@ -41,6 +42,11 @@ dev = [
 with_st40_mdsplus = [
     "st40_database",
     "standard_utility"
+]
+with_freegs_and_freegsnke = [
+    "freegs",
+    "freegsnke",
+    "freegs4e"
 ]
 
 [tool.maturin]
