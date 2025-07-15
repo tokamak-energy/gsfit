@@ -176,7 +176,7 @@ The information needed to run GSFit comes from two sources:
 
 These two sources of information are combined to initialise the Rust objects needed to run GSFit (as described in [section 2.1](#21-initialisation)).
 
-Writing to the database is done through [`python/gsfit/database_writers`](python/gsfit/database_writers), in a similar format to `database_readers`.
+Writing to the database is done through [`python/gsfit/database_writers/`](python/gsfit/database_writers/), in a similar format to `database_readers`.
 
 Included are the settings and readers for ST40's experimental data, and synthetic data produced by [FreeGS](https://github.com/freegs-plasma/freegs) and [FreeGSNKE](https://github.com/FusionComputingLab/freegsnke/) simulations.
 We welcome and are happy to include configurations for other devices.
@@ -203,7 +203,7 @@ field_bp_probe_101_detects = bp_probes["P101"]["greens"]["pf"]["SOL"] * coils["p
 ```
 -->
 
-## 2.4 Decision on coils vs PSU's
+## 2.4 Decision on coils vs PSUs
 On many tokamaks, including ST40, several PF coils are connected to a single PSU.
 For ST40 we have the `BVLT` and `BVLB` PF coils, both connected to the `BVL` PSU.
 
