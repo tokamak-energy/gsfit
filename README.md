@@ -6,10 +6,10 @@
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
 GSFit is a modern tokamak equilibrium reconstruction tool for post-shot experimental analysis and scientific interpretation.
-Developed by Tokamak Energy Ltd. for use on ST40, the worlds highest field spherical tokamak.
+Developed by Tokamak Energy Ltd. for use on ST40, the world's highest field spherical tokamak.
 
-The Grad-Shafranov equation is the is equilibrium solution to the ideal, single fluid, MHD equations, assuming axisymmetry.
-The Grad-Shafranov equation has two free degrees of freedom, often referred to as the source functions: the pressure gradient `p_prime` and `ff_prime` where `f` gives rise to the the poloidal plasma current. 
+The Grad-Shafranov equation is the equilibrium solution to the ideal, single-fluid, MHD equations, assuming axisymmetry.
+The Grad-Shafranov equation has two free degrees of freedom, often referred to as the source functions: the pressure gradient `p_prime` and `ff_prime`, where `f` gives rise to the poloidal plasma current. 
 GSFit uses diagnostics, most importantly the magnetics, to simultaneously solve the non-linear Grad-Shafranov equation while optimising the `p_prime` and `ff_prime` degrees of freedom to minimise the difference between the experimental "measured" values and the "calculated" values.
 More details about the algorithms used can be found in the excellent paper [J.-M. Moret, *et. al.*, "Tokamak equilibrium reconstruction code LIUQE and its real time implementation", Fusion Eng. Design, 91, 2015](https://doi.org/10.1016/j.fusengdes.2014.09.019).
 
@@ -18,7 +18,7 @@ GSFit's numerical solver is written in Rust for speed and robustness, and the us
 The goal of GSFit is high accuracy, not performance; when something can be calculated accurately, it **should** be calculated accurately regardless of computational cost.
 
 GSFit uses the COCOS 13 coordinate system, as described in [O. Sauter and S. Y Medvedev, "Tokamak Coordinate Conventions: COCOS", Comput. Phys. Commun. 184, 2013](https://doi.org/10.1016/j.cpc.2012.09.010).
-Where in summary, flux is measured in weber, and the poloidal angle increase counterclockwise, starting from the outboard mid-plane.
+Where, in summary, flux is measured in weber, and the poloidal angle increases counterclockwise, starting from the outboard mid-plane.
 
 **Why Rust and Python?**
 
@@ -27,10 +27,10 @@ It includes modern tooling such as a package manager and centralised registry (c
 Rust enforces strict ownership rules, making programs extremely memory efficient without requiring any extra effort.
 These rules also eliminate entire classes of memory issues.
 Additionally, Rust has zero-cost abstractions, allowing "implementations", which are similar to classes in object-oriented programming, to be used without any performance penalty.
-For more information the official [Rust book](https://doc.rust-lang.org/stable/book/) gives a complete introduction to the language with examples.
+For more information, the official [Rust book](https://doc.rust-lang.org/stable/book/) gives a complete introduction to the language with examples.
 
 Python is ubiquitous within the fusion industry.
-Using Python allows easy integration into existing workflows, for example in
+Using Python allows easy integration into existing workflows. For example, in
 [examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb](examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb), we reconstruct an equilibrium using synthetic "measured" data produced by the open source forward Grad-Shafranov solver [FreeGSNKE](https://github.com/FusionComputingLab/freegsnke).
 
 # 1. Installation and environment
@@ -158,7 +158,7 @@ gsfit_controller = Gsfit(
 gsfit_controller.run()
 ```
 
-To improve reliability and traceability the number of arguments needed to initialise the `gsfit_controller` object is <ins>deliberately kept to a minimum</ins>.
+To improve reliability and traceability, the number of arguments needed to initialise the `gsfit_controller` object is <ins>deliberately kept to a minimum</ins>.
 The `settings_path="default"` argument tells GSFit to use the settings (JSON files) from this directory [`python/gsfit/settings/default/`](python/gsfit/settings/default/).
 By storing all the settings needed to run GSFit in JSON files allows changes to be tracked through Git.
 
@@ -187,13 +187,13 @@ We can classify objects as either "current sources" or "sensors".
 * `coils`, `passives`, and `plasma` are "current sources".
 * `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, and `plasma` are "sensors".
 
-Note, `plasma` is both a current source and a sensor, this is because it contains the plasma current **and** the 2D (R, Z) grid where we want to take measurement on.
+Note, `plasma` is both a current source and a sensor; this is because it contains the plasma current **and** the 2D (R, Z) grid where we want to take measurements on.
 
 Principles about where data should be:
-* "sensors" contain the Greens tables.
+* "sensors" contain the Green's tables.
 * "current sources" contain the currents.
 
-the sensors and currents are linked by names; every magnetic probe and PF coil must have a unique name.
+The sensors and currents are linked by names; every magnetic probe and PF coil must have a unique name.
 
 <!--
 So the field which `bp_probe` `P101` detects will be:
