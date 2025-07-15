@@ -17,7 +17,7 @@ GSFit's numerical solver is written in Rust for speed and robustness, and the us
 
 The goal of GSFit is high accuracy, not performance; when something can be calculated accurately, it **should** be calculated accurately regardless of computational cost.
 
-GSFit uses the COCOS 13 coordinate system, as described in [O. Sauter and S. Y Medvedev, "Tokamak Coordinate Conventions: COCOS", Comput. Phys. Commun. 184, 2013](https://doi.org/10.1016/j.cpc.2012.09.010).
+GSFit uses the COCOS 13 coordinate system, as described in [O. Sauter and S. Y. Medvedev, "Tokamak Coordinate Conventions: COCOS", Comput. Phys. Commun. 184, 2013](https://doi.org/10.1016/j.cpc.2012.09.010).
 Where, in summary, flux is measured in weber, and the poloidal angle increases counterclockwise, starting from the outboard mid-plane.
 
 **Why Rust and Python?**
@@ -43,7 +43,7 @@ When installing from PyPI, see [section 1.2](#12-installing-from-pypi), you can 
 There are three main virtual environment providers: [`uv`](https://docs.astral.sh/uv/), [`conda`](https://docs.conda.io/projects/conda/en/latest/index.html), and [`virtualenv`](https://docs.python.org/3/library/venv.html).
 
 `uv` is both an environment and package manager and is the **recommended** option.
-This is because `uv` can create an environment with any version of Python, the instillation is done within the user's home directory, and `uv` has been specifically designed for speed.
+This is because `uv` can create an environment with any version of Python, the installation is done within the user's home directory, and `uv` has been specifically designed for speed.
 This makes it simple and quick to test against multiple Python versions.
 
 ```shell
@@ -55,14 +55,13 @@ python -m uv venv venv_gsfit --python=3.13
 source venv_gsfit/bin/activate
 ```
 
-
 ## 1.2 Installing from PyPI
 GSFit is available on the [PyPI package registry](https://pypi.org/project/gsfit/) as a pre-compiled binary.
 The binary is compiled using the "manylinux2014" standard, which typically can be run on any Linux machine newer than 2014.
 
 All of the packages GSFit depends on are listed in the [pyproject.toml](pyproject.toml).
 These are divided into essential packages which are always required for any run and optional packages which can be installed for different purposes.
-An example of optional packages are machine specific database readers.
+An example of optional packages are machine-specific database readers.
 
 ```shell
 # Install GSFit from the PyPI package registry, with only the essential packages
@@ -81,7 +80,7 @@ While GSFit can be installed into the system Python from PyPI, when compiling fr
 
 The Rust compiler is easily installed using [`rustup`](https://www.rust-lang.org/tools/install).
 
-GSFIt also requires [OpenBLAS](https://github.com/OpenMathLib/OpenBLAS) to perform various LAPACK routines, such as least squares minimisation and eignevalue/eigenvector calculations.
+GSFit also requires [OpenBLAS](https://github.com/OpenMathLib/OpenBLAS) to perform various LAPACK routines, such as least squares minimisation and eigenvalue/eigenvector calculations.
 
 ```shell
 # Install the Rust compiler (only needs to be done once)
@@ -102,10 +101,10 @@ uv pip install --reinstall .
 ## 1.4 IDE
 [VS Code](https://code.visualstudio.com/) is the recommended IDE for GSFit.
 
-A particularly useful extension is [`rust-analyser`](https://github.com/rust-lang/rust-analyzer), which *"is a part of a larger rls-2.0 effort to create excellent IDE support for Rust."*
+A particularly useful extension is [`rust-analyzer`](https://github.com/rust-lang/rust-analyzer), which *"is a part of a larger rls-2.0 effort to create excellent IDE support for Rust."*
 
 The [`PyO3`](https://crates.io/crates/pyo3) crate requires Python>=3.7.
-On machines where the `python3` command links to an unsupported Python version, you can change the following file: `~/.vscode-server/data/Machine/settings.json` to point to your desired Python's "standard library files". Which will be <ins>**similar**</ins> to:
+On machines where the `python3` command links to an unsupported Python version, you can change the following file: `~/.vscode-server/data/Machine/settings.json` to point to your desired Python's "standard library files", which will be <ins>**similar**</ins> to:
 ```json
 {
     "rust-analyzer.server.extraEnv": {
@@ -124,13 +123,13 @@ GSFit's solver and numerics are programmed in Rust, with the initialisation done
 
 The communication between Python and Rust is handled by the [`PyO3`](https://crates.io/crates/pyo3) crate.
 From the Python side the integration is seamless, and a general user would not know if a function / class is written in Python or Rust.
-In a similar way a user interacting with `numpy` does not know if they are calling Python, C or Fortran.
+In a similar way, a user interacting with `numpy` does not know if they are calling Python, C or Fortran.
 
 GSFit has the following implementations (which are similar to classes):
 * **`coils`** for the PF and TF coils. This object contains the geometry; measured values; and reconstructed values
-* **`passives`** for the toroidally conducting strucutres, such as the vacuum vessel and passive plates. `passives` also contains the degrees of freedom allowed for the passive conductors
+* **`passives`** for the toroidally conducting structures, such as the vacuum vessel and passive plates. `passives` also contains the degrees of freedom allowed for the passive conductors
 * **`plasma`** contains a $(R, Z)$ grid and the reconstructed equilibrium
-* **`bp_probes`** contains the Mrinov coils: geometry; measured values; which sensors to use in the reconstruction and their weights; and the reconstructed values
+* **`bp_probes`** contains the Mirnov coils: geometry; measured values; which sensors to use in the reconstruction and their weights; and the reconstructed values
 * **`flux_loops`** the toroidal flux loops. Note the units are in weber.
 * **`rogowski_coils`** measuring toroidal currents
 * **`isoflux`** contains two time-dependent $(R, Z)$ coordinates which have equal poloidal flux
@@ -170,7 +169,7 @@ The information needed to run GSFit comes from two sources:
     * which magnetic sensors to use in the reconstruction,
     * the degrees of freedom given to `p_prime` and `ff_prime`,
     * <ins>**and**</ins> which `database_reader` to use.
-2. **[`python/gsfit/database_readers/`](python/gsfit/database_readers/)**: Connects to machine specific databases to read experimental results in, such as:
+2. **[`python/gsfit/database_readers/`](python/gsfit/database_readers/)**: Connects to machine-specific databases to read experimental results in, such as:
     * geometry and current in poloidal field coils
     * measured signals from magnetic sensors
     * isoflux constraints
@@ -222,7 +221,7 @@ On ST40 we could create a PF coil called `BVL_combined` which contains both `BVL
 
 # 4. Citing GSFit
 We intend on publishing a paper on GSFit.
-While GSFit is unpublished please cite it as "P. F. Buxton, GSFit, https://github.com/tokamak-energy/gsfit, 2025"
+While GSFit is unpublished, please cite it as "P. F. Buxton, GSFit, https://github.com/tokamak-energy/gsfit, 2025"
 
 Please use the **GSFit** nomenclature, <ins>**not**</ins> GS-Fit, GSFIT, or g/s fit.
 
