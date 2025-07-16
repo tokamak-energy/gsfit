@@ -79,7 +79,7 @@ jobs:
       - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install *.whl[dev,with_freegs_and_freegsnke]
+          python -m pip install gsfit-0.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl[dev,with_freegs_and_freegsnke]
       - name: Run tests
         run: |
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
