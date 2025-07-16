@@ -19,10 +19,11 @@ permissions:
   contents: read
 
 jobs:
-  linux:
+  build_wheels_on_linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source code
+        uses: actions/checkout@v4
       - name: Build in maturin container
         uses: addnab/docker-run-action@v3
         with:
@@ -33,7 +34,7 @@ jobs:
             maturin build --release -i python3.11
             maturin build --release -i python3.12
             maturin build --release -i python3.13
-      - name: Upload wheels
+      - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v4
         with:
           name: wheels-linux
@@ -43,13 +44,14 @@ jobs:
     name: Source distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Build sdist
+      - name: Checkout source code
+        uses: actions/checkout@v4
+      - name: Build sdist (source distribution)
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
           args: --out dist
-      - name: Upload sdist
+      - name: Upload sdist to artifacts
         uses: actions/upload-artifact@v4
         with:
           name: wheels-sdist
@@ -58,24 +60,22 @@ jobs:
   tests:
     name: Run tests
     runs-on: ubuntu-latest
-    needs: [linux]
+    needs: [build_wheels_on_linux]
     steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Download built wheel
+      - name: Download built wheels
         uses: actions/download-artifact@v4
         with:
           name: wheels-linux
-      - name: list directory
-        run: ls -l
-      - name: list directory 2
-        run: ls -l wheels-linux/
-      - name: Install wheel and dev dependencies
+      - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install wheels-linux/gsfit-0.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl[dev,with_freegs_and_freegsnke]
+          pip install gsfit-*-cp313*.whl[dev,with_freegs_and_freegsnke]
       - name: Run tests
         run: |
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
@@ -84,7 +84,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [linux, sdist, tests]
+    needs: [build_wheels_on_linux, sdist, tests]
     permissions:
       # Use to sign the release artifacts
       id-token: write
@@ -93,7 +93,8 @@ jobs:
       # Used to generate artifact attestation
       attestations: write
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download all artifacts (wheels-linux and sdist)
+        uses: actions/download-artifact@v4
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
