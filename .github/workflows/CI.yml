@@ -68,10 +68,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: wheels-linux
+      - name: list directory
+        run: ls -l
+      - name: list directory 2
+        run: ls -l wheels-linux/
       - name: Install wheel and dev dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install wheels-linux/*.whl[dev,with_freegs_and_freegsnke]
+          pip install wheels-linux/gsfit-0.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl[dev,with_freegs_and_freegsnke]
       - name: Run tests
         run: |
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
