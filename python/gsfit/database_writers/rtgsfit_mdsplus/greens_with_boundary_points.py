@@ -76,7 +76,6 @@ def greens_with_boundary_points(plasma: gsfit_rs.Plasma) -> npt.NDArray[np.float
     # Check diagonal values for self-inductance are g_ltrb[i, i] = self_inductance_rectangle_cross_section(r_ltrb[i], d_r, d_z)
     for i in range(n_ltrb):
         expected_self_inductance = self_inductance_rectangle_cross_section(r_ltrb[i], d_r_vec[i], d_z_vec[i])
-        expected_self_inductance *= 2 * np.pi
         if not np.isclose(g_ltrb[i, i], expected_self_inductance):
             raise ValueError(f"Diagonal value at index {i} does not match expected self-inductance: {g_ltrb[i, i]} != {expected_self_inductance}")
 
