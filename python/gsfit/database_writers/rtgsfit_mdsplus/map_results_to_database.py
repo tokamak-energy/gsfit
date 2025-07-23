@@ -332,14 +332,14 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
             grid_points.append(shapely.geometry.Point(r[i_r], z[i_z]))
     mask_lim = vessel_polygon.contains(grid_points)
 
-    # Ensure that the (R,Z) grid cell nearest to the vessel is included in the mask
-    for r_v, z_v in zip(vessel_r, vessel_z):
-        # Find the nearest grid-point to the vessel point
-        i_r_nearest = np.argmin(np.abs(r - r_v))
-        i_z_nearest = np.argmin(np.abs(z - z_v))
-        mask_lim[i_z_nearest * n_r + i_r_nearest] = True
+    # # Ensure that the (R,Z) grid cell nearest to the vessel is included in the mask
+    # for r_v, z_v in zip(vessel_r, vessel_z):
+    #     # Find the nearest grid-point to the vessel point
+    #     i_r_nearest = np.argmin(np.abs(r - r_v))
+    #     i_z_nearest = np.argmin(np.abs(z - z_v))
+    #     mask_lim[i_z_nearest * n_r + i_r_nearest] = True
 
-    results["PRESHOT"]["MASK_LIM"] = mask_lim.astype(np.int32)
+    # results["PRESHOT"]["MASK_LIM"] = mask_lim.astype(np.int32)
 
     def compute_limit_idx_and_weights(r, z, lim_r, lim_z, n_intrp, n_lim):
         n_r = len(r)
@@ -382,6 +382,15 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     results["PRESHOT"]["LIMIT_W"] = limit_w.astype(np.float64)
     results["PRESHOT"]["LIMIT_R"] = lim_r.astype(np.float64)
     results["PRESHOT"]["LIMIT_Z"] = lim_z.astype(np.float64)
+
+    # If grid point is within sqrt(d_r^2 + d_z^2) of
+    # a limiter point then include it in the mask_lim
+    d_rz = np.sqrt(d_r**2 + d_z**2)
+    for i, (lr, lz) in enumerate(zip(lim_r, lim_z)):
+        points_near_lim = np.sqrt((lr - r_grid) ** 2 + (lz - z_grid) ** 2) < d_rz
+        mask_lim = np.logical_or(mask_lim, points_near_lim)
+
+    results["PRESHOT"]["MASK_LIM"] = mask_lim.astype(np.int32)
 
     r_ltrb = np.concatenate(
         (
