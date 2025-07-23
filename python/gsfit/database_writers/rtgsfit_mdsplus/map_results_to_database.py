@@ -380,6 +380,8 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     results["PRESHOT"]["N_LIMIT"] = np.int32(n_lim)
     results["PRESHOT"]["LIMIT_IDX"] = limit_idx.astype(np.int32)
     results["PRESHOT"]["LIMIT_W"] = limit_w.astype(np.float64)
+    results["PRESHOT"]["LIMIT_R"] = lim_r.astype(np.float64)
+    results["PRESHOT"]["LIMIT_Z"] = lim_z.astype(np.float64)
 
     r_ltrb = np.concatenate(
         (
