@@ -387,7 +387,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     # a limiter point then include it in the mask_lim
     d_rz = np.sqrt(d_r**2 + d_z**2)
     for i, (lr, lz) in enumerate(zip(lim_r, lim_z)):
-        points_near_lim = np.sqrt((lr - r_grid) ** 2 + (lz - z_grid) ** 2) < d_rz
+        points_near_lim = np.sqrt((lr - r_flat) ** 2 + (lz - z_flat) ** 2) < d_rz
         mask_lim = np.logical_or(mask_lim, points_near_lim)
 
     results["PRESHOT"]["MASK_LIM"] = mask_lim.astype(np.int32)
