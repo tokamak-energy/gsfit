@@ -24,9 +24,9 @@ Below we show some examples of how to run codes which use the `DiagnosticAndSimu
 from gsfit import Gsfit
 
 gsfit_controller = Gsfit(
-        pulseNo=12050,
-        run_name="RUN01",
-        run_description="Default settings"
+    puun_name="RUN01",
+    rulseNo=12050,
+    rn_description="Default settings"
 )
 
 gsfit_controller.run()
@@ -41,9 +41,9 @@ gsfit_controller.run()
 from bolometry import BlomXY1
 
 blom_xy1_controller = BlomXY1(
-        pulseNo=12050,
-        run_name="RUN01",
-        run_description="Default settings"
+    pulseNo=12050,
+    run_name="RUN01",
+    run_description="Default settings"
 )
 
 blom_xy1_controller.run()
@@ -60,9 +60,9 @@ blom_xy1_controller.run()
 from xrcs import Xrcs
 
 xrcs_controller = Xrcs(
-        pulseNo=12050,
-        run_name="RUN01",
-        run_description="Default settings"
+    pulseNo=12050,
+    run_name="RUN01",
+    run_description="Default settings"
 )
 
 xrcs_controller.run()
@@ -77,9 +77,9 @@ xrcs_controller.run()
 from dialoop import Dialoop
 
 dialoop_controller = Dialoop(
-        pulseNo=12050,
-        run_name="RUN01",
-        run_description="Default settings"
+    pulseNo=12050,
+    run_name="RUN01",
+    run_description="Default settings"
 )
 
 dialoop_controller.run()
