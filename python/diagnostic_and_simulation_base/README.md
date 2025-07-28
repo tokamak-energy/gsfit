@@ -24,8 +24,8 @@ Below we show some examples of how to run codes which use the `DiagnosticAndSimu
 from gsfit import Gsfit
 
 gsfit_controller = Gsfit(
-    puun_name="RUN01",
-    rulseNo=12050,
+    pulseNo=12050,
+    run_name="RUN01",
     rn_description="Default settings"
 )
 
