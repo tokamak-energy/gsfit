@@ -36,7 +36,7 @@ impl RogowskiCoils {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// [probe_name]["psi"]["calculated"]                               = Array1<f64>;  shape=[n_time]
     /// [probe_name]["psi"]["measured"]                                 = Array1<f64>;  shape=[n_time]
     /// [probe_name]["fit_settings"]["comment"]                         = str
