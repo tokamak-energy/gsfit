@@ -40,7 +40,7 @@ jobs:
             ls /opt/_internal/cpython-3.13.5/lib
             ls /opt/_internal/cpython-3.13.5/lib/python3.13
             export PYO3_PYTHON=/opt/python/cp313-cp313/bin/python3.13
-            export PYO3_CROSS_LIB_DIR=/opt/_internal/cpython-3.13.5/lib
+            export PYO3_CROSS_LIB_DIR=/opt/python/cp313-cp313/lib/
             cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
             # cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
       - name: Compile Rust, in maturin container
