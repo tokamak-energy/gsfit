@@ -33,7 +33,8 @@ jobs:
           image: ghcr.io/pyo3/maturin
           options: -v ${{ github.workspace }}:/workspace -w /workspace
           run: |
-            find / -name "libpython3.13*"
+            echo "searching..."
+            find / -name "libpython3*"
             # Install OpenBLAS, and OpenSSL
             # yum update -y && yum install -y openblas-devel openssl-devel
             # python3.13 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
