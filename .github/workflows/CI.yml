@@ -43,7 +43,7 @@ jobs:
             python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
             python --version
             ls ~/.local/share/uv/python/
-            export LD_LIBRARY_PATH=~/.local/share/uv/python/cpython-3.13.2-linux-x86_64-gnu/lib:$LD_LIBRARY_PATH && cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
+            export LD_LIBRARY_PATH=/opt/_internal/cpython-3.13.5/lib:$LD_LIBRARY_PATH && cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
             # cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
             # cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
             # cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
