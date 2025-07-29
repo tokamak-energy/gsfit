@@ -35,16 +35,16 @@ jobs:
           run: |
             # Install OpenBLAS, and OpenSSL
             yum update -y && yum install -y openblas-devel openssl-devel
-            yum update -y && yum install -y python3.13-devel
             # Create and activate Python virtual environment
-            python3.13 -m pip install --upgrade pip
-            python3.13 -m pip install --upgrade uv
-            uv venv venv_gsfit --python python3.13
-            source venv_gsfit/bin/activate
-            python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
-            python --version
+            # python3.13 -m pip install --upgrade pip
+            # python3.13 -m pip install --upgrade uv
+            # uv venv venv_gsfit --python python3.13
+            # source venv_gsfit/bin/activate
+            python3.13 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
+            python3.13 --version
             ls /opt/_internal/cpython-3.13.5/lib
-            export LD_LIBRARY_PATH=/opt/_internal/cpython-3.13.5/lib:$LD_LIBRARY_PATH && cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
+            # export LD_LIBRARY_PATH=/opt/_internal/cpython-3.13.5/lib:$LD_LIBRARY_PATH && cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
+            cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output -- -L /opt/_internal/cpython-3.13.5/lib
             # cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
             # cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
             # cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
