@@ -35,16 +35,12 @@ jobs:
           run: |
             # Install OpenBLAS, and OpenSSL
             yum update -y && yum install -y openblas-devel openssl-devel
-            # Create and activate Python virtual environment
-            # python3.13 -m pip install --upgrade pip
-            # python3.13 -m pip install --upgrade uv
-            # uv venv venv_gsfit --python python3.13
-            # source venv_gsfit/bin/activate
             python3.13 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
             python3.13 --version
             ls /opt/_internal/cpython-3.13.5/lib
+            ls /opt/_internal/cpython-3.13.5/lib/python3.13
             export PYO3_PYTHON=/opt/python/cp313-cp313/bin/python3.13
-            # export PYO3_CROSS_LIB_DIR=/opt/_internal/cpython-3.13.5/lib
+            export PYO3_CROSS_LIB_DIR=/opt/_internal/cpython-3.13.5/lib
             cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
             # cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
       - name: Compile Rust, in maturin container
