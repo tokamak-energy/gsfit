@@ -22,10 +22,20 @@ permissions:
 
 jobs:
   build_wheels_on_linux:
+    name: Compile Rust, build wheels for different Python versions, and run Rust tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+      - name: Rust tests
+        with:
+          image: ghcr.io/pyo3/maturin
+          options: -v ${{ github.workspace }}:/workspace -w /workspace
+          run: |
+            yum update -y && yum install -y openblas-devel openssl-devel
+            # export LD_LIBRARY_PATH=/home/peter.buxton/.local/share/uv/python/cpython-3.13.2-linux-x86_64-gnu/lib:$LD_LIBRARY_PATH && cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
+            cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
+            cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
       - name: Build in maturin container
         uses: addnab/docker-run-action@v3
         with:
@@ -60,7 +70,7 @@ jobs:
           path: dist
 
   tests:
-    name: Run tests
+    name: Run Python tests
     runs-on: ubuntu-latest
     needs: [build_wheels_on_linux]
     steps:
