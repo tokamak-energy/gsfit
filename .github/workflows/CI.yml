@@ -33,11 +33,11 @@ jobs:
           image: ghcr.io/pyo3/maturin
           options: -v ${{ github.workspace }}:/workspace -w /workspace
           run: |
-            # Install OpenBLAS and OpenSSL development libraries
-            yum update -y && yum install -y openblas-devel openssl-devel
-            # Create and active Python virtual environment
-            python3 -m pip install --upgrade pip
-            python3 -m pip install --upgrade uv
+            # Install OpenBLAS, OpenSSL, and Python 3.13 development libraries
+            yum update -y && yum install -y openblas-devel openssl-devel python3.13 python3.13-devel
+            # Create and activate Python virtual environment
+            python3.13 -m pip install --upgrade pip
+            python3.13 -m pip install --upgrade uv
             uv venv venv_gsfit --python python3.13
             source venv_gsfit/bin/activate
             export LD_LIBRARY_PATH=~/.local/share/uv/python/cpython-3.13.2-linux-x86_64-gnu/lib:$LD_LIBRARY_PATH && cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
