@@ -36,7 +36,7 @@ impl IsofluxBoundary {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// [probe_name]["b"]["calculated"]                                 = Array1<f64>;  shape=[n_time]
     /// [probe_name]["b"]["measured"]                                   = Array1<f64>;  shape=[n_time]
     /// [probe_name]["fit_settings"]["comment"]                         = str
