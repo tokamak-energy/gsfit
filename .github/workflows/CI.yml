@@ -34,7 +34,7 @@ jobs:
           options: -v ${{ github.workspace }}:/workspace -w /workspace
           run: |
             # Install OpenBLAS, OpenSSL, and Python 3.13 development libraries
-            yum update -y && yum install -y openblas-devel openssl-devel python3.13 python3.13-devel
+            yum update -y && yum install -y openblas-devel openssl-devel python3.12 python3.12-devel
             # Create and activate Python virtual environment
             # python3.13 -m pip install --upgrade pip
             # python3.13 -m pip install --upgrade uv
