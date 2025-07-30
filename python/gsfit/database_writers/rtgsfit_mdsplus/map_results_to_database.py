@@ -87,7 +87,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
         psu_names.append(power_supply["power_supply_name"])
         coil_names = power_supply["coils"]
         for coil_name in coil_names:
-            g_grid_coil[:, :, i_psu] += plasma.get_array2(["greens", "pf", coil_name, "psi"]) / (2.0 * np.pi)
+            g_grid_coil[:, :, i_psu] += plasma.get_array2(["greens", "pf", coil_name, "psi"])
 
     # Store in MDSplus
     results["PRESHOT"]["GREENS"]["GRID_COIL"] = g_grid_coil.flatten()
@@ -174,7 +174,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
             for i_psu, power_supply in enumerate(rtgsfit_psus):
                 coil_names = power_supply["coils"]
                 for coil_name in coil_names:
-                    g_measured_coil[i_constraint, i_psu] += flux_loops.get_f64([floop_name, "greens", "pf", coil_name])  # / (2.0 * np.pi)
+                    g_measured_coil[i_constraint, i_psu] += flux_loops.get_f64([floop_name, "greens", "pf", coil_name])
             # Add the weight
             constraints_weight[i_constraint] = flux_loops.get_f64([floop_name, "fit_settings", "weight"]) / flux_loops.get_f64(
                 [floop_name, "fit_settings", "expected_value"]
@@ -187,7 +187,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
                     g_dof_meas[i_constraint, n_plasma_dof + i_vessel_dof] = flux_loops.get_f64([floop_name, "greens", "passives", passive_name, dof_name])
                     i_vessel_dof += 1
             # Greens between the sensors and the plasma grid
-            g_grid_meas[i_constraint, :] = flux_loops.get_array1([floop_name, "greens", "plasma"])  # / (2.0 * np.pi)
+            g_grid_meas[i_constraint, :] = flux_loops.get_array1([floop_name, "greens", "plasma"])
             # Set-up index for next sensor
             i_constraint += 1
 
@@ -214,7 +214,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
                     g_dof_meas[i_constraint, n_plasma_dof + i_vessel_dof] = bp_probes.get_f64([bp_name, "greens", "passives", passive_name, dof_name])
                     i_vessel_dof += 1
             # Greens between the sensors and the plasma grid
-            g_grid_meas[i_constraint, :] = bp_probes.get_array1([bp_name, "greens", "plasma"])  # / (2.0 * np.pi)
+            g_grid_meas[i_constraint, :] = bp_probes.get_array1([bp_name, "greens", "plasma"])
             # Set-up index for next sensor
             i_constraint += 1
 
@@ -257,7 +257,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
                     )
                     i_vessel_dof += 1
             # Greens between the sensors and the plasma grid
-            g_grid_meas[i_constraint, :] = rogowski_coils.get_array1([rogowski_coil_name, "greens", "plasma"])  # / (2.0 * np.pi) # shape = [n_r * n_z]
+            g_grid_meas[i_constraint, :] = rogowski_coils.get_array1([rogowski_coil_name, "greens", "plasma"])
             # Set-up index for next sensor
             i_constraint += 1
 
@@ -286,7 +286,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     # Store in MDSplus
     results["PRESHOT"]["GREENS"]["MEAS_COIL"] = g_measured_coil.flatten()
     results["PRESHOT"]["WEIGHT"] = constraints_weight
-    g_dof_meas_weight = np.dot(np.diag(constraints_weight), g_dof_meas).T * (2.0 * np.pi)
+    g_dof_meas_weight = np.dot(np.diag(constraints_weight), g_dof_meas).T
     results["PRESHOT"]["GREENS"]["COEF_MEAS_W"] = g_dof_meas_weight.flatten()  # .reshape((n_coef, n_constraints))
     g_grid_meas_weight = np.dot(np.diag(constraints_weight), g_grid_meas).T * d_r * d_z
     results["PRESHOT"]["GREENS"]["GRID_MEAS_W"] = g_grid_meas_weight.flatten()
