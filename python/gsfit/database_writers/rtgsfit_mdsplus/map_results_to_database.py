@@ -72,7 +72,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     results["PRESHOT"]["Z_GRID"] = z_flat
     inv_r_mu0 = 1.0 / (r_flat * mu_0)
     results["PRESHOT"]["INV_R_MU0"] = inv_r_mu0
-    r_mu0_dz2 = r_flat * mu_0 * d_z**2
+    r_mu0_dz2 = 2 * np.pi * r_flat * mu_0 * d_z**2
     results["PRESHOT"]["R_MU0_DZ2"] = r_mu0_dz2
     results["PRESHOT"]["N_COIL"] = np.int32(n_psu)
     n_grid = n_r * n_z
