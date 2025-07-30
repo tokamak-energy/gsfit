@@ -2,7 +2,7 @@ import typing
 from typing import TYPE_CHECKING
 
 from gsfit_rs import Pressure
-from st40_database import GetData
+from st40_database import GetData  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
     from . import DatabaseReaderSt40MDSplus

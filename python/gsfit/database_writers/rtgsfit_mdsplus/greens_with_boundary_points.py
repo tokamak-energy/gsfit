@@ -124,5 +124,9 @@ def self_inductance_rectangle_cross_section(r: float, delta_r: float, delta_z: f
     return (
         mu_0
         * r
-        * ((1 + 2 * (delta_z / (8 * r)) ** 2 + 2 / 3 * (delta_r / (8 * r)) ** 2) * np.log(8 * r / (delta_r + delta_z)) - 0.5 + 0.5 * (delta_z / (8 * r)) ** 2)
+        * (
+            (1 + 2 * (delta_z / (8 * r)) ** 2 + 2 / 3 * (delta_r / (8 * r)) ** 2) * float(np.log(8 * r / (delta_r + delta_z)))
+            - 0.5
+            + 0.5 * (delta_z / (8 * r)) ** 2
+        )
     )

@@ -5,7 +5,7 @@ import gsfit_rs
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Plasma
-from st40_database import GetData
+from st40_database import GetData  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
     from . import DatabaseReaderSt40MDSplus
@@ -95,6 +95,9 @@ def setup_plasma(
     # Add upper MC tiles
     limit_pts_r = np.append(limit_pts_r, 0.7103)
     limit_pts_z = np.append(limit_pts_z, 0.3031)
+
+    limit_pts_r = np.array([0.178, 0.178, 0.178, 0.178, 0.178], dtype=np.float64)
+    limit_pts_z = np.array([0.0, -3e-3, 3e-3, 6e-3, -6e-3], dtype=np.float64)
 
     # Initialise the Plasma Rust class
     plasma = Plasma(

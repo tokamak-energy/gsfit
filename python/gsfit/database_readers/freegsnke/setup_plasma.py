@@ -5,6 +5,7 @@ import freegsnke  # type: ignore
 import gsfit_rs
 import numpy as np
 import numpy.typing as npt
+from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # type: ignore
 from gsfit_rs import Plasma
 
 if TYPE_CHECKING:
@@ -16,7 +17,7 @@ def setup_plasma(
     pulseNo: int,
     settings: dict[str, typing.Any],
     time: npt.NDArray[np.float64],
-    freegsnke_eqs: list[freegsnke.machine_update.Machine],
+    freegsnke_eqs: list[FreeGsnkeEquilibrium],
 ) -> Plasma:
     """
     This method initialises the Rust `Plasma` class.
@@ -34,7 +35,6 @@ def setup_plasma(
     ff_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
 
     # p_prime source function
-    p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
     if settings["source_function_p_prime.json"]["method"] == "efit_polynomial":
         n_dof = settings["source_function_p_prime.json"]["efit_polynomial"]["n_dof"]
         regularisations = np.array(settings["source_function_p_prime.json"]["efit_polynomial"]["regularizations"])

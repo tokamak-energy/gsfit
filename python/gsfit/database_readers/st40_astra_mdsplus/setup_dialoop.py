@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from gsfit_rs import Dialoop
-from st40_database import GetData
+from st40_database import GetData  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
     from . import DatabaseReaderST40AstraMDSplus
