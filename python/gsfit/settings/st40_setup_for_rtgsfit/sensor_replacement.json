@@ -1,0 +1,26 @@
+{
+    "I_ROG_DIVPSRB": {
+        "replacements": ["V_FLOOP_024", "V_FLOOP_022", "V_FLOOP_020"],
+        "coefficients": [-164.0, 1532.88, 1467.12]
+    },
+    "I_ROG_DIVPSRT": {
+        "replacements": ["V_FLOOP_007", "V_FLOOP_009", "V_FLOOP_011"],
+        "coefficients": [-164.0, 1532.88, 1467.12]
+    },
+    "I_ROG_GASBFLB": {
+        "replacements": ["V_FLOOP_024"],
+        "coefficients": [2000.0]
+    },
+    "I_ROG_GASBFLT": {
+        "replacements": ["V_FLOOP_007"],
+        "coefficients": [2000.0]
+    },
+    "I_ROG_HFSPSRB": {
+        "replacements": ["V_FLOOP_020"],
+        "coefficients": [7000.0]
+    },
+    "I_ROG_HFSPSRT": {
+        "replacements": ["V_FLOOP_011"],
+        "coefficients": [7000.0]
+    }
+}
