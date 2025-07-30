@@ -477,4 +477,4 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
         sensor_replacement_matrix = np.eye(len(constraint_names), len(sensors_pcs_should_read), dtype=np.float64)
 
     results["PRESHOT"]["SENS_NAMES"] = sensors_pcs_should_read
-    results["PRESHOT"]["SENS_REP_MAT"] = sensor_replacement_matrix
+    results["PRESHOT"]["SENS_REP_MAT"] = sensor_replacement_matrix.flatten()
