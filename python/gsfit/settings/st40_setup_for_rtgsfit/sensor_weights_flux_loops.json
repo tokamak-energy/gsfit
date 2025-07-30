@@ -235,7 +235,7 @@
         "fit_settings": {
             "expected_value": 0.05,
             "weight": 0.0,
-            "include": true,
+            "include": false,
             "comment": ""
         }
     },
@@ -275,7 +275,7 @@
         "fit_settings": {
             "expected_value": 0.05,
             "weight": 0.0,
-            "include": true,
+            "include": false,
             "comment": ""
         }
     },
