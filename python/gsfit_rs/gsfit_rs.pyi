@@ -42,12 +42,16 @@ def greens_py(
     z: npt.NDArray[np.float64],
     r_prime: npt.NDArray[np.float64],
     z_prime: npt.NDArray[np.float64],
+    d_r: npt.NDArray[np.float64] | None = None,
+    d_z: npt.NDArray[np.float64] | None = None,
 ) -> npt.NDArray[np.float64]:
     """
     :param r: (by convention) Sensor radial positions [meter]
     :param z: (by convention) Sensor vertical positions [meter]
     :param r_prime: (by convention) Current source radial positions [meter]
     :param z_prime: (by convention) Current source vertical positions [meter]
+    :param d_r: (optional) Radial widths [meter]
+    :param d_z: (optional) Vertical heights [meter]
 
     Note: the inputs are symmetrical
     """

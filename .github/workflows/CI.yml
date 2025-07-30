@@ -79,7 +79,7 @@ jobs:
           name: wheels-sdist
           path: dist
 
-  tests:
+  python_test:
     name: Python tests
     runs-on: ubuntu-latest
     needs: [build_wheels_on_linux]
@@ -106,13 +106,16 @@ jobs:
           python -m pip install gsfit-0.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl[dev,with_freegs_and_freegsnke]
       - name: Run tests
         run: |
+          # Run the MAST-U FreeGSNKE notebook
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+          # mypy test
+          py.test --mypy python/
 
   release:
     name: Release
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [build_wheels_on_linux, sdist, tests]
+    needs: [build_wheels_on_linux, sdist, python_test]
     permissions:
       # Use to sign the release artifacts
       id-token: write

@@ -38,6 +38,7 @@ dev = [
     "pytest-xdist",
     "scipy-stubs",
     "shapely",
+    "types-shapely",
 ]
 with_st40_mdsplus = [
     "st40_database",

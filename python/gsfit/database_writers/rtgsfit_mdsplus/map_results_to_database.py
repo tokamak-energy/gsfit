@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
+import numpy.typing as npt
 import shapely
 from scipy.constants import mu_0
 
@@ -341,7 +342,14 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
     results["PRESHOT"]["MASK_LIM"] = mask_lim.astype(np.int32)
 
-    def compute_limit_idx_and_weights(r, z, lim_r, lim_z, n_intrp, n_lim):
+    def compute_limit_idx_and_weights(
+        r: npt.NDArray[np.float64],
+        z: npt.NDArray[np.float64],
+        lim_r: npt.NDArray[np.float64],
+        lim_z: npt.NDArray[np.float64],
+        n_intrp: np.int32,
+        n_lim: int,
+    ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float64]]:
         n_r = len(r)
         n_lim = len(lim_r)
         limit_idx = np.zeros(n_lim * n_intrp, dtype=int)
@@ -404,3 +412,24 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     # Greens with the boundary points
     g_ltrb = greens_with_boundary_points(plasma)
     results["PRESHOT"]["GREENS"]["LTRB"] = g_ltrb
+
+    # The sensors PCS should read are the constraints
+    # but we need to remove the sensors we are replacing,
+    # and we need to add the sensors we are replacing them with
+    sensors_pcs_should_read = constraint_names
+    sensor_replacement = gsfit_controller.settings["sensor_replacement.json"]
+
+    # Remove the sensors that are being replaced
+    for sensor_replacement_name in sensor_replacement.keys():
+        sensors_pcs_should_read.pop(sensor_replacement_name)
+
+    # Add the sensors that are replacing the removed sensors
+    for senor_replacement_item in sensor_replacement:
+        replacements = senor_replacement_item["replacements"]
+        for replacement in replacements:
+            if replacement not in sensors_pcs_should_read:
+                sensors_pcs_should_read.append(replacement)
+
+    import pdb
+
+    pdb.set_trace()

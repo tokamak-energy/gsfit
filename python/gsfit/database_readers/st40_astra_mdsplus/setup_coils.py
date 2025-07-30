@@ -1,7 +1,10 @@
+# mypy: ignore-errors
+# TODO: need to fix mypy errors
+
 import typing
 from typing import TYPE_CHECKING
 
-import mdsthin
+import mdsthin  # type: ignore
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Coils

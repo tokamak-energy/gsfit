@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import freegsnke  # type: ignore
 import numpy as np
 import numpy.typing as npt
+from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # type: ignore
 from gsfit_rs import Isoflux
 from shapely.geometry import LineString  # type: ignore
 
@@ -17,7 +18,7 @@ def setup_isoflux_sensors(
     settings: dict[str, typing.Any],
     times_to_reconstruct: npt.NDArray[np.float64],
     time: npt.NDArray[np.float64],
-    freegsnke_eqs: list[freegsnke.machine_update.Machine],
+    freegsnke_eqs: list[FreeGsnkeEquilibrium],
 ) -> Isoflux:
     """
     This method initialises the Rust `Isoflux` class.

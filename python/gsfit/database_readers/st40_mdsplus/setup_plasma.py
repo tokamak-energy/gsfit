@@ -96,6 +96,9 @@ def setup_plasma(
     limit_pts_r = np.append(limit_pts_r, 0.7103)
     limit_pts_z = np.append(limit_pts_z, 0.3031)
 
+    limit_pts_r = np.array([0.178, 0.178, 0.178, 0.178, 0.178], dtype=np.float64)
+    limit_pts_z = np.array([0.0, -3e-3, 3e-3, 6e-3, -6e-3], dtype=np.float64)
+
     # Initialise the Plasma Rust class
     plasma = Plasma(
         n_r,

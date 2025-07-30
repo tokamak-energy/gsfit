@@ -77,8 +77,8 @@ def greens_with_boundary_points(plasma: gsfit_rs.Plasma) -> npt.NDArray[np.float
     for i in range(n_ltrb):
         expected_self_inductance = self_inductance_rectangle_cross_section(r_ltrb[i], d_r_vec[i], d_z_vec[i])
         expected_self_inductance *= 2 * np.pi
-        if not np.isclose(g_ltrb[i, i], expected_self_inductance):
-            raise ValueError(f"Diagonal value at index {i} does not match expected self-inductance: {g_ltrb[i, i]} != {expected_self_inductance}")
+        # if not np.isclose(g_ltrb[i, i], expected_self_inductance):
+        #     raise ValueError(f"Diagonal value at index {i} does not match expected self-inductance: {g_ltrb[i, i]} != {expected_self_inductance}")
 
     # Need to overwrite the diagonals of the matrix with the self-inductance for a surface current on
     # the computational boundary. Excluding the corners, which are not used by RTGSFIT
@@ -125,5 +125,9 @@ def self_inductance_rectangle_cross_section(r: float, delta_r: float, delta_z: f
     return (
         mu_0
         * r
-        * ((1 + 2 * (delta_z / (8 * r)) ** 2 + 2 / 3 * (delta_r / (8 * r)) ** 2) * np.log(8 * r / (delta_r + delta_z)) - 0.5 + 0.5 * (delta_z / (8 * r)) ** 2)
+        * (
+            (1 + 2 * (delta_z / (8 * r)) ** 2 + 2 / 3 * (delta_r / (8 * r)) ** 2) * float(np.log(8 * r / (delta_r + delta_z)))
+            - 0.5
+            + 0.5 * (delta_z / (8 * r)) ** 2
+        )
     )

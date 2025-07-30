@@ -220,7 +220,7 @@ class DiagnosticAndSimulationBase:
         operator: typing.Callable[..., typing.Any],
         message: str | None,
         args: dict[typing.Any, typing.Any] | None = None,
-    ) -> None:
+    ) -> typing.Any:
         if message is None:
             step_name = ""
         else:

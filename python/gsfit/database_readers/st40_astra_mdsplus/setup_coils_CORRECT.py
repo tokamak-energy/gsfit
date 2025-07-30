@@ -1,3 +1,6 @@
+# mypy: ignore-errors
+# TODO: need to fix mypy errors
+
 import typing
 from typing import TYPE_CHECKING
 

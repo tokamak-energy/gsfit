@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import freegsnke  # type: ignore
 import numpy as np
 import numpy.typing as npt
+from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # type: ignore
 from gsfit_rs import Pressure
 
 if TYPE_CHECKING:
@@ -15,7 +16,7 @@ def setup_pressure_sensors(
     pulseNo: int,
     settings: dict[str, typing.Any],
     time: npt.NDArray[np.float64],
-    freegsnke_eqs: list[freegsnke.machine_update.Machine],
+    freegsnke_eqs: list[FreeGsnkeEquilibrium],
 ) -> Pressure:
     """
     This method initialises the Rust `Pressure` class.
