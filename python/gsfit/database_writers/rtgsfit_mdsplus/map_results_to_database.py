@@ -424,9 +424,9 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     g_ltrb = greens_with_boundary_points(plasma)
     results["PRESHOT"]["GREENS"]["LTRB"] = g_ltrb
 
-    # The sensors PCS should read are the constraints.
-    # But we need to remove the sensors we are replacing,
-    # and we need to add the sensors we are going to use as the replacements.
+    # Sometimes important sensors are broken, mainly Rogowski coils which measure current in
+    # passive plates. As a work around we can use the nearby flux loop voltage (V = I * R) as
+    # a replacement. This section replaces the damaged "bad" sensors with working "good" sensors.
     sensors_pcs_should_read = copy.deepcopy(constraint_names)
     if "sensor_replacement.json" in gsfit_controller.settings:
         sensor_replacements = gsfit_controller.settings["sensor_replacement.json"]
@@ -451,12 +451,11 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
                 # Don't double add sensor names
                 if sensor_replacement_name not in sensors_pcs_should_read:
                     sensors_pcs_should_read.append(sensor_replacement_name)
-        import pdb; pdb.set_trace()
+
         # Construct a matrix where:
         # `sensors_rtgsfit_wants = sensor_replacement_matrix * sensors_pcs_should_read`
         sensor_replacement_matrix = np.zeros((len(constraint_names), len(sensors_pcs_should_read)), dtype=np.float64)
         for i_constraint, constraint_name in enumerate(constraint_names):
-            print(constraint_name)
             # Find the index of the sensor in the sensors_pcs_should_read list
             if constraint_name in sensors_pcs_should_read:
                 # A sensor that is not being replaced
@@ -472,8 +471,6 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
                     replacement_name = sensor_replacement_names[i_replacement]
                     i_pcs_sensor = sensors_pcs_should_read.index(replacement_name)
                     sensor_replacement_matrix[i_constraint, i_pcs_sensor] = sensor_replacement_coefficients[i_replacement]
-                print(f"Sensor {constraint_name} is being replaced")
-                print(sensor_replacement)
 
     else:
         # No sensor replacement, so the matrix is just the identity matrix
