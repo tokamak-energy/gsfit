@@ -1,3 +1,4 @@
+import copy
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -284,7 +285,6 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
     # Store in MDSplus
     results["PRESHOT"]["GREENS"]["MEAS_COIL"] = g_measured_coil.flatten()
-    results["PRESHOT"]["SENS_NAMES"] = np.array(constraint_names)
     results["PRESHOT"]["WEIGHT"] = constraints_weight
     g_dof_meas_weight = np.dot(np.diag(constraints_weight), g_dof_meas).T * (2.0 * np.pi)
     results["PRESHOT"]["GREENS"]["COEF_MEAS_W"] = g_dof_meas_weight.flatten()  # .reshape((n_coef, n_constraints))
@@ -413,23 +413,60 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     g_ltrb = greens_with_boundary_points(plasma)
     results["PRESHOT"]["GREENS"]["LTRB"] = g_ltrb
 
-    # The sensors PCS should read are the constraints
-    # but we need to remove the sensors we are replacing,
-    # and we need to add the sensors we are replacing them with
-    sensors_pcs_should_read = constraint_names
-    sensor_replacement = gsfit_controller.settings["sensor_replacement.json"]
+    # The sensors PCS should read are the constraints.
+    # But we need to remove the sensors we are replacing,
+    # and we need to add the sensors we are going to use as the replacements.
+    sensors_pcs_should_read = copy.deepcopy(constraint_names)
+    if "sensor_replacement.json" in gsfit_controller.settings:
+        sensor_replacements = gsfit_controller.settings["sensor_replacement.json"]
+        # sensor_replacement is a dictonary containing the sensors which should be replaced, the data structure is:
+        # {
+        #     "sensor_name_to_replace": {
+        #         "replacements": ["sensor_name_to_use_01", "sensor_name_to_use_02", ...],
+        #         "coefficients": [1.0,                     0.5,                     ...]
+        #     },
+        #     ...
+        # }
 
-    # Remove the sensors that are being replaced
-    for sensor_replacement_name in sensor_replacement.keys():
-        sensors_pcs_should_read.pop(sensor_replacement_name)
+        # Remove the sensors that are being replaced
+        for sensor_replacement_name in sensor_replacements.keys():
+            if sensor_replacement_name in sensors_pcs_should_read:
+                sensors_pcs_should_read.remove(sensor_replacement_name)
 
-    # Add the sensors that are replacing the removed sensors
-    for senor_replacement_item in sensor_replacement:
-        replacements = senor_replacement_item["replacements"]
-        for replacement in replacements:
-            if replacement not in sensors_pcs_should_read:
-                sensors_pcs_should_read.append(replacement)
+        # Add the sensors that are replacing the removed sensors
+        for sensor_replacement_item in sensor_replacements.values():
+            sensor_replacement_names = sensor_replacement_item["replacements"]
+            for sensor_replacement_name in sensor_replacement_names:
+                # Don't double add sensor names
+                if sensor_replacement_name not in sensors_pcs_should_read:
+                    sensors_pcs_should_read.append(sensor_replacement_name)
+        import pdb; pdb.set_trace()
+        # Construct a matrix where:
+        # `sensors_rtgsfit_wants = sensor_replacement_matrix * sensors_pcs_should_read`
+        sensor_replacement_matrix = np.zeros((len(constraint_names), len(sensors_pcs_should_read)), dtype=np.float64)
+        for i_constraint, constraint_name in enumerate(constraint_names):
+            print(constraint_name)
+            # Find the index of the sensor in the sensors_pcs_should_read list
+            if constraint_name in sensors_pcs_should_read:
+                # A sensor that is not being replaced
+                i_pcs_sensor = sensors_pcs_should_read.index(constraint_name)
+                sensor_replacement_matrix[i_constraint, i_pcs_sensor] = 1.0
+            else:
+                # This is a sensor that is being replaced
+                sensor_replacement = sensor_replacements[constraint_name]
+                sensor_replacement_names = sensor_replacement["replacements"]
+                sensor_replacement_coefficients = sensor_replacement["coefficients"]
+                n_replacements = len(sensor_replacement_names)
+                for i_replacement in range(0, n_replacements):
+                    replacement_name = sensor_replacement_names[i_replacement]
+                    i_pcs_sensor = sensors_pcs_should_read.index(replacement_name)
+                    sensor_replacement_matrix[i_constraint, i_pcs_sensor] = sensor_replacement_coefficients[i_replacement]
+                print(f"Sensor {constraint_name} is being replaced")
+                print(sensor_replacement)
 
-    import pdb
+    else:
+        # No sensor replacement, so the matrix is just the identity matrix
+        sensor_replacement_matrix = np.eye(len(constraint_names), len(sensors_pcs_should_read), dtype=np.float64)
 
-    pdb.set_trace()
+    results["PRESHOT"]["SENS_NAMES"] = sensors_pcs_should_read
+    results["PRESHOT"]["SENS_REP_MAT"] = sensor_replacement_matrix

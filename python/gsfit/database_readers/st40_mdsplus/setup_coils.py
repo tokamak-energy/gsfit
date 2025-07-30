@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Coils
-from st40_database import GetData
+from st40_database import GetData  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
     from . import DatabaseReaderSt40MDSplus

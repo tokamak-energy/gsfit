@@ -104,16 +104,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install gsfit-0.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl[dev,with_freegs_and_freegsnke]
-      - name: Run tests
+      - name: Fix FreeGS __author__ bug
         run: |
-          # Run the MAST-U FreeGSNKE notebook
-          python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
           # FreeGS has a bug where the __author__ variable is created from a metadata object which doesn't have an "Author" key
           FREEGS_PATH=$(python -c "import freegs; print(freegs.__file__)")
           echo $FREEGS_PATH
           sed -i 's/__author__ = metadata(__package__)\["Author"\]/__author__ = "Ben Dudson"/' "$FREEGS_PATH"
-          # mypy test
-          py.test --mypy python/
+      - name: Run Jupyter notebook Python tests
+        run: |
+          # Run the MAST-U FreeGSNKE notebook
+          python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+      - name: Run MyPy Python tests
+        run: mypy python/
 
   release:
     name: Release
