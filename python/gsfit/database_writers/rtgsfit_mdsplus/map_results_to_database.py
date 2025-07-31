@@ -478,3 +478,5 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
     results["PRESHOT"]["SENS_NAMES"] = sensors_pcs_should_read
     results["PRESHOT"]["SENS_REP_MAT"] = sensor_replacement_matrix.flatten()
+
+    results["PRESHOT"]["N_SENS_PCS"] = np.int32(len(sensors_pcs_should_read))
