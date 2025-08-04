@@ -2,8 +2,8 @@ import numpy as np
 from gsfit import Gsfit
 
 pulseNo = 13343  # sed_tag:pulse_num_replay
-pulseNo_write = pulseNo + 11_000_000
-run_name = "TEST_PB2"  # sed_tag:run_name_replay
+pulseNo_write = 99_000_230
+run_name = "RUN01"  # sed_tag:run_name_replay
 
 # Construct the GSFit object; using the "st40_setup_for_rtgsfit" settings
 gsfit_controller = Gsfit(
@@ -35,14 +35,14 @@ gsfit_controller.results["PRESHOT"]["COIL_SIGNALS"] = np.array(
 coil_matrix = np.array(
     [
         # BVL_PSU, BVUB_PSU, BVUT_PSU, DIV_PSU, MCVC_PSU, PSH_PSU, ROG_MCWIRE, SOL_PSU
-        [1.0,      0.0,      0.0,      0.0,     0.0,      0.0,     0.0,        0.0],  # BVL coil
-        [0.0,      1.0,      0.0,      0.0,     0.0,      0.0,     0.0,        0.0],  # BVUB coil
-        [0.0,      0.0,      1.0,      0.0,     0.0,      0.0,     0.0,        0.0],  # BVUT coil
-        [0.0,      0.0,      0.0,      1.0,     0.0,      0.0,     0.0,        0.0],  # DIV coil
-        [0.0,      0.0,      0.0,      0.0,     1.0,      0.0,     1.0,        0.0],  # MCB coil
-        [0.0,      0.0,      0.0,      0.0,     1.0,      0.0,     0.0,        0.0],  # MCT coil
-        [0.0,      0.0,      0.0,      0.0,     0.0,      1.0,     0.0,        0.0],  # PSH coil
         [0.0,      0.0,      0.0,      0.0,     0.0,      0.0,     0.0,        1.0],  # SOL coil
+        [0.0,      0.0,      0.0,      0.0,     0.0,      0.0,     1.0,        0.0],  # MCT coil
+        [0.0,      0.0,      0.0,      0.0,     1.0,      0.0,     1.0,        0.0],  # MCB coil
+        [0.0,      0.0,      0.0,      1.0,     0.0,      0.0,     0.0,        0.0],  # DIV coil
+        [1.0,      0.0,      0.0,      0.0,     0.0,      0.0,     0.0,        0.0],  # BVL coil
+        [0.0,      0.0,      1.0,      0.0,     0.0,      0.0,     0.0,        0.0],  # BVUT coil
+        [0.0,      1.0,      0.0,      0.0,     0.0,      0.0,     0.0,        0.0],  # BVUB coil
+        [0.0,      0.0,      0.0,      0.0,     0.0,      1.0,     0.0,        0.0],  # PSH coil
     ]
 )
 # fmt: on
