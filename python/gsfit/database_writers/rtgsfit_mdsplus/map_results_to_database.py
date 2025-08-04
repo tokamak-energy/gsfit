@@ -176,7 +176,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
                 for coil_name in coil_names:
                     g_measured_coil[i_constraint, i_psu] += flux_loops.get_f64([floop_name, "greens", "pf", coil_name])
             # Add the weight
-            constraints_weight[i_constraint] = flux_loops.get_f64([floop_name, "fit_settings", "weight"]) / flux_loops.get_f64(
+            constraints_weight[i_constraint] = 2 * np.pi * flux_loops.get_f64([floop_name, "fit_settings", "weight"]) / flux_loops.get_f64(
                 [floop_name, "fit_settings", "expected_value"]
             )
             # Add the Greens between measurements and degrees of freedom
