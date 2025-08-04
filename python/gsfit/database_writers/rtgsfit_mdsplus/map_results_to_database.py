@@ -275,7 +275,8 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
         for i_reg in range(n_reg_local):
             g_dof_meas[i_constraint, i_dof_start:i_dof_end] = passive_regularisation_local[i_reg, :]
-            constraints_weight[i_constraint] = passives.get_array1([passive_name, "regularisations_weight"])[i_reg]
+            regularisation_scaling = 0.001 * np.pi
+            constraints_weight[i_constraint] = regularisation_scaling * passives.get_array1([passive_name, "regularisations_weight"])[i_reg]
 
             # Set-up index for next sensor / constraint
             i_constraint += 1
