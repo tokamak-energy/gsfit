@@ -81,7 +81,7 @@ jobs:
   python_test:
     name: Python tests
     runs-on: ubuntu-latest
-    needs: [rust_tests, build_wheels_on_linux]
+    needs: [build_wheels_on_linux]
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
