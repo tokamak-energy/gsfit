@@ -12,4 +12,5 @@ __python_library__ = get_python_library()
 __python__ = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 __user__ = getpass.getuser()
 __computer__ = platform.node()
+# Store datetime using ISO-8601 format = yyyy-mm-ddThh:mm:ss.ffffffZ"; Z at end indicates UTC
 __datetime__ = datetime.datetime.now(datetime.UTC).isoformat() + "Z"
