@@ -152,7 +152,7 @@ def map_results_to_database(
             results["PASSIVES"]["IVC"]["DOF"]["EIG_14"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_14", "calculated"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_15"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_15", "calculated"])
         else:
-            dof_name = "constant_current_density"
+            dof_name = "constant_j"
             results["PASSIVES"][passive_name]["DOF"][dof_name.upper()] = passives.get_array1([passive_name, "dof", dof_name, "calculated"])
 
     # Store "WORKFLOW"
