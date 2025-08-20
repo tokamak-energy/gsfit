@@ -151,9 +151,8 @@ def map_results_to_database(
             results["PASSIVES"]["IVC"]["DOF"]["EIG_13"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_13", "calculated"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_14"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_14", "calculated"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_15"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_15", "calculated"])
-        else:
-            dof_name = "constant_current_density"
-            results["PASSIVES"][passive_name]["DOF"][dof_name.upper()] = passives.get_array1([passive_name, "dof", dof_name, "calculated"])
+        elif passive_name == "OVC":
+            results["PASSIVES"]["OVC"]["DOF"]["CONSTANT_J"]["CVALUE"] = passives.get_array1(["OVC", "dof", "*", "calculated"])
 
     # Store "WORKFLOW"
     database_reader_method = settings["GSFIT_code_settings.json"]["database_reader"]["method"]

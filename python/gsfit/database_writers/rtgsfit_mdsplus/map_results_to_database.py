@@ -176,7 +176,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
                 for coil_name in coil_names:
                     g_measured_coil[i_constraint, i_psu] += flux_loops.get_f64([floop_name, "greens", "pf", coil_name])
             # Add the weight
-            constraints_weight[i_constraint] = flux_loops.get_f64([floop_name, "fit_settings", "weight"]) / flux_loops.get_f64(
+            constraints_weight[i_constraint] = 2 * np.pi * flux_loops.get_f64([floop_name, "fit_settings", "weight"]) / flux_loops.get_f64(
                 [floop_name, "fit_settings", "expected_value"]
             )
             # Add the Greens between measurements and degrees of freedom
@@ -275,7 +275,8 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
         for i_reg in range(n_reg_local):
             g_dof_meas[i_constraint, i_dof_start:i_dof_end] = passive_regularisation_local[i_reg, :]
-            constraints_weight[i_constraint] = passives.get_array1([passive_name, "regularisations_weight"])[i_reg]
+            regularisation_scaling = 0.001 * np.pi
+            constraints_weight[i_constraint] = regularisation_scaling * passives.get_array1([passive_name, "regularisations_weight"])[i_reg]
 
             # Set-up index for next sensor / constraint
             i_constraint += 1
