@@ -480,3 +480,48 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     results["PRESHOT"]["SENS_NAMES"] = sensors_pcs_should_read
     results["PRESHOT"]["SENS_REP_MAT"] = sensor_replacement_matrix.flatten()
     results["PRESHOT"]["N_SENS_PCS"] = np.int32(len(sensors_pcs_should_read))
+
+    # Save IVC geometry data
+    results["PRESHOT"]["IVC"]["GEOMETRY"]["R"] = passives.get_array1(["IVC", "geometry", "r"])
+    results["PRESHOT"]["IVC"]["GEOMETRY"]["Z"] = passives.get_array1(["IVC", "geometry", "z"])
+    results["PRESHOT"]["IVC"]["GEOMETRY"]["D_R"] = passives.get_array1(["IVC", "geometry", "d_r"])
+    results["PRESHOT"]["IVC"]["GEOMETRY"]["D_Z"] = passives.get_array1(["IVC", "geometry", "d_z"])
+    results["PRESHOT"]["IVC"]["GEOMETRY"]["AREA"] = results["PRESHOT"]["IVC"]["GEOMETRY"]["D_R"] \
+                                                  * results["PRESHOT"]["IVC"]["GEOMETRY"]["D_Z"]
+    n_eigs = gsfit_controller.settings["passive_dof_regularisation.json"]["IVC"]["n_dof"]
+    n_segs = len(passives.get_array1(["IVC", "dof", f"eig_01", "current_distribution"]))
+    current_dofs = np.zeros((n_eigs, n_segs))
+    for eig_num in range(n_eigs):
+        current_dofs[eig_num, :] = \
+            passives.get_array1(["IVC", "dof", f"eig_{eig_num + 1:02d}", "current_distribution"])
+    results["PRESHOT"]["IVC"]["GEOMETRY"]["CURRENT_DOFS"] = current_dofs
+
+    # Create coef names list and save it
+    coef_names = ["pls0", "pls1", "pls2"]
+    for passive_name in passives.keys():
+        dof_names = passives.keys([passive_name, "dof"])
+        for dof_name in dof_names:
+            if dof_name == "constant_current_density":
+                coef_names.append(passive_name)
+            elif dof_name.startswith("eig_"):
+                coef_names.append(dof_name)
+            else:
+                raise ValueError(f"Unknown DoF name: {dof_name}")
+    results["PRESHOT"]["COEF_NAMES"] = coef_names
+
+    # create meas_names list and save it
+    meas_names = []
+    for i_flux_loop, floop_name in enumerate(flux_loops.keys()):
+        if flux_loops_to_include[i_flux_loop]:
+            meas_names.append(floop_name)
+    for i_bp_probe, bp_name in enumerate(bp_probes.keys()):
+        if bp_probes_to_include[i_bp_probe]:
+            meas_names.append(bp_name)
+    for rog_name in rogowski_coils_names_rtgsfit_order:
+        meas_names.append(rog_name)
+    for passive_name in passive_names:
+        passive_regularisation_local = passives.get_array2([passive_name, "regularisations"])
+        [n_reg_local, _] = passive_regularisation_local.shape
+        for i_reg in range(n_reg_local):
+            meas_names.append(f"{passive_name}_reg_{i_reg}")
+    results["PRESHOT"]["MEAS_NAMES"] = meas_names
