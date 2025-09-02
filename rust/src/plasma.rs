@@ -42,6 +42,22 @@ pub struct Plasma {
 /// Python accessible methods
 #[pymethods]
 impl Plasma {
+    /// Create a new Plasma instance
+    ///
+    /// # Arguments
+    /// * `n_r` - number of radial points
+    /// * `n_z` - number of vertical points
+    /// * `r_min` - minimum radial coordinate
+    /// * `r_max` - maximum radial coordinate
+    /// * `z_min` - minimum vertical coordinate
+    /// * `z_max` - maximum vertical coordinate
+    /// * `psi_n` - normalized poloidal flux points (1d array)
+    /// * `limit_pts_r` - radial limit points (1d array)
+    /// * `limit_pts_z` - vertical limit points (1d array)
+    /// * `vessel_r` - vessel radial points (1d array)
+    /// * `vessel_z` - vessel vertical points (1d array)
+    /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
+    /// * `ff_prime_source_function` - Fourier source function (a Rust implementation, initialised in Python)
     #[new]
     pub fn new(
         n_r: usize,
@@ -135,7 +151,7 @@ impl Plasma {
             }
         }
 
-        // Flattended 2d mesh
+        // Flatten 2d mesh
         let flat_r: Array1<f64> = mesh_r.flatten().to_owned();
         let flat_z: Array1<f64> = mesh_z.flatten().to_owned();
 
@@ -208,6 +224,9 @@ impl Plasma {
         }
     }
 
+    /// Calculate the Greens function with coils
+    /// The Greens tables are stored within self. Example data structure:
+    /// `self.results["greens"]["pf"][coil_name]["br"]`
     fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python types into Rust types
         let coils_local: &Coils = &*coils;
@@ -333,6 +352,11 @@ impl Plasma {
         }
     }
 
+    /// Calculate the Greens function with passives
+    /// The Greens tables are stored within self. Example data structure:
+    /// `self.results["greens"]["passives"][passive_name][dof_name]["psi"]`
+    /// Note: when adding a passive to the `passives` implementation we selected how to represent the
+    /// passive degrees of freedom through `current_distribution_type` (e.g. `constant_current_density` or `eig`)
     fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
         // Change Python types into Rust types
         let passives_local: &Passives = &*passives;
@@ -593,13 +617,6 @@ impl Plasma {
         let result: Py<PyList> = PyList::new(py, vec_i64).unwrap().into();
         return result;
     }
-
-    // /// Get the keys from results and return a Python list of strings
-    // pub fn keys(&self, py: Python) -> Py<PyList> {
-    //     let keys: Vec<String> = self.results.keys();
-    //     let result: Py<PyList> = PyList::new(py, keys).unwrap().into();
-    //     return result;
-    // }
 
     /// Get the keys from results and return a Python list of strings
     #[pyo3(signature = (key_path=None))]

@@ -11,9 +11,15 @@ pub struct EfitPolynomial {
     pub regularisations: Array2<f64>,
 }
 
+// TODO: check polynomial equation - do we need to add term to keep current density zero at edge???
 /// Python accessible methods
 #[pymethods]
 impl EfitPolynomial {
+    /// Create a new EfitPolynomial
+    ///
+    /// Using Eq. 4 and 5 from:
+    /// L. Lao, et. al., "Reconstruction of current profile parameters and plasma shapes in tokamaks", Nucl. Fusion, 1985
+    /// https://doi.org/10.1088/0029-5515/25/11/007
     #[new]
     pub fn new(n_dof: usize, regularisations: &Bound<'_, PyArray2<f64>>) -> Self {
         // Change Python types into Rust types

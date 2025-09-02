@@ -13,7 +13,7 @@ mod sensors;
 pub use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils};
 pub use sensors::{SensorsDynamic, SensorsStatic};
 mod grad_shafranov;
-mod plasma_geometry;
+pub mod plasma_geometry;
 pub use grad_shafranov::GsSolution;
 pub mod greens;
 mod nested_dict;
@@ -29,7 +29,7 @@ use circuit_equations::solve_circuit_equations;
 mod source_functions;
 use source_functions::{EfitPolynomial, LiuqePolynomial};
 
-mod bicubic_interpolator;
+pub mod bicubic_interpolator;
 
 // Global constants
 const PI: f64 = std::f64::consts::PI;
