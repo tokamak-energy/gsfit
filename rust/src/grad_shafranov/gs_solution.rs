@@ -1,5 +1,6 @@
 use crate::Plasma;
 use crate::plasma_geometry::BoundaryContour;
+use crate::plasma_geometry::MagneticAxis;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
@@ -333,7 +334,12 @@ impl<'a> GsSolution<'a> {
             // Find the magnetic axis (o-point)
             // TODO: we have calculated the turning points (x-points and o-points) twice! Once in `find_boundary` and once here.
             // TODO: should add an exception if the magnetic axis is not found
-            let (mag_r, mag_z, psi_a): (f64, f64, f64) = find_magnetic_axis(&r, &z, &br_2d, &bz_2d, &d_bz_d_z_2d, &psi_2d, self.r_mag, self.z_mag);
+            let magnetic_axis_result: Result<MagneticAxis, String> = find_magnetic_axis(&r, &z, &br_2d, &bz_2d, &d_bz_d_z_2d, &psi_2d, self.r_mag, self.z_mag);
+            let magnetic_axis: MagneticAxis = magnetic_axis_result.expect("gs_solution: unwrapping magnetic_axis");
+            // let (mag_r, mag_z, psi_a): (f64, f64, f64) = find_magnetic_axis(&r, &z, &br_2d, &bz_2d, &d_bz_d_z_2d, &psi_2d, self.r_mag, self.z_mag);
+            let mag_r = magnetic_axis.r;
+            let mag_z: f64 = magnetic_axis.z;
+            let psi_a: f64 = magnetic_axis.psi;
             self.r_mag = mag_r;
             self.z_mag = mag_z;
             self.psi_a = psi_a;
