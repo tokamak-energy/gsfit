@@ -277,7 +277,7 @@ fn test_find_magnetic_axis() {
     use approx::assert_abs_diff_eq;
     use ndarray::s;
 
-    let z_shfit: f64 = 0.02345;
+    let z_shift: f64 = 0.02345;
     let n_r: usize = 100;
     let n_z: usize = 201;
     let vec_r: Array1<f64> = Array1::linspace(0.01, 1.0, n_r);
@@ -299,7 +299,7 @@ fn test_find_magnetic_axis() {
 
     // Create some BV PF coils
     let bv_coils_r: Array1<f64> = Array1::from_vec(vec![1.4, 1.4]);
-    let bv_coils_z: Array1<f64> = Array1::from_vec(vec![0.6123 + z_shfit, -0.6123 + z_shfit]);
+    let bv_coils_z: Array1<f64> = Array1::from_vec(vec![0.6123 + z_shift, -0.6123 + z_shift]);
     let bv_g: Array2<f64> = greens(
         flat_r.clone(),
         flat_z.clone(),
@@ -314,7 +314,7 @@ fn test_find_magnetic_axis() {
 
     // Create a PF coil at mid-plane to represent the plasma
     let plasma_coil_r: Array1<f64> = Array1::from_vec(vec![0.41111]);
-    let plasma_coil_z: Array1<f64> = Array1::from_vec(vec![0.0 + z_shfit]);
+    let plasma_coil_z: Array1<f64> = Array1::from_vec(vec![0.0 + z_shift]);
     let plasma_g: Array2<f64> = greens(
         flat_r.clone(),
         flat_z.clone(),
@@ -351,5 +351,5 @@ fn test_find_magnetic_axis() {
 
     // Fairly large epsilon, since we have only given the bicubic interpolator the function
     // and it's derivatives at the four corner grid points
-    assert_abs_diff_eq!(magnetic_axis.z, 0.0 + z_shfit, epsilon = 1e-3);
+    assert_abs_diff_eq!(magnetic_axis.z, 0.0 + z_shift, epsilon = 1e-3);
 }
