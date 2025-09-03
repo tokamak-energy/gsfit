@@ -198,9 +198,6 @@ pub fn find_boundary(
         }
     }
 
-    // Find psi_axis
-    // let (r_mag, z_mag, psi_a): (f64, f64, f64) = find_magnetic_axis(&r, &z, &br_2d, &bz_2d, &d_bz_d_z_2d, &psi_2d, r_mag, z_mag);
-
     // // Calculate psi_n_2d
     // let psi_n_2d: Array2<f64> = &mask * (&psi_2d - psi_a) / (psi_b - psi_a);
 

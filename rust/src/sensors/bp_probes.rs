@@ -544,7 +544,7 @@ impl BpProbes {
                 let g_bz: f64 = g_bz_full.sum();
 
                 // Sensors Green's function
-                let g = g_br * sensor_angle_pol.cos() + g_bz * sensor_angle_pol.sin();
+                let g: f64 = g_br * sensor_angle_pol.cos() + g_bz * sensor_angle_pol.sin();
 
                 // Store
                 self.results
