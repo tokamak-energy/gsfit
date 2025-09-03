@@ -482,12 +482,13 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     results["PRESHOT"]["N_SENS_PCS"] = np.int32(len(sensors_pcs_should_read))
 
     # Save IVC geometry data
-    results["PRESHOT"]["IVC"]["GEOMETRY"]["R"] = passives.get_array1(["IVC", "geometry", "r"])
-    results["PRESHOT"]["IVC"]["GEOMETRY"]["Z"] = passives.get_array1(["IVC", "geometry", "z"])
-    results["PRESHOT"]["IVC"]["GEOMETRY"]["D_R"] = passives.get_array1(["IVC", "geometry", "d_r"])
-    results["PRESHOT"]["IVC"]["GEOMETRY"]["D_Z"] = passives.get_array1(["IVC", "geometry", "d_z"])
-    results["PRESHOT"]["IVC"]["GEOMETRY"]["AREA"] = results["PRESHOT"]["IVC"]["GEOMETRY"]["D_R"] \
-                                                  * results["PRESHOT"]["IVC"]["GEOMETRY"]["D_Z"]
+    results["PRESHOT"]["PASSIVES"]["IVC"]["GEOMETRY"]["R"] = passives.get_array1(["IVC", "geometry", "r"])
+    results["PRESHOT"]["PASSIVES"]["IVC"]["GEOMETRY"]["Z"] = passives.get_array1(["IVC", "geometry", "z"])
+    results["PRESHOT"]["PASSIVES"]["IVC"]["GEOMETRY"]["D_R"] = passives.get_array1(["IVC", "geometry", "d_r"])
+    results["PRESHOT"]["PASSIVES"]["IVC"]["GEOMETRY"]["D_Z"] = passives.get_array1(["IVC", "geometry", "d_z"])
+    results["PRESHOT"]["PASSIVES"]["IVC"]["GEOMETRY"]["AREA"] = \
+        results["PRESHOT"]["PASSIVES"]["IVC"]["GEOMETRY"]["D_R"] * \
+        results["PRESHOT"]["PASSIVES"]["IVC"]["GEOMETRY"]["D_Z"]
     n_eigs = gsfit_controller.settings["passive_dof_regularisation.json"]["IVC"]["n_dof"]
     n_segs = len(passives.get_array1(["IVC", "dof", f"eig_01", "current_distribution"]))
     current_dofs = np.zeros((n_eigs, n_segs))
