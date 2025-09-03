@@ -244,17 +244,17 @@ impl<'a> GsSolution<'a> {
         let greens_flux_loops_passives: Array2<f64> = flux_loops_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
 
         let greens_rogowski_coils_grid: Array2<f64> = rogowski_coils_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_rogowski_coils_dz: Array2<f64> = rogowski_coils_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]  TO ADD!!!!!
+        let greens_d_rogowski_coils_dz: Array2<f64> = rogowski_coils_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_rogowski_coils_pf: Array2<f64> = rogowski_coils_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_rogowski_coils_passives: Array2<f64> = rogowski_coils_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
 
         let greens_isoflux_grid: Array2<f64> = isoflux_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_isoflux_dz: Array2<f64> = isoflux_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]  TO ADD!!!!!
+        let greens_d_isoflux_dz: Array2<f64> = isoflux_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_isoflux_pf: Array2<f64> = isoflux_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_isoflux_passives: Array2<f64> = isoflux_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
 
         let greens_isoflux_boundary_grid: Array2<f64> = isoflux_boundary_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_isoflux_boundary_dz: Array2<f64> = isoflux_boundary_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]  TO ADD!!!!!
+        let greens_d_isoflux_boundary_dz: Array2<f64> = isoflux_boundary_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_isoflux_boundary_pf: Array2<f64> = isoflux_boundary_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_isoflux_boundary_passives: Array2<f64> = isoflux_boundary_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
 
@@ -278,21 +278,21 @@ impl<'a> GsSolution<'a> {
 
             // Calculate br and bz
             // Note, `self.calculate_b()` needs to be before `self.calculate_psi()`, because `br` will be used to calculate
-            // the delta_z numerical stabilisation, which is added to `psi`
+            // the `delta_z` numerical stabilisation, which is added to `psi`
             let (d_br_d_z_2d, d_bz_d_z_2d): (Array2<f64>, Array2<f64>) = self.calculate_b();
 
             // Updates psi
             self.calculate_psi();
             let psi_2d: Array2<f64> = self.psi_2d.to_owned();
 
-            // Apply the delta_z stabilisation
+            // Apply the `delta_z` stabilisation
             if i_iter > n_iter_no_vertical_feedback + 1 {
                 // Make `br` and `bz` consistent with `psi`
                 self.br_2d = self.br_2d.to_owned() + self.delta_z * &d_br_d_z_2d;
                 self.bz_2d = self.bz_2d.to_owned() + self.delta_z * &d_bz_d_z_2d;
             }
 
-            // Get br and bz
+            // Get `br` and `bz`
             let br_2d: Array2<f64> = self.br_2d.to_owned();
             let bz_2d: Array2<f64> = self.bz_2d.to_owned();
 
@@ -333,10 +333,16 @@ impl<'a> GsSolution<'a> {
 
             // Find the magnetic axis (o-point)
             // TODO: we have calculated the turning points (x-points and o-points) twice! Once in `find_boundary` and once here.
-            // TODO: should add an exception if the magnetic axis is not found
             let magnetic_axis_result: Result<MagneticAxis, String> = find_magnetic_axis(&r, &z, &br_2d, &bz_2d, &d_bz_d_z_2d, &psi_2d, self.r_mag, self.z_mag);
+
+            // Test if we have found the magnetic axis
+            if magnetic_axis_result.is_err() {
+                self.set_to_failed_time_slice();
+                break 'iteration_loop; // exit the iteration loop for this time-slice
+            }
+
+            // Unwrap and get results out of `magnetic_axis_result`
             let magnetic_axis: MagneticAxis = magnetic_axis_result.expect("gs_solution: unwrapping magnetic_axis");
-            // let (mag_r, mag_z, psi_a): (f64, f64, f64) = find_magnetic_axis(&r, &z, &br_2d, &bz_2d, &d_bz_d_z_2d, &psi_2d, self.r_mag, self.z_mag);
             let mag_r = magnetic_axis.r;
             let mag_z: f64 = magnetic_axis.z;
             let psi_a: f64 = magnetic_axis.psi;
