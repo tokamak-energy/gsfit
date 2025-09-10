@@ -495,7 +495,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     for eig_num in range(n_eigs):
         current_dofs[eig_num, :] = \
             passives.get_array1(["IVC", "dof", f"eig_{eig_num + 1:02d}", "current_distribution"])
-    results["PRESHOT"]["IVC"]["GEOMETRY"]["CURRENT_DOFS"] = current_dofs
+    results["PASSIVES"]["IVC"]["GEOMETRY"]["CURRENT_DOFS"] = current_dofs
 
     # Create coef names list and save it
     coef_names = ["pls0", "pls1", "pls2"]
