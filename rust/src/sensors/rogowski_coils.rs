@@ -792,7 +792,7 @@ impl RogowskiCoils {
                 let passive_name: &str = &passive_names[i_passive];
                 let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
                 for dof_name in dof_names {
-                    greens_with_passives[[i_dof_total, i_sensor]] = self
+                    greens_with_passives[(i_dof_total, i_sensor)] = self
                         .results
                         .get(&sensor_names[i_sensor])
                         .get("greens")

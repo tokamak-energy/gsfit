@@ -221,30 +221,36 @@ class Gsfit(DiagnosticAndSimulationBase):
         isoflux_boundary = self.isoflux_boundary
 
         # Greens with coils
+        tic = time_py.time()
         plasma.greens_with_coils(coils)
         bp_probes.greens_with_coils(coils)
         flux_loops.greens_with_coils(coils)
         rogowski_coils.greens_with_coils(coils)
         isoflux.greens_with_coils(coils)
         isoflux_boundary.greens_with_coils(coils)
-        self.logger.info("Finished Greens with coils")
+        toc = time_py.time()
+        self.logger.info(f"Finished Greens with coils;  {(toc - tic) * 1e3:,.2f}ms")
 
         # Greens with passives
+        tic = time_py.time()
         plasma.greens_with_passives(passives)
         bp_probes.greens_with_passives(passives)
         flux_loops.greens_with_passives(passives)
         rogowski_coils.greens_with_passives(passives)
         isoflux.greens_with_passives(passives)
         isoflux_boundary.greens_with_passives(passives)
-        self.logger.info("Finished Greens with passives")
+        toc = time_py.time()
+        self.logger.info(f"Finished Greens with passives;  {(toc - tic) * 1e3:,.2f}ms")
 
         # Greens with plasma
+        tic = time_py.time()
         bp_probes.greens_with_plasma(plasma)
         flux_loops.greens_with_plasma(plasma)
         rogowski_coils.greens_with_plasma(plasma)
         isoflux.greens_with_plasma(plasma)
         isoflux_boundary.greens_with_plasma(plasma)
-        self.logger.info("Finished Greens with plasma")
+        toc = time_py.time()
+        self.logger.info(f"Finished Greens with plasma;  {(toc - tic) * 1e3:,.2f}ms")
 
     def setup_objects(self, **kwargs: dict[str, typing.Any]) -> None:
         """
@@ -263,20 +269,43 @@ class Gsfit(DiagnosticAndSimulationBase):
         database_reader = get_database_reader(database_reader_method)
 
         # Initialise and store the Rust implementations
+        tic = time_py.time()
         self.coils = database_reader.setup_coils(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
-        self.logger.info(msg="`coils` initialised")
+        toc = time_py.time()
+        self.logger.info(msg=f"`coils`  initialised;  {(toc - tic) * 1e3:,.2f}ms")
+        
+        tic = time_py.time()
         self.bp_probes = database_reader.setup_bp_probes(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
-        self.logger.info(msg="`bp_probes` initialised")
+        toc = time_py.time()
+        self.logger.info(msg=f"`bp_probes` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+        
+        tic = time_py.time()
         self.flux_loops = database_reader.setup_flux_loops(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
-        self.logger.info(msg="`flux_loops` initialised")
+        toc = time_py.time()
+        self.logger.info(msg=f"`flux_loops` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
         self.rogowski_coils = database_reader.setup_rogowski_coils(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
-        self.logger.info(msg="`rogowski_coils` initialised")
+        toc = time_py.time()
+        self.logger.info(msg=f"`rogowski_coils` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
         self.passives = database_reader.setup_passives(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
-        self.logger.info(msg="`passives` initialised")
+        toc = time_py.time()
+        self.logger.info(msg=f"`passives` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
         self.plasma = database_reader.setup_plasma(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
-        self.logger.info(msg="`plasma` initialised")
+        toc = time_py.time()
+        self.logger.info(msg=f"`plasma` initialised;  {(toc - tic) * 1e3:,.2f}ms")
         times_to_reconstruct = self.results["TIME"]
+
+        tic = time_py.time()
         self.isoflux = database_reader.setup_isoflux_sensors(pulseNo=self.pulseNo, settings=self.settings, times_to_reconstruct=times_to_reconstruct, **kwargs)
-        self.logger.info(msg="`isoflux` initialised")
+        toc = time_py.time()
+        self.logger.info(msg=f"`isoflux` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
         self.isoflux_boundary = database_reader.setup_isoflux_boundary_sensors(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
-        self.logger.info(msg="`isoflux_boundary` initialised")
+        toc = time_py.time()
+        self.logger.info(msg=f"`isoflux_boundary` initialised;  {(toc - tic) * 1e3:,.2f}ms")

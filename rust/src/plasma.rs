@@ -1,6 +1,6 @@
 use crate::coils::Coils;
 use crate::grad_shafranov::GsSolution;
-use crate::greens::{d_greens_magnetic_field_dz, greens, greens_magnetic_field};
+use crate::greens::{greens_b, greens_d_b_d_z, greens_d2_psi_dr2, greens_psi};
 use crate::nested_dict::NestedDict;
 use crate::nested_dict::NestedDictAccumulator;
 use crate::passives::Passives;
@@ -13,7 +13,7 @@ use geo::Centroid;
 use geo::Line;
 use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Contains, Coord, LineString, Point, Polygon};
-use ndarray::{Array, Array1, Array2, Array3, Axis, s};
+use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
@@ -22,7 +22,6 @@ use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
-use rayon::result;
 use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
@@ -58,6 +57,10 @@ impl Plasma {
     /// * `vessel_z` - vessel vertical points (1d array)
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
     /// * `ff_prime_source_function` - Fourier source function (a Rust implementation, initialised in Python)
+    ///
+    /// # Returns
+    /// * `self` - a new instance of the Plasma struct
+    ///
     #[new]
     pub fn new(
         n_r: usize,
@@ -105,7 +108,7 @@ impl Plasma {
                 .expect("Failed to extract p_prime_source_function")
         });
 
-        // Extract an object from p_prime_source_function which contains the common traits
+        // Extract an object from ff_prime_source_function which contains the common traits
         let ff_prime_source_function_arc: Arc<dyn SourceFunctionTraits + Send + Sync> = Python::with_gil(|py| {
             ff_prime_source_function
                 .extract::<Py<PyAny>>(py)
@@ -133,8 +136,8 @@ impl Plasma {
         let mut results: NestedDict = NestedDict::new();
 
         // Create (r, z) grids
-        let r: Array1<f64> = Array::linspace(r_min, r_max, n_r);
-        let z: Array1<f64> = Array::linspace(z_min, z_max, n_z);
+        let r: Array1<f64> = Array1::linspace(r_min, r_max, n_r);
+        let z: Array1<f64> = Array1::linspace(z_min, z_max, n_z);
 
         // Grid spacing
         let d_r: f64 = r[1] - r[0];
@@ -146,8 +149,8 @@ impl Plasma {
         let mut mesh_z: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
         for i_z in 0..n_z {
             for i_r in 0..n_r {
-                mesh_r[[i_z, i_r]] = r[i_r];
-                mesh_z[[i_z, i_r]] = z[i_z];
+                mesh_r[(i_z, i_r)] = r[i_r];
+                mesh_z[(i_z, i_r)] = z[i_z];
             }
         }
 
@@ -155,10 +158,10 @@ impl Plasma {
         let flat_r: Array1<f64> = mesh_r.flatten().to_owned();
         let flat_z: Array1<f64> = mesh_z.flatten().to_owned();
 
-        // Calculate the Greens grid-grid
+        // Calculate the grid-grid Greens
         let d_r_flat: Array1<f64> = &r * 0.0 + d_r;
         let d_z_flat: Array1<f64> = &r * 0.0 + d_z;
-        let g_grid_grid_psi: Array2<f64> = greens(
+        let g_psi: Array2<f64> = greens_psi(
             flat_r.clone(),
             flat_z.clone(),
             r.clone(),
@@ -166,42 +169,47 @@ impl Plasma {
             d_r_flat, // TODO: I don't like thsee variables
             d_z_flat,
         );
-        let (g_grid_grid_br, g_grid_grid_bz): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
+        let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(
             flat_r.clone(), // sensors
             flat_z.clone(),
             r.clone(), // current sources
             0.0 * r.clone() + z[0],
         );
 
-        let (mut g_d_grid_grid_br_d_z, mut g_d_grid_grid_bz_d_z): (Array2<f64>, Array2<f64>) = d_greens_magnetic_field_dz(
+        let (mut g_d_br_d_z, mut g_d_bz_d_z): (Array2<f64>, Array2<f64>) = greens_d_b_d_z(
             flat_r.clone(), // sensors
             flat_z.clone(),
             r.clone(), // current sources
             0.0 * r.clone() + z[0],
         );
 
-        // TODO: we could change this to set the self-values to 0.0, instead of doing "if" statement, which is slow
+        // Set the self-values to 0.0
         for i_r in 0..n_r {
             for i_rz in 0..n_r * n_z {
-                if g_d_grid_grid_br_d_z[[i_rz, i_r]].is_nan() {
-                    g_d_grid_grid_br_d_z[[i_rz, i_r]] = 0.0; // TODO: this can be improved
-                    g_d_grid_grid_bz_d_z[[i_rz, i_r]] = 0.0;
+                if g_d_br_d_z[(i_rz, i_r)].is_nan() {
+                    g_d_br_d_z[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
+                    g_d_bz_d_z[(i_rz, i_r)] = 0.0;
+                }
+            }
+        }
+
+        // d2_g_d_r2
+        let mut g_d2_psi_d_r2: Array2<f64> = greens_d2_psi_dr2(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0]);
+        for i_r in 0..n_r {
+            for i_rz in 0..n_r * n_z {
+                if g_d2_psi_d_r2[(i_rz, i_r)].is_nan() {
+                    g_d2_psi_d_r2[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
                 }
             }
         }
 
         // Store values
-        results.get_or_insert("greens").get_or_insert("grid_grid").insert("br", g_grid_grid_br); // Array2<f64>; shape = (n_z * n_r, n_r)
-        results.get_or_insert("greens").get_or_insert("grid_grid").insert("bz", g_grid_grid_bz); // Array2<f64>; shape = (n_z * n_r, n_r)
-        results.get_or_insert("greens").get_or_insert("grid_grid").insert("psi", g_grid_grid_psi); // Array2<f64>; shape = (n_z * n_r, n_r)
-        results
-            .get_or_insert("greens")
-            .get_or_insert("grid_grid")
-            .insert("d_br_d_z", g_d_grid_grid_br_d_z); // Array2<f64>; shape = (n_z * n_r, n_r)
-        results
-            .get_or_insert("greens")
-            .get_or_insert("grid_grid")
-            .insert("d_bz_d_z", g_d_grid_grid_bz_d_z); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results.get_or_insert("greens").get_or_insert("grid_grid").insert("br", g_br); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results.get_or_insert("greens").get_or_insert("grid_grid").insert("bz", g_bz); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results.get_or_insert("greens").get_or_insert("grid_grid").insert("psi", g_psi); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results.get_or_insert("greens").get_or_insert("grid_grid").insert("d_br_d_z", g_d_br_d_z); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results.get_or_insert("greens").get_or_insert("grid_grid").insert("d_bz_d_z", g_d_bz_d_z); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results.get_or_insert("greens").get_or_insert("grid_grid").insert("d2_psi_d_r2", g_d2_psi_d_r2); // Array2<f64>; shape = (n_z * n_r, n_r)
         results.get_or_insert("grid").insert("d_area", d_area); // f64
         results.get_or_insert("grid").get_or_insert("flat").insert("r", flat_r); // Array1<f64>; shape = (n_z * n_r)
         results.get_or_insert("grid").get_or_insert("flat").insert("z", flat_z); // Array1<f64>; shape = (n_z * n_r)
@@ -227,6 +235,10 @@ impl Plasma {
     /// Calculate the Greens function with coils
     /// The Greens tables are stored within self. Example data structure:
     /// `self.results["greens"]["pf"][coil_name]["br"]`
+    ///
+    /// # Arguments
+    /// * `coils` - The Coils object (a Rust implementation, initialised in Python)
+    ///
     fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python types into Rust types
         let coils_local: &Coils = &*coils;
@@ -245,7 +257,7 @@ impl Plasma {
             let d_z: Array1<f64> = &coil_z * 0.0;
 
             // Greens function for flux
-            let g_grid_coil_all_filaments: Array2<f64> = greens(
+            let g_grid_coil_all_filaments: Array2<f64> = greens_psi(
                 flat_r.clone(),
                 flat_z.clone(),
                 coil_r.clone(),
@@ -263,7 +275,7 @@ impl Plasma {
 
             // Greens function for d_psi_d_z
             // (needed for calculating correction to psi from the vertical sabilisation "delta_z")
-            let (g_br_grid_coil_all_filaments, _g_br_grid_coil_all_filaments): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
+            let (g_br_grid_coil_all_filaments, _g_br_grid_coil_all_filaments): (Array2<f64>, Array2<f64>) = greens_b(
                 flat_r.clone(), // "sensors"
                 flat_z.clone(),
                 coil_r.clone(), // "current sources"
@@ -279,22 +291,15 @@ impl Plasma {
                 .to_owned();
 
             // Greens function for br and bz
-            let (g_br_grid_coil_all_filaments, g_bz_grid_coil_all_filaments): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
-                // shape = (n_z * n_r, n_filaments)
-                flat_r.clone(),
-                flat_z.clone(),
-                coil_r.clone(),
-                coil_z.clone(),
-            );
+            let (g_br_grid_coil_all_filaments, g_bz_grid_coil_all_filaments): (Array2<f64>, Array2<f64>) =
+                greens_b(flat_r.clone(), flat_z.clone(), coil_r.clone(), coil_z.clone()); // shape = (n_z * n_r, n_filaments)
 
             // Greens function for d_br_d_z and d_bz_d_z
-            let (g_d_br_grid_coil_all_filaments_d_z, g_d_bz_grid_coil_all_filaments_d_z): (Array2<f64>, Array2<f64>) = d_greens_magnetic_field_dz(
-                // shape = (n_z * n_r, n_filaments)
-                flat_r.clone(),
-                flat_z.clone(),
-                coil_r,
-                coil_z,
-            );
+            let (g_d_br_grid_coil_all_filaments_d_z, g_d_bz_grid_coil_all_filaments_d_z): (Array2<f64>, Array2<f64>) =
+                greens_d_b_d_z(flat_r.clone(), flat_z.clone(), coil_r.clone(), coil_z.clone()); // shape = (n_z * n_r, n_filaments)
+
+            // d2_psi_d_r2
+            let d2_g_d_r2_grid_coil_all_filaments: Array2<f64> = greens_d2_psi_dr2(flat_r.clone(), flat_z.clone(), coil_r, coil_z);
 
             // sum over all filaments and convert into shape = (n_z, n_r)
             let g_br_grid_coil: Array2<f64> = g_br_grid_coil_all_filaments
@@ -316,6 +321,11 @@ impl Plasma {
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
                 .expect("plasma.greens_with_coils.g_d_bz_grid_coil_d_z: Failed to reshape array into (n_z, n_r)")
+                .to_owned();
+            let d2_g_d_r2_grid_coil: Array2<f64> = d2_g_d_r2_grid_coil_all_filaments
+                .sum_axis(Axis(1))
+                .to_shape((n_z, n_r))
+                .expect("plasma.greens_with_coils.d2_g_d_r2_grid_coil: Failed to reshape array into (n_z, n_r)")
                 .to_owned();
 
             // Store results
@@ -343,6 +353,11 @@ impl Plasma {
                 .get_or_insert("greens")
                 .get_or_insert("pf")
                 .get_or_insert(&coil_name)
+                .insert("d2_psi_d_r2", d2_g_d_r2_grid_coil); // Array2<f64>; shape = (n_z, n_r)
+            self.results
+                .get_or_insert("greens")
+                .get_or_insert("pf")
+                .get_or_insert(&coil_name)
                 .insert("psi", g_grid_coil); // Array2<f64>; shape = (n_z, n_r)
             self.results
                 .get_or_insert("greens")
@@ -357,6 +372,10 @@ impl Plasma {
     /// `self.results["greens"]["passives"][passive_name][dof_name]["psi"]`
     /// Note: when adding a passive to the `passives` implementation we selected how to represent the
     /// passive degrees of freedom through `current_distribution_type` (e.g. `constant_current_density` or `eig`)
+    ///
+    /// # Arguments
+    /// * `passives` - The Passives object (a Rust implementation, initialised in Python)
+    ///
     fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
         // Change Python types into Rust types
         let passives_local: &Passives = &*passives;
@@ -384,7 +403,7 @@ impl Plasma {
                     .unwrap_array1();
 
                 // Green's table
-                let g_filaments: Array2<f64> = greens(
+                let g_filaments: Array2<f64> = greens_psi(
                     flat_r.clone(), // by convention (r, z) are "sensors"
                     flat_z.clone(),
                     passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
@@ -408,7 +427,7 @@ impl Plasma {
                     .insert("psi", g_with_dof);
 
                 // Green's functions for BR and BZ
-                let (g_br_filaments, g_bz_filaments): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
+                let (g_br_filaments, g_bz_filaments): (Array2<f64>, Array2<f64>) = greens_b(
                     flat_r.clone(), // by convention (r, z) are "sensors"
                     flat_z.clone(),
                     passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
@@ -416,7 +435,14 @@ impl Plasma {
                 );
 
                 // Green's functions for d_br_d_z and d_bz_d_z
-                let (d_g_br_filaments_d_z, d_g_bz_filaments_d_z): (Array2<f64>, Array2<f64>) = d_greens_magnetic_field_dz(
+                let (d_g_br_filaments_d_z, d_g_bz_filaments_d_z): (Array2<f64>, Array2<f64>) = greens_d_b_d_z(
+                    flat_r.clone(), // by convention (r, z) are "sensors"
+                    flat_z.clone(),
+                    passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
+                    passive_z.clone(),
+                );
+
+                let d2_g_d_r2_filaments: Array2<f64> = greens_d2_psi_dr2(
                     flat_r.clone(), // by convention (r, z) are "sensors"
                     flat_z.clone(),
                     passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
@@ -428,12 +454,14 @@ impl Plasma {
                 let g_bz_filaments_with_dof: Array2<f64> = g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
                 let d_g_br_filaments_with_dof_d_z: Array2<f64> = d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
                 let d_g_bz_filaments_with_dof_d_z: Array2<f64> = d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
+                let d2_g_d_r2_filaments_with_dof: Array2<f64> = d2_g_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
 
                 // Sum over all filaments
                 let g_br: Array1<f64> = g_br_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
                 let g_bz: Array1<f64> = g_bz_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
                 let g_d_br_d_z: Array1<f64> = d_g_br_filaments_with_dof_d_z.sum_axis(Axis(1)); // shape = [n_r * n_z]
                 let g_d_bz_d_z: Array1<f64> = d_g_bz_filaments_with_dof_d_z.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let d2_g_d_r2: Array1<f64> = d2_g_d_r2_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
 
                 // Store
                 self.results
@@ -460,6 +488,12 @@ impl Plasma {
                     .get_or_insert(&passive_name)
                     .get_or_insert(&dof_name)
                     .insert("d_bz_d_z", g_d_bz_d_z);
+                self.results
+                    .get_or_insert("greens")
+                    .get_or_insert("passives")
+                    .get_or_insert(&passive_name)
+                    .get_or_insert(&dof_name)
+                    .insert("d2_psi_d_r2", d2_g_d_r2);
 
                 // >> d(psi)/d(z) (needed for calculating correction to psi from the vertical sabilisation "delta_z")
                 // (needed for calculating correction to psi from the vertical sabilisation "delta_z")
@@ -648,8 +682,8 @@ impl Plasma {
     }
 }
 
-/// Rust only methods (either because we want to keep the methods private
-/// or more likely because we the methods are incompatible with Python)
+// Rust only methods - either because we want to keep the methods private
+// or more likely because the methods are incompatible with Python
 impl Plasma {
     pub fn get_greens_passive_grid(&self) -> Array2<f64> {
         // Get grid sizes
@@ -898,6 +932,49 @@ impl Plasma {
                         .get(&passive_name)
                         .get(&dof_name)
                         .get("d_bz_d_z")
+                        .unwrap_array1(),
+                );
+
+                // Keep count
+                i_dof_total += 1;
+            }
+        }
+
+        return greens_with_passives;
+    }
+
+    pub fn get_greens_passive_grid_d2_psi_d_r2(&self) -> Array2<f64> {
+        // Get grid sizes
+        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
+        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+
+        // Passives
+        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
+        let n_passives: usize = passive_names.len();
+
+        // Count the number of degrees of freedom
+        let mut n_dof_total: usize = 0;
+        for passive_name in &passive_names {
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
+            n_dof_total += dof_names.len();
+        }
+
+        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+
+        // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
+        let mut i_dof_total: usize = 0;
+        for i_passive in 0..n_passives {
+            let passive_name: &str = &passive_names[i_passive];
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
+            for dof_name in dof_names {
+                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
+                    &self
+                        .results
+                        .get("greens")
+                        .get("passives")
+                        .get(&passive_name)
+                        .get(&dof_name)
+                        .get("d2_psi_d_r2")
                         .unwrap_array1(),
                 );
 
@@ -1388,17 +1465,17 @@ fn epp_bt_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_rod: 
 
     for i_z in 0..n_z {
         for i_r in 0..n_r {
-            if mask[[i_z, i_r]] > 0.99 {
+            if mask[(i_z, i_r)] > 0.99 {
                 // Integrate the source function
                 let f_unnormalise: f64 = gs_solution
                     .ff_prime_source_function
-                    .source_function_integral(&Array1::from_vec(vec![psi_n_2d[[i_z, i_r]]]), &ff_prime_dof_values)[0];
+                    .source_function_integral(&Array1::from_vec(vec![psi_n_2d[(i_z, i_r)]]), &ff_prime_dof_values)[0];
 
                 // Calculate the poloidal flux function, f
                 let f_at_this_rz: f64 = f_unnormalise / d_psi_d_psi_n + f_boundary;
 
                 // Toroidal field
-                bt_2d_now[[i_z, i_r]] = f_at_this_rz / r[i_r];
+                bt_2d_now[(i_z, i_r)] = f_at_this_rz / r[i_r];
             }
         }
     }
@@ -1727,8 +1804,8 @@ fn epp_li(ip: f64, r: &Array1<f64>, d_area: f64, r_mag: f64, r_geo: f64, b_r: &A
     let mut bp_sq_vol_int: f64 = 0.0;
     for i_r in 0..n_r {
         for i_z in 0..n_z {
-            let bp_sq: f64 = b_r[[i_z, i_r]].powi(2) + b_z[[i_z, i_r]].powi(2);
-            bp_sq_vol_int += bp_sq * mask[[i_z, i_r]] * 2.0 * PI * r[i_r] * d_area;
+            let bp_sq: f64 = b_r[(i_z, i_r)].powi(2) + b_z[(i_z, i_r)].powi(2);
+            bp_sq_vol_int += bp_sq * mask[(i_z, i_r)] * 2.0 * PI * r[i_r] * d_area;
         }
     }
 
@@ -1759,14 +1836,14 @@ fn epp_mid_plane_p_profile(
 
     // TODO: change this to a slice
     for i_r in 0..n_r {
-        let psi_n_here: f64 = psi_n_2d[[i_z_centre, i_r]];
+        let psi_n_here: f64 = psi_n_2d[(i_z_centre, i_r)];
 
         let pressure_local: f64 = gs_solution
             .p_prime_source_function
             .source_function_integral(&Array1::from_vec(vec![psi_n_here]), &p_prime_dof_values)[0];
 
         // Apply the mask, and store pressure
-        p_profile[i_r] = pressure_local * mask_2d[[i_z_centre, i_r]] / d_psi_d_psi_n;
+        p_profile[i_r] = pressure_local * mask_2d[(i_z_centre, i_r)] / d_psi_d_psi_n;
     }
 
     return p_profile;
@@ -1815,19 +1892,19 @@ fn epp_hessian_matrix(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>
     let d_r: f64 = r[1] - r[0];
     let d_z: f64 = z[1] - z[0];
 
-    let c: f64 = -2.0 * psi[[i_z, i_r]] + psi[[i_z, i_r + 1]] + psi[[i_z, i_r - 1]];
-    let d: f64 = -2.0 * psi[[i_z, i_r]] + psi[[i_z + 1, i_r]] + psi[[i_z - 1, i_r]];
-    let e: f64 = psi[[i_z, i_r]] - psi[[i_z, i_r + 1]] + psi[[i_z + 1, i_r + 1]] - psi[[i_z + 1, i_r]];
+    let c: f64 = -2.0 * psi[(i_z, i_r)] + psi[(i_z, i_r + 1)] + psi[(i_z, i_r - 1)];
+    let d: f64 = -2.0 * psi[(i_z, i_r)] + psi[(i_z + 1, i_r)] + psi[(i_z - 1, i_r)];
+    let e: f64 = psi[(i_z, i_r)] - psi[(i_z, i_r + 1)] + psi[(i_z + 1, i_r + 1)] - psi[(i_z + 1, i_r)];
 
     let mut hessian_matrix: Array2<f64> = Array2::from_elem((2, 2), f64::NAN);
-    hessian_matrix[[0, 0]] = c / d_r.powi(2);
-    hessian_matrix[[0, 1]] = e / (d_r * d_z);
-    hessian_matrix[[1, 0]] = e / (d_r * d_z);
-    hessian_matrix[[1, 1]] = d / d_z.powi(2);
+    hessian_matrix[(0, 0)] = c / d_r.powi(2);
+    hessian_matrix[(0, 1)] = e / (d_r * d_z);
+    hessian_matrix[(1, 0)] = e / (d_r * d_z);
+    hessian_matrix[(1, 1)] = d / d_z.powi(2);
 
     // Calculate determinant and trace (as it's only 2x2 lets not use a library)
-    let hessian_determinant: f64 = hessian_matrix[[0, 0]] * hessian_matrix[[1, 1]] - hessian_matrix[[0, 1]] * hessian_matrix[[1, 0]];
-    let hessian_trace: f64 = hessian_matrix[[0, 0]] + hessian_matrix[[1, 1]];
+    let hessian_determinant: f64 = hessian_matrix[(0, 0)] * hessian_matrix[(1, 1)] - hessian_matrix[(0, 1)] * hessian_matrix[(1, 0)];
+    let hessian_trace: f64 = hessian_matrix[(0, 0)] + hessian_matrix[(1, 1)];
 
     return (hessian_matrix, hessian_determinant, hessian_trace);
 }
@@ -1970,7 +2047,7 @@ fn epp_q_axis(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, f_prof
 
     let (_hessian_matrix, hessian_determinant, hessian_trace): (Array2<f64>, f64, f64) = epp_hessian_matrix(gs_solution, r, z, index_r_mag, index_z_mag);
 
-    let j_phi: f64 = gs_solution.j_2d[[index_z_mag, index_r_mag]];
+    let j_phi: f64 = gs_solution.j_2d[(index_z_mag, index_r_mag)];
     let q_axis: f64 = hessian_trace.abs() / hessian_determinant.sqrt() * f_profile[0] / (MU_0 * r_mag.powi(2) * j_phi);
 
     // q_axis = abs(tri(H(psiN=0))) / sqrt(det(H(psiN=0))) * f_profile(psiN=0) / (mu0 * r_mag**2 * j_phi)
@@ -2130,7 +2207,7 @@ fn epp_w_mhd(p_2d: &Array2<f64>, r: &Array1<f64>, d_area: f64) -> f64 {
     let mut w_mhd: f64 = 0.0;
     for i_r in 0..n_r {
         for i_z in 0..n_z {
-            w_mhd += (3.0 / 2.0) * p_2d[[i_z, i_r]] * 2.0 * PI * r[i_r] * d_area;
+            w_mhd += (3.0 / 2.0) * p_2d[(i_z, i_r)] * 2.0 * PI * r[i_r] * d_area;
         }
     }
 

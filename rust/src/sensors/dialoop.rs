@@ -1,7 +1,7 @@
 use crate::Plasma;
 use crate::coils::Coils;
-use crate::greens::d_greens_magnetic_field_dz;
-use crate::greens::greens_magnetic_field;
+use crate::greens::greens_b;
+use crate::greens::greens_d_b_d_z;
 use crate::nested_dict::NestedDict;
 use crate::nested_dict::NestedDictAccumulator;
 use crate::passives::Passives;
@@ -477,7 +477,7 @@ impl Dialoop {
     //             let passive_name: &str = &passive_names[i_passive];
     //             let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
     //             for dof_name in dof_names {
-    //                 greens_with_passives[[i_dof_total, i_sensor]] = self
+    //                 greens_with_passives[(i_dof_total, i_sensor)] = self
     //                     .results
     //                     .get(&sensor_names[i_sensor])
     //                     .get("greens")

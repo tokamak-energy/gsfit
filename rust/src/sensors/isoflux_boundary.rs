@@ -1,7 +1,7 @@
 use crate::Plasma;
 use crate::coils::Coils;
-use crate::greens::greens;
-use crate::greens::greens_magnetic_field;
+use crate::greens::greens_b;
+use crate::greens::greens_psi;
 use crate::nested_dict::NestedDict;
 use crate::nested_dict::NestedDictAccumulator;
 use crate::passives::Passives;
@@ -188,7 +188,7 @@ impl IsofluxBoundary {
                 let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
                 for i_time in 0..n_time {
                     // Calculate the Green's at location 1
-                    let g_full_location_1: Array2<f64> = greens(
+                    let g_full_location_1: Array2<f64> = greens_psi(
                         Array1::from_vec(vec![location_1_r[i_time]]),
                         Array1::from_vec(vec![location_1_z[i_time]]),
                         coil_r.clone(),
@@ -251,7 +251,7 @@ impl IsofluxBoundary {
                     let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
                     for i_time in 0..n_time {
                         // Location 1
-                        let g_full_location_1: Array2<f64> = greens(
+                        let g_full_location_1: Array2<f64> = greens_psi(
                             Array1::from_vec(vec![location_1_r[i_time]]), // by convention (r, z) are "sensors"
                             Array1::from_vec(vec![location_1_z[i_time]]),
                             passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
@@ -324,7 +324,7 @@ impl IsofluxBoundary {
             let mut g_d_plasma_d_z: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
             for i_time in 0..n_time {
                 // Plasma componet
-                let g_full_location_1: Array2<f64> = greens(
+                let g_full_location_1: Array2<f64> = greens_psi(
                     Array1::from_vec(vec![location_1_r[i_time]]), // sensor
                     Array1::from_vec(vec![location_1_z[i_time]]),
                     plasma_r.clone(), // current source
@@ -342,7 +342,7 @@ impl IsofluxBoundary {
 
                 // Vertical stability
                 // location_1
-                let (g_br_full_location_1, _g_bz_full_location_1): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
+                let (g_br_full_location_1, _g_bz_full_location_1): (Array2<f64>, Array2<f64>) = greens_b(
                     Array1::from_vec(vec![location_1_r[i_time]]), // sensors
                     Array1::from_vec(vec![location_1_r[i_time]]),
                     plasma_r.clone(), // current sources

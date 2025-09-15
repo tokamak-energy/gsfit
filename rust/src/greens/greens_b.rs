@@ -4,7 +4,7 @@ use physical_constants;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
 
-// Global constants
+// Constants
 const PI: f64 = std::f64::consts::PI;
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
@@ -15,28 +15,21 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 ///
 ///
 /// # Arguments
+/// * `r` - "sensor" locations, metre
+/// * `z` - "sensor" locations, metre
+/// * `r_prime` - "current source" locations, metre
+/// * `z_prime` - "current source" locations, metre
 ///
-/// * `r` - "sensor" locations
-/// * `z` - "sensor" locations
-/// * `r_prime` - "current source" locations
-/// * `z_prime` - "current source" locations
+/// # Returns
+/// * `g_br[(n_rz, n_rz_prime)]`, where br = g_br * current
+/// * `g_bz[(n_rz, n_rz_prime)]`, where bz = g_bz * current
+///
+/// # Algorithm
 /// Calculates the magnetic fields BR and BZ at (R, Z)
 /// br = g_br * current;        br = - 1 / (2.0 * PI * r) * d_psi_d_z
 /// bz = g_bz * current;        bz = 1 / (2.0 * PI * r) * d_psi_d_r
 ///
 /// IMPORTANT: this is NOT symmetric in (r, z) and (r_prime, z_prime)
-///
-/// # Arguments
-///
-/// * `r` - the location where we want to calcualte the field
-/// * `z` - the location where we want to calcualte the field
-/// * `r_prime` - the current sources
-/// * `z_prime` - the current sources
-///
-/// # Returns
-///
-/// * `g_br[n_rz, n_rz_prime]` where br = g_br * current
-/// * `g_bz[n_rz, n_rz_prime]` where bz = g_bz * current
 ///
 /// # Examples
 ///
@@ -54,7 +47,8 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// println!("g_br: {:?}", g_br);
 /// println!("g_bz: {:?}", g_bz);
 /// ```
-pub fn greens_magnetic_field(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> (Array2<f64>, Array2<f64>) {
+///
+pub fn greens_b(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> (Array2<f64>, Array2<f64>) {
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
 
@@ -118,7 +112,7 @@ fn test_greens_magnetic_field() {
     let z: Array1<f64> = Array1::from(vec![0.00]);
 
     // Calculate br and bz
-    let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_magnetic_field(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
+    let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
     let current: f64 = 2.3456789;
     let br_numerical: Array1<f64> = g_br.sum_axis(Axis(1)) * current; // summing over the PF coils
     let bz_numerical: Array1<f64> = g_bz.sum_axis(Axis(1)) * current; // summing over the PF coils
@@ -142,7 +136,7 @@ fn test_greens_magnetic_field() {
     let r: Array1<f64> = Array1::from(vec![r_sensor]);
     let z: Array1<f64> = Array1::from(vec![0.00]);
 
-    let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_magnetic_field(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
+    let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
     let br_numerical_test2: Array1<f64> = g_br.sum_axis(Axis(1)) * current;
     let bz_numerical_test2: Array1<f64> = g_bz.sum_axis(Axis(1)) * current;
 

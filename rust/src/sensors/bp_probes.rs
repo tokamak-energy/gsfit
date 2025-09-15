@@ -1,7 +1,7 @@
 use crate::Plasma;
 use crate::coils::Coils;
-use crate::greens::d_greens_magnetic_field_dz;
-use crate::greens::greens_magnetic_field;
+use crate::greens::greens_b;
+use crate::greens::greens_d_b_d_z;
 use crate::nested_dict::NestedDict;
 use crate::nested_dict::NestedDictAccumulator;
 use crate::passives::Passives;
@@ -349,7 +349,7 @@ impl BpProbes {
                 let passive_name: &str = &passive_names[i_passive];
                 let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
                 for dof_name in dof_names {
-                    greens_with_passives[[i_dof_total, i_sensor]] = self
+                    greens_with_passives[(i_dof_total, i_sensor)] = self
                         .results
                         .get(&sensor_names[i_sensor])
                         .get("greens")
@@ -532,7 +532,7 @@ impl BpProbes {
                 let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
 
-                let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
+                let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
                     Array1::from_vec(vec![sensor_r]),
                     Array1::from_vec(vec![sensor_z]),
                     coil_r.clone(),
@@ -566,7 +566,7 @@ impl BpProbes {
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
 
-            let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
+            let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
                 Array1::from_vec(vec![sensor_r]), // sensor
                 Array1::from_vec(vec![sensor_z]),
                 plasma_r.clone(), // current source
@@ -580,10 +580,10 @@ impl BpProbes {
             let g_with_plasma: Array1<f64> = g_br * sensor_angle_pol.cos() + g_bz * sensor_angle_pol.sin();
 
             // Store
-            self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_with_plasma); // shape = [[n_z * n_r]]
+            self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_with_plasma); // shape = [(n_z * n_r)]
 
             // Vertical stability
-            let (g_d_plasma_br_d_z_full, g_d_plasma_bz_d_z_full): (Array2<f64>, Array2<f64>) = d_greens_magnetic_field_dz(
+            let (g_d_plasma_br_d_z_full, g_d_plasma_bz_d_z_full): (Array2<f64>, Array2<f64>) = greens_d_b_d_z(
                 Array1::from_vec(vec![sensor_r]), // sensor
                 Array1::from_vec(vec![sensor_z]),
                 plasma_r.clone(), // current source
@@ -620,7 +620,7 @@ impl BpProbes {
                 let passive_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
                 for dof_name in dof_names {
-                    let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
+                    let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
                         Array1::from_vec(vec![sensor_r]), // by convention (r, z) are "sensors"
                         Array1::from_vec(vec![sensor_z]),
                         passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"

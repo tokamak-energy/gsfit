@@ -13,13 +13,13 @@ pub fn find_viable_limit_point(
     psi_2d: &Array2<f64>,
     limit_pts_r: &Array1<f64>,
     limit_pts_z: &Array1<f64>,
-    r_mag: f64,
-    z_mag: f64,
+    mag_r: f64,
+    mag_z: f64,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
 ) -> Result<BoundaryContour, String> {
     // Magnetic axis point
-    let magnetic_axis_point: Point = Point::new(r_mag, z_mag);
+    let magnetic_axis_point: Point = Point::new(mag_r, mag_z);
 
     // Vessel polygon
     let n_vessel_pts: usize = vessel_r.len();

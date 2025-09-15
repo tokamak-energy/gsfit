@@ -1,4 +1,4 @@
-use crate::greens::greens;
+use crate::greens::greens_psi;
 use crate::nested_dict::NestedDict;
 use crate::nested_dict::NestedDictAccumulator;
 use crate::sensors::SensorsDynamic;
@@ -102,7 +102,7 @@ impl Coils {
                 let other_coil_z = self.results.get("pf").get(&other_coil_name).get("geometry").get("z").unwrap_array1();
 
                 let greens_filament_matrix: Array2<f64> =
-                    greens(coil_r.clone(), coil_z.clone(), other_coil_r, other_coil_z, coil_d_r.clone(), coil_d_z.clone());
+                    greens_psi(coil_r.clone(), coil_z.clone(), other_coil_r, other_coil_z, coil_d_r.clone(), coil_d_z.clone());
 
                 let g: f64 = greens_filament_matrix.sum();
 

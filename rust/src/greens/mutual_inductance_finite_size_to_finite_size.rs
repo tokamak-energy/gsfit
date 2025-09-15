@@ -1,4 +1,4 @@
-use crate::greens::greens;
+use crate::greens::greens_psi;
 use approx::abs_diff_eq;
 use ndarray::{Array1, Array2, s};
 
@@ -58,7 +58,7 @@ pub fn mutual_inductance_finite_size_to_finite_size(
             );
 
             // Calculate the greens function for the sub-filaments to sub-filaments
-            let g_sub_filaments: Array2<f64> = greens(
+            let g_sub_filaments: Array2<f64> = greens_psi(
                 r_sub_filament.clone(),
                 z_sub_filament.clone(),
                 r_sub_filament_prime.clone(),
@@ -67,7 +67,7 @@ pub fn mutual_inductance_finite_size_to_finite_size(
                 z_sub_filament.clone() * 0.0 + d_z[i_filament] / (n_sub_filaments as f64), // THIS LOOKS WRONG!!! do I need it??
             ); // shape = [n_sub_filaments * n_sub_filaments, n_sub_filaments * n_sub_filaments]
 
-            g[[i_filament, i_filament_prime]] = g_sub_filaments.sum() / ((n_sub_filaments as f64).powi(4));
+            g[(i_filament, i_filament_prime)] = g_sub_filaments.sum() / ((n_sub_filaments as f64).powi(4));
         }
     }
 
@@ -151,8 +151,8 @@ fn discretise_parallelogram(
         for i_v in 0..n_sub_filaments {
             let r_sub_filament: f64 = r1 + (r2 - r1) * u[i_u] + (r4 - r1) * v[i_v];
             let z_sub_filament: f64 = z1 + (z2 - z1) * u[i_u] + (z4 - z1) * v[i_v];
-            mesh_r[[i_u, i_v]] = r_sub_filament;
-            mesh_z[[i_u, i_v]] = z_sub_filament;
+            mesh_r[(i_u, i_v)] = r_sub_filament;
+            mesh_z[(i_u, i_v)] = z_sub_filament;
         }
     }
 

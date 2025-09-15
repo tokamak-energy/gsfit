@@ -11,7 +11,6 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 
-// Global constants
 const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone)]

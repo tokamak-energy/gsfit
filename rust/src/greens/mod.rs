@@ -1,12 +1,15 @@
 // Load modules
-mod d_greens_magnetic_field_dz;
-mod greens;
-mod greens_magnetic_field;
+mod d2_psi_d_r2_calculator;
+mod greens_b;
+mod greens_d2_psi_d_r2;
+mod greens_d_b_d_z;
+mod greens_psi;
 mod mutual_inductance_finite_size_to_finite_size;
 
 // Expose functions to public
-pub use d_greens_magnetic_field_dz::d_greens_magnetic_field_dz;
-pub use greens::greens;
-pub use greens_magnetic_field::greens_magnetic_field;
-
+pub use d2_psi_d_r2_calculator::D2PsiDR2Calculator;
+pub use greens_b::greens_b;
+pub use greens_d_b_d_z::greens_d_b_d_z;
+pub use greens_d2_psi_d_r2::greens_d2_psi_dr2;
+pub use greens_psi::greens_psi;
 pub use mutual_inductance_finite_size_to_finite_size::mutual_inductance_finite_size_to_finite_size;

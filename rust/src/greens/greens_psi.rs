@@ -5,7 +5,6 @@ use rayon::prelude::*;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
 
-// Global constants
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
 /// Calculates the Green's table between locations
@@ -16,22 +15,19 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// The equations are invariant under the exchange of (r, z) with (r_prime, z_prime)
 ///
 /// # Arguments
-///
 /// * `r` - by convention used for "sensors"
-/// * `z` - by convention used for "sensors"
+/// * `z` - by convention used for "sensors", same length as `r`
 /// * `r_prime` - by convention used for "current sources"
-/// * `z_prime` - by convention used for "current sources"
-/// * `d_r` - horizontal width of filament, must be same length as `r`
-/// * `d_z` - vertical height of filament, must be same length as `z`
+/// * `z_prime` - by convention used for "current sources", same length as `r_prime`
+/// * `d_r` - horizontal width of filament
+/// * `d_z` - vertical height of filament, same length as `r` and `z`
 ///
 /// # Returns
-///
-/// * `Array2<f64>` - The Greens table between "sensors" and "current sources"
+/// * `greens_array[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"
 ///
 /// # Examples
-///
 /// ```
-/// use gsfit_rs::greens::greens;
+/// use gsfit_rs::greens::greens_psi;
 /// use ndarray::{Array1, Array2};
 ///
 /// // By convention sensors are first
@@ -47,17 +43,14 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// let d_z: Array1<f64> = Array1::from(vec![0.0, 0.0]);
 ///
 /// // Calculate br and bz
-/// let greens_table: Array2<f64> =
-///     greens(r, z, r_prime, z_prime, d_r, d_z);
+/// let g_table: Array2<f64> =
+///     greens_psi(r, z, r_prime, z_prime, d_r, d_z);
 /// ```
 ///
-pub fn greens(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>, d_r: Array1<f64>, d_z: Array1<f64>) -> Array2<f64> {
+pub fn greens_psi(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>, d_r: Array1<f64>, d_z: Array1<f64>) -> Array2<f64> {
     let n_grid: usize = r.len();
     let n_filament: usize = r_prime.len();
 
-    // in Fiesta `r_filament` and `z_filament` were repeated to make them the same
-    // size as `r_grid` and `z_grid`. Parallelisation is then done on matrix
-    // multiplication
     let results: Vec<Array1<f64>> = (0..n_filament)
         .into_par_iter() // Use Rayon to create a parallel iterator
         .map(|i_filament: usize| {
@@ -125,7 +118,7 @@ fn test_greens_mutual_inductance() {
     // Calculate flux
     let d_r: Array1<f64> = Array1::zeros(r.len());
     let d_z: Array1<f64> = Array1::zeros(z.len());
-    let psi: Array2<f64> = greens(r.clone(), z.clone(), r_prime, z_prime, d_r, d_z);
+    let psi: Array2<f64> = greens_psi(r.clone(), z.clone(), r_prime, z_prime, d_r, d_z);
     let psi_numerical: Array1<f64> = psi.sum_axis(Axis(1)) * current;
     let psi_numerical: f64 = psi_numerical[0]; // since we have only one sensor
 

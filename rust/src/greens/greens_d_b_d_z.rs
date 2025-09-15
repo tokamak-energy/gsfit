@@ -3,14 +3,23 @@ use physical_constants;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
 
-// Global constants
 const PI: f64 = std::f64::consts::PI;
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
-///
 /// d_g_br_dz = d(g_br)/d(z) = the gradient of br with respect to z
 /// d_g_bz_dz = d(g_bz)/d(z) = the gradient of bz with respect to z
-pub fn d_greens_magnetic_field_dz(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> (Array2<f64>, Array2<f64>) {
+///
+/// # Arguments
+/// * `r` - by convention used for "sensors", metre
+/// * `z` - by convention used for "sensors", same length as `r`, metre
+/// * `r_prime` - by convention used for "current sources", metre
+/// * `z_prime` - by convention used for "current sources", same length as `r_prime`, metre
+///
+/// # Returns
+/// * `d_g_br_dz[(i_rz, i_rz_prime)]`
+/// * `d_g_bz_dz[(i_rz, i_rz_prime)]`
+///
+pub fn greens_d_b_d_z(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> (Array2<f64>, Array2<f64>) {
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
 
@@ -53,7 +62,7 @@ fn test_d_greens_magnetic_field_dz() {
     // differentiating br and bz from `greens_magnetic_field` function.
 
     // Lazy loading of packages which are not used anywhere else in the code
-    use crate::greens::greens_magnetic_field;
+    use crate::greens::greens_b;
     use approx::assert_abs_diff_eq;
 
     // Create two sensors which have the same radius and are close in z
@@ -72,20 +81,20 @@ fn test_d_greens_magnetic_field_dz() {
     // Calculate br and bz using the `greens_magnetic_field` function
     // Rember: g_br[n_rz, n_rz_prime] and g_bz[n_rz, n_rz_prime]
     // If we were to assume 1A of current is flowing in the coil, then `br = g_br * 1` and `bz = g_bz * 1`
-    let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_magnetic_field(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
+    let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
 
     // Numerically differentiate br and bz, i.e. d(g_br)/d(z) and d(g_bz)/d(z)
-    let d_g_br_dz_numerical: f64 = (g_br[[1, 0]] - g_br[[0, 0]]) / (sensor_z_plus_epsilon - sensor_z_minus_epsilon);
-    let d_g_bz_dz_numerical: f64 = (g_bz[[1, 0]] - g_bz[[0, 0]]) / (sensor_z_plus_epsilon - sensor_z_minus_epsilon);
+    let d_g_br_dz_numerical: f64 = (g_br[(1, 0)] - g_br[(0, 0)]) / (sensor_z_plus_epsilon - sensor_z_minus_epsilon);
+    let d_g_bz_dz_numerical: f64 = (g_bz[(1, 0)] - g_bz[(0, 0)]) / (sensor_z_plus_epsilon - sensor_z_minus_epsilon);
 
     // Call the function we are testing
     // We now have a single sensor at the centre of the two sensors we used for numerical differentiation
     let z: Array1<f64> = Array1::from(vec![(sensor_z_minus_epsilon + sensor_z_plus_epsilon) / 2.0]);
     let r: Array1<f64> = Array1::from(vec![sensor_r]);
-    let (d_g_br_dz, d_g_bz_dz): (Array2<f64>, Array2<f64>) = d_greens_magnetic_field_dz(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
+    let (d_g_br_dz, d_g_bz_dz): (Array2<f64>, Array2<f64>) = greens_d_b_d_z(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
 
     // Check the results
     let precision: f64 = 1e-11;
-    assert_abs_diff_eq!(d_g_br_dz[[0, 0]], d_g_br_dz_numerical, epsilon = precision);
-    assert_abs_diff_eq!(d_g_bz_dz[[0, 0]], d_g_bz_dz_numerical, epsilon = precision);
+    assert_abs_diff_eq!(d_g_br_dz[(0, 0)], d_g_br_dz_numerical, epsilon = precision);
+    assert_abs_diff_eq!(d_g_bz_dz[(0, 0)], d_g_bz_dz_numerical, epsilon = precision);
 }

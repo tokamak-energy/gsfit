@@ -1,4 +1,7 @@
 use super::BoundaryContour;
+use super::StationaryPoint;
+use crate::greens::D2PsiDR2Calculator;
+use crate::plasma_geometry::hessian;
 use contour::ContourBuilder;
 use core::f64;
 use geo::Contains;
@@ -19,7 +22,6 @@ const PI: f64 = std::f64::consts::PI;
 /// - The boundary contour is sorted by the largest to smallest `psi` value.
 ///
 /// # Arguments
-///
 /// * `r` - 1D array of R (major radius) grid points.
 /// * `z` - 1D array of Z (vertical) grid points.
 /// * `br_2d` - 2D array of poloidal magnetic field component B_R.
@@ -34,32 +36,34 @@ const PI: f64 = std::f64::consts::PI;
 /// * `Ok(BoundaryContour)` - The boundary contour and X-point information for the most viable candidate.
 /// * `Err(String)` - An error message if no suitable X-point is found.
 ///
+/// # Algorithm
+/// 1. Find contours where `br=0` and `bz=0`
+/// 2. Find stationary points, where `br=0` and `bz=0`
+/// 3. Down select stationary points to only saddle points
+/// 4. Find the contours associated with each saddle point
+/// 5. Draw a vector from (mag_r, mag_z) to (r.max(), mag_z)
+/// 6. Find intersection with boundary ==> we now know the x-point flux and x-point location (if there are multiple intersections, use the one )
+/// 7. Collect all contours for x-point flux
+/// 8. Pass to `BoundaryContour.refine_xpt_diverted_boundary`
+///
 /// # Example
 /// ```ignore
-/// let result = find_viable_xpt(&r, &z, &br_2d, &bz_2d, &psi_2d, &vessel_r, &vessel_z, mag_r, mag_z);
+/// let result = find_viable_xpt(&r, &z, &br_2d, &bz_2d, &psi_2d, &vessel_r, &vessel_z, mag_r, mag_z, d2_psi_d_r2_calculator);
 /// ```
 pub fn find_viable_xpt(
     r: &Array1<f64>,
     z: &Array1<f64>,
+    psi_2d: &Array2<f64>,
     br_2d: &Array2<f64>,
     bz_2d: &Array2<f64>,
-    psi_2d: &Array2<f64>,
-    d_br_d_z_2d: &Array2<f64>,
-    d_bz_d_z_2d: &Array2<f64>,
+    stationary_points: &Vec<StationaryPoint>,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
     mag_r: f64,
     mag_z: f64,
 ) -> Result<BoundaryContour, String> {
-    // Stratedgy:
-    // 1. Find contours where `br=0` and `bz=0`
-    // 2. Find turning points, where `br=0` and `bz=0`
-    // 3. Down select turning points to only saddle points
-    // 4. Find the contours associated with each saddle point
-    // 5. Draw a vector from (mag_r, mag_z) to (r.max(), mag_z)
-    // 6. Find intersection with boundary ==> we now know the x-point flux and x-point location (if there are multiple intersections, use the one )
-    // 7. Collect all contours for x-point flux
-    // 8. Pass to `BoundaryContour.refine_xpt_diverted_boundary`
+    // Create a mutable copy of `stationary_points`, because we want to filter it
+    let mut stationary_points: Vec<StationaryPoint> = stationary_points.clone();
 
     // Grid variables
     let n_r: usize = r.len();
@@ -77,105 +81,9 @@ pub fn find_viable_xpt(
         .x_origin(r_origin - d_r / 2.0)
         .y_origin(z_origin - d_z / 2.0);
 
-    // Find the contours for br=0
-    let br_flattened: Vec<f64> = br_2d.flatten().to_vec();
-    let br_contours_tmp: Vec<contour::Contour> = contour_grid.contours(&br_flattened, &[0.0f64]).expect("br_contours_tmp: error");
-    let br_contours: &MultiPolygon = br_contours_tmp[0].geometry(); // The [0] is because I have only supplied one `thresholds`
-
-    // Find the contours for bz=0
-    let bz_flattened: Vec<f64> = bz_2d.flatten().to_vec();
-    let bz_contours_tmp: Vec<contour::Contour> = contour_grid.contours(&bz_flattened, &[0.0f64]).expect("bz_contours_tmp: error");
-    let bz_contours: &MultiPolygon = bz_contours_tmp[0].geometry(); // The [0] is because I have only supplied one `thresholds`
-
-    // Collect br contours
-    let mut br_contour_line_segments: Vec<Line<f64>> = Vec::new();
-    // Loop over all contours
-    for br_contour in br_contours {
-        // "exterior" is the outer boundary of the contour
-        // There is only one "exterior"
-        // `Line` object has two coordinates: "start" and "end", so there will be multiple Lines
-        let br_line: Vec<Line<f64>> = br_contour.exterior().lines().collect();
-        for line_segment in br_line {
-            br_contour_line_segments.push(line_segment);
-        }
-
-        // "interiors" are the holes in the contour
-        // There can be multiple holes or None
-        // `Line` object has two coordinates: "start" and "end", so there will be multiple Lines
-        for br_interior in br_contour.interiors() {
-            let br_line: Vec<Line<f64>> = br_interior.lines().collect();
-            for line_segment in br_line {
-                br_contour_line_segments.push(line_segment);
-            }
-        }
-    }
-
-    // Collect bz contours
-    let mut bz_contour_line_segments: Vec<Line<f64>> = Vec::new();
-    // Loop over all contours
-    for bz_contour in bz_contours {
-        // "exterior" is the outer boundary of the contour
-        // There is only one "exterior"
-        // `LineString` object has a list of x and y coordinate pairs
-        // `Line` object has two coordinates: "start" and "end". When casting into `Line` object we can expect many entries in the Vec
-        let bz_line: Vec<Line<f64>> = bz_contour.exterior().lines().collect();
-        for line_segment in bz_line {
-            bz_contour_line_segments.push(line_segment);
-        }
-
-        // "interiors" are the holes in the contour
-        // There can be multiple holes or None
-        // `Line` object has two coordinates: "start" and "end", so there will be multiple Lines
-        for bz_interior in bz_contour.interiors() {
-            let bz_line: Vec<Line<f64>> = bz_interior.lines().collect();
-            for line_segment in bz_line {
-                bz_contour_line_segments.push(line_segment);
-            }
-        }
-    }
-
-    // Loop over the br and bz contours to find the intersections, which are the turning points
-    // TODO: for psi_a we needed to use bicubic interpolation; perhaps we need this here?
-    let mut possible_xpts_r: Vec<f64> = Vec::new(); // we have no idea how many intersections there will be, if any
-    let mut possible_xpts_z: Vec<f64> = Vec::new();
-    for br_line in &br_contour_line_segments {
-        for bz_line in &bz_contour_line_segments {
-            if let Some(line_intersection) = line_intersection(br_line.to_owned(), bz_line.to_owned()) {
-                if let LineIntersection::SinglePoint {
-                    intersection,
-                    is_proper: _is_proper,
-                } = line_intersection
-                {
-                    // Note:
-                    // `_is_proper` is a variable which is assigned but not used. It means:
-                    // * `is_proper = true` means the intersection occurs at a point that is not one of the endpoints of either line
-                    // * `is_proper = false` means the intersection occurs at an endpoint of one or both line segments
-                    let intersection_r: f64 = intersection.x;
-                    let intersection_z: f64 = intersection.y;
-
-                    // TODO: Very worringly, the contours can be off by 1/2 a grid point.
-                    // This has been reported to GitHub as an issue. But until it's fixed we shall add this extra test
-                    // that the intersection is within the grid.
-                    if intersection_r < r.max().expect("find_viable_xpt: r.max()").to_owned()
-                        && intersection_r > r.min().expect("find_viable_xpt: r.min()").to_owned()
-                        && intersection_z < z.max().expect("find_viable_xpt: z.max()").to_owned()
-                        && intersection_z > z.min().expect("find_viable_xpt: z.max()").to_owned()
-                        && intersection_z.abs() > 2.1
-                        && intersection_r.abs() > 0.15
-                    // TODO: Last two tests are because the Hessian matrix is not working!
-                    {
-                        possible_xpts_r.push(intersection_r);
-                        possible_xpts_z.push(intersection_z);
-                    }
-                }
-            }
-        }
-    }
-
-    // Exit if we haven't found any x-points
-    let n_xpts: usize = possible_xpts_r.len();
-    if n_xpts == 0 {
-        return Err("find_viable_xpt: no x-point found".to_string());
+    // Exit if we haven't found any stationary points
+    if stationary_points.len() == 0 {
+        return Err("find_viable_xpt: no stationary points found".to_string());
     }
 
     // Vessel polygon
@@ -192,80 +100,48 @@ pub fn find_viable_xpt(
         vec![], // No holes
     );
 
-    // Check if x-point is within the vessel
-    let mut indices_to_keep: Vec<usize> = Vec::new();
-    for i_xpt in 0..possible_xpts_r.len() {
-        let xpt_r_local: f64 = possible_xpts_r[i_xpt];
-        let xpt_z_local: f64 = possible_xpts_z[i_xpt];
+    // Filter to retain only `stationary_points` which are within the vessel
+    stationary_points.retain(|stationary_point| {
+        let xpt_r_local: f64 = stationary_point.r;
+        let xpt_z_local: f64 = stationary_point.z;
         let xpt_point: Point = Point::new(xpt_r_local, xpt_z_local);
         let inside_vessel: bool = vessel_polygon.contains(&xpt_point);
 
-        // "retain" the xpts which are inside the vessel
-        if inside_vessel {
-            indices_to_keep.push(i_xpt);
-        }
+        // retain points which are inside the vessel
+        return inside_vessel;
+    });
+    // Exit if we haven't found any `stationary_points` within the vessel
+    if stationary_points.len() == 0 {
+        return Err("find_viable_xpt: no stationary points found inside vessel".to_string());
     }
 
-    // Keep only saddle points which are inside the vessel
-    possible_xpts_r = indices_to_keep.iter().map(|&i| possible_xpts_r[i]).collect();
-    possible_xpts_z = indices_to_keep.iter().map(|&i| possible_xpts_z[i]).collect();
+    // Filter to retain only `stationary_points` which are saddle points
+    stationary_points.retain(|stationary_point| {
+        let hessian_det: f64 = stationary_point.hessian_determinant;
+        let saddle_point_test: bool = hessian_det < 0.0;
 
-    // Exit if we haven't found any x-points
-    let n_xpts: usize = possible_xpts_r.len();
-    if n_xpts == 0 {
-        return Err("find_viable_xpt: no x-point found".to_string());
+        return saddle_point_test;
+    });
+    // Exit if we haven't found any `stationary_points` which have saddle curvature
+    if stationary_points.len() == 0 {
+        return Err("find_viable_xpt: no stationary points with saddle curvature".to_string());
     }
-
-    // // TODO: I need to add a test to see if the turning point is a saddle point.
-    // // But: the Hessian matrix is not working reliably - I think this is because I don't have an analytic equation for d^2(psi)/d(z^2).
-    // let mut d2_psi_d_r2: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
-    // for i_z in 0..n_z {
-    //     for i_r in 0..n_r {
-    //         d2_psi_d_r2[[i_z, i_r]] = -2.0 * PI * r[i_r] * br_2d[[i_z, i_r]];
-    //     }
-    // }
-    // // TODO: I need an analytic solution for d^2(psi)/d(z^2).
-    // // I don't think this works very well near the saddle point! Same was observed near the magnetic axis.
-    // let mut d2_psi_d_z2: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
-    // for i_z in 0..n_z {
-    //     for i_r in 0..n_r {
-    //         // Central difference for interior points
-    //         if i_z > 0 && i_z < n_z - 1 {
-    //             d2_psi_d_z2[[i_z, i_r]] = (psi_2d[[i_z + 1, i_r]] - 2.0 * psi_2d[[i_z, i_r]] + psi_2d[[i_z - 1, i_r]]) / (d_z * d_z);
-    //         }
-    //         // Forward difference for the first row
-    //         else if i_z == 0 {
-    //             d2_psi_d_z2[[i_z, i_r]] = (psi_2d[[i_z + 2, i_r]] - 2.0 * psi_2d[[i_z + 1, i_r]] + psi_2d[[i_z, i_r]]) / (d_z * d_z);
-    //         }
-    //         // Backward difference for the last row
-    //         else if i_z == n_z - 1 {
-    //             d2_psi_d_z2[[i_z, i_r]] = (psi_2d[[i_z, i_r]] - 2.0 * psi_2d[[i_z - 1, i_r]] + psi_2d[[i_z - 2, i_r]]) / (d_z * d_z);
-    //         }
-    //     }
-    // }
-    // let mut d2_psi_d_r_d_z: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
-    // for i_z in 0..n_z {
-    //     for i_r in 0..n_r {
-    //         d2_psi_d_r_d_z[[i_z, i_r]] = 2.0 * PI * r[i_r] * bz_2d[[i_z, i_r]];
-    //     }
-    // }
-    // let (hessian_det, hessian_trace): (f64, f64) = hessian_matrix(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_z);
 
     // Create an interpolator for psi
     let psi_2d_flattened: Vec<f64> = psi_2d.flatten().to_vec();
-    let psi_interpolator = Interp2D::builder(psi_2d.clone())
-        .x(z.clone())
-        .y(r.clone())
-        .build()
-        .expect("find_viable_xpt: Can't make Interp2D");
+    // let psi_interpolator = Interp2D::builder(psi_2d.clone())
+    //     .x(z.clone())
+    //     .y(r.clone())
+    //     .build()
+    //     .expect("find_viable_xpt: Can't make Interp2D");
 
-    // Find psi at all saddle points
-    let mut possible_xpts_psi: Array1<f64> = Array1::from_elem(n_xpts, f64::NAN);
-    for i_xpt in 0..n_xpts {
-        possible_xpts_psi[i_xpt] = psi_interpolator
-            .interp_scalar(possible_xpts_z[i_xpt], possible_xpts_r[i_xpt])
-            .expect("find_viable_xpt: error, xpts");
-    }
+    // // Find psi at all saddle points
+    // for stationary_point in &mut stationary_points {
+    //     let xpt_r_local: f64 = stationary_point.r;
+    //     let xpt_z_local: f64 = stationary_point.z;
+    //     let psi_local: f64 = psi_interpolator.interp_scalar(xpt_z_local, xpt_r_local).expect("find_viable_xpt: error, xpts");
+    //     stationary_point.psi = psi_local;
+    // }
 
     // Create a vector from the magnetic axis to the right edge of the grid
     let mag_axis_point: Point = Point::new(mag_r, mag_z);
@@ -278,11 +154,14 @@ pub fn find_viable_xpt(
     let mut potential_psi_b: Vec<f64> = Vec::new();
     let mut potential_xpt_r: Vec<f64> = Vec::new();
     let mut potential_xpt_z: Vec<f64> = Vec::new();
-    for i_xpt in 0..n_xpts {
-        let psi_b_local: f64 = possible_xpts_psi[i_xpt];
+    // let mut potential_boundary: Vec<BoundaryContour> = Vec::new();
+    for stationary_point in stationary_points {
+        let possible_xpts_psi: f64 = stationary_point.psi;
+        let possible_xpts_r: f64 = stationary_point.r;
+        let possible_xpts_z: f64 = stationary_point.z;
 
         let boundary_contours_local: Vec<contour::Contour> = contour_grid
-            .contours(&psi_2d_flattened, &[psi_b_local])
+            .contours(&psi_2d_flattened, &[possible_xpts_psi])
             .expect("find_viable_xpt: cannot find `boundary_contours_tmp`");
         let boundary_contours: &geo_types::MultiPolygon = boundary_contours_local[0].geometry(); // The [0] is because I have only supplied one threshold
 
@@ -297,7 +176,7 @@ pub fn find_viable_xpt(
             // Find the minimum distance from the contour to the potential x-point
             let boundary_r: Array1<f64> = boundary_contour.exterior().coords().map(|coord| coord.x).collect::<Array1<f64>>();
             let boundary_z: Array1<f64> = boundary_contour.exterior().coords().map(|coord| coord.y).collect::<Array1<f64>>();
-            let distance: Array1<f64> = ((boundary_r - possible_xpts_r[i_xpt]).powi(2) + (boundary_z - possible_xpts_z[i_xpt]).powi(2)).sqrt();
+            let distance: Array1<f64> = ((boundary_r - possible_xpts_r).powi(2) + (boundary_z - possible_xpts_z).powi(2)).sqrt();
 
             // Check if the contour is "close" to the potential x-point
             if distance.min().expect("find_viable_xpt: error, distance.min()") < &near_distance {
@@ -313,11 +192,15 @@ pub fn find_viable_xpt(
                             LineIntersection::SinglePoint { intersection, .. } => intersection,
                             _ => panic!("find_viable_xpt: expected SinglePoint intersection"),
                         };
+                        // let boundary_contour = BoundaryContour{
+                        //     boundary_polygon: boundary_contour.clone(),
+                        // };
+                        // potential_boundary.push()
                         intersection_radius.push(intersection_point.x);
                         potential_boundary_contours.push(boundary_contours.clone());
-                        potential_psi_b.push(possible_xpts_psi[i_xpt]);
-                        potential_xpt_r.push(possible_xpts_r[i_xpt]);
-                        potential_xpt_z.push(possible_xpts_z[i_xpt]);
+                        potential_psi_b.push(possible_xpts_psi);
+                        potential_xpt_r.push(possible_xpts_r);
+                        potential_xpt_z.push(possible_xpts_z);
                     }
                 }
             }
@@ -384,46 +267,6 @@ pub fn find_viable_xpt(
     final_contour.refine_xpt_diverted_boundary(r, z, psi_2d, mag_r, mag_z, br_2d, bz_2d);
 
     return Ok(final_contour);
-}
-
-/// Calculates the Hessian determinant for the poloidal flux function `psi`.
-/// * det(Hessian(R, Z)) > 0: Both curvatures have the same sign (minimum or maximum)
-///     * trace > 0: Minimum
-///     * trace < 0: Maximum
-/// * det(Hessian(R, Z)) < 0: Curvatures have opposite signs ⇒ saddle point
-/// * det(Hessian(R, Z)) ≈ 0: Degenerate case function could be flat (can be saddle point, local minimum, or local maximum)
-///     * trace can be any value
-///
-/// Hessian(R, Z) = determinant of the Hessian matrix
-/// trace = diagonal elements of the Hessian matrix
-///
-/// # Arguments
-/// * `d2_psi_d_r2` - Second derivative of poloidal flux `psi` with respect to R.
-/// * `d2_psi_d_z2` - Second derivative of poloidal flux `psi` with respect to Z.
-/// * `d2_psi_d_r_z` - Mixed second derivative of poloidal flux `psi` with respect to R and Z.
-/// # Returns
-/// * `f64` - The Hessian determinant value.
-///
-/// # Example
-/// ```ignore
-/// let (hessian_det, hessian_trace): (f64, f64) = hessian_matrix(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_z);
-/// if hessian_det < 0.0 {
-///     println!("Saddle point = x-point");
-/// } else if hessian_det > 0.0 && d2_psi_d_r2 > 0.0 {
-///     println!("Local minimum");
-/// } else if hessian_det > 0.0 && d2_psi_d_r2 < 0.0 {
-///     println!("Local maximum = magnetic axis");
-/// } else {
-///     println!("This point can be a saddle point, local minimum, or local maximum");
-/// }
-/// ```
-/// TODO: perhaps use linear interpolation to create the inputs???
-fn hessian_matrix(d2_psi_d_r2: f64, d2_psi_d_z2: f64, d2_psi_d_r_z: f64) -> (f64, f64) {
-    // Calculate the Hessian determinant
-    let hessian_det: f64 = d2_psi_d_r2 * d2_psi_d_z2 - d2_psi_d_r_z.powi(2);
-
-    let hessian_trace: f64 = d2_psi_d_r2 + d2_psi_d_z2;
-    return (hessian_det, hessian_trace);
 }
 
 // #[test]
@@ -528,16 +371,16 @@ fn hessian_matrix(d2_psi_d_r2: f64, d2_psi_d_z2: f64, d2_psi_d_r_z: f64) -> (f64
 
 //     for i_z in 1..n_z - 1 {
 //         for i_r in 0..n_r {
-//             d_br_d_z_2d[[i_z, i_r]] = (br_2d[[i_z + 1, i_r]] - br_2d[[i_z - 1, i_r]]) / (2.0 * d_z);
-//             d_bz_d_z_2d[[i_z, i_r]] = (bz_2d[[i_z + 1, i_r]] - bz_2d[[i_z - 1, i_r]]) / (2.0 * d_z);
+//             d_br_d_z_2d[(i_z, i_r)] = (br_2d[(i_z + 1, i_r)] - br_2d[(i_z - 1, i_r)]) / (2.0 * d_z);
+//             d_bz_d_z_2d[(i_z, i_r)] = (bz_2d[(i_z + 1, i_r)] - bz_2d[(i_z - 1, i_r)]) / (2.0 * d_z);
 //         }
 //     }
 //     // For boundaries, use forward/backward difference
 //     for i_r in 0..n_r {
-//         d_br_d_z_2d[[0, i_r]] = (br_2d[[1, i_r]] - br_2d[[0, i_r]]) / d_z;
-//         d_br_d_z_2d[[n_z - 1, i_r]] = (br_2d[[n_z - 1, i_r]] - br_2d[[n_z - 2, i_r]]) / d_z;
-//         d_bz_d_z_2d[[0, i_r]] = (bz_2d[[1, i_r]] - bz_2d[[0, i_r]]) / d_z;
-//         d_bz_d_z_2d[[n_z - 1, i_r]] = (bz_2d[[n_z - 1, i_r]] - bz_2d[[n_z - 2, i_r]]) / d_z;
+//         d_br_d_z_2d[(0, i_r)] = (br_2d[(1, i_r)] - br_2d[(0, i_r)]) / d_z;
+//         d_br_d_z_2d[(n_z - 1, i_r)] = (br_2d[(n_z - 1, i_r)] - br_2d[(n_z - 2, i_r)]) / d_z;
+//         d_bz_d_z_2d[(0, i_r)] = (bz_2d[(1, i_r)] - bz_2d[(0, i_r)]) / d_z;
+//         d_bz_d_z_2d[(n_z - 1, i_r)] = (bz_2d[(n_z - 1, i_r)] - bz_2d[(n_z - 2, i_r)]) / d_z;
 //     }
 
 //     // Find the boundary contour, raise exception if boundary not found

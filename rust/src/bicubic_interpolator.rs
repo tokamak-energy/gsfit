@@ -41,10 +41,10 @@ impl BicubicInterpolator {
     ///
     /// # Algorithm
     /// `f`, `d_f_d_x`, `d_f_d_y`, and `d2_f_d_x_d_y` should be indexed like:
-    /// * `f[[0, 0]] = f[[i_x_left, i_y_lower]]`;
-    /// * `f[[0, 1]] = f[[i_x_left, i_y_upper]]`;
-    /// * `f[[1, 0]] = f[[i_x_right, i_y_lower]]`;
-    /// * `f[[1, 1]] = f[[i_x_right, i_y_upper]]`;
+    /// * `f[(0, 0)] = f[(i_x_left, i_y_lower)]`;
+    /// * `f[(0, 1)] = f[(i_x_left, i_y_upper)]`;
+    /// * `f[(1, 0)] = f[(i_x_right, i_y_lower)]`;
+    /// * `f[(1, 1)] = f[(i_x_right, i_y_upper)]`;
     ///
     /// The bicubic fit is:
     /// `P(x, y) = [1, x, x^2, x^3] * a * [1, y, y^2, y^3].T`
@@ -293,10 +293,10 @@ fn test_bicubic_interpolation() {
     let y_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
     for i_x in 0..n_x {
         for i_y in 0..n_y {
-            f[[i_x, i_y]] = calculate_f(x_grid[i_x], y_grid[i_y]);
-            d_f_d_x[[i_x, i_y]] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y]);
-            d_f_d_y[[i_x, i_y]] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y]);
-            d2_f_d_x_d_y[[i_x, i_y]] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
+            f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y]);
+            d_f_d_x[(i_x, i_y)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y]);
+            d_f_d_y[(i_x, i_y)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y]);
+            d2_f_d_x_d_y[(i_x, i_y)] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
         }
     }
 
@@ -312,9 +312,9 @@ fn test_bicubic_interpolation() {
     let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(delta_x, delta_y, &f, &d_f_d_x, &d_f_d_y, &d2_f_d_x_d_y);
     for i_x_target in 0..n_x_target {
         for i_y_target in 0..n_y_target {
-            f_analytic[[i_x_target, i_y_target]] = calculate_f(x_targets[i_x_target], y_targets[i_y_target]);
+            f_analytic[(i_x_target, i_y_target)] = calculate_f(x_targets[i_x_target], y_targets[i_y_target]);
             let f_interp = bicubic_interpolator.interpolate(x_targets[i_x_target], y_targets[i_y_target]);
-            f_interpolated[[i_x_target, i_y_target]] = f_interp;
+            f_interpolated[(i_x_target, i_y_target)] = f_interp;
         }
     }
 
