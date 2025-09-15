@@ -91,7 +91,7 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     }
 
     #[pyfn(m)]
-    fn d_greens_magnetic_field_dz_py(
+    fn greens_d_b_dz_py(
         py: Python,
         r: &Bound<'_, PyArray1<f64>>,
         z: &Bound<'_, PyArray1<f64>>,
@@ -109,7 +109,7 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     }
 
     #[pyfn(m)]
-    fn greens_magnetic_field_py(
+    fn greens_b_py(
         py: Python,
         r: &Bound<'_, PyArray1<f64>>,
         z: &Bound<'_, PyArray1<f64>>,

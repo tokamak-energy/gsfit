@@ -103,7 +103,7 @@ impl Dialoop {
     //             let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
     //             let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
 
-    //             let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
+    //             let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
     //                 Array1::from_vec(vec![sensor_r]),
     //                 Array1::from_vec(vec![sensor_z]),
     //                 coil_r.clone(),
@@ -145,7 +145,7 @@ impl Dialoop {
     //             let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
     //             for dof_name in dof_names {
-    //                 let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
+    //                 let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
     //                     Array1::from_vec(vec![sensor_r]), // by convention (r, z) are "sensors"
     //                     Array1::from_vec(vec![sensor_z]),
     //                     passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
@@ -197,7 +197,7 @@ impl Dialoop {
     //         let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
     //         let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
 
-    //         let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_magnetic_field(
+    //         let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
     //             Array1::from_vec(vec![sensor_r]), // sensor
     //             Array1::from_vec(vec![sensor_z]),
     //             plasma_r.clone(), // current source
@@ -214,7 +214,7 @@ impl Dialoop {
     //         self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_with_plasma);
 
     //         // Vertical stability
-    //         let (g_d_plasma_br_d_z_full, g_d_plasma_bz_d_z_full): (Array2<f64>, Array2<f64>) = d_greens_magnetic_field_dz(
+    //         let (g_d_plasma_br_d_z_full, g_d_plasma_bz_d_z_full): (Array2<f64>, Array2<f64>) = greens_d_b_dz(
     //             Array1::from_vec(vec![sensor_r]), // sensor
     //             Array1::from_vec(vec![sensor_z]),
     //             plasma_r.clone(), // current source

@@ -56,10 +56,10 @@ pub fn greens_d_b_d_z(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_pr
 }
 
 #[test]
-fn test_d_greens_magnetic_field_dz() {
+fn test_greens_d_b_dz() {
     // Test d(br)/d(z) and d(bz)/d(z) using a single PF coil.
     // While there might be an analytic solution, what I am doing is numerically
-    // differentiating br and bz from `greens_magnetic_field` function.
+    // differentiating br and bz from `greens_b` function.
 
     // Lazy loading of packages which are not used anywhere else in the code
     use crate::greens::greens_b;
@@ -78,7 +78,7 @@ fn test_d_greens_magnetic_field_dz() {
     let r_prime: Array1<f64> = Array1::from(vec![d]);
     let z_prime: Array1<f64> = Array1::from(vec![-d / 2.0]);
 
-    // Calculate br and bz using the `greens_magnetic_field` function
+    // Calculate br and bz using the `greens_b` function
     // Rember: g_br[n_rz, n_rz_prime] and g_bz[n_rz, n_rz_prime]
     // If we were to assume 1A of current is flowing in the coil, then `br = g_br * 1` and `bz = g_bz * 1`
     let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());

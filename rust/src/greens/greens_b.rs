@@ -34,7 +34,7 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// # Examples
 ///
 /// ```
-/// use gsfit_rs::greens::greens_magnetic_field;
+/// use gsfit_rs::greens::greens_b;
 /// use ndarray::{Array1, Array2};
 ///
 /// let r: Array1<f64> = Array1::from(vec![1.0, 2.0]);
@@ -42,7 +42,7 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// let r_prime: Array1<f64> = Array1::from(vec![5.0, 6.0]);
 /// let z_prime: Array1<f64> = Array1::from(vec![7.0, 8.0]);
 ///
-/// let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_magnetic_field(r, z, r_prime, z_prime);
+/// let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(r, z, r_prime, z_prime);
 ///
 /// println!("g_br: {:?}", g_br);
 /// println!("g_bz: {:?}", g_bz);
@@ -93,7 +93,7 @@ pub fn greens_b(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: A
 }
 
 #[test]
-fn test_greens_magnetic_field() {
+fn test_greens_b() {
     // Test the magnetic field using a Helmholtz coil, which has an analytic solution
 
     // Lazy loading of packages which are not used anywhere else in the code
