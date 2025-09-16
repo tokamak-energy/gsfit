@@ -1,29 +1,54 @@
 use super::BoundaryContour;
+use super::StationaryPoint;
 use super::find_viable_limit_point::find_viable_limit_point;
 use super::find_viable_xpt::find_viable_xpt;
+use crate::greens::D2PsiDR2Calculator;
 use core::f64;
 use geo::Contains;
 use geo::{Coord, LineString, Point, Polygon};
 use ndarray::{Array1, Array2, s};
 
+/// Find the plasma boundary
+///
+/// # Arguments
+/// * `r` - R grid points, metre
+/// * `z` - Z grid points, metre
+/// * `psi_2d` - poloidal flux, shape = (n_z, n_r), weber
+/// * `br_2d` - radial magnetic field, shape = (n_z, n_r), tesla
+/// * `bz_2d` - vertical magnetic field, shape = (n_z, n_r), tesla
+/// * `d_br_d_z_2d` - derivative of radial magnetic field with respect to Z, shape = (n_z, n_r), tesla / metre
+/// * `d_bz_d_z_2d` - derivative of vertical magnetic field with respect to Z, shape = (n_z, n_r), tesla / metre
+/// * `limit_pts_r` - R coordinates of limiter points, metre
+/// * `limit_pts_z` - Z coordinates of limiter points, metre
+/// * `vessel_r` - R coordinates of vessel points, metre
+/// * `vessel_z` - Z coordinates of vessel points, metre
+/// * `mag_r` - R coordinate of magnetic axis, metre
+/// * `mag_z` - Z coordinate of magnetic axis, metre
+/// * `d2_psi_d_r2_calculator` - object to calculate d^2(psi)/d(r^2) at (r, z) location, will return: weber^2 / metre^2
+///
+/// # Returns
+/// * `boundary_contour` - A `BoundaryContour` object representing the plasma boundary
+///
 pub fn find_boundary(
-    r: Array1<f64>,
-    z: Array1<f64>,
-    psi_2d: Array2<f64>,
-    br_2d: Array2<f64>,
-    bz_2d: Array2<f64>,
-    d_br_d_z_2d: Array2<f64>,
-    d_bz_d_z_2d: Array2<f64>,
-    limit_pts_r: Array1<f64>,
-    limit_pts_z: Array1<f64>,
-    vessel_r: Array1<f64>,
-    vessel_z: Array1<f64>,
-    r_mag: f64, // Note: r_mag and z_mag are from previous iteration; this can be a problem if the magnetic axis moves significantly
-    z_mag: f64, // which can happen when the plasma is significantly displaced vertically from the initial guess location, e.g. during a VDE
+    r: &Array1<f64>,
+    z: &Array1<f64>,
+    psi_2d: &Array2<f64>,
+    stationary_points: &Vec<StationaryPoint>,
+    br_2d: &Array2<f64>,
+    bz_2d: &Array2<f64>,
+    d_br_d_z_2d: &Array2<f64>,
+    d_bz_d_z_2d: &Array2<f64>,
+    limit_pts_r: &Array1<f64>,
+    limit_pts_z: &Array1<f64>,
+    vessel_r: &Array1<f64>,
+    vessel_z: &Array1<f64>,
+    mag_r: f64, // Note: mag_r and mag_z are from previous iteration; this can be a problem if the magnetic axis moves significantly
+    mag_z: f64, // which can happen when the plasma is significantly displaced vertically from the initial guess location, e.g. during a VDE
+    d2_psi_d_r2_calculator: D2PsiDR2Calculator,
 ) -> Result<BoundaryContour, String> {
     // Find x-points inside the vacuum vessel which could be the plasma boundary
     let xpt_boundary: Result<BoundaryContour, String> =
-        find_viable_xpt(&r, &z, &br_2d, &bz_2d, &psi_2d, &d_br_d_z_2d, &d_bz_d_z_2d, &vessel_r, &vessel_z, r_mag, z_mag);
+        find_viable_xpt(&r, &z, &psi_2d, &br_2d, &bz_2d, &stationary_points, &vessel_r, &vessel_z, mag_r, mag_z);
 
     // Extract results from `xpt_boundary` object
     let xpt_r: f64;
@@ -47,7 +72,8 @@ pub fn find_boundary(
 
     // Find a viable limiter point
     let limit_boundary: Result<BoundaryContour, String> =
-        find_viable_limit_point(&r, &z, &psi_2d, &limit_pts_r, &limit_pts_z, r_mag, z_mag, &vessel_r, &vessel_z);
+        find_viable_limit_point(&r, &z, &psi_2d, &limit_pts_r, &limit_pts_z, mag_r, mag_z, &vessel_r, &vessel_z);
+    // println!("find_boundary: limit_boundary={:?}", limit_boundary);
 
     // Extract results from `limit_boundary` object
     let limit_pt_r: f64;

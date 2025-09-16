@@ -8,9 +8,6 @@ use ndarray::{Array1, Array2, Axis, s};
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_linalg::Solve;
 use ndarray_stats::QuantileExt;
-use rand::rand_core::le;
-use rayon::vec;
-use std::ops::Range;
 
 const PI: f64 = std::f64::consts::PI;
 
@@ -130,13 +127,13 @@ impl BoundaryContour {
         let n_r: usize = r.len();
         let n_z: usize = z.len();
 
-        // Calculate the gradient of psi at the boundary points#
+        // Calculate the gradient of psi at the boundary points
         let mut d_psi_d_r: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
         let mut d_psi_d_z: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
         for i_r in 0..n_r {
             for i_z in 0..n_z {
-                d_psi_d_r[[i_z, i_r]] = 2.0 * PI * r[i_r] * bz_2d[[i_z, i_r]];
-                d_psi_d_z[[i_z, i_r]] = -2.0 * PI * r[i_r] * br_2d[[i_z, i_r]];
+                d_psi_d_r[(i_z, i_r)] = 2.0 * PI * r[i_r] * bz_2d[(i_z, i_r)];
+                d_psi_d_z[(i_z, i_r)] = -2.0 * PI * r[i_r] * br_2d[(i_z, i_r)];
             }
         }
 

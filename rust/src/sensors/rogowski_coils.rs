@@ -32,10 +32,23 @@ impl RogowskiCoils {
         Self { results: NestedDict::new() }
     }
 
-    /// Data structure:
-    ///
-    /// # Examples
-    ///
+    /// # Arguments
+    /// * `name` - Name of the sensor
+    /// * `r` - R coordinate of the sensor, metre
+    /// * `z` - Z coordinate of the sensor, metre
+    /// * `fit_settings_comment` - Comment about the sensor
+    /// * `fit_settings_expected_value` - Expected value of the sensor when the plasma current is zero, tesla
+    /// * `fit_settings_include` - Whether to include this sensor in the fitting
+    /// * `fit_settings_weight` - Weighting of this sensor in the fitting
+    /// * `time` - Time array for the measurements, seconds
+    /// * `measured` - Measured values of the sensor, tesla
+    /// * `gaps_r` - R coordinate of the gaps, metre
+    /// * `gaps_z` - Z coordinate of the gaps, metre
+    /// * `gaps_d_r` - Half width of the gaps in R, metre
+    /// * `gaps_d_z` - Half height of the gaps in Z, metre
+    /// * `gaps_name` - Name of the gaps
+    /// 
+    /// # Data structure:
     /// ```ignore
     /// [probe_name]["psi"]["calculated"]                               = Array1<f64>;  shape=[n_time]
     /// [probe_name]["psi"]["measured"]                                 = Array1<f64>;  shape=[n_time]
@@ -792,7 +805,7 @@ impl RogowskiCoils {
                 let passive_name: &str = &passive_names[i_passive];
                 let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
                 for dof_name in dof_names {
-                    greens_with_passives[[i_dof_total, i_sensor]] = self
+                    greens_with_passives[(i_dof_total, i_sensor)] = self
                         .results
                         .get(&sensor_names[i_sensor])
                         .get("greens")

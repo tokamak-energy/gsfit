@@ -57,7 +57,7 @@ def greens_py(
     """
     ...
 
-def greens_magnetic_field_py(
+def greens_b_py(
     r: npt.NDArray[np.float64],
     z: npt.NDArray[np.float64],
     r_prime: npt.NDArray[np.float64],

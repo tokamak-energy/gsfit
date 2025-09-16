@@ -665,7 +665,7 @@ impl NestedDict {
         self.data.insert(key.to_string(), value.into());
     }
 
-    pub fn get(&self, key: &str) -> NestedDictAccumulator {
+    pub fn get<'a>(&'a self, key: &str) -> NestedDictAccumulator<'a> {
         NestedDictAccumulator::new(self, vec![key.to_string()])
     }
 
@@ -846,7 +846,7 @@ fn test_nested_dict() {
     results.get_or_insert("P101").get_or_insert("greens").get_or_insert("pf").insert("BVLT", 0.2);
     results.get_or_insert("P101").get_or_insert("greens").get_or_insert("pf").insert("SOL", 0.3);
     let mut three_d_data: Array3<f64> = Array3::zeros([11, 12, 13]);
-    three_d_data[[8, 2, 3]] = 99.0;
+    three_d_data[(8, 2, 3)] = 99.0;
     results.get_or_insert("P101").get_or_insert("three_d").insert("data", three_d_data.clone());
 
     // Probe 2
@@ -917,7 +917,6 @@ fn test_nested_dict() {
     // test_08: Retrieve Array3<f64>, one wildcard, from Array2<f64> data
     let data_retrieved: Array3<f64> = results.get("*").get("greens").get("psi").unwrap_array3();
     assert_eq!(data_retrieved.shape(), &[5usize, 2usize, 3usize], "test_08, shape"); // shape = [n_z, n_r, n_sensors]
-    println!("data_retrieved.shape()={:?}", data_retrieved.shape());
     assert_eq!(data_retrieved.slice(s![.., .., 0]), p101_green_psi, "test_08, slice 0");
     assert_eq!(data_retrieved.slice(s![.., .., 1]), p102_green_psi, "test_08, slice 1");
     assert_eq!(data_retrieved.slice(s![.., .., 2]), p103_green_psi, "test_08, slice 2");

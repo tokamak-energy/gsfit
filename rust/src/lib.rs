@@ -31,7 +31,6 @@ use source_functions::{EfitPolynomial, LiuqePolynomial};
 
 pub mod bicubic_interpolator;
 
-// Global constants
 const PI: f64 = std::f64::consts::PI;
 
 /// A Python module implemented in Rust; bindings added here
@@ -66,7 +65,7 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
         let d_z_unwrapped: &Bound<'_, PyArray1<f64>> = d_z.unwrap_or(d_z_fallback_py);
         let d_z: Array1<f64> = Array1::from(unsafe { d_z_unwrapped.as_array() }.to_vec());
 
-        let g: Array2<f64> = greens::greens(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray, d_r, d_z);
+        let g: Array2<f64> = greens::greens_psi(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray, d_r, d_z);
 
         return g.into_pyarray(py).into();
     }
@@ -84,7 +83,7 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
         let r_prime_ndarray: Array1<f64> = Array1::from(unsafe { r_prime.as_array() }.to_vec());
         let z_prime_ndarray: Array1<f64> = Array1::from(unsafe { z_prime.as_array() }.to_vec());
 
-        let (_g_br, g_bz): (Array2<f64>, Array2<f64>) = greens::greens_magnetic_field(r_ndarray, z_ndarray, r_prime_ndarray.clone(), z_prime_ndarray);
+        let (_g_br, g_bz): (Array2<f64>, Array2<f64>) = greens::greens_b(r_ndarray, z_ndarray, r_prime_ndarray.clone(), z_prime_ndarray);
 
         let result: Array2<f64> = -2.0 * PI * r_prime_ndarray * g_bz;
 
@@ -92,7 +91,7 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     }
 
     #[pyfn(m)]
-    fn d_greens_magnetic_field_dz_py(
+    fn greens_d_b_dz_py(
         py: Python,
         r: &Bound<'_, PyArray1<f64>>,
         z: &Bound<'_, PyArray1<f64>>,
@@ -104,13 +103,13 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
         let r_prime_ndarray: Array1<f64> = Array1::from(unsafe { r_prime.as_array() }.to_vec());
         let z_prime_ndarray: Array1<f64> = Array1::from(unsafe { z_prime.as_array() }.to_vec());
 
-        let (d_g_br_dz, d_g_bz_dz): (Array2<f64>, Array2<f64>) = greens::d_greens_magnetic_field_dz(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray);
+        let (d_g_br_dz, d_g_bz_dz): (Array2<f64>, Array2<f64>) = greens::greens_d_b_d_z(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray);
 
         return (d_g_br_dz.into_pyarray(py).into(), d_g_bz_dz.into_pyarray(py).into());
     }
 
     #[pyfn(m)]
-    fn greens_magnetic_field_py(
+    fn greens_b_py(
         py: Python,
         r: &Bound<'_, PyArray1<f64>>,
         z: &Bound<'_, PyArray1<f64>>,
@@ -122,7 +121,7 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
         let r_prime_ndarray: Array1<f64> = Array1::from(unsafe { r_prime.as_array() }.to_vec());
         let z_prime_ndarray: Array1<f64> = Array1::from(unsafe { z_prime.as_array() }.to_vec());
 
-        let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens::greens_magnetic_field(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray);
+        let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens::greens_b(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray);
 
         return (g_br.into_pyarray(py).into(), g_bz.into_pyarray(py).into());
     }
@@ -326,10 +325,11 @@ fn solve_inverse_problem(
             gs_object.solve();
             let solution_found: bool = gs_object.ip.is_finite();
             println!(
-                "time={:6.1}ms;  solution_found={};  gs_error={}",
+                "time={:6.1}ms;  solution_found={};  gs_error={};  n_iter={}",
                 times_to_reconstruct_ndarray[i_time] * 1e3,
                 solution_found,
-                gs_object.gs_error_calculated
+                gs_object.gs_error_calculated,
+                gs_object.n_iter,
             );
 
             // Return into the Vec
@@ -390,7 +390,7 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
         for i_bp_probe in 0..n_bp_probes {
             if bp_probes_include[i_bp_probe] == true {
                 let sigma: f64 = bp_probes_expected_value[i_bp_probe] / bp_probes_weight[i_bp_probe];
-                chi_sq_mag_result[i_time] += (bp_probes_measured[[i_time, i_bp_probe]] - bp_probes_calculated[[i_time, i_bp_probe]]).powi(2) / sigma.powi(2);
+                chi_sq_mag_result[i_time] += (bp_probes_measured[(i_time, i_bp_probe)] - bp_probes_calculated[(i_time, i_bp_probe)]).powi(2) / sigma.powi(2);
             }
         }
 
@@ -399,7 +399,7 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
             if flux_loops_include[i_flux_loop] == true {
                 let sigma: f64 = flux_loops_expected_value[i_flux_loop] / flux_loops_weight[i_flux_loop];
                 chi_sq_mag_result[i_time] +=
-                    (flux_loops_measured[[i_time, i_flux_loop]] - flux_loops_calculated[[i_time, i_flux_loop]]).powi(2) / sigma.powi(2);
+                    (flux_loops_measured[(i_time, i_flux_loop)] - flux_loops_calculated[(i_time, i_flux_loop)]).powi(2) / sigma.powi(2);
             }
         }
 
@@ -408,7 +408,7 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
             if rogowski_coils_include[i_rogowski_coil] == true {
                 let sigma: f64 = rogowski_coils_expected_value[i_rogowski_coil] / rogowski_coils_weight[i_rogowski_coil];
                 chi_sq_mag_result[i_time] +=
-                    (rogowski_coils_measured[[i_time, i_rogowski_coil]] - rogowski_coils_calculated[[i_time, i_rogowski_coil]]).powi(2) / sigma.powi(2);
+                    (rogowski_coils_measured[(i_time, i_rogowski_coil)] - rogowski_coils_calculated[(i_time, i_rogowski_coil)]).powi(2) / sigma.powi(2);
             }
         }
     }
