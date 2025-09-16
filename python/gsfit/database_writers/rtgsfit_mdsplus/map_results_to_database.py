@@ -457,21 +457,20 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
         # `sensors_rtgsfit_wants = sensor_replacement_matrix * sensors_pcs_should_read`
         sensor_replacement_matrix = np.zeros((len(constraint_names), len(sensors_pcs_should_read)), dtype=np.float64)
         for i_constraint, constraint_name in enumerate(constraint_names):
-            # Find the index of the sensor in the sensors_pcs_should_read list
-            if constraint_name in sensors_pcs_should_read:
-                # A sensor that is not being replaced
-                i_pcs_sensor = sensors_pcs_should_read.index(constraint_name)
-                sensor_replacement_matrix[i_constraint, i_pcs_sensor] = 1.0
-            else:
-                # This is a sensor that is being replaced
+            # If the sensor is being replaced, only use the replacement coefficients
+            if constraint_name in sensor_replacements:
                 sensor_replacement = sensor_replacements[constraint_name]
                 sensor_replacement_names = sensor_replacement["replacements"]
                 sensor_replacement_coefficients = sensor_replacement["coefficients"]
                 n_replacements = len(sensor_replacement_names)
-                for i_replacement in range(0, n_replacements):
+                for i_replacement in range(n_replacements):
                     replacement_name = sensor_replacement_names[i_replacement]
                     i_pcs_sensor = sensors_pcs_should_read.index(replacement_name)
                     sensor_replacement_matrix[i_constraint, i_pcs_sensor] = sensor_replacement_coefficients[i_replacement]
+            elif constraint_name in sensors_pcs_should_read:
+                # Sensor is not being replaced, set identity
+                i_pcs_sensor = sensors_pcs_should_read.index(constraint_name)
+                sensor_replacement_matrix[i_constraint, i_pcs_sensor] = 1.0
 
     else:
         # No sensor replacement, so the matrix is just the identity matrix
