@@ -22,9 +22,5 @@
     "I_ROG_HFSPSRT": {
         "replacements": ["V_FLOOP_011"],
         "coefficients": [7000.0]
-    },
-    "I_ROG_INIVC000": {
-        "replacements": ["I_ROG_INIVC000", "I_BVL_PSU", "I_SOL_PSU", "I_BVUT_PSU", "I_BVUB_PSU", "I_DIV_PSU"],
-        "coefficients": [1.0,              -1.0,        -0.2429,     -0.0992,      0.0846,       0.5047]
     }
 }
