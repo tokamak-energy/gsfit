@@ -84,7 +84,7 @@ impl BoundaryContour {
         let xpt_r: f64 = self.bounding_r;
 
         // All of the logic is done for a LSN (Lower Single Null) configuration.
-        // If we have an USN (Upper Single Null), we will flip the psi_2d_in array and treat it as a LSN.
+        // If we have an USN (Upper Single Null), we will flip the `psi` array and treat it as a LSN.
         let psi_2d: Array2<f64>;
         let xpt_z: f64;
         let boundary_z: Array1<f64>;
@@ -177,13 +177,12 @@ impl BoundaryContour {
         }
 
         // Find the turning points near the x-point - this gives us direction vectors to know where the plasma is and isn't
-        // println!("boundary_r= {:#?}", boundary_r);
-        // println!("boundary_z= {:#?}", boundary_z);
-        let turning_points_near_xpt: Result<(f64, f64, f64, f64, f64, f64), String> = find_minima_maxima_about_xpt(&r, &z, &psi_2d, xpt_r, xpt_z, true);
-        if turning_points_near_xpt.is_err() {
+        let turning_points_near_xpt_or_error: Result<(f64, f64, f64, f64, f64, f64), String> =
+            find_minima_maxima_about_xpt(&r, &z, &psi_2d, xpt_r, xpt_z, true);
+        if turning_points_near_xpt_or_error.is_err() {
             println!(
                 "refine_xpt_diverted_boundary: error with find_minima_maxima_about_xpt: {}",
-                turning_points_near_xpt.err().unwrap()
+                turning_points_near_xpt_or_error.err().unwrap()
             );
             return;
         }
@@ -195,7 +194,8 @@ impl BoundaryContour {
             xpt_turning_hfs_minima_z,
             xpt_turning_plasma_maxima_r,
             xpt_turning_plasma_maxima_z,
-        ): (f64, f64, f64, f64, f64, f64) = turning_points_near_xpt.expect("refine_xpt_diverted_boundary: error unwrapping turning_points_near_xpt");
+        ): (f64, f64, f64, f64, f64, f64) =
+            turning_points_near_xpt_or_error.expect("refine_xpt_diverted_boundary: error unwrapping `turning_points_near_xpt_or_error`");
 
         // Create a polygon where the plasma can be, with 6 points
         let mut plasma_region_coords: Vec<Coord<f64>> = Vec::with_capacity(6);
