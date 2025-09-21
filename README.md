@@ -66,13 +66,13 @@ An example of optional packages are machine-specific database readers.
 ```shell
 # Install GSFit from the PyPI package registry, with only the essential packages
 uv pip install gsfit
-# or install GSFit with the "developer" packages, such as `pytest` and `mypy`
+# or install GSFit from the PyPI package registry, with the "developer" packages, such as `pytest` and `mypy`
 uv pip install gsfit[dev]
 # or install GSFit with reading/writing to/from ST40's experimental database
 # (this will only work within Tokamak Energy's network)
-uv pip install --reinstall .[with_st40_mdsplus]
+uv pip install gsfit.[with_st40_mdsplus]
 # or any combination
-uv pip install --reinstall .[dev,with_st40_mdsplus]
+uv pip install gsfit.[dev,with_st40_mdsplus]
 ```
 
 ## 1.3 Compiling and installing from source code
@@ -96,6 +96,9 @@ module load OpenBLAS
 
 # Install GSFit
 uv pip install --reinstall .
+
+# or install with the "developer" packages, such as `pytest` and `mypy`
+uv pip install --reinstall .[dev]
 ```
 
 ## 1.4 IDE

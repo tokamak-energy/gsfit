@@ -1,4 +1,6 @@
 use super::BoundaryContour;
+use crate::bicubic_interpolator::BicubicInterpolator;
+use crate::bicubic_interpolator::BicubicStationaryPoint;
 use crate::greens::D2PsiDR2Calculator;
 use crate::plasma_geometry::hessian;
 use contour::ContourBuilder;
@@ -130,8 +132,8 @@ pub fn find_stationary_points(
                     // `_is_proper` is a variable which is assigned but not used. It means:
                     // * `is_proper = true` means the intersection occurs at a point that is not one of the endpoints of either line
                     // * `is_proper = false` means the intersection occurs at an endpoint of one or both line segments
-                    let stationary_r: f64 = intersection.x;
-                    let stationary_z: f64 = intersection.y;
+                    let mut stationary_r: f64 = intersection.x;
+                    let mut stationary_z: f64 = intersection.y;
 
                     // TODO: Very worringly, the contours can be off by 1/2 a grid point.
                     // This has been reported to GitHub as an issue. But until it's fixed we shall add this extra test
@@ -143,17 +145,11 @@ pub fn find_stationary_points(
                     {
                         // TODO: need to use bicubic interpolator. So that the boundary is consistent with `psi_boundary`
 
-                        // Interpolate `psi` at the stationary point
-                        // This doesn't need to be super accurate now, we will refine later
-                        let psi_local: f64 = psi_interpolator
-                            .interp_scalar(stationary_z, stationary_r)
-                            .expect("find_stationary_points: can't interpolate psi");
-
                         // Find the closest grid point
                         let mut i_r_nearest: usize = 0;
                         let mut min_r_dist: f64 = f64::INFINITY;
                         for (i, &r_val) in r.iter().enumerate() {
-                            let dist = (stationary_r - r_val).abs();
+                            let dist: f64 = (stationary_r - r_val).abs();
                             if dist < min_r_dist {
                                 min_r_dist = dist;
                                 i_r_nearest = i;
@@ -162,15 +158,15 @@ pub fn find_stationary_points(
                         let mut i_z_nearest: usize = 0;
                         let mut min_z_dist: f64 = f64::INFINITY;
                         for (i, &z_val) in z.iter().enumerate() {
-                            let dist = (stationary_z - z_val).abs();
+                            let dist: f64 = (stationary_z - z_val).abs();
                             if dist < min_z_dist {
                                 min_z_dist = dist;
                                 i_z_nearest = i;
                             }
                         }
 
+                        // Calculate the Hessian at the nearest grid point
                         // d^2(psi)/(d_r^2)
-                        // println!("r[i_r]={}, z[i_z]={}", r[i_r_nearest], z[i_z_nearest]);
                         let d2_psi_d_r2: f64 = d2_psi_d_r2_calculator.calculate(i_r_nearest, i_z_nearest);
 
                         // d^2(psi)/(d_z^2)
@@ -187,10 +183,135 @@ pub fn find_stationary_points(
 
                         let (hessian_det, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_d_z);
 
+                        let stationary_psi: f64 = psi_interpolator
+                            .interp_scalar(stationary_z, stationary_r)
+                            .expect("find_stationary_points: can't interpolate psi");
+
+                        // // Calculate `psi` at the stationary point
+                        // // Find the four corner grid points surrounding the magnetic axis
+                        // let i_r_nearest_left: usize;
+                        // let i_r_nearest_right: usize;
+                        // let i_z_nearest_lower: usize;
+                        // let i_z_nearest_upper: usize;
+                        // if stationary_r > r[i_r_nearest] {
+                        //     i_r_nearest_left = i_r_nearest;
+                        //     i_r_nearest_right = i_r_nearest + 1;
+                        // } else {
+                        //     i_r_nearest_left = i_r_nearest - 1;
+                        //     i_r_nearest_right = i_r_nearest;
+                        // }
+                        // if stationary_z > z[i_z_nearest] {
+                        //     i_z_nearest_lower = i_z_nearest;
+                        //     i_z_nearest_upper = i_z_nearest + 1;
+                        // } else {
+                        //     i_z_nearest_lower = i_z_nearest - 1;
+                        //     i_z_nearest_upper = i_z_nearest;
+                        // }
+
+                        // // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
+                        // let mut f: Array2<f64> = Array2::zeros([2, 2]);
+                        // let mut d_f_d_r: Array2<f64> = Array2::zeros([2, 2]);
+                        // let mut d_f_d_z: Array2<f64> = Array2::zeros([2, 2]);
+                        // let mut d2_f_d_r_d_z: Array2<f64> = Array2::zeros([2, 2]);
+
+                        // // Function values
+                        // f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
+                        // f[(0, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
+                        // f[(1, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
+                        // f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
+
+                        // // d(psi)/d(r)
+                        // // bz = 1 / (2.0 * PI * r) * d_psi_d_r
+                        // d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                        // d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                        // d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                        // d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+                        // // d(psi)/d(z)
+                        // // br = - 1 / (2.0 * PI * r) * d_psi_d_z
+                        // d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                        // d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                        // d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                        // d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+                        // // d^2(psi)/(d(r)*d(z))
+                        // // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
+                        // // TODO: d_bz_d_z_2d has a delta_z correction missing!
+                        // d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                        // d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                        // d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                        // d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+                        // // Create a bicubic interpolator
+                        // let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+
+                        // // Find the location of the stationary point in the bicubit fit function:
+                        // // `f(x, y) = [1, x, x^2, x^3] * a_matrix * [1, y, y^2, y^3].T`
+                        // // `d(f(x,y)/d(x) = 0` and `d(f(x,y)/d(y) = 0)`
+                        // // Initial conditions are at the centre of the four corner grid points.
+                        // // From looking at some solutions there does not appear to be multiple maxima,
+                        // // so starting at the centre seems fine.
+                        // let x_start: f64 = (stationary_r - r[i_r_nearest_left]) / d_r;
+                        // let y_start: f64 = (stationary_z - z[i_z_nearest_lower]) / d_z;
+                        // // let stationary_point_or_error: Result<BicubicStationaryPoint, String> = bicubic_interpolator.find_stationary_point(0.5, 0.5, 1e-6, 100);
+                        // println!("Starting search for stationary point at x_start={x_start}, y_start={y_start}");
+                        // let stationary_point_or_error: Result<BicubicStationaryPoint, String> = bicubic_interpolator.find_stationary_point(x_start, y_start, 1e-6, 100);
+
+                        // // Extract the magnetic axis values
+                        // let stationary_psi: f64;
+                        // match stationary_point_or_error {
+                        //     Ok(stationary_point) => {
+                        //         // Extract and store results
+                        //         println!("Found stationary point at x={}, y={}", stationary_point.x, stationary_point.y);
+                        //         stationary_psi = stationary_point.f;
+                        //         stationary_r = r[i_r_nearest_left] + stationary_point.x * d_r;
+                        //         stationary_z = z[i_z_nearest_lower] + stationary_point.y * d_z;
+                        //     }
+                        //     Err(_error_string) => {
+                        //         println!("Warning, find_stationary_point failed: {}", _error_string);
+                        //         println!("Falling back to linear interpolation");
+                        //         // For now we will fall back on the linear interpolation.
+                        //         // TODO: figure out correct fallback, magnetic axis will be maximum in psi, but saddle point won't be??
+                        //         // Interpolate `psi` at the stationary point
+                        //         stationary_psi = psi_interpolator
+                        //             .interp_scalar(stationary_z, stationary_r)
+                        //             .expect("find_stationary_points: can't interpolate psi");
+
+                        //         // // The selection of the four bounding grid points was chosen by using linear interpolation.
+                        //         // // When the magnetic axis is close to one of the grid-point boundaries we can select the wrong four bounding points
+                        //         // // This will cause `find_stationary_point` to fail and not find the magnetic axis.
+                        //         // // If we fail to converge onto a solution, then fall back on a brute force method
+                        //         // // TODO: Perhaps the first part of the fallback should be to try shifting the four corner grid points?
+                        //         // // println!("Warning, find_stationary_point failed: {}", _error_string);
+                        //         // // println!("Falling back to brute-force search");
+                        //         // // println!("a_matrix={:?}", bicubic_interpolator.a_matrix);
+                        //         // let n_r_test: usize = 30;
+                        //         // let n_z_test: usize = 33;
+
+                        //         // let r_tests: Array1<f64> = Array1::linspace(0.0, 1.0, n_r_test);
+                        //         // let z_tests: Array1<f64> = Array1::linspace(0.0, 1.0, n_z_test);
+                        //         // let mut f_test: Array2<f64> = Array2::zeros([n_z_test, n_r_test]);
+                        //         // for i_r in 0..n_r_test {
+                        //         //     for i_z in 0..n_z_test {
+                        //         //         f_test[(i_z, i_r)] = bicubic_interpolator.interpolate(r_tests[i_r], z_tests[i_z]);
+                        //         //     }
+                        //         // }
+                        //         // // TODO: logic wrong!!
+                        //         // stationary_psi = f_test.max().unwrap().to_owned();
+                        //         // let (index_z_max, index_r_max) = f_test
+                        //         //     .indexed_iter()
+                        //         //     .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+                        //         //     .map(|((iz, ir), _)| (iz, ir))
+                        //         //     .unwrap();
+                        //         // stationary_r = r[i_r_nearest_left] + r_tests[index_r_max] * d_r;
+                        //         // stationary_z = z[i_z_nearest_lower] + z_tests[index_z_max] * d_z;
+                        //     }
+                        // }
+
                         stationary_points.push(StationaryPoint {
                             r: stationary_r,
                             z: stationary_z,
-                            psi: psi_local,
+                            psi: stationary_psi,
                             hessian_determinant: hessian_det,
                             hessian_trace: hessian_trace,
                         });
@@ -202,7 +323,7 @@ pub fn find_stationary_points(
 
     // Exit if we haven't found any stationary points
     if stationary_points.len() == 0 {
-        return Err("find_stationary_points: no stationary points found".to_string());
+        return Err("find_stationary_points: no intersection between `br` and `bz` contours found".to_string());
     }
 
     // Return

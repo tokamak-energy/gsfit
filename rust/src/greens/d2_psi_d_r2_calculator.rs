@@ -1,5 +1,4 @@
-use ndarray::{Array1, Array2, Array3, Axis, s};
-use physical_constants;
+use ndarray::{Array1, Array2, Array3, s};
 
 // Constants
 const PI: f64 = std::f64::consts::PI;
@@ -164,32 +163,38 @@ impl D2PsiDR2Calculator {
         // d2_psi_d_r2 = 2.0 * PI * r * d(bz)/d(r)
         // bz = bz_original + delta_z * d_bz_d_z;  // Looks like I might be missing a term, but it should be small, because `delta_z` is small
         let d2_psi_d_r2_plasma_self_grid: f64 = PI * r[i_r] * (bz_plasma_right - bz_plasma_left) / d_r;
-        // println!("d2_psi_d_r2_coils={}, d2_psi_d_r2_passives={}, d2_psi_d_r2_plasma_no_self={}, d2_psi_d_r2_plasma_self_grid={}", d2_psi_d_r2_coils, d2_psi_d_r2_passives, d2_psi_d_r2_plasma, d2_psi_d_r2_plasma_self_grid);
         d2_psi_d_r2_plasma += d2_psi_d_r2_plasma_self_grid;
 
         // Add up all the components
-        let d2_psi_d_r2: f64 = d2_psi_d_r2_coils + d2_psi_d_r2_passives + d2_psi_d_r2_plasma;
+        let d2_psi_d_r2_unshifted: f64 = d2_psi_d_r2_coils + d2_psi_d_r2_passives + d2_psi_d_r2_plasma;
 
         // Add on the `delta_z` term
         let delta_z: f64 = self.delta_z;
         let d_bz_d_z: Array2<f64> = self.d_bz_d_z.to_owned();
         // TODO: protect against i_r at the edges !!!!!
-        let d2_psi_d_r2_delta_z_term: f64 = if i_r == 0 {
+        let d2_psi_d_r2_delta_z_term: f64;
+        if i_r == 0 {
             // Forward difference at the left boundary
-            2.0 * PI * delta_z * d_bz_d_z[(i_z, i_r)]
-            + 2.0 * PI * r[i_r] * delta_z * (d_bz_d_z[(i_z, i_r + 1)] - d_bz_d_z[(i_z, i_r)]) / d_r
+            d2_psi_d_r2_delta_z_term =
+                2.0 * PI * delta_z * d_bz_d_z[(i_z, i_r)] + 2.0 * PI * r[i_r] * delta_z * (d_bz_d_z[(i_z, i_r + 1)] - d_bz_d_z[(i_z, i_r)]) / d_r
         } else if i_r == n_r - 1 {
             // Backward difference at the right boundary
-            2.0 * PI * delta_z * d_bz_d_z[(i_z, i_r)]
-            + 2.0 * PI * r[i_r] * delta_z * (d_bz_d_z[(i_z, i_r)] - d_bz_d_z[(i_z, i_r - 1)]) / d_r
+            d2_psi_d_r2_delta_z_term =
+                2.0 * PI * delta_z * d_bz_d_z[(i_z, i_r)] + 2.0 * PI * r[i_r] * delta_z * (d_bz_d_z[(i_z, i_r)] - d_bz_d_z[(i_z, i_r - 1)]) / d_r
         } else {
             // Central difference for interior points
-            2.0 * PI * delta_z * d_bz_d_z[(i_z, i_r)]
-            + PI * r[i_r] * delta_z * (d_bz_d_z[(i_z, i_r + 1)] - d_bz_d_z[(i_z, i_r - 1)]) / d_r
+            d2_psi_d_r2_delta_z_term =
+                2.0 * PI * delta_z * d_bz_d_z[(i_z, i_r)] + PI * r[i_r] * delta_z * (d_bz_d_z[(i_z, i_r + 1)] - d_bz_d_z[(i_z, i_r - 1)]) / d_r
         };
-        // println!("d2_psi_d_r2_delta_z_term={}", d2_psi_d_r2_delta_z_term);
 
-        return d2_psi_d_r2 + d2_psi_d_r2_delta_z_term;
+        let d2_psi_d_r2: f64;
+        if delta_z.is_finite() {
+            d2_psi_d_r2 = d2_psi_d_r2_unshifted + d2_psi_d_r2_delta_z_term;
+        } else {
+            d2_psi_d_r2 = d2_psi_d_r2_unshifted;
+        }
+
+        return d2_psi_d_r2;
     }
 }
 
@@ -199,6 +204,7 @@ fn test_d2_psi_d_r2_calculator() {
     use crate::greens::greens_d2_psi_dr2;
     use crate::greens::greens_psi::greens_psi;
     use approx::assert_abs_diff_eq;
+    use ndarray::Axis;
 
     let n_r_scaling: usize = 2;
     let n_r: usize = 300 * n_r_scaling;

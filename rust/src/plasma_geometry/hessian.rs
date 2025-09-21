@@ -18,19 +18,19 @@
 /// # Example
 /// ```
 /// use gsfit_rs::plasma_geometry::hessian;
-/// 
+///
 /// // Second derivatives
 /// let d2_psi_d_r2: f64 = 1.0; // weber^2 / metre^2
 /// let d2_psi_d_z2: f64 = -1.0; // weber^2 / metre^2
 /// let d2_psi_d_r_d_z: f64 = 0.0; // weber^2 / metre^2
-/// 
+///
 /// let (hessian_det, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_d_z);
 /// if hessian_det < 0.0 {
-///     println!("Saddle point = x-point");
-/// } else if hessian_det > 0.0 && d2_psi_d_r2 > 0.0 {
+///     println!("Saddle point");
+/// } else if hessian_det > 0.0 && hessian_trace > 0.0 {
 ///     println!("Local minimum");
-/// } else if hessian_det > 0.0 && d2_psi_d_r2 < 0.0 {
-///     println!("Local maximum = magnetic axis");
+/// } else if hessian_det > 0.0 && hessian_trace < 0.0 {
+///     println!("Local maximum");
 /// } else {
 ///     println!("This point can be a saddle point, local minimum, or local maximum");
 /// }

@@ -987,6 +987,8 @@ impl Plasma {
     }
 
     pub fn equilibrium_post_processor(&mut self, gs_solutions: &mut Vec<GsSolution>, coils: &Coils, plasma: &Plasma) {
+        // TODO: epp fails if there are no time-slices, e.g. if we set:
+        // ["GSFIT_code_settings.json"]["timeslices"]["user_defined"] = []
         println!("equilibrium_post_processor: starting");
 
         let n_time: usize = gs_solutions.len();
