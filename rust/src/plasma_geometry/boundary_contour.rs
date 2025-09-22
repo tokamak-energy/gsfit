@@ -70,6 +70,10 @@ impl BoundaryContour {
     /// * The x-point is repeated as the first and last pointss in the contour.
     /// We will do all the logic for a LSN (Lower Single Null) configuration. For USN we will flip the array.
     /// TODO: There is a bug where the boundary is made up of two contours, one for the LFS and one for the HFS. This case is missed!!
+    /// TODO: idea--(1) the boundary is found by marching squares, we can therefore "scan" horizontally and vertically and only keep a maximum of two points per row/column
+    /// TODO: idea--(1) this is how RT-GSFit works
+    /// TODO: idea--(2) I was considering a flood-fill algorithm, starting from the magnetic axis??
+    /// TODO: idea--(2) remember that we don't need high accuracy during Picard iterations, we are only finding the `mask` <-- this is probably the best idea
     pub fn refine_xpt_diverted_boundary(
         &mut self,
         r: &Array1<f64>,
