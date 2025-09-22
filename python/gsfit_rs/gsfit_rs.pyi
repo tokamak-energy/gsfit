@@ -46,12 +46,12 @@ def greens_py(
     d_z: npt.NDArray[np.float64] | None = None,
 ) -> npt.NDArray[np.float64]:
     """
-    :param r: (by convention) Sensor radial positions [meter]
-    :param z: (by convention) Sensor vertical positions [meter]
-    :param r_prime: (by convention) Current source radial positions [meter]
-    :param z_prime: (by convention) Current source vertical positions [meter]
-    :param d_r: (optional) Radial widths [meter]
-    :param d_z: (optional) Vertical heights [meter]
+    :param r: (by convention) Sensor radial positions [metre]
+    :param z: (by convention) Sensor vertical positions [metre]
+    :param r_prime: (by convention) Current source radial positions [metre]
+    :param z_prime: (by convention) Current source vertical positions [metre]
+    :param d_r: (optional) Radial widths [metre]
+    :param d_z: (optional) Vertical heights [metre]
 
     Note: the inputs are symmetrical
     """
@@ -64,10 +64,10 @@ def greens_b_py(
     z_prime: npt.NDArray[np.float64],
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """
-    :param r: Sensor radial positions [meter]
-    :param z: Sensor vertical positions [meter]
-    :param r_prime: Current source radial positions [meter]
-    :param z_prime: Current source vertical positions [meter]
+    :param r: Sensor radial positions [metre]
+    :param z: Sensor vertical positions [metre]
+    :param r_prime: Current source radial positions [metre]
+    :param z_prime: Current source vertical positions [metre]
 
     Note: the inputs are not symmetrical!
     i.e. you can't change (r, z) for (r_prime, z_prime)
@@ -89,10 +89,10 @@ def mutual_inductance_finite_size_to_finite_size(
     angle2_prime: npt.NDArray[np.float64],
 ) -> npt.NDArray[np.float64]:
     """
-    :param r: Sensor radial positions [meter]
-    :param z: Sensor vertical positions [meter]
-    :param r_prime: Current source radial positions [meter]
-    :param z_prime: Current source vertical positions [meter]
+    :param r: Sensor radial positions [metre]
+    :param z: Sensor vertical positions [metre]
+    :param r_prime: Current source radial positions [metre]
+    :param z_prime: Current source vertical positions [metre]
 
     Note: the inputs are not symmetrical!
     i.e. you can't change (r, z) for (r_prime, z_prime)
@@ -116,10 +116,10 @@ class Coils:
     ) -> None:
         """
         :param name: PF coil name
-        :param r: PF coil radial positions [meter]
-        :param z: PF coil vertical positions [meter]
-        :param d_r: PF coil radial widths [meter]
-        :param d_z: PF coil vertical heights [meter]
+        :param r: PF coil radial positions [metre]
+        :param z: PF coil vertical positions [metre]
+        :param d_r: PF coil radial widths [metre]
+        :param d_z: PF coil vertical heights [metre]
         :param time: Experimental time [second]
         :param measured: Experimental PF coil current [ampere]
         :param angle1: Angle of the PF coil from the vertical ("DIII-D" parallelogram type) [radians]
@@ -166,13 +166,13 @@ class Passives:
     ) -> None:
         """
         :param name: Passive name
-        :param r: A 1D array containing the radial centroid location for each filament [meter]
-        :param z: A 1D array containing the vertical centroid location for each filament [meter]
-        :param d_r: A 1D array containing the radial the width of the filament from the centroid to either side of the filament, total_width=2.0*d_r [meter]
-        :param d_z: A 1D array containing the radial the height of the filament from the centroid to either side of the filament, total_height=2.0*d_z [meter]
+        :param r: A 1D array containing the radial centroid location for each filament [metre]
+        :param z: A 1D array containing the vertical centroid location for each filament [metre]
+        :param d_r: A 1D array containing the radial the width of the filament from the centroid to either side of the filament, total_width=2.0*d_r [metre]
+        :param d_z: A 1D array containing the radial the height of the filament from the centroid to either side of the filament, total_height=2.0*d_z [metre]
         :param angle_1: A 1D array containing the angle of the filament from the vertical ("DIII-D" parallelogram type) [radians]
         :param angle_2: A 1D array containing the angle of the filament from the horizontal ("DIII-D" parallelogram type) [radians]
-        :param resistivity: Resistivity of this passive (same for all filaments) [ohm * meter]
+        :param resistivity: Resistivity of this passive (same for all filaments) [ohm * metre]
         :param current_distribution_type: "constant_current_density" or "eig"
         :param n_dof: number of degrees of freedom; if current_distribution_type=="constant_current_density", then n_dof=1; if current_distribution_type=="eig", then n_dof is the number of eigenvalues
         :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values
@@ -206,15 +206,15 @@ class Plasma:
         """
         :param n_r: Number of radial poitns [dimensionless]
         :param n_z: Number of vertical poitns [dimensionless]
-        :param r_min: Minimum radius [meter]
-        :param r_max: Maximum radius [meter]
-        :param z_min: Minimum vertical position [meter]
-        :param z_max: Maximum vertical position [meter]
+        :param r_min: Minimum radius [metre]
+        :param r_max: Maximum radius [metre]
+        :param z_min: Minimum vertical position [metre]
+        :param z_max: Maximum vertical position [metre]
         :param psi_n: 1D array for `psi_n`, which should go from [0.0, 1.0] [dimensionless]
-        :param limit_pts_r: the limiter surfaces [meter]
-        :param limit_pts_z: the limiter surfaces [meter]
-        :param vessel_r: the vacuum vessel chamber, where the plasma can exist [meter]
-        :param vessel_z: the vacuum vessel chamber, where the plasma can exist [meter]
+        :param limit_pts_r: the limiter surfaces [metre]
+        :param limit_pts_z: the limiter surfaces [metre]
+        :param vessel_r: the vacuum vessel chamber, where the plasma can exist [metre]
+        :param vessel_z: the vacuum vessel chamber, where the plasma can exist [metre]
         :param p_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
         :param ff_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
         """
@@ -258,8 +258,8 @@ class BpProbes:
         """
         :param name: Name of the sensor
         :param geometry_angle_pol: Poloidal angle of the sensor geometry [radian]
-        :param geometry_r: Radial position of the sensor geometry [meter]
-        :param geometry_z: Vertical position of the sensor geometry [meter]
+        :param geometry_r: Radial position of the sensor geometry [metre]
+        :param geometry_z: Vertical position of the sensor geometry [metre]
         :param fit_settings_comment: Comment for the fit settings, used for debugging
         :param fit_settings_expected_value: Expected value for the fit settings, used for normalisation [tesla]
         :param fit_settings_include: Whether to include this sensor in the fit [bool]
@@ -315,8 +315,8 @@ class FluxLoops:
     ) -> None:
         """
         :param name: Name of the sensor
-        :param geometry_r: Radial position of the sensor geometry [meter]
-        :param geometry_z: Vertical position of the sensor geometry [meter]
+        :param geometry_r: Radial position of the sensor geometry [metre]
+        :param geometry_z: Vertical position of the sensor geometry [metre]
         :param fit_settings_comment: Comment for the fit settings, used for debugging
         :param fit_settings_expected_value: Expected value for the fit settings, used for normalisation [weber]
         :param fit_settings_include: Whether to include this sensor in the fit [bool]
@@ -377,18 +377,18 @@ class RogowskiCoils:
     ) -> None:
         """
         :param name: Name of the sensor
-        :param r: 1D array containing the radial positions of the sensor geometry [meter]
-        :param z: 1D array containing the vertical positions of the sensor geometry [meter]
+        :param r: 1D array containing the radial positions of the sensor geometry [metre]
+        :param z: 1D array containing the vertical positions of the sensor geometry [metre]
         :param fit_settings_comment: Comment for the fit settings, used for debugging
         :param fit_settings_expected_value: Expected value for the fit settings, used for normalisation [ampere]
         :param fit_settings_include: Whether to include this sensor in the fit [bool]
         :param fit_settings_weight: Weight for the sensor [dimensionless]
         :param time: Time vector [second]
         :param measured: Measured values [ampere]
-        :param gaps_r: A 1D array containing the radial positions of the gaps [meter]
-        :param gaps_z: A 1D array containing the vertical positions of the gaps [meter]
-        :param gaps_d_r: A 1D array containing the radial widths of the gaps [meter]
-        :param gaps_d_z: A 1D array containing the vertical heights of the gaps [meter]
+        :param gaps_r: A 1D array containing the radial positions of the gaps [metre]
+        :param gaps_z: A 1D array containing the vertical positions of the gaps [metre]
+        :param gaps_d_r: A 1D array containing the radial widths of the gaps [metre]
+        :param gaps_d_z: A 1D array containing the vertical heights of the gaps [metre]
         :param gaps_name: A list of the names of the gaps
         """
         ...
