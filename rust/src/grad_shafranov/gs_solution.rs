@@ -282,8 +282,6 @@ impl<'a> GsSolution<'a> {
 
         // Iteration loop
         'iteration_loop: for i_iter in 0..self.n_iter_max {
-            // println!("  ");
-            // println!("i_iter={i_iter}");
             // From previous iteration
             let j_2d: Array2<f64> = self.j_2d.to_owned();
 
@@ -1127,15 +1125,15 @@ impl<'a> GsSolution<'a> {
         }
 
         // Add up all the components
-        let br_2d: Array2<f64> = &br_2d_coils + &br_2d_passives + &br_2d_plasma;
-        let bz_2d: Array2<f64> = &bz_2d_coils + &bz_2d_passives + &bz_2d_plasma;
+        let br_2d: Array2<f64> = br_2d_coils + br_2d_passives + &br_2d_plasma;
+        let bz_2d: Array2<f64> = bz_2d_coils + bz_2d_passives + bz_2d_plasma;
 
         // Store in self
         self.br_2d = br_2d;
         self.bz_2d = bz_2d;
 
         // d_br_d_z and d_bz_d_z
-        // Coils;  timing: 1.9ms, with [n_r, n_z]=[100,201]
+        // Coils;  timing: 1.9ms, with [n_r, n_z]=[100, 201]
         let mut d_br_d_z_2d_coils: Array2<f64> = Array2::zeros((n_z, n_r));
         let mut d_bz_d_z_2d_coils: Array2<f64> = Array2::zeros((n_z, n_r));
         for i_pf in 0..n_pf {
@@ -1143,7 +1141,7 @@ impl<'a> GsSolution<'a> {
             d_bz_d_z_2d_coils = d_bz_d_z_2d_coils + &g_d_bz_d_z_coils.slice(s![.., .., i_pf]) * pf_currents[i_pf];
         }
 
-        // Passives;  timing: 4ms, with [n_r, n_z]=[100,201]
+        // Passives;  timing: 4ms, with [n_r, n_z]=[100, 201]
         let passives_shape: &[usize] = g_d_br_d_z_passives.shape(); // shape = (n_z * n_r, n_passive_dof)
         let n_passive_dof: usize = passives_shape[1];
 
