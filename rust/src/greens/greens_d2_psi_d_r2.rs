@@ -15,7 +15,7 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// # Returns
 /// * `g_d2_psi_dr2[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"
 ///
-pub fn greens_d2_psi_dr2(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> Array2<f64> {
+pub fn greens_d2_psi_d_r2(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> Array2<f64> {
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
 
@@ -80,7 +80,7 @@ fn test_d2_psi_dr2() {
     let z_prime: Array1<f64> = Array1::from_vec(vec![0.8234]);
 
     let current: f64 = 1.0; // ampere
-    let d2_psi_dr2_analytic: f64 = current * greens_d2_psi_dr2(r.clone(), z.clone(), r_prime.clone(), z_prime.clone())[(0, 0)];
+    let d2_psi_dr2_analytic: f64 = current * greens_d2_psi_d_r2(r.clone(), z.clone(), r_prime.clone(), z_prime.clone())[(0, 0)];
 
     let r_vec: Array1<f64> = Array1::from_vec(vec![r_value - delta_r, r_value, r_value + delta_r]);
     let z_vec: Array1<f64> = Array1::from_vec(vec![z_value, z_value, z_value]);

@@ -201,7 +201,7 @@ impl D2PsiDR2Calculator {
 #[test]
 fn test_d2_psi_d_r2_calculator() {
     use crate::greens::greens_b::greens_b;
-    use crate::greens::greens_d2_psi_dr2;
+    use crate::greens::greens_d2_psi_d_r2;
     use crate::greens::greens_psi::greens_psi;
     use approx::assert_abs_diff_eq;
     use ndarray::Axis;
@@ -249,7 +249,7 @@ fn test_d2_psi_d_r2_calculator() {
 
     // Plasma
     // d2_g_d_r2
-    let mut g_d2_psi_d_r2_plasma: Array2<f64> = greens_d2_psi_dr2(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0]);
+    let mut g_d2_psi_d_r2_plasma: Array2<f64> = greens_d2_psi_d_r2(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0]);
     for i_r in 0..n_r {
         for i_rz in 0..n_r * n_z {
             if g_d2_psi_d_r2_plasma[(i_rz, i_r)].is_nan() {
