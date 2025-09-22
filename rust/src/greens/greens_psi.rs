@@ -70,7 +70,7 @@ pub fn greens_psi(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime:
             // Test for checking if source and sensor are at same location
             // this is for grid-grid calculation
             // If we do this earlier we can skip calculating elliptic integrals
-            let epsilon: f64 = 1e-6;
+            let epsilon: f64 = 1e-6;  // TODO: should this be smaller?
             for i in 0..n_grid {
                 if (r[i] - r_prime[i_filament]).abs() < epsilon && (z[i] - z_prime[i_filament]).abs() < epsilon {
                     green_this_filament[i] = MU_0
