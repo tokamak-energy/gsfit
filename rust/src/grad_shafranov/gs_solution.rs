@@ -288,20 +288,40 @@ impl<'a> GsSolution<'a> {
             // Calculate br and bz
             // Note, `self.calculate_b()` needs to be before `self.calculate_psi()`, because `br` will be used to calculate
             // the `delta_z` numerical stabilisation, which is added to `psi`
-            let (d_br_d_z_2d, d_bz_d_z_2d): (Array2<f64>, Array2<f64>) = self.calculate_b();
+            let (d_br_d_z_2d, d_bz_d_z_2d_unshifted): (Array2<f64>, Array2<f64>) = self.calculate_b();
 
             // Updates psi
             self.calculate_psi();
             let psi_2d: Array2<f64> = self.psi_2d.to_owned();
 
             // Apply the `delta_z` stabilisation
+            let d_z: f64 = z[1] - z[0];
+            let d_bz_d_z_2d: Array2<f64>;
             if i_iter > n_iter_no_vertical_feedback + 1 {
                 // Make `br` and `bz` consistent with `psi`
                 self.br_2d = self.br_2d.to_owned() + self.delta_z * &d_br_d_z_2d;
-                self.bz_2d = self.bz_2d.to_owned() + self.delta_z * &d_bz_d_z_2d;
+                self.bz_2d = self.bz_2d.to_owned() + self.delta_z * &d_bz_d_z_2d_unshifted;
 
-                // TODO: is there a `delta_z` stabilisation for derivatives of B?
-                // d_bz_d_z_2d
+                // d^2(bz)/d(z^2)
+                let mut d2_bz_d_z2_unshifted: Array2<f64> = Array2::zeros((n_z, n_r));
+                for i_r in 0..n_r {
+                    for i_z in 0..n_z {
+                        if i_z == 0 {
+                            // Forward difference at the bottom boundary
+                            d2_bz_d_z2_unshifted[(i_z, i_r)] = (d_bz_d_z_2d_unshifted[(i_z + 1, i_r)] - d_bz_d_z_2d_unshifted[(i_z, i_r)]) / d_z
+                        } else if i_z == n_z - 1 {
+                            // Backward difference at the top boundary
+                            d2_bz_d_z2_unshifted[(i_z, i_r)] = (d_bz_d_z_2d_unshifted[(i_z, i_r)] - d_bz_d_z_2d_unshifted[(i_z - 1, i_r)]) / d_z
+                        } else {
+                            // Central difference for interior points
+                            d2_bz_d_z2_unshifted[(i_z, i_r)] = (d_bz_d_z_2d_unshifted[(i_z + 1, i_r)] - d_bz_d_z_2d_unshifted[(i_z - 1, i_r)]) / (2.0 * d_z)
+                        };
+                    }
+                }
+
+                d_bz_d_z_2d = d_bz_d_z_2d_unshifted + self.delta_z * &d2_bz_d_z2_unshifted;
+            } else {
+                d_bz_d_z_2d = d_bz_d_z_2d_unshifted;
             }
 
             // Get `br` and `bz`
@@ -328,18 +348,18 @@ impl<'a> GsSolution<'a> {
             );
 
             // Find the stationary points in `psi`
-            let stationary_points_result: Result<Vec<StationaryPoint>, String> =
+            let stationary_points_or_error: Result<Vec<StationaryPoint>, String> =
                 find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
             // At a minimum we should have found the magnetic axis
-            if stationary_points_result.is_err() {
+            if stationary_points_or_error.is_err() {
                 self.set_to_failed_time_slice();
                 break 'iteration_loop; // exit the iteration loop for this time-slice
             }
-            let stationary_points: Vec<StationaryPoint> = stationary_points_result.expect("gs_solution: unwrapping stationary_points");
+            let stationary_points: Vec<StationaryPoint> = stationary_points_or_error.expect("gs_solution: unwrapping stationary_points");
 
             // Find boundary
             // TODO: should also return stationary points
-            let plasma_boundary: Result<BoundaryContour, String> = find_boundary(
+            let plasma_boundary_or_error: Result<BoundaryContour, String> = find_boundary(
                 &r,
                 &z,
                 &psi_2d,
@@ -357,32 +377,43 @@ impl<'a> GsSolution<'a> {
                 d2_psi_d_r2_calculator,
             );
             // Test if we have found a plasma boundary
-            if plasma_boundary.is_err() {
+            if plasma_boundary_or_error.is_err() {
                 self.set_to_failed_time_slice();
                 break 'iteration_loop; // exit the iteration loop for this time-slice
             }
             // Unwrap and store the plasma boundary
-            let plasma_boundary_unwrapped: BoundaryContour = plasma_boundary.expect("Failed to find plasma boundary");
-            self.mask = plasma_boundary_unwrapped.mask.expect("Failed to unwrap mask");
-            self.psi_b = plasma_boundary_unwrapped.bounding_psi;
-            self.boundary_r = plasma_boundary_unwrapped.boundary_r;
-            self.boundary_z = plasma_boundary_unwrapped.boundary_z;
-            self.bounding_r = plasma_boundary_unwrapped.bounding_r;
-            self.bounding_z = plasma_boundary_unwrapped.bounding_z;
+            let plasma_boundary: BoundaryContour = plasma_boundary_or_error.expect("Failed to find plasma boundary");
+            self.mask = plasma_boundary.mask.expect("Failed to unwrap mask");
+            self.psi_b = plasma_boundary.bounding_psi;
+            self.boundary_r = plasma_boundary.boundary_r;
+            self.boundary_z = plasma_boundary.boundary_z;
+            self.bounding_r = plasma_boundary.bounding_r;
+            self.bounding_z = plasma_boundary.bounding_z;
             let mask: Array2<f64> = self.mask.to_owned();
             let psi_b: f64 = self.psi_b;
-            self.xpt_diverted = plasma_boundary_unwrapped.xpt_diverted;
+            self.xpt_diverted = plasma_boundary.xpt_diverted;
 
             // Find the magnetic axis (o-point)
-            let magnetic_axis_result: Result<MagneticAxis, String> =
-                find_magnetic_axis(&r, &z, &br_2d, &bz_2d, &d_bz_d_z_2d, &psi_2d, &stationary_points, self.r_mag, self.z_mag);
+            let magnetic_axis_or_error: Result<MagneticAxis, String> = find_magnetic_axis(
+                &r,
+                &z,
+                &psi_2d,
+                &br_2d,
+                &bz_2d,
+                &d_bz_d_z_2d,
+                &stationary_points,
+                self.r_mag,
+                self.z_mag,
+                &vessel_r,
+                &vessel_z,
+            );
             // Test if we have found the magnetic axis
-            if magnetic_axis_result.is_err() {
+            if magnetic_axis_or_error.is_err() {
                 self.set_to_failed_time_slice();
                 break 'iteration_loop; // exit the iteration loop for this time-slice
             }
-            // Unwrap and get results out of `magnetic_axis_result`
-            let magnetic_axis: MagneticAxis = magnetic_axis_result.expect("gs_solution: unwrapping magnetic_axis");
+            // Unwrap and get results out of `magnetic_axis_or_error`
+            let magnetic_axis: MagneticAxis = magnetic_axis_or_error.expect("gs_solution: unwrapping magnetic_axis");
             let mag_r: f64 = magnetic_axis.r;
             let mag_z: f64 = magnetic_axis.z;
             let psi_a: f64 = magnetic_axis.psi;
@@ -409,7 +440,6 @@ impl<'a> GsSolution<'a> {
             // Check if we have reached the maximum number of iterations
             if i_iter == self.n_iter_max - 1 {
                 // Ensure that failed time-slices are excluded
-                println!("Reached maximum iterations without convergence.");
                 self.set_to_failed_time_slice();
                 break 'iteration_loop; // Exit the iteration loop
             }
@@ -1095,15 +1125,15 @@ impl<'a> GsSolution<'a> {
         }
 
         // Add up all the components
-        let br_2d: Array2<f64> = &br_2d_coils + &br_2d_passives + &br_2d_plasma;
-        let bz_2d: Array2<f64> = &bz_2d_coils + &bz_2d_passives + &bz_2d_plasma;
+        let br_2d: Array2<f64> = br_2d_coils + br_2d_passives + &br_2d_plasma;
+        let bz_2d: Array2<f64> = bz_2d_coils + bz_2d_passives + bz_2d_plasma;
 
         // Store in self
         self.br_2d = br_2d;
         self.bz_2d = bz_2d;
 
         // d_br_d_z and d_bz_d_z
-        // Coils;  timing: 1.9ms, with [n_r, n_z]=[100,201]
+        // Coils;  timing: 1.9ms, with [n_r, n_z]=[100, 201]
         let mut d_br_d_z_2d_coils: Array2<f64> = Array2::zeros((n_z, n_r));
         let mut d_bz_d_z_2d_coils: Array2<f64> = Array2::zeros((n_z, n_r));
         for i_pf in 0..n_pf {
@@ -1111,7 +1141,7 @@ impl<'a> GsSolution<'a> {
             d_bz_d_z_2d_coils = d_bz_d_z_2d_coils + &g_d_bz_d_z_coils.slice(s![.., .., i_pf]) * pf_currents[i_pf];
         }
 
-        // Passives;  timing: 4ms, with [n_r, n_z]=[100,201]
+        // Passives;  timing: 4ms, with [n_r, n_z]=[100, 201]
         let passives_shape: &[usize] = g_d_br_d_z_passives.shape(); // shape = (n_z * n_r, n_passive_dof)
         let n_passive_dof: usize = passives_shape[1];
 

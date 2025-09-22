@@ -47,7 +47,7 @@ impl RogowskiCoils {
     /// * `gaps_d_r` - Half width of the gaps in R, metre
     /// * `gaps_d_z` - Half height of the gaps in Z, metre
     /// * `gaps_name` - Name of the gaps
-    /// 
+    ///
     /// # Data structure:
     /// ```ignore
     /// [probe_name]["psi"]["calculated"]                               = Array1<f64>;  shape=[n_time]

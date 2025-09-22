@@ -425,6 +425,10 @@ impl Passives {
 impl Passives {
     pub fn equilibrium_post_processor(&mut self, gs_solutions: &Vec<GsSolution>) {
         let n_time: usize = gs_solutions.len();
+        if n_time == 0 {
+            println!("Passives.equilibrium_post_processor: no time slices to process, returning");
+            return;
+        }
 
         // Get sizes
         // TODO: BUG: this assumes that time-slice 0 has converged!!

@@ -219,6 +219,20 @@ fn solve_inverse_problem(
     let times_to_reconstruct_ndarray: Array1<f64> = Array1::from(unsafe { times_to_reconstruct.as_array() }.to_vec());
     let n_time: usize = times_to_reconstruct_ndarray.len();
 
+    if n_time == 0 {
+        // Store empty `p_prime` and `ff_prime` profiles
+        // TODO: all keys should be like this with zero size arrays
+        let n_p_prime_dof: usize = plasma.p_prime_source_function.source_function_n_dof();
+        let n_ff_prime_dof: usize = plasma.ff_prime_source_function.source_function_n_dof();
+        let p_prime_coefs: Array2<f64> = Array2::zeros((n_time, n_p_prime_dof));
+        let ff_prime_coefs: Array2<f64> = Array2::zeros((n_time, n_ff_prime_dof));
+        plasma.results.get_or_insert("source_functions").get_or_insert("p_prime").insert("coefficients", p_prime_coefs);
+        plasma.results.get_or_insert("source_functions").get_or_insert("ff_prime").insert("coefficients", ff_prime_coefs);
+
+        println!("solve_inverse_problem: no times to reconstruct, returning");
+        return;
+    }
+
     plasma.results.insert("time", times_to_reconstruct_ndarray.clone());
 
     // Import rust implementation
@@ -353,8 +367,8 @@ fn solve_inverse_problem(
     flux_loops.calculate_sensor_values_rust(&coils_owned, &passives_owned, &plasma_owned);
     rogowski_coils.calculate_sensor_values_rust(&coils_owned, &passives_owned, &plasma_owned);
 
+    // Calculate chi_sq_mag for each time slice
     let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, n_time);
-
     plasma.results.get_or_insert("global").insert("chi_mag", chi_mag);
 }
 

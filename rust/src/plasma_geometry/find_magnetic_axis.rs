@@ -3,7 +3,9 @@ use crate::bicubic_interpolator::BicubicInterpolator;
 use crate::bicubic_interpolator::BicubicStationaryPoint;
 use contour::ContourBuilder;
 use core::f64;
+use core::panic;
 use geo::line_intersection::{LineIntersection, line_intersection};
+use geo::{Contains, Coord, LineString, Point, Polygon};
 use geo::{Line, MultiPolygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
@@ -51,93 +53,105 @@ pub struct MagneticAxis {
 pub fn find_magnetic_axis(
     r: &Array1<f64>,
     z: &Array1<f64>,
+    psi_2d: &Array2<f64>,
     br_2d: &Array2<f64>,
     bz_2d: &Array2<f64>,
     d_bz_d_z_2d: &Array2<f64>,
-    psi_2d: &Array2<f64>,
-    stationary_points: &Vec<StationaryPoint>,  // TODO: use pre-calculated `stationary_points`, instead of re-calculating them
+    stationary_points: &Vec<StationaryPoint>,
     mag_r_previous: f64,
     mag_z_previous: f64,
+    vessel_r: &Array1<f64>,
+    vessel_z: &Array1<f64>,
 ) -> Result<MagneticAxis, String> {
     // TODO: need to add plasma current sign: we are assuming positive current = hill in psi;
     // but negative plasma current will make a valley and break all the logic!
 
-    let mut mag_r: f64 = mag_r_previous; // initial condition
-    let mut mag_z: f64 = mag_z_previous; // initial condition
+    // // Imports
+    // use std::fs::File;
+    // use std::io::{BufWriter, Write};
+    // // write to file
+    // let file = File::create("psi_2d.csv").expect("can't make file");
+    // let mut writer = BufWriter::new(file);
+    // for row in psi_2d.rows() {
+    //     let line: String = row.iter()
+    //         .map(|&value| value.to_string())
+    //         .collect::<Vec<_>>()
+    //         .join(", ");
+    //     writeln!(writer, "{}", line).expect("can't write line");
+    // }
+    // writer.flush().expect("can't flush writer");
+    // panic!("stop for debugging");
+
+    // Create a mutable copy of `stationary_points`, because we want to filter it
+    let mut stationary_points: Vec<StationaryPoint> = stationary_points.to_owned();
+
+    // println!("find_magnetic_axis: stationary_points={:?}", stationary_points);
 
     // Grid variables
-    let n_r: usize = r.len();
-    let n_z: usize = z.len();
     let d_r: f64 = (r.last().expect("find_magnetic_axis: unwrapping last `r`") - r[0]) / (r.len() as f64 - 1.0);
     let d_z: f64 = (z.last().expect("find_magnetic_axis: unwrapping last `z`") - z[0]) / (z.len() as f64 - 1.0);
-    let r_origin: f64 = r[0];
-    let z_origin: f64 = z[0];
 
-    // Construct an empty "contour_grid" object
-    let contour_grid: ContourBuilder = ContourBuilder::new(n_r, n_z, true)
-        .x_step(d_r)
-        .y_step(d_z)
-        .x_origin(r_origin - d_r / 2.0) // contour is off by 1/2 grid spacing; reported as GitHub issue
-        .y_origin(z_origin - d_z / 2.0);
-
-    // Find the contours for br=0
-    let br_flattened: Vec<f64> = br_2d.iter().cloned().collect();
-    let br_contours_tmp: Vec<contour::Contour> = contour_grid.contours(&br_flattened, &[0.0f64]).expect("br_contours_tmp: error");
-    let br_contours: &MultiPolygon = br_contours_tmp[0].geometry(); // The [0] is because I have only supplied one `thresholds`
-
-    // Find the contours for bz=0
-    let bz_flattened: Vec<f64> = bz_2d.iter().cloned().collect();
-    let bz_contours_tmp: Vec<contour::Contour> = contour_grid.contours(&bz_flattened, &[0.0f64]).expect("bz_contours_tmp: error");
-    let bz_contours: &MultiPolygon = bz_contours_tmp[0].geometry(); // The [0] is because I have only supplied one `thresholds`
-
-    // Test that we have found contours for both br=0 and bz=0
-    let n_br_contours: usize = br_contours.iter().count();
-    if n_br_contours == 0 {
-        return Err("find_magnetic_axis: No contours found for br=0".to_string());
+    // Filter `stationary_points` to keep only those with "turning curvature" (either maximum or minimum)
+    stationary_points.retain(|stationary_point| {
+        let turning_point_test: bool = stationary_point.hessian_determinant > 0.0;
+        return turning_point_test;
+    });
+    // Exit if we haven't found any `stationary_points` within the vessel
+    if stationary_points.len() == 0 {
+        return Err("find_magnetic_axis: no stationary points with turning shape found".to_string());
     }
-    let n_bz_contours: usize = bz_contours.iter().count();
-    if n_bz_contours == 0 {
-        return Err("find_magnetic_axis: No contours found for bz=0".to_string());
+    // println!("find_magnetic_axis: turning stationary_points={:?}", stationary_points);
+
+    // Filter `stationary_points` to keep only those within the vessel
+    // Vessel polygon
+    let n_vessel_pts: usize = vessel_r.len();
+    let mut vessel_coords: Vec<Coord<f64>> = Vec::with_capacity(n_vessel_pts);
+    for i_vessel in 0..n_vessel_pts {
+        vessel_coords.push(Coord {
+            x: vessel_r[i_vessel],
+            y: vessel_z[i_vessel],
+        });
     }
+    let vessel_polygon: Polygon = Polygon::new(
+        LineString::from(vessel_coords),
+        vec![], // No holes
+    );
+    stationary_points.retain(|stationary_point| {
+        let test_point: Point = Point::new(stationary_point.r, stationary_point.z);
+        let within_vessel_test: bool = vessel_polygon.contains(&test_point);
+        return within_vessel_test;
+    });
+    // Exit if we haven't found any `stationary_points` within the vessel
+    if stationary_points.len() == 0 {
+        return Err("find_magnetic_axis: no stationary points found within the vessel".to_string());
+    }
+    // println!("find_magnetic_axis: in vessel stationary_points={:?}", stationary_points);
 
-    // Search for stationary points; intersections between br and bz
-    for br_contour in br_contours {
-        let br_lines: Vec<Line<_>> = br_contour.exterior().lines().collect();
-        for bz_contour in bz_contours {
-            let bz_lines: Vec<Line<_>> = bz_contour.exterior().lines().collect();
-
-            // Loop over the lines (lines have two coordinates: start and end)
-            for br_line in &br_lines {
-                for bz_line in &bz_lines {
-                    if let Some(line_intersection) = line_intersection(br_line.to_owned(), bz_line.to_owned()) {
-                        if let LineIntersection::SinglePoint {
-                            intersection,
-                            is_proper: _is_proper,
-                        } = line_intersection
-                        {
-                            // Note:
-                            // `_is_proper = true` means the intersection occurs at a point that is not one of the endpoints of either line
-                            // `_is_proper = false` means the intersection occurs at an endpoint of one or both line segments
-                            let intersection_r: f64 = intersection.x;
-                            let intersection_z: f64 = intersection.y;
-
-                            // Test if the x-point is within the range
-                            // TODO: should use Hessian matrix to determine if the intersection is a maximum/minimum/saddle point
-                            if intersection_r > 0.17 && intersection_r < 0.8 {
-                                if intersection_z > -0.25 && intersection_z < 0.25 {
-                                    // add bottom x-point
-                                    mag_r = intersection_r;
-                                    mag_z = intersection_z;
-
-                                    // println!("find_magnetic_axis: mag_r={}, mag_z={}", mag_r, mag_z);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    // If we have multiple stationary points, choose the one nearest to the previous magnetic axis position
+    let mut mag_r: f64;
+    let mut mag_z: f64;
+    if stationary_points.len() > 1 {
+        let mut distances: Vec<f64> = Vec::with_capacity(stationary_points.len());
+        for stationary_point in &stationary_points {
+            let dr: f64 = stationary_point.r - mag_r_previous;
+            let dz: f64 = stationary_point.z - mag_z_previous;
+            let distance: f64 = (dr * dr + dz * dz).sqrt();
+            distances.push(distance);
         }
+        let (i_min, _min_value) = distances
+            .iter()
+            .enumerate()
+            .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .expect("find_magnetic_axis: finding min distance");
+        mag_r = stationary_points[i_min].r;
+        mag_z = stationary_points[i_min].z;
+    } else {
+        // We have exactly one stationary point within the vessel
+        mag_r = stationary_points[0].r;
+        mag_z = stationary_points[0].z;
     }
+
+    // println!("mag_r, mag_z = {}, {}", mag_r, mag_z);
 
     // Find the nearest grid-point to the magnetic axis
     let i_r_nearest: usize = (r - mag_r).mapv(|x| x.abs()).argmin().unwrap();

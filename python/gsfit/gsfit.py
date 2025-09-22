@@ -184,7 +184,7 @@ class Gsfit(DiagnosticAndSimulationBase):
 
         self.logger.info(msg="About to call: `gsfit_rs.solve_inverse_problem`")
         # Note: the solution to the GS equation is stored inside: `plasma`, `passives`, `bp_probes`, `flux_loops`, and `rogowski_coils`
-        t0 = time_py.time()
+        tic = time_py.time()
         gsfit_rs.solve_inverse_problem(
             plasma,
             coils,
@@ -202,8 +202,8 @@ class Gsfit(DiagnosticAndSimulationBase):
             self.settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["use"],
             self.settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["mixing_from_previous_iter"],
         )
-        t1 = time_py.time()
-        self.logger.info(msg=f"Finished: `gsfit_rs.solve_inverse_problem` time = {(t1 - t0) * 1e3}ms")
+        toc = time_py.time()
+        self.logger.info(msg=f"Finished: `gsfit_rs.solve_inverse_problem` time = {(toc - tic) * 1e3:,.2f}ms")
 
     def calculate_greens(self) -> None:
         """

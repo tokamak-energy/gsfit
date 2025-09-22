@@ -2,6 +2,25 @@ use crate::greens::greens_psi;
 use approx::abs_diff_eq;
 use ndarray::{Array1, Array2, s};
 
+/// Mutual inductance between filaments of finite size
+///
+/// # Arguments
+/// * `r` - R coordinate of the first set of filaments, shape = [n_filaments], metre
+/// * `z` - Z coordinate of the first set of filaments, shape = [n_filaments], metre
+/// * `d_r` - Radial width of the first set of filaments, shape = [n_filaments], metre
+/// * `d_z` - Vertical height of the first set of filaments, shape = [n_filaments], metre
+/// * `angle1` - Angle of the first side of the first set of filaments, shape = [n_filaments], radian
+/// * `angle2` - Angle of the second side of the first set of filaments, shape = [n_filaments], radian
+/// * `r_prime` - R coordinate of the second set of filaments, shape = [n_filaments_prime], metre
+/// * `z_prime` - Z coordinate of the second set of filaments, shape = [n_filaments_prime], metre
+/// * `d_r_prime` - Radial width of the second set of filaments, shape = [n_filaments_prime], metre
+/// * `d_z_prime` - Vertical height of the second set of filaments, shape = [n_filaments_prime], metre
+/// * `angle1_prime` - Angle of the first side of the second set of filaments, shape = [n_filaments_prime], radian
+/// * `angle2_prime` - Angle of the second side of the second set of filaments, shape = [n_filaments_prime], radian
+///
+/// # Returns
+/// * `g` - Mutual inductance between the two sets of filaments, shape = [n_filaments, n_filaments_prime], henry
+///
 pub fn mutual_inductance_finite_size_to_finite_size(
     r: &Array1<f64>,
     z: &Array1<f64>,
