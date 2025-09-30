@@ -135,9 +135,9 @@ jobs:
       - name: Install dependencies
         run: |
           brew install openblas
-          python3.11 -m pip install --upgrade pip maturin
-          python3.12 -m pip install --upgrade pip maturin
-          python3.13 -m pip install --upgrade pip maturin
+          py -3.11 -m pip install --upgrade pip maturin
+          py -3.12 -m pip install --upgrade pip maturin
+          py -3.13 -m pip install --upgrade pip maturin
       - name: Build Python wheels (compiling Rust)
         run: |
           export OPENBLAS_DIR=$(brew --prefix openblas)
