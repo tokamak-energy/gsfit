@@ -218,18 +218,17 @@ jobs:
           .\vcpkg\bootstrap-vcpkg.bat
           .\vcpkg\vcpkg install openblas:x64-windows
       - name: Build Python wheels (compiling Rust)
-        env:
-          OPENBLAS_DIR: ${{ github.workspace }}\vcpkg\installed\x64-windows
-          OPENBLAS_STATIC: "1"
-          RUSTFLAGS: "-Ctarget-feature=+crt-static"
         run: |
           dir
+          set OPENBLAS_DIR=${{ github.workspace }}\vcpkg\installed\x64-windows
           echo %OPENBLAS_DIR%
-          set OPENBLAS_SYSTEM=1
+
+          dir ${{ github.workspace }}\vcpkg\installed\x64-windows
+          dir %OPENBLAS_DIR%
+          dir %OPENBLAS_DIR%\lib
+          dir %OPENBLAS_DIR%\include
           maturin build --release -i python3.11
-          set OPENBLAS_SYSTEM=1
           maturin build --release -i python3.12
-          set OPENBLAS_SYSTEM=1
           maturin build --release -i python3.13
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v4
