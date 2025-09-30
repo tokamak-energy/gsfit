@@ -220,7 +220,7 @@ jobs:
       - name: Build Python wheels (compiling Rust)
         run: |
           dir
-          set OPENBLAS_DIR=${{ github.workspace }}\vcpkg\installed\x64-windows
+          set "OPENBLAS_DIR=${{ github.workspace }}\vcpkg\installed\x64-windows"
           echo %OPENBLAS_DIR%
           maturin build --release -i python3.11
           maturin build --release -i python3.12
