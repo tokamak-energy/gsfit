@@ -1,12 +1,8 @@
 use super::StationaryPoint;
 use crate::bicubic_interpolator::BicubicInterpolator;
 use crate::bicubic_interpolator::BicubicStationaryPoint;
-use contour::ContourBuilder;
 use core::f64;
-use core::panic;
-use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Contains, Coord, LineString, Point, Polygon};
-use geo::{Line, MultiPolygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
 

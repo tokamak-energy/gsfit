@@ -833,11 +833,11 @@ impl<'a> GsSolution<'a> {
             let mut s: Vec<f64> = vec![0.0; n_usize.min(m_usize)]; // Singular values
             let mut rank: i32 = 0; // Effective rank
             let rcond: f64 = -1.0; // Use machine precision
-            let mut info: i32 = 999;
+            let mut info: i32 = 999; // TODO: what is this number?
 
             // Workspace query
-            let lwork: i32 = 4218; // TODO: what is this number?????????????????????
-            let mut work = vec![0.0; lwork as usize];
+            let lwork: i32 = 4218; // TODO: what is this number?
+            let mut work: Vec<f64> = vec![0.0; lwork as usize];
 
             // using the same as EFIT
             unsafe {
@@ -907,28 +907,12 @@ impl<'a> GsSolution<'a> {
             }
             self.delta_z = delta_z.clone();
 
-            // Calculate profiles
-            let psi_n_flat: Array1<f64> = Array1::from_iter(psi_n_2d.iter().cloned());
-
-            let p_prime_2d: Array2<f64> = p_prime_source_function
-                .source_function_value(&psi_n_flat, &p_prime_dof_values.clone())
-                .to_shape((n_z, n_r))
-                .expect("error in p_prime_2d")
-                .to_owned();
-            let j_2d_p_prime: Array2<f64> = 2.0 * PI * &mesh_r * p_prime_2d * &mask;
-
-            let ff_prime_2d: Array2<f64> = ff_prime_source_function
-                .source_function_value(&psi_n_flat, &ff_prime_dof_values.clone())
-                .to_shape((n_z, n_r))
-                .expect("error in ff_prime_2d")
-                .to_owned();
-            let j_2d_ff_prime: Array2<f64> = 2.0 * PI * ff_prime_2d * &mask / (MU_0 * &mesh_r);
-
             // Calculate j_2d
-            let j_2d: Array2<f64> = j_2d_p_prime + j_2d_ff_prime;
-            self.j_2d = j_2d.clone();
+            self.calculate_j(&mesh_r); // TODO: I don't like having to pass mesh_r in
+            let j_2d: Array2<f64> = self.j_2d.to_owned();
 
             // Total plasma current
+            // TODO: do we actually need to calculate Ip at every iteration?
             let i_2d: Array2<f64> = &j_2d * d_area;
             let ip: f64 = i_2d.sum();
             self.ip = ip;
@@ -1229,6 +1213,38 @@ impl<'a> GsSolution<'a> {
         let d_bz_d_z_2d: Array2<f64> = d_bz_d_z_2d_coils + d_bz_d_z_2d_passives + d_bz_d_z_2d_plasma;
 
         return (d_br_d_z_2d, d_bz_d_z_2d);
+    }
+
+    fn calculate_j(&mut self, mesh_r: &Array2<f64>) {
+        let psi_n_2d: Array2<f64> = self.psi_n_2d.to_owned();
+        let (n_z, n_r) = psi_n_2d.dim();
+        let mask: Array2<f64> = self.mask.to_owned();
+        let p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.p_prime_source_function.clone();
+        let ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.ff_prime_source_function.clone();
+
+        // Calculate profiles
+        let psi_n_flat: Array1<f64> = Array1::from_iter(psi_n_2d.iter().cloned());
+
+        let p_prime_dof_values: Array1<f64> = self.p_prime_dof_values.to_owned();
+        let ff_prime_dof_values: Array1<f64> = self.ff_prime_dof_values.to_owned();
+
+        let p_prime_2d: Array2<f64> = p_prime_source_function
+            .source_function_value(&psi_n_flat, &p_prime_dof_values.clone())
+            .to_shape((n_z, n_r))
+            .expect("error in p_prime_2d")
+            .to_owned();
+        let j_2d_p_prime: Array2<f64> = 2.0 * PI * mesh_r * p_prime_2d * &mask;
+
+        let ff_prime_2d: Array2<f64> = ff_prime_source_function
+            .source_function_value(&psi_n_flat, &ff_prime_dof_values.clone())
+            .to_shape((n_z, n_r))
+            .expect("error in ff_prime_2d")
+            .to_owned();
+        let j_2d_ff_prime: Array2<f64> = 2.0 * PI * ff_prime_2d * &mask / (MU_0 * mesh_r);
+
+        // Calculate j_2d
+        let j_2d: Array2<f64> = j_2d_p_prime + j_2d_ff_prime;
+        self.j_2d = j_2d.clone();
     }
 
     pub fn initialise_plasma_with_point_source_current(&mut self) {

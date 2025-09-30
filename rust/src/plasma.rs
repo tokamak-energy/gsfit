@@ -38,23 +38,23 @@ pub struct Plasma {
     pub ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
 }
 
-/// Python accessible methods
+// Python accessible methods
 #[pymethods]
 impl Plasma {
     /// Create a new Plasma instance
     ///
     /// # Arguments
-    /// * `n_r` - number of radial points
-    /// * `n_z` - number of vertical points
-    /// * `r_min` - minimum radial coordinate
-    /// * `r_max` - maximum radial coordinate
-    /// * `z_min` - minimum vertical coordinate
-    /// * `z_max` - maximum vertical coordinate
-    /// * `psi_n` - normalized poloidal flux points (1d array)
-    /// * `limit_pts_r` - radial limit points (1d array)
-    /// * `limit_pts_z` - vertical limit points (1d array)
-    /// * `vessel_r` - vessel radial points (1d array)
-    /// * `vessel_z` - vessel vertical points (1d array)
+    /// * `n_r` - number of radial points, dimensionless
+    /// * `n_z` - number of vertical points, dimensionless
+    /// * `r_min` - minimum radial coordinate, meter
+    /// * `r_max` - maximum radial coordinate, meter
+    /// * `z_min` - minimum vertical coordinate, meter
+    /// * `z_max` - maximum vertical coordinate, meter
+    /// * `psi_n` - normalized poloidal flux points (1d array), dimensionless
+    /// * `limit_pts_r` - radial limit points (1d array), meter
+    /// * `limit_pts_z` - vertical limit points (1d array), meter
+    /// * `vessel_r` - vessel radial points (1d array), meter
+    /// * `vessel_z` - vessel vertical points (1d array), meter
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
     /// * `ff_prime_source_function` - Fourier source function (a Rust implementation, initialised in Python)
     ///
@@ -74,8 +74,8 @@ impl Plasma {
         limit_pts_z: &Bound<'_, PyArray1<f64>>,
         vessel_r: &Bound<'_, PyArray1<f64>>,
         vessel_z: &Bound<'_, PyArray1<f64>>,
-        p_prime_source_function: Py<PyAny>,  // This is a big ugly!
-        ff_prime_source_function: Py<PyAny>, // This is a big ugly!
+        p_prime_source_function: Py<PyAny>,  // TODO: This is a big ugly!
+        ff_prime_source_function: Py<PyAny>, // TODO: This is a big ugly!
     ) -> Self {
         // Change Python types into Rust types
         let psi_n_ndarray: Array1<f64> = Array1::from(unsafe { psi_n.as_array() }.to_vec());
@@ -85,7 +85,7 @@ impl Plasma {
         let vessel_z_ndarray: Array1<f64> = Array1::from(unsafe { vessel_z.as_array() }.to_vec());
 
         // Extract an object from p_prime_source_function which contains the common traits
-        let p_prime_source_function_arc: Arc<dyn SourceFunctionTraits + Send + Sync> = Python::with_gil(|py| {
+        let p_prime_source_function_arc: Arc<dyn SourceFunctionTraits + Send + Sync> = Python::attach(|py| {
             p_prime_source_function
                 .extract::<Py<PyAny>>(py)
                 .and_then(|obj| {
@@ -109,7 +109,7 @@ impl Plasma {
         });
 
         // Extract an object from ff_prime_source_function which contains the common traits
-        let ff_prime_source_function_arc: Arc<dyn SourceFunctionTraits + Send + Sync> = Python::with_gil(|py| {
+        let ff_prime_source_function_arc: Arc<dyn SourceFunctionTraits + Send + Sync> = Python::attach(|py| {
             ff_prime_source_function
                 .extract::<Py<PyAny>>(py)
                 .and_then(|obj| {

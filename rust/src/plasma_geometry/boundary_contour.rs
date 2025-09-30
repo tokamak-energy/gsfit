@@ -419,6 +419,7 @@ impl BoundaryContour {
     }
 }
 
+/// TODO: idea - perhaps I could use the bicubic interpolation within a grid cell to find the maxima and minima in psi??
 fn find_minima_maxima_about_xpt(
     r: &Array1<f64>,
     z: &Array1<f64>,

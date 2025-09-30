@@ -1,17 +1,12 @@
 use super::BoundaryContour;
 use super::StationaryPoint;
-use crate::greens::D2PsiDR2Calculator;
-use crate::plasma_geometry::hessian;
 use contour::ContourBuilder;
 use core::f64;
 use geo::Contains;
 use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Coord, Line, LineString, MultiPolygon, Point, Polygon};
 use ndarray::{Array1, Array2};
-use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
-
-const PI: f64 = std::f64::consts::PI;
 
 /// Finds the most likely x-point (i.e. one which passes all the x-point tests, and the x-point with the largest poloidal flux `psi`).
 ///

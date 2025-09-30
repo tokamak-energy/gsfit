@@ -211,8 +211,6 @@ fn solve_inverse_problem(
     use_anderson_mixing: bool,
     anderson_mixing_from_previous_iter: f64,
 ) {
-    // Start logger
-    // env_logger::init();
     println!("solve_inverse_problem starting");
 
     // Convert to rust data type
