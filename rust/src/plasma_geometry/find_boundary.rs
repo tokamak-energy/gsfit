@@ -2,10 +2,11 @@ use super::BoundaryContour;
 use super::StationaryPoint;
 use super::find_viable_limit_point::find_viable_limit_point;
 use super::find_viable_xpt::find_viable_xpt;
+use super::flood_fill_mask::flood_fill_mask;
 use crate::greens::D2PsiDR2Calculator;
 use core::f64;
-use geo::{Contains, Coord, LineString, Point, Polygon};
-use ndarray::{Array1, Array2, s};
+use geo::{Coord, LineString, Polygon};
+use ndarray::{Array1, Array2};
 
 /// Find the plasma boundary
 ///
@@ -174,13 +175,6 @@ pub fn find_boundary(
         return Err("find_boundary: no boundary found".to_string());
     }
 
-    // Grid variables
-    let n_r: usize = r.len();
-    let n_z: usize = z.len();
-
-    // Calculate the "mask"; check if grid points are inside or outside the boundary
-    let mut mask: Array2<f64> = Array2::zeros((n_z, n_r));
-
     // boundary polygon
     let polygon_coordinates: Vec<Coord<f64>> = boundary_r.iter().zip(boundary_z.iter()).map(|(&x, &y)| Coord { x, y }).collect();
 
@@ -189,63 +183,20 @@ pub fn find_boundary(
         vec![], // No holes
     );
 
-    // Vessel polygon
-    let n_vessel_pts: usize = vessel_r.len();
-    let mut vessel_coords: Vec<Coord<f64>> = Vec::with_capacity(n_vessel_pts);
-    for i_vessel in 0..n_vessel_pts {
-        vessel_coords.push(Coord {
-            x: vessel_r[i_vessel],
-            y: vessel_z[i_vessel],
-        });
-    }
-    let vessel_polygon: Polygon = Polygon::new(
-        LineString::from(vessel_coords),
-        vec![], // No holes
+    // Calculate the mask
+    let mask: Array2<f64> = flood_fill_mask(
+        &r,
+        &z,
+        &psi_2d,
+        psi_b,
+        xpt_r,
+        xpt_z,
+        xpt_diverted,
+        mag_r_previous,
+        mag_z_previous,
+        &vessel_r,
+        &vessel_z,
     );
-
-    // Construct the mask
-    // mask=0.0 outside the plasma
-    // mask=1.0 inside the plasma
-    for i_r in 0..n_r {
-        for i_z in 0..n_z {
-            // Check if the point is inside the polygon
-            let test_point: Point = Point::new(r[i_r], z[i_z]);
-            let inside_bounding_contour: bool = boundary_polygon.contains(&test_point);
-            let inside_vessel: bool = vessel_polygon.contains(&test_point);
-            if inside_bounding_contour && inside_vessel {
-                mask[(i_z, i_r)] = 1.0;
-            }
-        }
-    }
-
-    // Remove the centre post (do we actually need this????)
-    let mut i_vessel_r: usize = 0;
-    let target_r: f64 = 0.1704; // the inboard limiter; actually 0.1705
-    for i_r in 0..n_r {
-        if r[i_r] < target_r {
-            // ensure less than the limiter
-            i_vessel_r = i_r;
-        }
-    }
-    mask.slice_mut(s![.., 0..i_vessel_r]).fill(0.0); // shape = (n_z, n_r)
-
-    // If there are any x-points, then mask above and below the x-point
-    // SHOULDN'T NEED TO DO THIS!!!!
-    if xpt_diverted {
-        for i_z in 0..n_z {
-            if z[i_z] > bounding_z.abs() {
-                mask.slice_mut(s![i_z..n_z, ..]).fill(0.0); // shape = (n_z, n_r)
-            }
-            if z[i_z] < -bounding_z.abs() {
-                mask.slice_mut(s![0..i_z, ..]).fill(0.0); // shape = (n_z, n_r)
-            }
-        }
-    }
-
-    // // Calculate psi_n_2d
-    // let psi_n_2d: Array2<f64> = &mask * (&psi_2d - psi_a) / (psi_b - psi_a);
-
-    // println!("find_boundary: psi_b={psi_b}, bounding_r={bounding_r}, bounding_z={bounding_z}");
 
     let result: BoundaryContour = BoundaryContour {
         boundary_polygon,
