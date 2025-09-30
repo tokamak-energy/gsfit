@@ -21,8 +21,8 @@ permissions:
   contents: read
 
 jobs:
-  rust_tests:
-    name: Rust tests
+  linux_rust_tests:
+    name: Linux Rust tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
@@ -39,8 +39,8 @@ jobs:
             cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
             cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
 
-  build_wheels_on_linux:
-    name: Build wheels for different Python versions
+  linux_build_wheels:
+    name: Linux Build wheels for Python
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
@@ -61,6 +61,34 @@ jobs:
           name: wheels-linux
           path: rust/target/wheels/
 
+  mac_os_build_wheels:
+    name: macOS Build wheels for Python
+    runs-on: macos-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies
+        run: |
+          brew install openblas openssl
+          python -m pip install --upgrade pip
+          python -m pip install maturin
+      - name: Build Python wheels (compiling Rust)
+        run: |
+          export OPENBLAS_DIR=$(brew --prefix openblas)
+          export OPENSSL_DIR=$(brew --prefix openssl)
+          maturin build --release -i python3.11
+      - name: Upload wheels to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos
+          path: rust/target/wheels/
+
   sdist:
     name: Source distribution
     runs-on: ubuntu-latest
@@ -78,10 +106,10 @@ jobs:
           name: wheels-sdist
           path: dist
 
-  python_test:
-    name: Python tests
+  linux_python_tests:
+    name: "Linux: Python tests"
     runs-on: ubuntu-latest
-    needs: [build_wheels_on_linux]
+    needs: [linux_build_wheels]
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -120,7 +148,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [sdist, rust_tests, build_wheels_on_linux, python_test]
+    needs: [sdist, linux_rust_tests, linux_build_wheels, linux_python_tests]
     permissions:
       # Use to sign the release artifacts
       id-token: write
