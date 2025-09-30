@@ -222,11 +222,6 @@ jobs:
           dir
           set OPENBLAS_DIR=${{ github.workspace }}\vcpkg\installed\x64-windows
           echo %OPENBLAS_DIR%
-
-          dir ${{ github.workspace }}\vcpkg\installed\x64-windows
-          dir %OPENBLAS_DIR%
-          dir %OPENBLAS_DIR%\lib
-          dir %OPENBLAS_DIR%\include
           maturin build --release -i python3.11
           maturin build --release -i python3.12
           maturin build --release -i python3.13
