@@ -212,11 +212,20 @@ jobs:
           py -3.11 -m pip install --upgrade pip maturin
           py -3.12 -m pip install --upgrade pip maturin
           py -3.13 -m pip install --upgrade pip maturin
-      - name: Build Python wheels (compiling Rust)
+      - name: Install OpenBLAS via vcpkg
         run: |
-          maturin build --release -i python3.11
-          maturin build --release -i python3.12
-          maturin build --release -i python3.13
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg install openblas:x64-windows
+      - name: Build Python wheels (compiling Rust)
+        env:
+          OPENBLAS_DIR: ${{ github.workspace }}\vcpkg\installed\x64-windows
+          OPENBLAS_STATIC: "1"
+          RUSTFLAGS: "-Ctarget-feature=+crt-static"
+        run: |
+          maturin build --release -i python3.11 --cargo-extra-args="--features openblas-src/system"
+          maturin build --release -i python3.12 --cargo-extra-args="--features openblas-src/system"
+          maturin build --release -i python3.13 --cargo-extra-args="--features openblas-src/system"
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v4
         with:
