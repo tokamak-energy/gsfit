@@ -223,8 +223,13 @@ jobs:
           OPENBLAS_STATIC: "1"
           RUSTFLAGS: "-Ctarget-feature=+crt-static"
         run: |
+          dir
+          echo %OPENBLAS_DIR%
+          set OPENBLAS_SYSTEM=1
           maturin build --release -i python3.11
+          set OPENBLAS_SYSTEM=1
           maturin build --release -i python3.12
+          set OPENBLAS_SYSTEM=1
           maturin build --release -i python3.13
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v4
