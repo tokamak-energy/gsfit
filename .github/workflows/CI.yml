@@ -219,7 +219,7 @@ jobs:
           .\vcpkg\vcpkg install openblas --triplet x64-windows-static-md
       - name: Build Python wheels (compiling Rust)
         env:
-          OPENBLAS_DIR: ${{ github.workspace }}\vcpkg\installed\x64-windows
+          OPENBLAS_DIR: ${{ github.workspace }}\vcpkg\packages\openblas_x64-windows
         run: |
           maturin build --release -i python3.11
           maturin build --release -i python3.12
