@@ -221,6 +221,7 @@ jobs:
         env:
           OPENBLAS_DIR: ${{ github.workspace }}\vcpkg\packages\openblas_x64-windows
         run: |
+          $env:PATH += ";${{ github.workspace }}\vcpkg"
           maturin build --release -i python3.11
           maturin build --release -i python3.12
           maturin build --release -i python3.13
