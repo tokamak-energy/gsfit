@@ -223,13 +223,14 @@ jobs:
         env:
           VCPKG_ROOT: C:/vcpkg
           OPENBLAS_DIR: C:/vcpkg/packages/openblas_x64-windows
-          RUSTFLAGS: -L C:/vcpkg/packages/openblas_x64-windows/lib -l openblas.lib
+          RUSTFLAGS: -L C:/vcpkg/packages/openblas_x64-windows/lib -l openblas
         run: |
           Get-ChildItem -Path "C:/vcpkg/packages/openblas_x64-windows"
           Get-ChildItem -Path "C:/vcpkg/packages/openblas_x64-windows/lib"
           # $env:PATH += ";C:/vcpkg"
           # $env:PATH += ";D:/a/gsfit/gsfit/vcpkg/installed/x64-windows-static-md"
-          maturin build --release -i python3.11
+          # maturin build --release -i python3.11
+          maturin build --release -i python3.11 --cargo-extra-args="-- -C link-arg=/LIBPATH:C:/vcpkg/packages/openblas_x64-windows/lib"
           maturin build --release -i python3.12
           maturin build --release -i python3.13
       - name: Upload wheels to artifacts
