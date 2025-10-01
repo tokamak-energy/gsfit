@@ -215,7 +215,9 @@ jobs:
       - name: Install OpenBLAS via vcpkg
         run: |
           git clone https://github.com/microsoft/vcpkg.git
+          set VCPKG_ROOT=${{ github.workspace }}\vcpkg
           .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg integrate install
           .\vcpkg\vcpkg install openblas --triplet x64-windows-static-md
       - name: Build Python wheels (compiling Rust)
         env:
