@@ -221,16 +221,17 @@ jobs:
           vcpkg install openblas --triplet x64-windows-static-md
       - name: Build Python wheels (compiling Rust)
         env:
-          OPENBLAS_DIR: ${{ github.workspace }}/vcpkg/installed/x64-windows-static-md
-          RUSTFLAGS: -L ${{ github.workspace }}/vcpkg/packages/openblas_x64-windows-static-md/lib -l openblas
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          OPENBLAS_DIR: ${{ github.workspace }}/vcpkg/installed/openblas_x64-windows
+          RUSTFLAGS: -L ${{ github.workspace }}/vcpkg/packages/openblas_x64-windows/lib -l openblas
         run: |
-          Get-ChildItem -Path "${{ github.workspace }}/vcpkg/packages/openblas_x64-windows-static-md"
-          Get-ChildItem -Path "${{ github.workspace }}/vcpkg/packages/openblas_x64-windows-static-md/lib"
+          Get-ChildItem -Path "${{ github.workspace }}/vcpkg/packages/openblas_x64-windows"
+          Get-ChildItem -Path "${{ github.workspace }}/vcpkg/packages/openblas_x64-windows/lib"
           # $env:PATH += ";${{ github.workspace }}/vcpkg"
           # $env:PATH += ";D:/a/gsfit/gsfit/vcpkg/installed/x64-windows-static-md"
-          # $env:PATH += ";D:/a/gsfit/gsfit/vcpkg/packages/openblas_x64-windows-static-md"
-          # $env:PATH += ";D:/a/gsfit/gsfit/vcpkg/packages/openblas_x64-windows-static-md/lib"
-          # $env:PATH += ";D:/a/gsfit/gsfit/vcpkg/packages/openblas_x64-windows-static-md/share"
+          # $env:PATH += ";D:/a/gsfit/gsfit/vcpkg/packages/openblas_x64-windows"
+          # $env:PATH += ";D:/a/gsfit/gsfit/vcpkg/packages/openblas_x64-windows/lib"
+          # $env:PATH += ";D:/a/gsfit/gsfit/vcpkg/packages/openblas_x64-windows/share"
           maturin build --release -i python3.11
           maturin build --release -i python3.12
           maturin build --release -i python3.13
