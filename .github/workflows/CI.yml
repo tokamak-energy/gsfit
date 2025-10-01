@@ -218,7 +218,7 @@ jobs:
           set VCPKG_ROOT=${{ github.workspace }}\vcpkg
           .\vcpkg\bootstrap-vcpkg.bat
           .\vcpkg\vcpkg integrate install # this installs for all users, so using "C:/vcpkg/packages/..."
-          vcpkg install openblas --triplet x64-windows-static-md
+          vcpkg install openblas --triplet x64-windows
       - name: Build Python wheels (compiling Rust)
         env:
           VCPKG_ROOT: C:/vcpkg
@@ -227,9 +227,6 @@ jobs:
         run: |
           Get-ChildItem -Path "C:/vcpkg/packages/openblas_x64-windows"
           Get-ChildItem -Path "C:/vcpkg/packages/openblas_x64-windows/lib"
-          # $env:PATH += ";C:/vcpkg"
-          # $env:PATH += ";D:/a/gsfit/gsfit/vcpkg/installed/x64-windows-static-md"
-          # maturin build --release -i python3.11
           maturin build --release -i python3.11 --cargo-extra-args="-- -C link-arg=/LIBPATH:C:/vcpkg/packages/openblas_x64-windows/lib"
           maturin build --release -i python3.12
           maturin build --release -i python3.13
