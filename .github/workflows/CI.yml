@@ -217,11 +217,11 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           set VCPKG_ROOT=${{ github.workspace }}\vcpkg
           .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg integrate install
+          .\vcpkg\vcpkg integrate install # this installs for all users, so using "C:/vcpkg/packages/..."
           vcpkg install openblas --triplet x64-windows-static-md
       - name: Build Python wheels (compiling Rust)
         env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          VCPKG_ROOT: C:/vcpkg
           OPENBLAS_DIR: ${{ github.workspace }}/vcpkg/installed/openblas_x64-windows
           RUSTFLAGS: -L ${{ github.workspace }}/vcpkg/packages/openblas_x64-windows/lib -l openblas
         run: |
