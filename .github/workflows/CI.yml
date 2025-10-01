@@ -218,10 +218,9 @@ jobs:
           .\vcpkg\bootstrap-vcpkg.bat
           .\vcpkg\vcpkg install openblas:x64-windows
       - name: Build Python wheels (compiling Rust)
+        env:
+          OPENBLAS_DIR: ${{ github.workspace }}\vcpkg\packages\openblas_x64-windows
         run: |
-          dir
-          set "OPENBLAS_DIR=${{ github.workspace }}\vcpkg\installed\x64-windows"
-          echo %OPENBLAS_DIR%
           maturin build --release -i python3.11
           maturin build --release -i python3.12
           maturin build --release -i python3.13
