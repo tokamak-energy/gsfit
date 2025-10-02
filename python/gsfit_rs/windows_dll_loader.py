@@ -24,6 +24,9 @@ def add_vcpkg_dll_directory() -> None:
     Raises:
         RuntimeError: If `VCPKG_ROOT` is not set or OpenBLAS/LAPACK are not installed.
     """
+    if sys.platform != "win32":
+        print("Not on Windows, skipping DLL directory addition.")
+        return
 
     # Check for `VCPKG_ROOT` environment variable (standard vcpkg variable)
     vcpkg_root = os.environ.get("VCPKG_ROOT")
