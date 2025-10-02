@@ -1,5 +1,4 @@
 import os
-import sys
 from pathlib import Path
 
 
@@ -25,8 +24,9 @@ def add_vcpkg_dll_directory() -> None:
     Raises:
         RuntimeError: If `VCPKG_ROOT` is not set or OpenBLAS/LAPACK are not installed.
     """
-    if sys.platform != "win32":
-        print("Not on Windows, skipping DLL directory addition.")
+
+    # This is needed for mypy type checking, as `os.add_dll_directory` is specific to Windows
+    if not hasattr(os, 'add_dll_directory'):
         return
 
     # Check for `VCPKG_ROOT` environment variable (standard vcpkg variable)
