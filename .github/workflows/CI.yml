@@ -258,17 +258,17 @@ jobs:
           git clone https://github.com/FusionComputingLab/freegsnke.git %USERPROFILE%\github\freegsnke
       - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install gsfit-0.0.0-cp311-cp311-win_amd64.whl[dev,with_freegs_and_freegsnke]
+          py -3.11 -m pip install --upgrade pip
+          py -3.11 -m pip install gsfit-0.0.0-cp311-cp311-win_amd64.whl[dev,with_freegs_and_freegsnke]
       - name: Fix FreeGS __author__ bug
         shell: bash
         run: |
-          FREEGS_PATH=$(python -c "import freegs; print(freegs.__file__)")
+          FREEGS_PATH=$(py -3.11 -c "import freegs; print(freegs.__file__)")
           echo $FREEGS_PATH
           sed -i 's/__author__ = metadata(__package__)\["Author"\]/__author__ = "Ben Dudson"/' "$FREEGS_PATH"
       - name: Run Jupyter notebook Python tests
         run: |
-          python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+          py -3.11 -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
       - name: Run mypy Python tests
         run: mypy python/
 
