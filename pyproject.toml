@@ -29,7 +29,8 @@ requires-python = ">=3.11"
 dev = [
     "ipykernel",
     "ipympl",
-    "maturin[patchelf]",
+    "maturin[patchelf]; platform_system == 'Linux'",
+    "maturin; platform_system != 'Linux'",
     "mypy",
     "nbval",
     "pytest",
