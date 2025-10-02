@@ -176,10 +176,74 @@ jobs:
       - name: Run mypy Python tests
         run: mypy python/
 
+  # windows_build_wheels:
+  #   name: "Windows: Build Python wheels"
+  #   runs-on: windows-latest
+  #   steps:
+  #     - name: Checkout source code
+  #       uses: actions/checkout@v4
+  #     - name: Set up Python 3.11
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.11'
+  #     - name: Set up Python 3.12
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.12'
+  #     - name: Set up Python 3.13
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.13'
+  #     - name: Install Rust toolchain
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - name: Install dependencies
+  #       run: |
+  #         py -3.11 -m pip install --upgrade pip maturin
+  #         py -3.12 -m pip install --upgrade pip maturin
+  #         py -3.13 -m pip install --upgrade pip maturin
+  #     - name: Install OpenBLAS via vcpkg
+  #       run: |
+  #         git clone https://github.com/microsoft/vcpkg.git
+  #         set VCPKG_ROOT=${{ github.workspace }}\vcpkg
+  #         .\vcpkg\bootstrap-vcpkg.bat
+  #         .\vcpkg\vcpkg integrate install # this installs for all users, into "C:/vcpkg/..."
+  #         vcpkg install openblas --triplet x64-windows-static-md
+  #         vcpkg install lapack-reference --triplet x64-windows-static-md
+  #     - name: Build Python wheels (compiling Rust)
+  #       env:
+  #         VCPKG_ROOT: C:/vcpkg
+  #         # OPENBLAS_DIR: C:/vcpkg/packages/openblas_x64-windows
+  #         # RUSTFLAGS: -L C:/vcpkg/packages/openblas_x64-windows/lib -l openblas
+  #       run: |
+  #         maturin build --release -i python3.11
+  #         maturin build --release -i python3.12
+  #         maturin build --release -i python3.13
+  #     - name: Upload wheels to artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: wheels-windows
+  #         path: rust/target/wheels/
+
   windows_build_wheels:
     name: "Windows: Build Python wheels"
     runs-on: windows-latest
     steps:
+      - name: Cache installation of OpenBLAS and LAPACK (via `vcpkg`)
+        id: cache-vcpkg
+        uses: actions/cache@v4
+        with:
+          path: "C:/vcpkg"
+          key: vcpkg-${{ runner.os }}-openblas-lapack-v1
+          restore-keys: vcpkg-${{ runner.os }}-openblas-lapack-
+      - name: Install OpenBLAS via `vcpkg` (might be skipped if cached)
+        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          # Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in PATH
+          .\vcpkg\vcpkg integrate install
+          vcpkg install openblas:x64-windows-static-md
+          vcpkg install lapack-reference:x64-windows-static-md
       - name: Checkout source code
         uses: actions/checkout@v4
       - name: Set up Python 3.11
@@ -201,19 +265,10 @@ jobs:
           py -3.11 -m pip install --upgrade pip maturin
           py -3.12 -m pip install --upgrade pip maturin
           py -3.13 -m pip install --upgrade pip maturin
-      - name: Install OpenBLAS via vcpkg
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          set VCPKG_ROOT=${{ github.workspace }}\vcpkg
-          .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg integrate install # this installs for all users, into "C:/vcpkg/..."
-          vcpkg install openblas --triplet x64-windows-static-md
-          vcpkg install lapack-reference --triplet x64-windows-static-md
+
       - name: Build Python wheels (compiling Rust)
         env:
           VCPKG_ROOT: C:/vcpkg
-          # OPENBLAS_DIR: C:/vcpkg/packages/openblas_x64-windows
-          # RUSTFLAGS: -L C:/vcpkg/packages/openblas_x64-windows/lib -l openblas
         run: |
           maturin build --release -i python3.11
           maturin build --release -i python3.12
