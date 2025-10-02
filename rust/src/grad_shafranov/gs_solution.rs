@@ -12,7 +12,6 @@ use core::f64;
 use ndarray::Axis;
 use ndarray::{Array1, Array2, Array3, s};
 use std::sync::Arc;
-extern crate blas_src;
 use lapack::*;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
