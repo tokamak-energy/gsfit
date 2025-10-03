@@ -36,7 +36,7 @@ Using Python allows easy integration into existing workflows. For example, in
 # 1. Installation and environment
 
 ## 1.1 Python environment
-Presently, GSFit can be run on Python 3.11, 3.12 and 3.13 (see the banner at the top of this page).
+GSFit can be run on Python 3.11, 3.12 and 3.13 (see the banner at the top of this page).
 
 When installing from PyPI, see [section 1.2](#12-installing-from-pypi), you can use the system Python, but it is best practice to use a virtual environment.
 
@@ -57,7 +57,8 @@ source venv_gsfit/bin/activate
 
 ## 1.2 Installing from PyPI
 GSFit is available on the [PyPI package registry](https://pypi.org/project/gsfit/) as a pre-compiled binary.
-The binary is compiled using the "manylinux2014" standard, which typically can be run on any Linux machine newer than 2014.
+The binary is compiled for Linux, macOS, and Windows.
+For Linux the "manylinux2014" standard is used, which typically can be run on any Linux machine newer than 2014.
 
 All of the packages GSFit depends on are listed in the [pyproject.toml](pyproject.toml).
 These are divided into essential packages which are always required for any run and optional packages which can be installed for different purposes.
@@ -75,12 +76,14 @@ uv pip install gsfit.[with_st40_mdsplus]
 uv pip install gsfit.[dev,with_st40_mdsplus]
 ```
 
-## 1.3 Compiling and installing from source code
+<!-- ## 1.3 Compiling and installing from source code
 While GSFit can be installed into the system Python from PyPI, when compiling from source code a virtual environment is <ins>**required**</ins>.
 
 The Rust compiler is easily installed using [`rustup`](https://www.rust-lang.org/tools/install).
 
-GSFit also requires [OpenBLAS](https://github.com/OpenMathLib/OpenBLAS) to perform various LAPACK routines, such as least squares minimisation and eigenvalue/eigenvector calculations.
+GSFit also requires [OpenBLAS](https://github.com/OpenMathLib/OpenBLAS) to perform various LAPACK routines, such as least squares minimisation and eigenvalue/eigenvector calculations. -->
+
+## 1.3 Compiling and installing from source code on Linux
 
 ```shell
 # Install the Rust compiler (only needs to be done once)
@@ -101,7 +104,77 @@ uv pip install --reinstall .
 uv pip install --reinstall .[dev]
 ```
 
-## 1.4 IDE
+## 1.4 Compiling and installing from source code on macOS
+
+```shell
+# Install the Rust compiler (only needs to be done once)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Clone a copy of GSFit from GitHub
+git clone git@github.com:tokamak-energy/gsfit.git
+cd gsfit
+
+# Load OpenBLAS (gsfit is statically linked so this is only required when compiling)
+module avail
+module load OpenBLAS
+
+# Install GSFit
+uv pip install --reinstall .
+
+# or install with the "developer" packages, such as `pytest` and `mypy`
+uv pip install --reinstall .[dev]
+```
+
+## 1.5 Compiling and installing from source code on Windows
+
+On Windows, OpenBLAS can be installed using [vcpkg](https://vcpkg.io/):
+
+```powershell
+# Install vcpkg (only needs to be done once)
+git clone https://github.com/Microsoft/vcpkg.git C:\Users\__YOUR_USERNAME__\github\vcpkg
+cd C:\Users\__YOUR_USERNAME__\github\vcpkg
+.\bootstrap-vcpkg.bat
+
+# Install OpenBLAS/LAPACK with static linking
+vcpkg install openblas:x64-windows-static-md
+vcpkg install lapack-reference:x64-windows-static-md
+
+# Set VCPKG_ROOT environment variable (required for GSFit to find OpenBLAS DLLs)
+$env:VCPKG_ROOT = "C:\Users\__YOUR_USERNAME__\github\vcpkg"
+
+# Install the Rust compiler (only needs to be done once)
+# Download and run rustup-init.exe from https://www.rust-lang.org/tools/install
+
+# Clone a copy of GSFit from GitHub
+git clone git@github.com:tokamak-energy/gsfit.git
+cd gsfit
+
+# Install GSFit
+uv pip install --reinstall .
+
+# or install with the "developer" packages, such as `pytest` and `mypy`
+uv pip install --reinstall .[dev]
+```
+
+**Important for Windows users**: 
+
+GSFit requires the `VCPKG_ROOT` environment variable to locate OpenBLAS/LAPACK DLLs at runtime. Set it in each PowerShell session:
+
+```powershell
+$env:VCPKG_ROOT = "C:\Users\__YOUR_USERNAME__\github\vcpkg"
+```
+
+Or add it permanently to your system environment variables:
+1. Open System Properties → Environment Variables
+2. Add a new user or system variable: `VCPKG_ROOT` = `C:\Users\__YOUR_USERNAME__\github\vcpkg`
+
+Alternatively, add it to your PowerShell "profile" for automatic loading:
+```powershell
+notepad $PROFILE
+# Add the line: $env:VCPKG_ROOT = "C:\Users\__YOUR_USERNAME__\github\vcpkg"
+```
+
+## 1.6 IDE
 [VS Code](https://code.visualstudio.com/) is the recommended IDE for GSFit.
 
 A particularly useful extension is [`rust-analyzer`](https://github.com/rust-lang/rust-analyzer), which *"is a part of a larger rls-2.0 effort to create excellent IDE support for Rust."*
