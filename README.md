@@ -114,9 +114,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 git clone git@github.com:tokamak-energy/gsfit.git
 cd gsfit
 
-# Load OpenBLAS (gsfit is statically linked so this is only required when compiling)
-module avail
-module load OpenBLAS
+# Install OpenBLAS (gsfit is statically linked so this is only required when compiling)
+brew install openblas
 
 # Install GSFit
 uv pip install --reinstall .
@@ -130,7 +129,7 @@ uv pip install --reinstall .[dev]
 On Windows, OpenBLAS can be installed using [vcpkg](https://vcpkg.io/):
 
 ```powershell
-# Install vcpkg (only needs to be done once)
+# Install vcpkg
 git clone https://github.com/Microsoft/vcpkg.git C:\Users\__YOUR_USERNAME__\github\vcpkg
 cd C:\Users\__YOUR_USERNAME__\github\vcpkg
 .\bootstrap-vcpkg.bat
@@ -139,20 +138,23 @@ cd C:\Users\__YOUR_USERNAME__\github\vcpkg
 vcpkg install openblas:x64-windows-static-md
 vcpkg install lapack-reference:x64-windows-static-md
 
-# Set VCPKG_ROOT environment variable (required for GSFit to find OpenBLAS DLLs)
-$env:VCPKG_ROOT = "C:\Users\__YOUR_USERNAME__\github\vcpkg"
-
-# Install the Rust compiler (only needs to be done once)
+# Install the Rust compiler
 # Download and run rustup-init.exe from https://www.rust-lang.org/tools/install
 
 # Clone a copy of GSFit from GitHub
 git clone git@github.com:tokamak-energy/gsfit.git
 cd gsfit
 
+# Copy OpenBLAS and LAPACk *.dll library files
+# Since Python 3.8+, *.dll library files are not found using the `PATH` environment variable. Instead, they are only found from:
+#   1. The directory containing the .pyd file (what we will be doing)
+#   2. System directories
+#   3. Directories explicitly added with `os.add_dll_directory("path_to_dlls")`
+Copy-Item "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" -Destination "python/gsfit_rs/" -ErrorAction Stop
+
 # Install GSFit
 uv pip install --reinstall .
-
-# or install with the "developer" packages, such as `pytest` and `mypy`
+# Or install with the "developer" packages, such as `pytest` and `mypy`
 uv pip install --reinstall .[dev]
 ```
 

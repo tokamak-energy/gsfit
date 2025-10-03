@@ -134,8 +134,6 @@ jobs:
           python3.13 -m pip install --upgrade pip maturin
       - name: Build Python wheels (compiling Rust)
         run: |
-          export OPENBLAS_DIR=$(brew --prefix openblas)
-          export OPENSSL_DIR=$(brew --prefix openssl)
           maturin build --release -i python3.11
           maturin build --release -i python3.12
           maturin build --release -i python3.13
@@ -221,13 +219,13 @@ jobs:
       - name: Copy OpenBLAS and LAPACK DLLs to Python package
         run: |
           # Copy all DLLs from vcpkg to the Python package directory
-          Copy-Item "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" -Destination "python/gsfit_rs/" -ErrorAction SilentlyContinue
+          Copy-Item "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" -Destination "python/gsfit_rs/" -ErrorAction Stop
           # List what DLLs are available in vcpkg (for debugging)
           Write-Host "Available DLLs in vcpkg bin directory:"
           Get-ChildItem "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" | Select-Object Name
           # List what's now in the Python package directory
           Write-Host "DLLs copied to python/gsfit_rs:"
-          Get-ChildItem "python/gsfit_rs/*.dll" -ErrorAction SilentlyContinue | Select-Object Name
+          Get-ChildItem "python/gsfit_rs/*.dll" -ErrorAction Stop | Select-Object Name
 
       - name: Build Python wheels (compiling Rust)
         env:
