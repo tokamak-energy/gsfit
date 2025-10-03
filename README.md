@@ -70,8 +70,7 @@ uv pip install gsfit
 # or install GSFit from the PyPI package registry, with the "developer" packages, such as `pytest` and `mypy`
 uv pip install gsfit[dev]
 # or install GSFit with reading/writing to/from ST40's experimental database
-# (this will only work within Tokamak Energy's network)
-uv pip install gsfit.[with_st40_mdsplus]
+uv pip install gsfit.[with_st40_mdsplus]  # (this will only work within Tokamak Energy's network)
 # or any combination
 uv pip install gsfit.[dev,with_st40_mdsplus]
 ```
@@ -99,7 +98,6 @@ module load OpenBLAS
 
 # Install GSFit
 uv pip install --reinstall .
-
 # or install with the "developer" packages, such as `pytest` and `mypy`
 uv pip install --reinstall .[dev]
 ```
@@ -119,7 +117,6 @@ brew install openblas
 
 # Install GSFit
 uv pip install --reinstall .
-
 # or install with the "developer" packages, such as `pytest` and `mypy`
 uv pip install --reinstall .[dev]
 ```
@@ -154,26 +151,8 @@ Copy-Item "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" -Destination "pyt
 
 # Install GSFit
 uv pip install --reinstall .
-# Or install with the "developer" packages, such as `pytest` and `mypy`
+# or install with the "developer" packages, such as `pytest` and `mypy`
 uv pip install --reinstall .[dev]
-```
-
-**Important for Windows users**: 
-
-GSFit requires the `VCPKG_ROOT` environment variable to locate OpenBLAS/LAPACK DLLs at runtime. Set it in each PowerShell session:
-
-```powershell
-$env:VCPKG_ROOT = "C:\Users\__YOUR_USERNAME__\github\vcpkg"
-```
-
-Or add it permanently to your system environment variables:
-1. Open System Properties → Environment Variables
-2. Add a new user or system variable: `VCPKG_ROOT` = `C:\Users\__YOUR_USERNAME__\github\vcpkg`
-
-Alternatively, add it to your PowerShell "profile" for automatic loading:
-```powershell
-notepad $PROFILE
-# Add the line: $env:VCPKG_ROOT = "C:\Users\__YOUR_USERNAME__\github\vcpkg"
 ```
 
 ## 1.6 IDE
