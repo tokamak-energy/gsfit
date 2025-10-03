@@ -247,22 +247,6 @@ jobs:
     runs-on: windows-latest
     needs: [windows_build_wheels]
     steps:
-      # - name: Cache installation of OpenBLAS and LAPACK (via `vcpkg`)
-      #   id: cache-vcpkg
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: "C:/vcpkg"
-      #     key: vcpkg-${{ runner.os }}-openblas-lapack-v1
-      #     restore-keys: vcpkg-${{ runner.os }}-openblas-lapack-
-      # - name: Install OpenBLAS via `vcpkg` (might be skipped if cached)
-      #   if: steps.cache-vcpkg.outputs.cache-hit != 'true'
-      #   run: |
-      #     git clone https://github.com/microsoft/vcpkg.git
-      #     .\vcpkg\bootstrap-vcpkg.bat
-      #     # Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in PATH
-      #     .\vcpkg\vcpkg integrate install
-      #     vcpkg install openblas:x64-windows-static-md
-      #     vcpkg install lapack-reference:x64-windows-static-md
       - name: Checkout source code
         uses: actions/checkout@v4
       - name: Set up Python
