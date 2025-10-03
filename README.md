@@ -135,8 +135,9 @@ git clone https://github.com/Microsoft/vcpkg.git C:\Users\__YOUR_USERNAME__\gith
 cd C:\Users\__YOUR_USERNAME__\github\vcpkg
 .\bootstrap-vcpkg.bat
 
-# Install OpenBLAS with static linking
-.\vcpkg install openblas:x64-windows-static-md
+# Install OpenBLAS/LAPACK with static linking
+vcpkg install openblas:x64-windows-static-md
+vcpkg install lapack-reference:x64-windows-static-md
 
 # Set VCPKG_ROOT environment variable (required for GSFit to find OpenBLAS DLLs)
 $env:VCPKG_ROOT = "C:\Users\__YOUR_USERNAME__\github\vcpkg"
@@ -157,7 +158,7 @@ uv pip install --reinstall .[dev]
 
 **Important for Windows users**: 
 
-GSFit requires the `VCPKG_ROOT` environment variable to locate OpenBLAS DLLs at runtime. Set it in each PowerShell session:
+GSFit requires the `VCPKG_ROOT` environment variable to locate OpenBLAS/LAPACK DLLs at runtime. Set it in each PowerShell session:
 
 ```powershell
 $env:VCPKG_ROOT = "C:\Users\__YOUR_USERNAME__\github\vcpkg"
