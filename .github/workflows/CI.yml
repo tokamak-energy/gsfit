@@ -247,22 +247,22 @@ jobs:
     runs-on: windows-latest
     needs: [windows_build_wheels]
     steps:
-      - name: Cache installation of OpenBLAS and LAPACK (via `vcpkg`)
-        id: cache-vcpkg
-        uses: actions/cache@v4
-        with:
-          path: "C:/vcpkg"
-          key: vcpkg-${{ runner.os }}-openblas-lapack-v1
-          restore-keys: vcpkg-${{ runner.os }}-openblas-lapack-
-      - name: Install OpenBLAS via `vcpkg` (might be skipped if cached)
-        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          .\vcpkg\bootstrap-vcpkg.bat
-          # Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in PATH
-          .\vcpkg\vcpkg integrate install
-          vcpkg install openblas:x64-windows-static-md
-          vcpkg install lapack-reference:x64-windows-static-md
+      # - name: Cache installation of OpenBLAS and LAPACK (via `vcpkg`)
+      #   id: cache-vcpkg
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: "C:/vcpkg"
+      #     key: vcpkg-${{ runner.os }}-openblas-lapack-v1
+      #     restore-keys: vcpkg-${{ runner.os }}-openblas-lapack-
+      # - name: Install OpenBLAS via `vcpkg` (might be skipped if cached)
+      #   if: steps.cache-vcpkg.outputs.cache-hit != 'true'
+      #   run: |
+      #     git clone https://github.com/microsoft/vcpkg.git
+      #     .\vcpkg\bootstrap-vcpkg.bat
+      #     # Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in PATH
+      #     .\vcpkg\vcpkg integrate install
+      #     vcpkg install openblas:x64-windows-static-md
+      #     vcpkg install lapack-reference:x64-windows-static-md
       - name: Checkout source code
         uses: actions/checkout@v4
       - name: Set up Python
@@ -284,13 +284,13 @@ jobs:
           py -3.11 -m pip install --upgrade pip
           py -3.11 -m pip install gsfit-0.0.0-cp311-cp311-win_amd64.whl[dev,with_freegs_and_freegsnke]
       - name: Run Jupyter notebook Python tests
-        env:
-          VCPKG_ROOT: C:/vcpkg
+        # env:
+        #   VCPKG_ROOT: C:/vcpkg
         run: |
           py -3.11 -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
       - name: Run mypy Python tests
-        env:
-          VCPKG_ROOT: C:/vcpkg
+        # env:
+        #   VCPKG_ROOT: C:/vcpkg
         run: mypy python/
 
   release:
