@@ -46,7 +46,7 @@ def add_vcpkg_dll_directory() -> None:
             f"vcpkg bin directory not found: {dll_path}"
         )
 
-    # Check for OpenBLAS DLLs (can be named openblas.dll or libblas.dll depending on vcpkg version)
+    # Check for OpenBLAS and LAPACK DLLs
     has_openblas_and_lapack = (dll_path / "libblas.dll").exists() and (dll_path / "liblapack.dll").exists()
     if not has_openblas_and_lapack:
         raise RuntimeError(
