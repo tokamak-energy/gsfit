@@ -218,6 +218,17 @@ jobs:
           py -3.12 -m pip install --upgrade pip maturin
           py -3.13 -m pip install --upgrade pip maturin
 
+      - name: Copy OpenBLAS and LAPACK DLLs to Python package
+        run: |
+          # Copy all DLLs from vcpkg to the Python package directory
+          Copy-Item "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" -Destination "python/gsfit_rs/" -ErrorAction SilentlyContinue
+          # List what DLLs are available in vcpkg (for debugging)
+          Write-Host "Available DLLs in vcpkg bin directory:"
+          Get-ChildItem "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" | Select-Object Name
+          # List what's now in the Python package directory
+          Write-Host "DLLs copied to python/gsfit_rs:"
+          Get-ChildItem "python/gsfit_rs/*.dll" -ErrorAction SilentlyContinue | Select-Object Name
+
       - name: Build Python wheels (compiling Rust)
         env:
           VCPKG_ROOT: C:/vcpkg
