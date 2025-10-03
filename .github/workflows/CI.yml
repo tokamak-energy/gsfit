@@ -266,8 +266,8 @@ jobs:
         run: dir
       - name: Clone FreeGSNKE repository
         run: |
-          mkdir %USERPROFILE%\github
-          git clone https://github.com/FusionComputingLab/freegsnke.git %USERPROFILE%\github\freegsnke
+          mkdir $env:USERPROFILE\github
+          git clone https://github.com/FusionComputingLab/freegsnke.git $env:USERPROFILE\github\freegsnke
       - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
         run: |
           py -3.11 -m pip install --upgrade pip
