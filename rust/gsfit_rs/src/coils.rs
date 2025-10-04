@@ -1,6 +1,5 @@
 use crate::greens::greens_psi;
-use crate::data_tree::DataTree;
-use crate::data_tree::DataTreeAccumulator;
+use data_tree::{DataTree, DataTreeAccumulator};
 use crate::sensors::SensorsDynamic;
 use ndarray::{Array1, Array2, Array3, s};
 use ndarray_interp::interp1d::Interp1D;

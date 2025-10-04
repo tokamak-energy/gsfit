@@ -16,7 +16,7 @@ mod grad_shafranov;
 pub mod plasma_geometry;
 pub use grad_shafranov::GsSolution;
 pub mod greens;
-mod data_tree;
+// Import DataTree from the external crate
 pub use data_tree::DataTree;
 mod plasma;
 pub use plasma::Plasma;

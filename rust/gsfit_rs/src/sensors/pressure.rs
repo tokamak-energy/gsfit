@@ -2,8 +2,8 @@
 use crate::Plasma;
 use crate::greens::greens_b;
 use crate::greens::greens_d_b_d_z;
-use crate::data_tree::DataTree;
-use crate::data_tree::DataTreeAccumulator;
+use data_tree::DataTree;
+use data_tree::DataTreeAccumulator;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use ndarray::{Array1, Array2, Array3, Axis, s};

@@ -1,7 +1,6 @@
 use crate::grad_shafranov::GsSolution;
 use crate::greens::mutual_inductance_finite_size_to_finite_size;
-use crate::data_tree::DataTree;
-use crate::data_tree::DataTreeAccumulator;
+use data_tree::{DataTree, DataTreeAccumulator};
 use lapack::*;
 use ndarray::{Array1, Array2, Array3, s};
 use ndarray_linalg::Norm;

@@ -1,8 +1,7 @@
 use crate::coils::Coils;
 use crate::grad_shafranov::GsSolution;
 use crate::greens::{greens_b, greens_d_b_d_z, greens_d2_psi_d_r2, greens_psi};
-use crate::data_tree::DataTree;
-use crate::data_tree::DataTreeAccumulator;
+use data_tree::{DataTree, DataTreeAccumulator};
 use crate::passives::Passives;
 use crate::source_functions::SourceFunctionTraits;
 use crate::source_functions::{EfitPolynomial, LiuqePolynomial};

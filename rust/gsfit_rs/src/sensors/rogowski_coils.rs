@@ -1,7 +1,7 @@
 use crate::Plasma;
 use crate::coils::Coils;
-use crate::data_tree::DataTree;
-use crate::data_tree::DataTreeAccumulator;
+use data_tree::DataTree;
+use data_tree::DataTreeAccumulator;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use geo::{Contains, Coord, LineString, Point, Polygon};

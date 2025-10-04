@@ -1,0 +1,10 @@
+[package]
+name = "data_tree"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ndarray = "0.16.1"
+
+[dev-dependencies]
+# For running tests
