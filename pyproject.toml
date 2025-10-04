@@ -55,6 +55,7 @@ with_freegs_and_freegsnke = [
 features = ["pyo3/extension-module"]
 python-source = "python"
 python-packages = ["gsfit", "gsfit_rs", "diagnostic_and_simulation_base"]
+manifest-path = "rust/gsfit_rs/Cargo.toml"
 gsfit.data = ["gsfit/settings/"]
 
 [tool.mypy]

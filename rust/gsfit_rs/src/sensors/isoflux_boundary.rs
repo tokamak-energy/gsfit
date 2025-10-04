@@ -2,8 +2,8 @@ use crate::Plasma;
 use crate::coils::Coils;
 use crate::greens::greens_b;
 use crate::greens::greens_psi;
-use crate::nested_dict::NestedDict;
-use crate::nested_dict::NestedDictAccumulator;
+use data_tree::DataTree;
+use data_tree::DataTreeAccumulator;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::SensorsStatic;
 use ndarray::{Array1, Array2, Array3, Axis, s};
@@ -20,16 +20,16 @@ const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone)]
 #[pyclass]
-pub struct Isoflux {
-    pub results: NestedDict,
+pub struct IsofluxBoundary {
+    pub results: DataTree,
 }
 
 /// Python accessible methods
 #[pymethods]
-impl Isoflux {
+impl IsofluxBoundary {
     #[new]
     pub fn new() -> Self {
-        Self { results: NestedDict::new() }
+        Self { results: DataTree::new() }
     }
 
     /// Data structure:
@@ -61,15 +61,11 @@ impl Isoflux {
         time: &Bound<'_, PyArray1<f64>>,
         location_1_r: &Bound<'_, PyArray1<f64>>,
         location_1_z: &Bound<'_, PyArray1<f64>>,
-        location_2_r: &Bound<'_, PyArray1<f64>>,
-        location_2_z: &Bound<'_, PyArray1<f64>>,
         times_to_reconstruct: &Bound<'_, PyArray1<f64>>,
     ) {
         // Convert into Rust data types
         let location_1_r_ndarray: Array1<f64> = Array1::from(unsafe { location_1_r.as_array() }.to_vec());
         let location_1_z_ndarray: Array1<f64> = Array1::from(unsafe { location_1_z.as_array() }.to_vec());
-        let location_2_r_ndarray: Array1<f64> = Array1::from(unsafe { location_2_r.as_array() }.to_vec());
-        let location_2_z_ndarray: Array1<f64> = Array1::from(unsafe { location_2_z.as_array() }.to_vec());
         let time_ndarray: Array1<f64> = Array1::from(unsafe { time.as_array() }.to_vec());
         let times_to_reconstruct_ndarray: Array1<f64> = Array1::from(unsafe { times_to_reconstruct.as_array() }.to_vec());
         let n_time: usize = times_to_reconstruct_ndarray.len();
@@ -105,18 +101,6 @@ impl Isoflux {
         self.results
             .get_or_insert(name)
             .get_or_insert("isoflux_geometry")
-            .get_or_insert("location_2")
-            .get_or_insert("r")
-            .insert("measured_experimental", location_2_r_ndarray.clone());
-        self.results
-            .get_or_insert(name)
-            .get_or_insert("isoflux_geometry")
-            .get_or_insert("location_2")
-            .get_or_insert("z")
-            .insert("measured_experimental", location_2_z_ndarray.clone());
-        self.results
-            .get_or_insert(name)
-            .get_or_insert("isoflux_geometry")
             .insert("time_experimental", time_ndarray.clone());
 
         // Interpolate all sensors to `times_to_reconstruct`
@@ -147,35 +131,7 @@ impl Isoflux {
             .get_or_insert("isoflux_geometry")
             .get_or_insert("location_1")
             .get_or_insert("z")
-            .insert("measured", location_1_z_measured);
-        // location_2_r
-        let interpolator = Interp1D::builder(location_2_r_ndarray)
-            .x(time_ndarray.clone())
-            .build()
-            .expect("Isoflux.greens_with_coils: Can't make Interp1D for location_2_r");
-        let location_2_r_measured: Array1<f64> = interpolator
-            .interp_array(&times_to_reconstruct_ndarray)
-            .expect("Isoflux.greens_with_coils: Can't do interpolation for location_2_r");
-        self.results
-            .get_or_insert(name)
-            .get_or_insert("isoflux_geometry")
-            .get_or_insert("location_2")
-            .get_or_insert("r")
-            .insert("measured", location_2_r_measured.clone());
-        // location_2_z
-        let interpolator = Interp1D::builder(location_2_z_ndarray)
-            .x(time_ndarray.clone())
-            .build()
-            .expect("Isoflux.greens_with_coils: Can't make Interp1D for location_2_z");
-        let location_2_z_measured: Array1<f64> = interpolator
-            .interp_array(&times_to_reconstruct_ndarray)
-            .expect("Isoflux.greens_with_coils: Can't do interpolation for location_2_z");
-        self.results
-            .get_or_insert(name)
-            .get_or_insert("isoflux_geometry")
-            .get_or_insert("location_2")
-            .get_or_insert("z")
-            .insert("measured", location_2_z_measured);
+            .insert("measured", location_1_z_measured.clone());
 
         // Add time
         self.results
@@ -186,7 +142,7 @@ impl Isoflux {
         // Add a time-dependent "include"
         let mut include_dynamic: Vec<bool> = vec![fit_settings_include; n_time];
         for i_time in 0..n_time {
-            if location_1_r_measured[i_time].is_nan() || location_2_r_measured[i_time].is_nan() {
+            if location_1_r_measured[i_time].is_nan() || location_1_z_measured[i_time].is_nan() {
                 include_dynamic[i_time] = false;
             }
         }
@@ -220,22 +176,6 @@ impl Isoflux {
                 .get("z")
                 .get("measured")
                 .unwrap_array1();
-            let location_2_r: Array1<f64> = self
-                .results
-                .get(&sensor_name)
-                .get("isoflux_geometry")
-                .get("location_2")
-                .get("r")
-                .get("measured")
-                .unwrap_array1();
-            let location_2_z: Array1<f64> = self
-                .results
-                .get(&sensor_name)
-                .get("isoflux_geometry")
-                .get("location_2")
-                .get("z")
-                .get("measured")
-                .unwrap_array1();
 
             // Get time
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("isoflux_geometry").get("time").unwrap_array1();
@@ -256,21 +196,9 @@ impl Isoflux {
                         coil_r.clone() * 0.0,
                         coil_r.clone() * 0.0,
                     );
-                    let g_location_1: f64 = g_full_location_1.sum();
-
-                    // Calculate the Green's at location 1
-                    let g_full_location_2: Array2<f64> = greens_psi(
-                        Array1::from_vec(vec![location_2_r[i_time]]),
-                        Array1::from_vec(vec![location_2_z[i_time]]),
-                        coil_r.clone(),
-                        coil_z.clone(),
-                        coil_r.clone() * 0.0,
-                        coil_r.clone() * 0.0,
-                    );
-                    let g_location_2: f64 = g_full_location_2.sum();
 
                     // Sum over all the current sources
-                    g_vs_time[i_time] = g_location_1 - g_location_2;
+                    g_vs_time[i_time] = g_full_location_1.sum();
                 }
 
                 // Store
@@ -306,22 +234,6 @@ impl Isoflux {
                 .get("z")
                 .get("measured")
                 .unwrap_array1();
-            let location_2_r: Array1<f64> = self
-                .results
-                .get(&sensor_name)
-                .get("isoflux_geometry")
-                .get("location_2")
-                .get("r")
-                .get("measured")
-                .unwrap_array1();
-            let location_2_z: Array1<f64> = self
-                .results
-                .get(&sensor_name)
-                .get("isoflux_geometry")
-                .get("location_2")
-                .get("z")
-                .get("measured")
-                .unwrap_array1();
 
             // Get time
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("isoflux_geometry").get("time").unwrap_array1();
@@ -329,7 +241,7 @@ impl Isoflux {
 
             // Calculate Greens with each passive degree of freedom
             for passive_name in passives_local.results.keys() {
-                let _tmp: NestedDictAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
+                let _tmp: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
                 let dof_names: Vec<String> = _tmp.keys();
                 let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
@@ -360,33 +272,7 @@ impl Isoflux {
                         let g_with_dof_full_location_1: Array2<f64> = g_full_location_1 * &current_distribution; // shape = [n_r * n_z, n_filament]
 
                         // Sum over all filaments
-                        let g_location_1: f64 = g_with_dof_full_location_1.sum();
-
-                        // Location 2
-                        let g_full_location_2: Array2<f64> = greens_psi(
-                            Array1::from_vec(vec![location_2_r[i_time]]), // by convention (r, z) are "sensors"
-                            Array1::from_vec(vec![location_2_z[i_time]]),
-                            passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
-                            passive_z.clone(),
-                            passive_r.clone() * 0.0,
-                            passive_z.clone() * 0.0,
-                        );
-
-                        // Current distribution
-                        let current_distribution: Array1<f64> = passives
-                            .results
-                            .get(&passive_name)
-                            .get("dof")
-                            .get(&dof_name)
-                            .get("current_distribution")
-                            .unwrap_array1();
-
-                        let g_with_dof_full_location_2: Array2<f64> = g_full_location_2 * &current_distribution; // shape = [n_r * n_z, n_filament]
-
-                        // Sum over all filaments
-                        let g_location_2: f64 = g_with_dof_full_location_2.sum();
-
-                        g_vs_time[i_time] = g_location_1 - g_location_2;
+                        g_vs_time[i_time] = g_with_dof_full_location_1.sum();
                     }
 
                     // Store
@@ -429,22 +315,6 @@ impl Isoflux {
                 .get("z")
                 .get("measured")
                 .unwrap_array1();
-            let location_2_r: Array1<f64> = self
-                .results
-                .get(&sensor_name)
-                .get("isoflux_geometry")
-                .get("location_2")
-                .get("r")
-                .get("measured")
-                .unwrap_array1();
-            let location_2_z: Array1<f64> = self
-                .results
-                .get(&sensor_name)
-                .get("isoflux_geometry")
-                .get("location_2")
-                .get("z")
-                .get("measured")
-                .unwrap_array1();
 
             // Get time
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("isoflux_geometry").get("time").unwrap_array1();
@@ -466,20 +336,8 @@ impl Isoflux {
                 // Sensors Green's function
                 let g_with_plasma_location_1: Array1<f64> = g_full_location_1.sum_axis(Axis(0)); // g_br_full_location_1.shape = [1, n_z * n_r];  g_br_location_1.shape = [n_z * n_r]
 
-                let g_full_location_2: Array2<f64> = greens_psi(
-                    Array1::from_vec(vec![location_2_r[i_time]]), // sensor
-                    Array1::from_vec(vec![location_2_z[i_time]]),
-                    plasma_r.clone(), // current source
-                    plasma_z.clone(),
-                    plasma_r.clone() * 0.0, // TODO: I don't like the dr_prime and dz_prime
-                    plasma_r.clone() * 0.0,
-                );
-
-                // Sensors Green's function
-                let g_with_plasma_location_2: Array1<f64> = g_full_location_2.sum_axis(Axis(0)); // g_br_full_location_2.shape = [1, n_z * n_r];  g_br_location_2.shape = [n_z * n_r]
-
                 // Store greens
-                let g_with_plasma_now: Array1<f64> = g_with_plasma_location_1 - g_with_plasma_location_2;
+                let g_with_plasma_now: Array1<f64> = g_with_plasma_location_1;
                 g_with_plasma.slice_mut(s![i_time, ..]).assign(&g_with_plasma_now);
 
                 // Vertical stability
@@ -493,18 +351,7 @@ impl Isoflux {
 
                 let g_d_plasma_d_z_location_1: Array1<f64> = -2.0 * PI * location_1_r[i_time].clone() * g_br_full_location_1.sum_axis(Axis(0)); // shape = n_r * n_z
 
-                // location_2
-                let (g_br_full_location_2, _g_bz_full_location_2): (Array2<f64>, Array2<f64>) = greens_b(
-                    Array1::from_vec(vec![location_2_r[i_time]]), // sensors
-                    Array1::from_vec(vec![location_2_r[i_time]]),
-                    plasma_r.clone(), // current sources
-                    plasma_z.clone(),
-                );
-
-                let g_d_plasma_d_z_location_2: Array1<f64> = -2.0 * PI * location_2_r[i_time].clone() * g_br_full_location_2.sum_axis(Axis(0)); // shape = n_r * n_z
-
-                let g_d_plasma_d_z_now: Array1<f64> = g_d_plasma_d_z_location_1 - g_d_plasma_d_z_location_2;
-                g_d_plasma_d_z.slice_mut(s![i_time, ..]).assign(&g_d_plasma_d_z_now);
+                g_d_plasma_d_z.slice_mut(s![i_time, ..]).assign(&g_d_plasma_d_z_location_1);
             }
 
             // Store
@@ -547,7 +394,7 @@ impl Isoflux {
     /// Get Array1<f64> and return a numpy.ndarray
     pub fn get_array1(&self, keys: Vec<String>, py: Python) -> Py<PyArray1<f64>> {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -562,7 +409,7 @@ impl Isoflux {
     /// Get Array2<f64> and return a numpy.ndarray
     pub fn get_array2(&self, keys: Vec<String>, py: Python) -> Py<PyArray2<f64>> {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -577,7 +424,7 @@ impl Isoflux {
     /// Get Array3<f64> and return a numpy.ndarray
     pub fn get_array3(&self, keys: Vec<String>, py: Python) -> Py<PyArray3<f64>> {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -592,7 +439,7 @@ impl Isoflux {
     /// Get Vec<bool> and return a Python list[bool]
     pub fn get_bool(&self, keys: Vec<String>) -> bool {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -608,7 +455,7 @@ impl Isoflux {
     /// Get f64 value and return a f64
     pub fn get_f64(&self, keys: Vec<String>) -> f64 {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -622,7 +469,7 @@ impl Isoflux {
     /// Get usize value and return a int
     pub fn get_usize(&self, keys: Vec<String>) -> usize {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -636,7 +483,7 @@ impl Isoflux {
     /// Get Vec<bool> and return a Python list[bool]
     pub fn get_vec_bool(&self, keys: Vec<String>, py: Python) -> Py<PyList> {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -652,7 +499,7 @@ impl Isoflux {
     /// Get Vec<usize> and return a Python list[int]
     pub fn get_vec_usize(&self, keys: Vec<String>, py: Python) -> Py<PyList> {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -673,7 +520,7 @@ impl Isoflux {
             if key_path.len() == 0 {
                 self.results.keys()
             } else {
-                // Convert PyList to Vec<String> and traverse NestedDictAccumulator
+                // Convert PyList to Vec<String> and traverse DataTreeAccumulator
                 let keys: Vec<String> = key_path.extract().expect("Failed to extract key_path as Vec<String>");
                 let mut result_accumulator = self.results.get(&keys[0]);
                 // Skip the first key and traverse the rest
@@ -697,8 +544,8 @@ impl Isoflux {
 }
 
 // Rust only methods
-impl Isoflux {
-    /// For Isoflux sensors the static data is actually time-dependent.
+impl IsofluxBoundary {
+    /// For IsofluxBoundary sensors the static data is actually time-dependent.
     /// TODO: consider renaming `SensorsStatic`. Perhaps `GeometricGreens` ?
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
         // Define empty data arrays
@@ -735,7 +582,7 @@ impl Isoflux {
                 }
             }
 
-            // Convert from Vec<bool> to Vec of indices
+            // Convert from boolean to indices
             let include_indices: Vec<usize> = include
                 .iter()
                 .enumerate()
