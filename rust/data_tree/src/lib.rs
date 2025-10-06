@@ -11,7 +11,7 @@ enum SliceType {
 }
 
 #[derive(Clone)]
-pub enum NestedValue {
+pub enum DataValue {
     F64(f64),
     String(String),
     Usize(usize),
@@ -21,31 +21,31 @@ pub enum NestedValue {
     Array3(Array3<f64>),
     VecUsize(Vec<usize>),
     VecBool(Vec<bool>),
-    NestedDict(NestedDict), // nested dictionaries
+    DataTree(DataTree), // nested dictionaries
 }
 
-pub struct NestedDictAccumulator<'a> {
-    pub root: &'a NestedDict,
+pub struct DataTreeAccumulator<'a> {
+    pub root: &'a DataTree,
     pub keys_store: Vec<String>, // TODO: NEED TO CHANGE VARIABLE NAME!!
 }
 
-impl<'a> NestedDictAccumulator<'a> {
-    pub fn new(root: &'a NestedDict, keys_store: Vec<String>) -> Self {
+impl<'a> DataTreeAccumulator<'a> {
+    pub fn new(root: &'a DataTree, keys_store: Vec<String>) -> Self {
         Self { root, keys_store }
     }
 
-    pub fn new_scalar(root: &'a NestedDict, key: &str) -> Self {
+    pub fn new_scalar(root: &'a DataTree, key: &str) -> Self {
         Self {
             root,
             keys_store: vec![key.to_string()],
         }
     }
 
-    pub fn get(&self, key: &str) -> NestedDictAccumulator<'a> {
+    pub fn get(&self, key: &str) -> DataTreeAccumulator<'a> {
         // Append the key to the existing keys_store
         let mut new_keys = self.keys_store.clone();
         new_keys.push(key.to_string());
-        NestedDictAccumulator::new(self.root, new_keys)
+        DataTreeAccumulator::new(self.root, new_keys)
     }
 
     pub fn keys(&self) -> Vec<String> {
@@ -54,15 +54,15 @@ impl<'a> NestedDictAccumulator<'a> {
             let mut next_stack = Vec::new();
             for dict in stack {
                 if key == "*" {
-                    // Add all NestedDicts from the current level to the stack
+                    // Add all DataTrees from the current level to the stack
                     for value in dict.data.values() {
-                        if let NestedValue::NestedDict(nested_dict) = value {
-                            next_stack.push(nested_dict);
+                        if let DataValue::DataTree(data_tree) = value {
+                            next_stack.push(data_tree);
                         }
                     }
                 } else if let Some(value) = dict.data.get(key) {
-                    if let NestedValue::NestedDict(nested_dict) = value {
-                        next_stack.push(nested_dict);
+                    if let DataValue::DataTree(data_tree) = value {
+                        next_stack.push(data_tree);
                     }
                 }
             }
@@ -87,16 +87,16 @@ impl<'a> NestedDictAccumulator<'a> {
             for dict in stack {
                 if key == "*" {
                     for value in dict.data.values() {
-                        if let NestedValue::NestedDict(nested_dict) = value {
-                            next_stack.push(nested_dict);
+                        if let DataValue::DataTree(data_tree) = value {
+                            next_stack.push(data_tree);
                         }
                     }
                 } else if let Some(value) = dict.data.get(key) {
                     match value {
-                        NestedValue::NestedDict(nested_dict) => {
-                            next_stack.push(nested_dict);
+                        DataValue::DataTree(data_tree) => {
+                            next_stack.push(data_tree);
                         }
-                        NestedValue::Usize(u) => collected.push(*u),
+                        DataValue::Usize(u) => collected.push(*u),
                         _ => {}
                     }
                 }
@@ -123,21 +123,21 @@ impl<'a> NestedDictAccumulator<'a> {
                     for sorted_key in keys_store {
                         if let Some(value) = dict.data.get(&sorted_key) {
                             match value {
-                                NestedValue::NestedDict(nested_dict) => {
-                                    next_stack.push(nested_dict);
+                                DataValue::DataTree(data_tree) => {
+                                    next_stack.push(data_tree);
                                 }
-                                NestedValue::Usize(u) => collected.push(*u),
+                                DataValue::Usize(u) => collected.push(*u),
                                 _ => {}
                             }
                         }
                     }
                 } else if let Some(value) = dict.data.get(key) {
                     match value {
-                        NestedValue::NestedDict(nested_dict) => {
-                            next_stack.push(nested_dict);
+                        DataValue::DataTree(data_tree) => {
+                            next_stack.push(data_tree);
                         }
-                        NestedValue::Usize(u) => collected.push(*u),
-                        NestedValue::VecUsize(vec_usize) => {
+                        DataValue::Usize(u) => collected.push(*u),
+                        DataValue::VecUsize(vec_usize) => {
                             return vec_usize.to_owned();
                         }
                         _ => {}
@@ -158,16 +158,16 @@ impl<'a> NestedDictAccumulator<'a> {
             for dict in stack {
                 if key == "*" {
                     for value in dict.data.values() {
-                        if let NestedValue::NestedDict(nested_dict) = value {
-                            next_stack.push(nested_dict);
+                        if let DataValue::DataTree(data_tree) = value {
+                            next_stack.push(data_tree);
                         }
                     }
                 } else if let Some(value) = dict.data.get(key) {
                     match value {
-                        NestedValue::NestedDict(nested_dict) => {
-                            next_stack.push(nested_dict);
+                        DataValue::DataTree(data_tree) => {
+                            next_stack.push(data_tree);
                         }
-                        NestedValue::F64(x) => collected.push(*x),
+                        DataValue::F64(x) => collected.push(*x),
                         _ => {}
                     }
                 }
@@ -191,16 +191,16 @@ impl<'a> NestedDictAccumulator<'a> {
             for dict in stack {
                 if key == "*" {
                     for value in dict.data.values() {
-                        if let NestedValue::NestedDict(nested_dict) = value {
-                            next_stack.push(nested_dict);
+                        if let DataValue::DataTree(data_tree) = value {
+                            next_stack.push(data_tree);
                         }
                     }
                 } else if let Some(value) = dict.data.get(key) {
                     match value {
-                        NestedValue::NestedDict(nested_dict) => {
-                            next_stack.push(nested_dict);
+                        DataValue::DataTree(data_tree) => {
+                            next_stack.push(data_tree);
                         }
-                        NestedValue::Bool(x) => collected.push(*x),
+                        DataValue::Bool(x) => collected.push(*x),
                         _ => {}
                     }
                 }
@@ -227,23 +227,23 @@ impl<'a> NestedDictAccumulator<'a> {
                     for sorted_key in keys_store {
                         if let Some(value) = dict.data.get(&sorted_key) {
                             match value {
-                                NestedValue::NestedDict(nested_dict) => {
-                                    next_stack.push(nested_dict);
+                                DataValue::DataTree(data_tree) => {
+                                    next_stack.push(data_tree);
                                 }
-                                NestedValue::Bool(b) => collected.push(*b),
+                                DataValue::Bool(b) => collected.push(*b),
                                 _ => {}
                             }
                         }
                     }
                 } else if let Some(value) = dict.data.get(key) {
                     match value {
-                        NestedValue::NestedDict(nested_dict) => {
-                            next_stack.push(nested_dict);
+                        DataValue::DataTree(data_tree) => {
+                            next_stack.push(data_tree);
                         }
-                        NestedValue::Bool(b) => {
+                        DataValue::Bool(b) => {
                             collected.push(*b);
                         }
-                        NestedValue::VecBool(vec_bool) => {
+                        DataValue::VecBool(vec_bool) => {
                             return vec_bool.to_owned();
                         }
                         _ => {}
@@ -268,10 +268,10 @@ impl<'a> NestedDictAccumulator<'a> {
                     for sorted_key in keys_store {
                         if let Some(value) = dict.data.get(&sorted_key) {
                             match value {
-                                NestedValue::NestedDict(nested_dict) => {
-                                    next_stack.push(nested_dict);
+                                DataValue::DataTree(data_tree) => {
+                                    next_stack.push(data_tree);
                                 }
-                                NestedValue::F64(x) => collected.push(*x),
+                                DataValue::F64(x) => collected.push(*x),
                                 _ => {
                                     panic!("accumulation error!!");
                                 }
@@ -280,11 +280,11 @@ impl<'a> NestedDictAccumulator<'a> {
                     }
                 } else if let Some(value) = dict.data.get(key) {
                     match value {
-                        NestedValue::NestedDict(nested_dict) => {
-                            next_stack.push(nested_dict);
+                        DataValue::DataTree(data_tree) => {
+                            next_stack.push(data_tree);
                         }
-                        NestedValue::F64(x) => collected.push(*x),
-                        NestedValue::Array1(array) => {
+                        DataValue::F64(x) => collected.push(*x),
+                        DataValue::Array1(array) => {
                             collected.extend(array.iter().cloned());
                         }
                         _ => {}
@@ -300,7 +300,7 @@ impl<'a> NestedDictAccumulator<'a> {
     pub fn unwrap_array2(&self) -> Array2<f64> {
         // Recursive helper function
         fn traverse_recursive(
-            node: &NestedDict,
+            node: &DataTree,
             keys: &[String],
             collected: &mut Vec<Array1<f64>>,
             shape: &mut (usize, usize),
@@ -321,23 +321,23 @@ impl<'a> NestedDictAccumulator<'a> {
 
                 // for (key, value) in &node.data {
                 for key in keys_tmp {
-                    let value: &NestedValue = node.data.get(key).unwrap();
+                    let value: &DataValue = node.data.get(key).unwrap();
                     match value {
-                        NestedValue::NestedDict(nested_dict) => {
+                        DataValue::DataTree(data_tree) => {
                             // Recurse into nested dictionary
-                            if let Some(array2) = traverse_recursive(nested_dict, remaining_keys, collected, shape, level + 1) {
+                            if let Some(array2) = traverse_recursive(data_tree, remaining_keys, collected, shape, level + 1) {
                                 return Some(array2);
                             }
                             local_count += 1; // Increment for each nested dictionary
                         }
-                        NestedValue::Array1(array) if remaining_keys.is_empty() => {
+                        DataValue::Array1(array) if remaining_keys.is_empty() => {
                             collected.push(array.clone());
                             if level == 0 {
                                 shape.0 += 1; // Increment rows for the first wildcard
                             }
                             shape.1 = array.len(); // Columns are determined by array length
                         }
-                        NestedValue::F64(value) if remaining_keys.is_empty() => {
+                        DataValue::F64(value) if remaining_keys.is_empty() => {
                             collected.push(Array1::from(vec![*value]));
                             if level == 0 {
                                 shape.0 += 1; // Increment rows for the first wildcard
@@ -355,21 +355,21 @@ impl<'a> NestedDictAccumulator<'a> {
             } else if let Some(value) = node.data.get(current_key) {
                 // Non-wildcard key
                 match value {
-                    NestedValue::NestedDict(nested_dict) => {
-                        return traverse_recursive(nested_dict, remaining_keys, collected, shape, level);
+                    DataValue::DataTree(data_tree) => {
+                        return traverse_recursive(data_tree, remaining_keys, collected, shape, level);
                     }
-                    NestedValue::Array2(array2) if remaining_keys.is_empty() => {
+                    DataValue::Array2(array2) if remaining_keys.is_empty() => {
                         // Directly return Array2 if no remaining keys
                         shape.0 = array2.nrows();
                         shape.1 = array2.ncols();
                         return Some(array2.clone());
                     }
-                    NestedValue::Array1(array) if remaining_keys.is_empty() => {
+                    DataValue::Array1(array) if remaining_keys.is_empty() => {
                         collected.push(array.clone());
                         shape.0 = 1; // Single row
                         shape.1 = array.len(); // Number of columns matches array length
                     }
-                    NestedValue::F64(value) if remaining_keys.is_empty() => {
+                    DataValue::F64(value) if remaining_keys.is_empty() => {
                         collected.push(Array1::from(vec![*value]));
                         shape.0 = 1; // Single row
                         shape.1 += 1; // Single scalar value
@@ -426,7 +426,7 @@ impl<'a> NestedDictAccumulator<'a> {
         /// Recursive helper function.
         /// This function finds all the paths to the data and stores where each path should be stored within the Array3
         fn traverse_recursive_to_find_paths_and_slices(
-            node: &NestedDict,
+            node: &DataTree,
             keys: &Vec<String>,
             path: &mut Vec<String>,
             index_right_to_left: &mut Vec<usize>,
@@ -446,9 +446,9 @@ impl<'a> NestedDictAccumulator<'a> {
                 for i_key in 0..keys_tmp.len() {
                     let key: &String = keys_tmp[i_key];
 
-                    let value: &NestedValue = node.data.get(key).unwrap();
+                    let value: &DataValue = node.data.get(key).unwrap();
                     match value {
-                        NestedValue::NestedDict(nested_dict) => {
+                        DataValue::DataTree(data_tree) => {
                             let mut path_new: Vec<String> = path.clone();
                             path_new.push(key.to_string());
 
@@ -458,7 +458,7 @@ impl<'a> NestedDictAccumulator<'a> {
                             let mut sizes_right_to_left_new: Vec<usize> = sizes_right_to_left.clone();
 
                             traverse_recursive_to_find_paths_and_slices(
-                                nested_dict,
+                                data_tree,
                                 remaining_keys,
                                 &mut path_new,
                                 &mut index_right_to_left_new,
@@ -466,7 +466,7 @@ impl<'a> NestedDictAccumulator<'a> {
                                 paths,
                             );
                         }
-                        NestedValue::Array2(_array2_data) if remaining_keys.is_empty() => {
+                        DataValue::Array2(_array2_data) if remaining_keys.is_empty() => {
                             // e.g. ["node0", "node1", "*"]
                             let mut path_new: Vec<String> = path.clone();
                             path_new.push(key.to_string());
@@ -478,7 +478,7 @@ impl<'a> NestedDictAccumulator<'a> {
 
                             paths.push((path_new.clone(), SliceType::Array2Size(slice_info), data_shape));
                         }
-                        NestedValue::Array1(_array1_data) if remaining_keys.is_empty() => {
+                        DataValue::Array1(_array1_data) if remaining_keys.is_empty() => {
                             // e.g. ["*", "node1", "*"]
                             let mut path_new: Vec<String> = path.clone();
                             path_new.push(key.to_string());
@@ -490,7 +490,7 @@ impl<'a> NestedDictAccumulator<'a> {
 
                             paths.push((path_new.clone(), SliceType::Array1Size(slice_info), data_shape));
                         }
-                        NestedValue::F64(_f64_data) if remaining_keys.is_empty() => {
+                        DataValue::F64(_f64_data) if remaining_keys.is_empty() => {
                             // e.g. ["*", "*", "*"] (test_09)
                             let mut path_new: Vec<String> = path.clone();
                             path_new.push(key.to_string());
@@ -509,13 +509,13 @@ impl<'a> NestedDictAccumulator<'a> {
                 }
             } else {
                 path.push(current_key.to_string());
-                let value: &NestedValue = node.data.get(current_key).unwrap();
+                let value: &DataValue = node.data.get(current_key).unwrap();
                 match value {
-                    NestedValue::NestedDict(nested_dict) => {
+                    DataValue::DataTree(data_tree) => {
                         // Recurse into nested dictionary
-                        traverse_recursive_to_find_paths_and_slices(nested_dict, remaining_keys, path, index_right_to_left, sizes_right_to_left, paths);
+                        traverse_recursive_to_find_paths_and_slices(data_tree, remaining_keys, path, index_right_to_left, sizes_right_to_left, paths);
                     }
-                    NestedValue::Array3(_array3_data) if remaining_keys.is_empty() => {
+                    DataValue::Array3(_array3_data) if remaining_keys.is_empty() => {
                         // e.g. ["node0", "node1", "node2"] (test_07)
                         let slice_info: SliceInfo<[SliceInfoElem; 3], Dim<[usize; 3]>, Dim<[usize; 3]>> = s![.., .., ..];
 
@@ -524,7 +524,7 @@ impl<'a> NestedDictAccumulator<'a> {
 
                         paths.push((path.clone(), SliceType::Array3Size(slice_info), data_shape));
                     }
-                    NestedValue::Array2(_array2_data) if remaining_keys.is_empty() => {
+                    DataValue::Array2(_array2_data) if remaining_keys.is_empty() => {
                         // e.g. ["node0", "*", "node2"] (test_08)
                         let slice_info: SliceInfo<[SliceInfoElem; 3], Dim<[usize; 3]>, Dim<[usize; 2]>> = s![.., .., index_right_to_left[0]];
 
@@ -533,7 +533,7 @@ impl<'a> NestedDictAccumulator<'a> {
 
                         paths.push((path.clone(), SliceType::Array2Size(slice_info), data_shape));
                     }
-                    NestedValue::Array1(_array1_data) if remaining_keys.is_empty() => {
+                    DataValue::Array1(_array1_data) if remaining_keys.is_empty() => {
                         // e.g. ["*", "*", "node2"]
                         let slice_info: SliceInfo<[SliceInfoElem; 3], Dim<[usize; 3]>, Dim<[usize; 1]>> =
                             s![.., index_right_to_left[1], index_right_to_left[0]];
@@ -543,7 +543,7 @@ impl<'a> NestedDictAccumulator<'a> {
 
                         paths.push((path.clone(), SliceType::Array1Size(slice_info), data_shape));
                     }
-                    NestedValue::F64(_f64_data) if remaining_keys.is_empty() => {
+                    DataValue::F64(_f64_data) if remaining_keys.is_empty() => {
                         // e.g. ["*", "*", "*", "node3"]  TODO: check this?
                         let slice_info: SliceInfo<[SliceInfoElem; 3], Dim<[usize; 3]>, Dim<[usize; 0]>> =
                             s![index_right_to_left[2], index_right_to_left[1], index_right_to_left[0]];
@@ -586,24 +586,24 @@ impl<'a> NestedDictAccumulator<'a> {
             let (path, slice_indices, _data_size) = path_and_slice;
 
             // Loop over all keys, except the last one
-            let mut dict: &NestedDict = self.root;
+            let mut dict: &DataTree = self.root;
             for key in path[0..path.len() - 1].iter() {
-                let value: &NestedValue = dict.data.get(key).unwrap();
+                let value: &DataValue = dict.data.get(key).unwrap();
                 match value {
-                    NestedValue::NestedDict(nested_dict) => {
-                        dict = nested_dict;
+                    DataValue::DataTree(data_tree) => {
+                        dict = data_tree;
                     }
                     _ => {
-                        panic!("unwrap_array3.traverse_recursive_to_find_paths_and_slices: Should not have a non-NestedDict value here");
+                        panic!("unwrap_array3.traverse_recursive_to_find_paths_and_slices: Should not have a non-DataTree value here");
                     }
                 }
             }
             // For the last key we retrieve the data
             match slice_indices {
                 SliceType::Array3Size(slice_info) => {
-                    let value: &NestedValue = dict.data.get(&path[path.len() - 1]).unwrap();
+                    let value: &DataValue = dict.data.get(&path[path.len() - 1]).unwrap();
                     match value {
-                        NestedValue::Array3(array3) => {
+                        DataValue::Array3(array3) => {
                             final_data.slice_mut(slice_info).assign(&array3);
                         }
                         _ => {
@@ -612,9 +612,9 @@ impl<'a> NestedDictAccumulator<'a> {
                     }
                 }
                 SliceType::Array2Size(slice_info) => {
-                    let value: &NestedValue = dict.data.get(&path[path.len() - 1]).unwrap();
+                    let value: &DataValue = dict.data.get(&path[path.len() - 1]).unwrap();
                     match value {
-                        NestedValue::Array2(array2) => {
+                        DataValue::Array2(array2) => {
                             final_data.slice_mut(slice_info).assign(&array2);
                         }
                         _ => {
@@ -623,9 +623,9 @@ impl<'a> NestedDictAccumulator<'a> {
                     }
                 }
                 SliceType::Array1Size(slice_info) => {
-                    let value: &NestedValue = dict.data.get(&path[path.len() - 1]).unwrap();
+                    let value: &DataValue = dict.data.get(&path[path.len() - 1]).unwrap();
                     match value {
-                        NestedValue::Array1(array1) => {
+                        DataValue::Array1(array1) => {
                             final_data.slice_mut(slice_info).assign(&array1);
                         }
                         _ => {
@@ -634,9 +634,9 @@ impl<'a> NestedDictAccumulator<'a> {
                     }
                 }
                 SliceType::F64Size(slice_info) => {
-                    let value: &NestedValue = dict.data.get(&path[path.len() - 1]).unwrap();
+                    let value: &DataValue = dict.data.get(&path[path.len() - 1]).unwrap();
                     match value {
-                        NestedValue::F64(f64_val) => {
+                        DataValue::F64(f64_val) => {
                             final_data.slice_mut(slice_info).fill(*f64_val);
                         }
                         _ => {
@@ -652,28 +652,28 @@ impl<'a> NestedDictAccumulator<'a> {
 }
 
 #[derive(Clone)]
-pub struct NestedDict {
-    pub data: HashMap<String, NestedValue>,
+pub struct DataTree {
+    pub data: HashMap<String, DataValue>,
 }
 
-impl NestedDict {
+impl DataTree {
     pub fn new() -> Self {
         Self { data: HashMap::new() }
     }
 
-    pub fn insert<T: Into<NestedValue>>(&mut self, key: &str, value: T) {
+    pub fn insert<T: Into<DataValue>>(&mut self, key: &str, value: T) {
         self.data.insert(key.to_string(), value.into());
     }
 
-    pub fn get<'a>(&'a self, key: &str) -> NestedDictAccumulator<'a> {
-        NestedDictAccumulator::new(self, vec![key.to_string()])
+    pub fn get<'a>(&'a self, key: &str) -> DataTreeAccumulator<'a> {
+        DataTreeAccumulator::new(self, vec![key.to_string()])
     }
 
-    pub fn get_or_insert(&mut self, key: &str) -> &mut NestedDict {
-        if let NestedValue::NestedDict(ref mut dict) = *self.data.entry(key.to_string()).or_insert_with(|| NestedValue::NestedDict(NestedDict::new())) {
+    pub fn get_or_insert(&mut self, key: &str) -> &mut DataTree {
+        if let DataValue::DataTree(ref mut dict) = *self.data.entry(key.to_string()).or_insert_with(|| DataValue::DataTree(DataTree::new())) {
             dict
         } else {
-            panic!("Stored value is not a NestedDict");
+            panic!("Stored value is not a DataTree");
         }
     }
 
@@ -688,7 +688,7 @@ impl NestedDict {
     pub fn print_keys(&self) {
         let mut results: Vec<(Vec<String>, String)> = Vec::<(Vec<String>, String)>::new();
 
-        fn traverse(current_dict: &NestedDict, prefix: Vec<String>, results: &mut Vec<(Vec<String>, String)>) {
+        fn traverse(current_dict: &DataTree, prefix: Vec<String>, results: &mut Vec<(Vec<String>, String)>) {
             let mut sorted_keys: Vec<&String> = current_dict.data.keys().collect();
             sorted_keys.sort();
 
@@ -696,49 +696,49 @@ impl NestedDict {
                 let mut current_path: Vec<String> = prefix.clone();
                 current_path.push(key.clone());
 
-                let value: &NestedValue = current_dict.data.get(key).expect("Key should exist in the dictionary");
+                let value: &DataValue = current_dict.data.get(key).expect("Key should exist in the dictionary");
 
                 match value {
-                    NestedValue::NestedDict(nested_dict) => {
-                        traverse(nested_dict, current_path, results);
+                    DataValue::DataTree(data_tree) => {
+                        traverse(data_tree, current_path, results);
                     }
-                    NestedValue::Array1(array1) => {
+                    DataValue::Array1(array1) => {
                         let dim: usize = array1.dim();
                         let description: String = format!("Array1<f64>;  shape=({:?})", dim);
                         results.push((current_path, description));
                     }
-                    NestedValue::Array2(array2) => {
+                    DataValue::Array2(array2) => {
                         let dim: (usize, usize) = array2.dim();
                         let description: String = format!("Array2<f64>;  shape={:?}", dim);
                         results.push((current_path, description));
                     }
-                    NestedValue::Array3(array3) => {
+                    DataValue::Array3(array3) => {
                         let dim: (usize, usize, usize) = array3.dim();
                         let description: String = format!("Array3<f64>;  shape={:?}", dim);
                         results.push((current_path, description));
                     }
-                    NestedValue::F64(f64_val) => {
+                    DataValue::F64(f64_val) => {
                         let description: String = format!("f64;  value={:?}", f64_val);
                         results.push((current_path, description));
                     }
-                    NestedValue::String(value) => {
+                    DataValue::String(value) => {
                         let description: String = format!("String;  value={:?}", value);
                         results.push((current_path, description));
                     }
-                    NestedValue::Usize(usize_val) => {
+                    DataValue::Usize(usize_val) => {
                         let description: String = format!("usize;  value={:?}", usize_val);
                         results.push((current_path, description));
                     }
-                    NestedValue::Bool(bool_val) => {
+                    DataValue::Bool(bool_val) => {
                         let description: String = format!("bool;  value={:?}", bool_val);
                         results.push((current_path, description));
                     }
-                    NestedValue::VecUsize(vec_usize) => {
+                    DataValue::VecUsize(vec_usize) => {
                         let dim: usize = vec_usize.len();
                         let description: String = format!("Vec<usize>;  shape={:?}", dim);
                         results.push((current_path, description));
                     }
-                    NestedValue::VecBool(vec_bool) => {
+                    DataValue::VecBool(vec_bool) => {
                         let dim: usize = vec_bool.len();
                         let description: String = format!("Vec<bool>;  shape={:?}", dim);
                         results.push((current_path, description));
@@ -765,74 +765,74 @@ impl NestedDict {
     }
 }
 
-impl From<String> for NestedValue {
+impl From<String> for DataValue {
     fn from(value: String) -> Self {
-        NestedValue::String(value)
+        DataValue::String(value)
     }
 }
 
-impl From<f64> for NestedValue {
+impl From<f64> for DataValue {
     fn from(value: f64) -> Self {
-        NestedValue::F64(value)
+        DataValue::F64(value)
     }
 }
 
-impl From<usize> for NestedValue {
+impl From<usize> for DataValue {
     fn from(value: usize) -> Self {
-        NestedValue::Usize(value)
+        DataValue::Usize(value)
     }
 }
 
-impl From<bool> for NestedValue {
+impl From<bool> for DataValue {
     fn from(value: bool) -> Self {
-        NestedValue::Bool(value)
+        DataValue::Bool(value)
     }
 }
 
-impl From<Array1<f64>> for NestedValue {
+impl From<Array1<f64>> for DataValue {
     fn from(value: Array1<f64>) -> Self {
-        NestedValue::Array1(value)
+        DataValue::Array1(value)
     }
 }
 
-impl From<Array2<f64>> for NestedValue {
+impl From<Array2<f64>> for DataValue {
     fn from(value: Array2<f64>) -> Self {
-        NestedValue::Array2(value)
+        DataValue::Array2(value)
     }
 }
 
-impl From<Array3<f64>> for NestedValue {
+impl From<Array3<f64>> for DataValue {
     fn from(value: Array3<f64>) -> Self {
-        NestedValue::Array3(value)
+        DataValue::Array3(value)
     }
 }
 
-impl From<Vec<usize>> for NestedValue {
+impl From<Vec<usize>> for DataValue {
     fn from(value: Vec<usize>) -> Self {
-        NestedValue::VecUsize(value)
+        DataValue::VecUsize(value)
     }
 }
 
-impl From<Vec<bool>> for NestedValue {
+impl From<Vec<bool>> for DataValue {
     fn from(value: Vec<bool>) -> Self {
-        NestedValue::VecBool(value)
+        DataValue::VecBool(value)
     }
 }
 
-impl From<NestedDict> for NestedValue {
-    fn from(value: NestedDict) -> Self {
-        NestedValue::NestedDict(value)
+impl From<DataTree> for DataValue {
+    fn from(value: DataTree) -> Self {
+        DataValue::DataTree(value)
     }
 }
 
 #[test]
-fn test_nested_dict() {
+fn test_data_tree() {
     // Lazy loading for the tests
     use ndarray::s;
 
     // Construct restuls
     // Probe 1
-    let mut results: NestedDict = NestedDict::new();
+    let mut results: DataTree = DataTree::new();
     results.get_or_insert("P101").get_or_insert("geometry").insert("r", 1.1f64);
     results.get_or_insert("P101").get_or_insert("geometry").insert("z", 0.1f64);
     results
@@ -922,7 +922,7 @@ fn test_nested_dict() {
     assert_eq!(data_retrieved.slice(s![.., .., 2]), p103_green_psi, "test_08, slice 2");
 
     // test_09: Retrieve Array3<f64>, two wildcards, from Array1<f64> data
-    let mut test_data: NestedDict = NestedDict::new();
+    let mut test_data: DataTree = DataTree::new();
     let data: Array1<f64> = Array1::from_vec(vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0]);
     test_data
         .get_or_insert("level_00_key_00")

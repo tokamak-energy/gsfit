@@ -1,0 +1,52 @@
+[package]
+name = "gsfit_rs"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "gsfit_rs"
+
+[dependencies]
+# Local data_tree dependency
+data_tree = { path = "../data_tree" }
+
+# External dependencies
+contour = "0.13.1"
+geo = "0.31.0"  # For contour
+geo-types = "0.7.17"  # For getting geo type out of `contour`
+num = "0.4.3"
+pyo3 = { version = "0.26.0", features = ["extension-module"] }  # Communication with Python
+physical_constants = "0.5.0"  # For MU_0
+rayon = "1.11.0"
+spec_math = "0.1.6"  # For elliptic integrals
+numpy = "0.26.0"
+ndarray = { version = "0.16.1", features = ["approx"] }
+ndarray-interp = "0.5.0"
+env_logger = "0.11.8"
+log = "0.4.28"
+approx = "0.5.1"
+lapack = "0.20.0"
+ndarray-stats = "0.6.0"
+ode_solvers = "0.6.1"
+rand = "0.9.2"
+
+# Platform-specific BLAS/LAPACK configurations
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+blas-src = { version = "0.12.1", features = ["openblas"] }
+ndarray-linalg = { version = "0.17.0", features = ["openblas"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+openblas-src = { version = "0.10.13", features = ["system"] }
+ndarray-linalg = { version = "0.17.0", features = ["openblas-static"] }
+
+[profile.release]
+debug = false
+overflow-checks = true
+opt-level = 3  # Highest optimization level
+lto = true  # Link Time Optimization
+codegen-units = 1  # Fewer units can lead to better optimization
+
+[profile.dev]
+debug = true
+overflow-checks = true

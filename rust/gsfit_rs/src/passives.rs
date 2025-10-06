@@ -1,7 +1,6 @@
 use crate::grad_shafranov::GsSolution;
 use crate::greens::mutual_inductance_finite_size_to_finite_size;
-use crate::nested_dict::NestedDict;
-use crate::nested_dict::NestedDictAccumulator;
+use data_tree::{DataTree, DataTreeAccumulator};
 use lapack::*;
 use ndarray::{Array1, Array2, Array3, s};
 use ndarray_linalg::Norm;
@@ -16,7 +15,7 @@ const PI: f64 = std::f64::consts::PI;
 #[derive(Clone)]
 #[pyclass]
 pub struct Passives {
-    pub results: NestedDict,
+    pub results: DataTree,
 }
 
 /// Python accessible methods
@@ -24,7 +23,7 @@ pub struct Passives {
 impl Passives {
     #[new]
     pub fn new() -> Self {
-        Self { results: NestedDict::new() }
+        Self { results: DataTree::new() }
     }
 
     ///
@@ -271,7 +270,7 @@ impl Passives {
     /// Get Array1<f64> and return a numpy.ndarray
     pub fn get_array1(&self, keys: Vec<String>, py: Python) -> Py<PyArray1<f64>> {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -286,7 +285,7 @@ impl Passives {
     /// Get Array2<f64> and return a numpy.ndarray
     pub fn get_array2(&self, keys: Vec<String>, py: Python) -> Py<PyArray2<f64>> {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -301,7 +300,7 @@ impl Passives {
     /// Get Array3<f64> and return a numpy.ndarray
     pub fn get_array3(&self, keys: Vec<String>, py: Python) -> Py<PyArray3<f64>> {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -316,7 +315,7 @@ impl Passives {
     /// Get Vec<bool> and return a Python list[bool]
     pub fn get_bool(&self, keys: Vec<String>) -> bool {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -332,7 +331,7 @@ impl Passives {
     /// Get f64 value and return a f64
     pub fn get_f64(&self, keys: Vec<String>) -> f64 {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -346,7 +345,7 @@ impl Passives {
     /// Get usize value and return a int
     pub fn get_usize(&self, keys: Vec<String>) -> usize {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -360,7 +359,7 @@ impl Passives {
     /// Get Vec<bool> and return a Python list[bool]
     pub fn get_vec_bool(&self, keys: Vec<String>, py: Python) -> Py<PyList> {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -376,7 +375,7 @@ impl Passives {
     /// Get Vec<usize> and return a Python list[int]
     pub fn get_vec_usize(&self, keys: Vec<String>, py: Python) -> Py<PyList> {
         // Start with the root accumulator
-        let mut result_accumulator: NestedDictAccumulator<'_> = self.results.get(&keys[0]);
+        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
 
         // Traverse the keys to reach the desired value
         for key in &keys[1..] {
@@ -397,7 +396,7 @@ impl Passives {
             if key_path.len() == 0 {
                 self.results.keys()
             } else {
-                // Convert PyList to Vec<String> and traverse NestedDictAccumulator
+                // Convert PyList to Vec<String> and traverse DataTreeAccumulator
                 let keys: Vec<String> = key_path.extract().expect("Failed to extract key_path as Vec<String>");
                 let mut result_accumulator = self.results.get(&keys[0]);
                 // Skip the first key and traverse the rest
