@@ -4,6 +4,9 @@ members = [
     "data_tree/data_tree_derive",
     "gsfit_rs",
 ]
+resolver = "3"  # Use Rust 2024 edition resolver
+[workspace.package]
+edition = "2024"
 
 # Workspace-wide profile settings
 [profile.release]
