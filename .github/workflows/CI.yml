@@ -43,17 +43,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libopenblas-dev libpython3.13-dev
+          sudo apt-get install -y libopenblas-dev libpython3.11-dev
       - name: Run Rust tests
         run: |
           # Set LD_LIBRARY_PATH so test binaries can find libpython at runtime
-          export LD_LIBRARY_PATH=$(python3 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
+          # Python 3.11 from actions/setup-python includes the shared library
+          export LD_LIBRARY_PATH=$(python3.11 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
+          # Verify Python and library
+          python3.11 --version
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+          ls -la $(python3.11 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')/libpython* || true
           # Run tests
           cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib -- --show-output
           cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
