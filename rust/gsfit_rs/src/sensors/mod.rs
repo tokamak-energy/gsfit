@@ -7,6 +7,7 @@ mod isoflux_boundary;
 mod pressure;
 mod rogowski_coils;
 mod static_and_dynamic_data_types;
+// mod hall_probes; // Hall probes are not yet implemented
 
 // Expose
 pub use bp_probes::BpProbes;
@@ -18,3 +19,4 @@ pub use pressure::Pressure;
 pub use rogowski_coils::RogowskiCoils;
 pub use static_and_dynamic_data_types::SensorsDynamic;
 pub use static_and_dynamic_data_types::SensorsStatic;
+// pub use hall_probes::HallProbes; // Hall probes are not yet implemented
