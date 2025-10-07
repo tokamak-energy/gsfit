@@ -40,24 +40,23 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
-      - name: Rust tests, in maturin container
-        uses: addnab/docker-run-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          image: ghcr.io/pyo3/maturin
-          options: -v ${{ github.workspace }}:/workspace -w /workspace
-          run: |
-            # Install OpenBLAS, OpenSSL, and Python 3.11 development packages
-            # Note: python3.11-devel provides libpython3.11.so needed for linking tests
-            yum update -y && yum install -y openblas-devel openssl-devel python3.11-devel
-            # Use Python 3.11 from system (has shared library)
-            export PATH=/usr/bin:$PATH
-            # Verify Python version
-            python3.11 --version
-            # Set LD_LIBRARY_PATH for Python shared library (needed at runtime for tests)
-            export LD_LIBRARY_PATH=$(python3.11 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
-            # Perform Rust tests
-            cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib -- --show-output
-            cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
+          python-version: '3.13'
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenblas-dev libpython3.13-dev
+      - name: Run Rust tests
+        run: |
+          # Set LD_LIBRARY_PATH so test binaries can find libpython at runtime
+          export LD_LIBRARY_PATH=$(python3 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
+          # Run tests
+          cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib -- --show-output
+          cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
 
   linux_build_wheels:
     name: "Linux: Build Python wheels"
