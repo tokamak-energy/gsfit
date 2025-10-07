@@ -1,5 +1,5 @@
 use approx::abs_diff_eq;
-use ndarray::{Array1, Array2, s};
+use ndarray::{s, Array1, Array2};
 use physical_constants;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
@@ -147,5 +147,6 @@ fn test_greens_b() {
 
     let precision: f64 = 1e-7;
     assert_abs_diff_eq!(br_numerical_test2[0], 0.0, epsilon = precision); // the [0] is because we have only one sensor
-    assert_abs_diff_eq!(bz_numerical_test2[0], bz_analytic_test2, epsilon = precision); // the [0] is because we have only one sensor
+    assert_abs_diff_eq!(bz_numerical_test2[0], bz_analytic_test2, epsilon = precision);
+    // the [0] is because we have only one sensor
 }

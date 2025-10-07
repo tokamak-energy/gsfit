@@ -1,8 +1,8 @@
-use super::BoundaryContour;
-use super::StationaryPoint;
 use super::find_viable_limit_point::find_viable_limit_point;
 use super::find_viable_xpt::find_viable_xpt;
 use super::flood_fill_mask::flood_fill_mask;
+use super::BoundaryContour;
+use super::StationaryPoint;
 use crate::greens::D2PsiDR2Calculator;
 use core::f64;
 use geo::{Coord, LineString, Polygon};

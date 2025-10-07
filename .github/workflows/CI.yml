@@ -40,17 +40,30 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
-      - name: Rust tests, in maturin container
-        uses: addnab/docker-run-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          image: ghcr.io/pyo3/maturin
-          options: -v ${{ github.workspace }}:/workspace -w /workspace
-          run: |
-            # Install OpenBLAS, and OpenSSL
-            yum update -y && yum install -y openblas-devel openssl-devel
-            # Perform Rust tests
-            cargo test --manifest-path rust/Cargo.toml --package gsfit_rs --lib -- --show-output
-            cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
+          python-version: '3.12'
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          apt-cache search libpython
+          # In ubuntu-latest, only `libpython3.12-dev` is available
+          sudo apt-get install -y libopenblas-dev libpython3.12-dev
+      - name: Run Rust tests
+        run: |
+          # Set LD_LIBRARY_PATH so test binaries can find libpython at runtime
+          # Python 3.12 from actions/setup-python includes the shared library
+          export LD_LIBRARY_PATH=$(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
+          # Verify Python and library
+          python3.12 --version
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+          ls -la $(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')/libpython* || true
+          # Run tests
+          cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib -- --show-output
+          cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
 
   linux_build_wheels:
     name: "Linux: Build Python wheels"
@@ -190,7 +203,7 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           .\vcpkg\bootstrap-vcpkg.bat
-          # Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in PATH
+          # Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in `PATH`
           .\vcpkg\vcpkg integrate install
           vcpkg install openblas:x64-windows-static-md
           vcpkg install lapack-reference:x64-windows-static-md

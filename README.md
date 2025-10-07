@@ -126,17 +126,19 @@ uv pip install --reinstall .[dev]
 On Windows, OpenBLAS can be installed using [vcpkg](https://vcpkg.io/):
 
 ```powershell
-# Install vcpkg
-git clone https://github.com/Microsoft/vcpkg.git C:\Users\__YOUR_USERNAME__\github\vcpkg
-cd C:\Users\__YOUR_USERNAME__\github\vcpkg
+# Install `vcpkg` (Windows package manager)
+git clone https://github.com/Microsoft/vcpkg.git C:\Users\<user.name>\github\vcpkg
+cd C:\Users\<user.name>\github\vcpkg
 .\bootstrap-vcpkg.bat
+# Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in `PATH`
+.\vcpkg\vcpkg integrate install
 
 # Install OpenBLAS/LAPACK with static linking
 vcpkg install openblas:x64-windows-static-md
 vcpkg install lapack-reference:x64-windows-static-md
 
-# Install the Rust compiler
-# Download and run rustup-init.exe from https://www.rust-lang.org/tools/install
+# Download and install Rust compiler
+# run rustup-init.exe from https://www.rust-lang.org/tools/install
 
 # Clone a copy of GSFit from GitHub
 git clone git@github.com:tokamak-energy/gsfit.git

@@ -1,5 +1,5 @@
 use core::f64;
-use ndarray::{Array1, Array2, s};
+use ndarray::{s, Array1, Array2};
 
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,

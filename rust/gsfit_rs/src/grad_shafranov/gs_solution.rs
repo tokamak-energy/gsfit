@@ -1,18 +1,18 @@
-use crate::Plasma;
 use crate::greens::D2PsiDR2Calculator;
-use crate::plasma_geometry::BoundaryContour;
-use crate::plasma_geometry::MagneticAxis;
-use crate::plasma_geometry::StationaryPoint;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
 use crate::plasma_geometry::find_stationary_points;
+use crate::plasma_geometry::BoundaryContour;
+use crate::plasma_geometry::MagneticAxis;
+use crate::plasma_geometry::StationaryPoint;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
+use crate::Plasma;
 use core::f64;
-use ndarray::Axis;
-use ndarray::{Array1, Array2, Array3, s};
-use std::sync::Arc;
 use lapack::*;
+use ndarray::Axis;
+use ndarray::{s, Array1, Array2, Array3};
+use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 const PI: f64 = std::f64::consts::PI;

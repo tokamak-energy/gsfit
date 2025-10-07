@@ -1,13 +1,13 @@
+use geo::{Contains, Coord, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
 use std::collections::VecDeque;
-use geo::{Contains, Coord, LineString, Point, Polygon};
 
 /// Flood fill algorithm to create a mask of points inside the plasma boundary
 /// starting from the magnetic axis location
 /// * mask=0.0 --> outside the plasma
 /// * mask=1.0 --> inside the plasma
-/// 
+///
 /// # Arguments
 /// * `r` - R grid points, metre
 /// * `z` - Z grid points, metre

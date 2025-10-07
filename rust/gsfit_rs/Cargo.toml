@@ -16,7 +16,7 @@ contour = "0.13.1"
 geo = "0.31.0"  # For contour
 geo-types = "0.7.17"  # For getting geo type out of `contour`
 num = "0.4.3"
-pyo3 = { version = "0.26.0", features = ["extension-module"] }  # Communication with Python
+pyo3 = { version = "0.26.0", features = ["extension-module", "multiple-pymethods"] }  # Communication with Python
 physical_constants = "0.5.0"  # For MU_0
 rayon = "1.11.0"
 spec_math = "0.1.6"  # For elliptic integrals

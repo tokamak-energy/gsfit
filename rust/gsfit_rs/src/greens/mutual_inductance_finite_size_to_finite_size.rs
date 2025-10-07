@@ -1,6 +1,6 @@
 use crate::greens::greens_psi;
 use approx::abs_diff_eq;
-use ndarray::{Array1, Array2, s};
+use ndarray::{s, Array1, Array2};
 
 /// Mutual inductance between filaments of finite size
 ///
@@ -48,7 +48,7 @@ pub fn mutual_inductance_finite_size_to_finite_size(
         // TODO: Make this a parallel loop
         for i_filament_prime in 0..n_filaments_prime {
             // Discretise the first filament
-            let (r_sub_filament, z_sub_filament, d_r_sub_filament, d_z_sub_filament, area): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, f64) =
+            let (r_sub_filament, z_sub_filament, _d_r_sub_filament, _d_z_sub_filament, _area): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, f64) =
                 discretise_parallelogram(
                     r[i_filament],
                     z[i_filament],
@@ -60,7 +60,7 @@ pub fn mutual_inductance_finite_size_to_finite_size(
                 );
 
             // Discretise the second filament
-            let (r_sub_filament_prime, z_sub_filament_prime, d_r_sub_filament_prime, d_z_sub_filament_prime, area_prime): (
+            let (r_sub_filament_prime, z_sub_filament_prime, _d_r_sub_filament_prime, _d_z_sub_filament_prime, _area_prime): (
                 Array1<f64>,
                 Array1<f64>,
                 Array1<f64>,

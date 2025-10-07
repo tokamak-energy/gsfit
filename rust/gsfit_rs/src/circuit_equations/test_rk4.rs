@@ -1,7 +1,7 @@
 // The equations of motion describing the motion of a spacecraft on a Kepler
 // orbit are integrated using Dopri5.
 
-use ndarray::{Array, Array1, Array2, Array3, s};
+use ndarray::{s, Array, Array1, Array2, Array3};
 use ode_solvers::dopri5::*;
 use ode_solvers::*;
 
@@ -10,7 +10,7 @@ type Time = f64;
 
 use std::{
     f64::consts::PI,
-    fs::{File, create_dir_all},
+    fs::{create_dir_all, File},
     io::BufWriter,
     io::Write,
     path::Path,
