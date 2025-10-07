@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 ndarray = "0.16.1"
+data_tree_derive = { path = "../data_tree_derive" }
 
 [dev-dependencies]
 # For running tests

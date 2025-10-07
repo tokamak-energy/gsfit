@@ -190,7 +190,7 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           .\vcpkg\bootstrap-vcpkg.bat
-          # Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in PATH
+          # Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in `PATH`
           .\vcpkg\vcpkg integrate install
           vcpkg install openblas:x64-windows-static-md
           vcpkg install lapack-reference:x64-windows-static-md

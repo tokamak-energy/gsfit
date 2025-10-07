@@ -2,6 +2,9 @@ use core::panic;
 use ndarray::{Array1, Array2, Array3, Dim, SliceInfo, SliceInfoElem, s};
 use std::collections::HashMap;
 
+// Re-export the derive macro from data_tree_derive
+pub use data_tree_derive::AddDataTreeGetters;
+
 #[derive(Debug)]
 enum SliceType {
     Array3Size(SliceInfo<[SliceInfoElem; 3], Dim<[usize; 3]>, Dim<[usize; 3]>>),
