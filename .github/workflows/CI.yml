@@ -125,6 +125,8 @@ jobs:
           python -m pip install gsfit-0.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl[dev,with_freegs_and_freegsnke]
       - name: Run Jupyter notebook Python tests
         run: |
+          # Uninstall pytest-xdist to prevent parallel execution; perhaps this is the cause of Jupyter notebook hanging?
+          python -m pip uninstall -y pytest-xdist
           # Run the MAST-U FreeGSNKE notebook
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
       - name: Run mypy Python tests
