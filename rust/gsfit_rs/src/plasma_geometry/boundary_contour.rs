@@ -4,7 +4,7 @@ use geo::Area;
 use geo::Centroid;
 use geo::Contains;
 use geo::{Coord, LineString, Point, Polygon};
-use ndarray::{Array1, Array2, Axis, s};
+use ndarray::{s, Array1, Array2, Axis};
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_linalg::Solve;
 use ndarray_stats::QuantileExt;
@@ -434,7 +434,7 @@ fn find_minima_maxima_about_xpt(
 
     // Radius of circle around x-point
     let circle_radius: f64 = (d_r.powi(2) + d_z.powi(2)).sqrt() / 1.7; // ~1cm with n_r=80, n_z=161
-    // Number of points to sample on circle
+                                                                       // Number of points to sample on circle
     let n_theta: usize = 100;
     // Avoid double counting theta=0.0 and theta=2.0*PI
     let theta: Array1<f64> = Array1::linspace(0.0, 2.0 * PI, n_theta + 1).slice(s![..n_theta]).to_owned();

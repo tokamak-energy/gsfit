@@ -5,8 +5,8 @@ use crate::greens::D2PsiDR2Calculator;
 use crate::plasma_geometry::hessian;
 use contour::ContourBuilder;
 use core::f64;
+use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::Contains;
-use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Coord, Line, LineString, MultiPolygon, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_interp::interp2d::Interp2D;
@@ -249,7 +249,8 @@ pub fn find_stationary_points(
                         // where the features are smaller than the grid spacing. This happens particularly near the PF coils,
                         // such as DIV/SOL. Because we are effectively randomly sampling the function the contouring can contain
                         // intersections between `br=0` and `bz=0` contours which are not real stationary points.
-                        let stationary_point_or_error: Result<BicubicStationaryPoint, String> = bicubic_interpolator.find_stationary_point(x_start, y_start, 1e-6, 100);
+                        let stationary_point_or_error: Result<BicubicStationaryPoint, String> =
+                            bicubic_interpolator.find_stationary_point(x_start, y_start, 1e-6, 100);
 
                         // Extract the magnetic axis values
                         let stationary_psi: f64;

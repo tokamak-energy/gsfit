@@ -1,9 +1,9 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Data, Fields};
+use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 /// Derive macro to automatically generate DataTree getter methods
-/// 
+///
 /// This macro generates the following methods for structs containing a `results: DataTree` field:
 /// - get_array1(&self, keys: Vec<String>, py: Python) -> Py<PyArray1<f64>>
 /// - get_array2(&self, keys: Vec<String>, py: Python) -> Py<PyArray2<f64>>
@@ -18,28 +18,25 @@ use syn::{parse_macro_input, DeriveInput, Data, Fields};
 #[proc_macro_derive(AddDataTreeGetters)]
 pub fn add_data_tree_getters(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    
+
     let struct_name = &input.ident;
-    
+
     // Verify the struct has a field named "results" of type DataTree
     let has_results_field = match &input.data {
-        Data::Struct(data_struct) => {
-            match &data_struct.fields {
-                Fields::Named(fields_named) => {
-                    fields_named.named.iter().any(|field| {
-                        field.ident.as_ref().map(|ident| ident == "results").unwrap_or(false)
-                    })
-                }
-                _ => false,
-            }
-        }
+        Data::Struct(data_struct) => match &data_struct.fields {
+            Fields::Named(fields_named) => fields_named
+                .named
+                .iter()
+                .any(|field| field.ident.as_ref().map(|ident| ident == "results").unwrap_or(false)),
+            _ => false,
+        },
         _ => false,
     };
-    
+
     if !has_results_field {
         panic!("AddDataTreeGetters can only be derived for structs with a 'results: DataTree' field");
     }
-    
+
     // Generate the implementation
     let expanded = quote! {
         // PyO3 supports multiple #[pymethods] blocks, so we generate a separate one

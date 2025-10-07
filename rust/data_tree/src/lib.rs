@@ -1,5 +1,5 @@
 use core::panic;
-use ndarray::{Array1, Array2, Array3, Dim, SliceInfo, SliceInfoElem, s};
+use ndarray::{s, Array1, Array2, Array3, Dim, SliceInfo, SliceInfoElem};
 use std::collections::HashMap;
 
 // Re-export the derive macro from data_tree_derive

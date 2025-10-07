@@ -1,7 +1,7 @@
 use crate::greens::greens_psi;
-use data_tree::{DataTree, DataTreeAccumulator, AddDataTreeGetters};
 use crate::sensors::SensorsDynamic;
-use ndarray::{Array1, Array2, Array3, s};
+use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use ndarray::{s, Array1, Array2, Array3};
 use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;

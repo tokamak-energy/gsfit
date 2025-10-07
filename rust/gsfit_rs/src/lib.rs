@@ -1,6 +1,6 @@
 use core::f64;
 use log::info; // use log::{debug, error, info};
-use ndarray::{Array1, Array2, s};
+use ndarray::{s, Array1, Array2};
 use numpy::IntoPyArray; // converting to python data types
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::{PyArray1, PyArray2};
@@ -224,8 +224,16 @@ fn solve_inverse_problem(
         let n_ff_prime_dof: usize = plasma.ff_prime_source_function.source_function_n_dof();
         let p_prime_coefs: Array2<f64> = Array2::zeros((n_time, n_p_prime_dof));
         let ff_prime_coefs: Array2<f64> = Array2::zeros((n_time, n_ff_prime_dof));
-        plasma.results.get_or_insert("source_functions").get_or_insert("p_prime").insert("coefficients", p_prime_coefs);
-        plasma.results.get_or_insert("source_functions").get_or_insert("ff_prime").insert("coefficients", ff_prime_coefs);
+        plasma
+            .results
+            .get_or_insert("source_functions")
+            .get_or_insert("p_prime")
+            .insert("coefficients", p_prime_coefs);
+        plasma
+            .results
+            .get_or_insert("source_functions")
+            .get_or_insert("ff_prime")
+            .insert("coefficients", ff_prime_coefs);
 
         println!("solve_inverse_problem: no times to reconstruct, returning");
         return;

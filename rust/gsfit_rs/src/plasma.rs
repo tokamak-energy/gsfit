@@ -1,18 +1,18 @@
 use crate::coils::Coils;
 use crate::grad_shafranov::GsSolution;
-use crate::greens::{greens_b, greens_d_b_d_z, greens_d2_psi_d_r2, greens_psi};
-use data_tree::{DataTree, DataTreeAccumulator};
+use crate::greens::{greens_b, greens_d2_psi_d_r2, greens_d_b_d_z, greens_psi};
 use crate::passives::Passives;
 use crate::source_functions::SourceFunctionTraits;
 use crate::source_functions::{EfitPolynomial, LiuqePolynomial};
 use contour::ContourBuilder;
 use core::f64;
+use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::Area;
 use geo::Centroid;
 use geo::Line;
-use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Contains, Coord, LineString, Point, Polygon};
-use ndarray::{Array1, Array2, Array3, Axis, s};
+use ndarray::{s, Array1, Array2, Array3, Axis};
 use ndarray_interp::interp1d::Interp1D;
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
@@ -29,7 +29,7 @@ const PI: f64 = std::f64::consts::PI;
 // use log::{debug, error, info};
 // env_logger::init(); // in the "new" method
 
-#[derive(Clone)]
+#[derive(Clone, AddDataTreeGetters)]
 #[pyclass]
 pub struct Plasma {
     pub results: DataTree,
@@ -290,8 +290,7 @@ impl Plasma {
                 .to_owned();
 
             // Greens function for br and bz
-            let (g_br_all_filaments, g_bz_all_filaments): (Array2<f64>, Array2<f64>) =
-                greens_b(flat_r.clone(), flat_z.clone(), coil_r.clone(), coil_z.clone()); // shape = (n_z * n_r, n_filaments)
+            let (g_br_all_filaments, g_bz_all_filaments): (Array2<f64>, Array2<f64>) = greens_b(flat_r.clone(), flat_z.clone(), coil_r.clone(), coil_z.clone()); // shape = (n_z * n_r, n_filaments)
 
             // Greens function for d_br_d_z and d_bz_d_z
             let (g_d_br_d_z_all_filaments, g_d_bz_d_z_all_filaments): (Array2<f64>, Array2<f64>) =
@@ -527,157 +526,6 @@ impl Plasma {
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
         return string_output;
-    }
-
-    /// Get Array1<f64> and return a numpy.ndarray
-    pub fn get_array1(&self, keys: Vec<String>, py: Python) -> Py<PyArray1<f64>> {
-        // Start with the root accumulator
-        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
-
-        // Traverse the keys to reach the desired value
-        for key in &keys[1..] {
-            result_accumulator = result_accumulator.get(key);
-        }
-
-        // Unwrap, convert to NumPy, and return
-        let array1: Array1<f64> = result_accumulator.unwrap_array1();
-        return array1.into_pyarray(py).into();
-    }
-
-    /// Get Array2<f64> and return a numpy.ndarray
-    pub fn get_array2(&self, keys: Vec<String>, py: Python) -> Py<PyArray2<f64>> {
-        // Start with the root accumulator
-        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
-
-        // Traverse the keys to reach the desired value
-        for key in &keys[1..] {
-            result_accumulator = result_accumulator.get(key);
-        }
-
-        // Unwrap, convert to NumPy, and return
-        let array2: Array2<f64> = result_accumulator.unwrap_array2();
-        return array2.into_pyarray(py).into();
-    }
-
-    /// Get Array3<f64> and return a numpy.ndarray
-    pub fn get_array3(&self, keys: Vec<String>, py: Python) -> Py<PyArray3<f64>> {
-        // Start with the root accumulator
-        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
-
-        // Traverse the keys to reach the desired value
-        for key in &keys[1..] {
-            result_accumulator = result_accumulator.get(key);
-        }
-
-        // Unwrap, convert to NumPy, and return
-        let array3: Array3<f64> = result_accumulator.unwrap_array3();
-        return array3.into_pyarray(py).into();
-    }
-
-    /// Get Vec<bool> and return a Python list[bool]
-    pub fn get_bool(&self, keys: Vec<String>) -> bool {
-        // Start with the root accumulator
-        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
-
-        // Traverse the keys to reach the desired value
-        for key in &keys[1..] {
-            result_accumulator = result_accumulator.get(key);
-        }
-
-        // Unwrap, convert to a Vec<bool>, and return as a Python list
-        let bool_value: bool = result_accumulator.unwrap_bool();
-
-        return bool_value;
-    }
-
-    /// Get f64 value and return a f64
-    pub fn get_f64(&self, keys: Vec<String>) -> f64 {
-        // Start with the root accumulator
-        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
-
-        // Traverse the keys to reach the desired value
-        for key in &keys[1..] {
-            result_accumulator = result_accumulator.get(key);
-        }
-
-        // Unwrap the f64, and return
-        return result_accumulator.unwrap_f64();
-    }
-
-    /// Get usize value and return a int
-    pub fn get_usize(&self, keys: Vec<String>) -> usize {
-        // Start with the root accumulator
-        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
-
-        // Traverse the keys to reach the desired value
-        for key in &keys[1..] {
-            result_accumulator = result_accumulator.get(key);
-        }
-
-        // Unwrap the f64, and return
-        return result_accumulator.unwrap_usize();
-    }
-
-    /// Get Vec<bool> and return a Python list[bool]
-    pub fn get_vec_bool(&self, keys: Vec<String>, py: Python) -> Py<PyList> {
-        // Start with the root accumulator
-        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
-
-        // Traverse the keys to reach the desired value
-        for key in &keys[1..] {
-            result_accumulator = result_accumulator.get(key);
-        }
-
-        // Unwrap, convert to a Vec<bool>, and return as a Python list
-        let vec_bool: Vec<bool> = result_accumulator.unwrap_vec_bool();
-        let result: Py<PyList> = PyList::new(py, vec_bool).unwrap().into();
-        return result;
-    }
-
-    /// Get Vec<usize> and return a Python list[int]
-    pub fn get_vec_usize(&self, keys: Vec<String>, py: Python) -> Py<PyList> {
-        // Start with the root accumulator
-        let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
-
-        // Traverse the keys to reach the desired value
-        for key in &keys[1..] {
-            result_accumulator = result_accumulator.get(key);
-        }
-
-        // Unwrap, convert to a Vec<usize>, and return as a Python list of integers
-        let vec_usize: Vec<usize> = result_accumulator.unwrap_vec_usize();
-        let vec_i64: Vec<i64> = vec_usize.into_iter().map(|x| x as i64).collect();
-        let result: Py<PyList> = PyList::new(py, vec_i64).unwrap().into();
-        return result;
-    }
-
-    /// Get the keys from results and return a Python list of strings
-    #[pyo3(signature = (key_path=None))]
-    pub fn keys(&self, py: Python, key_path: Option<&Bound<'_, PyList>>) -> Py<PyList> {
-        let keys: Vec<String> = if let Some(key_path) = key_path {
-            if key_path.len() == 0 {
-                self.results.keys()
-            } else {
-                // Convert PyList to Vec<String> and traverse DataTreeAccumulator
-                let keys: Vec<String> = key_path.extract().expect("Failed to extract key_path as Vec<String>");
-                let mut result_accumulator = self.results.get(&keys[0]);
-                // Skip the first key and traverse the rest
-                for key in &keys[1..] {
-                    result_accumulator = result_accumulator.get(key);
-                }
-                result_accumulator.keys()
-            }
-        } else {
-            // if `sub_keys = None` (when not supplied)
-            self.results.keys()
-        };
-        let result: Py<PyList> = PyList::new(py, keys).unwrap().into();
-        return result;
-    }
-
-    /// Print keys to screen, to be used within Python
-    pub fn print_keys(&self) {
-        self.results.print_keys();
     }
 }
 
