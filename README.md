@@ -1,7 +1,7 @@
 # GSFit: Grad-Shafranov Fit
 [![The 3-Clause BSD License](https://img.shields.io/pypi/l/prtg-pyprobe)](LICENSE) 
 [![Python 3.11|3.12|3.13](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue?logo=python&logoColor=white)](https://www.python.org/) 
-[![Rust](https://img.shields.io/badge/Rust-1.89-red?logo=rust&logoColor=white)](https://www.rust-lang.org/) 
+[![Rust](https://img.shields.io/badge/Rust-1.90-red?logo=rust&logoColor=white)](https://www.rust-lang.org/) 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) 
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
