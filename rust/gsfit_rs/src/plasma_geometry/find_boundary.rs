@@ -1,8 +1,8 @@
+use super::BoundaryContour;
+use super::StationaryPoint;
 use super::find_viable_limit_point::find_viable_limit_point;
 use super::find_viable_xpt::find_viable_xpt;
 use super::flood_fill_mask::flood_fill_mask;
-use super::BoundaryContour;
-use super::StationaryPoint;
 use crate::greens::D2PsiDR2Calculator;
 use core::f64;
 use geo::{Coord, LineString, Polygon};
@@ -92,7 +92,7 @@ pub fn find_boundary(
         &vessel_r,
         &vessel_z,
     );
-    // println!("find_boundary: xpt_boundary_or_error = {:?}", xpt_boundary_or_error);
+    // println!("find_boundary: limit_boundary_or_error = {:?}", limit_boundary_or_error);
 
     // Extract results from `limit_boundary` object
     let limit_pt_r: f64;

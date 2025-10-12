@@ -1,4 +1,4 @@
-use ndarray::{s, Array1, Array2, Array3};
+use ndarray::{Array1, Array2, Array3, s};
 
 // Constants
 const PI: f64 = std::f64::consts::PI;

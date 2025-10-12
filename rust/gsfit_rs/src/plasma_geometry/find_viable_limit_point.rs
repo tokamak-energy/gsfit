@@ -123,6 +123,11 @@ pub fn find_viable_limit_point(
             });
         }
     }
+    // Exit if we haven't found any boundary contours
+    if boundary_contours_all.len() == 0 {
+        // println!("find_viable_limit_point: no boundary found");
+        return Err("no boundary found 01".to_string());
+    }
 
     // Check if the boundary has reached the grid edge
     boundary_contours_all.retain(|boundary_contour| {
@@ -143,9 +148,12 @@ pub fn find_viable_limit_point(
 
         // "retain" the contours which have not reached the edge
         let not_reached_edge: bool = !has_reached_edge;
-        // println!("not_reached_edge={not_reached_edge}");
         return not_reached_edge;
     });
+    // Exit if we haven't found any boundary contours
+    if boundary_contours_all.len() == 0 {
+        return Err("no boundary found 02".to_string());
+    }
 
     // Find the shortest distance from any boundary point to the limit_point
     // Find the minimum distance from any of the points which describe the boundary to the limit_pt
@@ -173,7 +181,7 @@ pub fn find_viable_limit_point(
     // Exit if we haven't found any boundary contours
     if boundary_contours_all.len() == 0 {
         // println!("find_viable_limit_point: no boundary found");
-        return Err("no boundary found".to_string());
+        return Err("no boundary found 03".to_string());
     }
 
     // Check if the magnetic axis (point) is inside the boundary (polygon)
@@ -216,7 +224,7 @@ pub fn find_viable_limit_point(
     // Exit if we haven't found any boundary contours
     if boundary_contours_all.len() == 0 {
         // println!("find_viable_limit_point: no boundary found 02");
-        return Err("no boundary found 02".to_string());
+        return Err("no boundary found 04".to_string());
     }
 
     // Sort by `fraction_inside_vessel`

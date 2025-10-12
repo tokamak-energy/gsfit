@@ -1,4 +1,4 @@
-use ndarray::{s, Array1, Array2};
+use ndarray::{Array1, Array2, s};
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk;
 

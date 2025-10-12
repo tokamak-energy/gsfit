@@ -2,7 +2,7 @@ use crate::grad_shafranov::GsSolution;
 use crate::greens::mutual_inductance_finite_size_to_finite_size;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use lapack::*;
-use ndarray::{s, Array1, Array2, Array3};
+use ndarray::{Array1, Array2, Array3, s};
 use ndarray_linalg::Norm;
 use numpy::IntoPyArray; // converting to python data types
 use numpy::PyArrayMethods; // used in to convert python data into ndarray

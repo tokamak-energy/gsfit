@@ -1,10 +1,10 @@
+use crate::Plasma;
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
-use crate::Plasma;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::{Contains, Coord, LineString, Point, Polygon};
-use ndarray::{s, Array1, Array2, Array3, Axis};
+use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
@@ -626,10 +626,10 @@ impl RogowskiCoils {
         // With PF coils
         let greens_with_pf: Array2<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array2(); // shape = [n_pf, n_sensors]
         let greens_with_pf: Array2<f64> = greens_with_pf.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_pf, n_sensors]
-                                                                                            // With plasma
+        // With plasma
         let greens_with_grid: Array2<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array2(); // shape = [n_z * n_r, n_sensors]
         let greens_with_grid: Array2<f64> = greens_with_grid.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_pf, n_sensors]
-                                                                                                // With d_sensor_dz (for vertical stability)
+        // With d_sensor_dz (for vertical stability)
         let greens_d_sensor_dz: Array2<f64> = self.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array2(); // shape = [n_z * n_r, n_sensors]
         let greens_d_sensor_dz: Array2<f64> = greens_d_sensor_dz.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_z * n_r, n_sensors]
 

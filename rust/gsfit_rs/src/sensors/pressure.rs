@@ -1,11 +1,11 @@
 // Fixed variable size
+use crate::Plasma;
 use crate::greens::greens_b;
 use crate::greens::greens_d_b_d_z;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
-use crate::Plasma;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use ndarray::{s, Array1, Array2, Array3, Axis};
+use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray; // converting to python data types
 use numpy::PyArrayMethods; // used in to convert python data into ndarray

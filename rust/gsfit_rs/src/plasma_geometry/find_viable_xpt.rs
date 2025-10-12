@@ -2,8 +2,8 @@ use super::BoundaryContour;
 use super::StationaryPoint;
 use contour::ContourBuilder;
 use core::f64;
-use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::Contains;
+use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Coord, Line, LineString, MultiPolygon, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
@@ -246,7 +246,7 @@ pub fn find_viable_xpt(
         secondary_xpt_distance: f64::MAX,
     };
 
-    final_contour.refine_xpt_diverted_boundary(r, z, psi_2d, mag_r_previous, mag_z_previous, br_2d, bz_2d);
+    // final_contour.refine_xpt_diverted_boundary(r, z, psi_2d, mag_r_previous, mag_z_previous, br_2d, bz_2d);
 
     return Ok(final_contour);
 }

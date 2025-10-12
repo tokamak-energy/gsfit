@@ -1,5 +1,5 @@
 use core::f64;
-use ndarray::{s, Array1, Array2};
+use ndarray::{Array1, Array2, s};
 use physical_constants;
 use rayon::prelude::*;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind

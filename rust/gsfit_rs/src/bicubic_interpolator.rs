@@ -1,5 +1,10 @@
 use core::f64;
-use ndarray::{s, Array1, Array2};
+use ndarray::{Array1, Array2, s};
+
+pub struct SaddleLocalMinimaAndMaxima {
+    pub maxima: f64,
+    pub minima: f64,
+}
 
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,
