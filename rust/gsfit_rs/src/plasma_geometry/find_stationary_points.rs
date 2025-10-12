@@ -275,14 +275,6 @@ pub fn find_stationary_points(
                             }
                         }
 
-                        // // For saddle points we want to find the local minima and maxima on the cell boundary
-                        // if hessian_det < 0.0 {
-                        //     if stationary_z > -0.6 && stationary_z < -0.45 && stationary_r > 0.23 {
-                        //         let saddle_local_minima_and_maxima: SaddleLocalMinimaAndMaxima =
-                        //             bicubic_interpolator.find_saddle_point_local_minima_and_maxima_on_cell_boundary();
-                        //     }
-                        // }
-
                         stationary_points.push(StationaryPoint {
                             r: stationary_r,
                             z: stationary_z,

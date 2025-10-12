@@ -16,7 +16,7 @@
                 },
                 "psu2coil": {
                     "pulseNo": null,
-                    "run_name": "RUN02",
+                    "run_name": "RUN06",
                     "usage": "PF and TF coil currents"
                 }
             },
