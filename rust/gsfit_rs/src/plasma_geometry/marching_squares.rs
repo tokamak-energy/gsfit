@@ -409,8 +409,7 @@ pub fn sort_boundary_points_version_2(
 
     // Remove any accidental duplicates of start/end from interior (with a small tolerance)
     const EPS: f64 = 1e-12;
-    interior.retain(|p| ((p.0 - start.0).abs() > EPS || (p.1 - start.1).abs() > EPS)
-        && ((p.0 - end.0).abs() > EPS || (p.1 - end.1).abs() > EPS));
+    interior.retain(|p| ((p.0 - start.0).abs() > EPS || (p.1 - start.1).abs() > EPS) && ((p.0 - end.0).abs() > EPS || (p.1 - end.1).abs() > EPS));
 
     if interior.is_empty() {
         return (vec![xpt_r, start.0, end.0, xpt_r], vec![xpt_z, start.1, end.1, xpt_z]);
@@ -420,14 +419,26 @@ pub fn sort_boundary_points_version_2(
     #[inline]
     fn side_of_axis(xr: f64, xz: f64, vr: f64, vz: f64, p: (f64, f64)) -> i8 {
         let cross = vr * (p.1 - xz) - vz * (p.0 - xr);
-        if cross > 0.0 { 1 } else if cross < 0.0 { -1 } else { 0 }
+        if cross > 0.0 {
+            1
+        } else if cross < 0.0 {
+            -1
+        } else {
+            0
+        }
     }
 
     // Direction X -> magnetic axis (unit)
     let mut vr = mag_r - xpt_r;
     let mut vz = mag_z - xpt_z;
     let v_norm = (vr * vr + vz * vz).sqrt();
-    if v_norm > 0.0 { vr /= v_norm; vz /= v_norm; } else { vr = 1.0; vz = 0.0; }
+    if v_norm > 0.0 {
+        vr /= v_norm;
+        vz /= v_norm;
+    } else {
+        vr = 1.0;
+        vz = 0.0;
+    }
 
     // Prefer start and end on opposite sides; swap if both on same side
     let s_start = side_of_axis(xpt_r, xpt_z, vr, vz, start);
@@ -438,14 +449,13 @@ pub fn sort_boundary_points_version_2(
 
     // Helper: would adding segment cross the existing polyline?
     fn would_cross(r_path: &Vec<f64>, z_path: &Vec<f64>, r_last: f64, z_last: f64, r_new: f64, z_new: f64) -> bool {
-        if r_path.len() < 2 { return false; }
+        if r_path.len() < 2 {
+            return false;
+        }
         for i in 0..(r_path.len() - 2) {
-            if segments_intersect(
-                r_path[i], z_path[i],
-                r_path[i + 1], z_path[i + 1],
-                r_last, z_last,
-                r_new, z_new,
-            ) { return true; }
+            if segments_intersect(r_path[i], z_path[i], r_path[i + 1], z_path[i + 1], r_last, z_last, r_new, z_new) {
+                return true;
+            }
         }
         false
     }
@@ -511,9 +521,14 @@ pub fn sort_boundary_points_version_2(
             let mut best_i = None;
             let mut best_d2 = f64::INFINITY;
             for (i, p) in interior.iter().enumerate() {
-                if used[i] { continue; }
+                if used[i] {
+                    continue;
+                }
                 let d2 = (p.0 - cur.0) * (p.0 - cur.0) + (p.1 - cur.1) * (p.1 - cur.1);
-                if d2 < best_d2 { best_d2 = d2; best_i = Some(i); }
+                if d2 < best_d2 {
+                    best_d2 = d2;
+                    best_i = Some(i);
+                }
             }
             chosen = best_i;
         }
@@ -525,7 +540,9 @@ pub fn sort_boundary_points_version_2(
             used[i] = true;
             n_used += 1;
             cur = p;
-            if locked_steps_done < SIDE_LOCK_STEPS { locked_steps_done += 1; }
+            if locked_steps_done < SIDE_LOCK_STEPS {
+                locked_steps_done += 1;
+            }
         } else {
             break;
         }
@@ -541,10 +558,30 @@ pub fn sort_boundary_points_version_2(
         for k in 0..(m - 1) {
             let mut crosses = false;
             for i in 0..(m - 1) {
-                if i == k { continue; }
-                if segments_intersect(r_sorted[i], z_sorted[i], r_sorted[i + 1], z_sorted[i + 1], r_sorted[k], z_sorted[k], end.0, end.1)
-                    || segments_intersect(r_sorted[i], z_sorted[i], r_sorted[i + 1], z_sorted[i + 1], end.0, end.1, r_sorted[k + 1], z_sorted[k + 1]) {
-                    crosses = true; break;
+                if i == k {
+                    continue;
+                }
+                if segments_intersect(
+                    r_sorted[i],
+                    z_sorted[i],
+                    r_sorted[i + 1],
+                    z_sorted[i + 1],
+                    r_sorted[k],
+                    z_sorted[k],
+                    end.0,
+                    end.1,
+                ) || segments_intersect(
+                    r_sorted[i],
+                    z_sorted[i],
+                    r_sorted[i + 1],
+                    z_sorted[i + 1],
+                    end.0,
+                    end.1,
+                    r_sorted[k + 1],
+                    z_sorted[k + 1],
+                ) {
+                    crosses = true;
+                    break;
                 }
             }
             if !crosses {
