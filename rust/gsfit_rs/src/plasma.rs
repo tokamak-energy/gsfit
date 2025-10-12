@@ -985,6 +985,7 @@ impl Plasma {
                     n: 0,
                 };
                 boundary_contours.push(boundary_contour_empty);
+                xpt_diverted.push(false);
                 continue 'time_loop;
             }
 
