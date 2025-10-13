@@ -908,38 +908,6 @@ impl Plasma {
 
         let mut xpt_diverted: Vec<bool> = Vec::with_capacity(n_time);
 
-        // let mut boundary_nbnd: Vec<usize> = Vec::with_capacity(n_time);
-        // let mut vec_array_boundary_r: Vec<Array1<f64>> = Vec::with_capacity(n_time);
-        // let mut vec_array_boundary_z: Vec<Array1<f64>> = Vec::with_capacity(n_time);
-        // for i_time in 0..n_time {
-        //     let tmp_boundary_r: Array1<f64>;
-        //     let tmp_boundary_z: Array1<f64>;
-        //     if gs_solutions[i_time].xpt_diverted {
-        //         (tmp_boundary_r, tmp_boundary_z) = epp_clean_boundary(&gs_solutions[i_time]);
-        //         // Reassign the boundary to the GS solution
-        //         // TODO: how slow is this? could I always do this in the iteration?
-        //         gs_solutions[i_time].boundary_r = tmp_boundary_r.clone();
-        //         gs_solutions[i_time].boundary_z = tmp_boundary_z.clone();
-        //     } else {
-        //         tmp_boundary_r = gs_solutions[i_time].boundary_r.clone();
-        //         tmp_boundary_z = gs_solutions[i_time].boundary_z.clone();
-        //     }
-
-        //     boundary_nbnd.push(tmp_boundary_r.len());
-        //     vec_array_boundary_r.push(tmp_boundary_r);
-        //     vec_array_boundary_z.push(tmp_boundary_z);
-        // }
-
-        // let max_n_boundary: usize = boundary_nbnd.iter().max().unwrap().clone();
-
-        // let mut boundary_r: Array2<f64> = Array2::from_elem((n_time, max_n_boundary), f64::NAN);
-        // let mut boundary_z: Array2<f64> = Array2::from_elem((n_time, max_n_boundary), f64::NAN);
-
-        // for i_time in 0..n_time {
-        //     boundary_r.slice_mut(s![i_time, 0..boundary_nbnd[i_time]]).assign(&vec_array_boundary_r[i_time]);
-        //     boundary_z.slice_mut(s![i_time, 0..boundary_nbnd[i_time]]).assign(&vec_array_boundary_z[i_time]);
-        // }
-
         // Loop over time, and perform post-processing on `gs_solutions`
         let mut p_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         let mut bt_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
@@ -1185,7 +1153,6 @@ impl Plasma {
             q0[i_time] = q_profile_this_time[0];
 
             rho_pol_profile.slice_mut(s![i_time, ..]).assign(&psi_n.clone().mapv(|x| x.sqrt()));
-            // println!("boundary_contour_local={:#?}", boundary_contour_local);
 
             // Minor radius
             r_minor[i_time] = (boundary_contour_local.r.max().unwrap().to_owned() - boundary_contour_local.r.min().unwrap().to_owned()) / 2.0;
@@ -1204,15 +1171,9 @@ impl Plasma {
         let mut boundary_r: Array2<f64> = Array2::from_elem((n_time, max_n_boundary), f64::NAN);
         let mut boundary_z: Array2<f64> = Array2::from_elem((n_time, max_n_boundary), f64::NAN);
 
-        // println!("max_n_boundary={}", max_n_boundary);
-        // println!("boundary_contours.len()={}", boundary_contours.len());
-        // let boundary_contour: &BoundaryContourNew = &boundary_contours[3];
-        // println!("boundary_contour={:#?}", boundary_contour);
         for i_time in 0..n_time {
-            // println!("i_time={}", i_time);
             let boundary_contour: &BoundaryContourNew = &boundary_contours[i_time];
             let n_boundary: usize = boundary_contour.n;
-            // println!("n_boundary={}", n_boundary);
 
             boundary_nbnd.push(n_boundary);
             boundary_r.slice_mut(s![i_time, 0..n_boundary]).assign(&boundary_contour.r);

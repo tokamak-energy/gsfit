@@ -281,7 +281,6 @@ impl<'a> GsSolution<'a> {
 
         // Iteration loop
         'iteration_loop: for i_iter in 0..self.n_iter_max {
-            // println!("i_iter={i_iter}");
             // From previous iteration
             let j_2d: Array2<f64> = self.j_2d.to_owned();
 

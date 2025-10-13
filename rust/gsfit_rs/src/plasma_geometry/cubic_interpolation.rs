@@ -48,7 +48,7 @@ pub fn cubic_interpolation(
     let a: f64 = cell0_f;
     let b: f64 = delta_x * cell0_d_f_d_x;
     let c: f64 = -3.0 * cell0_f - 2.0 * delta_x * cell0_d_f_d_x + 3.0 * cell1_f - delta_x * cell1_d_f_d_x;
-    let d: f64 = 2.0 * cell0_f + delta_x * cell0_d_f_d_x - 2.0 * cell1_f + delta_x * cell1_d_f_d_x; // somehow this is correct
+    let d: f64 = 2.0 * cell0_f + delta_x * cell0_d_f_d_x - 2.0 * cell1_f + delta_x * cell1_d_f_d_x;
 
     // Rearrange: d*t³ + c*t² + b*t + (a - f_target) = 0
     let roots: Vec<f64> = solve_cubic(d, c, b, a - f_target);
