@@ -8,8 +8,10 @@ authors = [
 ]
 classifiers = [
     "Programming Language :: Rust",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
     "f90nml",
@@ -21,8 +23,10 @@ dependencies = [
 ]
 description = "GSFit: Equilibrium reconstruction"
 dynamic = ["version"]
+license = "BSD-3-Clause"
 name = "gsfit"
 readme = "README.md"
+repository = "https://github.com/tokamak-energy/gsfit"
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
