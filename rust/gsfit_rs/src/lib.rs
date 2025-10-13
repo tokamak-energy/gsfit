@@ -1,6 +1,6 @@
 use core::f64;
 use log::info; // use log::{debug, error, info};
-use ndarray::{s, Array1, Array2};
+use ndarray::{Array1, Array2, s};
 use numpy::IntoPyArray; // converting to python data types
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::{PyArray1, PyArray2};

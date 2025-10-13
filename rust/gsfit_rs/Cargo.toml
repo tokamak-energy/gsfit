@@ -1,6 +1,6 @@
 [package]
 name = "gsfit_rs"
-version = "0.0.0"
+version = "0.0.3"
 edition = "2024"
 
 [lib]

@@ -1,17 +1,17 @@
+use crate::Plasma;
 use crate::greens::D2PsiDR2Calculator;
-use crate::plasma_geometry::find_boundary;
-use crate::plasma_geometry::find_magnetic_axis;
-use crate::plasma_geometry::find_stationary_points;
 use crate::plasma_geometry::BoundaryContour;
 use crate::plasma_geometry::MagneticAxis;
 use crate::plasma_geometry::StationaryPoint;
+use crate::plasma_geometry::find_boundary;
+use crate::plasma_geometry::find_magnetic_axis;
+use crate::plasma_geometry::find_stationary_points;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
-use crate::Plasma;
 use core::f64;
 use lapack::*;
 use ndarray::Axis;
-use ndarray::{s, Array1, Array2, Array3};
+use ndarray::{Array1, Array2, Array3, s};
 use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
@@ -51,8 +51,8 @@ pub struct GsSolution<'a> {
     pub psi_b: f64,
     pub psi_a: f64,
     pub ip: f64,
-    pub boundary_r: Array1<f64>,
-    pub boundary_z: Array1<f64>,
+    // pub boundary_r: Array1<f64>,
+    // pub boundary_z: Array1<f64>,
     pub bounding_r: f64,
     pub bounding_z: f64,
     pub delta_z: f64,
@@ -127,8 +127,8 @@ impl<'a> GsSolution<'a> {
             psi_b: f64::NAN,
             psi_a: f64::NAN,
             ip: f64::NAN,
-            boundary_r: Array1::zeros(0),
-            boundary_z: Array1::zeros(0),
+            // boundary_r: Array1::zeros(0),
+            // boundary_z: Array1::zeros(0),
             bounding_r: f64::NAN,
             bounding_z: f64::NAN,
             delta_z: f64::NAN,
@@ -163,8 +163,8 @@ impl<'a> GsSolution<'a> {
         self.psi_b = f64::NAN;
         self.psi_a = f64::NAN;
         self.ip = f64::NAN;
-        self.boundary_r = Array1::zeros(0);
-        self.boundary_z = Array1::zeros(0);
+        // self.boundary_r = Array1::zeros(0);
+        // self.boundary_z = Array1::zeros(0);
         self.bounding_r = f64::NAN;
         self.bounding_z = f64::NAN;
         self.delta_z = f64::NAN;
@@ -384,8 +384,8 @@ impl<'a> GsSolution<'a> {
             let plasma_boundary: BoundaryContour = plasma_boundary_or_error.expect("Failed to find plasma boundary");
             self.mask = plasma_boundary.mask.expect("Failed to unwrap mask");
             self.psi_b = plasma_boundary.bounding_psi;
-            self.boundary_r = plasma_boundary.boundary_r;
-            self.boundary_z = plasma_boundary.boundary_z;
+            // self.boundary_r = plasma_boundary.boundary_r;
+            // self.boundary_z = plasma_boundary.boundary_z;
             self.bounding_r = plasma_boundary.bounding_r;
             self.bounding_z = plasma_boundary.bounding_z;
             let mask: Array2<f64> = self.mask.to_owned();

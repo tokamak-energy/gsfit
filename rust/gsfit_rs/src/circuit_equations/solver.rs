@@ -3,7 +3,7 @@ use core::time;
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::sensors::{BpProbes, FluxLoops, RogowskiCoils};
-use ndarray::{s, Array, Array1, Array2, Array3};
+use ndarray::{Array, Array1, Array2, Array3, s};
 use ndarray_interp::interp1d::Interp1D;
 use ndarray_linalg::Inverse; // Import the Inverse trait
 use numpy::IntoPyArray; // converting to python data types

@@ -1,6 +1,6 @@
 use crate::greens::greens_psi;
 use approx::abs_diff_eq;
-use ndarray::{s, Array1, Array2};
+use ndarray::{Array1, Array2, s};
 
 /// Mutual inductance between filaments of finite size
 ///

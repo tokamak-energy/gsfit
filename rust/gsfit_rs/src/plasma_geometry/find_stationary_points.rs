@@ -1,12 +1,11 @@
 use super::BoundaryContour;
-use crate::bicubic_interpolator::BicubicInterpolator;
-use crate::bicubic_interpolator::BicubicStationaryPoint;
+use crate::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint, SaddleLocalMinimaAndMaxima};
 use crate::greens::D2PsiDR2Calculator;
 use crate::plasma_geometry::hessian;
 use contour::ContourBuilder;
 use core::f64;
-use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::Contains;
+use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Coord, Line, LineString, MultiPolygon, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_interp::interp2d::Interp2D;
@@ -263,43 +262,16 @@ pub fn find_stationary_points(
                                 stationary_z = z[i_z_nearest_lower] + stationary_point.y * d_z;
                             }
                             Err(_error_string) => {
-                                // println!("Warning, find_stationary_point failed: {}", _error_string);
-                                // println!("Falling back to linear interpolation");
-                                // println!("stationary_r={stationary_r};  stationary_z={stationary_z};");
-                                // TODO: perhaps I should not add this point to the list of stationary points?
                                 // For now we will fall back on the linear interpolation.
                                 stationary_psi = psi_interpolator
                                     .interp_scalar(stationary_z, stationary_r)
                                     .expect("find_stationary_points: can't interpolate psi");
 
-                                // // The selection of the four bounding grid points was chosen by using linear interpolation.
-                                // // When the magnetic axis is close to one of the grid-point boundaries we can select the wrong four bounding points
-                                // // This will cause `find_stationary_point` to fail and not find the magnetic axis.
-                                // // If we fail to converge onto a solution, then fall back on a brute force method
-                                // // TODO: Perhaps the first part of the fallback should be to try shifting the four corner grid points?
-                                // // println!("Warning, find_stationary_point failed: {}", _error_string);
-                                // // println!("Falling back to brute-force search");
-                                // // println!("a_matrix={:?}", bicubic_interpolator.a_matrix);
-                                // let n_r_test: usize = 30;
-                                // let n_z_test: usize = 33;
-
-                                // let r_tests: Array1<f64> = Array1::linspace(0.0, 1.0, n_r_test);
-                                // let z_tests: Array1<f64> = Array1::linspace(0.0, 1.0, n_z_test);
-                                // let mut f_test: Array2<f64> = Array2::zeros([n_z_test, n_r_test]);
-                                // for i_r in 0..n_r_test {
-                                //     for i_z in 0..n_z_test {
-                                //         f_test[(i_z, i_r)] = bicubic_interpolator.interpolate(r_tests[i_r], z_tests[i_z]);
-                                //     }
-                                // }
-                                // // TODO: logic wrong!!
-                                // stationary_psi = f_test.max().unwrap().to_owned();
-                                // let (index_z_max, index_r_max) = f_test
-                                //     .indexed_iter()
-                                //     .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-                                //     .map(|((iz, ir), _)| (iz, ir))
-                                //     .unwrap();
-                                // stationary_r = r[i_r_nearest_left] + r_tests[index_r_max] * d_r;
-                                // stationary_z = z[i_z_nearest_lower] + z_tests[index_z_max] * d_z;
+                                // The selection of the four bounding grid points was chosen by using linear interpolation.
+                                // When the magnetic axis is close to one of the grid-point boundaries we can select the wrong four bounding points
+                                // This will cause `find_stationary_point` to fail and not find the magnetic axis.
+                                // If we fail to converge onto a solution, then fall back on a brute force method
+                                // TODO: Perhaps the first part of the fallback should be to try shifting the four corner grid points?
                             }
                         }
 

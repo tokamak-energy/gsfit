@@ -21,7 +21,7 @@ fn main() {
         } else {
             "python3".to_string()
         };
-        
+
         // Try to get Python library directory
         if let Ok(output) = Command::new(&python_cmd)
             .args(&["-c", "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"])
@@ -31,7 +31,7 @@ fn main() {
                 if let Ok(libdir) = String::from_utf8(output.stdout) {
                     let libdir = libdir.trim();
                     println!("cargo:rustc-link-search=native={}", libdir);
-                    
+
                     // Get the Python version for the library name
                     if let Ok(version_output) = Command::new(&python_cmd)
                         .args(&["-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"])
