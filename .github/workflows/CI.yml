@@ -339,7 +339,7 @@ jobs:
         shell: pwsh
         run: |
           # Get Python tag, e.g. "cp311"
-          $pyTag = python -c "import sys;print(f'cp{sys.version_info.major}{sys.version_info.minor}')"
+          $pyTag = py -3.11 -c "import sys;print(f'cp{sys.version_info.major}{sys.version_info.minor}')"
           Write-Host "Detected Python tag:" $pyTag
           $wheel = Get-ChildItem -Recurse -Filter "gsfit-*-$pyTag-$pyTag-*.whl" | Select-Object -First 1
           if (-not $wheel) { throw "No matching wheel found for $pyTag" }
