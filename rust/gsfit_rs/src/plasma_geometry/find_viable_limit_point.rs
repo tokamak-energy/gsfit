@@ -106,7 +106,6 @@ pub fn find_viable_limit_point(
             let n_points: usize = boundary_r.len();
 
             boundary_contours_all.push(BoundaryContour {
-                boundary_polygon: boundary_contour.clone(),
                 boundary_r,
                 boundary_z,
                 n_points,
@@ -115,8 +114,7 @@ pub fn find_viable_limit_point(
                 bounding_z: limit_pt_z,
                 fraction_inside_vessel: f64::NAN,
                 xpt_diverted: false,
-                plasma_volume: None, // volume calculated using method
-                mask: None,          // mask calculated using method
+                mask: None, // mask calculated using method
                 secondary_xpt_r: f64::NAN,
                 secondary_xpt_z: f64::NAN,
                 secondary_xpt_distance: f64::NAN,
@@ -129,31 +127,31 @@ pub fn find_viable_limit_point(
         return Err("no boundary found 01".to_string());
     }
 
-    // Check if the boundary has reached the grid edge
-    boundary_contours_all.retain(|boundary_contour| {
-        let polygon: Polygon = boundary_contour.boundary_polygon.clone();
+    // // Check if the boundary has reached the grid edge
+    // boundary_contours_all.retain(|boundary_contour| {
+    //     let polygon: Polygon = boundary_contour.boundary_polygon.clone();
 
-        let mut has_reached_edge: bool = false;
-        // Check if the boundary has reached the grid edge
-        for coord in polygon.exterior().coords() {
-            let r_coord: f64 = coord.x;
-            let z_coord: f64 = coord.y;
+    //     let mut has_reached_edge: bool = false;
+    //     // Check if the boundary has reached the grid edge
+    //     for coord in polygon.exterior().coords() {
+    //         let r_coord: f64 = coord.x;
+    //         let z_coord: f64 = coord.y;
 
-            // TODO: should I set a tolerance here, or is machine precision ok??
-            if abs_diff_eq!(r_coord, r[0]) || abs_diff_eq!(r_coord, r[n_r - 1]) || abs_diff_eq!(z_coord, z[0]) || abs_diff_eq!(z_coord, z[n_z - 1]) {
-                // println!("find_viable_limit_point: boundary is not closed!!!");
-                has_reached_edge = true;
-            }
-        }
+    //         // TODO: should I set a tolerance here, or is machine precision ok??
+    //         if abs_diff_eq!(r_coord, r[0]) || abs_diff_eq!(r_coord, r[n_r - 1]) || abs_diff_eq!(z_coord, z[0]) || abs_diff_eq!(z_coord, z[n_z - 1]) {
+    //             // println!("find_viable_limit_point: boundary is not closed!!!");
+    //             has_reached_edge = true;
+    //         }
+    //     }
 
-        // "retain" the contours which have not reached the edge
-        let not_reached_edge: bool = !has_reached_edge;
-        return not_reached_edge;
-    });
-    // Exit if we haven't found any boundary contours
-    if boundary_contours_all.len() == 0 {
-        return Err("no boundary found 02".to_string());
-    }
+    //     // "retain" the contours which have not reached the edge
+    //     let not_reached_edge: bool = !has_reached_edge;
+    //     return not_reached_edge;
+    // });
+    // // Exit if we haven't found any boundary contours
+    // if boundary_contours_all.len() == 0 {
+    //     return Err("no boundary found 02".to_string());
+    // }
 
     // Find the shortest distance from any boundary point to the limit_point
     // Find the minimum distance from any of the points which describe the boundary to the limit_pt
@@ -163,8 +161,24 @@ pub fn find_viable_limit_point(
         let limit_point_r: f64 = boundary_contour.bounding_r;
         let limit_point_z: f64 = boundary_contour.bounding_z;
 
-        let polygon: Polygon = boundary_contour.boundary_polygon.clone();
-        for coord in polygon.exterior().coords() {
+        let boundary_r: Array1<f64> = boundary_contour.boundary_r.clone();
+        let boundary_z: Array1<f64> = boundary_contour.boundary_z.clone();
+        let n_boundary_pts: usize = boundary_r.len();
+
+        let mut boundary_contour_coordinates: Vec<Coord<f64>> = Vec::with_capacity(n_boundary_pts);
+        for i_boundary_pt in 0..n_boundary_pts {
+            boundary_contour_coordinates.push(Coord {
+                x: boundary_r[i_boundary_pt],
+                y: boundary_z[i_boundary_pt],
+            });
+        }
+        // Construct the contour
+        let boundary_polygon: Polygon = Polygon::new(
+            LineString::new(boundary_contour_coordinates),
+            vec![], // No holes
+        );
+        // boundary_contour.boundary_polygon.clone();
+        for coord in boundary_polygon.exterior().coords() {
             let boundary_r: f64 = coord.x;
             let boundary_z: f64 = coord.y;
 
@@ -187,7 +201,23 @@ pub fn find_viable_limit_point(
     // Check if the magnetic axis (point) is inside the boundary (polygon)
     // The contours are already sorted by `psi_b`
     for boundary_contour in &boundary_contours_all {
-        let boundary_polygon: Polygon = boundary_contour.boundary_polygon.clone();
+        let boundary_r: Array1<f64> = boundary_contour.boundary_r.clone();
+        let boundary_z: Array1<f64> = boundary_contour.boundary_z.clone();
+        let n_boundary_pts: usize = boundary_r.len();
+
+        let mut boundary_contour_coordinates: Vec<Coord<f64>> = Vec::with_capacity(n_boundary_pts);
+        for i_boundary_pt in 0..n_boundary_pts {
+            boundary_contour_coordinates.push(Coord {
+                x: boundary_r[i_boundary_pt],
+                y: boundary_z[i_boundary_pt],
+            });
+        }
+        // Construct the contour
+        let boundary_polygon: Polygon = Polygon::new(
+            LineString::new(boundary_contour_coordinates),
+            vec![], // No holes
+        );
+
         let inside: bool = boundary_polygon.contains(&magnetic_axis_point);
         if inside {
             return Ok(boundary_contour.to_owned());
@@ -199,9 +229,24 @@ pub fn find_viable_limit_point(
     for boundary_contour in &mut boundary_contours_all {
         let mut n_inside_vessel: usize = 0;
 
-        let contour_polygon: Polygon = boundary_contour.boundary_polygon.clone();
+        let boundary_r: Array1<f64> = boundary_contour.boundary_r.clone();
+        let boundary_z: Array1<f64> = boundary_contour.boundary_z.clone();
+        let n_boundary_pts: usize = boundary_r.len();
 
-        for coord in contour_polygon.exterior().coords() {
+        let mut boundary_contour_coordinates: Vec<Coord<f64>> = Vec::with_capacity(n_boundary_pts);
+        for i_boundary_pt in 0..n_boundary_pts {
+            boundary_contour_coordinates.push(Coord {
+                x: boundary_r[i_boundary_pt],
+                y: boundary_z[i_boundary_pt],
+            });
+        }
+        // Construct the contour
+        let boundary_polygon: Polygon = Polygon::new(
+            LineString::new(boundary_contour_coordinates),
+            vec![], // No holes
+        );
+
+        for coord in boundary_polygon.exterior().coords() {
             let boundary_r: f64 = coord.x;
             let boundary_z: f64 = coord.y;
             let inside_vessel: bool = vessel_polygon.contains(&Point::new(boundary_r, boundary_z));

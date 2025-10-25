@@ -230,7 +230,7 @@ pub fn find_viable_xpt(
 
     let n_points: usize = boundary_r.len();
     let mut final_contour: BoundaryContour = BoundaryContour {
-        boundary_polygon: Polygon::new(LineString::new(vec![]), vec![]), // TODO: this is not correct. But I want to remove this variable from BoundaryContour
+        // boundary_polygon: Polygon::new(LineString::new(vec![]), vec![]), // TODO: this is not correct. But I want to remove this variable from BoundaryContour
         boundary_r: Array1::from_vec(boundary_r),
         boundary_z: Array1::from_vec(boundary_z),
         n_points,
@@ -239,8 +239,7 @@ pub fn find_viable_xpt(
         bounding_z: potential_xpt_z[index_min],
         fraction_inside_vessel: f64::NAN,
         xpt_diverted: true,
-        plasma_volume: None, // volume calculated using method
-        mask: None,          // mask calculated using method
+        mask: None, // mask calculated using method
         secondary_xpt_r: f64::NAN,
         secondary_xpt_z: f64::NAN,
         secondary_xpt_distance: f64::MAX,

@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-
 use super::cubic_interpolation::cubic_interpolation;
 use approx::abs_diff_eq;
 use ndarray::{Array1, Array2};
+use std::collections::HashMap;
 
 const PI: f64 = std::f64::consts::PI;
 
@@ -261,6 +260,7 @@ pub fn marching_squares(
         boundary_points_near_xpt_z_sorted.push(boundary_points_near_xpt_z[i]);
     }
 
+    // TODO: I found a condition where this panics (ohmic start-up)
     let mut first_and_last_boundary_points: Vec<(f64, f64)> = Vec::new();
     first_and_last_boundary_points.push((boundary_points_near_xpt_r_sorted[0], boundary_points_near_xpt_z_sorted[0]));
     first_and_last_boundary_points.push((boundary_points_near_xpt_r_sorted[1], boundary_points_near_xpt_z_sorted[1]));

@@ -311,3 +311,13 @@ for row in psi_2d_coils.rows() {
 }
 writer.flush().expect("can't flush writer");
 ``` -->
+
+<!--
+Mapping of Rust types to Python types:
+https://pyo3.rs/v0.26.0/conversions/tables.html
+-->
+
+<!--
+git soft reset:
+git fetch origin && git reset --soft origin/main
+-->

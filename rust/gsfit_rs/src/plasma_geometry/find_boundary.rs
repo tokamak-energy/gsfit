@@ -171,6 +171,15 @@ pub fn find_boundary(
         boundary_z = Array1::zeros(0);
     }
 
+    // Overwrite with limiter (for ohmic start-up)
+    let psi_b: f64 = limit_pt_psi_b;
+    let bounding_r: f64 = limit_pt_r;
+    let bounding_z: f64 = limit_pt_z;
+    let xpt_diverted: bool = false;
+    let limit_boundary: BoundaryContour = limit_boundary_or_error.unwrap();
+    let boundary_r: Array1<f64> = limit_boundary.to_owned().boundary_r;
+    let boundary_z: Array1<f64> = limit_boundary.to_owned().boundary_z;
+
     if psi_b.is_nan() {
         return Err("find_boundary: no boundary found".to_string());
     }
@@ -199,7 +208,6 @@ pub fn find_boundary(
     );
 
     let result: BoundaryContour = BoundaryContour {
-        boundary_polygon,
         boundary_r: boundary_r.clone(),
         boundary_z,
         n_points: boundary_r.len(),
@@ -208,7 +216,6 @@ pub fn find_boundary(
         bounding_z,
         fraction_inside_vessel: f64::NAN, // fraction inside vessel not calculated here
         xpt_diverted,
-        plasma_volume: None, // volume calculated using method
         mask: Some(mask),
         secondary_xpt_r: f64::NAN,
         secondary_xpt_z: f64::NAN,

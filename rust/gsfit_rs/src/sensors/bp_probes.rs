@@ -4,6 +4,7 @@ use crate::greens::greens_b;
 use crate::greens::greens_d_b_d_z;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
+use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
@@ -139,7 +140,10 @@ impl BpProbes {
     /// This splits the BpProbes into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (SensorsStatic, Vec<SensorsDynamic>) {
+    /// TODO: change `SensorsStatic` to Vec<SensorsStatic> to be consistent with other sensor types.
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+        let n_time: usize = times_to_reconstruct.len();
+
         // Vector of boolean's to say if we use the sensor or not
         let include: Vec<bool> = self.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
 
@@ -157,6 +161,14 @@ impl BpProbes {
         // Down select sensor names
         let sensor_names: Vec<String> = include_indices.iter().map(|&index| sensor_names_all[index].clone()).collect();
         let n_sensors: usize = sensor_names.len();
+
+        // If there are no sensors selected, return empty data
+        if n_sensors == 0 {
+            let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
+            let static_data_empty_vs_time: Vec<SensorsStatic> = vec![static_data_empty; n_time];
+            let dynamic_data_empty_vs_time: Vec<SensorsDynamic> = vec![dynamic_data_empty; n_time];
+            return (static_data_empty_vs_time, dynamic_data_empty_vs_time);
+        }
 
         // Fit settings
         // Weight
@@ -227,7 +239,6 @@ impl BpProbes {
 
         // Time dependent
         // Interpolate all sensors to `times_to_reconstruct`
-        let n_time: usize = times_to_reconstruct.len();
         let mut measured: Array2<f64> = Array2::zeros((n_sensors_all, n_time));
         for i_sensor in 0..n_sensors_all {
             // Sensor names
@@ -270,8 +281,9 @@ impl BpProbes {
             results_dynamic.push(results_dynamic_this_time_slice);
         }
 
+        let results_static_time_dependent: Vec<SensorsStatic> = vec![results_static.clone(); n_time];
         // Return the static and dynamic results
-        return (results_static, results_dynamic);
+        return (results_static_time_dependent, results_dynamic);
     }
 
     /// Calculate sensor values
