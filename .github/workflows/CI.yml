@@ -151,6 +151,11 @@ jobs:
           python -m pip uninstall -y pytest-xdist
           # Run the MAST-U FreeGSNKE notebook
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+      - name: Upload executed notebook artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux_example_02_mastu_notebook
+          path: examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
       - name: Run mypy Python tests
         run: mypy python/
 
