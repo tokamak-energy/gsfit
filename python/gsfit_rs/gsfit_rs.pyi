@@ -56,6 +56,7 @@ def solve_inverse_problem(
     rogowski_coils: RogowskiCoils,
     isoflux: Isoflux,
     isoflux_boundary: IsofluxBoundary,
+    magnetic_axis: MagneticAxis,
     times_to_reconstruct: npt.NDArray[np.float64],
     n_iter_max: int,
     n_iter_min: int,

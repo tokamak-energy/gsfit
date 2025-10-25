@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # type: ignore
 from gsfit_rs import MagneticAxis
 
 if TYPE_CHECKING:
@@ -14,6 +15,8 @@ def setup_magnetic_axis_sensors(
     pulseNo: int,
     settings: dict[str, typing.Any],
     times_to_reconstruct: npt.NDArray[np.float64],
+    time: npt.NDArray[np.float64],
+    freegsnke_eqs: list[FreeGsnkeEquilibrium],
 ) -> MagneticAxis:
     """
     This method initialises the Rust `MagneticAxis` class.
