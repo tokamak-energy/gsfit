@@ -248,15 +248,18 @@ fn solve_inverse_problem(
 
     // Get static and dynamic data
     let coils_dynamic: Vec<SensorsDynamic> = coils.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (bp_probes_static, bp_probes_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = bp_probes.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (flux_loops_static, flux_loops_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = flux_loops.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (bp_probes_static, bp_probes_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+        bp_probes.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (flux_loops_static, flux_loops_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+        flux_loops.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (rogowski_coils_static, rogowski_coils_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         rogowski_coils.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (isoflux_statics, isoflux_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = isoflux.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (isoflux_boundary_statics, isoflux_boundary_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         isoflux_boundary.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
-    let (magnetic_axis_statics, magnetic_axis_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = magnetic_axis.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (magnetic_axis_statics, magnetic_axis_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+        magnetic_axis.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
     // TOD: might be better to combine all sensors here, before passing to the solver
 
@@ -402,7 +405,8 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
             for i_bp_probe in 0..n_bp_probes {
                 if bp_probes_include[i_bp_probe] == true {
                     let sigma: f64 = bp_probes_expected_value[i_bp_probe] / bp_probes_weight[i_bp_probe];
-                    chi_sq_mag_result[i_time] += (bp_probes_measured[(i_time, i_bp_probe)] - bp_probes_calculated[(i_time, i_bp_probe)]).powi(2) / sigma.powi(2);
+                    chi_sq_mag_result[i_time] +=
+                        (bp_probes_measured[(i_time, i_bp_probe)] - bp_probes_calculated[(i_time, i_bp_probe)]).powi(2) / sigma.powi(2);
                 }
             }
         }

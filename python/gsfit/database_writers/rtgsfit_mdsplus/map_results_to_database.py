@@ -176,8 +176,8 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
                 for coil_name in coil_names:
                     g_measured_coil[i_constraint, i_psu] += flux_loops.get_f64([floop_name, "greens", "pf", coil_name])
             # Add the weight
-            constraints_weight[i_constraint] = 2 * np.pi * flux_loops.get_f64([floop_name, "fit_settings", "weight"]) / flux_loops.get_f64(
-                [floop_name, "fit_settings", "expected_value"]
+            constraints_weight[i_constraint] = (
+                2 * np.pi * flux_loops.get_f64([floop_name, "fit_settings", "weight"]) / flux_loops.get_f64([floop_name, "fit_settings", "expected_value"])
             )
             # Add the Greens between measurements and degrees of freedom
             i_vessel_dof = 0
@@ -485,15 +485,12 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     results["PASSIVES"]["IVC"]["GEOMETRY"]["Z"] = passives.get_array1(["IVC", "geometry", "z"])
     results["PASSIVES"]["IVC"]["GEOMETRY"]["D_R"] = passives.get_array1(["IVC", "geometry", "d_r"])
     results["PASSIVES"]["IVC"]["GEOMETRY"]["D_Z"] = passives.get_array1(["IVC", "geometry", "d_z"])
-    results["PASSIVES"]["IVC"]["GEOMETRY"]["AREA"] = \
-        results["PASSIVES"]["IVC"]["GEOMETRY"]["D_R"] * \
-        results["PASSIVES"]["IVC"]["GEOMETRY"]["D_Z"]
+    results["PASSIVES"]["IVC"]["GEOMETRY"]["AREA"] = results["PASSIVES"]["IVC"]["GEOMETRY"]["D_R"] * results["PASSIVES"]["IVC"]["GEOMETRY"]["D_Z"]
     n_eigs = gsfit_controller.settings["passive_dof_regularisation.json"]["IVC"]["n_dof"]
     n_segs = len(passives.get_array1(["IVC", "dof", f"eig_01", "current_distribution"]))
     current_dofs = np.zeros((n_eigs, n_segs))
     for eig_num in range(n_eigs):
-        current_dofs[eig_num, :] = \
-            passives.get_array1(["IVC", "dof", f"eig_{eig_num + 1:02d}", "current_distribution"])
+        current_dofs[eig_num, :] = passives.get_array1(["IVC", "dof", f"eig_{eig_num + 1:02d}", "current_distribution"])
     results["PASSIVES"]["IVC"]["GEOMETRY"]["CURRENT_DOFS"] = current_dofs
 
     # Create coef names list and save it

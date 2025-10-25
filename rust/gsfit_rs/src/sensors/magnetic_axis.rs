@@ -114,9 +114,8 @@ impl MagneticAxis {
             .get_or_insert("geometry")
             .insert("time", times_to_reconstruct_ndarray);
 
-
         // Add a time-dependent "include"
-        let include_dynamic: Vec<bool> = vec![fit_settings_include; n_time];  // we are including all sensors
+        let include_dynamic: Vec<bool> = vec![fit_settings_include; n_time]; // we are including all sensors
         self.results
             .get_or_insert(name)
             .get_or_insert("fit_settings")

@@ -1,8 +1,8 @@
 use crate::Plasma;
 use crate::coils::Coils;
 use crate::passives::Passives;
-use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
+use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::{Contains, Coord, LineString, Point, Polygon};
 use ndarray::{Array1, Array2, Array3, Axis, s};

@@ -551,11 +551,11 @@ impl Isoflux {
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
         // Define empty data arrays
         let results_static_empty: SensorsStatic = SensorsStatic {
-            greens_with_grid: Array2::zeros((0, 0)), // should be: shape = [n_z * n_r, 0]
-            greens_with_pf: Array2::zeros((0, 0)), // should be: shape = [n_pf, 0]
-            greens_with_passives: Array2::zeros((0, 0)), // should be: shape = [n_dof_total, 0]
-            greens_d_sensor_dz: Array2::zeros((0, 0)), // should be: shape = [n_z * n_r, 0]
-            fit_settings_weight: Array1::zeros(0), // there could still be a weight even if no sensors?
+            greens_with_grid: Array2::zeros((0, 0)),       // should be: shape = [n_z * n_r, 0]
+            greens_with_pf: Array2::zeros((0, 0)),         // should be: shape = [n_pf, 0]
+            greens_with_passives: Array2::zeros((0, 0)),   // should be: shape = [n_dof_total, 0]
+            greens_d_sensor_dz: Array2::zeros((0, 0)),     // should be: shape = [n_z * n_r, 0]
+            fit_settings_weight: Array1::zeros(0),         // there could still be a weight even if no sensors?
             fit_settings_expected_value: Array1::zeros(0), // there could still be an expected value even if no sensors?
         };
         let results_dynamic_empty: SensorsDynamic = SensorsDynamic { measured: Array1::zeros(0) }; // Correct. Shape should be [0].
@@ -663,7 +663,7 @@ impl Isoflux {
             // Create the `SensorsStatic` data
             let results_static_this_time_slice: SensorsStatic = SensorsStatic {
                 greens_with_grid: greens_with_grid.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
-                greens_with_pf: greens_with_pf.slice(s![i_time, .., ..]).to_owned(), // shape = [n_pf, n_sensors]
+                greens_with_pf: greens_with_pf.slice(s![i_time, .., ..]).to_owned(),     // shape = [n_pf, n_sensors]
                 greens_with_passives: greens_with_passives.slice(s![i_time, .., ..]).to_owned(), // shape = [n_dof_total, n_sensors]
                 greens_d_sensor_dz: greens_d_sensor_dz.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
                 fit_settings_weight: fit_settings_weight.clone(),

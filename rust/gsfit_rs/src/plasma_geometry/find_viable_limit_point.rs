@@ -123,7 +123,6 @@ pub fn find_viable_limit_point(
     }
     // Exit if we haven't found any boundary contours
     if boundary_contours_all.len() == 0 {
-        // println!("find_viable_limit_point: no boundary found");
         return Err("no boundary found 01".to_string());
     }
 
@@ -177,7 +176,6 @@ pub fn find_viable_limit_point(
             LineString::new(boundary_contour_coordinates),
             vec![], // No holes
         );
-        // boundary_contour.boundary_polygon.clone();
         for coord in boundary_polygon.exterior().coords() {
             let boundary_r: f64 = coord.x;
             let boundary_z: f64 = coord.y;
@@ -189,12 +187,10 @@ pub fn find_viable_limit_point(
         }
 
         // "retain" the contours which get close to the limit point
-        // println!("boundary_crosses_limit_point={boundary_crosses_limit_point}");
         return boundary_crosses_limit_point;
     });
     // Exit if we haven't found any boundary contours
     if boundary_contours_all.len() == 0 {
-        // println!("find_viable_limit_point: no boundary found");
         return Err("no boundary found 03".to_string());
     }
 
@@ -268,7 +264,6 @@ pub fn find_viable_limit_point(
     });
     // Exit if we haven't found any boundary contours
     if boundary_contours_all.len() == 0 {
-        // println!("find_viable_limit_point: no boundary found 02");
         return Err("no boundary found 04".to_string());
     }
 

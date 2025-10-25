@@ -6,7 +6,7 @@ class DataTreeAccessor:
     def get_f64(self, keys: list[str]) -> float:
         """
         Get single f64 value.
-        
+
         :param keys: The path of keys to access the data, e.g. `["level1", "level2", "data_f64_value"]`.
         :return: f64 value
         """

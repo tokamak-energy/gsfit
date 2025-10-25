@@ -280,12 +280,12 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.coils = database_reader.setup_coils(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`coils`  initialised;  {(toc - tic) * 1e3:,.2f}ms")
-        
+
         tic = time_py.time()
         self.bp_probes = database_reader.setup_bp_probes(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`bp_probes` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-        
+
         tic = time_py.time()
         self.flux_loops = database_reader.setup_flux_loops(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
@@ -318,6 +318,11 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.logger.info(msg=f"`isoflux_boundary` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
-        self.magnetic_axis = database_reader.setup_magnetic_axis_sensors(pulseNo=self.pulseNo, settings=self.settings, times_to_reconstruct=times_to_reconstruct, **kwargs)
+        self.magnetic_axis = database_reader.setup_magnetic_axis_sensors(
+            pulseNo=self.pulseNo,
+            settings=self.settings,
+            times_to_reconstruct=times_to_reconstruct,
+            **kwargs,
+        )
         toc = time_py.time()
         self.logger.info(msg=f"`magnetic_axis` initialised;  {(toc - tic) * 1e3:,.2f}ms")
