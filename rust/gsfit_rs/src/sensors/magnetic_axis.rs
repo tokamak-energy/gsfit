@@ -98,10 +98,10 @@ impl MagneticAxis {
         let interpolator = Interp1D::builder(mag_axis_z_ndarray)
             .x(time_ndarray.clone())
             .build()
-            .expect("MagneticAxis.greens_with_coils: Can't make Interp1D for mag_axis_z");
+            .expect("MagneticAxis.add_sensor: Can't make Interp1D for mag_axis_z");
         let geometry_z_measured: Array1<f64> = interpolator
             .interp_array(&times_to_reconstruct_ndarray)
-            .expect("MagneticAxis.greens_with_coils: Can't do interpolation for mag_axis_z");
+            .expect("MagneticAxis.add_sensor: Can't do interpolation for mag_axis_z");
         self.results
             .get_or_insert(name)
             .get_or_insert("geometry")
@@ -414,7 +414,7 @@ impl MagneticAxis {
     }
 
     pub fn greens_with_passives_rs(&mut self, passives: Passives) {
-        // Loop over sensros
+        // Loop over sensors
         for sensor_name in self.results.keys() {
             // Get time
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("time").unwrap_array1();

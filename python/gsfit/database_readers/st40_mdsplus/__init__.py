@@ -48,8 +48,8 @@ class DatabaseReaderSt40MDSplus(DatabaseReaderProtocol):
     def setup_isoflux_boundary_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> IsofluxBoundary:
         return setup_isoflux_boundary_sensors(self, *args, **kwargs)
 
-    def setup_magnetic_axis_sensors(self, pulseNo, settings, **kwargs) -> MagneticAxis:
-        return setup_magnetic_axis_sensors(self, pulseNo, settings, **kwargs)
+    def setup_magnetic_axis_sensors(self, *args, **kwargs) -> MagneticAxis:
+        return setup_magnetic_axis_sensors(self, *args, **kwargs)
 
     def setup_isoflux_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Isoflux:
         return setup_isoflux_sensors(self, *args, **kwargs)
