@@ -147,10 +147,36 @@ jobs:
           python -m pip list
       - name: Run Jupyter notebook Python tests
         run: |
+          set -euo pipefail
           # Uninstall pytest-xdist to prevent parallel execution; perhaps this is the cause of Jupyter notebook hanging?
           python -m pip uninstall -y pytest-xdist
-          # Run the MAST-U FreeGSNKE notebook
+          # Run the MAST-U FreeGSNKE notebook as a test
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+          # Execute the notebook and save an executed copy, then copy it over the original so the next step uploads the executed result
+          python - <<'PY'
+            from pathlib import Path
+            import shutil
+            from nbformat import read, write
+            from nbclient import NotebookClient
+
+            src = Path("examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb")
+            out_dir = Path("examples/artifacts")
+            out_dir.mkdir(parents=True, exist_ok=True)
+            dst = out_dir / f"{src.stem}-executed.ipynb"
+
+            with src.open(encoding="utf-8") as f:
+                nb = read(f, as_version=4)
+
+            client = NotebookClient(nb, timeout=1800, kernel_name="python3", allow_errors=True)
+            client.execute()
+
+            with dst.open("w", encoding="utf-8") as f:
+                write(nb, f)
+
+            # Ensure the upload step picks up the executed notebook
+            shutil.copyfile(dst, src)
+            print(f"Executed notebook saved to: {dst} and copied to: {src}")
+            PY
       - name: Upload executed notebook artifact
         uses: actions/upload-artifact@v4
         with:
