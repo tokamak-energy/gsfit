@@ -144,6 +144,7 @@ jobs:
           python -m pip install --upgrade pip
           # Install the locally built wheel with extras using a PEP 508 direct reference
           python -m pip install "gsfit[dev,with_freegs_and_freegsnke] @ ${WHEEL_URI}"
+          python -m pip list
       - name: Run Jupyter notebook Python tests
         run: |
           # Uninstall pytest-xdist to prevent parallel execution; perhaps this is the cause of Jupyter notebook hanging?
