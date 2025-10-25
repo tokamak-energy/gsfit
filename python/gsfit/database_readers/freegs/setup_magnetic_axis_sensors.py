@@ -21,7 +21,7 @@ def setup_magnetic_axis_sensors(
     :param pulseNo: Pulse number, used to read from the database
     :param settings: Dictionary containing the JSON settings read from the `settings` directory
 
-    **This method is specific to ST40's experimental MDSplus database.**
+    **This method is specific to FreeGS.**
 
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """
