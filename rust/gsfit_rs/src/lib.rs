@@ -368,9 +368,7 @@ fn solve_inverse_problem(
 
     // Post-process
     plasma.equilibrium_post_processor(&mut gs_solutions, &coils_owned, &plasma_owned);
-    println!("Plasma post-processing complete");
     passives.equilibrium_post_processor(&gs_solutions);
-    println!("Passives post-processing complete");
 
     // Get owned versions for calculating sensor values
     let coils_owned: Coils = coils.to_owned();
@@ -383,7 +381,6 @@ fn solve_inverse_problem(
     rogowski_coils.calculate_sensor_values_rust(&coils_owned, &passives_owned, &plasma_owned);
 
     // Calculate chi_sq_mag for each time slice
-    println!("Calculating chi_sq_mag for each time slice");
     let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, n_time);
     plasma.results.get_or_insert("global").insert("chi_mag", chi_mag);
 }
