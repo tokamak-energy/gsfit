@@ -142,14 +142,51 @@ jobs:
       - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
         run: |
           python -m pip install --upgrade pip
+
           # Install the locally built wheel with extras using a PEP 508 direct reference
           python -m pip install "gsfit[dev,with_freegs_and_freegsnke] @ ${WHEEL_URI}"
+
+          # List installed packages
+          python -m pip list
       - name: Run Jupyter notebook Python tests
         run: |
+          set -euo pipefail
+
           # Uninstall pytest-xdist to prevent parallel execution; perhaps this is the cause of Jupyter notebook hanging?
           python -m pip uninstall -y pytest-xdist
-          # Run the MAST-U FreeGSNKE notebook
+
+          # Run the MAST-U FreeGSNKE notebook as a test
+          # Note: --nbval-lax ignores minor output differences such as floating point precision; but there is still some comparison with stored outputs
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+
+          # Make an artifacts directory inside `examples/`
+          mkdir -p examples/artifacts
+
+          # Execute the notebook and save an executed copy
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          from nbformat import read, write
+          from nbclient import NotebookClient
+
+          src = Path("examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb")
+          out_dir = Path("examples/artifacts")
+          dst = out_dir / f"{src.stem}-executed.ipynb"
+
+          with src.open(encoding="utf-8") as f:
+              nb = read(f, as_version=4)
+
+          client = NotebookClient(nb, timeout=1800, kernel_name="python3", allow_errors=True)
+          client.execute()
+
+          with dst.open("w", encoding="utf-8") as f:
+              write(nb, f)
+          PY
+      - name: Upload executed notebook artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux_jupyter_notebooks
+          path: examples/artifacts/
       - name: Run mypy Python tests
         run: mypy python/
 

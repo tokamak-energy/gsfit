@@ -43,10 +43,9 @@ def setup_coils(
 
     # Count the number of PF coils
     n_pf = 0
-    # `freegsnke_tokamak.coils` is a list of tuples
     for current_carrying_object in freegsnke_tokamak.coils:
-        # Each `current_carrying_object` tuple contains the `circuit_name` and the `circuit`.
-        # the `current_carrying_object` can be a PF coil or passive.
+        # `type(current_carrying_object) = (str, freegs4e.machine.Circuit) = (circuit_name, circuit)`.
+        # `current_carrying_object` can be either a PF coil or passive
         circuit_name = current_carrying_object[0]
         circuit = current_carrying_object[1]
         if isinstance(circuit, freegs4e.machine.Circuit):
@@ -56,19 +55,22 @@ def setup_coils(
     # Loop over time and get the currents
     pf_coil_currents = np.full((n_time, n_pf), np.nan)
     for i_time in range(0, n_time):
-        print(f"i_time = {i_time}")
         i_pf = 0
         for current_carrying_object in freegsnke_eqs[i_time].tokamak.coils:
             circuit_name = current_carrying_object[0]
             circuit = current_carrying_object[1]
+            circuit_current = circuit.current
             if isinstance(circuit, freegs4e.machine.Circuit):
                 pf_coils = circuit.coils
                 for pf_coil in pf_coils:
+                    # `type(pf_coils) = list[(str, freegs4e.multi_coil.MultiCoil)]`
                     coil_name = pf_coil[0]
                     coil_object = pf_coil[1]
 
                     # Store the current
-                    pf_coil_currents[i_time, i_pf] = coil_object.current
+                    # Note, there is a recent bug in FreeGSNKE/FreeGS4E where the `coil_object.current` is not updated, and currents are all zero.
+                    # pf_coil_currents[i_time, i_pf] = coil_object.current
+                    pf_coil_currents[i_time, i_pf] = circuit_current
 
                     # set index for the next PF coil
                     i_pf = i_pf + 1
