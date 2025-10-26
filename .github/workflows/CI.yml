@@ -156,6 +156,7 @@ jobs:
           python -m pip uninstall -y pytest-xdist
 
           # Run the MAST-U FreeGSNKE notebook as a test
+          # Note: --nbval-lax ignores minor output differences such as floating point precision; but there is still some comparison with stored outputs
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
 
           # Make an artifacts directory inside `examples/`
