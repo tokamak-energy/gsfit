@@ -41,7 +41,7 @@ def setup_passives(
     vessel_resistivity = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.RESISTIVITY"))
     vessel_fillaments_to_passives = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.FILS2PASSIVE"))
     [n_filaments, n_passives] = vessel_fillaments_to_passives.shape
-    passive_names = elmag.get("VESSEL.PASSIVE_NAME")
+    passive_names = typing.cast(list[str], elmag.get("VESSEL.PASSIVE_NAME"))
 
     for i_passive in range(0, n_passives):
         passive_name = passive_names[i_passive]

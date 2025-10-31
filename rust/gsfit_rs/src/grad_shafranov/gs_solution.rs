@@ -273,7 +273,7 @@ impl<'a> GsSolution<'a> {
         self.passive_dof_values = Array1::zeros(n_passive_dof);
 
         // Initialise plasma with point source current
-        self.initialise_plasma_with_point_source_current();
+        self.initialise_plasma_with_point_source_current(plasma.initial_ip, plasma.initial_cur_r, plasma.initial_cur_z);
 
         // Some variables we want to track between iterations
         let mut dof_values_previous: Array1<f64> = Array1::zeros(n_p_prime_dof + n_ff_prime_dof + n_passive_dof + 1);
@@ -281,6 +281,7 @@ impl<'a> GsSolution<'a> {
 
         // Iteration loop
         'iteration_loop: for i_iter in 0..self.n_iter_max {
+            println!("GsSolution: Starting iteration {}", i_iter + 1);
             // From previous iteration
             let j_2d: Array2<f64> = self.j_2d.to_owned();
 
@@ -1246,13 +1247,10 @@ impl<'a> GsSolution<'a> {
         self.j_2d = j_2d.clone();
     }
 
-    pub fn initialise_plasma_with_point_source_current(&mut self) {
+    pub fn initialise_plasma_with_point_source_current(&mut self, initial_ip: f64, initial_cur_r: f64, initial_cur_z: f64) {
         // Unpack objects
         let plasma: &Plasma = &self.plasma;
         let coils_dynamic: &SensorsDynamic = &self.coils_dynamic;
-
-        // TODO: Need to fix this!!
-        let ip_guess: f64 = 425.0e3;
 
         // Extract stuff from Plasma
         let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
@@ -1273,19 +1271,30 @@ impl<'a> GsSolution<'a> {
 
         // Find where to initialise the plasma
         let r: Array1<f64> = plasma.results.get("grid").get("r").unwrap_array1();
-        let r_target: f64 = 0.45;
+        let r_target: f64 = initial_cur_r;
         let mut i_r_centre: usize = 0;
         let mut smallest_diff: f64 = f64::MAX;
-        for (i, &value) in r.iter().enumerate() {
+        for (i_r, &value) in r.iter().enumerate() {
             let diff: f64 = (value - r_target).abs();
             if diff < smallest_diff {
                 smallest_diff = diff;
-                i_r_centre = i;
+                i_r_centre = i_r;
+            }
+        }
+        let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
+        let z_target: f64 = initial_cur_z;
+        let mut i_z_centre: usize = 0;
+        let mut smallest_diff: f64 = f64::MAX;
+        for (i_z, &value) in z.iter().enumerate() {
+            let diff: f64 = (value - z_target).abs();
+            if diff < smallest_diff {
+                smallest_diff = diff;
+                i_z_centre = i_z;
             }
         }
 
-        // Initialise `i_z_centre` to be centre of Z grid, assuming this is Z=0
-        let i_z_centre: usize = (n_z as f64 / 2.0).floor() as usize;
+        // Create a "hill" of current
+        // TODO: this can be improved --> like RT-GSFit initial guess
         j_2d[(i_z_centre, i_r_centre)] = 3.0;
 
         j_2d[(i_z_centre - 1, i_r_centre)] = 2.0;
@@ -1302,7 +1311,7 @@ impl<'a> GsSolution<'a> {
         j_2d[(i_z_centre - 1, i_r_centre - 1)] = 1.0;
         j_2d[(i_z_centre, i_r_centre - 2)] = 1.0;
 
-        j_2d = j_2d * ip_guess / d_area / 19.0;
+        j_2d = j_2d * initial_ip / d_area / 19.0;
 
         // Store in self
         self.j_2d = j_2d;
