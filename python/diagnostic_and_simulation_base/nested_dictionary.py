@@ -122,9 +122,9 @@ class NestedDict(OrderedDict):  # type: ignore
     ) -> None:
         """Override __setitem__ to ensure all dictionaries are converted to NestedDict."""
         value = _convert_to_nested_dict(value)
+        # TODO: figure out why this fails mypy tests?
         OrderedDict.__setitem__(self, key, value)
 
-    # BUXTON: figure out why this fails mypy tests?
     def update(  # type: ignore
         self,
         dict_to_add: dict[typing.Any, typing.Any] | None = None,
@@ -200,12 +200,14 @@ class NestedDict(OrderedDict):  # type: ignore
                 return stacked_results
 
         # Normal behaviour
+        # TODO: this fails `ty` type checking
         return OrderedDict.__getitem__(self, key)
 
     # TODO: need to fix mypy tests
     def print_keys(self, d: None = None, path: list[str] | None = None) -> None:
         # import pdb; pdb.set_trace()
         if d is None:
+            # TODO: this fails `ty` type checking. I think this is because we are re-defining `d` from type None to type NestedDict
             d = self  # Use the current instance as the dictionary
 
         if path is None:
@@ -216,6 +218,7 @@ class NestedDict(OrderedDict):  # type: ignore
             self.keys_long = []
             self.data_type_long = []
 
+        # TODO: this fails `ty` type checking
         for key, value in d.items():
             new_path = path + [f'["{key}"]']
 

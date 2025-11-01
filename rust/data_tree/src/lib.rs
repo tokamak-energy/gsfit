@@ -394,7 +394,7 @@ impl<'a> DataTreeAccumulator<'a> {
 
         // Stack collected arrays into an Array2
         if collected.is_empty() {
-            panic!("No matching Array1<f64> or Array2<f64> found for keys: {:?}", self.keys_store);
+            panic!("unwrap_array2: No matching Array1<f64> or Array2<f64> found for keys: {:?}", self.keys_store);
         }
 
         // Flatten collected arrays into a row-major 2D array

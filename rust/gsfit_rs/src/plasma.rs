@@ -32,6 +32,9 @@ pub struct Plasma {
     pub results: DataTree,
     pub p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
     pub ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
+    pub initial_ip: f64,
+    pub initial_cur_r: f64,
+    pub initial_cur_z: f64,
 }
 
 // Python accessible methods
@@ -72,6 +75,9 @@ impl Plasma {
         vessel_z: &Bound<'_, PyArray1<f64>>,
         p_prime_source_function: Py<PyAny>,  // TODO: This is a big ugly!
         ff_prime_source_function: Py<PyAny>, // TODO: This is a big ugly!
+        initial_ip: f64,
+        initial_cur_r: f64,
+        initial_cur_z: f64,
     ) -> Self {
         // Change Python types into Rust types
         let psi_n_ndarray: Array1<f64> = Array1::from(unsafe { psi_n.as_array() }.to_vec());
@@ -225,6 +231,9 @@ impl Plasma {
             results,
             p_prime_source_function: p_prime_source_function_arc,
             ff_prime_source_function: ff_prime_source_function_arc,
+            initial_ip,
+            initial_cur_r,
+            initial_cur_z,
         }
     }
 

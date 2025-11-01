@@ -30,6 +30,11 @@ def setup_plasma(
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """
 
+    # Initial plasma conditions
+    initial_ip = settings["GSFIT_code_settings.json"]["initial_guess"]["ip"]
+    initial_cur_r = settings["GSFIT_code_settings.json"]["initial_guess"]["r_cur"]
+    initial_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["z_cur"]
+
     # Set the source functions types
     p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
     ff_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
@@ -108,6 +113,9 @@ def setup_plasma(
         vessel_z,
         p_prime_source_function,
         ff_prime_source_function,
+        initial_ip,
+        initial_cur_r,
+        initial_cur_z,
     )
 
     return plasma

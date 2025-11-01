@@ -96,7 +96,7 @@
         "user_defined": [0.5]
     },
     "initial_guess": {
-        "ip": 600.0e3,
+        "ip": 500.0e3,
         "r_cur": 0.8,
         "z_cur": 0.0
     }

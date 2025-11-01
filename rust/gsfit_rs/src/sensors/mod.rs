@@ -4,6 +4,7 @@ mod dialoop;
 mod flux_loops;
 mod isoflux;
 mod isoflux_boundary;
+mod magnetic_axis;
 mod pressure;
 mod rogowski_coils;
 mod static_and_dynamic_data_types;
@@ -20,3 +21,4 @@ pub use rogowski_coils::RogowskiCoils;
 pub use static_and_dynamic_data_types::SensorsDynamic;
 pub use static_and_dynamic_data_types::SensorsStatic;
 // pub use hall_probes::HallProbes; // Hall probes are not yet implemented
+pub use magnetic_axis::MagneticAxis;

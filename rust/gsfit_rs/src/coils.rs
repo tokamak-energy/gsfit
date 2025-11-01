@@ -124,6 +124,12 @@ impl Coils {
         string_output += &format!("║  {:<74} ║\n", "<gsfit_rs.Coils>");
         string_output += &format!("║  {:<74} ║\n", version);
 
+        // PF names
+        let pf_coil_names: Vec<String> = self.results.get("pf").keys();
+        let n_pf_coils: usize = pf_coil_names.len();
+        string_output += &format!("║  {:<74} ║\n", format!("n_pf_coils={}", n_pf_coils));
+        string_output += &format!("║  {:<74} ║\n", format!("pf_coil_names=[{}]", pf_coil_names.join(", ")));
+
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
         return string_output;
@@ -142,7 +148,7 @@ impl Coils {
         let interpolator = Interp1D::builder(measured_experimental)
             .x(time_experimental.clone())
             .build()
-            .expect("Coils.split_into_static_and_dynamic: Can't make Interp1D");
+            .expect("Coils.split_into_static_and_dynamic: Can't make Interp1D, has the TF coil been added?");
 
         // Do the interpolation
         let measured_tf: Array1<f64> = interpolator
