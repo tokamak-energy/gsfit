@@ -1,22 +1,22 @@
 import typing
 from typing import TYPE_CHECKING
 
-import freegs  # type: ignore
 import numpy as np
 import numpy.typing as npt
+from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # type: ignore
 from gsfit_rs import MagneticAxis
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGS
+    from . import DatabaseReaderST40AstraMDSplus
 
 
 def setup_magnetic_axis_sensors(
-    self: "DatabaseReaderFreeGS",
+    self: "DatabaseReaderST40AstraMDSplus",
     pulseNo: int,
     settings: dict[str, typing.Any],
     times_to_reconstruct: npt.NDArray[np.float64],
     time: npt.NDArray[np.float64],
-    freegs_eqs: list[freegs.equilibrium.Equilibrium],
+    freegsnke_eqs: list[FreeGsnkeEquilibrium],
 ) -> MagneticAxis:
     """
     This method initialises the Rust `MagneticAxis` class.
@@ -24,7 +24,7 @@ def setup_magnetic_axis_sensors(
     :param pulseNo: Pulse number, used to read from the database
     :param settings: Dictionary containing the JSON settings read from the `settings` directory
 
-    **This method is specific to FreeGS.**
+        **This method is specific to FreeGSNKE.**
 
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """

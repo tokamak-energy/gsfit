@@ -51,7 +51,7 @@ class DatabaseReaderST40AstraMDSplus(DatabaseReaderProtocol):
     def setup_isoflux_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Isoflux:
         return setup_isoflux_sensors(self, *args, **kwargs)
     
-    def setup_magnetic_axis_sensors(self, *args, **kwargs) -> MagneticAxis:
+    def setup_magnetic_axis_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> MagneticAxis:
         return setup_magnetic_axis_sensors(self, *args, **kwargs)
 
     def setup_passives(self, *args: typing.Any, **kwargs: typing.Any) -> Passives:

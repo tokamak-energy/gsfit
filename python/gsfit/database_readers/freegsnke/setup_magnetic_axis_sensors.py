@@ -7,11 +7,11 @@ from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # 
 from gsfit_rs import MagneticAxis
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderSt40MDSplus
+    from . import DatabaseReaderFreeGSNKE
 
 
 def setup_magnetic_axis_sensors(
-    self: "DatabaseReaderSt40MDSplus",
+    self: "DatabaseReaderFreeGSNKE",
     pulseNo: int,
     settings: dict[str, typing.Any],
     times_to_reconstruct: npt.NDArray[np.float64],

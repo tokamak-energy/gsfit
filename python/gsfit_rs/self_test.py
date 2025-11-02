@@ -10,9 +10,9 @@ from gsfit_rs import MagneticAxis
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
 from gsfit_rs import EfitPolynomial
-from gsfit_rs import solve_inverse_problem
+from gsfit_rs import solve_grad_shafranov
 
-def run():
+def run() -> None:
     # Make a Helmholtz PF coil
     coils = Coils()
     coils.add_pf_coil(
@@ -138,7 +138,7 @@ def run():
     isoflux_boundary.greens_with_plasma(plasma)
     magnetic_axis.greens_with_plasma(plasma)
 
-    solve_inverse_problem(
+    solve_grad_shafranov(
         plasma=plasma,
         coils=coils,
         passives=passives,
