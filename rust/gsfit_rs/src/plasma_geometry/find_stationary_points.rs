@@ -1,12 +1,10 @@
-use super::BoundaryContour;
-use crate::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint, SaddleLocalMinimaAndMaxima};
+use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint};
 use crate::greens::D2PsiDR2Calculator;
 use crate::plasma_geometry::hessian;
 use contour::ContourBuilder;
 use core::f64;
-use geo::Contains;
 use geo::line_intersection::{LineIntersection, line_intersection};
-use geo::{Coord, Line, LineString, MultiPolygon, Point, Polygon};
+use geo::{Line, MultiPolygon};
 use ndarray::{Array1, Array2};
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;

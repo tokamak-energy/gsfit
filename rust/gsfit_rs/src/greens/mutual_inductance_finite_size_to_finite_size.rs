@@ -19,7 +19,7 @@ use ndarray::{Array1, Array2, s};
 /// * `angle2_prime` - Angle of the second side of the second set of filaments, shape = [n_filaments_prime], radian
 ///
 /// # Returns
-/// * `g` - Mutual inductance between the two sets of filaments, shape = [n_filaments, n_filaments_prime], henry
+/// * `g_psi` - Mutual inductance between the two sets of filaments, shape = [n_filaments, n_filaments_prime], henry
 ///
 pub fn mutual_inductance_finite_size_to_finite_size(
     r: &Array1<f64>,
@@ -38,7 +38,7 @@ pub fn mutual_inductance_finite_size_to_finite_size(
     let n_filaments: usize = r.len();
     let n_filaments_prime: usize = r_prime.len();
 
-    let mut g: Array2<f64> = Array2::from_elem((n_filaments, n_filaments_prime), f64::NAN);
+    let mut g_psi: Array2<f64> = Array2::from_elem((n_filaments, n_filaments_prime), f64::NAN);
 
     // Number of sub-filaments to divide each filament into
     // TODO: can this can be adjusted automatically to achieve a desired accuracy ??
@@ -86,11 +86,11 @@ pub fn mutual_inductance_finite_size_to_finite_size(
                 z_sub_filament.clone() * 0.0 + d_z[i_filament] / (n_sub_filaments as f64), // THIS LOOKS WRONG!!! do I need it??
             ); // shape = [n_sub_filaments * n_sub_filaments, n_sub_filaments * n_sub_filaments]
 
-            g[(i_filament, i_filament_prime)] = g_sub_filaments.sum() / ((n_sub_filaments as f64).powi(4));
+            g_psi[(i_filament, i_filament_prime)] = g_sub_filaments.sum() / ((n_sub_filaments as f64).powi(4));
         }
     }
 
-    return g;
+    return g_psi;
 }
 
 fn discretise_parallelogram(

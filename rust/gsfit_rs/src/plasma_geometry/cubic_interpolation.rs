@@ -83,27 +83,27 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> Vec<f64> {
     }
 
     // Normalize to monic: x³ + A x² + B x + C = 0
-    let A = b / a;
-    let B = c / a;
-    let C = d / a;
+    let a_norm: f64 = b / a;
+    let b_norm: f64 = c / a;
+    let c_norm: f64 = d / a;
 
     // Depressed cubic: y³ + p y + q = 0 with x = y - A/3
-    let A2 = A * A;
-    let p = B - A2 / 3.0;
-    let q = 2.0 * A * A2 / 27.0 - A * B / 3.0 + C;
-    let offset = A / 3.0;
+    let a2_norm: f64 = a_norm * a_norm;
+    let p: f64 = b_norm - a2_norm / 3.0;
+    let q: f64 = 2.0 * a_norm * a2_norm / 27.0 - a_norm * b_norm / 3.0 + c_norm;
+    let offset: f64 = a_norm / 3.0;
 
     // Discriminant for depressed cubic: Δ = (q/2)² + (p/3)³
-    let delta = (q * 0.5) * (q * 0.5) + (p / 3.0) * (p / 3.0) * (p / 3.0);
+    let delta: f64 = (q * 0.5) * (q * 0.5) + (p / 3.0) * (p / 3.0) * (p / 3.0);
 
-    let mut roots = Vec::new();
+    let mut roots: Vec<f64> = Vec::new();
 
     if delta > EPS {
         // One real root (Cardano)
-        let sqrt_delta = delta.sqrt();
-        let u = (-q * 0.5 + sqrt_delta).cbrt();
-        let v = (-q * 0.5 - sqrt_delta).cbrt();
-        let y = u + v;
+        let sqrt_delta: f64 = delta.sqrt();
+        let u: f64 = (-q * 0.5 + sqrt_delta).cbrt();
+        let v: f64 = (-q * 0.5 - sqrt_delta).cbrt();
+        let y: f64 = u + v;
         roots.push(y - offset);
     } else if delta.abs() <= EPS {
         // Multiple real roots
@@ -111,21 +111,21 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> Vec<f64> {
             // Triple root at y = 0
             roots.push(-offset);
         } else {
-            let u = (-q * 0.5).cbrt();
+            let u: f64 = (-q * 0.5).cbrt();
             roots.push(2.0 * u - offset);
             roots.push(-u - offset);
         }
     } else {
         // Three distinct real roots (trigonometric solution)
-        let rho = (-p / 3.0).sqrt();
-        let theta = ((-q) / (2.0 * rho * rho * rho)).acos();
-        for k in 0..3 {
-            let y = 2.0 * rho * ((theta + 2.0 * std::f64::consts::PI * k as f64) / 3.0).cos();
+        let rho: f64 = (-p / 3.0).sqrt();
+        let theta: f64 = ((-q) / (2.0 * rho * rho * rho)).acos();
+        for k in 0..3usize {
+            let y: f64 = 2.0 * rho * ((theta + 2.0 * std::f64::consts::PI * k as f64) / 3.0).cos();
             roots.push(y - offset);
         }
     }
 
-    roots
+    return roots;
 }
 
 /// Solve quadratic equation: a*x² + b*x + c = 0
@@ -140,16 +140,16 @@ fn solve_quadratic(a: f64, b: f64, c: f64) -> Vec<f64> {
         return vec![-c / b];
     }
 
-    let discriminant = b * b - 4.0 * a * c;
+    let discriminant: f64 = b * b - 4.0 * a * c;
 
     if discriminant < -EPSILON {
         Vec::new()
     } else if discriminant.abs() < EPSILON {
         vec![-b / (2.0 * a)]
     } else {
-        let sqrt_disc = discriminant.sqrt();
+        let sqrt_disc: f64 = discriminant.sqrt();
         // Use numerically stable formula
-        let q = -0.5 * (b + b.signum() * sqrt_disc);
+        let q: f64 = -0.5 * (b + b.signum() * sqrt_disc);
         vec![q / a, c / q]
     }
 }
@@ -176,7 +176,7 @@ fn test_cubic_interpolation() {
         return value;
     }
     // Derivative of cubic function
-    fn d_f_d_x(x: f64, a: f64, b: f64, c: f64, d: f64) -> f64 {
+    fn d_f_d_x(x: f64, a: f64, b: f64, c: f64, _d: f64) -> f64 {
         // let value: f64 = b + 2.0 * c * x + 3.0 * d * x.powi(2);
         let value: f64 = 3.0 * a * x.powi(2) + 2.0 * b * x + c;
         return value;

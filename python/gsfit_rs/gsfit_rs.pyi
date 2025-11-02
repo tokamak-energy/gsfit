@@ -47,7 +47,7 @@ class DataTreeAccessor:
     def keys(self, key_path: list[str] | None = None) -> list[str]: ...
     def print_keys(self) -> None: ...
 
-def solve_inverse_problem(
+def solve_grad_shafranov(
     plasma: Plasma,
     coils: Coils,
     passives: Passives,
@@ -101,48 +101,6 @@ def greens_py(
     :param d_z: (optional) Vertical heights [metre]
 
     Note: the inputs are symmetrical
-    """
-    ...
-
-def greens_b_py(
-    r: npt.NDArray[np.float64],
-    z: npt.NDArray[np.float64],
-    r_prime: npt.NDArray[np.float64],
-    z_prime: npt.NDArray[np.float64],
-) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-    """
-    :param r: Sensor radial positions [metre]
-    :param z: Sensor vertical positions [metre]
-    :param r_prime: Current source radial positions [metre]
-    :param z_prime: Current source vertical positions [metre]
-
-    Note: the inputs are not symmetrical!
-    i.e. you can't change (r, z) for (r_prime, z_prime)
-    """
-    ...
-
-def mutual_inductance_finite_size_to_finite_size(
-    r: npt.NDArray[np.float64],
-    z: npt.NDArray[np.float64],
-    d_r: npt.NDArray[np.float64],
-    d_z: npt.NDArray[np.float64],
-    angle1: npt.NDArray[np.float64],
-    angle2: npt.NDArray[np.float64],
-    r_prime: npt.NDArray[np.float64],
-    z_prime: npt.NDArray[np.float64],
-    d_r_prime: npt.NDArray[np.float64],
-    d_z_prime: npt.NDArray[np.float64],
-    angle1_prime: npt.NDArray[np.float64],
-    angle2_prime: npt.NDArray[np.float64],
-) -> npt.NDArray[np.float64]:
-    """
-    :param r: Sensor radial positions [metre]
-    :param z: Sensor vertical positions [metre]
-    :param r_prime: Current source radial positions [metre]
-    :param z_prime: Current source vertical positions [metre]
-
-    Note: the inputs are not symmetrical!
-    i.e. you can't change (r, z) for (r_prime, z_prime)
     """
     ...
 

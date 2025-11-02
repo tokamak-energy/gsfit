@@ -126,9 +126,11 @@ class Gsfit(DiagnosticAndSimulationBase):
         database_writer.map_results_to_database(self)
 
         # Do the writing to MDSplus
+        self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
         if self.write_to_mds:
             self.logger.info("Writing to MDSplus")
             self._write_to_mds()
+        
 
     def setup_timeslices(self) -> None:
         """
@@ -184,10 +186,10 @@ class Gsfit(DiagnosticAndSimulationBase):
 
         times_to_reconstruct = self.results["TIME"]
 
-        self.logger.info(msg="About to call: `gsfit_rs.solve_inverse_problem`")
+        self.logger.info(msg="About to call: `gsfit_rs.solve_grad_shafranov`")
         # Note: the solution to the GS equation is stored inside: `plasma`, `passives`, `bp_probes`, `flux_loops`, and `rogowski_coils`
         tic = time_py.time()
-        gsfit_rs.solve_inverse_problem(
+        gsfit_rs.solve_grad_shafranov(
             plasma,
             coils,
             passives,

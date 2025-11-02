@@ -1,11 +1,6 @@
 use core::f64;
 use ndarray::{Array1, Array2, s};
 
-pub struct SaddleLocalMinimaAndMaxima {
-    pub maxima: f64,
-    pub minima: f64,
-}
-
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,
 }
@@ -100,6 +95,7 @@ impl BicubicInterpolator {
     /// # Returns
     /// * `f` - interpolated value at (x, y)
     ///
+    #[allow(dead_code)]
     pub fn interpolate(&self, x: f64, y: f64) -> f64 {
         let x_vec: Array1<f64> = Array1::from_vec(vec![1.0, x, x.powi(2), x.powi(3)]);
         let y_vec: Array1<f64> = Array1::from_vec(vec![1.0, y, y.powi(2), y.powi(3)]);

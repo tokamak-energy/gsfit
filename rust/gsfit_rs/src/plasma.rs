@@ -95,6 +95,7 @@ impl Plasma {
                         Ok(Arc::new(EfitPolynomial {
                             n_dof: efit.n_dof,
                             regularisations: efit.regularisations.clone(),
+                            dof_values: efit.dof_values.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else if let Ok(liuqe) = obj.extract::<PyRef<LiuqePolynomial>>(py) {
                         Ok(Arc::new(LiuqePolynomial {
@@ -119,6 +120,7 @@ impl Plasma {
                         Ok(Arc::new(EfitPolynomial {
                             n_dof: efit.n_dof,
                             regularisations: efit.regularisations.clone(),
+                            dof_values: efit.dof_values.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else if let Ok(liuqe) = obj.extract::<PyRef<LiuqePolynomial>>(py) {
                         Ok(Arc::new(LiuqePolynomial {

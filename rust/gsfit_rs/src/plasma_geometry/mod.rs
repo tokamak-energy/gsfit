@@ -1,4 +1,5 @@
 // Internal imports
+mod bicubic_interpolator;
 mod boundary_contour;
 pub mod cubic_interpolation;
 mod find_boundary;

@@ -19,8 +19,6 @@ use ndarray_stats::QuantileExt;
 /// # Arguments
 /// * `r` - 1D array of R (major radius) grid points.
 /// * `z` - 1D array of Z (vertical) grid points.
-/// * `br_2d` - 2D array of poloidal magnetic field component B_R.
-/// * `bz_2d` - 2D array of poloidal magnetic field component B_Z.
 /// * `psi_2d` - 2D array of poloidal flux values.
 /// * `vessel_r` - 1D array of R coordinates defining the vessel boundary polygon.
 /// * `vessel_z` - 1D array of Z coordinates defining the vessel boundary polygon.
@@ -49,8 +47,6 @@ pub fn find_viable_xpt(
     r: &Array1<f64>,
     z: &Array1<f64>,
     psi_2d: &Array2<f64>,
-    br_2d: &Array2<f64>,
-    bz_2d: &Array2<f64>,
     stationary_points: &Vec<StationaryPoint>,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
@@ -229,7 +225,7 @@ pub fn find_viable_xpt(
     }
 
     let n_points: usize = boundary_r.len();
-    let mut final_contour: BoundaryContour = BoundaryContour {
+    let final_contour: BoundaryContour = BoundaryContour {
         boundary_polygon: Polygon::new(LineString::new(vec![]), vec![]), // TODO: this is not correct. But I want to remove this variable from BoundaryContour
         boundary_r: Array1::from_vec(boundary_r),
         boundary_z: Array1::from_vec(boundary_z),
@@ -245,8 +241,6 @@ pub fn find_viable_xpt(
         secondary_xpt_z: f64::NAN,
         secondary_xpt_distance: f64::MAX,
     };
-
-    // final_contour.refine_xpt_diverted_boundary(r, z, psi_2d, mag_r_previous, mag_z_previous, br_2d, bz_2d);
 
     return Ok(final_contour);
 }

@@ -13,13 +13,13 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// * `z_prime` - by convention used for "current sources", same length as `r_prime`, metre
 ///
 /// # Returns
-/// * `g_d2_psi_dr2[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"
+/// * `g_d2_psi_d_r2[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"
 ///
 pub fn greens_d2_psi_d_r2(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> Array2<f64> {
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
 
-    let mut d2_g_d_r2: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
+    let mut g_d2_psi_d_r2: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
 
     for i_rz in 0..n_rz {
         // Define some variables
@@ -58,12 +58,12 @@ pub fn greens_d2_psi_d_r2(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, 
 
         let bottom: Array1<f64> = 2.0 * &d_sq.mapv(|x| x.powi(2)) * &u_sq.mapv(|x| x.powf(1.5)) * &y_sq;
 
-        let d2_g_d_r2_local: Array1<f64> = MU_0 * (top_1 + top_2 + top_3 + top_4 + top_5 + top_6) / bottom;
+        let g_d2_psi_d_r2_local: Array1<f64> = MU_0 * (top_1 + top_2 + top_3 + top_4 + top_5 + top_6) / bottom;
 
-        d2_g_d_r2.slice_mut(s![i_rz, ..]).assign(&d2_g_d_r2_local);
+        g_d2_psi_d_r2.slice_mut(s![i_rz, ..]).assign(&g_d2_psi_d_r2_local);
     }
 
-    return d2_g_d_r2;
+    return g_d2_psi_d_r2;
 }
 
 #[test]

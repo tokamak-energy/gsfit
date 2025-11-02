@@ -12,4 +12,5 @@ pub use greens_b::greens_b;
 pub use greens_d_b_d_z::greens_d_b_d_z;
 pub use greens_d2_psi_d_r2::greens_d2_psi_d_r2;
 pub use greens_psi::greens_psi;
+pub use greens_psi::greens_py;
 pub use mutual_inductance_finite_size_to_finite_size::mutual_inductance_finite_size_to_finite_size;
