@@ -7,7 +7,7 @@ use crate::plasma_geometry::marching_squares::marching_squares;
 use crate::source_functions::SourceFunctionTraits;
 use crate::source_functions::{EfitPolynomial, LiuqePolynomial};
 use contour::ContourBuilder;
-use core::f64;
+use core::{f64, panic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::Area;
 use geo::Centroid;
@@ -103,9 +103,7 @@ impl Plasma {
                             regularisations: liuqe.regularisations.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
-                        Err(pyo3::exceptions::PyTypeError::new_err(
-                            "p_prime_source_function must implement SourceFunctionTraits",
-                        ))
+                        panic!("p_prime_source_function must implement SourceFunctionTraits");
                     }
                 })
                 .expect("Failed to extract p_prime_source_function")
@@ -128,9 +126,7 @@ impl Plasma {
                             regularisations: liuqe.regularisations.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
-                        Err(pyo3::exceptions::PyTypeError::new_err(
-                            "ff_prime_source_function must implement SourceFunctionTraits",
-                        ))
+                        panic!("ff_prime_source_function must implement SourceFunctionTraits");
                     }
                 })
                 .expect("Failed to extract ff_prime_source_function")
