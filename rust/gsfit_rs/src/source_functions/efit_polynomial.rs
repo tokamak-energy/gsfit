@@ -1,7 +1,7 @@
 use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2};
-use numpy::PyArray2;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
+use numpy::{PyArray1, PyArray2};
 use pyo3::prelude::*;
 
 #[derive(Clone)]
@@ -9,6 +9,7 @@ use pyo3::prelude::*;
 pub struct EfitPolynomial {
     pub n_dof: usize,
     pub regularisations: Array2<f64>,
+    pub dof_values: Array1<f64>,
 }
 
 // TODO: check polynomial equation - do we need to add term to keep current density zero at edge???
@@ -24,11 +25,14 @@ impl EfitPolynomial {
     pub fn new(n_dof: usize, regularisations: &Bound<'_, PyArray2<f64>>) -> Self {
         // Change Python types into Rust types
         let regularisations_ndarray: Array2<f64> = Array2::from(unsafe { regularisations.as_array() }.to_owned());
+        // let polynomial_coeficients_ndarray: Array1<f64> = Array1::from(unsafe { polynomial_coeficients.as_array() }.to_owned());
+        let polynomial_coeficients_ndarray: Array1<f64> = Array1::zeros(0);
 
         // Create the struct
         EfitPolynomial {
             n_dof,
             regularisations: regularisations_ndarray,
+            dof_values: polynomial_coeficients_ndarray,
         }
     }
 

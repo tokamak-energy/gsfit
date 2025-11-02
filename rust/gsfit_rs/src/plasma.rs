@@ -7,7 +7,7 @@ use crate::plasma_geometry::marching_squares::marching_squares;
 use crate::source_functions::SourceFunctionTraits;
 use crate::source_functions::{EfitPolynomial, LiuqePolynomial};
 use contour::ContourBuilder;
-use core::f64;
+use core::{f64, panic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::Area;
 use geo::Centroid;
@@ -32,6 +32,9 @@ pub struct Plasma {
     pub results: DataTree,
     pub p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
     pub ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
+    pub initial_ip: f64,
+    pub initial_cur_r: f64,
+    pub initial_cur_z: f64,
 }
 
 // Python accessible methods
@@ -72,6 +75,9 @@ impl Plasma {
         vessel_z: &Bound<'_, PyArray1<f64>>,
         p_prime_source_function: Py<PyAny>,  // TODO: This is a big ugly!
         ff_prime_source_function: Py<PyAny>, // TODO: This is a big ugly!
+        initial_ip: f64,
+        initial_cur_r: f64,
+        initial_cur_z: f64,
     ) -> Self {
         // Change Python types into Rust types
         let psi_n_ndarray: Array1<f64> = Array1::from(unsafe { psi_n.as_array() }.to_vec());
@@ -89,6 +95,7 @@ impl Plasma {
                         Ok(Arc::new(EfitPolynomial {
                             n_dof: efit.n_dof,
                             regularisations: efit.regularisations.clone(),
+                            dof_values: efit.dof_values.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else if let Ok(liuqe) = obj.extract::<PyRef<LiuqePolynomial>>(py) {
                         Ok(Arc::new(LiuqePolynomial {
@@ -96,9 +103,7 @@ impl Plasma {
                             regularisations: liuqe.regularisations.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
-                        Err(pyo3::exceptions::PyTypeError::new_err(
-                            "p_prime_source_function must implement SourceFunctionTraits",
-                        ))
+                        panic!("p_prime_source_function must implement SourceFunctionTraits");
                     }
                 })
                 .expect("Failed to extract p_prime_source_function")
@@ -113,6 +118,7 @@ impl Plasma {
                         Ok(Arc::new(EfitPolynomial {
                             n_dof: efit.n_dof,
                             regularisations: efit.regularisations.clone(),
+                            dof_values: efit.dof_values.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else if let Ok(liuqe) = obj.extract::<PyRef<LiuqePolynomial>>(py) {
                         Ok(Arc::new(LiuqePolynomial {
@@ -120,9 +126,7 @@ impl Plasma {
                             regularisations: liuqe.regularisations.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
-                        Err(pyo3::exceptions::PyTypeError::new_err(
-                            "ff_prime_source_function must implement SourceFunctionTraits",
-                        ))
+                        panic!("ff_prime_source_function must implement SourceFunctionTraits");
                     }
                 })
                 .expect("Failed to extract ff_prime_source_function")
@@ -225,6 +229,9 @@ impl Plasma {
             results,
             p_prime_source_function: p_prime_source_function_arc,
             ff_prime_source_function: ff_prime_source_function_arc,
+            initial_ip,
+            initial_cur_r,
+            initial_cur_z,
         }
     }
 

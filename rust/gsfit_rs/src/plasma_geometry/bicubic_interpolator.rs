@@ -1,11 +1,6 @@
 use core::f64;
 use ndarray::{Array1, Array2, s};
 
-pub struct SaddleLocalMinimaAndMaxima {
-    pub maxima: f64,
-    pub minima: f64,
-}
-
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,
 }
@@ -65,7 +60,7 @@ impl BicubicInterpolator {
     ///
     /// # Examples
     /// ```rust
-    /// use gsfit_rs::bicubic_interpolator::BicubicInterpolator;
+    /// use gsfit_rs::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
     /// use ndarray::{Array2};
     /// ```
     pub fn new(delta_x: f64, delta_y: f64, f: &Array2<f64>, d_f_d_x: &Array2<f64>, d_f_d_y: &Array2<f64>, d2_f_d_x_d_y: &Array2<f64>) -> Self {
@@ -100,6 +95,7 @@ impl BicubicInterpolator {
     /// # Returns
     /// * `f` - interpolated value at (x, y)
     ///
+    #[allow(dead_code)]
     pub fn interpolate(&self, x: f64, y: f64) -> f64 {
         let x_vec: Array1<f64> = Array1::from_vec(vec![1.0, x, x.powi(2), x.powi(3)]);
         let y_vec: Array1<f64> = Array1::from_vec(vec![1.0, y, y.powi(2), y.powi(3)]);

@@ -29,7 +29,7 @@ pub fn flood_fill_mask(
     z: &Array1<f64>,
     psi_2d: &Array2<f64>,
     psi_b: f64,
-    xpt_r: f64,
+    _xpt_r: f64,
     xpt_z: f64,
     xpt_diverted: bool,
     mag_r_previous: f64, // Note: mag_r and mag_z are from previous iteration; this can be a problem if the magnetic axis moves significantly

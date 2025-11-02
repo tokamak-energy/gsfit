@@ -16,15 +16,15 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// * `z_prime` - by convention used for "current sources", same length as `r_prime`, metre
 ///
 /// # Returns
-/// * `d_g_br_dz[(i_rz, i_rz_prime)]`
-/// * `d_g_bz_dz[(i_rz, i_rz_prime)]`
+/// * `g_d_br_dz[(i_rz, i_rz_prime)]`
+/// * `g_d_bz_dz[(i_rz, i_rz_prime)]`
 ///
 pub fn greens_d_b_d_z(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> (Array2<f64>, Array2<f64>) {
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
 
-    let mut d_g_br_dz: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
-    let mut d_g_bz_dz: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
+    let mut g_d_br_dz: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
+    let mut g_d_bz_dz: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
 
     for i_rz in 0..n_rz {
         // Define some variables
@@ -42,17 +42,17 @@ pub fn greens_d_b_d_z(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_pr
         let elliptic_integral_e: Array1<f64> = k_sq.mapv(|x: f64| ellpe(x));
         let elliptic_integral_k: Array1<f64> = k_sq.mapv(|x: f64| ellpk(1.0 - x)); // very annoying how this is defined
 
-        let d_g_br_dz_this_slice: Array1<f64> = MU_0 / (2.0 * PI * r[i_rz] * &d_sq * &u * &u_sq)
+        let g_d_br_dz_local: Array1<f64> = MU_0 / (2.0 * PI * r[i_rz] * &d_sq * &u * &u_sq)
             * ((&v_sq * &u_sq - &h_sq * (&d_sq + &k_sq * &u_sq * &u_sq / &d_sq)) * &elliptic_integral_e
                 + (h_sq * &v_sq - &u_sq * &d_sq) * &elliptic_integral_k);
 
-        let d_g_bz_dz_this_slice: Array1<f64> =
+        let g_d_bz_dz_local: Array1<f64> =
             MU_0 * &h / (2.0 * PI * &d_sq * u * &u_sq) * (-(3.0 * u_sq + 4.0 * v_sq * &w_sq / d_sq) * elliptic_integral_e + w_sq * elliptic_integral_k);
 
-        d_g_br_dz.slice_mut(s![i_rz, ..]).assign(&d_g_br_dz_this_slice);
-        d_g_bz_dz.slice_mut(s![i_rz, ..]).assign(&d_g_bz_dz_this_slice);
+        g_d_br_dz.slice_mut(s![i_rz, ..]).assign(&g_d_br_dz_local);
+        g_d_bz_dz.slice_mut(s![i_rz, ..]).assign(&g_d_bz_dz_local);
     }
-    return (d_g_br_dz, d_g_bz_dz);
+    return (g_d_br_dz, g_d_bz_dz);
 }
 
 #[test]
@@ -84,17 +84,17 @@ fn test_greens_d_b_dz() {
     let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
 
     // Numerically differentiate br and bz, i.e. d(g_br)/d(z) and d(g_bz)/d(z)
-    let d_g_br_dz_numerical: f64 = (g_br[(1, 0)] - g_br[(0, 0)]) / (sensor_z_plus_epsilon - sensor_z_minus_epsilon);
-    let d_g_bz_dz_numerical: f64 = (g_bz[(1, 0)] - g_bz[(0, 0)]) / (sensor_z_plus_epsilon - sensor_z_minus_epsilon);
+    let g_d_br_dz_numerical: f64 = (g_br[(1, 0)] - g_br[(0, 0)]) / (sensor_z_plus_epsilon - sensor_z_minus_epsilon);
+    let g_d_bz_dz_numerical: f64 = (g_bz[(1, 0)] - g_bz[(0, 0)]) / (sensor_z_plus_epsilon - sensor_z_minus_epsilon);
 
     // Call the function we are testing
     // We now have a single sensor at the centre of the two sensors we used for numerical differentiation
     let z: Array1<f64> = Array1::from(vec![(sensor_z_minus_epsilon + sensor_z_plus_epsilon) / 2.0]);
     let r: Array1<f64> = Array1::from(vec![sensor_r]);
-    let (d_g_br_dz, d_g_bz_dz): (Array2<f64>, Array2<f64>) = greens_d_b_d_z(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
+    let (g_d_br_dz, g_d_bz_dz): (Array2<f64>, Array2<f64>) = greens_d_b_d_z(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
 
     // Check the results
     let precision: f64 = 1e-11;
-    assert_abs_diff_eq!(d_g_br_dz[(0, 0)], d_g_br_dz_numerical, epsilon = precision);
-    assert_abs_diff_eq!(d_g_bz_dz[(0, 0)], d_g_bz_dz_numerical, epsilon = precision);
+    assert_abs_diff_eq!(g_d_br_dz[(0, 0)], g_d_br_dz_numerical, epsilon = precision);
+    assert_abs_diff_eq!(g_d_bz_dz[(0, 0)], g_d_bz_dz_numerical, epsilon = precision);
 }

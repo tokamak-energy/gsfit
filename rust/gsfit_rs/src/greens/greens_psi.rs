@@ -1,11 +1,49 @@
 use core::f64;
 use ndarray::{Array1, Array2, s};
+use numpy::IntoPyArray;
+use numpy::PyArrayMethods; // used in to convert python data into ndarray
+use numpy::{PyArray1, PyArray2};
 use physical_constants;
+use pyo3::prelude::*;
 use rayon::prelude::*;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
-use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
+use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind // converting to python data types
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
+
+#[pyfunction]
+#[pyo3(signature = (r, z, r_prime, z_prime, d_r=None, d_z=None))]
+pub fn greens_py(
+    py: Python,
+    r: &Bound<'_, PyArray1<f64>>,
+    z: &Bound<'_, PyArray1<f64>>,
+    r_prime: &Bound<'_, PyArray1<f64>>,
+    z_prime: &Bound<'_, PyArray1<f64>>,
+    d_r: Option<&Bound<'_, PyArray1<f64>>>,
+    d_z: Option<&Bound<'_, PyArray1<f64>>>,
+) -> Py<PyArray2<f64>> {
+    let r_ndarray: Array1<f64> = Array1::from(unsafe { r.as_array() }.to_vec());
+    let z_ndarray: Array1<f64> = Array1::from(unsafe { z.as_array() }.to_vec());
+    let r_prime_ndarray: Array1<f64> = Array1::from(unsafe { r_prime.as_array() }.to_vec());
+    let z_prime_ndarray: Array1<f64> = Array1::from(unsafe { z_prime.as_array() }.to_vec());
+
+    // Some horible variable type change and fallback when option not supplied
+    let n_prime: usize = r_prime_ndarray.len();
+    let d_r_fallback: Array1<f64> = Array1::from_elem(n_prime, f64::NAN);
+    let d_r_fallback_py: &Bound<'_, PyArray1<f64>> = &d_r_fallback.into_pyarray(py).into();
+    let d_r_unwrapped: &Bound<'_, PyArray1<f64>> = d_r.unwrap_or(d_r_fallback_py);
+    let d_r: Array1<f64> = Array1::from(unsafe { d_r_unwrapped.as_array() }.to_vec());
+    // d_z
+    let n_prime: usize = r_prime_ndarray.len();
+    let d_z_fallback: Array1<f64> = Array1::from_elem(n_prime, f64::NAN);
+    let d_z_fallback_py: &Bound<'_, PyArray1<f64>> = &d_z_fallback.into_pyarray(py).into();
+    let d_z_unwrapped: &Bound<'_, PyArray1<f64>> = d_z.unwrap_or(d_z_fallback_py);
+    let d_z: Array1<f64> = Array1::from(unsafe { d_z_unwrapped.as_array() }.to_vec());
+
+    let g_psi: Array2<f64> = greens_psi(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray, d_r, d_z);
+
+    return g_psi.into_pyarray(py).into();
+}
 
 /// Calculates the Green's table between locations
 ///
@@ -23,7 +61,7 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// * `d_z` - vertical height of filament, same length as `r` and `z`
 ///
 /// # Returns
-/// * `greens_array[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"
+/// * `g_psi[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"
 ///
 /// # Examples
 /// ```
@@ -85,12 +123,12 @@ pub fn greens_psi(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime:
         })
         .collect();
 
-    let mut greens_array: Array2<f64> = Array2::from_elem((n_grid, n_filament), f64::NAN);
+    let mut g_psi: Array2<f64> = Array2::from_elem((n_grid, n_filament), f64::NAN);
     for i_filament in 0..n_filament {
-        greens_array.slice_mut(s![.., i_filament]).assign(&results[i_filament]);
+        g_psi.slice_mut(s![.., i_filament]).assign(&results[i_filament]);
     }
 
-    return greens_array;
+    return g_psi;
 }
 
 #[test]

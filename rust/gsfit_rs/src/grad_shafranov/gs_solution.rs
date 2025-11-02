@@ -32,6 +32,8 @@ pub struct GsSolution<'a> {
     isoflux_dynamic: &'a SensorsDynamic,
     isoflux_boundary_static: &'a SensorsStatic,
     isoflux_boundary_dynamic: &'a SensorsDynamic,
+    magnetic_axis_static: &'a SensorsStatic,
+    magnetic_axis_dynamic: &'a SensorsDynamic,
     n_iter_max: usize,
     n_iter_min: usize,
     n_iter_no_vertical_feedback: usize,
@@ -85,6 +87,8 @@ impl<'a> GsSolution<'a> {
         isoflux_dynamic: &'a SensorsDynamic,
         isoflux_boundary_static: &'a SensorsStatic,
         isoflux_boundary_dynamic: &'a SensorsDynamic,
+        magnetic_axis_static: &'a SensorsStatic,
+        magnetic_axis_dynamic: &'a SensorsDynamic,
         n_iter_max: usize,
         n_iter_min: usize,
         n_iter_no_vertical_feedback: usize,
@@ -108,6 +112,8 @@ impl<'a> GsSolution<'a> {
             isoflux_dynamic,
             isoflux_boundary_static,
             isoflux_boundary_dynamic,
+            magnetic_axis_static,
+            magnetic_axis_dynamic,
             n_iter_max,
             n_iter_min,
             n_iter_no_vertical_feedback,
@@ -198,6 +204,8 @@ impl<'a> GsSolution<'a> {
         let isoflux_dynamic: &SensorsDynamic = self.isoflux_dynamic;
         let isoflux_boundary_static: &SensorsStatic = self.isoflux_boundary_static;
         let isoflux_boundary_dynamic: &SensorsDynamic = self.isoflux_boundary_dynamic;
+        let magnetic_axis_static: &SensorsStatic = self.magnetic_axis_static;
+        let magnetic_axis_dynamic: &SensorsDynamic = self.magnetic_axis_dynamic;
 
         // Plasma grid
         let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
@@ -225,14 +233,22 @@ impl<'a> GsSolution<'a> {
         let n_rog: usize = rogowski_coils_dynamic.measured.len();
         let n_isoflux: usize = isoflux_dynamic.measured.len();
         let n_isoflux_boundary: usize = isoflux_boundary_dynamic.measured.len();
+        let n_magnetic_axis_constraints: usize = magnetic_axis_dynamic.measured.len();
         let n_p_prime_regularisation: usize = p_prime_source_function.source_function_regularisation().shape()[0];
         let n_ff_prime_regularisation: usize = ff_prime_source_function.source_function_regularisation().shape()[0];
-        let n_source_function_reg: usize = n_p_prime_regularisation + n_ff_prime_regularisation;
         let passive_regularisations: Array2<f64> = self.passive_regularisations.to_owned();
         let n_passive_regularisation: usize = passive_regularisations.shape()[0];
         let n_delta_z_regularisation: usize = 0; // initially set to 0 because we don't have previous iteration
-        let n_constraints: usize =
-            n_bp + n_fl + n_rog + n_isoflux + n_isoflux_boundary + n_source_function_reg + n_passive_regularisation + n_delta_z_regularisation;
+        let n_constraints: usize = n_bp
+            + n_fl
+            + n_rog
+            + n_isoflux
+            + n_isoflux_boundary
+            + n_magnetic_axis_constraints
+            + n_p_prime_regularisation
+            + n_ff_prime_regularisation
+            + n_passive_regularisation
+            + n_delta_z_regularisation;
 
         // Magnetic sensor's Greens tables
         let greens_bp_probes_grid: Array2<f64> = bp_probes_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
@@ -261,6 +277,11 @@ impl<'a> GsSolution<'a> {
         let greens_isoflux_boundary_passives: Array2<f64> = isoflux_boundary_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
         let g_bz_plasma: Array2<f64> = plasma.results.get("greens").get("grid_grid").get("bz").unwrap_array2(); // shape = (n_z * n_r, n_r)
 
+        let greens_magnetic_axis_grid: Array2<f64> = magnetic_axis_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
+        let greens_d_magnetic_axis_dz: Array2<f64> = magnetic_axis_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
+        let greens_magnetic_axis_pf: Array2<f64> = magnetic_axis_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
+        let greens_magnetic_axis_passives: Array2<f64> = magnetic_axis_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+
         // Greens for d^2(psi)/d(r^2); note, we only calculate this value at a few grid points in `find_boundary` and `find_magnetic_axis`
         let g_d2_psi_d_r2_coils: Array3<f64> = plasma.results.get("greens").get("pf").get("*").get("d2_psi_d_r2").unwrap_array3(); // shape = (n_z, n_r, n_pf)
         let g_d2_psi_d_r2_passives: Array2<f64> = plasma.get_greens_passive_grid_d2_psi_d_r2(); // shape = (n_z * n_r, n_passive_dofs)
@@ -273,7 +294,7 @@ impl<'a> GsSolution<'a> {
         self.passive_dof_values = Array1::zeros(n_passive_dof);
 
         // Initialise plasma with point source current
-        self.initialise_plasma_with_point_source_current();
+        self.initialise_plasma_with_point_source_current(plasma.initial_ip, plasma.initial_cur_r, plasma.initial_cur_z);
 
         // Some variables we want to track between iterations
         let mut dof_values_previous: Array1<f64> = Array1::zeros(n_p_prime_dof + n_ff_prime_dof + n_passive_dof + 1);
@@ -346,7 +367,7 @@ impl<'a> GsSolution<'a> {
                 self.delta_z,
             );
 
-            // Find the stationary points in `psi`
+            // Find stationary points in `psi`
             let stationary_points_or_error: Result<Vec<StationaryPoint>, String> =
                 find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
             // At a minimum we should have found the magnetic axis
@@ -363,17 +384,12 @@ impl<'a> GsSolution<'a> {
                 &z,
                 &psi_2d,
                 &stationary_points,
-                &br_2d,
-                &bz_2d,
-                &d_br_d_z_2d,
-                &d_bz_d_z_2d,
                 &limit_pts_r,
                 &limit_pts_z,
                 &vessel_r,
                 &vessel_z,
                 self.r_mag, // previous iteration
                 self.z_mag, // previous iteration
-                d2_psi_d_r2_calculator,
             );
             // Test if we have found a plasma boundary
             if plasma_boundary_or_error.is_err() {
@@ -393,19 +409,7 @@ impl<'a> GsSolution<'a> {
             self.xpt_diverted = plasma_boundary.xpt_diverted;
 
             // Find the magnetic axis (o-point)
-            let magnetic_axis_or_error: Result<MagneticAxis, String> = find_magnetic_axis(
-                &r,
-                &z,
-                &psi_2d,
-                &br_2d,
-                &bz_2d,
-                &d_bz_d_z_2d,
-                &stationary_points,
-                self.r_mag,
-                self.z_mag,
-                &vessel_r,
-                &vessel_z,
-            );
+            let magnetic_axis_or_error: Result<MagneticAxis, String> = find_magnetic_axis(&stationary_points, self.r_mag, self.z_mag, &vessel_r, &vessel_z);
             // Test if we have found the magnetic axis
             if magnetic_axis_or_error.is_err() {
                 self.set_to_failed_time_slice();
@@ -733,6 +737,59 @@ impl<'a> GsSolution<'a> {
                 i_constraint += 1;
             }
 
+            // Add magnetic_axis to fitting matrix
+            for i_sensor in 0..n_magnetic_axis_constraints {
+                // p_prime degrees of freedom
+                for i_p_prime_dof in 0..n_p_prime_dof {
+                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
+                        * PI
+                        * d_area
+                        * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
+                            * &mask_flat
+                            * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
+                            * &flat_r)
+                            .sum();
+                }
+
+                // ff_prime degrees of freedom
+                for i_ff_prime_dof in 0..n_ff_prime_dof {
+                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
+                        * PI
+                        * d_area
+                        * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
+                            * &mask_flat
+                            * ff_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_ff_prime_dof)
+                            / (MU_0 * &flat_r))
+                            .sum();
+                }
+
+                // Add passive degrees of freedom
+                for i_passive_dof in 0..n_passive_dof {
+                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_magnetic_axis_passives[(i_passive_dof, i_sensor)];
+                }
+
+                // Vertical stability (using previous iteration)
+                if i_iter > n_iter_no_vertical_feedback {
+                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
+                        d_area * (&greens_d_magnetic_axis_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
+                }
+
+                // PF coil component
+                // TODO: I checked and `greens_rogowski_coils_pf["bvlb", "BVLBCASE"] = 16`
+                let tmp: Array1<f64> = greens_magnetic_axis_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
+                constraint_values_from_coils[i_constraint] = tmp.sum();
+
+                // Store sensor values
+                s_measured[i_constraint] = 0.0; // Magnetic axis value is always zero
+
+                // Store weights
+                constraint_weights[i_constraint] =
+                    magnetic_axis_static.fit_settings_weight[i_sensor] / magnetic_axis_static.fit_settings_expected_value[i_sensor];
+
+                // Setup indexer for next sensor or constraint
+                i_constraint += 1;
+            }
+
             // Add p_prime_regularisation to fitting matrix
             let p_prime_regularisation: Array2<f64> = p_prime_source_function.source_function_regularisation(); // shape = [n_regularisation, n_dof]
             for i_regularisation in 0..n_p_prime_regularisation {
@@ -869,7 +926,7 @@ impl<'a> GsSolution<'a> {
 
             // Compute the condition number
             if let (Some(&sigma_max), Some(&sigma_min)) = (s.first(), s.iter().filter(|&&x| x > 0.0).last()) {
-                let condition_number = sigma_max / sigma_min;
+                let _condition_number: f64 = sigma_max / sigma_min;
             } else {
                 println!("Matrix is rank-deficient or singular, condition number is undefined.");
             }
@@ -1230,14 +1287,14 @@ impl<'a> GsSolution<'a> {
         let p_prime_2d: Array2<f64> = p_prime_source_function
             .source_function_value(&psi_n_flat, &p_prime_dof_values.clone())
             .to_shape((n_z, n_r))
-            .expect("error in p_prime_2d")
+            .expect("gs_solution: error in p_prime_2d")
             .to_owned();
         let j_2d_p_prime: Array2<f64> = 2.0 * PI * mesh_r * p_prime_2d * &mask;
 
         let ff_prime_2d: Array2<f64> = ff_prime_source_function
             .source_function_value(&psi_n_flat, &ff_prime_dof_values.clone())
             .to_shape((n_z, n_r))
-            .expect("error in ff_prime_2d")
+            .expect("gs_solution: error in ff_prime_2d")
             .to_owned();
         let j_2d_ff_prime: Array2<f64> = 2.0 * PI * ff_prime_2d * &mask / (MU_0 * mesh_r);
 
@@ -1246,13 +1303,10 @@ impl<'a> GsSolution<'a> {
         self.j_2d = j_2d.clone();
     }
 
-    pub fn initialise_plasma_with_point_source_current(&mut self) {
+    pub fn initialise_plasma_with_point_source_current(&mut self, initial_ip: f64, initial_cur_r: f64, initial_cur_z: f64) {
         // Unpack objects
         let plasma: &Plasma = &self.plasma;
         let coils_dynamic: &SensorsDynamic = &self.coils_dynamic;
-
-        // TODO: Need to fix this!!
-        let ip_guess: f64 = 425.0e3;
 
         // Extract stuff from Plasma
         let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
@@ -1273,19 +1327,30 @@ impl<'a> GsSolution<'a> {
 
         // Find where to initialise the plasma
         let r: Array1<f64> = plasma.results.get("grid").get("r").unwrap_array1();
-        let r_target: f64 = 0.45;
+        let r_target: f64 = initial_cur_r;
         let mut i_r_centre: usize = 0;
         let mut smallest_diff: f64 = f64::MAX;
-        for (i, &value) in r.iter().enumerate() {
+        for (i_r, &value) in r.iter().enumerate() {
             let diff: f64 = (value - r_target).abs();
             if diff < smallest_diff {
                 smallest_diff = diff;
-                i_r_centre = i;
+                i_r_centre = i_r;
+            }
+        }
+        let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
+        let z_target: f64 = initial_cur_z;
+        let mut i_z_centre: usize = 0;
+        let mut smallest_diff: f64 = f64::MAX;
+        for (i_z, &value) in z.iter().enumerate() {
+            let diff: f64 = (value - z_target).abs();
+            if diff < smallest_diff {
+                smallest_diff = diff;
+                i_z_centre = i_z;
             }
         }
 
-        // Initialise `i_z_centre` to be centre of Z grid, assuming this is Z=0
-        let i_z_centre: usize = (n_z as f64 / 2.0).floor() as usize;
+        // Create a "hill" of current
+        // TODO: this can be improved --> like RT-GSFit initial guess
         j_2d[(i_z_centre, i_r_centre)] = 3.0;
 
         j_2d[(i_z_centre - 1, i_r_centre)] = 2.0;
@@ -1302,7 +1367,7 @@ impl<'a> GsSolution<'a> {
         j_2d[(i_z_centre - 1, i_r_centre - 1)] = 1.0;
         j_2d[(i_z_centre, i_r_centre - 2)] = 1.0;
 
-        j_2d = j_2d * ip_guess / d_area / 19.0;
+        j_2d = j_2d * initial_ip / d_area / 19.0;
 
         // Store in self
         self.j_2d = j_2d;

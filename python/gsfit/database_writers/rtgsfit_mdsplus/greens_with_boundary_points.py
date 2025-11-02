@@ -30,8 +30,8 @@ def greens_with_boundary_points(plasma: gsfit_rs.Plasma) -> npt.NDArray[np.float
     ones_len_r_inner = np.ones_like(r_inner)
     ones_len_z_inner = np.ones_like(z_inner)
 
-    d_r = np.mean(np.diff(r))
-    d_z = np.mean(np.diff(z))
+    d_r = np.mean(np.diff(r)).astype(np.float64)
+    d_z = np.mean(np.diff(z)).astype(np.float64)
 
     r_ltrb = np.concatenate(
         (

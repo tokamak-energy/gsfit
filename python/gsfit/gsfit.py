@@ -46,6 +46,7 @@ class Gsfit(DiagnosticAndSimulationBase):
     rogowski_coils: gsfit_rs.RogowskiCoils
     isoflux: gsfit_rs.Isoflux
     isoflux_boundary: gsfit_rs.IsofluxBoundary
+    magnetic_axis: gsfit_rs.MagneticAxis
 
     # TODO: move to DiagnosticAndSimulationBase
     def __getitem__(self, key: str) -> typing.Any:
@@ -80,7 +81,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         1. Set the environment variables
         2. Setup the timeslices to reconstruct
         3. Read in all the machine settings and initalise the following Rust implementations:
-            `coils`, `passives`, `plasma`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, and `isoflux_boundary`
+            `coils`, `passives`, `plasma`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `magnetic_axis`
         4. Initialise the Greens functions
         5. Solve the GS equation
         6. Map the results to the MDSplus database structure and store in `self.results`
@@ -94,7 +95,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.setup_timeslices()
 
         # Read in all the machine settings and initalise the following Rust implementations:
-        # `coils`, `passives`, `plasma`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, and `isoflux_boundary`
+        # `coils`, `passives`, `plasma`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `magnetic_axis`
         self.setup_objects(**kwargs)
 
         # Calculate the Greens functions for all permutations between current source objects and sensors.
@@ -125,9 +126,11 @@ class Gsfit(DiagnosticAndSimulationBase):
         database_writer.map_results_to_database(self)
 
         # Do the writing to MDSplus
+        self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
         if self.write_to_mds:
             self.logger.info("Writing to MDSplus")
             self._write_to_mds()
+        
 
     def setup_timeslices(self) -> None:
         """
@@ -179,13 +182,14 @@ class Gsfit(DiagnosticAndSimulationBase):
         rogowski_coils = self.rogowski_coils
         isoflux = self.isoflux
         isoflux_boundary = self.isoflux_boundary
+        magnetic_axis = self.magnetic_axis
 
         times_to_reconstruct = self.results["TIME"]
 
-        self.logger.info(msg="About to call: `gsfit_rs.solve_inverse_problem`")
+        self.logger.info(msg="About to call: `gsfit_rs.solve_grad_shafranov`")
         # Note: the solution to the GS equation is stored inside: `plasma`, `passives`, `bp_probes`, `flux_loops`, and `rogowski_coils`
         tic = time_py.time()
-        gsfit_rs.solve_inverse_problem(
+        gsfit_rs.solve_grad_shafranov(
             plasma,
             coils,
             passives,
@@ -194,6 +198,7 @@ class Gsfit(DiagnosticAndSimulationBase):
             rogowski_coils,
             isoflux,
             isoflux_boundary,
+            magnetic_axis,
             times_to_reconstruct,
             self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"],
             self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_min"],
@@ -219,6 +224,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         rogowski_coils = self.rogowski_coils
         isoflux = self.isoflux
         isoflux_boundary = self.isoflux_boundary
+        magnetic_axis = self.magnetic_axis
 
         # Greens with coils
         tic = time_py.time()
@@ -228,6 +234,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         rogowski_coils.greens_with_coils(coils)
         isoflux.greens_with_coils(coils)
         isoflux_boundary.greens_with_coils(coils)
+        magnetic_axis.greens_with_coils(coils)
         toc = time_py.time()
         self.logger.info(f"Finished Greens with coils;  {(toc - tic) * 1e3:,.2f}ms")
 
@@ -239,6 +246,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         rogowski_coils.greens_with_passives(passives)
         isoflux.greens_with_passives(passives)
         isoflux_boundary.greens_with_passives(passives)
+        magnetic_axis.greens_with_passives(passives)
         toc = time_py.time()
         self.logger.info(f"Finished Greens with passives;  {(toc - tic) * 1e3:,.2f}ms")
 
@@ -249,13 +257,14 @@ class Gsfit(DiagnosticAndSimulationBase):
         rogowski_coils.greens_with_plasma(plasma)
         isoflux.greens_with_plasma(plasma)
         isoflux_boundary.greens_with_plasma(plasma)
+        magnetic_axis.greens_with_plasma(plasma)
         toc = time_py.time()
         self.logger.info(f"Finished Greens with plasma;  {(toc - tic) * 1e3:,.2f}ms")
 
     def setup_objects(self, **kwargs: dict[str, typing.Any]) -> None:
         """
         Initialises the Rust objects needed to run the GSFit inverse solver:
-        `coils`, `passives`, `plasma`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, and `isoflux_boundary`
+        `coils`, `passives`, `plasma`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `magnetic_axis`
 
         Different machines will use different data stores (e.g. MDSplus, or FreeGNSKE object).
         New readers for different devices / forward GS solvers can be added to:
@@ -273,12 +282,12 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.coils = database_reader.setup_coils(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`coils`  initialised;  {(toc - tic) * 1e3:,.2f}ms")
-        
+
         tic = time_py.time()
         self.bp_probes = database_reader.setup_bp_probes(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`bp_probes` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-        
+
         tic = time_py.time()
         self.flux_loops = database_reader.setup_flux_loops(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
@@ -309,3 +318,13 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.isoflux_boundary = database_reader.setup_isoflux_boundary_sensors(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`isoflux_boundary` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
+        self.magnetic_axis = database_reader.setup_magnetic_axis_sensors(
+            pulseNo=self.pulseNo,
+            settings=self.settings,
+            times_to_reconstruct=times_to_reconstruct,
+            **kwargs,
+        )
+        toc = time_py.time()
+        self.logger.info(msg=f"`magnetic_axis` initialised;  {(toc - tic) * 1e3:,.2f}ms")
