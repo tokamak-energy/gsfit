@@ -48,8 +48,6 @@ def setup_flux_loops(
         pickups_vals[i_time, :] = freegsnke_tokamak.probes.calculate_fluxloop_value(freegsnke_eqs[i_time])
 
     for i_sensor, sensor in enumerate(freegsnke_tokamak.probes.floops):
-    # import pdb; pdb.set_trace()
-    # for i_sensor, sensor in enumerate(freegsnke_tokamak.probes.floop_order):
         # Get the sensor name
         sensor_name = sensor["name"]
 

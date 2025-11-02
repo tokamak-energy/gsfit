@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
-import shapely
 import shapely.geometry
 from scipy.constants import mu_0
 
