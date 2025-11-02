@@ -60,7 +60,7 @@ impl BicubicInterpolator {
     ///
     /// # Examples
     /// ```rust
-    /// use gsfit_rs::bicubic_interpolator::BicubicInterpolator;
+    /// use gsfit_rs::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
     /// use ndarray::{Array2};
     /// ```
     pub fn new(delta_x: f64, delta_y: f64, f: &Array2<f64>, d_f_d_x: &Array2<f64>, d_f_d_y: &Array2<f64>, d2_f_d_x_d_y: &Array2<f64>) -> Self {
