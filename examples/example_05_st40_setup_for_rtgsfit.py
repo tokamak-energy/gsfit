@@ -42,10 +42,12 @@ coil_matrix = np.array(
         [1.0,      0.0,      0.0,      0.0,     0.0,      0.0,     0.0,        0.0],  # BVL coil
         [0.0,      0.0,      1.0,      0.0,     0.0,      0.0,     0.0,        0.0],  # BVUT coil
         [0.0,      1.0,      0.0,      0.0,     0.0,      0.0,     0.0,        0.0],  # BVUB coil
-        [0.0,      0.0,      0.0,      0.0,     0.0,      1.0,     0.0,        0.0],  # PSH coil
+        [0.0,      0.0,      0.0,      0.0,     0.0,      0.0,     0.0,        0.0],  # PSH coil
     ]
 )
 # fmt: on
+# Transpose as this is used by Matlab/Simulink which is column-major
+coil_matrix = coil_matrix.T
 gsfit_controller.results["PRESHOT"]["COIL_MATRIX"] = coil_matrix
 
 # Run
