@@ -557,6 +557,8 @@ impl Isoflux {
             greens_d_sensor_dz: Array2::zeros((0, 0)),     // should be: shape = [n_z * n_r, 0]
             fit_settings_weight: Array1::zeros(0),         // there could still be a weight even if no sensors?
             fit_settings_expected_value: Array1::zeros(0), // there could still be an expected value even if no sensors?
+            geometry_r: Array1::zeros(0),                  // not used for Isoflux
+            geometry_z: Array1::zeros(0),                  // not used for Isoflux
         };
         let results_dynamic_empty: SensorsDynamic = SensorsDynamic { measured: Array1::zeros(0) }; // Correct. Shape should be [0].
 
@@ -668,6 +670,8 @@ impl Isoflux {
                 greens_d_sensor_dz: greens_d_sensor_dz.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
                 fit_settings_weight: fit_settings_weight.clone(),
                 fit_settings_expected_value: fit_settings_expected_value.clone(),
+                geometry_r: Array1::zeros(n_sensors), // not used for Isoflux
+                geometry_z: Array1::zeros(n_sensors), // not used for Isoflux
             };
             results_static.push(results_static_this_time_slice);
 

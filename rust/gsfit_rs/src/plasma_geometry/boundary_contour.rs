@@ -14,9 +14,5 @@ pub struct BoundaryContour {
     pub bounding_z: f64,
     pub fraction_inside_vessel: f64,
     pub xpt_diverted: bool,
-    pub plasma_volume: Option<f64>,
     pub mask: Option<Array2<f64>>,
-    pub secondary_xpt_r: f64,
-    pub secondary_xpt_z: f64,
-    pub secondary_xpt_distance: f64,
 }

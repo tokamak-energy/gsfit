@@ -9,7 +9,7 @@ from gsfit_rs import Dialoop
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
-from gsfit_rs import MagneticAxis
+from gsfit_rs import StationaryPoint
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
 from gsfit_rs import RogowskiCoils
@@ -275,9 +275,9 @@ class DatabaseReaderProtocol(Protocol):
         """
         ...
 
-    def setup_magnetic_axis_sensors(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> MagneticAxis:
+    def setup_stationary_point_sensors(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> StationaryPoint:
         """
-        This method initialises the Rust `MagneticAxis` class (the magnetic axis position sensors).
+        This method initialises the Rust `StationaryPoint` class (the magnetic axis position sensors).
 
         :param pulseNo: Pulse number, used to read from the database
         :param settings: Dictionary containing the JSON settings read from the `settings` directory

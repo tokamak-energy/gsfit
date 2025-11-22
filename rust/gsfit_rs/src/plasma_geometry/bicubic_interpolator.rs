@@ -26,6 +26,12 @@ pub struct BicubicStationaryPoint {
     pub iter: usize,
 }
 
+pub enum ErrorType {
+    HessianIsSingular,
+    BacktrackingFailed,
+    MaxIterationsReached,
+}
+
 impl BicubicInterpolator {
     /// Bicubic interpolation
     /// https://en.wikipedia.org/wiki/Bicubic_interpolation

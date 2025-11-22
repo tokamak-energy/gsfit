@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 mod sensors;
-pub use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, MagneticAxis, Pressure, RogowskiCoils};
+pub use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, StationaryPoint};
 pub use sensors::{SensorsDynamic, SensorsStatic};
 mod grad_shafranov;
 pub mod plasma_geometry;
@@ -38,7 +38,7 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<FluxLoops>()?;
     m.add_class::<Isoflux>()?;
     m.add_class::<IsofluxBoundary>()?;
-    m.add_class::<MagneticAxis>()?;
+    m.add_class::<StationaryPoint>()?;
     m.add_class::<RogowskiCoils>()?;
     m.add_class::<Pressure>()?;
 

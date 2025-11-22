@@ -357,6 +357,8 @@ impl FluxLoops {
             greens_d_sensor_dz,
             fit_settings_weight,
             fit_settings_expected_value,
+            geometry_r: Array1::zeros(n_sensors), // not used for FluxLoops
+            geometry_z: Array1::zeros(n_sensors), // not used for FluxLoops
         };
 
         // Time dependent

@@ -1,4 +1,5 @@
 use super::BoundaryContour;
+use super::Error;
 use super::StationaryPoint;
 use super::find_viable_limit_point::find_viable_limit_point;
 use super::find_viable_xpt::find_viable_xpt;
@@ -34,10 +35,11 @@ pub fn find_boundary(
     vessel_z: &Array1<f64>,
     mag_r_previous: f64, // Note: mag_r and mag_z are from previous iteration; this can be a problem if the magnetic axis moves significantly
     mag_z_previous: f64, // which can happen when the plasma is significantly displaced vertically from the initial guess location, e.g. during a VDE
-) -> Result<BoundaryContour, String> {
+) -> Result<BoundaryContour, Error> {
     // Find x-points inside the vacuum vessel which could be the plasma boundary
     let xpt_boundary_or_error: Result<BoundaryContour, String> =
         find_viable_xpt(&r, &z, &psi_2d, &stationary_points, &vessel_r, &vessel_z, mag_r_previous, mag_z_previous);
+    // println!("find_boundary: xpt_boundary_or_error = {:?}", xpt_boundary_or_error);
 
     // Extract results from `xpt_boundary` object
     let xpt_r: f64;
@@ -151,7 +153,10 @@ pub fn find_boundary(
     }
 
     if psi_b.is_nan() {
-        return Err("find_boundary: no boundary found".to_string());
+        return Err(Error::NoBoundaryFound {
+            no_xpt_reason: "".to_string(),
+            no_limit_point_reason: "".to_string(),
+        });
     }
 
     // boundary polygon
@@ -170,6 +175,7 @@ pub fn find_boundary(
         psi_b,
         xpt_r,
         xpt_z,
+        &stationary_points,
         xpt_diverted,
         mag_r_previous,
         mag_z_previous,
@@ -187,11 +193,7 @@ pub fn find_boundary(
         bounding_z,
         fraction_inside_vessel: f64::NAN, // fraction inside vessel not calculated here
         xpt_diverted,
-        plasma_volume: None, // volume calculated using method
         mask: Some(mask),
-        secondary_xpt_r: f64::NAN,
-        secondary_xpt_z: f64::NAN,
-        secondary_xpt_distance: f64::NAN,
     };
 
     return Ok(boundary_contour);

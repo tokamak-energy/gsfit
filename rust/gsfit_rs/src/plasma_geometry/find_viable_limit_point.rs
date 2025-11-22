@@ -6,6 +6,9 @@ use geo::Contains;
 use geo::{Coord, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_interp::interp2d::Interp2D;
+use ndarray_stats::QuantileExt;
+
+// problem: the plasma should be x-point diverted. But, 
 
 pub fn find_viable_limit_point(
     r: &Array1<f64>,
@@ -78,6 +81,21 @@ pub fn find_viable_limit_point(
     // Flatten psi_2d
     let psi_2d_flattened: Vec<f64> = psi_2d.iter().cloned().collect();
 
+
+    // let boundary = marching_squares(
+    //     r,
+    //     z,
+    //     psi_2d,
+    //     br_2d,
+    //     bz_2d,
+    //     psi_b,
+    //     mask_2d,
+    //     xpt_r_or_none,
+    //     xpt_z_or_none,
+    //     mag_r,
+    //     mag_z,
+    // );
+
     // Loop over all limit points and contours associated with each limit point.
     // Essentially I am flattening the double for loop
     let mut boundary_contours_all: Vec<BoundaryContour> = Vec::new();
@@ -101,9 +119,9 @@ pub fn find_viable_limit_point(
                 .nth(i_contour)
                 .expect("find_viable_limit_point: cannot find `boundary_contour`");
 
-            let boundary_r: Array1<f64> = boundary_contour.exterior().coords().map(|coord| coord.x).collect::<Array1<f64>>();
-            let boundary_z: Array1<f64> = boundary_contour.exterior().coords().map(|coord| coord.y).collect::<Array1<f64>>();
-            let n_points: usize = boundary_r.len();
+            let boundary_r: Array1<f64> = Array1::zeros(0);
+            let boundary_z: Array1<f64> = Array1::zeros(0);
+            let n_points: usize = 0;
 
             boundary_contours_all.push(BoundaryContour {
                 boundary_polygon: boundary_contour.clone(),
@@ -115,48 +133,40 @@ pub fn find_viable_limit_point(
                 bounding_z: limit_pt_z,
                 fraction_inside_vessel: f64::NAN,
                 xpt_diverted: false,
-                plasma_volume: None, // volume calculated using method
-                mask: None,          // mask calculated using method
-                secondary_xpt_r: f64::NAN,
-                secondary_xpt_z: f64::NAN,
-                secondary_xpt_distance: f64::NAN,
+                mask: None, // mask calculated later using method
             });
         }
     }
     // Exit if we haven't found any boundary contours
     if boundary_contours_all.len() == 0 {
-        // println!("find_viable_limit_point: no boundary found");
         return Err("no boundary found 01".to_string());
     }
 
-    // Check if the boundary has reached the grid edge
-    boundary_contours_all.retain(|boundary_contour| {
-        let polygon: Polygon = boundary_contour.boundary_polygon.clone();
-
-        let mut has_reached_edge: bool = false;
-        // Check if the boundary has reached the grid edge
-        for coord in polygon.exterior().coords() {
-            let r_coord: f64 = coord.x;
-            let z_coord: f64 = coord.y;
-
-            // TODO: should I set a tolerance here, or is machine precision ok??
-            if abs_diff_eq!(r_coord, r[0]) || abs_diff_eq!(r_coord, r[n_r - 1]) || abs_diff_eq!(z_coord, z[0]) || abs_diff_eq!(z_coord, z[n_z - 1]) {
-                // println!("find_viable_limit_point: boundary is not closed!!!");
-                has_reached_edge = true;
+    // Create a contour using `stationary_point.psi`; and check if it exists on the LFS at the magnetic axis height
+    // Find the closest grid point to the magnetic axis
+    let index_mag_r: usize = (r - mag_r_previous).abs().argmin().expect("find_limit_point: unwrapping index_mag_r");
+    let index_mag_z: usize = (z - mag_z_previous).abs().argmin().expect("find_limit_point: unwrapping index_mag_z");
+    // March from the magnetic axis to the LFS and check if we intersect any contours
+    let n_r: usize = r.len();
+    let mut index_distance: Vec<usize> = Vec::new();
+    boundary_contours_all.retain(|stationary_point| {
+        for i_r in index_mag_r..n_r - 1 {
+            if psi_2d[(index_mag_z, i_r)] < stationary_point.bounding_psi {
+                index_distance.push(i_r);
+                return true;
             }
         }
-
-        // "retain" the contours which have not reached the edge
-        let not_reached_edge: bool = !has_reached_edge;
-        return not_reached_edge;
+        // No LFS boundary encountered
+        return false;
     });
-    // Exit if we haven't found any boundary contours
+    // Exit if we haven't found any `stationary_points` which have saddle curvature
     if boundary_contours_all.len() == 0 {
-        return Err("no boundary found 02".to_string());
+        return Err("find_viable_xpt: no stationary points with LFS boundary".to_string());
     }
 
     // Find the shortest distance from any boundary point to the limit_point
     // Find the minimum distance from any of the points which describe the boundary to the limit_pt
+    // Retain contours which get "close" to the limit point
     boundary_contours_all.retain(|boundary_contour| {
         let mut boundary_crosses_limit_point: bool = false;
 
@@ -174,13 +184,10 @@ pub fn find_viable_limit_point(
             }
         }
 
-        // "retain" the contours which get close to the limit point
-        // println!("boundary_crosses_limit_point={boundary_crosses_limit_point}");
         return boundary_crosses_limit_point;
     });
     // Exit if we haven't found any boundary contours
     if boundary_contours_all.len() == 0 {
-        // println!("find_viable_limit_point: no boundary found");
         return Err("no boundary found 03".to_string());
     }
 
@@ -194,50 +201,46 @@ pub fn find_viable_limit_point(
         }
     }
 
-    // If we don't find any contours which contain the magnetic axis we will fall
-    // back and use the largest `fraction_inside_vessel`
-    for boundary_contour in &mut boundary_contours_all {
-        let mut n_inside_vessel: usize = 0;
+    // // If we don't find any contours which contain the magnetic axis we will fall
+    // // back and use the largest `fraction_inside_vessel`
+    // for boundary_contour in &mut boundary_contours_all {
+    //     let mut n_inside_vessel: usize = 0;
 
-        let contour_polygon: Polygon = boundary_contour.boundary_polygon.clone();
+    //     let contour_polygon: Polygon = boundary_contour.boundary_polygon.clone();
 
-        for coord in contour_polygon.exterior().coords() {
-            let boundary_r: f64 = coord.x;
-            let boundary_z: f64 = coord.y;
-            let inside_vessel: bool = vessel_polygon.contains(&Point::new(boundary_r, boundary_z));
+    //     for coord in contour_polygon.exterior().coords() {
+    //         let boundary_r: f64 = coord.x;
+    //         let boundary_z: f64 = coord.y;
+    //         let inside_vessel: bool = vessel_polygon.contains(&Point::new(boundary_r, boundary_z));
 
-            if inside_vessel {
-                n_inside_vessel += 1;
-            }
-        }
-        let fraction_inside_vessel: f64 = n_inside_vessel as f64 / (boundary_contour.n_points as f64);
+    //         if inside_vessel {
+    //             n_inside_vessel += 1;
+    //         }
+    //     }
+    //     let fraction_inside_vessel: f64 = n_inside_vessel as f64 / (boundary_contour.n_points as f64);
 
-        // Store
-        boundary_contour.fraction_inside_vessel = fraction_inside_vessel;
-    }
-
-    // Only retain if fraction_inside_vessel is greater than 0.8
-    boundary_contours_all.retain(|boundary_contour| {
-        let fraction_inside_vessel_above_threshold: bool = boundary_contour.fraction_inside_vessel > 0.8;
-        return fraction_inside_vessel_above_threshold;
-    });
-    // Exit if we haven't found any boundary contours
-    if boundary_contours_all.len() == 0 {
-        // println!("find_viable_limit_point: no boundary found 02");
-        return Err("no boundary found 04".to_string());
-    }
-
-    // Sort by `fraction_inside_vessel`
-    boundary_contours_all.sort_by(|a, b| {
-        b.fraction_inside_vessel
-            .partial_cmp(&a.fraction_inside_vessel)
-            .expect("find_viable_limit_point: cannot find `boundary_contours_all`")
-    });
-
-    // for boundary_contour in &boundary_contours_all {
-    //     println!("fraction_inside_vessel={}", boundary_contour.fraction_inside_vessel);
+    //     // Store
+    //     boundary_contour.fraction_inside_vessel = fraction_inside_vessel;
     // }
 
+    // // Only retain if fraction_inside_vessel is greater than 0.8
+    // boundary_contours_all.retain(|boundary_contour| {
+    //     let fraction_inside_vessel_above_threshold: bool = boundary_contour.fraction_inside_vessel > 0.8;
+    //     return fraction_inside_vessel_above_threshold;
+    // });
+    // // Exit if we haven't found any boundary contours
+    // if boundary_contours_all.len() == 0 {
+    //     return Err("no boundary found 04".to_string());
+    // }
+
+    // // Sort by `fraction_inside_vessel`
+    // boundary_contours_all.sort_by(|a, b| {
+    //     b.fraction_inside_vessel
+    //         .partial_cmp(&a.fraction_inside_vessel)
+    //         .expect("find_viable_limit_point: cannot find `boundary_contours_all`")
+    // });
+
     // Return the first element, i.e. the largest `fraction_inside_vessel`
-    return Ok(boundary_contours_all[0].to_owned());
+    // return Ok(boundary_contours_all[0].to_owned());
+    return Err("no boundary found 05".to_string());
 }

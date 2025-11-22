@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from . import DatabaseReaderST40AstraMDSplus
 
 
-def setup_magnetic_axis_sensors(
+def setup_stationary_point_sensors(
     self: "DatabaseReaderST40AstraMDSplus",
     pulseNo: int,
     settings: dict[str, typing.Any],

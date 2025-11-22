@@ -1,7 +1,9 @@
+use super::Error;
 use crate::Plasma;
 use crate::greens::D2PsiDR2Calculator;
 use crate::plasma_geometry::BoundaryContour;
 use crate::plasma_geometry::MagneticAxis;
+use crate::plasma_geometry;
 use crate::plasma_geometry::StationaryPoint;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
@@ -67,10 +69,12 @@ pub struct GsSolution<'a> {
     pub r_mag: f64,
     pub z_mag: f64,
     pub xpt_diverted: bool,
+    pub stationary_points: Vec<StationaryPoint>,
     pub p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
     pub ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
     passive_regularisations: Array2<f64>,
     passive_regularisations_weight: Array1<f64>,
+    pub error_state: Option<Error>,
 }
 
 impl<'a> GsSolution<'a> {
@@ -146,10 +150,12 @@ impl<'a> GsSolution<'a> {
             r_mag: f64::NAN,
             z_mag: f64::NAN,
             xpt_diverted: false,
+            stationary_points: Vec::new(),
             p_prime_source_function,
             ff_prime_source_function,
             passive_regularisations,
             passive_regularisations_weight,
+            error_state: None,
         }
     }
 
@@ -372,14 +378,24 @@ impl<'a> GsSolution<'a> {
                 find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
             // At a minimum we should have found the magnetic axis
             if stationary_points_or_error.is_err() {
+                // Set time-slice to failed
                 self.set_to_failed_time_slice();
-                break 'iteration_loop; // exit the iteration loop for this time-slice
+
+                // Store error state
+                self.error_state = Some(Error::NoStationaryPointsFound);
+                println!("{:?}", self.error_state.as_ref().unwrap());
+
+                // Exit iteration loop for this time-slice
+                break 'iteration_loop;
             }
             let stationary_points: Vec<StationaryPoint> = stationary_points_or_error.expect("gs_solution: unwrapping stationary_points");
+            
+            // Store stationary points in the solution
+            self.stationary_points = stationary_points.clone();
 
             // Find boundary
             // TODO: should also return stationary points
-            let plasma_boundary_or_error: Result<BoundaryContour, String> = find_boundary(
+            let plasma_boundary_or_error: Result<BoundaryContour, plasma_geometry::Error> = find_boundary(
                 &r,
                 &z,
                 &psi_2d,
@@ -393,15 +409,29 @@ impl<'a> GsSolution<'a> {
             );
             // Test if we have found a plasma boundary
             if plasma_boundary_or_error.is_err() {
+                // Set time-slice to failed
                 self.set_to_failed_time_slice();
-                break 'iteration_loop; // exit the iteration loop for this time-slice
+
+                // Extract the reasons for no boundary found
+                let plasma_boundary_error: plasma_geometry::Error = plasma_boundary_or_error.err().unwrap();
+                let (no_xpt_reason, no_limit_point_reason) = match plasma_boundary_error {
+                    plasma_geometry::Error::NoBoundaryFound { no_xpt_reason, no_limit_point_reason } => (no_xpt_reason, no_limit_point_reason),
+                };
+                // Store error states in this module's own Error enum
+                self.error_state = Some(Error::NoBoundaryFound {
+                    no_xpt_reason,
+                    no_limit_point_reason,
+                });
+
+                println!("{:?}", self.error_state.as_ref().unwrap());
+
+                // Exit iteration loop for this time-slice
+                break 'iteration_loop;
             }
             // Unwrap and store the plasma boundary
             let plasma_boundary: BoundaryContour = plasma_boundary_or_error.expect("Failed to find plasma boundary");
             self.mask = plasma_boundary.mask.expect("Failed to unwrap mask");
             self.psi_b = plasma_boundary.bounding_psi;
-            // self.boundary_r = plasma_boundary.boundary_r;
-            // self.boundary_z = plasma_boundary.boundary_z;
             self.bounding_r = plasma_boundary.bounding_r;
             self.bounding_z = plasma_boundary.bounding_z;
             let mask: Array2<f64> = self.mask.to_owned();
@@ -412,8 +442,15 @@ impl<'a> GsSolution<'a> {
             let magnetic_axis_or_error: Result<MagneticAxis, String> = find_magnetic_axis(&stationary_points, self.r_mag, self.z_mag, &vessel_r, &vessel_z);
             // Test if we have found the magnetic axis
             if magnetic_axis_or_error.is_err() {
+                // Set time-slice to failed
                 self.set_to_failed_time_slice();
-                break 'iteration_loop; // exit the iteration loop for this time-slice
+
+                // Store error state
+                self.error_state = Some(Error::NoMagneticAxisFound);
+                println!("{:?}", self.error_state.as_ref().unwrap());
+
+                // Exit iteration loop for this time-slice
+                break 'iteration_loop;
             }
             // Unwrap and get results out of `magnetic_axis_or_error`
             let magnetic_axis: MagneticAxis = magnetic_axis_or_error.expect("gs_solution: unwrapping magnetic_axis");
@@ -436,15 +473,20 @@ impl<'a> GsSolution<'a> {
             let gs_error_calculated: f64 = self.gs_error_calculated;
             if gs_error_calculated < self.gs_error_tolerence && i_iter > self.n_iter_min {
                 self.n_iter = i_iter;
-                // println!("Found GS solution.");
                 break 'iteration_loop; // Exit the iteration loop
             }
 
             // Check if we have reached the maximum number of iterations
             if i_iter == self.n_iter_max - 1 {
-                // Ensure that failed time-slices are excluded
+                // Set time-slice to failed
                 self.set_to_failed_time_slice();
-                break 'iteration_loop; // Exit the iteration loop
+
+                // Store error state
+                self.error_state = Some(Error::MaxIterReached);
+                println!("{:?}", self.error_state.as_ref().unwrap());
+
+                // Exit iteration loop for this time-slice
+                break 'iteration_loop;
             }
 
             // Flatten variables
@@ -775,7 +817,6 @@ impl<'a> GsSolution<'a> {
                 }
 
                 // PF coil component
-                // TODO: I checked and `greens_rogowski_coils_pf["bvlb", "BVLBCASE"] = 16`
                 let tmp: Array1<f64> = greens_magnetic_axis_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
@@ -789,6 +830,67 @@ impl<'a> GsSolution<'a> {
                 // Setup indexer for next sensor or constraint
                 i_constraint += 1;
             }
+
+            // Pressure sensor:
+            // 1.) Find where the pressure sensors are located in `psi_n`
+            // 2.) Calculate the "sensor" measurement matrix:
+            //     `pressure[psi_n] = pressure_int_dof_01 * d(psi)/d(psi_n) + pressure_int_dof_02 * d(psi)/d(psi_n) + ... = measured_pressure`
+            //     where `pressure_int_dof_xx` = integral from LCFS to psi_n of basis function xx
+
+            // d(psi)/d(psi_n)
+            let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
+            // // Add pressure to fitting matrix
+            // for i_sensor in 0..n_pressure_constraints {
+            //     // p_prime degrees of freedom
+            //     for i_p_prime_dof in 0..n_p_prime_dof {
+            //         fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
+            //             * PI
+            //             * d_area
+            //             * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
+            //                 * &mask_flat
+            //                 * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
+            //                 * &flat_r)
+            //                 .sum();
+            //     }
+
+            //     // ff_prime degrees of freedom
+            //     for i_ff_prime_dof in 0..n_ff_prime_dof {
+            //         fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
+            //             * PI
+            //             * d_area
+            //             * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
+            //                 * &mask_flat
+            //                 * ff_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_ff_prime_dof)
+            //                 / (MU_0 * &flat_r))
+            //                 .sum();
+            //     }
+
+            //     // Add passive degrees of freedom
+            //     for i_passive_dof in 0..n_passive_dof {
+            //         fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_magnetic_axis_passives[(i_passive_dof, i_sensor)];
+            //     }
+
+            //     // Vertical stability (using previous iteration)
+            //     if i_iter > n_iter_no_vertical_feedback {
+            //         fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
+            //             d_area * (&greens_d_magnetic_axis_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
+            //     }
+
+            //     // PF coil component
+            //     // TODO: I checked and `greens_rogowski_coils_pf["bvlb", "BVLBCASE"] = 16`
+            //     let tmp: Array1<f64> = greens_magnetic_axis_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
+            //     constraint_values_from_coils[i_constraint] = tmp.sum();
+
+            //     // Store sensor values
+            //     s_measured[i_constraint] = 0.0; // Magnetic axis value is always zero
+
+            //     // Store weights
+            //     constraint_weights[i_constraint] =
+            //         magnetic_axis_static.fit_settings_weight[i_sensor] / magnetic_axis_static.fit_settings_expected_value[i_sensor];
+
+            //     // Setup indexer for next sensor or constraint
+            //     i_constraint += 1;
+            // }
 
             // Add p_prime_regularisation to fitting matrix
             let p_prime_regularisation: Array2<f64> = p_prime_source_function.source_function_regularisation(); // shape = [n_regularisation, n_dof]
