@@ -1,9 +1,9 @@
 use super::Error;
 use crate::Plasma;
 use crate::greens::D2PsiDR2Calculator;
+use crate::plasma_geometry;
 use crate::plasma_geometry::BoundaryContour;
 use crate::plasma_geometry::MagneticAxis;
-use crate::plasma_geometry;
 use crate::plasma_geometry::StationaryPoint;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
@@ -389,7 +389,7 @@ impl<'a> GsSolution<'a> {
                 break 'iteration_loop;
             }
             let stationary_points: Vec<StationaryPoint> = stationary_points_or_error.expect("gs_solution: unwrapping stationary_points");
-            
+
             // Store stationary points in the solution
             self.stationary_points = stationary_points.clone();
 
@@ -415,7 +415,10 @@ impl<'a> GsSolution<'a> {
                 // Extract the reasons for no boundary found
                 let plasma_boundary_error: plasma_geometry::Error = plasma_boundary_or_error.err().unwrap();
                 let (no_xpt_reason, no_limit_point_reason) = match plasma_boundary_error {
-                    plasma_geometry::Error::NoBoundaryFound { no_xpt_reason, no_limit_point_reason } => (no_xpt_reason, no_limit_point_reason),
+                    plasma_geometry::Error::NoBoundaryFound {
+                        no_xpt_reason,
+                        no_limit_point_reason,
+                    } => (no_xpt_reason, no_limit_point_reason),
                 };
                 // Store error states in this module's own Error enum
                 self.error_state = Some(Error::NoBoundaryFound {

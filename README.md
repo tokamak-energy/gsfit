@@ -1,7 +1,7 @@
 # GSFit: Grad-Shafranov Fit
 [![The 3-Clause BSD License](https://img.shields.io/pypi/l/prtg-pyprobe)](LICENSE) 
 [![Python 3.11|3.12|3.13](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue?logo=python&logoColor=white)](https://www.python.org/) 
-[![Rust](https://img.shields.io/badge/Rust-1.90-red?logo=rust&logoColor=white)](https://www.rust-lang.org/) 
+[![Rust](https://img.shields.io/badge/Rust-1.91-red?logo=rust&logoColor=white)](https://www.rust-lang.org/) 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) 
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
@@ -272,13 +272,19 @@ This is quite burdensome and **to keep GSFit simple to initialise, we have decid
 The work-around, if you want to have the PSU currents as a degree of freedom, is to combine all of the PF coils connected to a single power supply into a single coil.
 On ST40 we could create a PF coil called `BVL_combined` which contains both `BVLT` and `BVLB`.
 
-# 3. Planned future development
+# 3. Advanced building
+GSFit is intended to be a Python library, where the Rust code is called from Python (Python is not called from within Rust).
+The advantage of this is that the Rust binary does not need to link agains `libpython-dev` which is not always installed on all machines.
+
+However, for testing, where the Rust code is run as it's own executable, not from within Python, **we must link to Python!**
+
+# 4. Planned future development
 * Pressure constrained.
 * Spline `p_prime` and `ff_prime`
 * Interfacing to and from IMAS & OMAS.
 * More kinetic sensors, such as MSE, polarimeters, and interferometers.
 
-# 4. Citing GSFit
+# 5. Citing GSFit
 We intend on publishing a paper on GSFit.
 While GSFit is unpublished, please cite it as "P. F. Buxton, GSFit, https://github.com/tokamak-energy/gsfit, 2025"
 

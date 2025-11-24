@@ -79,11 +79,15 @@ warn_unreachable = true
 warn_unused_configs = true
 no_implicit_reexport = true
 
+# We use `ruff` not `black`. Here we "try" to prevent `black` from running.
+# There is no "robust" way of disabling `black`
 [tool.black]
-line-length = 160
+exclude = '.*'
 
+# We use `ruff` not `isort`. Here we "try" to prevent `isort` from running.
+# There is no "robust" way of disabling `isort`
 [tool.isort]
-multi_line_output = 3
+skip_glob = ["*"]
 
 [tool.ruff]
 line-length = 160

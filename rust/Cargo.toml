@@ -8,7 +8,7 @@ resolver = "3"  # Use Rust 2024 edition resolver
 [workspace.package]
 edition = "2024"
 
-# Workspace-wide profile settings
+# Workspace-wide profile settings (note, this overwrites the "member packages")
 [profile.release]
 debug = false
 overflow-checks = true

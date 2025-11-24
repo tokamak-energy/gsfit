@@ -1,4 +1,6 @@
 use super::BoundaryContour;
+use super::bicubic_interpolator::BicubicInterpolator;
+use super::flood_fill_mask::flood_fill_mask;
 use approx::abs_diff_eq;
 use contour::ContourBuilder;
 use core::f64;
@@ -7,9 +9,24 @@ use geo::{Coord, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
+use super::StationaryPoint;
 
-// problem: the plasma should be x-point diverted. But, 
-
+/// Find a viable limit point which can be used to define the plasma boundary
+///
+///  # Arguments
+/// * `r` - R grid points, metre
+/// * `z` - Z grid points, metre
+/// * `psi_2d` - poloidal flux, shape = (n_z, n_r), weber
+/// * `limit_pts_r` - R coordinates of limiter points, metre
+/// * `limit_pts_z` - Z coordinates of limiter points, metre
+/// * `mag_r_previous` - R coordinate of magnetic axis from previous iteration, metre
+/// * `mag_z_previous` - Z coordinate of magnetic axis from previous iteration, metre
+/// * `vessel_r` - R coordinates of vessel points, metre
+/// * `vessel_z` - Z coordinates of vessel points, metre
+///
+/// # Returns
+/// * `BoundaryContour` - A `BoundaryContour` object representing the plasma boundary
+///
 pub fn find_viable_limit_point(
     r: &Array1<f64>,
     z: &Array1<f64>,
@@ -20,7 +37,10 @@ pub fn find_viable_limit_point(
     mag_z_previous: f64,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
+    stationary_points: &Vec<StationaryPoint>,
 ) -> Result<BoundaryContour, String> {
+    // TODO: add logic for negative plasma current
+
     // Magnetic axis point
     let magnetic_axis_point: Point = Point::new(mag_r_previous, mag_z_previous);
 
@@ -39,6 +59,8 @@ pub fn find_viable_limit_point(
     );
 
     // Create an interpolator for psi
+    // TODO: replace with `BicubicInterpolator` to be consistent
+    // let psi_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &psi_2d, &d_psi_d_r, &d_psi_d_z, &d2_psi_d_r_d_z);
     let psi_interpolator = Interp2D::builder(psi_2d.clone())
         .x(z.clone())
         .y(r.clone())
@@ -80,21 +102,6 @@ pub fn find_viable_limit_point(
 
     // Flatten psi_2d
     let psi_2d_flattened: Vec<f64> = psi_2d.iter().cloned().collect();
-
-
-    // let boundary = marching_squares(
-    //     r,
-    //     z,
-    //     psi_2d,
-    //     br_2d,
-    //     bz_2d,
-    //     psi_b,
-    //     mask_2d,
-    //     xpt_r_or_none,
-    //     xpt_z_or_none,
-    //     mag_r,
-    //     mag_z,
-    // );
 
     // Loop over all limit points and contours associated with each limit point.
     // Essentially I am flattening the double for loop
@@ -164,7 +171,7 @@ pub fn find_viable_limit_point(
         return Err("find_viable_xpt: no stationary points with LFS boundary".to_string());
     }
 
-    // Find the shortest distance from any boundary point to the limit_point
+    // Find the shortest distance from any boundary point to the `limit_point`
     // Find the minimum distance from any of the points which describe the boundary to the limit_pt
     // Retain contours which get "close" to the limit point
     boundary_contours_all.retain(|boundary_contour| {
@@ -191,6 +198,15 @@ pub fn find_viable_limit_point(
         return Err("no boundary found 03".to_string());
     }
 
+    // TODO: Check distance from limit_point to plasma boundary ==> need accurate boundary calculation, not escaping saddle point
+    // BUT: I think `marching_squares` is quite slow, so I don't want to call it during GS Picard iteration.
+    // TODO: create a reduced version of `marching_squares` which is only applied near the limit_point
+
+    // As a stop-gap measure I can use the distance from the limit_point to `mask_2d`
+    // If I decide to improve, I will still need `mask_2d`
+
+    // mask_2d = flood_fill_mask(&r, &z, &psi_2d, f64::INFINITY, &Vec::new(), mag_r_previous, mag_z_previous, &vessel_r, &vessel_z);
+
     // Check if the magnetic axis (point) is inside the boundary (polygon)
     // The contours are already sorted by `psi_b`
     for boundary_contour in &boundary_contours_all {
@@ -200,45 +216,6 @@ pub fn find_viable_limit_point(
             return Ok(boundary_contour.to_owned());
         }
     }
-
-    // // If we don't find any contours which contain the magnetic axis we will fall
-    // // back and use the largest `fraction_inside_vessel`
-    // for boundary_contour in &mut boundary_contours_all {
-    //     let mut n_inside_vessel: usize = 0;
-
-    //     let contour_polygon: Polygon = boundary_contour.boundary_polygon.clone();
-
-    //     for coord in contour_polygon.exterior().coords() {
-    //         let boundary_r: f64 = coord.x;
-    //         let boundary_z: f64 = coord.y;
-    //         let inside_vessel: bool = vessel_polygon.contains(&Point::new(boundary_r, boundary_z));
-
-    //         if inside_vessel {
-    //             n_inside_vessel += 1;
-    //         }
-    //     }
-    //     let fraction_inside_vessel: f64 = n_inside_vessel as f64 / (boundary_contour.n_points as f64);
-
-    //     // Store
-    //     boundary_contour.fraction_inside_vessel = fraction_inside_vessel;
-    // }
-
-    // // Only retain if fraction_inside_vessel is greater than 0.8
-    // boundary_contours_all.retain(|boundary_contour| {
-    //     let fraction_inside_vessel_above_threshold: bool = boundary_contour.fraction_inside_vessel > 0.8;
-    //     return fraction_inside_vessel_above_threshold;
-    // });
-    // // Exit if we haven't found any boundary contours
-    // if boundary_contours_all.len() == 0 {
-    //     return Err("no boundary found 04".to_string());
-    // }
-
-    // // Sort by `fraction_inside_vessel`
-    // boundary_contours_all.sort_by(|a, b| {
-    //     b.fraction_inside_vessel
-    //         .partial_cmp(&a.fraction_inside_vessel)
-    //         .expect("find_viable_limit_point: cannot find `boundary_contours_all`")
-    // });
 
     // Return the first element, i.e. the largest `fraction_inside_vessel`
     // return Ok(boundary_contours_all[0].to_owned());

@@ -72,6 +72,7 @@ pub fn find_boundary(
         mag_z_previous,
         &vessel_r,
         &vessel_z,
+        &stationary_points,
     );
     // println!("find_boundary: limit_boundary_or_error = {:?}", limit_boundary_or_error);
 
@@ -168,20 +169,7 @@ pub fn find_boundary(
     );
 
     // Calculate the mask
-    let mask: Array2<f64> = flood_fill_mask(
-        &r,
-        &z,
-        &psi_2d,
-        psi_b,
-        xpt_r,
-        xpt_z,
-        &stationary_points,
-        xpt_diverted,
-        mag_r_previous,
-        mag_z_previous,
-        &vessel_r,
-        &vessel_z,
-    );
+    let mask: Array2<f64> = flood_fill_mask(&r, &z, &psi_2d, psi_b, &stationary_points, mag_r_previous, mag_z_previous, &vessel_r, &vessel_z);
 
     let boundary_contour: BoundaryContour = BoundaryContour {
         boundary_polygon,

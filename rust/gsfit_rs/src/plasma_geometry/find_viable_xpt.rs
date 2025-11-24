@@ -50,6 +50,8 @@ pub fn find_viable_xpt(
     mag_r_previous: f64,
     mag_z_previous: f64,
 ) -> Result<BoundaryContour, String> {
+    // TODO: add logic for negative plasma current
+
     // Create a mutable copy of `stationary_points`, because we want to filter it
     let mut stationary_points: Vec<StationaryPoint> = stationary_points.clone();
     // Exit if we haven't found any stationary points
