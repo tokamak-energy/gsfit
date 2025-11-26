@@ -9,7 +9,7 @@ from gsfit_rs import Dialoop
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
-from gsfit_rs import MagneticAxis
+from gsfit_rs import StationaryPoint
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
 from gsfit_rs import RogowskiCoils
@@ -19,7 +19,7 @@ class DatabaseReaderProtocol(Protocol):
     """
     Protocol for reading experimental data.
     Each method is responsible for initialising one of the Rust objects:
-    `bp_probes`, `coils`, `dialoop`, `flux_loops`, `isoflux`, `isoflux_boundary`, `magnetic_axis`, `passives`, `plasma`, and `rogowski_coils`.
+    `bp_probes`, `coils`, `dialoop`, `flux_loops`, `isoflux`, `isoflux_boundary`, `stationary_point`, `passives`, `plasma`, and `rogowski_coils`.
 
     The Protocol defines the inputs and outputs of each method.
     New database readers should be implemented **all** methods.
@@ -275,9 +275,9 @@ class DatabaseReaderProtocol(Protocol):
         """
         ...
 
-    def setup_magnetic_axis_sensors(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> MagneticAxis:
+    def setup_stationary_point_sensors(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> StationaryPoint:
         """
-        This method initialises the Rust `MagneticAxis` class (the magnetic axis position sensors).
+        This method initialises the Rust `StationaryPoint` class (the magnetic axis, and x-point positions).
 
         :param pulseNo: Pulse number, used to read from the database
         :param settings: Dictionary containing the JSON settings read from the `settings` directory
@@ -289,16 +289,16 @@ class DatabaseReaderProtocol(Protocol):
 
         Different machines will use different data stores for the measured signals.
         This Protocol allows different database readers to be selected.
-        The output of this method must always be a `MagneticAxis` object.
+        The output of this method must always be a `StationaryPoint` object.
 
         At a minimum this method should look like this:
         ```python
-        # Initialise the MagneticAxis Rust class
-        magnetic_axis = MagneticAxis()
+        # Initialise the StationaryPoint Rust class
+        stationary_point = StationaryPoint()
 
         # Add all of the magnetic axis sensors
         for i_magnetic_axis in range(n_magnetic_axis_sensors):
-            magnetic_axis.add_sensor(
+            stationary_point.add_sensor(
                 name=...,                         # read from a database
                 fit_settings_comment=...,         # read from `sensor_weights_magnetic_axis.json` file
                 fit_settings_expected_value=...,  # read from `sensor_weights_magnetic_axis.json` file
@@ -310,7 +310,7 @@ class DatabaseReaderProtocol(Protocol):
                 times_to_reconstruct=...,         # read from `GSFIT_code_settings.json` file
             )
 
-        return magnetic_axis
+        return stationary_point
         ```
         """
         ...

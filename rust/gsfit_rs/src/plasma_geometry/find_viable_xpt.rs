@@ -1,10 +1,8 @@
 use super::BoundaryContour;
 use super::StationaryPoint;
-use contour::ContourBuilder;
 use core::f64;
 use geo::Contains;
-use geo::line_intersection::{LineIntersection, line_intersection};
-use geo::{Coord, Line, LineString, MultiPolygon, Point, Polygon};
+use geo::{Coord, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
 
@@ -37,7 +35,6 @@ use ndarray_stats::QuantileExt;
 /// 5. Draw a vector from (mag_r, mag_z) to (r.max(), mag_z)
 /// 6. Find intersection with boundary ==> we now know the x-point flux and x-point location (if there are multiple intersections, use the one )
 /// 7. Collect all contours for x-point flux
-/// 8. Pass to `BoundaryContour.refine_xpt_diverted_boundary`
 ///
 /// # Example
 /// ```ignore
@@ -53,6 +50,8 @@ pub fn find_viable_xpt(
     mag_r_previous: f64,
     mag_z_previous: f64,
 ) -> Result<BoundaryContour, String> {
+    // TODO: add logic for negative plasma current
+
     // Create a mutable copy of `stationary_points`, because we want to filter it
     let mut stationary_points: Vec<StationaryPoint> = stationary_points.clone();
     // Exit if we haven't found any stationary points
@@ -60,22 +59,6 @@ pub fn find_viable_xpt(
     if stationary_points.len() == 0 {
         return Err("find_viable_xpt: no stationary points found".to_string());
     }
-
-    // Grid variables
-    let n_r: usize = r.len();
-    let n_z: usize = z.len();
-    let d_r: f64 = &r[1] - &r[0];
-    let d_z: f64 = &z[1] - &z[0];
-    let r_origin: f64 = r[0];
-    let z_origin: f64 = z[0];
-    let near_distance: f64 = (d_r.powi(2) + d_z.powi(2)).sqrt() * 2.0;
-
-    // Construct an empty `contour_grid` object
-    let contour_grid: ContourBuilder = ContourBuilder::new(n_r, n_z, true)
-        .x_step(d_r)
-        .y_step(d_z)
-        .x_origin(r_origin - d_r / 2.0)
-        .y_origin(z_origin - d_z / 2.0);
 
     // Vessel polygon
     let n_vessel_pts: usize = vessel_r.len();
@@ -107,9 +90,7 @@ pub fn find_viable_xpt(
 
     // Filter to retain only `stationary_points` which are saddle points
     stationary_points.retain(|stationary_point| {
-        let hessian_det: f64 = stationary_point.hessian_determinant;
-        let saddle_point_test: bool = hessian_det < 0.0;
-
+        let saddle_point_test: bool = stationary_point.hessian_determinant < 0.0;
         return saddle_point_test;
     });
     // Exit if we haven't found any `stationary_points` which have saddle curvature
@@ -117,129 +98,49 @@ pub fn find_viable_xpt(
         return Err("find_viable_xpt: no stationary points with saddle curvature".to_string());
     }
 
-    // Flatten psi for contouring
-    let psi_2d_flattened: Vec<f64> = psi_2d.flatten().to_vec();
-
-    // Create a vector from the magnetic axis to the right edge of the grid
-    let mag_axis_point: Point = Point::new(mag_r_previous, mag_z_previous);
-    let right_edge_point: Point = Point::new(r.max().expect("find_viable_xpt: r.max()").to_owned(), mag_z_previous);
-    let mag_axis_to_right_edge: Line<f64> = Line::new(mag_axis_point, right_edge_point);
-
-    // See which contours are on the LFS
-    let mut potential_boundary_contours: Vec<geo_types::MultiPolygon> = Vec::new();
-    let mut intersection_radius: Vec<f64> = Vec::new();
-    let mut potential_psi_b: Vec<f64> = Vec::new();
-    let mut potential_xpt_r: Vec<f64> = Vec::new();
-    let mut potential_xpt_z: Vec<f64> = Vec::new();
-    // let mut potential_boundary: Vec<BoundaryContour> = Vec::new();
-    for stationary_point in stationary_points {
-        let possible_xpts_psi: f64 = stationary_point.psi;
-        let possible_xpts_r: f64 = stationary_point.r;
-        let possible_xpts_z: f64 = stationary_point.z;
-
-        let boundary_contours_local: Vec<contour::Contour> = contour_grid
-            .contours(&psi_2d_flattened, &[possible_xpts_psi])
-            .expect("find_viable_xpt: cannot find `boundary_contours_tmp`");
-        let boundary_contours: &geo_types::MultiPolygon = boundary_contours_local[0].geometry(); // The [0] is because I have only supplied one threshold
-
-        // Check if the contour is close to the saddle point
-        let n_contours: usize = boundary_contours.iter().count();
-        for i_contour in 0..n_contours {
-            let boundary_contour: &Polygon = boundary_contours
-                .iter()
-                .nth(i_contour)
-                .expect("find_viable_xpt: cannot find `boundary_contour`");
-
-            // Find the minimum distance from the contour to the potential x-point
-            let boundary_r: Array1<f64> = boundary_contour.exterior().coords().map(|coord| coord.x).collect::<Array1<f64>>();
-            let boundary_z: Array1<f64> = boundary_contour.exterior().coords().map(|coord| coord.y).collect::<Array1<f64>>();
-            let distances: Array1<f64> = ((boundary_r - possible_xpts_r).powi(2) + (boundary_z - possible_xpts_z).powi(2)).sqrt();
-            let min_distance: f64 = distances.min().expect("find_viable_xpt: cannot find min distance").to_owned();
-
-            // Check if the contour is "close" to the potential x-point
-            if &min_distance < &near_distance {
-                // Check if the boundary contour intersects the line from the magnetic axis to the right edge
-                let boundary_contour_line: LineString<f64> = boundary_contour.exterior().to_owned();
-
-                // Check intersection between each segment of the `boundary_contour_line` and the `mag_axis_to_right_edge` line
-                for segment in boundary_contour_line.lines() {
-                    let intersection = line_intersection(segment, mag_axis_to_right_edge);
-                    if intersection.is_some() {
-                        let intersection2: LineIntersection<f64> = intersection.expect("find_viable_xpt: error, intersection");
-                        let intersection_point: Coord = match intersection2 {
-                            LineIntersection::SinglePoint { intersection, .. } => intersection,
-                            _ => panic!("find_viable_xpt: expected SinglePoint intersection"),
-                        };
-                        // let boundary_contour = BoundaryContour{
-                        //     boundary_polygon: boundary_contour.clone(),
-                        // };
-                        // potential_boundary.push()
-                        intersection_radius.push(intersection_point.x);
-                        potential_boundary_contours.push(boundary_contours.clone());
-                        potential_psi_b.push(possible_xpts_psi);
-                        potential_xpt_r.push(possible_xpts_r);
-                        potential_xpt_z.push(possible_xpts_z);
-                    }
-                }
+    // Create a contour using `stationary_point.psi`; and check if it exists on the LFS
+    // Find the closest grid point to the magnetic axis
+    let index_mag_r: usize = (r - mag_r_previous).abs().argmin().expect("find_viable_xpt: unwrapping index_mag_r");
+    let index_mag_z: usize = (z - mag_z_previous).abs().argmin().expect("find_viable_xpt: unwrapping index_mag_z");
+    // March from the magnetic axis to the LFS and check if we intersect any contours
+    let n_r: usize = r.len();
+    let mut index_distance: Vec<usize> = Vec::new();
+    stationary_points.retain(|stationary_point| {
+        for i_r in index_mag_r..n_r - 1 {
+            if psi_2d[(index_mag_z, i_r)] < stationary_point.psi {
+                index_distance.push(i_r);
+                return true;
             }
         }
+        // No LFS boundary encountered
+        return false;
+    });
+    // Exit if we haven't found any `stationary_points` which have saddle curvature
+    if stationary_points.len() == 0 {
+        return Err("find_viable_xpt: no stationary points with LFS boundary".to_string());
     }
 
-    let n_intersections: usize = intersection_radius.len();
-    if n_intersections == 0 {
-        return Err("find_viable_xpt: contours passing the LFS found".to_string());
-    }
-
-    // Find the index of the minimum value in intersection_radius
-    let mut index_min: usize = usize::MAX; // initialize to an invalid index, will panic if used
-    let mut min_radius: f64 = f64::INFINITY;
-    for (i_intersection, &radius) in intersection_radius.iter().enumerate() {
-        if radius < min_radius {
-            min_radius = radius;
-            index_min = i_intersection;
+    // Find the minimum value in index_distance to identify the closest LFS boundary
+    let mut index_min: usize = 0;
+    let mut min_distance_idx: usize = usize::MAX;
+    for (i, &dist_idx) in index_distance.iter().enumerate() {
+        if dist_idx < min_distance_idx {
+            min_distance_idx = dist_idx;
+            index_min = i;
         }
     }
 
-    let boundary_contour: MultiPolygon = potential_boundary_contours[index_min].clone();
-    // We are going to add all of the contours at the psi_b value to bounary_r and boundary_z.
-    // Then refine_xpt_diverted_boundary will figure out what the boundary is.
-    let mut boundary_r: Vec<f64> = Vec::new();
-    let mut boundary_z: Vec<f64> = Vec::new();
-    for contour in &boundary_contour {
-        // Add all exterior contour to the boundary
-        let tmp_r: Vec<f64> = contour.exterior().coords().map(|coord| coord.x).collect::<Vec<f64>>();
-        let tmp_z: Vec<f64> = contour.exterior().coords().map(|coord| coord.y).collect::<Vec<f64>>();
-        for i_point in 0..tmp_r.len() {
-            boundary_r.push(tmp_r[i_point]);
-            boundary_z.push(tmp_z[i_point]);
-        }
-        // Add all interiors to the boundary
-        for interior in contour.interiors() {
-            let tmp_r: Vec<f64> = interior.coords().map(|coord| coord.x).collect::<Vec<f64>>();
-            let tmp_z: Vec<f64> = interior.coords().map(|coord| coord.y).collect::<Vec<f64>>();
-            for i_point in 0..tmp_r.len() {
-                boundary_r.push(tmp_r[i_point]);
-                boundary_z.push(tmp_z[i_point]);
-            }
-        }
-    }
-
-    let n_points: usize = boundary_r.len();
+    let n_points: usize = 0;
     let final_contour: BoundaryContour = BoundaryContour {
-        boundary_polygon: Polygon::new(LineString::new(vec![]), vec![]), // TODO: this is not correct. But I want to remove this variable from BoundaryContour
-        boundary_r: Array1::from_vec(boundary_r),
-        boundary_z: Array1::from_vec(boundary_z),
+        boundary_r: Array1::zeros(0),
+        boundary_z: Array1::zeros(0),
         n_points,
-        bounding_psi: potential_psi_b[index_min],
-        bounding_r: potential_xpt_r[index_min],
-        bounding_z: potential_xpt_z[index_min],
+        bounding_psi: stationary_points[index_min].psi,
+        bounding_r: stationary_points[index_min].r,
+        bounding_z: stationary_points[index_min].z,
         fraction_inside_vessel: f64::NAN,
         xpt_diverted: true,
-        plasma_volume: None, // volume calculated using method
-        mask: None,          // mask calculated using method
-        secondary_xpt_r: f64::NAN,
-        secondary_xpt_z: f64::NAN,
-        secondary_xpt_distance: f64::MAX,
+        mask: None, // mask calculated later
     };
 
     return Ok(final_contour);
@@ -364,7 +265,6 @@ pub fn find_viable_xpt(
 //         .expect("find_viable_xpt: error, we should have found a viable x-point");
 //     // Calculate the plasma volume
 //     xpt_boundary.calculate_plasma_volume();
-//     // println!("test_find_viable_xpt: xpt_boundary.plasma_volume = {:?}", xpt_boundary.plasma_volume);
 
 //     // // Calculate a LSN
 //     // let vertical_offset: f64 = 1.0 - 1e-2; // small offset
@@ -399,7 +299,6 @@ pub fn find_viable_xpt(
 //     .expect("find_viable_xpt: error, we should have found a viable x-point");
 //     xpt_boundary.refine_xpt_diverted_boundary(&r, &z, &psi_2d, mag_r, mag_z, &br_2d, &bz_2d);
 //     xpt_boundary.calculate_plasma_volume();
-//     // println!("test_find_viable_xpt: xpt_boundary.plasma_volume = {:?}", xpt_boundary.plasma_volume);
 
 //     // Imports
 //     use std::fs::File;

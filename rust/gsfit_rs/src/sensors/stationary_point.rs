@@ -15,13 +15,13 @@ use pyo3::types::PyList;
 
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass]
-pub struct MagneticAxis {
+pub struct StationaryPoint {
     pub results: DataTree,
 }
 
 /// Python accessible methods
 #[pymethods]
-impl MagneticAxis {
+impl StationaryPoint {
     #[new]
     pub fn new() -> Self {
         Self { results: DataTree::new() }
@@ -85,10 +85,10 @@ impl MagneticAxis {
         let interpolator = Interp1D::builder(mag_axis_r_ndarray)
             .x(time_ndarray.clone())
             .build()
-            .expect("MagneticAxis.add_sensor: Can't make Interp1D for mag_axis_r");
+            .expect("StationaryPoint.add_sensor: Can't make Interp1D for mag_axis_r");
         let geometry_r_measured: Array1<f64> = interpolator
             .interp_array(&times_to_reconstruct_ndarray)
-            .expect("MagneticAxis.add_sensor: Can't do interpolation for geometry_r");
+            .expect("StationaryPoint.add_sensor: Can't do interpolation for geometry_r");
         self.results
             .get_or_insert(name)
             .get_or_insert("geometry")
@@ -98,10 +98,10 @@ impl MagneticAxis {
         let interpolator = Interp1D::builder(mag_axis_z_ndarray)
             .x(time_ndarray.clone())
             .build()
-            .expect("MagneticAxis.add_sensor: Can't make Interp1D for mag_axis_z");
+            .expect("StationaryPoint.add_sensor: Can't make Interp1D for mag_axis_z");
         let geometry_z_measured: Array1<f64> = interpolator
             .interp_array(&times_to_reconstruct_ndarray)
-            .expect("MagneticAxis.add_sensor: Can't do interpolation for mag_axis_z");
+            .expect("StationaryPoint.add_sensor: Can't do interpolation for mag_axis_z");
         self.results
             .get_or_insert(name)
             .get_or_insert("geometry")
@@ -165,7 +165,7 @@ impl MagneticAxis {
         let version: &str = env!("CARGO_PKG_VERSION");
 
         let mut string_output = String::from("╔═════════════════════════════════════════════════════════════════════════════╗\n");
-        string_output += &format!("║  {:<74} ║\n", "<gsfit_rs.MagneticAxis>");
+        string_output += &format!("║  {:<74} ║\n", "<gsfit_rs.StationaryPoint>");
         string_output += &format!("║  {:<74} ║\n", version);
 
         let n_sensors: usize = self.results.keys().len();
@@ -178,8 +178,8 @@ impl MagneticAxis {
 }
 
 // Rust only methods
-impl MagneticAxis {
-    /// This splits the MagneticAxis into:
+impl StationaryPoint {
+    /// This splits the StationaryPoint into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
     /// For Isoflux sensors the static data is actually time-dependent.
@@ -193,6 +193,8 @@ impl MagneticAxis {
             greens_d_sensor_dz: Array2::zeros((0, 0)),
             fit_settings_weight: Array1::zeros(0),
             fit_settings_expected_value: Array1::zeros(0),
+            geometry_r: Array1::zeros(0), // not used for StationaryPoint
+            geometry_z: Array1::zeros(0), // not used for StationaryPoint
         };
         let results_dynamic_empty: SensorsDynamic = SensorsDynamic { measured: Array1::zeros(0) };
 
@@ -303,6 +305,8 @@ impl MagneticAxis {
                 greens_d_sensor_dz: greens_d_sensor_dz.slice(s![i_time, .., ..]).to_owned(),
                 fit_settings_weight: fit_settings_weight.clone(),
                 fit_settings_expected_value: fit_settings_expected_value.clone(),
+                geometry_r: Array1::zeros(n_sensors), // not used for StationaryPoint
+                geometry_z: Array1::zeros(n_sensors), // not used for StationaryPoint
             };
             results_static.push(results_static_this_time_slice);
 
@@ -318,7 +322,7 @@ impl MagneticAxis {
     }
 
     pub fn greens_with_coils_rs(&mut self, coils: Coils) {
-        // There should be only be one `sensor_name` in MagneticAxis
+        // There should be only be one `sensor_name` in StationaryPoint
         for sensor_name in self.results.keys() {
             // Get time
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("time").unwrap_array1();
@@ -363,7 +367,7 @@ impl MagneticAxis {
         let n_r: usize = plasma.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = plasma.results.get("grid").get("n_z").unwrap_usize();
 
-        // There should be only be one `sensor_name` in MagneticAxis
+        // There should be only be one `sensor_name` in StationaryPoint
         for sensor_name in self.results.keys() {
             // Get time
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("time").unwrap_array1();
@@ -372,8 +376,6 @@ impl MagneticAxis {
             // Time-dependent magnetic axis
             let mag_axis_r: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("r").get("measured").unwrap_array1();
             let mag_axis_z: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("z").get("measured").unwrap_array1();
-
-            self.results.print_keys();
 
             let mut g_with_plasma: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
             let mut g_d_plasma_d_z: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);

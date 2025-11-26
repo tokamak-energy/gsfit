@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-
 use super::cubic_interpolation::cubic_interpolation;
 use approx::abs_diff_eq;
 use ndarray::{Array1, Array2};
+use ndarray_stats::QuantileExt;
+use std::collections::HashMap;
 
 const PI: f64 = std::f64::consts::PI;
 
@@ -77,9 +77,19 @@ pub fn marching_squares(
                     cubic_interpolation(bottom_z, bottom_psi, bottom_d_psi_d_z, top_z, top_psi, top_d_psi_d_z, psi_b);
                 if cubic_interpolation_or_error.is_ok() {
                     let cubic_interpolation_z: Array1<f64> = cubic_interpolation_or_error.unwrap();
-                    if cubic_interpolation_z.len() != 1 {
-                        println!("Warning: Found {} crossing points, in bottom to top march", cubic_interpolation_z.len());
-                    }
+                    
+                    // TODO: after some testing, it would appear that the difference between cubic_interpolation_z[0] and cubic_interpolation_z[1]
+                    // doesn't affect anything?
+
+                    // let z_cross: f64;
+                    // if cubic_interpolation_z.len() != 1 {
+                    //     println!("Warning: Found {} crossing points, in bottom to top march", cubic_interpolation_z.len());
+                    //     println!("cubic_interpolation_z={:?}", cubic_interpolation_z);
+                    //     z_cross = cubic_interpolation_z[1];
+                    // }
+                    // else {
+                    //     z_cross = cubic_interpolation_z[0];
+                    // }
                     let r_cross: f64 = r[i_r];
                     let z_cross: f64 = cubic_interpolation_z[0];
                     // note, this key and value structure assumes there is only one crossing per cell edge
@@ -87,6 +97,15 @@ pub fn marching_squares(
                 }
             }
         }
+    }
+
+    // If empty
+    if unsorted_boundary_points.is_empty() {
+        return BoundaryContourNew {
+            r: Array1::zeros(0),
+            z: Array1::zeros(0),
+            n: 0,
+        };
     }
 
     // If x-point is not provided, we are limited
@@ -126,24 +145,26 @@ pub fn marching_squares(
     let xpt_z: f64 = xpt_z_or_none.unwrap();
 
     // Find the closest grid point
-    let mut i_r_nearest_xpt: usize = 0;
-    let mut min_r_dist: f64 = f64::INFINITY;
-    for (i, &r_val) in r.iter().enumerate() {
-        let dist: f64 = (xpt_r - r_val).abs();
-        if dist < min_r_dist {
-            min_r_dist = dist;
-            i_r_nearest_xpt = i;
-        }
-    }
-    let mut i_z_nearest_xpt: usize = 0;
-    let mut min_z_dist: f64 = f64::INFINITY;
-    for (i, &z_val) in z.iter().enumerate() {
-        let dist: f64 = (xpt_z - z_val).abs();
-        if dist < min_z_dist {
-            min_z_dist = dist;
-            i_z_nearest_xpt = i;
-        }
-    }
+    let i_r_nearest_xpt: usize = (r - xpt_r).abs().argmin().unwrap();
+    let i_z_nearest_xpt: usize = (z - xpt_z).abs().argmin().unwrap();
+    // let mut i_r_nearest_xpt: usize = 0;
+    // let mut min_r_dist: f64 = f64::INFINITY;
+    // for (i, &r_val) in r.iter().enumerate() {
+    //     let dist: f64 = (xpt_r - r_val).abs();
+    //     if dist < min_r_dist {
+    //         min_r_dist = dist;
+    //         i_r_nearest_xpt = i;
+    //     }
+    // }
+    // let mut i_z_nearest_xpt: usize = 0;
+    // let mut min_z_dist: f64 = f64::INFINITY;
+    // for (i, &z_val) in z.iter().enumerate() {
+    //     let dist: f64 = (xpt_z - z_val).abs();
+    //     if dist < min_z_dist {
+    //         min_z_dist = dist;
+    //         i_z_nearest_xpt = i;
+    //     }
+    // }
 
     // Find the four corner grid points surrounding the x-point
     let i_r_nearest_xpt_left: usize;

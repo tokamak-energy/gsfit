@@ -9,9 +9,21 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=lapack");
     }
 
+    // // For tests, link against Python 3.13
+    // let profile: String = env::var("PROFILE").unwrap_or_default();
+    // if profile == "test" || profile == "debug" {
+    //     // NOTE: I also need to do:
+    //     // ```terminal
+    //     // export LD_LIBRARY_PATH="/home/peter.buxton/.local/share/uv/python/cpython-3.13.2-linux-x86_64-gnu/lib"
+    //     // ```
+    //     let lib_dir: &str = "/home/peter.buxton/.local/share/uv/python/cpython-3.13.2-linux-x86_64-gnu/lib";
+    //     println!("cargo:rustc-link-search=native={}", lib_dir);
+    //     println!("cargo:rustc-link-lib=dylib=python3.13");
+    // }
+
     // When building for tests (debug profile), add Python library path for linking
     // This allows tests to link against libpython without extension-module feature
-    let profile = env::var("PROFILE").unwrap_or_default();
+    let profile: String = env::var("PROFILE").unwrap_or_default();
     if profile == "test" || profile == "debug" {
         // Try Python from PYO3_PYTHON env var first, then VIRTUAL_ENV, then python3
         let python_cmd = if let Ok(pyo3_python) = env::var("PYO3_PYTHON") {

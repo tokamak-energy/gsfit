@@ -404,6 +404,8 @@ impl IsofluxBoundary {
             greens_d_sensor_dz: Array2::zeros((0, 0)),
             fit_settings_weight: Array1::zeros(0),
             fit_settings_expected_value: Array1::zeros(0),
+            geometry_r: Array1::zeros(0), // not used for IsofluxBoundary
+            geometry_z: Array1::zeros(0), // not used for IsofluxBoundary
         };
         let results_dynamic_empty: SensorsDynamic = SensorsDynamic { measured: Array1::zeros(0) };
 
@@ -515,6 +517,8 @@ impl IsofluxBoundary {
                 greens_d_sensor_dz: greens_d_sensor_dz.slice(s![i_time, .., ..]).to_owned(),
                 fit_settings_weight: fit_settings_weight.clone(),
                 fit_settings_expected_value: fit_settings_expected_value.clone(),
+                geometry_r: Array1::zeros(n_sensors), // not used for IsofluxBoundary
+                geometry_z: Array1::zeros(n_sensors), // not used for IsofluxBoundary
             };
             results_static.push(results_static_this_time_slice);
 

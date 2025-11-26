@@ -18,6 +18,12 @@ pub struct StationaryPoint {
     pub psi: f64,
     pub hessian_determinant: f64,
     pub hessian_trace: f64,
+    pub i_r_nearest: usize,
+    pub i_z_nearest: usize,
+    pub i_r_nearest_left: usize,
+    pub i_r_nearest_right: usize,
+    pub i_z_nearest_lower: usize,
+    pub i_z_nearest_upper: usize,
 }
 
 pub fn find_stationary_points(
@@ -29,7 +35,7 @@ pub fn find_stationary_points(
     d_br_d_z_2d: &Array2<f64>,
     d_bz_d_z_2d: &Array2<f64>,
     d2_psi_d_r2_calculator: D2PsiDR2Calculator,
-) -> Result<Vec<StationaryPoint>, String> {
+) -> Result<Vec<StationaryPoint>, String> {  // I'm thinking of always returning a Vec, even if it's empty?
     // Grid variables
     let n_r: usize = r.len();
     let n_z: usize = z.len();
@@ -265,9 +271,6 @@ pub fn find_stationary_points(
                                     .interp_scalar(stationary_z, stationary_r)
                                     .expect("find_stationary_points: can't interpolate psi");
 
-                                // The selection of the four bounding grid points was chosen by using linear interpolation.
-                                // When the magnetic axis is close to one of the grid-point boundaries we can select the wrong four bounding points
-                                // This will cause `find_stationary_point` to fail and not find the magnetic axis.
                                 // If we fail to converge onto a solution, then fall back on a brute force method
                                 // TODO: Perhaps the first part of the fallback should be to try shifting the four corner grid points?
                             }
@@ -279,6 +282,12 @@ pub fn find_stationary_points(
                             psi: stationary_psi,
                             hessian_determinant: hessian_det,
                             hessian_trace: hessian_trace,
+                            i_r_nearest,
+                            i_z_nearest,
+                            i_r_nearest_left,
+                            i_r_nearest_right,
+                            i_z_nearest_lower,
+                            i_z_nearest_upper,
                         });
                     }
                 }

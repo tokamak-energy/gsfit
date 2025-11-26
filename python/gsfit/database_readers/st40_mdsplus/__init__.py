@@ -6,7 +6,7 @@ from gsfit_rs import Dialoop
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
-from gsfit_rs import MagneticAxis
+from gsfit_rs import StationaryPoint
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
 from gsfit_rs import RogowskiCoils
@@ -18,7 +18,7 @@ from .setup_dialoop import setup_dialoop
 from .setup_flux_loops import setup_flux_loops
 from .setup_isoflux_boundary_sensors import setup_isoflux_boundary_sensors
 from .setup_isoflux_sensors import setup_isoflux_sensors
-from .setup_magnetic_axis_sensors import setup_magnetic_axis_sensors
+from .setup_stationary_point_sensors import setup_stationary_point_sensors
 from .setup_passives import setup_passives
 from .setup_plasma import setup_plasma
 from .setup_rogowski_coils import setup_rogowski_coils
@@ -48,8 +48,8 @@ class DatabaseReaderSt40MDSplus(DatabaseReaderProtocol):
     def setup_isoflux_boundary_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> IsofluxBoundary:
         return setup_isoflux_boundary_sensors(self, *args, **kwargs)
 
-    def setup_magnetic_axis_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> MagneticAxis:
-        return setup_magnetic_axis_sensors(self, *args, **kwargs)
+    def setup_stationary_point_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> StationaryPoint:
+        return setup_stationary_point_sensors(self, *args, **kwargs)
 
     def setup_isoflux_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Isoflux:
         return setup_isoflux_sensors(self, *args, **kwargs)

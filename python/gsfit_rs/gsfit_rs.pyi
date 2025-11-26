@@ -56,7 +56,7 @@ def solve_grad_shafranov(
     rogowski_coils: RogowskiCoils,
     isoflux: Isoflux,
     isoflux_boundary: IsofluxBoundary,
-    magnetic_axis: MagneticAxis,
+    stationary_point: StationaryPoint,
     times_to_reconstruct: npt.NDArray[np.float64],
     n_iter_max: int,
     n_iter_min: int,
@@ -453,10 +453,10 @@ class IsofluxBoundary(DataTreeAccessor):
     #     plasma: "Plasma",
     # ) -> None: ...
 
-class MagneticAxis:
+class StationaryPoint:
     def __new__(
         cls,
-    ) -> MagneticAxis: ...
+    ) -> StationaryPoint: ...
     def add_sensor(
         cls,
         name: str,

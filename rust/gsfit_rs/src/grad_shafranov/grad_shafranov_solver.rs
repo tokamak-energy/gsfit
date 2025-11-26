@@ -3,7 +3,7 @@ use super::gs_solution::GsSolution;
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
-use crate::sensors::{BpProbes, FluxLoops, Isoflux, IsofluxBoundary, MagneticAxis, RogowskiCoils, SensorsDynamic, SensorsStatic};
+use crate::sensors::{BpProbes, FluxLoops, Isoflux, IsofluxBoundary, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
 use crate::source_functions::SourceFunctionTraits;
 use log::info; // use log::{debug, error, info};
 use ndarray::{Array1, Array2, s};
@@ -24,7 +24,7 @@ pub fn solve_grad_shafranov(
     mut rogowski_coils: PyRefMut<RogowskiCoils>,
     mut isoflux: PyRefMut<Isoflux>,
     mut isoflux_boundary: PyRefMut<IsofluxBoundary>,
-    mut magnetic_axis: PyRefMut<MagneticAxis>,
+    mut stationay_point: PyRefMut<StationaryPoint>,
     times_to_reconstruct: &Bound<'_, PyArray1<f64>>,
     n_iter_max: usize,
     n_iter_min: usize,
@@ -78,8 +78,8 @@ pub fn solve_grad_shafranov(
     let (isoflux_boundary_statics, isoflux_boundary_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         isoflux_boundary.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
-    let (magnetic_axis_statics, magnetic_axis_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
-        magnetic_axis.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (stationay_point_statics, stationay_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+        stationay_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
     // TOD: might be better to combine all sensors here, before passing to the solver
 
@@ -158,8 +158,8 @@ pub fn solve_grad_shafranov(
                 &isoflux_dynamic[i_time],
                 &isoflux_boundary_statics[i_time],
                 &isoflux_boundary_dynamic[i_time],
-                &magnetic_axis_statics[i_time],
-                &magnetic_axis_dynamic[i_time],
+                &stationay_point_statics[i_time],
+                &stationay_point_dynamic[i_time],
                 n_iter_max,
                 n_iter_min,
                 n_iter_no_vertical_feedback,
@@ -191,6 +191,8 @@ pub fn solve_grad_shafranov(
     // Post-process
     plasma.equilibrium_post_processor(&mut gs_solutions, &coils_owned, &plasma_owned);
     passives.equilibrium_post_processor(&gs_solutions);
+
+    // Get error codes for failed time-slices
 
     // Get owned versions for calculating sensor values
     let coils_owned: Coils = coils.to_owned();

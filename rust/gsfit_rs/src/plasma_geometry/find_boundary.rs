@@ -1,4 +1,5 @@
 use super::BoundaryContour;
+use super::Error;
 use super::StationaryPoint;
 use super::find_viable_limit_point::find_viable_limit_point;
 use super::find_viable_xpt::find_viable_xpt;
@@ -27,6 +28,8 @@ pub fn find_boundary(
     r: &Array1<f64>,
     z: &Array1<f64>,
     psi_2d: &Array2<f64>,
+    br_2d: &Array2<f64>,
+    bz_2d: &Array2<f64>,
     stationary_points: &Vec<StationaryPoint>,
     limit_pts_r: &Array1<f64>,
     limit_pts_z: &Array1<f64>,
@@ -34,10 +37,11 @@ pub fn find_boundary(
     vessel_z: &Array1<f64>,
     mag_r_previous: f64, // Note: mag_r and mag_z are from previous iteration; this can be a problem if the magnetic axis moves significantly
     mag_z_previous: f64, // which can happen when the plasma is significantly displaced vertically from the initial guess location, e.g. during a VDE
-) -> Result<BoundaryContour, String> {
+) -> Result<BoundaryContour, Error> {
     // Find x-points inside the vacuum vessel which could be the plasma boundary
     let xpt_boundary_or_error: Result<BoundaryContour, String> =
         find_viable_xpt(&r, &z, &psi_2d, &stationary_points, &vessel_r, &vessel_z, mag_r_previous, mag_z_previous);
+    // println!("find_boundary: xpt_boundary_or_error = {:?}", xpt_boundary_or_error);
 
     // Extract results from `xpt_boundary` object
     let xpt_r: f64;
@@ -64,12 +68,15 @@ pub fn find_boundary(
         &r,
         &z,
         &psi_2d,
+        &br_2d,
+        &bz_2d,
         &limit_pts_r,
         &limit_pts_z,
         mag_r_previous,
         mag_z_previous,
         &vessel_r,
         &vessel_z,
+        &stationary_points,
     );
     // println!("find_boundary: limit_boundary_or_error = {:?}", limit_boundary_or_error);
 
@@ -151,34 +158,16 @@ pub fn find_boundary(
     }
 
     if psi_b.is_nan() {
-        return Err("find_boundary: no boundary found".to_string());
+        return Err(Error::NoBoundaryFound {
+            no_xpt_reason: "".to_string(),
+            no_limit_point_reason: "".to_string(),
+        });
     }
 
-    // boundary polygon
-    let polygon_coordinates: Vec<Coord<f64>> = boundary_r.iter().zip(boundary_z.iter()).map(|(&x, &y)| Coord { x, y }).collect();
-
-    let boundary_polygon: Polygon = Polygon::new(
-        LineString::from(polygon_coordinates),
-        vec![], // No holes
-    );
-
     // Calculate the mask
-    let mask: Array2<f64> = flood_fill_mask(
-        &r,
-        &z,
-        &psi_2d,
-        psi_b,
-        xpt_r,
-        xpt_z,
-        xpt_diverted,
-        mag_r_previous,
-        mag_z_previous,
-        &vessel_r,
-        &vessel_z,
-    );
+    let mask: Array2<f64> = flood_fill_mask(&r, &z, &psi_2d, psi_b, &stationary_points, mag_r_previous, mag_z_previous, &vessel_r, &vessel_z);
 
     let boundary_contour: BoundaryContour = BoundaryContour {
-        boundary_polygon,
         boundary_r: boundary_r.clone(),
         boundary_z,
         n_points: boundary_r.len(),
@@ -187,11 +176,7 @@ pub fn find_boundary(
         bounding_z,
         fraction_inside_vessel: f64::NAN, // fraction inside vessel not calculated here
         xpt_diverted,
-        plasma_volume: None, // volume calculated using method
         mask: Some(mask),
-        secondary_xpt_r: f64::NAN,
-        secondary_xpt_z: f64::NAN,
-        secondary_xpt_distance: f64::NAN,
     };
 
     return Ok(boundary_contour);

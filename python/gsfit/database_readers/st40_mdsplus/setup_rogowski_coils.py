@@ -75,9 +75,8 @@ def setup_rogowski_coils(
 
             # Only INIVC000 has gaps
             if sensor_name == "INIVC000":
-                from MDSplus import Connection  # type: ignore
-
-                conn = Connection("smaug")
+                import mdsthin  # type: ignore
+                conn = mdsthin.Connection("smaug")
                 conn.openTree("st40", 11010605)
                 gaps_r = conn.get("\\MAG::TOP.RUN14C.ROG.INIVC000.GAPS:R").data().astype(np.float64)
                 gaps_z = conn.get("\\MAG::TOP.RUN14C.ROG.INIVC000.GAPS:Z").data().astype(np.float64)
