@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from . import DatabaseReaderFreeGSNKE
 
 
-def setup_magnetic_axis_sensors(
+def setup_stationary_point_sensors(
     self: "DatabaseReaderFreeGSNKE",
     pulseNo: int,
     settings: dict[str, typing.Any],
