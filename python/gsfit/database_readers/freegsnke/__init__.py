@@ -6,7 +6,7 @@ from gsfit_rs import Dialoop
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
-from gsfit_rs import MagneticAxis
+from gsfit_rs import StationaryPoint
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
 from gsfit_rs import RogowskiCoils
@@ -51,7 +51,7 @@ class DatabaseReaderFreeGSNKE(DatabaseReaderProtocol):
     def setup_isoflux_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Isoflux:
         return setup_isoflux_sensors(self, *args, **kwargs)
 
-    def setup_stationary_point_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> MagneticAxis:
+    def setup_stationary_point_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> StationaryPoint:
         return setup_stationary_point_sensors(self, *args, **kwargs)
 
     def setup_passives(self, *args: typing.Any, **kwargs: typing.Any) -> Passives:
