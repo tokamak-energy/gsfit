@@ -57,6 +57,10 @@ pub fn find_viable_limit_point(
     let d_z: f64 = &z[1] - &z[0];
     let d_l: f64 = (d_r.powi(2) + d_z.powi(2)).sqrt();
 
+    // Find the closest grid point to the magnetic axis
+    let index_mag_r: usize = (r - mag_r_previous).abs().argmin().expect("find_viable_limit_point: unwrapping index_mag_r");
+    let index_mag_z: usize = (z - mag_z_previous).abs().argmin().expect("find_viable_limit_point: unwrapping index_mag_z");
+
     // Create an interpolator for psi
     // TODO: replace with `BicubicInterpolator` to be consistent
     // let psi_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &psi_2d, &d_psi_d_r, &d_psi_d_z, &d2_psi_d_r_d_z);
@@ -98,35 +102,21 @@ pub fn find_viable_limit_point(
             .expect("find_viable_limit_point: cannot sort potential_limit_points by bounding_psi")
     });
 
-    // Find the closest grid point to the magnetic axis
-    let index_mag_r: usize = (r - mag_r_previous).abs().argmin().expect("find_viable_limit_point: unwrapping index_mag_r");
-    let index_mag_z: usize = (z - mag_z_previous).abs().argmin().expect("find_viable_limit_point: unwrapping index_mag_z");
-
-    // March from the magnetic axis to the LFS and check if we intersect any contours
-    potential_limit_points.retain(|potential_limit_point| {
+    // Loop over potential limit points; by doing the loop like this we don't do extra calculations, and exit as soon as we find a viable limit point
+    'loop_over_potential_limit_points: for potential_limit_point in &mut potential_limit_points {
+        // March from the magnetic axis to the LFS and check if we intersect any contours
+        let mut test_intersects_lfs_boundary: bool = false;
         for i_r in index_mag_r..n_r - 1 {
             if psi_2d[(index_mag_z, i_r)] < potential_limit_point.bounding_psi {
-                return true;
+                test_intersects_lfs_boundary = true;
             }
         }
         // No LFS boundary encountered
-        return false;
-    });
-    // Exit if we haven't found any `stationary_points` which have saddle curvature
-    if potential_limit_points.len() == 0 {
-        return Err("find_viable_limit_point: no stationary points with LFS boundary".to_string());
-    }
+        if !test_intersects_lfs_boundary {
+            continue 'loop_over_potential_limit_points;
+        }
 
-    // TODO: Check distance from limit_point to plasma boundary ==> need accurate boundary calculation, not escaping saddle point
-    // BUT: I think `marching_squares` is quite slow, so I don't want to call it during GS Picard iteration.
-    // TODO: create a reduced version of `marching_squares` which is only applied near the limit_point
-
-    // As a stop-gap measure I can use the distance from the limit_point to `mask_2d`
-    // If I decide to improve, I will still need `mask_2d`
-
-    // Add the mast to all potential limit points
-    // TODO: we will only be keeping the first `potential_limit_point`, so perhpaps we don't need to calculate all masks
-    for potential_limit_point in &mut potential_limit_points {
+        // Find the mask
         let mask_2d: Array2<f64> = flood_fill_mask(
             &r,
             &z,
@@ -138,26 +128,18 @@ pub fn find_viable_limit_point(
             &vessel_r,
             &vessel_z,
         );
+        potential_limit_point.mask = Some(mask_2d.clone());
 
-        potential_limit_point.mask = Some(mask_2d);
-    }
+        // Test if the magnetic axis is inside the boundary (`mask`)
+        let test_mask: bool = potential_limit_point.mask.as_ref().expect("find_viable_limit_point: unwrapping mask")[(index_mag_z, index_mag_r)] > 0.0;
+        // Skip if magnetic axis is outside boundary
+        if !test_mask {
+            continue 'loop_over_potential_limit_points;
+        }
 
-    // Retain only `potential_limit_points` where the magnetic axis is inside the boundary (`mask`)
-    potential_limit_points.retain(|potential_limit_point| {
-        let mask_test: bool = potential_limit_point.mask.as_ref().expect("find_viable_limit_point: unwrapping mask")[(index_mag_z, index_mag_r)] > 0.0;
-        return mask_test;
-    });
-    // Exit if we haven't found any `potential_limit_points` which have saddle curvature
-    if potential_limit_points.len() == 0 {
-        return Err("find_viable_limit_point: no potential_limit_points with LFS boundary".to_string());
-    }
-
-    // Check the distance from the limit_point to the plasma boundary
-    potential_limit_points.retain(|potential_limit_point| {
-        let mask_2d: &Array2<f64> = potential_limit_point.mask.as_ref().expect("find_viable_limit_point: unwrapping mask 2");
-        let psi_b: f64 = potential_limit_point.bounding_psi;
-
+        // Calculate the plasma boundary
         // TODO: update `marching_squares` to only do points near limit_point
+        let psi_b: f64 = potential_limit_point.bounding_psi;
         let plasma_boundary: BoundaryContourNew = marching_squares(
             &r,
             &z,
@@ -171,11 +153,8 @@ pub fn find_viable_limit_point(
             mag_r_previous,
             mag_z_previous,
         );
-
-        // TODO: how did this happen?
         if plasma_boundary.r.len() == 0 {
-            println!("find_viable_limit_point: plasma_boundary has zero length");
-            return false;
+            continue 'loop_over_potential_limit_points;
         }
 
         let distance_limit_point_to_boundary: Array1<f64> = ((potential_limit_point.bounding_r - plasma_boundary.r).powi(2)
@@ -184,17 +163,14 @@ pub fn find_viable_limit_point(
         let distance_min: f64 = distance_limit_point_to_boundary.min().expect("find_viable_limit_point: no minimum distance found").to_owned();
 
         // Keep if distance to plasma boundary is less than 1 grid spacing
-        if distance_min < 1.0 * d_l {
-            return true;
-        } else {
-            return false;
+        if distance_min > 1.0 * d_l {
+            continue 'loop_over_potential_limit_points;
         }
-    });
-    // Exit if we haven't found any `potential_limit_points`
-    if potential_limit_points.len() == 0 {
-        return Err("find_viable_limit_point: no stationary points with LFS boundary".to_string());
+
+        // If we make it to the end, then return this, ending `find_viable_limit_point` function
+        return Ok(potential_limit_point.to_owned());
     }
 
-    return Ok(potential_limit_points[0].to_owned());
+    return Err("find_viable_limit_point: no stationary points with LFS boundary".to_string());
 
 }
