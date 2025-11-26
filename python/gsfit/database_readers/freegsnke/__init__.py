@@ -18,7 +18,7 @@ from .setup_dialoop import setup_dialoop
 from .setup_flux_loops import setup_flux_loops
 from .setup_isoflux_boundary_sensors import setup_isoflux_boundary_sensors
 from .setup_isoflux_sensors import setup_isoflux_sensors
-from .setup_magnetic_axis_sensors import setup_magnetic_axis_sensors
+from .setup_stationary_point_sensors import setup_stationary_point_sensors
 from .setup_passives import setup_passives
 from .setup_plasma import setup_plasma
 from .setup_rogowski_coils import setup_rogowski_coils
@@ -51,8 +51,8 @@ class DatabaseReaderFreeGSNKE(DatabaseReaderProtocol):
     def setup_isoflux_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Isoflux:
         return setup_isoflux_sensors(self, *args, **kwargs)
 
-    def setup_magnetic_axis_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> MagneticAxis:
-        return setup_magnetic_axis_sensors(self, *args, **kwargs)
+    def setup_stationary_point_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> MagneticAxis:
+        return setup_stationary_point_sensors(self, *args, **kwargs)
 
     def setup_passives(self, *args: typing.Any, **kwargs: typing.Any) -> Passives:
         return setup_passives(self, *args, **kwargs)
