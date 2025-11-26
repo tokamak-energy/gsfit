@@ -1107,6 +1107,10 @@ impl Plasma {
                 mag_z_local,
             );
             boundary_contours.push(boundary_contour_local.clone());
+            if boundary_contour_local.n == 0 {
+                println!("equilibrium_post_processor: time slice {} has empty boundary contour, skipping further post-processing for this time slice", i_time);
+                continue 'time_loop;
+            }
 
             // Plasma volume
             // plasma_volume[i_time] = epp_plasma_volume(&gs_solutions[i_time], r_geo[i_time]);

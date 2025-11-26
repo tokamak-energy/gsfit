@@ -132,7 +132,6 @@ pub fn find_viable_xpt(
 
     let n_points: usize = 0;
     let final_contour: BoundaryContour = BoundaryContour {
-        boundary_polygon: Polygon::new(LineString::new(vec![]), vec![]), // TODO: this is not correct. But I want to remove this variable from BoundaryContour
         boundary_r: Array1::zeros(0),
         boundary_z: Array1::zeros(0),
         n_points,

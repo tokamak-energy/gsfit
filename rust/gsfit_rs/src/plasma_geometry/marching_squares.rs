@@ -77,9 +77,19 @@ pub fn marching_squares(
                     cubic_interpolation(bottom_z, bottom_psi, bottom_d_psi_d_z, top_z, top_psi, top_d_psi_d_z, psi_b);
                 if cubic_interpolation_or_error.is_ok() {
                     let cubic_interpolation_z: Array1<f64> = cubic_interpolation_or_error.unwrap();
-                    if cubic_interpolation_z.len() != 1 {
-                        println!("Warning: Found {} crossing points, in bottom to top march", cubic_interpolation_z.len());
-                    }
+                    
+                    // TODO: after some testing, it would appear that the difference between cubic_interpolation_z[0] and cubic_interpolation_z[1]
+                    // doesn't affect anything?
+
+                    // let z_cross: f64;
+                    // if cubic_interpolation_z.len() != 1 {
+                    //     println!("Warning: Found {} crossing points, in bottom to top march", cubic_interpolation_z.len());
+                    //     println!("cubic_interpolation_z={:?}", cubic_interpolation_z);
+                    //     z_cross = cubic_interpolation_z[1];
+                    // }
+                    // else {
+                    //     z_cross = cubic_interpolation_z[0];
+                    // }
                     let r_cross: f64 = r[i_r];
                     let z_cross: f64 = cubic_interpolation_z[0];
                     // note, this key and value structure assumes there is only one crossing per cell edge
@@ -87,6 +97,15 @@ pub fn marching_squares(
                 }
             }
         }
+    }
+
+    // If empty
+    if unsorted_boundary_points.is_empty() {
+        return BoundaryContourNew {
+            r: Array1::zeros(0),
+            z: Array1::zeros(0),
+            n: 0,
+        };
     }
 
     // If x-point is not provided, we are limited

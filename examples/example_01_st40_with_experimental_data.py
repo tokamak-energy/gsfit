@@ -9,7 +9,7 @@ pulseNo_write = pulseNo + 11_000_000  # Write to a "million" modelling pulse num
 # Construct the GSFit object
 gsfit_controller = Gsfit(
     pulseNo=pulseNo,
-    run_name="TEST03",
+    run_name="TEST06",
     run_description="Standard run",
     write_to_mds=True,
     pulseNo_write=pulseNo_write,

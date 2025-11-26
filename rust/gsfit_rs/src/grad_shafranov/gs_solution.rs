@@ -399,6 +399,8 @@ impl<'a> GsSolution<'a> {
                 &r,
                 &z,
                 &psi_2d,
+                &br_2d,
+                &bz_2d,
                 &stationary_points,
                 &limit_pts_r,
                 &limit_pts_z,

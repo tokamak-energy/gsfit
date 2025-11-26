@@ -1,11 +1,8 @@
 use core::f64;
-
-use geo::Polygon;
 use ndarray::{Array1, Array2};
 
 #[derive(Debug, Clone)]
 pub struct BoundaryContour {
-    pub boundary_polygon: Polygon,
     pub boundary_r: Array1<f64>,
     pub boundary_z: Array1<f64>,
     pub n_points: usize,

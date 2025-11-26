@@ -28,6 +28,8 @@ pub fn find_boundary(
     r: &Array1<f64>,
     z: &Array1<f64>,
     psi_2d: &Array2<f64>,
+    br_2d: &Array2<f64>,
+    bz_2d: &Array2<f64>,
     stationary_points: &Vec<StationaryPoint>,
     limit_pts_r: &Array1<f64>,
     limit_pts_z: &Array1<f64>,
@@ -66,6 +68,8 @@ pub fn find_boundary(
         &r,
         &z,
         &psi_2d,
+        &br_2d,
+        &bz_2d,
         &limit_pts_r,
         &limit_pts_z,
         mag_r_previous,
@@ -160,19 +164,10 @@ pub fn find_boundary(
         });
     }
 
-    // boundary polygon
-    let polygon_coordinates: Vec<Coord<f64>> = boundary_r.iter().zip(boundary_z.iter()).map(|(&x, &y)| Coord { x, y }).collect();
-
-    let boundary_polygon: Polygon = Polygon::new(
-        LineString::from(polygon_coordinates),
-        vec![], // No holes
-    );
-
     // Calculate the mask
     let mask: Array2<f64> = flood_fill_mask(&r, &z, &psi_2d, psi_b, &stationary_points, mag_r_previous, mag_z_previous, &vessel_r, &vessel_z);
 
     let boundary_contour: BoundaryContour = BoundaryContour {
-        boundary_polygon,
         boundary_r: boundary_r.clone(),
         boundary_z,
         n_points: boundary_r.len(),

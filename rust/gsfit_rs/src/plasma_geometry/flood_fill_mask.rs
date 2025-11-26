@@ -52,14 +52,9 @@ pub fn flood_fill_mask(
     // Label points we should not cross
     let mut indicies_do_not_cross: HashMap<(usize, usize), ()> = HashMap::new();
     for stationary_point in stationary_points.iter() {
-        let stationary_r: f64 = stationary_point.r;
-        let stationary_z: f64 = stationary_point.z;
-
         // Find the nearest grid point to the stationary point
         let i_r_nearest: usize = stationary_point.i_r_nearest;
         let i_z_nearest: usize = stationary_point.i_z_nearest;
-        let i_r_nearest_left: usize = stationary_point.i_r_nearest_left;
-        let i_r_nearest_right: usize = stationary_point.i_r_nearest_right;
         let i_z_nearest_lower: usize = stationary_point.i_z_nearest_lower;
         let i_z_nearest_upper: usize = stationary_point.i_z_nearest_upper;
 
@@ -106,6 +101,11 @@ pub fn flood_fill_mask(
     // Find the index of the grid point closest to the magnetic axis
     let i_r_nearest_mag: usize = (r - mag_r_previous).abs().argmin().unwrap();
     let i_z_nearest_mag: usize = (z - mag_z_previous).abs().argmin().unwrap();
+
+    // Add a test that the magnetic axis is higher than psi_b
+    if psi_2d[(i_z_nearest_mag, i_r_nearest_mag)] < psi_b {
+        return mask_2d;
+    }
 
     // Start the flood fill algorithm, going anticlockwise from the magnetic axis
     // Directions: right, up, left, down (anticlockwise)
