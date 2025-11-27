@@ -2,7 +2,7 @@ use crate::coils::Coils;
 use crate::grad_shafranov::GsSolution;
 use crate::greens::{greens_b, greens_d_b_d_z, greens_d2_psi_d_r2, greens_psi};
 use crate::passives::Passives;
-use crate::plasma_geometry::marching_squares::BoundaryContourNew;
+use crate::plasma_geometry::marching_squares::MarchingContour;
 use crate::plasma_geometry::marching_squares::marching_squares;
 use crate::source_functions::SourceFunctionTraits;
 use crate::source_functions::{EfitPolynomial, LiuqePolynomial};
@@ -949,12 +949,12 @@ impl Plasma {
 
         let i_rod: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").unwrap_array1();
 
-        let mut boundary_contours: Vec<BoundaryContourNew> = Vec::new();
+        let mut boundary_contours: Vec<MarchingContour> = Vec::new();
 
         'time_loop: for i_time in 0..n_time {
             // Skip time-slices which didn't converge
             if gs_solutions[i_time].psi_a.is_nan() {
-                let boundary_contour_empty: BoundaryContourNew = BoundaryContourNew {
+                let boundary_contour_empty: MarchingContour = MarchingContour {
                     r: Array1::from_elem(0, f64::NAN),
                     z: Array1::from_elem(0, f64::NAN),
                     n: 0,
@@ -1093,7 +1093,7 @@ impl Plasma {
             // // Get stationary points from the GS solution
             // let stationary_points_local: &Vec<crate::plasma_geometry::StationaryPoint> = &gs_solutions[i_time].stationary_points;
 
-            let boundary_contour_local: BoundaryContourNew = marching_squares(
+            let boundary_contour_local: MarchingContour = marching_squares(
                 &r,
                 &z,
                 &psi_2d_local,
@@ -1187,7 +1187,7 @@ impl Plasma {
         let mut boundary_z: Array2<f64> = Array2::from_elem((n_time, max_n_boundary), f64::NAN);
 
         for i_time in 0..n_time {
-            let boundary_contour: &BoundaryContourNew = &boundary_contours[i_time];
+            let boundary_contour: &MarchingContour = &boundary_contours[i_time];
             let n_boundary: usize = boundary_contour.n;
 
             boundary_nbnd.push(n_boundary);

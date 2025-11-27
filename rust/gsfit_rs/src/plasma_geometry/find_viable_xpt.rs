@@ -52,13 +52,17 @@ pub fn find_viable_xpt(
 ) -> Result<BoundaryContour, String> {
     // TODO: add logic for negative plasma current
 
-    // Create a mutable copy of `stationary_points`, because we want to filter it
-    let mut stationary_points: Vec<StationaryPoint> = stationary_points.clone();
     // Exit if we haven't found any stationary points
-    // TODO: should not have called `find_viable_xpt` if there are no stationary points
+    // TODO: perhaps I should never call `find_viable_xpt` if there are no stationary points?
     if stationary_points.len() == 0 {
         return Err("find_viable_xpt: no stationary points found".to_string());
     }
+
+    // Grid variables
+    let n_r: usize = r.len();
+
+    // Number of stationary points
+    let n_stationary_points: usize = stationary_points.len();
 
     // Vessel polygon
     let n_vessel_pts: usize = vessel_r.len();
@@ -74,76 +78,73 @@ pub fn find_viable_xpt(
         vec![], // No holes
     );
 
-    // Filter to retain only `stationary_points` which are within the vessel
-    stationary_points.retain(|stationary_point| {
-        let xpt_r_local: f64 = stationary_point.r;
-        let xpt_z_local: f64 = stationary_point.z;
-        let xpt_point: Point = Point::new(xpt_r_local, xpt_z_local);
-        let inside_vessel: bool = vessel_polygon.contains(&xpt_point);
+    // Construct potential x-points
+    let mut potential_xpts: Vec<BoundaryContour> = Vec::with_capacity(n_stationary_points);
+    for i_xpt in 0..n_stationary_points {
+        let stationary_point: StationaryPoint = stationary_points[i_xpt];
 
-        return inside_vessel;
-    });
-    // Exit if we haven't found any `stationary_points` within the vessel
-    if stationary_points.len() == 0 {
-        return Err("find_viable_xpt: no stationary points found inside vessel".to_string());
+        // Only add saddle points
+        let test_for_saddle_point: bool = stationary_point.hessian_determinant < 0.0;
+        if test_for_saddle_point == true {
+            potential_xpts.push(
+                BoundaryContour {
+                    boundary_r: Array1::zeros(0),
+                    boundary_z: Array1::zeros(0),
+                    n_points: 0,
+                    bounding_psi: stationary_point.psi,
+                    bounding_r: stationary_point.r,
+                    bounding_z: stationary_point.z,
+                    xpt_diverted: false,
+                    mask: None, // mask calculated later using method
+                }
+            )
+        }
+    }
+    if potential_xpts.len() == 0 {
+        return Err("find_viable_xpt: no saddle points found".to_string());
     }
 
-    // Filter to retain only `stationary_points` which are saddle points
-    stationary_points.retain(|stationary_point| {
-        let saddle_point_test: bool = stationary_point.hessian_determinant < 0.0;
-        return saddle_point_test;
+    // Sort from largest to smallest `psi`
+    potential_xpts.sort_by(|a, b| {
+        b.bounding_psi // using `b` first gives descending order
+            .partial_cmp(&a.bounding_psi)
+            .expect("find_viable_limit_point: cannot sort potential_limit_points by bounding_psi")
     });
-    // Exit if we haven't found any `stationary_points` which have saddle curvature
-    if stationary_points.len() == 0 {
-        return Err("find_viable_xpt: no stationary points with saddle curvature".to_string());
-    }
 
-    // Create a contour using `stationary_point.psi`; and check if it exists on the LFS
     // Find the closest grid point to the magnetic axis
     let index_mag_r: usize = (r - mag_r_previous).abs().argmin().expect("find_viable_xpt: unwrapping index_mag_r");
     let index_mag_z: usize = (z - mag_z_previous).abs().argmin().expect("find_viable_xpt: unwrapping index_mag_z");
-    // March from the magnetic axis to the LFS and check if we intersect any contours
-    let n_r: usize = r.len();
-    let mut index_distance: Vec<usize> = Vec::new();
-    stationary_points.retain(|stationary_point| {
+
+    'loop_over_potential_xpts: for potential_xpt in &mut potential_xpts {
+        // Test if saddle point is within vessel
+        let xpt_r_local: f64 = potential_xpt.bounding_r;
+        let xpt_z_local: f64 = potential_xpt.bounding_z;
+        let xpt_point: Point = Point::new(xpt_r_local, xpt_z_local);
+        let test_inside_vessel: bool = vessel_polygon.contains(&xpt_point);
+        if test_inside_vessel == false {
+            continue 'loop_over_potential_xpts;
+        }
+
+        // Test if there is a LFS boundary at the same height as the magnetic axis
+        // March from the magnetic axis to the LFS
+        let mut test_intersects_lfs_boundary: bool = false;
         for i_r in index_mag_r..n_r - 1 {
-            if psi_2d[(index_mag_z, i_r)] < stationary_point.psi {
-                index_distance.push(i_r);
-                return true;
+            if psi_2d[(index_mag_z, i_r)] < potential_xpt.bounding_psi {
+                test_intersects_lfs_boundary = true;
             }
         }
         // No LFS boundary encountered
-        return false;
-    });
-    // Exit if we haven't found any `stationary_points` which have saddle curvature
-    if stationary_points.len() == 0 {
-        return Err("find_viable_xpt: no stationary points with LFS boundary".to_string());
-    }
-
-    // Find the minimum value in index_distance to identify the closest LFS boundary
-    let mut index_min: usize = 0;
-    let mut min_distance_idx: usize = usize::MAX;
-    for (i, &dist_idx) in index_distance.iter().enumerate() {
-        if dist_idx < min_distance_idx {
-            min_distance_idx = dist_idx;
-            index_min = i;
+        if !test_intersects_lfs_boundary {
+            continue 'loop_over_potential_xpts;
         }
+
+        // If we make it to the end, then return this, ending `find_viable_xpt` function
+        return Ok(potential_xpt.to_owned());
+
     }
 
-    let n_points: usize = 0;
-    let final_contour: BoundaryContour = BoundaryContour {
-        boundary_r: Array1::zeros(0),
-        boundary_z: Array1::zeros(0),
-        n_points,
-        bounding_psi: stationary_points[index_min].psi,
-        bounding_r: stationary_points[index_min].r,
-        bounding_z: stationary_points[index_min].z,
-        fraction_inside_vessel: f64::NAN,
-        xpt_diverted: true,
-        mask: None, // mask calculated later
-    };
+    return Err("find_viable_xpt: no viable x-point found".to_string());
 
-    return Ok(final_contour);
 }
 
 // #[test]

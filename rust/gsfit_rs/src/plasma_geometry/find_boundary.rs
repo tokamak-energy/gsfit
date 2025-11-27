@@ -5,7 +5,6 @@ use super::find_viable_limit_point::find_viable_limit_point;
 use super::find_viable_xpt::find_viable_xpt;
 use super::flood_fill_mask::flood_fill_mask;
 use core::f64;
-use geo::{Coord, LineString, Polygon};
 use ndarray::{Array1, Array2};
 
 /// Find the plasma boundary
@@ -18,8 +17,8 @@ use ndarray::{Array1, Array2};
 /// * `limit_pts_z` - Z coordinates of limiter points, metre
 /// * `vessel_r` - R coordinates of vessel points, metre
 /// * `vessel_z` - Z coordinates of vessel points, metre
-/// * `mag_r` - R coordinate of magnetic axis, metre
-/// * `mag_z` - Z coordinate of magnetic axis, metre
+/// * `mag_r_previous` - R coordinate of magnetic axis (from the previous iteration), metre
+/// * `mag_z_previous` - Z coordinate of magnetic axis (from the previous iteration), metre
 ///
 /// # Returns
 /// * `boundary_contour` - A `BoundaryContour` object representing the plasma boundary
@@ -30,6 +29,7 @@ pub fn find_boundary(
     psi_2d: &Array2<f64>,
     br_2d: &Array2<f64>,
     bz_2d: &Array2<f64>,
+    d_bz_d_z_2d: &Array2<f64>,
     stationary_points: &Vec<StationaryPoint>,
     limit_pts_r: &Array1<f64>,
     limit_pts_z: &Array1<f64>,
@@ -70,6 +70,7 @@ pub fn find_boundary(
         &psi_2d,
         &br_2d,
         &bz_2d,
+        &d_bz_d_z_2d,
         &limit_pts_r,
         &limit_pts_z,
         mag_r_previous,
@@ -108,7 +109,6 @@ pub fn find_boundary(
     let boundary_r: Array1<f64>;
     let boundary_z: Array1<f64>;
     if limit_boundary_or_error.is_err() && xpt_boundary_or_error.is_err() {
-        // println!("find_boundary: No boundary found");
         xpt_diverted = false;
         bounding_r = f64::NAN;
         bounding_z = f64::NAN;
@@ -116,7 +116,6 @@ pub fn find_boundary(
         boundary_r = Array1::zeros(0);
         boundary_z = Array1::zeros(0);
     } else if limit_boundary_or_error.is_err() {
-        // println!("find_boundary: Found xpt");
         psi_b = xpt_psi_b;
         bounding_r = xpt_r;
         bounding_z = xpt_z;
@@ -124,7 +123,6 @@ pub fn find_boundary(
         boundary_r = xpt_boundary_r;
         boundary_z = xpt_boundary_z;
     } else if xpt_boundary_or_error.is_err() {
-        // println!("find_boundary: Found limiter");
         psi_b = limit_pt_psi_b;
         bounding_r = limit_pt_r;
         bounding_z = limit_pt_z;
@@ -132,7 +130,6 @@ pub fn find_boundary(
         boundary_r = limit_pt_boundary_r;
         boundary_z = limit_pt_boundary_z;
     } else if limit_pt_psi_b > xpt_psi_b {
-        // println!("find_boundary: Found limiter");
         psi_b = limit_pt_psi_b;
         bounding_r = limit_pt_r;
         bounding_z = limit_pt_z;
@@ -140,7 +137,6 @@ pub fn find_boundary(
         boundary_r = limit_pt_boundary_r;
         boundary_z = limit_pt_boundary_z;
     } else if xpt_psi_b > limit_pt_psi_b {
-        // println!("find_boundary: Found xpt");
         psi_b = xpt_psi_b;
         bounding_r = xpt_r;
         bounding_z = xpt_z;
@@ -148,7 +144,6 @@ pub fn find_boundary(
         boundary_r = xpt_boundary_r;
         boundary_z = xpt_boundary_z;
     } else {
-        // println!("find_boundary: Found None");
         xpt_diverted = false;
         bounding_r = f64::NAN;
         bounding_z = f64::NAN;
@@ -164,6 +159,8 @@ pub fn find_boundary(
         });
     }
 
+    // println!("xpt_diverted = {}", xpt_diverted);
+
     // Calculate the mask
     let mask: Array2<f64> = flood_fill_mask(&r, &z, &psi_2d, psi_b, &stationary_points, mag_r_previous, mag_z_previous, &vessel_r, &vessel_z);
 
@@ -174,7 +171,6 @@ pub fn find_boundary(
         bounding_psi: psi_b,
         bounding_r,
         bounding_z,
-        fraction_inside_vessel: f64::NAN, // fraction inside vessel not calculated here
         xpt_diverted,
         mask: Some(mask),
     };

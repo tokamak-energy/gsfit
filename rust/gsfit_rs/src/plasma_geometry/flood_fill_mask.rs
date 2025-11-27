@@ -2,7 +2,6 @@ use super::StationaryPoint;
 use geo::{Contains, Coord, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
-use rand::rand_core::le;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 
@@ -98,12 +97,38 @@ pub fn flood_fill_mask(
     let n_z: usize = z.len();
     let mut mask_2d: Array2<f64> = Array2::from_elem((n_z, n_r), 0.0);
 
+    // Pre-compute a mask for points that lie inside the vessel so we can stop flood fill steps at the wall
+    let n_vessel_pts: usize = vessel_r.len();
+    let mut vessel_coords: Vec<Coord<f64>> = Vec::with_capacity(n_vessel_pts);
+    for i_vessel in 0..n_vessel_pts {
+        vessel_coords.push(Coord {
+            x: vessel_r[i_vessel],
+            y: vessel_z[i_vessel],
+        });
+    }
+    let vessel_polygon: Polygon = Polygon::new(
+        LineString::from(vessel_coords),
+        vec![], // No holes
+    );
+    let mut mask_vessel_2d: Array2<bool> = Array2::from_elem((n_z, n_r), false);
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            let test_point: Point = Point::new(r[i_r], z[i_z]);
+            mask_vessel_2d[(i_z, i_r)] = vessel_polygon.contains(&test_point);
+        }
+    }
+
     // Find the index of the grid point closest to the magnetic axis
     let i_r_nearest_mag: usize = (r - mag_r_previous).abs().argmin().unwrap();
     let i_z_nearest_mag: usize = (z - mag_z_previous).abs().argmin().unwrap();
 
     // Add a test that the magnetic axis is higher than psi_b
     if psi_2d[(i_z_nearest_mag, i_r_nearest_mag)] < psi_b {
+        return mask_2d;
+    }
+
+    // Magnetic axis must be inside the vessel, otherwise we cannot start the fill
+    if mask_vessel_2d[(i_z_nearest_mag, i_r_nearest_mag)] == false {
         return mask_2d;
     }
 
@@ -133,6 +158,12 @@ pub fn flood_fill_mask(
             let new_i_z: usize = new_i_z as usize;
             let new_i_r: usize = new_i_r as usize;
 
+            // Respect the vessel wall during the flood fill
+            // This prevents the fill from painting the centre post and wrapping all the way round to the opposite Z
+            if mask_vessel_2d[(new_i_z, new_i_r)] == false {
+                continue;
+            }
+
             // Check if we are going past a saddle point
             if indicies_do_not_cross.contains_key(&(new_i_z, new_i_r)) {
                 // Don't add this point to the `mask`, and don't add it to the `queue`
@@ -149,31 +180,10 @@ pub fn flood_fill_mask(
         }
     }
 
-    // Vessel polygon
-    let n_vessel_pts: usize = vessel_r.len();
-    let mut vessel_coords: Vec<Coord<f64>> = Vec::with_capacity(n_vessel_pts);
-    for i_vessel in 0..n_vessel_pts {
-        vessel_coords.push(Coord {
-            x: vessel_r[i_vessel],
-            y: vessel_z[i_vessel],
-        });
-    }
-    let vessel_polygon: Polygon = Polygon::new(
-        LineString::from(vessel_coords),
-        vec![], // No holes
-    );
-
-    // Ensure points outside the vessel are masked out
-    // TODO: This could be pre-calculated as `mask_vessel_2d`, and we do `mask_2d *= mask_vessel_2d`
-    for i_r in 0..n_r {
-        for i_z in 0..n_z {
-            // Check if the point is inside the polygon
-            let test_point: Point = Point::new(r[i_r], z[i_z]);
-            let inside_vessel: bool = vessel_polygon.contains(&test_point);
-            if inside_vessel == false {
-                // Ensure points outside the vessel are masked out
-                mask_2d[(i_z, i_r)] = 0.0;
-            }
+    // Ensure points outside the vessel are masked out (defensive, should already be zero)
+    for (mask_val, inside_vessel) in mask_2d.iter_mut().zip(mask_vessel_2d.iter()) {
+        if inside_vessel == &false {
+            *mask_val = 0.0;
         }
     }
 
@@ -221,7 +231,7 @@ fn test_flood_fill_mask() {
 
     let psi_b: f64 = -0.05901706777528778;
     let _xpt_r: f64 = 0.1;
-    let xpt_z: f64 = -0.5713182906388565;
+    let _xpt_z: f64 = -0.5713182906388565;
     let stationary_points: Vec<StationaryPoint> = vec![];
     let mag_r_previous: f64 = 0.5115792196972574;
     let mag_z_previous: f64 = -0.007343976139471093;
@@ -238,5 +248,24 @@ fn test_flood_fill_mask() {
         &vessel_z,
     );
 
-    // Need to add an assert?
+    let painted_cells: f64 = mask_2d.sum();
+    assert_eq!(
+        painted_cells,
+        2776.0,
+        "test_flood_fill_mask: mask should only paint the plasma interior (2776 cells)",
+    );
+
+    let mut leaking_cells_above_0p6: f64 = 0.0;
+    for (i_z, z_val) in z.iter().enumerate() {
+        if *z_val > 0.6 {
+            for i_r in 0..n_r {
+                leaking_cells_above_0p6 += mask_2d[(i_z, i_r)];
+            }
+        }
+    }
+    assert_eq!(
+        leaking_cells_above_0p6,
+        0.0,
+        "test_flood_fill_mask: flood fill leaked above z=0.6 m",
+    );
 }

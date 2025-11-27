@@ -401,6 +401,7 @@ impl<'a> GsSolution<'a> {
                 &psi_2d,
                 &br_2d,
                 &bz_2d,
+                &d_bz_d_z_2d,
                 &stationary_points,
                 &limit_pts_r,
                 &limit_pts_z,
@@ -484,7 +485,7 @@ impl<'a> GsSolution<'a> {
             // Check if we have reached the maximum number of iterations
             if i_iter == self.n_iter_max - 1 {
                 // Set time-slice to failed
-                self.set_to_failed_time_slice();
+                // self.set_to_failed_time_slice();
 
                 // Store error state
                 self.error_state = Some(Error::MaxIterReached);
