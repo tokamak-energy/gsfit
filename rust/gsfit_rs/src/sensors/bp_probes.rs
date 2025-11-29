@@ -10,6 +10,7 @@ use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
+use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
@@ -28,6 +29,23 @@ impl BpProbes {
         Self { results: DataTree::new() }
     }
 
+    /// Add a bp-probe sensor (Mirnov coil)
+    ///
+    /// # Arguments
+    /// * `name` - Name of the sensor
+    /// * `geometry_angle_pol` - Poloidal angle of the sensor, radian
+    /// * `geometry_r` - R coordinate of the sensor, meter
+    /// * `geometry_z` - Z coordinate of the sensor, meter
+    /// * `fit_settings_comment` - Comment for the fit settings
+    /// * `fit_settings_expected_value` - Expected value for the fit settings
+    /// * `fit_settings_include` - Include in the fit settings
+    /// * `fit_settings_weight` - Weight in the fit settings
+    /// * `time` - Time array of the measured data, second
+    /// * `measured` - Measured data array, tesla
+    ///
+    /// # Returns
+    /// None
+    ///
     pub fn add_sensor(
         &mut self,
         name: &str,
@@ -38,12 +56,12 @@ impl BpProbes {
         fit_settings_expected_value: f64,
         fit_settings_include: bool,
         fit_settings_weight: f64,
-        time: &Bound<'_, PyArray1<f64>>,
-        measured: &Bound<'_, PyArray1<f64>>,
+        time: PyReadonlyArray1<f64>,
+        measured: PyReadonlyArray1<f64>,
     ) {
         // Convert into Rust data types
-        let time_ndarray: Array1<f64> = Array1::from(unsafe { time.as_array() }.to_vec());
-        let measured_ndarray: Array1<f64> = Array1::from(unsafe { measured.as_array() }.to_vec());
+        let time_ndarray: Array1<f64> = time.to_owned_array();
+        let measured_ndarray: Array1<f64> = measured.to_owned_array();
 
         // Geometry
         self.results
@@ -114,7 +132,7 @@ impl BpProbes {
         let plasma_rs: &Plasma = &*plasma;
 
         // Run the Rust method
-        self.calculate_sensor_values_rust(coils_rs, passives_rs, plasma_rs);
+        self.calculate_sensor_values_rs(coils_rs, passives_rs, plasma_rs);
     }
 
     /// Print to screen, to be used within Python
@@ -139,7 +157,7 @@ impl BpProbes {
 impl BpProbes {
     /// This splits the BpProbes into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
-    /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
+    /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
     /// TODO: change `SensorsStatic` to Vec<SensorsStatic> to be consistent with other sensor types.
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
@@ -257,18 +275,18 @@ impl BpProbes {
                 .expect("BpProbes.split_into_static_and_dynamic: Can't make Interp1D");
 
             // Do the interpolation
-            let measured_this_coil: Array1<f64> = interpolator
+            let measured_this_sensor: Array1<f64> = interpolator
                 .interp_array(&times_to_reconstruct)
                 .expect("BpProbes.split_into_static_and_dynamic: Can't do interpolation");
 
             // Store for later
-            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_coil);
+            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_sensor);
 
             // Store in self
             self.results
                 .get_or_insert(sensor_name)
                 .get_or_insert("b")
-                .insert("measured", measured_this_coil);
+                .insert("measured", measured_this_sensor);
         }
 
         // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
@@ -289,7 +307,7 @@ impl BpProbes {
     }
 
     /// Calculate sensor values
-    pub fn calculate_sensor_values_rust(&mut self, coils: &Coils, passives: &Passives, plasma: &Plasma) {
+    pub fn calculate_sensor_values_rs(&mut self, coils: &Coils, passives: &Passives, plasma: &Plasma) {
         for sensor_name in self.results.keys() {
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(&sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = [n_pf]
@@ -468,7 +486,7 @@ impl BpProbes {
     }
 
     pub fn greens_with_passives_rs(&mut self, passives: Passives) {
-        // Loop over sensros
+        // Loop over sensors
         for sensor_name in self.results.keys() {
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();

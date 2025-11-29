@@ -1,7 +1,7 @@
 use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2};
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
-use numpy::{PyArray1, PyArray2, PyArray3};
+use numpy::borrow::PyReadonlyArray2;
 use pyo3::prelude::*;
 
 #[derive(Clone)]
@@ -15,8 +15,8 @@ pub struct LiuqePolynomial {
 #[pymethods]
 impl LiuqePolynomial {
     #[new]
-    pub fn new(n_dof: usize, regularisations: &Bound<'_, PyArray2<f64>>) -> Self {
-        let regularisations_ndarray: Array2<f64> = Array2::from(unsafe { regularisations.as_array() }.to_owned());
+    pub fn new(n_dof: usize, regularisations: PyReadonlyArray2<f64>) -> Self {
+        let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
 
         // Create the struct
         LiuqePolynomial {

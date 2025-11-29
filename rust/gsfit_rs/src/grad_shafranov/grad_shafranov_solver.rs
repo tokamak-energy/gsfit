@@ -9,6 +9,7 @@ use log::info; // use log::{debug, error, info};
 use ndarray::{Array1, Array2, s};
 use numpy::PyArray1;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
+use numpy::borrow::PyReadonlyArray1;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::sync::Arc;
@@ -25,7 +26,7 @@ pub fn solve_grad_shafranov(
     mut isoflux: PyRefMut<Isoflux>,
     mut isoflux_boundary: PyRefMut<IsofluxBoundary>,
     mut stationay_point: PyRefMut<StationaryPoint>,
-    times_to_reconstruct: &Bound<'_, PyArray1<f64>>,
+    times_to_reconstruct: PyReadonlyArray1<f64>,
     n_iter_max: usize,
     n_iter_min: usize,
     n_iter_no_vertical_feedback: usize,
@@ -36,7 +37,7 @@ pub fn solve_grad_shafranov(
     println!("solve_grad_shafranov starting");
 
     // Convert to rust data type
-    let times_to_reconstruct_ndarray: Array1<f64> = Array1::from(unsafe { times_to_reconstruct.as_array() }.to_vec());
+    let times_to_reconstruct_ndarray: Array1<f64> = times_to_reconstruct.to_owned_array();
     let n_time: usize = times_to_reconstruct_ndarray.len();
 
     if n_time == 0 {
@@ -200,9 +201,9 @@ pub fn solve_grad_shafranov(
     let plasma_owned: Plasma = plasma.to_owned();
 
     // Calculate sensor values
-    bp_probes.calculate_sensor_values_rust(&coils_owned, &passives_owned, &plasma_owned);
-    flux_loops.calculate_sensor_values_rust(&coils_owned, &passives_owned, &plasma_owned);
-    rogowski_coils.calculate_sensor_values_rust(&coils_owned, &passives_owned, &plasma_owned);
+    bp_probes.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
+    flux_loops.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
+    rogowski_coils.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
 
     // Calculate chi_sq_mag for each time slice
     let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, n_time);

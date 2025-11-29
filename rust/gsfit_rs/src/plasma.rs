@@ -2,7 +2,7 @@ use crate::coils::Coils;
 use crate::grad_shafranov::GsSolution;
 use crate::greens::{greens_b, greens_d_b_d_z, greens_d2_psi_d_r2, greens_psi};
 use crate::passives::Passives;
-use crate::plasma_geometry::marching_squares::BoundaryContourNew;
+use crate::plasma_geometry::marching_squares::MarchingContour;
 use crate::plasma_geometry::marching_squares::marching_squares;
 use crate::source_functions::SourceFunctionTraits;
 use crate::source_functions::{EfitPolynomial, LiuqePolynomial};
@@ -16,8 +16,9 @@ use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
-use numpy::IntoPyArray; // converting to python data types
-use numpy::PyArrayMethods; // used in to convert python data into ndarray
+use numpy::IntoPyArray;
+use numpy::PyArrayMethods;
+use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
@@ -68,11 +69,11 @@ impl Plasma {
         r_max: f64,
         z_min: f64,
         z_max: f64,
-        psi_n: &Bound<'_, PyArray1<f64>>,
-        limit_pts_r: &Bound<'_, PyArray1<f64>>,
-        limit_pts_z: &Bound<'_, PyArray1<f64>>,
-        vessel_r: &Bound<'_, PyArray1<f64>>,
-        vessel_z: &Bound<'_, PyArray1<f64>>,
+        psi_n: PyReadonlyArray1<f64>,
+        limit_pts_r: PyReadonlyArray1<f64>,
+        limit_pts_z: PyReadonlyArray1<f64>,
+        vessel_r: PyReadonlyArray1<f64>,
+        vessel_z: PyReadonlyArray1<f64>,
         p_prime_source_function: Py<PyAny>,  // TODO: This is a big ugly!
         ff_prime_source_function: Py<PyAny>, // TODO: This is a big ugly!
         initial_ip: f64,
@@ -80,12 +81,11 @@ impl Plasma {
         initial_cur_z: f64,
     ) -> Self {
         // Change Python types into Rust types
-        let psi_n_ndarray: Array1<f64> = Array1::from(unsafe { psi_n.as_array() }.to_vec());
-        let limit_pts_r_ndarray: Array1<f64> = Array1::from(unsafe { limit_pts_r.as_array() }.to_vec());
-        let limit_pts_z_ndarray: Array1<f64> = Array1::from(unsafe { limit_pts_z.as_array() }.to_vec());
-        let vessel_r_ndarray: Array1<f64> = Array1::from(unsafe { vessel_r.as_array() }.to_vec());
-        let vessel_z_ndarray: Array1<f64> = Array1::from(unsafe { vessel_z.as_array() }.to_vec());
-
+        let psi_n_ndarray: Array1<f64> = psi_n.to_owned_array();
+        let limit_pts_r_ndarray: Array1<f64> = limit_pts_r.to_owned_array();
+        let limit_pts_z_ndarray: Array1<f64> = limit_pts_z.to_owned_array();
+        let vessel_r_ndarray: Array1<f64> = vessel_r.to_owned_array();
+        let vessel_z_ndarray: Array1<f64> = vessel_z.to_owned_array();
         // Extract an object from p_prime_source_function which contains the common traits
         let p_prime_source_function_arc: Arc<dyn SourceFunctionTraits + Send + Sync> = Python::attach(|py| {
             p_prime_source_function
@@ -949,12 +949,12 @@ impl Plasma {
 
         let i_rod: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").unwrap_array1();
 
-        let mut boundary_contours: Vec<BoundaryContourNew> = Vec::new();
+        let mut boundary_contours: Vec<MarchingContour> = Vec::with_capacity(n_time);
 
         'time_loop: for i_time in 0..n_time {
             // Skip time-slices which didn't converge
             if gs_solutions[i_time].psi_a.is_nan() {
-                let boundary_contour_empty: BoundaryContourNew = BoundaryContourNew {
+                let boundary_contour_empty: MarchingContour = MarchingContour {
                     r: Array1::from_elem(0, f64::NAN),
                     z: Array1::from_elem(0, f64::NAN),
                     n: 0,
@@ -1093,7 +1093,7 @@ impl Plasma {
             // // Get stationary points from the GS solution
             // let stationary_points_local: &Vec<crate::plasma_geometry::StationaryPoint> = &gs_solutions[i_time].stationary_points;
 
-            let boundary_contour_local: BoundaryContourNew = marching_squares(
+            let boundary_contour_local: MarchingContour = marching_squares(
                 &r,
                 &z,
                 &psi_2d_local,
@@ -1108,7 +1108,10 @@ impl Plasma {
             );
             boundary_contours.push(boundary_contour_local.clone());
             if boundary_contour_local.n == 0 {
-                println!("equilibrium_post_processor: time slice {} has empty boundary contour, skipping further post-processing for this time slice", i_time);
+                println!(
+                    "equilibrium_post_processor: time slice {} has empty boundary contour, skipping further post-processing for this time slice",
+                    i_time
+                );
                 continue 'time_loop;
             }
 
@@ -1187,7 +1190,7 @@ impl Plasma {
         let mut boundary_z: Array2<f64> = Array2::from_elem((n_time, max_n_boundary), f64::NAN);
 
         for i_time in 0..n_time {
-            let boundary_contour: &BoundaryContourNew = &boundary_contours[i_time];
+            let boundary_contour: &MarchingContour = &boundary_contours[i_time];
             let n_boundary: usize = boundary_contour.n;
 
             boundary_nbnd.push(n_boundary);

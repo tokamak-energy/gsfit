@@ -4,8 +4,9 @@ use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use lapack::*;
 use ndarray::{Array1, Array2, Array3, s};
 use ndarray_linalg::Norm;
-use numpy::IntoPyArray; // converting to python data types
-use numpy::PyArrayMethods; // used in to convert python data into ndarray
+use numpy::IntoPyArray;
+use numpy::PyArrayMethods;
+use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
@@ -38,28 +39,27 @@ impl Passives {
     pub fn add_passive(
         &mut self,
         name: &str,
-        r: &Bound<'_, PyArray1<f64>>,
-        z: &Bound<'_, PyArray1<f64>>,
-        d_r: &Bound<'_, PyArray1<f64>>,
-        d_z: &Bound<'_, PyArray1<f64>>,
-        angle_1: &Bound<'_, PyArray1<f64>>,
-        angle_2: &Bound<'_, PyArray1<f64>>,
+        r: PyReadonlyArray1<f64>,
+        z: PyReadonlyArray1<f64>,
+        d_r: PyReadonlyArray1<f64>,
+        d_z: PyReadonlyArray1<f64>,
+        angle_1: PyReadonlyArray1<f64>,
+        angle_2: PyReadonlyArray1<f64>,
         resistivity: f64,
         current_distribution_type: &str,
         n_dof: usize,
-        regularisations: &Bound<'_, PyArray2<f64>>,
-        regularisations_weight: &Bound<'_, PyArray1<f64>>,
+        regularisations: PyReadonlyArray2<f64>,
+        regularisations_weight: PyReadonlyArray1<f64>,
     ) {
         // Change Python types into Rust types
-        let r_ndarray: Array1<f64> = Array1::from(unsafe { r.as_array() }.to_vec());
-        let z_ndarray: Array1<f64> = Array1::from(unsafe { z.as_array() }.to_vec());
-        let d_r_ndarray: Array1<f64> = Array1::from(unsafe { d_r.as_array() }.to_vec());
-        let d_z_ndarray: Array1<f64> = Array1::from(unsafe { d_z.as_array() }.to_vec());
-        let angle_1_ndarray: Array1<f64> = Array1::from(unsafe { angle_1.as_array() }.to_vec());
-        let angle_2_ndarray: Array1<f64> = Array1::from(unsafe { angle_2.as_array() }.to_vec());
-        let regularisations_ndarray: Array2<f64> = Array2::from(unsafe { regularisations.as_array() }.to_owned());
-        let regularisations_weight_ndarray: Array1<f64> = Array1::from(unsafe { regularisations_weight.as_array() }.to_owned());
-
+        let r_ndarray: Array1<f64> = r.to_owned_array();
+        let z_ndarray: Array1<f64> = z.to_owned_array();
+        let d_r_ndarray: Array1<f64> = d_r.to_owned_array();
+        let d_z_ndarray: Array1<f64> = d_z.to_owned_array();
+        let angle_1_ndarray: Array1<f64> = angle_1.to_owned_array();
+        let angle_2_ndarray: Array1<f64> = angle_2.to_owned_array();
+        let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
+        let regularisations_weight_ndarray: Array1<f64> = regularisations_weight.to_owned_array();
         // Check sizes match
         // regularisation can either be empty or the same size as the number of degrees of freedom
         // assert!(regularisation_weight_ndarray.len() == 0 || regularisation_weight_ndarray.len() == n_dof);

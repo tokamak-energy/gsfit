@@ -10,6 +10,7 @@ use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
+use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
@@ -58,12 +59,12 @@ impl FluxLoops {
         fit_settings_expected_value: f64,
         fit_settings_include: bool,
         fit_settings_weight: f64,
-        time: &Bound<'_, PyArray1<f64>>,
-        measured: &Bound<'_, PyArray1<f64>>,
+        time: PyReadonlyArray1<f64>,
+        measured: PyReadonlyArray1<f64>,
     ) {
         // Convert to Rust data types
-        let time_ndarray: Array1<f64> = Array1::from(unsafe { time.as_array() }.to_vec());
-        let measured_ndarray: Array1<f64> = Array1::from(unsafe { measured.as_array() }.to_vec());
+        let time_ndarray: Array1<f64> = time.to_owned_array();
+        let measured_ndarray: Array1<f64> = measured.to_owned_array();
 
         // Geometry
         self.results.get_or_insert(name).get_or_insert("geometry").insert("r", geometry_r);
@@ -142,8 +143,8 @@ impl FluxLoops {
 
             // Calculate Greens with each passive degree of freedom
             for passive_name in passives_local.results.keys() {
-                let _tmp: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
-                let dof_names: Vec<String> = _tmp.keys();
+                let dof_accumulator: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
+                let dof_names: Vec<String> = dof_accumulator.keys();
                 let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
@@ -219,7 +220,7 @@ impl FluxLoops {
             );
 
             // d(psi)/d(z) = -2.0 * pi * R * B_r
-            let g_d_plasma_d_z: Array1<f64> = -2.0 * PI * sensor_r.clone() * g_br_full.sum_axis(Axis(0));
+            let g_d_plasma_d_z: Array1<f64> = -2.0 * PI * sensor_r * g_br_full.sum_axis(Axis(0));
 
             // Store
             // TODO: should I reshape to Array2 [n_z, n_r] ????
@@ -237,7 +238,7 @@ impl FluxLoops {
         let plasma_rs: &Plasma = &*plasma;
 
         // Run the Rust method
-        self.calculate_sensor_values_rust(coils_rs, passives_rs, plasma_rs);
+        self.calculate_sensor_values_rs(coils_rs, passives_rs, plasma_rs);
     }
 
     /// Print to screen, to be used within Python
@@ -262,7 +263,7 @@ impl FluxLoops {
 impl FluxLoops {
     /// This splits the FluxLoops into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
-    /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
+    /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
 
@@ -379,24 +380,24 @@ impl FluxLoops {
                 .expect("FluxLoops.split_into_static_and_dynamic: Can't make Interp1D");
 
             // Do the interpolation
-            let measured_this_coil: Array1<f64> = interpolator
+            let measured_this_sensor: Array1<f64> = interpolator
                 .interp_array(&times_to_reconstruct)
                 .expect("FluxLoops.split_into_static_and_dynamic: Can't do interpolation");
 
             // Store for later
-            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_coil);
+            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_sensor);
 
             // Store in self
             self.results
                 .get_or_insert(sensor_name)
                 .get_or_insert("psi")
-                .insert("measured", measured_this_coil);
+                .insert("measured", measured_this_sensor);
         }
 
         // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
         let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);
         for i_time in 0..n_time {
-            // Select time-slide and the sensors we use in reconstruction
+            // Select time-slice and the sensors we use in reconstruction
             let measured_this_time_slice_and_sensors: Array1<f64> = measured.slice(s![.., i_time]).select(Axis(0), &include_indices).to_owned();
             // Create new `SensorsDynamic` instance and store
             let results_dynamic_this_time_slice: SensorsDynamic = SensorsDynamic {
@@ -410,7 +411,7 @@ impl FluxLoops {
         return (results_static_time_dependent, results_dynamic);
     }
 
-    pub fn calculate_sensor_values_rust(&mut self, coils: &Coils, passives: &Passives, plasma: &Plasma) {
+    pub fn calculate_sensor_values_rs(&mut self, coils: &Coils, passives: &Passives, plasma: &Plasma) {
         for sensor_name in self.results.keys() {
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(&sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = [n_pf]

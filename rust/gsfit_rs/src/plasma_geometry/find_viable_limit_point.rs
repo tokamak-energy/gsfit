@@ -1,14 +1,14 @@
 use super::BoundaryContour;
+use super::StationaryPoint;
 use super::bicubic_interpolator::BicubicInterpolator;
 use super::flood_fill_mask::flood_fill_mask;
+use super::marching_squares::MarchingContour;
+use super::marching_squares::marching_squares;
 use core::f64;
 use ndarray::{Array1, Array2};
-use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
-use rand::rand_core::le;
-use super::StationaryPoint;
-use super::marching_squares::BoundaryContourNew;
-use super::marching_squares::marching_squares;
+
+const PI: f64 = std::f64::consts::PI;
 
 /// Find a viable limit point which can be used to define the plasma boundary
 ///
@@ -33,7 +33,8 @@ pub fn find_viable_limit_point(
     psi_2d: &Array2<f64>,
     br_2d: &Array2<f64>,
     bz_2d: &Array2<f64>,
-    limit_pts_r: &Array1<f64>,  // TODO: might be better to have limit_pts_r and limit_pts_z as a "struct"
+    d_bz_d_z_2d: &Array2<f64>,
+    limit_pts_r: &Array1<f64>, // TODO: might be better to have limit_pts_r and limit_pts_z as a "struct"
     limit_pts_z: &Array1<f64>,
     mag_r_previous: f64,
     mag_z_previous: f64,
@@ -61,38 +62,92 @@ pub fn find_viable_limit_point(
     let index_mag_r: usize = (r - mag_r_previous).abs().argmin().expect("find_viable_limit_point: unwrapping index_mag_r");
     let index_mag_z: usize = (z - mag_z_previous).abs().argmin().expect("find_viable_limit_point: unwrapping index_mag_z");
 
-    // Create an interpolator for psi
-    // TODO: replace with `BicubicInterpolator` to be consistent
-    // let psi_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &psi_2d, &d_psi_d_r, &d_psi_d_z, &d2_psi_d_r_d_z);
-    let psi_interpolator = Interp2D::builder(psi_2d.clone())
-        .x(z.clone())
-        .y(r.clone())
-        .build()
-        .expect("find_boundary: Can't make Interp2D");
-
     // Number of limit points
     let n_limit_pts: usize = limit_pts_r.len();
 
     let mut potential_limit_points: Vec<BoundaryContour> = Vec::with_capacity(n_limit_pts);
 
     for i_limit in 0..n_limit_pts {
-        let psi_at_limit_pt: f64 = psi_interpolator
-            .interp_scalar(limit_pts_z[i_limit], limit_pts_r[i_limit])
-            .expect("possible_bounding_psi: error, limiter");
+        let i_r_nearest: usize = (r - limit_pts_r[i_limit])
+            .abs()
+            .argmin()
+            .expect("find_viable_limit_point: unwrapping i_r_nearest");
+        let i_z_nearest: usize = (z - limit_pts_z[i_limit])
+            .abs()
+            .argmin()
+            .expect("find_viable_limit_point: unwrapping i_z_nearest");
 
-        potential_limit_points.push(
-            BoundaryContour {
-                boundary_r: Array1::zeros(0),
-                boundary_z: Array1::zeros(0),
-                n_points: 0,
-                bounding_psi: psi_at_limit_pt,
-                bounding_r: limit_pts_r[i_limit],
-                bounding_z: limit_pts_z[i_limit],
-                fraction_inside_vessel: f64::NAN,
-                xpt_diverted: false,
-                mask: None, // mask calculated later using method
-            }
-        )
+        // Find the four corner grid points surrounding the limit point
+        let i_r_nearest_left: usize;
+        let i_r_nearest_right: usize;
+        let i_z_nearest_lower: usize;
+        let i_z_nearest_upper: usize;
+        if limit_pts_r[i_limit] > r[i_r_nearest] {
+            i_r_nearest_left = i_r_nearest;
+            i_r_nearest_right = i_r_nearest + 1;
+        } else {
+            i_r_nearest_left = i_r_nearest - 1;
+            i_r_nearest_right = i_r_nearest;
+        }
+        if limit_pts_z[i_limit] > z[i_z_nearest] {
+            i_z_nearest_lower = i_z_nearest;
+            i_z_nearest_upper = i_z_nearest + 1;
+        } else {
+            i_z_nearest_lower = i_z_nearest - 1;
+            i_z_nearest_upper = i_z_nearest;
+        }
+
+        // Find psi at the limit point
+        // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
+        let mut f: Array2<f64> = Array2::zeros([2, 2]);
+        let mut d_f_d_r: Array2<f64> = Array2::zeros([2, 2]);
+        let mut d_f_d_z: Array2<f64> = Array2::zeros([2, 2]);
+        let mut d2_f_d_r_d_z: Array2<f64> = Array2::zeros([2, 2]);
+
+        // Function values
+        f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
+        f[(0, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
+        f[(1, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
+        f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
+
+        // d(psi)/d(r)
+        // bz = 1 / (2.0 * PI * r) * d_psi_d_r
+        d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+        d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+        d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+        d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+        // d(psi)/d(z)
+        // br = - 1 / (2.0 * PI * r) * d_psi_d_z
+        d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+        d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+        d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+        d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+        // d^2(psi)/(d(r)*d(z))
+        // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
+        d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+        d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+        d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+        d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+        // Create a bicubic interpolator
+        let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+
+        let x: f64 = (limit_pts_r[i_limit] - r[i_r_nearest_left]) / d_r;
+        let y: f64 = (limit_pts_z[i_limit] - z[i_z_nearest_lower]) / d_z;
+        let psi_at_limit_pt: f64 = bicubic_interpolator.interpolate(x, y);
+
+        potential_limit_points.push(BoundaryContour {
+            boundary_r: Array1::zeros(0),
+            boundary_z: Array1::zeros(0),
+            n_points: 0,
+            bounding_psi: psi_at_limit_pt,
+            bounding_r: limit_pts_r[i_limit],
+            bounding_z: limit_pts_z[i_limit],
+            xpt_diverted: false,
+            mask: None, // mask calculated later using method
+        })
     }
 
     // Sort from largest to smallest `psi`
@@ -104,7 +159,8 @@ pub fn find_viable_limit_point(
 
     // Loop over potential limit points; by doing the loop like this we don't do extra calculations, and exit as soon as we find a viable limit point
     'loop_over_potential_limit_points: for potential_limit_point in &mut potential_limit_points {
-        // March from the magnetic axis to the LFS and check if we intersect any contours
+        // Test if there is a LFS boundary at the same height as the magnetic axis
+        // March from the magnetic axis to the LFS
         let mut test_intersects_lfs_boundary: bool = false;
         for i_r in index_mag_r..n_r - 1 {
             if psi_2d[(index_mag_z, i_r)] < potential_limit_point.bounding_psi {
@@ -140,27 +196,18 @@ pub fn find_viable_limit_point(
         // Calculate the plasma boundary
         // TODO: update `marching_squares` to only do points near limit_point
         let psi_b: f64 = potential_limit_point.bounding_psi;
-        let plasma_boundary: BoundaryContourNew = marching_squares(
-            &r,
-            &z,
-            &psi_2d,
-            &br_2d,
-            &bz_2d,
-            psi_b,
-            &mask_2d,
-            None,
-            None,
-            mag_r_previous,
-            mag_z_previous,
-        );
+        let plasma_boundary: MarchingContour = marching_squares(&r, &z, &psi_2d, &br_2d, &bz_2d, psi_b, &mask_2d, None, None, mag_r_previous, mag_z_previous);
         if plasma_boundary.r.len() == 0 {
             continue 'loop_over_potential_limit_points;
         }
 
-        let distance_limit_point_to_boundary: Array1<f64> = ((potential_limit_point.bounding_r - plasma_boundary.r).powi(2)
-            + (potential_limit_point.bounding_z - plasma_boundary.z).powi(2)).sqrt();
+        let distance_limit_point_to_boundary: Array1<f64> =
+            ((potential_limit_point.bounding_r - plasma_boundary.r).powi(2) + (potential_limit_point.bounding_z - plasma_boundary.z).powi(2)).sqrt();
 
-        let distance_min: f64 = distance_limit_point_to_boundary.min().expect("find_viable_limit_point: no minimum distance found").to_owned();
+        let distance_min: f64 = distance_limit_point_to_boundary
+            .min()
+            .expect("find_viable_limit_point: no minimum distance found")
+            .to_owned();
 
         // Keep if distance to plasma boundary is less than 1 grid spacing
         if distance_min > 1.0 * d_l {
@@ -171,6 +218,5 @@ pub fn find_viable_limit_point(
         return Ok(potential_limit_point.to_owned());
     }
 
-    return Err("find_viable_limit_point: no stationary points with LFS boundary".to_string());
-
+    return Err("find_viable_limit_point: no viable limit point found".to_string());
 }

@@ -9,6 +9,7 @@ use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
+use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
@@ -34,16 +35,16 @@ impl StationaryPoint {
         fit_settings_expected_value: f64,
         fit_settings_include: bool,
         fit_settings_weight: f64,
-        time: &Bound<'_, PyArray1<f64>>,
-        mag_axis_r: &Bound<'_, PyArray1<f64>>,
-        mag_axis_z: &Bound<'_, PyArray1<f64>>,
-        times_to_reconstruct: &Bound<'_, PyArray1<f64>>,
+        time: PyReadonlyArray1<f64>,
+        mag_axis_r: PyReadonlyArray1<f64>,
+        mag_axis_z: PyReadonlyArray1<f64>,
+        times_to_reconstruct: PyReadonlyArray1<f64>,
     ) {
         // Convert into Rust data types
-        let time_ndarray: Array1<f64> = Array1::from(unsafe { time.as_array() }.to_vec());
-        let mag_axis_r_ndarray: Array1<f64> = Array1::from(unsafe { mag_axis_r.as_array() }.to_vec());
-        let mag_axis_z_ndarray: Array1<f64> = Array1::from(unsafe { mag_axis_z.as_array() }.to_vec());
-        let times_to_reconstruct_ndarray: Array1<f64> = Array1::from(unsafe { times_to_reconstruct.as_array() }.to_vec());
+        let time_ndarray: Array1<f64> = time.to_owned_array();
+        let mag_axis_r_ndarray: Array1<f64> = mag_axis_r.to_owned_array();
+        let mag_axis_z_ndarray: Array1<f64> = mag_axis_z.to_owned_array();
+        let times_to_reconstruct_ndarray: Array1<f64> = times_to_reconstruct.to_owned_array();
         let n_time: usize = times_to_reconstruct_ndarray.len();
 
         // Fit settings
@@ -181,7 +182,7 @@ impl StationaryPoint {
 impl StationaryPoint {
     /// This splits the StationaryPoint into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
-    /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
+    /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
     /// For Isoflux sensors the static data is actually time-dependent.
     /// TODO: consider renaming `SensorsStatic`. Perhaps `SensorsGeometry` ?
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
@@ -213,11 +214,7 @@ impl StationaryPoint {
             for sensor_name in sensor_names_all.clone() {
                 let include_dynamic: Vec<bool> = self.results.get(&sensor_name).get("fit_settings").get("include_dynamic").unwrap_vec_bool();
 
-                if include_dynamic[i_time] == true {
-                    include.push(true)
-                } else {
-                    include.push(false)
-                }
+                include.push(include_dynamic[i_time]);
             }
 
             // Convert from Vec<bool> to Vec of indices
@@ -274,7 +271,7 @@ impl StationaryPoint {
             }
 
             // With passives
-            let mut greens_with_passives: Array3<f64> = Array3::zeros((n_time, n_dof_total, n_sensors)) * f64::NAN;
+            let mut greens_with_passives: Array3<f64> = Array3::from_elem((n_time, n_dof_total, n_sensors), f64::NAN);
             for i_sensor in 0..n_sensors {
                 let mut i_dof_total: usize = 0;
                 for i_passive in 0..n_passives {
@@ -322,7 +319,6 @@ impl StationaryPoint {
     }
 
     pub fn greens_with_coils_rs(&mut self, coils: Coils) {
-        // There should be only be one `sensor_name` in StationaryPoint
         for sensor_name in self.results.keys() {
             // Get time
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("time").unwrap_array1();
@@ -367,7 +363,6 @@ impl StationaryPoint {
         let n_r: usize = plasma.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = plasma.results.get("grid").get("n_z").unwrap_usize();
 
-        // There should be only be one `sensor_name` in StationaryPoint
         for sensor_name in self.results.keys() {
             // Get time
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("time").unwrap_array1();
@@ -427,8 +422,8 @@ impl StationaryPoint {
 
             // Calculate Greens with each passive degree of freedom
             for passive_name in passives.results.keys() {
-                let _tmp: DataTreeAccumulator<'_> = passives.results.get(&passive_name).get("dof");
-                let dof_names: Vec<String> = _tmp.keys();
+                let dof_names_accumulator: DataTreeAccumulator<'_> = passives.results.get(&passive_name).get("dof");
+                let dof_names: Vec<String> = dof_names_accumulator.keys();
                 let passive_r: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 

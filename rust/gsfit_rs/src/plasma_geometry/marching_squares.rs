@@ -7,7 +7,7 @@ use std::collections::HashMap;
 const PI: f64 = std::f64::consts::PI;
 
 #[derive(Debug, Clone)]
-pub struct BoundaryContourNew {
+pub struct MarchingContour {
     pub r: Array1<f64>,
     pub z: Array1<f64>,
     pub n: usize,
@@ -25,7 +25,7 @@ pub fn marching_squares(
     xpt_z_or_none: Option<f64>,
     mag_r: f64,
     mag_z: f64,
-) -> BoundaryContourNew {
+) -> MarchingContour {
     let n_z: usize = z.len();
     let n_r: usize = r.len();
 
@@ -77,7 +77,7 @@ pub fn marching_squares(
                     cubic_interpolation(bottom_z, bottom_psi, bottom_d_psi_d_z, top_z, top_psi, top_d_psi_d_z, psi_b);
                 if cubic_interpolation_or_error.is_ok() {
                     let cubic_interpolation_z: Array1<f64> = cubic_interpolation_or_error.unwrap();
-                    
+
                     // TODO: after some testing, it would appear that the difference between cubic_interpolation_z[0] and cubic_interpolation_z[1]
                     // doesn't affect anything?
 
@@ -101,7 +101,7 @@ pub fn marching_squares(
 
     // If empty
     if unsorted_boundary_points.is_empty() {
-        return BoundaryContourNew {
+        return MarchingContour {
             r: Array1::zeros(0),
             z: Array1::zeros(0),
             n: 0,
@@ -129,7 +129,7 @@ pub fn marching_squares(
         boundary_z_sorted.push(boundary_z_sorted[0]);
 
         let n: usize = boundary_r_sorted.len();
-        let boundary_contour: BoundaryContourNew = BoundaryContourNew {
+        let boundary_contour: MarchingContour = MarchingContour {
             r: Array1::from_vec(boundary_r_sorted),
             z: Array1::from_vec(boundary_z_sorted),
             n: n,
@@ -318,7 +318,7 @@ pub fn marching_squares(
         sort_boundary_points_version_2(unsorted_boundary_points, xpt_r, xpt_z, mag_r, mag_z, first_and_last_boundary_points);
 
     let n: usize = boundary_sorted_r.len();
-    let boundary_contour: BoundaryContourNew = BoundaryContourNew {
+    let boundary_contour: MarchingContour = MarchingContour {
         r: Array1::from_vec(boundary_sorted_r),
         z: Array1::from_vec(boundary_sorted_z),
         n: n,

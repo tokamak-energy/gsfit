@@ -35,7 +35,8 @@ pub fn find_stationary_points(
     d_br_d_z_2d: &Array2<f64>,
     d_bz_d_z_2d: &Array2<f64>,
     d2_psi_d_r2_calculator: D2PsiDR2Calculator,
-) -> Result<Vec<StationaryPoint>, String> {  // I'm thinking of always returning a Vec, even if it's empty?
+) -> Result<Vec<StationaryPoint>, String> {
+    // I'm thinking of always returning a Vec, even if it's empty?
     // Grid variables
     let n_r: usize = r.len();
     let n_z: usize = z.len();
