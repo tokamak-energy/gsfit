@@ -1,6 +1,7 @@
 use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2};
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
+use numpy::borrow::PyReadonlyArray2;
 use numpy::{PyArray1, PyArray2};
 use pyo3::prelude::*;
 
@@ -22,10 +23,9 @@ impl EfitPolynomial {
     /// L. Lao, et. al., "Reconstruction of current profile parameters and plasma shapes in tokamaks", Nucl. Fusion, 1985
     /// https://doi.org/10.1088/0029-5515/25/11/007
     #[new]
-    pub fn new(n_dof: usize, regularisations: &Bound<'_, PyArray2<f64>>) -> Self {
+    pub fn new(n_dof: usize, regularisations: PyReadonlyArray2<f64>) -> Self {
         // Change Python types into Rust types
-        let regularisations_ndarray: Array2<f64> = Array2::from(unsafe { regularisations.as_array() }.to_owned());
-        // let polynomial_coeficients_ndarray: Array1<f64> = Array1::from(unsafe { polynomial_coeficients.as_array() }.to_owned());
+        let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
         let polynomial_coeficients_ndarray: Array1<f64> = Array1::zeros(0);
 
         // Create the struct

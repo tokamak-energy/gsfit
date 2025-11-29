@@ -2,6 +2,7 @@ use core::f64;
 use ndarray::{Array1, Array2, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
+use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2};
 use physical_constants;
 use pyo3::prelude::*;
@@ -15,17 +16,17 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 #[pyo3(signature = (r, z, r_prime, z_prime, d_r=None, d_z=None))]
 pub fn greens_py(
     py: Python,
-    r: &Bound<'_, PyArray1<f64>>,
-    z: &Bound<'_, PyArray1<f64>>,
-    r_prime: &Bound<'_, PyArray1<f64>>,
-    z_prime: &Bound<'_, PyArray1<f64>>,
-    d_r: Option<&Bound<'_, PyArray1<f64>>>,
-    d_z: Option<&Bound<'_, PyArray1<f64>>>,
+    r: PyReadonlyArray1<f64>,
+    z: PyReadonlyArray1<f64>,
+    r_prime: PyReadonlyArray1<f64>,
+    z_prime: PyReadonlyArray1<f64>,
+    d_r: Option<&Bound<'_, PyArray1<f64>>>, // TODO: make this nicer with `PyReadonlyArray1`
+    d_z: Option<&Bound<'_, PyArray1<f64>>>, // TODO: make this nicer with `PyReadonlyArray1`
 ) -> Py<PyArray2<f64>> {
-    let r_ndarray: Array1<f64> = Array1::from(unsafe { r.as_array() }.to_vec());
-    let z_ndarray: Array1<f64> = Array1::from(unsafe { z.as_array() }.to_vec());
-    let r_prime_ndarray: Array1<f64> = Array1::from(unsafe { r_prime.as_array() }.to_vec());
-    let z_prime_ndarray: Array1<f64> = Array1::from(unsafe { z_prime.as_array() }.to_vec());
+    let r_ndarray: Array1<f64> = r.to_owned_array();
+    let z_ndarray: Array1<f64> = z.to_owned_array();
+    let r_prime_ndarray: Array1<f64> = r_prime.to_owned_array();
+    let z_prime_ndarray: Array1<f64> = z_prime.to_owned_array();
 
     // Some horible variable type change and fallback when option not supplied
     let n_prime: usize = r_prime_ndarray.len();

@@ -9,6 +9,7 @@ use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
+use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
@@ -54,12 +55,12 @@ impl Dialoop {
         fit_settings_expected_value: f64,
         fit_settings_include: bool,
         fit_settings_weight: f64,
-        time: &Bound<'_, PyArray1<f64>>,
-        measured: &Bound<'_, PyArray1<f64>>,
+        time: PyReadonlyArray1<f64>,
+        measured: PyReadonlyArray1<f64>,
     ) {
         // Convert into Rust data types
-        let time_ndarray: Array1<f64> = Array1::from(unsafe { time.as_array() }.to_vec());
-        let measured_ndarray: Array1<f64> = Array1::from(unsafe { measured.as_array() }.to_vec());
+        let time_ndarray: Array1<f64> = time.to_owned_array();
+        let measured_ndarray: Array1<f64> = measured.to_owned_array();
 
         // Fit settings
         self.results

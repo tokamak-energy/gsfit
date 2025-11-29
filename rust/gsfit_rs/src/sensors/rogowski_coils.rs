@@ -1,3 +1,4 @@
+use super::BpProbes;
 use crate::Plasma;
 use crate::coils::Coils;
 use crate::passives::Passives;
@@ -9,14 +10,13 @@ use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
+use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 const PI: f64 = std::f64::consts::PI;
-
-use super::BpProbes;
 
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass]
@@ -32,16 +32,18 @@ impl RogowskiCoils {
         Self { results: DataTree::new() }
     }
 
-    /// # Arguments
+    /// Add a Rogowski coil sensor
+    ///
+    ///  # Arguments
     /// * `name` - Name of the sensor
     /// * `r` - R coordinate of the sensor, metre
     /// * `z` - Z coordinate of the sensor, metre
     /// * `fit_settings_comment` - Comment about the sensor
-    /// * `fit_settings_expected_value` - Expected value of the sensor when the plasma current is zero, tesla
+    /// * `fit_settings_expected_value` - Expected value of the sensor when the plasma current is zero, ampere
     /// * `fit_settings_include` - Whether to include this sensor in the fitting
     /// * `fit_settings_weight` - Weighting of this sensor in the fitting
     /// * `time` - Time array for the measurements, seconds
-    /// * `measured` - Measured values of the sensor, tesla
+    /// * `measured` - Measured values of the sensor, ampere
     /// * `gaps_r` - R coordinate of the gaps, metre
     /// * `gaps_z` - Z coordinate of the gaps, metre
     /// * `gaps_d_r` - Half width of the gaps in R, metre
@@ -67,29 +69,29 @@ impl RogowskiCoils {
     pub fn add_sensor(
         &mut self,
         name: &str,
-        r: &Bound<'_, PyArray1<f64>>,
-        z: &Bound<'_, PyArray1<f64>>,
+        r: PyReadonlyArray1<f64>,
+        z: PyReadonlyArray1<f64>,
         fit_settings_comment: String,
         fit_settings_expected_value: f64,
         fit_settings_include: bool,
         fit_settings_weight: f64,
-        time: &Bound<'_, PyArray1<f64>>,
-        measured: &Bound<'_, PyArray1<f64>>,
-        gaps_r: &Bound<'_, PyArray1<f64>>,
-        gaps_z: &Bound<'_, PyArray1<f64>>,
-        gaps_d_r: &Bound<'_, PyArray1<f64>>,
-        gaps_d_z: &Bound<'_, PyArray1<f64>>,
-        gaps_name: &Bound<'_, PyList>,
+        time: PyReadonlyArray1<f64>,
+        measured: PyReadonlyArray1<f64>,
+        gaps_r: PyReadonlyArray1<f64>,
+        gaps_z: PyReadonlyArray1<f64>,
+        gaps_d_r: PyReadonlyArray1<f64>,
+        gaps_d_z: PyReadonlyArray1<f64>,
+        gaps_name: &Bound<'_, PyList>, // TODO: is there a better than using the &Bound<'_, PyList> type here?
     ) {
         // Convert to Rust data types
-        let r_ndarray: Array1<f64> = Array1::from(unsafe { r.as_array() }.to_vec());
-        let z_ndarray: Array1<f64> = Array1::from(unsafe { z.as_array() }.to_vec());
-        let time_ndarray: Array1<f64> = Array1::from(unsafe { time.as_array() }.to_vec());
-        let measured_ndarray: Array1<f64> = Array1::from(unsafe { measured.as_array() }.to_vec());
-        let gaps_r_ndarray: Array1<f64> = Array1::from(unsafe { gaps_r.as_array() }.to_vec());
-        let gaps_z_ndarray: Array1<f64> = Array1::from(unsafe { gaps_z.as_array() }.to_vec());
-        let gaps_d_r_ndarray: Array1<f64> = Array1::from(unsafe { gaps_d_r.as_array() }.to_vec());
-        let gaps_d_z_ndarray: Array1<f64> = Array1::from(unsafe { gaps_d_z.as_array() }.to_vec());
+        let r_ndarray: Array1<f64> = r.to_owned_array();
+        let z_ndarray: Array1<f64> = z.to_owned_array();
+        let time_ndarray: Array1<f64> = time.to_owned_array();
+        let measured_ndarray: Array1<f64> = measured.to_owned_array();
+        let gaps_r_ndarray: Array1<f64> = gaps_r.to_owned_array();
+        let gaps_z_ndarray: Array1<f64> = gaps_z.to_owned_array();
+        let gaps_d_r_ndarray: Array1<f64> = gaps_d_r.to_owned_array();
+        let gaps_d_z_ndarray: Array1<f64> = gaps_d_z.to_owned_array();
         let n_gaps: usize = gaps_r_ndarray.len();
 
         // Add gaps
@@ -475,7 +477,7 @@ impl RogowskiCoils {
         let plasma_rs: &Plasma = &*plasma;
 
         // Run the Rust method
-        self.calculate_sensor_values_rust(coils_rs, passives_rs, plasma_rs);
+        self.calculate_sensor_values_rs(coils_rs, passives_rs, plasma_rs);
     }
 
     /// Print to screen, to be used within Python
@@ -574,13 +576,13 @@ impl RogowskiCoils {
         }
 
         // Add to virtual b_z probes
-        for i_vitual_bp_probe in 0..n_virtual_bp_probes {
-            let virtual_b_z_probe_name: String = format!("virtual_b_r_gap={}_sensor={}", gap_name, i_vitual_bp_probe);
+        for i_virtual_bp_probe in 0..n_virtual_bp_probes {
+            let virtual_b_z_probe_name: String = format!("virtual_b_z_gap={}_sensor={}", gap_name, i_virtual_bp_probe);
             virtual_b_z_probes.add_sensor_rs(
                 &virtual_b_z_probe_name,
                 PI / 2.0, // vertical = b_z
-                chord_r[i_vitual_bp_probe],
-                chord_z[i_vitual_bp_probe],
+                chord_r[i_virtual_bp_probe],
+                chord_z[i_virtual_bp_probe],
                 "no comment".to_string(),
                 0.0,
                 true,
@@ -595,7 +597,7 @@ impl RogowskiCoils {
 
     /// This splits the RogowskiCoils into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
-    /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
+    /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
 
@@ -743,7 +745,7 @@ impl RogowskiCoils {
         return (results_static_time_dependent, results_dynamic);
     }
 
-    pub fn calculate_sensor_values_rust(&mut self, coils: &Coils, passives: &Passives, plasma: &Plasma) {
+    pub fn calculate_sensor_values_rs(&mut self, coils: &Coils, passives: &Passives, plasma: &Plasma) {
         for sensor_name in self.results.keys() {
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(&sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = [n_pf]

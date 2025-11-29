@@ -56,7 +56,7 @@
         }
     },
     "numerics": {
-        "n_iter_max": 25,
+        "n_iter_max": 100,
         "gs_error": 5.0e-6,
         "n_iter_no_vertical_feedback": 1,
         "n_iter_min": 0,
@@ -71,10 +71,10 @@
         "inverse": true
     },
     "grid": {
-        "n_r": 80,
+        "n_r": 81,
         "n_z": 161,
         "r_min": 0.01,
-        "r_max": 1.00,
+        "r_max": 1.01,
         "z_min": -1.0,
         "z_max": 1.0
     },

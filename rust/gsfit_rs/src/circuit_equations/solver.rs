@@ -1,14 +1,11 @@
-use core::time;
-
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::sensors::{BpProbes, FluxLoops, RogowskiCoils};
-use ndarray::{Array, Array1, Array2, Array3, s};
+use ndarray::{Array1, Array2, s};
 use ndarray_interp::interp1d::Interp1D;
-use ndarray_linalg::Inverse; // Import the Inverse trait
-use numpy::IntoPyArray; // converting to python data types
-use numpy::PyArrayMethods; // used in to convert python data into ndarray
-use numpy::{PyArray1, PyArray2};
+use ndarray_linalg::Inverse;
+use numpy::PyArrayMethods;
+use numpy::borrow::PyReadonlyArray1;
 use ode_solvers::dopri5::*;
 use ode_solvers::*;
 use pyo3::prelude::*;
@@ -99,12 +96,12 @@ pub fn solve_circuit_equations(
     mut bp_probes: PyRefMut<BpProbes>,
     mut flux_loops: PyRefMut<FluxLoops>,
     mut rogowski_coils: PyRefMut<RogowskiCoils>,
-    times_to_solve: &Bound<'_, PyArray1<f64>>,
+    times_to_solve: PyReadonlyArray1<f64>,
 ) {
     let coil_names: Vec<String> = coils.results.get("pf").keys();
     let n_coils: usize = coil_names.len();
 
-    let times_to_solve_ndarray: Array1<f64> = Array1::from(unsafe { times_to_solve.as_array() }.to_vec());
+    let times_to_solve_ndarray: Array1<f64> = times_to_solve.to_owned_array();
 
     let model: CircuitEquationModel = CircuitEquationModel::new(coils.to_owned());
 

@@ -1,3 +1,4 @@
+use super::SensorsDynamic;
 use crate::Plasma;
 use crate::coils::Coils;
 use crate::greens::greens_b;
@@ -9,11 +10,10 @@ use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
+use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
-
-use super::SensorsDynamic;
 
 const PI: f64 = std::f64::consts::PI;
 
@@ -57,20 +57,20 @@ impl Isoflux {
         fit_settings_comment: String,
         fit_settings_include: bool,
         fit_settings_weight: f64,
-        time: &Bound<'_, PyArray1<f64>>,
-        location_1_r: &Bound<'_, PyArray1<f64>>,
-        location_1_z: &Bound<'_, PyArray1<f64>>,
-        location_2_r: &Bound<'_, PyArray1<f64>>,
-        location_2_z: &Bound<'_, PyArray1<f64>>,
-        times_to_reconstruct: &Bound<'_, PyArray1<f64>>,
+        time: PyReadonlyArray1<f64>,
+        location_1_r: PyReadonlyArray1<f64>,
+        location_1_z: PyReadonlyArray1<f64>,
+        location_2_r: PyReadonlyArray1<f64>,
+        location_2_z: PyReadonlyArray1<f64>,
+        times_to_reconstruct: PyReadonlyArray1<f64>,
     ) {
         // Convert into Rust data types
-        let location_1_r_ndarray: Array1<f64> = Array1::from(unsafe { location_1_r.as_array() }.to_vec());
-        let location_1_z_ndarray: Array1<f64> = Array1::from(unsafe { location_1_z.as_array() }.to_vec());
-        let location_2_r_ndarray: Array1<f64> = Array1::from(unsafe { location_2_r.as_array() }.to_vec());
-        let location_2_z_ndarray: Array1<f64> = Array1::from(unsafe { location_2_z.as_array() }.to_vec());
-        let time_ndarray: Array1<f64> = Array1::from(unsafe { time.as_array() }.to_vec());
-        let times_to_reconstruct_ndarray: Array1<f64> = Array1::from(unsafe { times_to_reconstruct.as_array() }.to_vec());
+        let location_1_r_ndarray: Array1<f64> = location_1_r.to_owned_array();
+        let location_1_z_ndarray: Array1<f64> = location_1_z.to_owned_array();
+        let location_2_r_ndarray: Array1<f64> = location_2_r.to_owned_array();
+        let location_2_z_ndarray: Array1<f64> = location_2_z.to_owned_array();
+        let time_ndarray: Array1<f64> = time.to_owned_array();
+        let times_to_reconstruct_ndarray: Array1<f64> = times_to_reconstruct.to_owned_array();
         let n_time: usize = times_to_reconstruct_ndarray.len();
 
         // Fit settings
@@ -137,10 +137,10 @@ impl Isoflux {
         let interpolator = Interp1D::builder(location_1_z_ndarray)
             .x(time_ndarray.clone())
             .build()
-            .expect("Isoflux.greens_with_coils: Can't make Interp1D for location_1_r");
+            .expect("Isoflux.greens_with_coils: Can't make Interp1D for location_1_z");
         let location_1_z_measured: Array1<f64> = interpolator
             .interp_array(&times_to_reconstruct_ndarray)
-            .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_r");
+            .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_z");
         self.results
             .get_or_insert(name)
             .get_or_insert("isoflux_geometry")
@@ -257,7 +257,7 @@ impl Isoflux {
                     );
                     let g_location_1: f64 = g_full_location_1.sum();
 
-                    // Calculate the Green's at location 1
+                    // Calculate the Green's at location 2
                     let g_full_location_2: Array2<f64> = greens_psi(
                         Array1::from_vec(vec![location_2_r[i_time]]),
                         Array1::from_vec(vec![location_2_z[i_time]]),
@@ -452,7 +452,7 @@ impl Isoflux {
             let mut g_with_plasma: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
             let mut g_d_plasma_d_z: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
             for i_time in 0..n_time {
-                // Plasma componet
+                // Plasma component
                 let g_full_location_1: Array2<f64> = greens_psi(
                     Array1::from_vec(vec![location_1_r[i_time]]), // sensor
                     Array1::from_vec(vec![location_1_z[i_time]]),
@@ -485,7 +485,7 @@ impl Isoflux {
                 // location_1
                 let (g_br_full_location_1, _g_bz_full_location_1): (Array2<f64>, Array2<f64>) = greens_b(
                     Array1::from_vec(vec![location_1_r[i_time]]), // sensors
-                    Array1::from_vec(vec![location_1_r[i_time]]),
+                    Array1::from_vec(vec![location_1_z[i_time]]),
                     plasma_r.clone(), // current sources
                     plasma_z.clone(),
                 );
@@ -495,7 +495,7 @@ impl Isoflux {
                 // location_2
                 let (g_br_full_location_2, _g_bz_full_location_2): (Array2<f64>, Array2<f64>) = greens_b(
                     Array1::from_vec(vec![location_2_r[i_time]]), // sensors
-                    Array1::from_vec(vec![location_2_r[i_time]]),
+                    Array1::from_vec(vec![location_2_z[i_time]]),
                     plasma_r.clone(), // current sources
                     plasma_z.clone(),
                 );
@@ -578,11 +578,7 @@ impl Isoflux {
                 let include_dynamic: Vec<bool> = self.results.get(&sensor_name).get("fit_settings").get("include_dynamic").unwrap_vec_bool();
                 println!("include_dynamic = {:?}", include_dynamic);
 
-                if include_dynamic[i_time] == true {
-                    include.push(true)
-                } else {
-                    include.push(false)
-                }
+                include.push(include_dynamic[i_time])
             }
 
             // Convert from Vec<bool> to Vec of indices

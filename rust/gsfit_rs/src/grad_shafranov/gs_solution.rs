@@ -55,12 +55,9 @@ pub struct GsSolution<'a> {
     pub psi_b: f64,
     pub psi_a: f64,
     pub ip: f64,
-    // pub boundary_r: Array1<f64>,
-    // pub boundary_z: Array1<f64>,
     pub bounding_r: f64,
     pub bounding_z: f64,
     pub delta_z: f64,
-    // pub n_iter: usize,
     pub xpt_upper_r: f64,
     pub xpt_upper_z: f64,
     pub xpt_lower_r: f64,
@@ -137,8 +134,6 @@ impl<'a> GsSolution<'a> {
             psi_b: f64::NAN,
             psi_a: f64::NAN,
             ip: f64::NAN,
-            // boundary_r: Array1::zeros(0),
-            // boundary_z: Array1::zeros(0),
             bounding_r: f64::NAN,
             bounding_z: f64::NAN,
             delta_z: f64::NAN,
@@ -175,8 +170,6 @@ impl<'a> GsSolution<'a> {
         self.psi_b = f64::NAN;
         self.psi_a = f64::NAN;
         self.ip = f64::NAN;
-        // self.boundary_r = Array1::zeros(0);
-        // self.boundary_z = Array1::zeros(0);
         self.bounding_r = f64::NAN;
         self.bounding_z = f64::NAN;
         self.delta_z = f64::NAN;
@@ -394,13 +387,13 @@ impl<'a> GsSolution<'a> {
             self.stationary_points = stationary_points.clone();
 
             // Find boundary
-            // TODO: should also return stationary points
             let plasma_boundary_or_error: Result<BoundaryContour, plasma_geometry::Error> = find_boundary(
                 &r,
                 &z,
                 &psi_2d,
                 &br_2d,
                 &bz_2d,
+                &d_bz_d_z_2d,
                 &stationary_points,
                 &limit_pts_r,
                 &limit_pts_z,
@@ -554,7 +547,6 @@ impl<'a> GsSolution<'a> {
                 if i_iter > n_iter_no_vertical_feedback {
                     fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
                         d_area * (&greens_d_bp_probes_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
-                    //  * &mask_flat
                 }
 
                 // PF coil component
@@ -663,7 +655,6 @@ impl<'a> GsSolution<'a> {
                 }
 
                 // PF coil component
-                // TODO: I checked and `greens_rogowski_coils_pf["bvlb", "BVLBCASE"] = 16`
                 let tmp: Array1<f64> = greens_rogowski_coils_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
@@ -1118,7 +1109,6 @@ impl<'a> GsSolution<'a> {
         }
 
         // Do some re-shaping
-        // let g_grid_grid_3d: Array3<f64> = g_grid_grid.flatten().to_shape((n_z, n_r, n_r)).expect("Failed to reshape g_grid_grid").to_owned();
         let (g_grid_grid_flat, _): (Vec<f64>, Option<usize>) = g_grid_grid.into_raw_vec_and_offset();
         let g_grid_grid_3d: Array3<f64> = Array3::from_shape_vec((n_z, n_r, n_r), g_grid_grid_flat).expect("Failed to reshape into Array3");
 
@@ -1196,7 +1186,7 @@ impl<'a> GsSolution<'a> {
         let j_2d: Array2<f64> = self.j_2d.to_owned();
         let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
 
-        let (_1, _2, n_pf): (usize, usize, usize) = g_br_coils.dim();
+        let (_, _, n_pf): (usize, usize, usize) = g_br_coils.dim();
 
         // Coils;  timing: 1.9ms, with [n_r, n_z]=[100,201]
         let mut br_2d_coils: Array2<f64> = Array2::zeros((n_z, n_r));

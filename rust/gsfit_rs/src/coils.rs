@@ -5,6 +5,7 @@ use ndarray::{Array1, Array2, Array3, s};
 use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
+use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
@@ -25,20 +26,20 @@ impl Coils {
     pub fn add_pf_coil(
         &mut self,
         name: &str,
-        r: &Bound<'_, PyArray1<f64>>,
-        z: &Bound<'_, PyArray1<f64>>,
-        d_r: &Bound<'_, PyArray1<f64>>,
-        d_z: &Bound<'_, PyArray1<f64>>,
-        time: &Bound<'_, PyArray1<f64>>,
-        measured: &Bound<'_, PyArray1<f64>>,
+        r: PyReadonlyArray1<f64>,
+        z: PyReadonlyArray1<f64>,
+        d_r: PyReadonlyArray1<f64>,
+        d_z: PyReadonlyArray1<f64>,
+        time: PyReadonlyArray1<f64>,
+        measured: PyReadonlyArray1<f64>,
     ) {
         // Change Python types into Rust types
-        let r_ndarray: Array1<f64> = Array1::from(unsafe { r.as_array() }.to_vec());
-        let z_ndarray: Array1<f64> = Array1::from(unsafe { z.as_array() }.to_vec());
-        let d_r_ndarray: Array1<f64> = Array1::from(unsafe { d_r.as_array() }.to_vec());
-        let d_z_ndarray: Array1<f64> = Array1::from(unsafe { d_z.as_array() }.to_vec());
-        let time_ndarray: Array1<f64> = Array1::from(unsafe { time.as_array() }.to_vec());
-        let measured_ndarray: Array1<f64> = Array1::from(unsafe { measured.as_array() }.to_vec());
+        let r_ndarray: Array1<f64> = r.to_owned_array();
+        let z_ndarray: Array1<f64> = z.to_owned_array();
+        let d_r_ndarray: Array1<f64> = d_r.to_owned_array();
+        let d_z_ndarray: Array1<f64> = d_z.to_owned_array();
+        let time_ndarray: Array1<f64> = time.to_owned_array();
+        let measured_ndarray: Array1<f64> = measured.to_owned_array();
 
         // Store the PF coils
         self.results
@@ -73,10 +74,10 @@ impl Coils {
             .insert("measured_experimental", measured_ndarray); // Array1<f64>; shape = (n_time)
     }
 
-    pub fn add_tf_coil(&mut self, time: &Bound<'_, PyArray1<f64>>, measured: &Bound<'_, PyArray1<f64>>) {
+    pub fn add_tf_coil(&mut self, time: PyReadonlyArray1<f64>, measured: PyReadonlyArray1<f64>) {
         // Change Python types into Rust types
-        let time_ndarray: Array1<f64> = Array1::from(unsafe { time.as_array() }.to_vec());
-        let measured_ndarray: Array1<f64> = Array1::from(unsafe { measured.as_array() }.to_vec());
+        let time_ndarray: Array1<f64> = time.to_owned_array();
+        let measured_ndarray: Array1<f64> = measured.to_owned_array();
 
         // Store the rod current
         self.results
