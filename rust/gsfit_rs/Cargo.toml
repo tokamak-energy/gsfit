@@ -15,12 +15,12 @@ data_tree = { path = "../data_tree" }
 contour = "0.13.1"
 geo = "0.31.0"  # For centre of mass; polygon area
 geo-types = "0.7.17"  # For getting geo type out of `contour`
-pyo3 = { version = "0.27.1", features = ["extension-module", "multiple-pymethods"] }  # "extension-module" = this will be a Python package; "multiple-pymethods" = ??
+pyo3 = { version = "0.26.0", features = ["extension-module", "multiple-pymethods"] }  # "extension-module" = this will be a Python package; "multiple-pymethods" = ??
 physical_constants = "0.5.0"  # For MU_0
 rayon = "1.11.0"
 spec_math = "0.1.6"  # For elliptic integrals
-numpy = "0.27.0"
-ndarray = { version = "0.16.1", features = ["approx"] }
+numpy = "0.26.0"
+ndarray = { version = "0.16.1", features = ["approx"] }  # must be same version as numpy uses internally
 ndarray-interp = "0.5.0"
 env_logger = "0.11.8"
 log = "0.4.28"
