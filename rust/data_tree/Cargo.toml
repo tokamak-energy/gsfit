@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ndarray = "0.16.1"
+ndarray = "0.16.1"  # must be same version as used in `gsfit_rs`
 data_tree_derive = { path = "data_tree_derive" }
 
 [dev-dependencies]

@@ -57,6 +57,9 @@ jobs:
           # Update Rust and print version
           rustup update
           rustc --version
+
+          # Print cargo tree
+          cargo tree --manifest-path rust/Cargo.toml
           
           # Set LD_LIBRARY_PATH so test binaries can find libpython at runtime
           # Python 3.12 from actions/setup-python includes the shared library
