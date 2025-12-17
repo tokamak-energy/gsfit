@@ -1,6 +1,6 @@
 {
     "thresh": 100.0e-12,
-    "frac": 0.99,
+    "frac": 0.999,
     "n_intrp": 4,
     "n_xpt_max": 50,
     "n_lcfs_max": 500
