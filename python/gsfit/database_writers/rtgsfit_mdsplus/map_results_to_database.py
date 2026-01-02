@@ -381,9 +381,9 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     n_intrp = np.int32(rtgsfit_code_settings["n_intrp"])
     lim_r = plasma.get_array1(["limiter", "limit_pts", "r"])
     lim_z = plasma.get_array1(["limiter", "limit_pts", "z"])
-    # Remove indices where |lim_z| > 0.9 m
-    lim_r = lim_r[np.abs(lim_z) < 0.7]
-    lim_z = lim_z[np.abs(lim_z) < 0.7]
+    # Remove indices where |lim_z| > 0.7 m
+    # lim_r = lim_r[np.abs(lim_z) < 0.7]
+    # lim_z = lim_z[np.abs(lim_z) < 0.7]
     n_lim = len(lim_r)
     limit_idx, limit_w = compute_limit_idx_and_weights(r, z, lim_r, lim_z, n_intrp, n_lim)
     results["PRESHOT"]["N_LIMIT"] = np.int32(n_lim)
@@ -394,7 +394,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
     # If grid point is within sqrt(d_r^2 + d_z^2) of
     # a limiter point then include it in the mask_lim
-    d_rz = np.sqrt(d_r**2 + d_z**2)
+    d_rz = np.sqrt(d_r**2 + d_z**2) / 2
     for i, (lr, lz) in enumerate(zip(lim_r, lim_z)):
         points_near_lim = np.sqrt((lr - r_flat) ** 2 + (lz - z_flat) ** 2) < d_rz
         mask_lim = np.logical_or(mask_lim, points_near_lim)
