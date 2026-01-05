@@ -6,8 +6,8 @@ use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
-use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -269,14 +269,12 @@ impl BpProbes {
             let measured_experimental: Array1<f64> = self.results.get(sensor_name).get("b").get("measured_experimental").unwrap_array1();
 
             // Create the interpolator
-            let interpolator = Interp1D::builder(measured_experimental)
-                .x(time_experimental.clone())
-                .build()
-                .expect("BpProbes.split_into_static_and_dynamic: Can't make Interp1D");
+            let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_experimental, &measured_experimental)
+                .expect("BpProbes.split_into_static_and_dynamic: Can't make interpolator");
 
             // Do the interpolation
             let measured_this_sensor: Array1<f64> = interpolator
-                .interp_array(&times_to_reconstruct)
+                .interpolate_array1(&times_to_reconstruct)
                 .expect("BpProbes.split_into_static_and_dynamic: Can't do interpolation");
 
             // Store for later

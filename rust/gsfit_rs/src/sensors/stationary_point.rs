@@ -5,8 +5,8 @@ use crate::greens::greens_d_b_d_z;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
-use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -83,12 +83,9 @@ impl StationaryPoint {
 
         // Interpolate the geometry to `times_to_reconstruct`
         // geometry_r
-        let interpolator = Interp1D::builder(mag_axis_r_ndarray)
-            .x(time_ndarray.clone())
-            .build()
-            .expect("StationaryPoint.add_sensor: Can't make Interp1D for mag_axis_r");
-        let geometry_r_measured: Array1<f64> = interpolator
-            .interp_array(&times_to_reconstruct_ndarray)
+        let interpolator = interpolation::Dim1Linear::new(&time_ndarray, &mag_axis_r_ndarray).
+            expect("StationaryPoint.add_sensor: Can't make interpolator for mag_axis_r");
+        let geometry_r_measured: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct_ndarray)
             .expect("StationaryPoint.add_sensor: Can't do interpolation for geometry_r");
         self.results
             .get_or_insert(name)
@@ -96,13 +93,10 @@ impl StationaryPoint {
             .get_or_insert("r")
             .insert("measured", geometry_r_measured);
         // geometry_z
-        let interpolator = Interp1D::builder(mag_axis_z_ndarray)
-            .x(time_ndarray.clone())
-            .build()
-            .expect("StationaryPoint.add_sensor: Can't make Interp1D for mag_axis_z");
-        let geometry_z_measured: Array1<f64> = interpolator
-            .interp_array(&times_to_reconstruct_ndarray)
-            .expect("StationaryPoint.add_sensor: Can't do interpolation for mag_axis_z");
+        let interpolator = interpolation::Dim1Linear::new(&time_ndarray, &mag_axis_z_ndarray).
+            expect("StationaryPoint.add_sensor: Can't make interpolator for mag_axis_z");
+        let geometry_z_measured: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct_ndarray)
+            .expect("StationaryPoint.add_sensor: Can't do interpolation for geometry_z");
         self.results
             .get_or_insert(name)
             .get_or_insert("geometry")

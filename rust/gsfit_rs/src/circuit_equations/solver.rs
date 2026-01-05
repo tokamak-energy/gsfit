@@ -1,8 +1,8 @@
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::sensors::{BpProbes, FluxLoops, RogowskiCoils};
+use interpolation;
 use ndarray::{Array1, Array2, s};
-use ndarray_interp::interp1d::Interp1D;
 use ndarray_linalg::Inverse;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -64,12 +64,11 @@ impl ode_solvers::System<f64, DVector<f64>> for CircuitEquationModel {
         let mut voltages: Array1<f64> = Array1::zeros(n_states);
 
         for i_state in 0..n_states {
-            let interpolator = Interp1D::builder(voltages_vs_time.slice(s![.., i_state]))
-                .x(time.clone())
-                .build()
-                .expect("Coils.split_into_static_and_dynamic: Can't make Interp1D");
+           let interpolator = interpolation::Dim1Linear::new(&time, &voltages_vs_time.slice(s![.., i_state]).to_owned())
+               .expect("Coils.split_into_static_and_dynamic: Can't make interpolator");
 
-            let voltage_this_coil: f64 = interpolator.interp_scalar(time_now).unwrap();
+            // let voltage_this_coil: f64 = interpolator.interp_scalar(time_now).unwrap();
+            let voltage_this_coil: f64 = -999.0; // TODO: replace with interpolation call
             voltages[i_state] = voltage_this_coil;
         }
 

@@ -12,8 +12,8 @@ use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::Area;
 use geo::Centroid;
 use geo::{Contains, Coord, LineString, Point, Polygon};
+use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
-use ndarray_interp::interp1d::Interp1D;
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
 use numpy::IntoPyArray;
@@ -1976,14 +1976,14 @@ fn epp_q_axis(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, f_prof
     return q_axis;
 }
 
+/// Safety factor at psi_n=0.95, q95
 fn epp_q95(q_profile: &Array1<f64>, psi_n: &Array1<f64>) -> f64 {
-    // q95 = q(psi_n=0.95)
-    let q95: f64 = Interp1D::builder(q_profile.to_owned())
-        .x(psi_n.clone())
-        .build()
-        .expect("find_boundary: Can't make Interp1D")
-        .interp_scalar(0.95)
-        .expect("possible_bounding_psi: error, limiter");
+    let interpolator = interpolation::Dim1Linear::new(&psi_n, &q_profile)
+        .expect("find_boundary: Can't make interpolator for q_profile");
+
+    let psi_95: Array1<f64> = Array1::from_vec(vec![0.95]);
+    let q95: f64 = interpolator.interpolate_array1(&psi_95).expect("epp_q95: can't do interpolation")[0];
+
     return q95;
 }
 

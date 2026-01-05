@@ -1,0 +1,10 @@
+[package]
+name = "interpolation"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ndarray = "0.16.1"  # must be same version as used in `gsfit_rs`
+
+[dev-dependencies]
+# For running tests

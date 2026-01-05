@@ -86,6 +86,8 @@ pub fn greens_py(
 ///     greens_psi(r, z, r_prime, z_prime, d_r, d_z);
 /// ```
 ///
+/// TODO: it would be useful to turn this into a generic where it can accept: `greens_psi(r: f64, z: f64, r_prime: f64, z_prime: f64, d_r: f64, d_z: f64)`
+///
 pub fn greens_psi(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>, d_r: Array1<f64>, d_z: Array1<f64>) -> Array2<f64> {
     let n_grid: usize = r.len();
     let n_filament: usize = r_prime.len();

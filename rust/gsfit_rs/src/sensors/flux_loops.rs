@@ -6,8 +6,8 @@ use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
-use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -66,34 +66,17 @@ impl FluxLoops {
         let time_ndarray: Array1<f64> = time.to_owned_array();
         let measured_ndarray: Array1<f64> = measured.to_owned_array();
 
-        // Geometry
-        self.results.get_or_insert(name).get_or_insert("geometry").insert("r", geometry_r);
-        self.results.get_or_insert(name).get_or_insert("geometry").insert("z", geometry_z);
-
-        // Fit settings
-        self.results
-            .get_or_insert(name)
-            .get_or_insert("fit_settings")
-            .insert("comment", fit_settings_comment);
-        self.results
-            .get_or_insert(name)
-            .get_or_insert("fit_settings")
-            .insert("expected_value", fit_settings_expected_value);
-        self.results
-            .get_or_insert(name)
-            .get_or_insert("fit_settings")
-            .insert("include", fit_settings_include);
-        self.results
-            .get_or_insert(name)
-            .get_or_insert("fit_settings")
-            .insert("weight", fit_settings_weight);
-
-        // Measurements
-        self.results.get_or_insert(name).get_or_insert("psi").insert("time_experimental", time_ndarray);
-        self.results
-            .get_or_insert(name)
-            .get_or_insert("psi")
-            .insert("measured_experimental", measured_ndarray);
+        self.add_sensor_rs(
+            name,
+            geometry_r,
+            geometry_z,
+            fit_settings_comment,
+            fit_settings_expected_value,
+            fit_settings_include,
+            fit_settings_weight,
+            time_ndarray,
+            measured_ndarray,
+        );
     }
 
     ///
@@ -261,6 +244,78 @@ impl FluxLoops {
 
 // Rust only methods
 impl FluxLoops {
+    pub fn add_sensor_rs(
+        &mut self,
+        name: &str,
+        geometry_r: f64,
+        geometry_z: f64,
+        fit_settings_comment: String,
+        fit_settings_expected_value: f64,
+        fit_settings_include: bool,
+        fit_settings_weight: f64,
+        time: Array1<f64>,
+        measured: Array1<f64>,
+    ) {
+        // Geometry
+        self.results.get_or_insert(name).get_or_insert("geometry").insert("r", geometry_r);
+        self.results.get_or_insert(name).get_or_insert("geometry").insert("z", geometry_z);
+
+        // Fit settings
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("fit_settings")
+            .insert("comment", fit_settings_comment);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("fit_settings")
+            .insert("expected_value", fit_settings_expected_value);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("fit_settings")
+            .insert("include", fit_settings_include);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("fit_settings")
+            .insert("weight", fit_settings_weight);
+
+        // Measurements
+        self.results.get_or_insert(name).get_or_insert("psi").insert("time_experimental", time);
+        self.results.get_or_insert(name).get_or_insert("psi").insert("measured_experimental", measured);
+    }
+
+    pub fn greens_with_coils_rs(&mut self, coils: &Coils) {
+        // Change Python type into Rust
+
+        for sensor_name in self.results.keys() {
+            let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
+            let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
+
+            for pf_coil_name in coils.results.get("pf").keys() {
+                let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
+                let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
+
+                let g_full: Array2<f64> = greens_psi(
+                    Array1::from_vec(vec![sensor_r]),
+                    Array1::from_vec(vec![sensor_z]),
+                    coil_r.clone(),
+                    coil_z.clone(),
+                    coil_r.clone() * 0.0,
+                    coil_r.clone() * 0.0,
+                );
+
+                // Sum over all the current sources
+                let g: f64 = g_full.sum();
+
+                // Store
+                self.results
+                    .get_or_insert(&sensor_name)
+                    .get_or_insert("greens")
+                    .get_or_insert("pf")
+                    .insert(&pf_coil_name, g);
+            }
+        }
+    }
+
     /// This splits the FluxLoops into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
@@ -374,14 +429,12 @@ impl FluxLoops {
             let measured_experimental: Array1<f64> = self.results.get(sensor_name).get("psi").get("measured_experimental").unwrap_array1();
 
             // Create the interpolator
-            let interpolator = Interp1D::builder(measured_experimental)
-                .x(time_experimental.clone())
-                .build()
-                .expect("FluxLoops.split_into_static_and_dynamic: Can't make Interp1D");
+            let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_experimental, &measured_experimental)
+                .expect("FluxLoops.split_into_static_and_dynamic: Can't make interpolator");
 
             // Do the interpolation
             let measured_this_sensor: Array1<f64> = interpolator
-                .interp_array(&times_to_reconstruct)
+                .interpolate_array1(&times_to_reconstruct)
                 .expect("FluxLoops.split_into_static_and_dynamic: Can't do interpolation");
 
             // Store for later
