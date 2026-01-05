@@ -93,8 +93,8 @@ pub fn find_viable_xpt(
                 bounding_psi: stationary_point.psi,
                 bounding_r: stationary_point.r,
                 bounding_z: stationary_point.z,
-                xpt_diverted: false,
-                mask: None, // mask calculated later using method
+                xpt_diverted: false, // TODO: should this be `true`?
+                mask: None,          // mask calculated later using method
             })
         }
     }

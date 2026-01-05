@@ -5,8 +5,8 @@ use crate::greens::greens_b;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
+use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
-use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::{PyArray1, PyArray2, PyArray3};
@@ -234,14 +234,11 @@ impl HallProbes {
             let measured_experimental: Array1<f64> = self.results.get(sensor_name).get("b").get("measured_experimental").unwrap_array1();
 
             // Create the interpolator
-            let interpolator = Interp1D::builder(measured_experimental)
-                .x(time_experimental.clone())
-                .build()
-                .expect("HallProbes.split_into_static_and_dynamic: Can't make Interp1D");
+            let interpolator = interpolator::Dim1Linear::new(&time_experimental, &measured_experimental)
+                .expect("HallProbes.split_into_static_and_dynamic: Can't make interpolator");
 
             // Do the interpolation
-            let measured_this_coil: Array1<f64> = interpolator
-                .interp_array(&times_to_reconstruct)
+            let measured_this_coil: Array1<f64> = interpolator.interp_array(&times_to_reconstruct)
                 .expect("HallProbes.split_into_static_and_dynamic: Can't do interpolation");
 
             // Store for later

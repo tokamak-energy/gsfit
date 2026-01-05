@@ -271,6 +271,8 @@ pub fn find_stationary_points(
                                 stationary_psi = psi_interpolator
                                     .interp_scalar(stationary_z, stationary_r)
                                     .expect("find_stationary_points: can't interpolate psi");
+                                // println!("does this ever happen??")
+                                // NOTE: this happens quite often!
 
                                 // If we fail to converge onto a solution, then fall back on a brute force method
                                 // TODO: Perhaps the first part of the fallback should be to try shifting the four corner grid points?

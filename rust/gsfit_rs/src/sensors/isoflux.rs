@@ -6,8 +6,8 @@ use crate::greens::greens_psi;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::SensorsStatic;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
-use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -120,12 +120,10 @@ impl Isoflux {
 
         // Interpolate all sensors to `times_to_reconstruct`
         // location_1_r
-        let interpolator = Interp1D::builder(location_1_r_ndarray)
-            .x(time_ndarray.clone())
-            .build()
-            .expect("Isoflux.greens_with_coils: Can't make Interp1D for location_1_r");
+        let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_ndarray, &location_1_r_ndarray)
+            .expect("Isoflux.greens_with_coils: Can't make interpolator for location_1_r");
         let location_1_r_measured: Array1<f64> = interpolator
-            .interp_array(&times_to_reconstruct_ndarray)
+            .interpolate_array1(&times_to_reconstruct_ndarray)
             .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_r");
         self.results
             .get_or_insert(name)
@@ -134,12 +132,10 @@ impl Isoflux {
             .get_or_insert("r")
             .insert("measured", location_1_r_measured.clone());
         // location_1_z
-        let interpolator = Interp1D::builder(location_1_z_ndarray)
-            .x(time_ndarray.clone())
-            .build()
-            .expect("Isoflux.greens_with_coils: Can't make Interp1D for location_1_z");
+        let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_ndarray, &location_1_z_ndarray)
+            .expect("Isoflux.greens_with_coils: Can't make interpolator for location_1_z");
         let location_1_z_measured: Array1<f64> = interpolator
-            .interp_array(&times_to_reconstruct_ndarray)
+            .interpolate_array1(&times_to_reconstruct_ndarray)
             .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_z");
         self.results
             .get_or_insert(name)
@@ -148,12 +144,10 @@ impl Isoflux {
             .get_or_insert("z")
             .insert("measured", location_1_z_measured);
         // location_2_r
-        let interpolator = Interp1D::builder(location_2_r_ndarray)
-            .x(time_ndarray.clone())
-            .build()
-            .expect("Isoflux.greens_with_coils: Can't make Interp1D for location_2_r");
+        let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_ndarray, &location_2_r_ndarray)
+            .expect("Isoflux.greens_with_coils: Can't make interpolator for location_2_r");
         let location_2_r_measured: Array1<f64> = interpolator
-            .interp_array(&times_to_reconstruct_ndarray)
+            .interpolate_array1(&times_to_reconstruct_ndarray)
             .expect("Isoflux.greens_with_coils: Can't do interpolation for location_2_r");
         self.results
             .get_or_insert(name)
@@ -162,12 +156,10 @@ impl Isoflux {
             .get_or_insert("r")
             .insert("measured", location_2_r_measured.clone());
         // location_2_z
-        let interpolator = Interp1D::builder(location_2_z_ndarray)
-            .x(time_ndarray.clone())
-            .build()
-            .expect("Isoflux.greens_with_coils: Can't make Interp1D for location_2_z");
+        let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_ndarray, &location_2_z_ndarray)
+            .expect("Isoflux.greens_with_coils: Can't make interpolator for location_2_z");
         let location_2_z_measured: Array1<f64> = interpolator
-            .interp_array(&times_to_reconstruct_ndarray)
+            .interpolate_array1(&times_to_reconstruct_ndarray)
             .expect("Isoflux.greens_with_coils: Can't do interpolation for location_2_z");
         self.results
             .get_or_insert(name)
@@ -578,7 +570,7 @@ impl Isoflux {
                 let include_dynamic: Vec<bool> = self.results.get(&sensor_name).get("fit_settings").get("include_dynamic").unwrap_vec_bool();
                 println!("include_dynamic = {:?}", include_dynamic);
 
-                include.push(include_dynamic[i_time])
+                include.push(include_dynamic[i_time]);
             }
 
             // Convert from Vec<bool> to Vec of indices

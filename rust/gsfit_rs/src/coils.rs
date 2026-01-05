@@ -1,8 +1,8 @@
 use crate::greens::greens_psi;
 use crate::sensors::SensorsDynamic;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use interpolation;
 use ndarray::{Array1, Array2, Array3, s};
-use ndarray_interp::interp1d::Interp1D;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -41,37 +41,7 @@ impl Coils {
         let time_ndarray: Array1<f64> = time.to_owned_array();
         let measured_ndarray: Array1<f64> = measured.to_owned_array();
 
-        // Store the PF coils
-        self.results
-            .get_or_insert("pf")
-            .get_or_insert(name)
-            .get_or_insert("geometry")
-            .insert("r", r_ndarray); // Array1<f64>; shape = (n_filaments)
-        self.results
-            .get_or_insert("pf")
-            .get_or_insert(name)
-            .get_or_insert("geometry")
-            .insert("z", z_ndarray); // Array1<f64>; shape = (n_filaments)
-        self.results
-            .get_or_insert("pf")
-            .get_or_insert(name)
-            .get_or_insert("geometry")
-            .insert("d_r", d_r_ndarray); // Array1<f64>; shape = (n_filaments)
-        self.results
-            .get_or_insert("pf")
-            .get_or_insert(name)
-            .get_or_insert("geometry")
-            .insert("d_z", d_z_ndarray); // Array1<f64>; shape = (n_filaments)
-        self.results
-            .get_or_insert("pf")
-            .get_or_insert(name)
-            .get_or_insert("i")
-            .insert("time_experimental", time_ndarray); // Array1<f64>; shape = (n_time)
-        self.results
-            .get_or_insert("pf")
-            .get_or_insert(name)
-            .get_or_insert("i")
-            .insert("measured_experimental", measured_ndarray); // Array1<f64>; shape = (n_time)
+        self.add_pf_coil_rs(name, &r_ndarray, &z_ndarray, &d_r_ndarray, &d_z_ndarray, &time_ndarray, &measured_ndarray)
     }
 
     pub fn add_tf_coil(&mut self, time: PyReadonlyArray1<f64>, measured: PyReadonlyArray1<f64>) {
@@ -140,20 +110,61 @@ impl Coils {
 /// Rust only methods (either because we want to keep the methods private
 /// or more likely because we the methods are incompatible with Python)
 impl Coils {
+    pub fn add_pf_coil_rs(
+        &mut self,
+        name: &str,
+        r: &Array1<f64>,
+        z: &Array1<f64>,
+        d_r: &Array1<f64>,
+        d_z: &Array1<f64>,
+        time: &Array1<f64>,
+        measured: &Array1<f64>,
+    ) {
+        // Store the PF coils
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .get_or_insert("geometry")
+            .insert("r", r.to_owned()); // Array1<f64>; shape = (n_filaments)
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .get_or_insert("geometry")
+            .insert("z", z.to_owned()); // Array1<f64>; shape = (n_filaments)
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .get_or_insert("geometry")
+            .insert("d_r", d_r.to_owned()); // Array1<f64>; shape = (n_filaments)
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .get_or_insert("geometry")
+            .insert("d_z", d_z.to_owned()); // Array1<f64>; shape = (n_filaments)
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .get_or_insert("i")
+            .insert("time_experimental", time.to_owned()); // Array1<f64>; shape = (n_time)
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .get_or_insert("i")
+            .insert("measured_experimental", measured.to_owned()); // Array1<f64>; shape = (n_time)
+    }
+
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> Vec<SensorsDynamic> {
         // TF coil
         let time_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("time_experimental").unwrap_array1();
         let measured_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("measured_experimental").unwrap_array1();
 
         // Create the interpolator
-        let interpolator = Interp1D::builder(measured_experimental)
-            .x(time_experimental.clone())
-            .build()
-            .expect("Coils.split_into_static_and_dynamic: Can't make Interp1D, has the TF coil been added?");
+        let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_experimental, &measured_experimental)
+            .expect("Coils.split_into_static_and_dynamic: Can't make interpolator, has the TF coil been added?");
 
         // Do the interpolation
         let measured_tf: Array1<f64> = interpolator
-            .interp_array(&times_to_reconstruct)
+            .interpolate_array1(&times_to_reconstruct)
             .expect("Coils.split_into_static_and_dynamic: Can't do TF interpolation");
 
         // Store in self
@@ -174,14 +185,12 @@ impl Coils {
             let measured_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("measured_experimental").unwrap_array1();
 
             // Create the interpolator
-            let interpolator = Interp1D::builder(measured_experimental)
-                .x(time_experimental.clone())
-                .build()
-                .expect("Coils.split_into_static_and_dynamic: Can't make Interp1D");
+            let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_experimental, &measured_experimental)
+                .expect("Coils.split_into_static_and_dynamic: Can't make interpolator");
 
             // Do the interpolation
             let measured_this_coil: Array1<f64> = interpolator
-                .interp_array(&times_to_reconstruct)
+                .interpolate_array1(&times_to_reconstruct)
                 .expect("Coils.split_into_static_and_dynamic: Can't do interpolation");
 
             // Store for later
