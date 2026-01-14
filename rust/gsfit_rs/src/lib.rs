@@ -18,6 +18,10 @@ mod source_functions;
 pub use grad_shafranov::solve_grad_shafranov;
 use greens::greens_py;
 use source_functions::{EfitPolynomial, LiuqePolynomial};
+// mod solovev_equilibrium;
+// pub use solovev_equilibrium::run_solovev;
+// mod analytic_grad_shafranov;
+mod material_properties;
 
 /// A Python module implemented in Rust; bindings added here
 #[pymodule]
@@ -45,6 +49,9 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Expose source functions
     m.add_class::<EfitPolynomial>()?;
     m.add_class::<LiuqePolynomial>()?;
+
+    // Expose solovev equilibrium function
+    // m.add_function(wrap_pyfunction!(run_solovev, m)?)?;
 
     Ok(())
 }
