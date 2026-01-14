@@ -119,14 +119,14 @@ impl Coils {
 
             // Length of the coil
             let r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
-            let lenght: Array1<f64> = 2.0 * PI * r;
+            let length: Array1<f64> = 2.0 * PI * r;
 
             // Resistivity of copper
             let temperature_in_kelvin: f64 = 293.15; // 20 degrees C
             let resistivity_copper_20c: f64 = copper_resistivity(temperature_in_kelvin); // ~ 1.68e-8 ohm * meter
 
             // Resistance of coil
-            let resistance: f64 = (resistivity_copper_20c * lenght / area).sum();
+            let resistance: f64 = (resistivity_copper_20c * length / area).sum();
 
             // Store resistance
             self.results.get_or_insert("pf").get_or_insert(&coil_name).insert("resistance", resistance);
