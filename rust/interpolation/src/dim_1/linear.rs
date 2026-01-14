@@ -1,12 +1,13 @@
 use crate::errors::Error;
 use ndarray::Array1;
 
-pub struct Dim1Linear<'a> {
-    x: &'a Array1<f64>,
-    f: &'a Array1<f64>,
+#[derive(Clone)]
+pub struct Dim1Linear {
+    x: Array1<f64>,
+    f: Array1<f64>,
 }
 
-impl<'a> Dim1Linear<'a> {
+impl Dim1Linear {
     /// Create a new 1D linear interpolator
     ///
     /// # Arguments
@@ -22,7 +23,7 @@ impl<'a> Dim1Linear<'a> {
     /// This does mean that the lifetime of the `Dim1Linear` struct is tied to the lifetime
     /// of the input arrays, which adds some complexity.
     ///
-    pub fn new(x: &'a Array1<f64>, f: &'a Array1<f64>) -> Result<Self, Error> {
+    pub fn new(x: Array1<f64>, f: Array1<f64>) -> Result<Self, Error> {
         if x.len() != f.len() {
             return Err(Error::FunctionAndXLengthMismatch {
                 f_len: f.len(),
@@ -33,10 +34,7 @@ impl<'a> Dim1Linear<'a> {
         // Check for the same `x` values
         for i_x in 0..x.len() - 1 {
             if (x[i_x + 1] - x[i_x]).abs() < std::f64::EPSILON {
-                return Err(Error::DuplicateXValues {
-                    x_value: x[i_x],
-                    index: i_x,
-                });
+                return Err(Error::DuplicateXValues { x_value: x[i_x], index: i_x });
             }
         }
 
@@ -75,11 +73,37 @@ impl<'a> Dim1Linear<'a> {
         for i_x_new in 0..n_x_new {
             // Loop over `x` to find the interval over which to interpolate
             for i_x in 0..n_x - 1 {
-                if x_new[i_x_new] >= self.x[i_x] && x_new[i_x_new] <= self.x[i_x + 1] { // TODO: I think this can be simplified?
+                if x_new[i_x_new] >= self.x[i_x] && x_new[i_x_new] <= self.x[i_x + 1] {
+                    // TODO: I think this can be simplified?
                     let segment_fraction: f64 = (x_new[i_x_new] - self.x[i_x]) / (self.x[i_x + 1] - self.x[i_x]);
                     f_new[i_x_new] = self.f[i_x] * (1.0 - segment_fraction) + self.f[i_x + 1] * segment_fraction;
                     break;
                 }
+            }
+        }
+
+        return Ok(f_new);
+    }
+
+    pub fn interpolate_scalar(&self, x_new: f64) -> Result<f64, Error> {
+        // Check bounds and exit if out of bounds
+        if x_new < self.x[0] || x_new > self.x[self.x.len() - 1] {
+            return Err(Error::XOutOfBounds {
+                x_desired: x_new,
+                x_min: self.x[0],
+                x_max: self.x[self.x.len() - 1],
+            });
+        }
+
+        let n_x: usize = self.x.len();
+        let mut f_new: f64 = f64::NAN;
+
+        // Loop over `x` to find the interval over which to interpolate
+        for i_x in 0..n_x - 1 {
+            if x_new >= self.x[i_x] && x_new <= self.x[i_x + 1] {
+                let segment_fraction: f64 = (x_new - self.x[i_x]) / (self.x[i_x + 1] - self.x[i_x]);
+                f_new = self.f[i_x] * (1.0 - segment_fraction) + self.f[i_x + 1] * segment_fraction;
+                break;
             }
         }
 

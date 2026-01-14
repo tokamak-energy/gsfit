@@ -2,7 +2,6 @@ use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2};
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::borrow::PyReadonlyArray2;
-use numpy::{PyArray1, PyArray2};
 use pyo3::prelude::*;
 
 #[derive(Clone)]

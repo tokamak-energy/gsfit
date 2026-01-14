@@ -6,8 +6,8 @@ use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::{Contains, Coord, LineString, Point, Polygon};
-use ndarray::{Array1, Array2, Array3, Axis, s};
 use interpolation;
+use ndarray::{Array1, Array2, Array3, Axis, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -708,7 +708,7 @@ impl RogowskiCoils {
             let measured_experimental: Array1<f64> = self.results.get(sensor_name).get("i").get("measured_experimental").unwrap_array1();
 
             // Create the interpolator
-            let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_experimental, &measured_experimental)
+            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
                 .expect("RogowskiCoils.split_into_static_and_dynamic: Can't make interpolator");
             // Do the interpolation
             let measured_this_coil: Array1<f64> = interpolator

@@ -104,9 +104,10 @@ impl IsofluxBoundary {
 
         // Interpolate all sensors to `times_to_reconstruct`
         // location_1_r
-        let interpolator = interpolation::Dim1Linear::new(&time_ndarray, &location_1_r_ndarray)
+        let interpolator = interpolation::Dim1Linear::new(time_ndarray.clone(), location_1_r_ndarray.clone())
             .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_r");
-        let location_1_r_measured: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct_ndarray)
+        let location_1_r_measured: Array1<f64> = interpolator
+            .interpolate_array1(&times_to_reconstruct_ndarray)
             .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_r");
         self.results
             .get_or_insert(name)
@@ -115,9 +116,10 @@ impl IsofluxBoundary {
             .get_or_insert("r")
             .insert("measured", location_1_r_measured.clone());
         // location_1_z
-        let interpolator = interpolation::Dim1Linear::new(&time_ndarray, &location_1_z_ndarray)
+        let interpolator = interpolation::Dim1Linear::new(time_ndarray.clone(), location_1_z_ndarray.clone())
             .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_z");
-        let location_1_z_measured: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct_ndarray)
+        let location_1_z_measured: Array1<f64> = interpolator
+            .interpolate_array1(&times_to_reconstruct_ndarray)
             .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_z");
         self.results
             .get_or_insert(name)
