@@ -83,9 +83,10 @@ impl StationaryPoint {
 
         // Interpolate the geometry to `times_to_reconstruct`
         // geometry_r
-        let interpolator = interpolation::Dim1Linear::new(&time_ndarray, &mag_axis_r_ndarray).
-            expect("StationaryPoint.add_sensor: Can't make interpolator for mag_axis_r");
-        let geometry_r_measured: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct_ndarray)
+        let interpolator = interpolation::Dim1Linear::new(time_ndarray.clone(), mag_axis_r_ndarray.clone())
+            .expect("StationaryPoint.add_sensor: Can't make interpolator for mag_axis_r");
+        let geometry_r_measured: Array1<f64> = interpolator
+            .interpolate_array1(&times_to_reconstruct_ndarray)
             .expect("StationaryPoint.add_sensor: Can't do interpolation for geometry_r");
         self.results
             .get_or_insert(name)
@@ -93,9 +94,10 @@ impl StationaryPoint {
             .get_or_insert("r")
             .insert("measured", geometry_r_measured);
         // geometry_z
-        let interpolator = interpolation::Dim1Linear::new(&time_ndarray, &mag_axis_z_ndarray).
-            expect("StationaryPoint.add_sensor: Can't make interpolator for mag_axis_z");
-        let geometry_z_measured: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct_ndarray)
+        let interpolator = interpolation::Dim1Linear::new(time_ndarray.clone(), mag_axis_z_ndarray.clone())
+            .expect("StationaryPoint.add_sensor: Can't make interpolator for mag_axis_z");
+        let geometry_z_measured: Array1<f64> = interpolator
+            .interpolate_array1(&times_to_reconstruct_ndarray)
             .expect("StationaryPoint.add_sensor: Can't do interpolation for geometry_z");
         self.results
             .get_or_insert(name)

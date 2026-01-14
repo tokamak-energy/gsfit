@@ -429,7 +429,7 @@ impl FluxLoops {
             let measured_experimental: Array1<f64> = self.results.get(sensor_name).get("psi").get("measured_experimental").unwrap_array1();
 
             // Create the interpolator
-            let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_experimental, &measured_experimental)
+            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
                 .expect("FluxLoops.split_into_static_and_dynamic: Can't make interpolator");
 
             // Do the interpolation

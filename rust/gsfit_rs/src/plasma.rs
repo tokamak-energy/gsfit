@@ -1978,8 +1978,7 @@ fn epp_q_axis(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, f_prof
 
 /// Safety factor at psi_n=0.95, q95
 fn epp_q95(q_profile: &Array1<f64>, psi_n: &Array1<f64>) -> f64 {
-    let interpolator = interpolation::Dim1Linear::new(&psi_n, &q_profile)
-        .expect("find_boundary: Can't make interpolator for q_profile");
+    let interpolator = interpolation::Dim1Linear::new(psi_n.clone(), q_profile.clone()).expect("find_boundary: Can't make interpolator for q_profile");
 
     let psi_95: Array1<f64> = Array1::from_vec(vec![0.95]);
     let q95: f64 = interpolator.interpolate_array1(&psi_95).expect("epp_q95: can't do interpolation")[0];

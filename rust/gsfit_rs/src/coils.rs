@@ -1,4 +1,5 @@
 use crate::greens::greens_psi;
+use crate::material_properties::copper_resistivity;
 use crate::sensors::SensorsDynamic;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use interpolation;
@@ -9,6 +10,8 @@ use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
+
+use std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass]
@@ -42,6 +45,27 @@ impl Coils {
         let measured_ndarray: Array1<f64> = measured.to_owned_array();
 
         self.add_pf_coil_rs(name, &r_ndarray, &z_ndarray, &d_r_ndarray, &d_z_ndarray, &time_ndarray, &measured_ndarray)
+    }
+
+    // TODO: I'm not convinced about this implementation.
+    // Is there a nicer way of doing this?
+    pub fn set_pf_voltage(&mut self, name: &str, time: PyReadonlyArray1<f64>, measured_voltage: PyReadonlyArray1<f64>) {
+        // Change Python types into Rust types
+
+        let time_ndarray: Array1<f64> = time.to_owned_array();
+        let voltages_ndarray: Array1<f64> = measured_voltage.to_owned_array();
+
+        // Store the PF coil voltages
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .get_or_insert("v")
+            .insert("time_experimental", time_ndarray);
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .get_or_insert("v")
+            .insert("measured_experimental", voltages_ndarray);
     }
 
     pub fn add_tf_coil(&mut self, time: PyReadonlyArray1<f64>, measured: PyReadonlyArray1<f64>) {
@@ -79,11 +103,33 @@ impl Coils {
                 // Store greens
                 self.results
                     .get_or_insert("pf")
-                    .get_or_insert("greens")
-                    .get_or_insert("pf")
                     .get_or_insert(&coil_name)
+                    .get_or_insert("greens")
                     .insert(&other_coil_name, g);
             }
+        }
+    }
+
+    fn calculate_coil_resistance(&mut self) {
+        for coil_name in self.results.get("pf").keys() {
+            // Calculate the cross sectional area
+            let d_r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_r").unwrap_array1();
+            let d_z: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_z").unwrap_array1();
+            let area: Array1<f64> = 4.0 * &d_r * &d_z;
+
+            // Length of the coil
+            let r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
+            let lenght: Array1<f64> = 2.0 * PI * r;
+
+            // Resistivity of copper
+            let temperature_in_kelvin: f64 = 293.15; // 20 degrees C
+            let resistivity_copper_20c: f64 = copper_resistivity(temperature_in_kelvin); // ~ 1.68e-8 ohm * meter
+
+            // Resistance of coil
+            let resistance: f64 = (resistivity_copper_20c * lenght / area).sum();
+
+            // Store resistance
+            self.results.get_or_insert("pf").get_or_insert(&coil_name).insert("resistance", resistance);
         }
     }
 
@@ -159,7 +205,7 @@ impl Coils {
         let measured_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("measured_experimental").unwrap_array1();
 
         // Create the interpolator
-        let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_experimental, &measured_experimental)
+        let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
             .expect("Coils.split_into_static_and_dynamic: Can't make interpolator, has the TF coil been added?");
 
         // Do the interpolation
@@ -185,7 +231,7 @@ impl Coils {
             let measured_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("measured_experimental").unwrap_array1();
 
             // Create the interpolator
-            let interpolator: interpolation::Dim1Linear<'_> = interpolation::Dim1Linear::new(&time_experimental, &measured_experimental)
+            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
                 .expect("Coils.split_into_static_and_dynamic: Can't make interpolator");
 
             // Do the interpolation
