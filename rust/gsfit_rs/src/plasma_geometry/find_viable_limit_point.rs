@@ -54,8 +54,8 @@ pub fn find_viable_limit_point(
 
     // Grid variables
     let n_r: usize = r.len();
-    let d_r: f64 = &r[1] - &r[0];
-    let d_z: f64 = &z[1] - &z[0];
+    let d_r: f64 = r[1] - r[0];
+    let d_z: f64 = z[1] - z[0];
     let d_l: f64 = (d_r.powi(2) + d_z.powi(2)).sqrt();
 
     // Find the closest grid point to the magnetic axis
@@ -174,15 +174,15 @@ pub fn find_viable_limit_point(
 
         // Find the mask
         let mask_2d: Array2<f64> = flood_fill_mask(
-            &r,
-            &z,
-            &psi_2d,
+            r,
+            z,
+            psi_2d,
             potential_limit_point.bounding_psi,
-            &stationary_points,
+            stationary_points,
             mag_r_previous,
             mag_z_previous,
-            &vessel_r,
-            &vessel_z,
+            vessel_r,
+            vessel_z,
         );
         potential_limit_point.mask = Some(mask_2d.clone());
 
@@ -196,8 +196,8 @@ pub fn find_viable_limit_point(
         // Calculate the plasma boundary
         // TODO: update `marching_squares` to only do points near limit_point
         let psi_b: f64 = potential_limit_point.bounding_psi;
-        let plasma_boundary: MarchingContour = marching_squares(&r, &z, &psi_2d, &br_2d, &bz_2d, psi_b, &mask_2d, None, None, mag_r_previous, mag_z_previous);
-        if plasma_boundary.r.len() == 0 {
+        let plasma_boundary: MarchingContour = marching_squares(r, z, psi_2d, br_2d, bz_2d, psi_b, &mask_2d, None, None, mag_r_previous, mag_z_previous);
+        if plasma_boundary.r.is_empty() {
             continue 'loop_over_potential_limit_points;
         }
 

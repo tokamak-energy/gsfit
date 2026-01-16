@@ -31,13 +31,13 @@ pub fn greens_py(
     // Some horible variable type change and fallback when option not supplied
     let n_prime: usize = r_prime_ndarray.len();
     let d_r_fallback: Array1<f64> = Array1::from_elem(n_prime, f64::NAN);
-    let d_r_fallback_py: &Bound<'_, PyArray1<f64>> = &d_r_fallback.into_pyarray(py).into();
+    let d_r_fallback_py: &Bound<'_, PyArray1<f64>> = &d_r_fallback.into_pyarray(py);
     let d_r_unwrapped: &Bound<'_, PyArray1<f64>> = d_r.unwrap_or(d_r_fallback_py);
     let d_r: Array1<f64> = Array1::from(unsafe { d_r_unwrapped.as_array() }.to_vec());
     // d_z
     let n_prime: usize = r_prime_ndarray.len();
     let d_z_fallback: Array1<f64> = Array1::from_elem(n_prime, f64::NAN);
-    let d_z_fallback_py: &Bound<'_, PyArray1<f64>> = &d_z_fallback.into_pyarray(py).into();
+    let d_z_fallback_py: &Bound<'_, PyArray1<f64>> = &d_z_fallback.into_pyarray(py);
     let d_z_unwrapped: &Bound<'_, PyArray1<f64>> = d_z.unwrap_or(d_z_fallback_py);
     let d_z: Array1<f64> = Array1::from(unsafe { d_z_unwrapped.as_array() }.to_vec());
 

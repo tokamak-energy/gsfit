@@ -54,7 +54,7 @@ pub fn find_viable_xpt(
 
     // Exit if we haven't found any stationary points
     // TODO: perhaps I should never call `find_viable_xpt` if there are no stationary points?
-    if stationary_points.len() == 0 {
+    if stationary_points.is_empty() {
         return Err("find_viable_xpt: no stationary points found".to_string());
     }
 
@@ -98,7 +98,7 @@ pub fn find_viable_xpt(
             })
         }
     }
-    if potential_xpts.len() == 0 {
+    if potential_xpts.is_empty() {
         return Err("find_viable_xpt: no saddle points found".to_string());
     }
 

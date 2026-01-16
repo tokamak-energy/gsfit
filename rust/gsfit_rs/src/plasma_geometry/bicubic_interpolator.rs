@@ -82,7 +82,7 @@ impl BicubicInterpolator {
         let d_f_d_x_normalised: Array2<f64> = d_f_d_x.to_owned() * delta_x;
         let d_f_d_y_normalised: Array2<f64> = d_f_d_y.to_owned() * delta_y;
         let d2_f_d_x_d_y_normalised: Array2<f64> = d2_f_d_x_d_y.to_owned() * delta_x * delta_y;
-        function_matrix.slice_mut(s![0..2, 0..2]).assign(&f);
+        function_matrix.slice_mut(s![0..2, 0..2]).assign(f);
         function_matrix.slice_mut(s![2..4, 0..2]).assign(&d_f_d_x_normalised);
         function_matrix.slice_mut(s![0..2, 2..4]).assign(&d_f_d_y_normalised);
         function_matrix.slice_mut(s![2..4, 2..4]).assign(&d2_f_d_x_d_y_normalised);

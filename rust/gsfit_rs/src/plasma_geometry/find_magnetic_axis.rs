@@ -57,7 +57,7 @@ pub fn find_magnetic_axis(
         return turning_point_test;
     });
     // Exit if we haven't found any `stationary_points` within the vessel
-    if stationary_points.len() == 0 {
+    if stationary_points.is_empty() {
         return Err("find_magnetic_axis: no `stationary_points` with turning curvature found".to_string());
     }
 
@@ -81,7 +81,7 @@ pub fn find_magnetic_axis(
         return within_vessel_test;
     });
     // Exit if we haven't found any `stationary_points` within the vessel
-    if stationary_points.len() == 0 {
+    if stationary_points.is_empty() {
         return Err("find_magnetic_axis: no `stationary_points` found within the vessel".to_string());
     }
 

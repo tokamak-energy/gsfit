@@ -40,3 +40,7 @@ ndarray-linalg = { version = "0.17.0", features = ["openblas"] }
 [target.'cfg(target_os = "windows")'.dependencies]
 openblas-src = { version = "0.10.13", features = ["system"] }
 ndarray-linalg = { version = "0.17.0", features = ["openblas-static"] }
+
+[lints.clippy]
+needless_range_loop = "allow"
+needless_return = "allow"

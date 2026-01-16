@@ -1,15 +1,19 @@
 use crate::coils::Coils;
+use crate::greens::mutual_inductance_finite_size_to_finite_size;
+use crate::passives::PassiveGeometryAll;
 use crate::passives::Passives;
 use crate::sensors::{BpProbes, FluxLoops, RogowskiCoils};
+use dop_shared::OutputType;
 use interpolation;
 use ndarray::{Array1, Array2, s};
 use ndarray::{Axis, concatenate};
 use ndarray_linalg::Inverse;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
-// use ode_solvers::dopri5::*;
 use ode_solvers::*;
 use pyo3::prelude::*;
+
+const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone)]
 pub struct CircuitEquationModel {
@@ -27,23 +31,21 @@ pub struct CircuitEquationModel {
 impl CircuitEquationModel {
     /// Constructor for CircuitEquationModel
     pub fn new(coils: Coils, passives: Passives) -> Self {
-        let n_passives: usize = passives.results.keys().len();
-        let n_passives: usize = 0; // TODO: temporarily set passives to 0
-
         // Find which PF coils are current driven and which are voltage driven
         let pf_names: Vec<String> = coils.results.get("pf").keys();
         let mut pf_current_driven_names: Vec<String> = Vec::new();
         let mut pf_voltage_driven_names: Vec<String> = Vec::new();
         for pf_name in pf_names {
-            // let is_current_driven: bool = coils
-            //     .results
-            //     .get("pf")
-            //     .get(&pf_name)
-            //     .get("is_current_driven")
-            //     .unwrap_bool();
+            let is_current_driven: String = coils
+                .results
+                .get("pf")
+                .get(&pf_name)
+                .get("driven_by")
+                .unwrap_string();
+            println!("pf_name={}, is_current_driven={}", pf_name, is_current_driven);
             let mut is_current_driven: bool = true; // TODO: replace with actual check
-            println!("pf_name={}", pf_name);
-            if pf_name == "SOL" || pf_name == "BVLT" || pf_name == "BVLB" || pf_name == "DIVT" {
+            // println!("pf_name={}", pf_name);
+            if pf_name == "BVLT" || pf_name == "BVLB" || pf_name == "DIVT" {
                 // TODO: some random coils are current driven to test code
                 is_current_driven = false;
             }
@@ -59,8 +61,8 @@ impl CircuitEquationModel {
         // Collect I_PF_I (current driven PF coils)
         let mut pf_current_driven_current_interpolators: Vec<interpolation::Dim1Linear> = Vec::with_capacity(n_current_driven);
         for pf_name in &pf_current_driven_names {
-            let times: Array1<f64> = coils.results.get("pf").get(&pf_name).get("i").get("time_experimental").unwrap_array1();
-            let currents: Array1<f64> = coils.results.get("pf").get(&pf_name).get("i").get("measured_experimental").unwrap_array1();
+            let times: Array1<f64> = coils.results.get("pf").get(pf_name).get("i").get("time_experimental").unwrap_array1();
+            let currents: Array1<f64> = coils.results.get("pf").get(pf_name).get("i").get("measured_experimental").unwrap_array1();
 
             // Construct and store the interpolator, I_PF_I
             let current_interpolator: interpolation::Dim1Linear =
@@ -71,8 +73,8 @@ impl CircuitEquationModel {
         // Collect d(I_PF_I)/d(t) (current driven PF coils)
         let mut pf_current_driven_current_derivative_interpolators: Vec<interpolation::Dim1Linear> = Vec::with_capacity(n_current_driven);
         for pf_name in &pf_current_driven_names {
-            let times: Array1<f64> = coils.results.get("pf").get(&pf_name).get("i").get("time_experimental").unwrap_array1();
-            let currents: Array1<f64> = coils.results.get("pf").get(&pf_name).get("i").get("measured_experimental").unwrap_array1();
+            let times: Array1<f64> = coils.results.get("pf").get(pf_name).get("i").get("time_experimental").unwrap_array1();
+            let currents: Array1<f64> = coils.results.get("pf").get(pf_name).get("i").get("measured_experimental").unwrap_array1();
 
             let mut current_derivatives: Array1<f64> = Array1::from_elem(currents.len(), f64::NAN);
             // Forward difference for first point
@@ -94,6 +96,10 @@ impl CircuitEquationModel {
                 interpolation::Dim1Linear::new(times.clone(), current_derivatives.clone()).expect("Failed to create interpolator for: d(I_PF_I)/d(t)");
             pf_current_driven_current_derivative_interpolators.push(current_derivatives_interpolator);
         }
+
+        // let n_passives: usize = passive_locations_r.len();
+        let n_passives: usize = passives.get_n_passive_filaments();
+        // println!("n_passives={}", n_passives);
 
         // Find if we are solving for the plasma current state or not
         let n_plasma: usize = 0; // TODO: temporarily **NOT** including plasma
@@ -128,7 +134,8 @@ impl CircuitEquationModel {
 
         let mut mutual_31: Array2<f64> = Array2::from_elem((n_passives, n_current_driven), f64::NAN);
         let mut mutual_32: Array2<f64> = Array2::from_elem((n_passives, n_voltage_driven), f64::NAN);
-        let mut mutual_33: Array2<f64> = Array2::from_elem((n_passives, n_passives), f64::NAN);
+        // let mut mutual_33: Array2<f64> = Array2::from_elem((n_passives, n_passives), f64::NAN);
+        let mutual_33: Array2<f64> = passives.greens_with_self();
         let mut mutual_34: Array2<f64> = Array2::from_elem((n_passives, n_plasma), f64::NAN); // plasma
 
         let mut mutual_41: Array2<f64> = Array2::from_elem((n_plasma, n_current_driven), f64::NAN);
@@ -197,6 +204,101 @@ impl CircuitEquationModel {
             res_2[(i_pf_voltage_driven, i_pf_voltage_driven)] = coils.results.get("pf").get(pf_voltage_driven_name).get("resistance").unwrap_f64();
         }
 
+        // Get the passive filament geometry
+        let passive_geometry_all: PassiveGeometryAll = passives.get_all_passive_filament_geometry();
+        let passive_r: Array1<f64> = passive_geometry_all.r;
+        let passive_z: Array1<f64> = passive_geometry_all.z;
+        let passive_d_r: Array1<f64> = passive_geometry_all.d_r;
+        let passive_d_z: Array1<f64> = passive_geometry_all.d_z;
+        let passive_angle_1: Array1<f64> = passive_geometry_all.angle_1;
+        let passive_angle_2: Array1<f64> = passive_geometry_all.angle_2;
+        let passive_resistivity: Array1<f64> = passive_geometry_all.resistivity;
+
+        // Mutual inductance between I_PF_I and passives
+        // mutual_13.shape = (n_current_driven, n_passives)
+        for i_current_driven in 0..n_current_driven {
+            // Get the coil geometry
+            let coil_name: &String = &pf_current_driven_names[i_current_driven];
+            let coil_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
+            let coil_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
+            let coil_d_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("d_r").unwrap_array1();
+            let coil_d_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("d_z").unwrap_array1();
+            let n_coil_filaments: usize = coil_r.len();
+            let coil_angle_1: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
+            let coil_angle_2: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
+
+            let g_coil_filaments_passive_filaments: Array2<f64> = mutual_inductance_finite_size_to_finite_size(
+                &coil_r,
+                &coil_z,
+                &coil_d_r,
+                &coil_d_z,
+                &coil_angle_1,
+                &coil_angle_2,
+                &passive_r,
+                &passive_z,
+                &passive_d_r,
+                &passive_d_z,
+                &passive_angle_1,
+                &passive_angle_2,
+            ); // shape = [n_coil_filaments, n_passives]
+
+            // Sum over all coil filaments
+            let g_coil_passive_filaments = g_coil_filaments_passive_filaments.sum_axis(Axis(0)); // shape = [n_passives]
+
+            // Store in mutual_13
+            mutual_13.slice_mut(s![i_current_driven, ..]).assign(&g_coil_passive_filaments);
+        }
+        // mutual_31 is the transpose of mutual_13
+        mutual_31 = mutual_13.t().to_owned();
+
+        // Mutual inductance between I_PF_V and passives
+        // mutual_23.shape = (n_voltage_driven, n_passives)
+        for i_voltage_driven in 0..n_voltage_driven {
+            // Get the coil geometry
+            let coil_name: &String = &pf_voltage_driven_names[i_voltage_driven];
+            let coil_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
+            let coil_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
+            let coil_d_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("d_r").unwrap_array1();
+            let coil_d_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("d_z").unwrap_array1();
+            let n_coil_filaments: usize = coil_r.len();
+            let coil_angle_1: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
+            let coil_angle_2: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
+
+            let g_coil_filaments_passive_filaments: Array2<f64> = mutual_inductance_finite_size_to_finite_size(
+                &coil_r,
+                &coil_z,
+                &coil_d_r,
+                &coil_d_z,
+                &coil_angle_1,
+                &coil_angle_2,
+                &passive_r,
+                &passive_z,
+                &passive_d_r,
+                &passive_d_z,
+                &passive_angle_1,
+                &passive_angle_2,
+            ); // shape = [n_coil_filaments, n_passives]
+
+            // Sum over all coil filaments
+            let g_coil_passive_filaments = g_coil_filaments_passive_filaments.sum_axis(Axis(0)); // shape = [n_passives]
+
+            // Store in mutual_23
+            mutual_23.slice_mut(s![i_voltage_driven, ..]).assign(&g_coil_passive_filaments);
+        }
+        // mutual_32 is the transpose of mutual_23
+        mutual_32 = mutual_23.t().to_owned();
+
+        // Passive resistance matrix
+        for i_passive in 0..n_passives {
+            let area: f64 = passive_d_r[i_passive] * passive_d_z[i_passive];
+            let length: f64 = 2.0 * PI * passive_r[i_passive];
+
+            res_3[(i_passive, i_passive)] = passive_resistivity[i_passive] * length / area;
+        }
+
+        // println!("mutual_21 = {:?}", mutual_21);
+        // println!("mutual_12 = {:?}", mutual_12);
+
         #[rustfmt::skip]
         let temp_1: Array2<f64> = concatenate(
             Axis(0),
@@ -215,7 +317,7 @@ impl CircuitEquationModel {
                 concatenate(Axis(1), &[Array2::zeros((n_current_driven, n_voltage_driven)).view(),   Array2::zeros((n_current_driven, n_passives)).view(),       Array2::zeros((n_current_driven, n_current_driven)).view(),       Array2::zeros((n_current_driven, n_plasma)).view()]).unwrap().view(),
                 concatenate(Axis(1), &[res_2.view(),                                                 Array2::zeros((n_voltage_driven, n_passives)).view(),       Array2::zeros((n_voltage_driven, n_current_driven)).view(),       Array2::zeros((n_voltage_driven, n_plasma)).view()]).unwrap().view(),
                 concatenate(Axis(1), &[Array2::zeros((n_passives, n_voltage_driven)).view(),         res_3.view(),                                               Array2::zeros((n_passives, n_current_driven)).view(),             Array2::zeros((n_passives, n_plasma)).view()]).unwrap().view(),
-                concatenate(Axis(1), &[Array2::zeros((n_plasma, n_voltage_driven)).view(),           Array2::zeros((n_plasma, n_passives)).view(),               Array2::zeros((n_plasma, n_current_driven)).view(),               Array2::from_elem((n_plasma, n_plasma), 0.0).view()]).unwrap().view(),
+                concatenate(Axis(1), &[Array2::zeros((n_plasma, n_voltage_driven)).view(),           Array2::zeros((n_plasma, n_passives)).view(),               Array2::zeros((n_plasma, n_current_driven)).view(),               Array2::zeros((n_plasma, n_plasma)).view()]).unwrap().view(),
             ]
         ).unwrap();
 
@@ -233,14 +335,14 @@ impl CircuitEquationModel {
         let a_matrix: Array2<f64> = temp_1.clone().inv().expect("temp_1 inversion failed").dot(&temp_2);
         let b_matrix: Array2<f64> = temp_1.clone().inv().expect("temp_1 inversion failed").dot(&temp_3);
 
-        println!("state_names={:#?}", state_names);
-        println!("state_names.len()={:#?}", state_names.len());
+        // println!("state_names={:#?}", state_names);
+        // println!("state_names.len()={:#?}", state_names.len());
 
-        println!("temp_1={:#?}", temp_1);
-        println!("temp_2={:#?}", temp_2);
-        println!("temp_3={:#?}", temp_3);
-        println!("a_matrix={:#?}", a_matrix);
-        println!("b_matrix={:#?}", b_matrix);
+        // println!("temp_1={:#?}", temp_1);
+        // println!("temp_2={:#?}", temp_2);
+        // println!("temp_3={:#?}", temp_3);
+        // println!("a_matrix={:#?}", a_matrix);
+        // println!("b_matrix={:#?}", b_matrix);
 
         CircuitEquationModel {
             n_current_driven,
@@ -259,6 +361,7 @@ impl CircuitEquationModel {
 impl ode_solvers::System<f64, DVector<f64>> for CircuitEquationModel {
     /// System of ordinary differential equations.
     /// Calculate the derivative of the state vector at the current time.
+    /// Note, the function signature is defined by the `ode_solvers` crate.
     ///
     /// # Arguments
     /// - `time_now`: Current time.
@@ -266,6 +369,7 @@ impl ode_solvers::System<f64, DVector<f64>> for CircuitEquationModel {
     /// - `d_states_d_t`: Derivative of state vector to be filled in. This is a mutable output argument.
     ///
     fn system(&self, time_now: f64, states: &DVector<f64>, d_states_d_t: &mut DVector<f64>) {
+        println!("time_now = {}", time_now);
         // Get sizes
         let n_pf_current_driven: usize = self.n_current_driven;
         let n_pf_voltage_driven: usize = self.n_voltage_driven;
@@ -295,6 +399,7 @@ impl ode_solvers::System<f64, DVector<f64>> for CircuitEquationModel {
 
         // Add Ip to `u` states
         // TODO: add plasma state
+        // println!("u.shape() = {:?}", u.shape());
 
         // Add d(I_PF_I)/d(t) to `u` states
         let mut pf_current_driven_derivative_values: Array1<f64> = Array1::from_elem(n_pf_current_driven, f64::NAN);
@@ -316,6 +421,7 @@ impl ode_solvers::System<f64, DVector<f64>> for CircuitEquationModel {
 
         // Convert DVector to Array1
         let states_ndarray: Array1<f64> = Array1::from_vec(states.as_slice().to_vec());
+        // println!("states_ndarray.shape() = {:?}", states_ndarray.shape());
 
         // Calculate d(states)/d(t), what we need to return
         let d_states_d_t_ndarray: Array1<f64> = self.a_matrix.dot(&states_ndarray) + self.b_matrix.dot(&u);
@@ -367,8 +473,6 @@ fn solve_circuit_equations_rs(
     mut rogowski_coils: RogowskiCoils,
     times_to_solve: Array1<f64>,
 ) {
-    let n_passives: usize = passives.results.keys().len();
-    let n_passives: usize = 0; // TODO: temporarily set passives to 0
     let n_time: usize = times_to_solve.len();
 
     let coil_names: Vec<String> = coils.results.get("pf").keys();
@@ -386,7 +490,7 @@ fn solve_circuit_equations_rs(
         //     .get("is_current_driven")
         //     .unwrap_bool();
         let mut is_current_driven: bool = true; // TODO: replace with actual check
-        println!("pf_name={}", pf_name);
+        // println!("pf_name={}", pf_name);
         if pf_name == "SOL" || pf_name == "BVLT" || pf_name == "BVLB" || pf_name == "DIVT" {
             // TODO: give us a challenge
             is_current_driven = false;
@@ -397,49 +501,112 @@ fn solve_circuit_equations_rs(
             pf_voltage_driven_names.push(pf_name.to_owned());
         }
     }
+
     let n_current_driven: usize = pf_current_driven_names.len();
     let n_voltage_driven: usize = pf_voltage_driven_names.len();
+    let n_passives: usize = passives.get_n_passive_filaments();
 
-    println!("pf_current_driven_names: {:?}", pf_current_driven_names);
-    println!("pf_voltage_driven_names: {:?}", pf_voltage_driven_names);
-
-    let n_plasma: usize = 0; // TODO: temporarily set plasma to 0
+    // println!("pf_current_driven_names: {:?}", pf_current_driven_names);
+    // println!("pf_voltage_driven_names: {:?}", pf_voltage_driven_names);
 
     let model: CircuitEquationModel = CircuitEquationModel::new(coils.to_owned(), passives.to_owned());
 
-    println!("here 01");
+    // println!("here 01");
     let time_start: f64 = times_to_solve[0];
     let time_end: f64 = times_to_solve.last().unwrap().to_owned();
     let d_time: f64 = times_to_solve[1] - times_to_solve[0];
-    let rtol: f64 = 1e-3;
-    let atol: f64 = 1e-3;
 
-    println!("here 02");
+    // Solver tolerances - looser tolerances can help with stiffness detection
+    // Try: 1e-3 to 1e-6 for tighter control, or 1e-1 to 1.0 for looser control
+    let rtol: f64 = 1e-3; // Relative tolerance
+    let atol: f64 = 1e-3; // Absolute tolerance
 
-    let initial_states: DVector<f64> = DVector::zeros(n_coils);
-    println!("here 03");
+    // println!("here 02");
+    let n_plasma: usize = 0; // TODO: need to add plasma
 
-    let mut stepper = Dopri5::new(model.clone(), time_start, time_end, d_time, initial_states, rtol, atol);
+    // `states = [I_PF_V; I_passives; alpha; beta]`
+    let n_states: usize = n_voltage_driven + n_passives + n_current_driven + n_plasma;
+    let initial_states: DVector<f64> = DVector::zeros(n_states);
+    // println!("here 03");
 
-    println!("here 04");
+    // Configure Dopri5 with advanced parameters to handle stiffness better
+    // Use from_param to set all configuration options
+    let safety_factor: f64 = 0.9; // Safety factor for step size control
+    let beta: f64 = 0.04; // Beta coefficient for PI controller
+    let fac_min: f64 = 0.2; // Min factor between successive steps
+    let fac_max: f64 = 10.0; // Max factor between successive steps
+    let h_max: f64 = time_end - time_start; // Maximum step size (full range)
+    let h_initial: f64 = 0.0; // Let solver auto-compute initial step (0.0 = auto)
+    let n_max: u32 = 500000; // Max number of steps (increased from default 100000)
+    let n_stiff: u32 = 100000; // Check stiffness every n_stiff steps (increased from default 1000)
+
+    let mut stepper = Dopri5::from_param(
+        model.clone(),
+        time_start,
+        time_end,
+        d_time,
+        initial_states,
+        rtol,
+        atol,
+        safety_factor,
+        beta,
+        fac_min,
+        fac_max,
+        h_max,
+        h_initial,
+        n_max,
+        n_stiff,
+        OutputType::Dense,
+    );
+
+    println!("Solver configuration:");
+    println!("  rtol={}, atol={}", rtol, atol);
+    println!("  Max steps: {}", n_max);
+    println!("  Stiffness check interval: {}", n_stiff);
+    println!("  Step size factors: [{}, {}]", fac_min, fac_max);
+    println!("  Max step size: {}", h_max);
+
+    // println!("here 04");
 
     let integral_results_or_error: Result<dop_shared::Stats, dop_shared::IntegrationError> = stepper.integrate();
+
+    // Check if integration succeeded or failed
+    match &integral_results_or_error {
+        Ok(stats) => {
+            println!("Integration succeeded!");
+            println!("  Number of function evaluations: {}", stats.num_eval);
+            println!("  Accepted steps: {}", stats.accepted_steps);
+            println!("  Rejected steps: {}", stats.rejected_steps);
+        }
+        Err(error) => {
+            println!("Integration FAILED with error: {:?}", error);
+            println!("  Error details: {}", error);
+        }
+    }
+
+    // stepper.integrate_with_continuous_output_model(continuous_output)
+
+    // integral_results_or_error.
     // let integral_results: dop_shared::Stats = integral_results_or_error.expect("Integration failed in solve_circuit_equations_rs");
 
-    println!("here 05");
+    // println!("here 05");
 
     let time_out: &Vec<f64> = stepper.x_out();
-    println!("here 06");
+    let time_out: Array1<f64> = Array1::from_vec(time_out.to_owned());
+    // println!("here 06");
     let states_out: &Vec<DVector<f64>> = stepper.y_out(); // shape=(n_time, n_states)
-    println!("here 07");
+    // println!("here 07");
 
-    println!("states_out.len()={:?}", states_out.len());
-    println!("time_out.len()={:?}", time_out.len());
-    println!("states_out[0]={:?}", states_out[0]);
+    // println!("states_out.len()={:?}", states_out.len());
+    // println!("time_out.len()={:?}", time_out.len());
+    // println!("states_out[0]={:?}", states_out[0]);
+    // println!("n_time_old = {}", n_time);
+    let n_time: usize = states_out.len();
+    // println!("n_time_new = {}", n_time);
 
-    println!("state_names={:#?}", model.state_names);
+    // println!("state_names={:#?}", model.state_names);
     for (i_state, (circuit_type, circuit_name)) in model.state_names.iter().enumerate() {
-        println!("circuit_type={}, circuit_name={}", circuit_type, circuit_name);
+        // println!("circuit_type={}, circuit_name={}", circuit_type, circuit_name);
         if circuit_type == "pf" {
             // Extract simulated current
             let mut current_simulated: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -454,20 +621,25 @@ fn solve_circuit_equations_rs(
                 .get_or_insert(circuit_name)
                 .get_or_insert("i")
                 .insert("simulated", current_simulated);
+            coils
+                .results
+                .get_or_insert("pf")
+                .get_or_insert(circuit_name)
+                .get_or_insert("i")
+                .insert("time_simulated", time_out.clone());
         } else if circuit_type == "passive" {
-            println!("to do...")
+            // let i_passive: usize = circuit_name.parse::<usize>().unwrap();
+            // // Extract simulated current
+            // let mut current_simulated: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+            // for i_time in 0..n_time {
+            //     current_simulated[i_time] = states_out[i_time][i_state];
+            // }
+            // passives
+            //     .results
+            //     .get_or_insert(passive)
         }
     }
-
-    // print to remove warnings
-    // coils.print_keys();
-    // passives.print_keys();
-    // bp_probes.print_keys();
-    // flux_loops.print_keys();
-    // rogowski_coils.print_keys();
-    // println!("times_to_solve: {:?}", times_to_solve);
-
-    // for pf_name in &coil_names {
-    //     coils.results.get_or_insert("pf").get_or_insert(pf_name).get_or_insert("i").insert("simulated", y_out.clone());
-    // }
 }
+
+// IDEAS FOR TESTING:
+// * If we have some PF coils voltage driven = 0V; this will be the same as passives.

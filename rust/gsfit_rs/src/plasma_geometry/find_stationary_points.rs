@@ -40,8 +40,8 @@ pub fn find_stationary_points(
     // Grid variables
     let n_r: usize = r.len();
     let n_z: usize = z.len();
-    let d_r: f64 = &r[1] - &r[0];
-    let d_z: f64 = &z[1] - &z[0];
+    let d_r: f64 = r[1] - r[0];
+    let d_z: f64 = z[1] - z[0];
     let r_origin: f64 = r[0];
     let z_origin: f64 = z[0];
 
@@ -299,7 +299,7 @@ pub fn find_stationary_points(
     }
 
     // Exit if we haven't found any stationary points
-    if stationary_points.len() == 0 {
+    if stationary_points.is_empty() {
         return Err("find_stationary_points: no intersection between `br` and `bz` contours found".to_string());
     }
 

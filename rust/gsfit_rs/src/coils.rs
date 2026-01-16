@@ -66,6 +66,11 @@ impl Coils {
             .get_or_insert(name)
             .get_or_insert("v")
             .insert("measured_experimental", voltages_ndarray);
+
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .insert("driven_by", "voltage".to_string());
     }
 
     pub fn add_tf_coil(&mut self, time: PyReadonlyArray1<f64>, measured: PyReadonlyArray1<f64>) {
@@ -86,17 +91,19 @@ impl Coils {
 
     pub fn greens_with_self(&mut self) {
         for coil_name in self.results.get("pf").keys() {
-            let coil_r = self.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
-            let coil_z = self.results.get("pf").get(&coil_name).get("geometry").get("z").unwrap_array1();
-            let coil_d_r = self.results.get("pf").get(&coil_name).get("geometry").get("d_r").unwrap_array1();
-            let coil_d_z = self.results.get("pf").get(&coil_name).get("geometry").get("d_z").unwrap_array1();
+            let coil_r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
+            let coil_z: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("z").unwrap_array1();
+            let coil_d_r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_r").unwrap_array1();
+            let coil_d_z: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_z").unwrap_array1();
 
             for other_coil_name in self.results.get("pf").keys() {
-                let other_coil_r = self.results.get("pf").get(&other_coil_name).get("geometry").get("r").unwrap_array1();
-                let other_coil_z = self.results.get("pf").get(&other_coil_name).get("geometry").get("z").unwrap_array1();
+                let other_coil_r: Array1<f64> = self.results.get("pf").get(&other_coil_name).get("geometry").get("r").unwrap_array1();
+                let other_coil_z: Array1<f64> = self.results.get("pf").get(&other_coil_name).get("geometry").get("z").unwrap_array1();
 
                 let greens_filament_matrix: Array2<f64> =
                     greens_psi(coil_r.clone(), coil_z.clone(), other_coil_r, other_coil_z, coil_d_r.clone(), coil_d_z.clone());
+                // println!("coil_name={}, other_coil_name={}", coil_name, other_coil_name);
+                // println!("greens_filament_matrix={:?}", greens_filament_matrix);
 
                 let g: f64 = greens_filament_matrix.sum();
 
@@ -197,6 +204,10 @@ impl Coils {
             .get_or_insert(name)
             .get_or_insert("i")
             .insert("measured_experimental", measured.to_owned()); // Array1<f64>; shape = (n_time)
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .insert("driven_by", "current".to_string());
     }
 
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> Vec<SensorsDynamic> {
@@ -210,7 +221,7 @@ impl Coils {
 
         // Do the interpolation
         let measured_tf: Array1<f64> = interpolator
-            .interpolate_array1(&times_to_reconstruct)
+            .interpolate_array1(times_to_reconstruct)
             .expect("Coils.split_into_static_and_dynamic: Can't do TF interpolation");
 
         // Store in self
@@ -236,7 +247,7 @@ impl Coils {
 
             // Do the interpolation
             let measured_this_coil: Array1<f64> = interpolator
-                .interpolate_array1(&times_to_reconstruct)
+                .interpolate_array1(times_to_reconstruct)
                 .expect("Coils.split_into_static_and_dynamic: Can't do interpolation");
 
             // Store for later
@@ -245,7 +256,7 @@ impl Coils {
             // Store in self
             self.results
                 .get_or_insert("pf")
-                .get_or_insert(&coil_name)
+                .get_or_insert(coil_name)
                 .get_or_insert("i")
                 .insert("measured", measured_this_coil);
         }

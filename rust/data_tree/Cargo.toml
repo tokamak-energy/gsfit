@@ -9,3 +9,7 @@ data_tree_derive = { path = "data_tree_derive" }
 
 [dev-dependencies]
 # For running tests
+
+[lints.clippy]
+needless_range_loop = "allow"
+needless_return = "allow"

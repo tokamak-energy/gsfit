@@ -185,6 +185,39 @@ impl<'a> DataTreeAccumulator<'a> {
         }
     }
 
+    pub fn unwrap_string(&self) -> String {
+        let mut collected: Vec<String> = Vec::new();
+
+        let mut stack = vec![self.root];
+        for key in &self.keys_store {
+            let mut next_stack = Vec::new();
+            for dict in stack {
+                if key == "*" {
+                    for value in dict.data.values() {
+                        if let DataValue::DataTree(data_tree) = value {
+                            next_stack.push(data_tree);
+                        }
+                    }
+                } else if let Some(value) = dict.data.get(key) {
+                    match value {
+                        DataValue::DataTree(data_tree) => {
+                            next_stack.push(data_tree);
+                        }
+                        DataValue::String(x) => collected.push(x.clone()),
+                        _ => {}
+                    }
+                }
+            }
+            stack = next_stack;
+        }
+
+        if collected.len() == 1 {
+            collected[0].clone()
+        } else {
+            panic!("Expected exactly one String, found {}: {:?}", collected.len(), collected);
+        }
+    }
+
     pub fn unwrap_bool(&self) -> bool {
         let mut collected: Vec<bool> = Vec::new();
 

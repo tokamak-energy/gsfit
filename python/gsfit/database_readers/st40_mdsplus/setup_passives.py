@@ -45,7 +45,7 @@ def setup_passives(
 
     for i_passive in range(0, n_passives):
         passive_name = passive_names[i_passive]
-        i_filaments = vessel_fillaments_to_passives[:, i_passive].astype(int) == True
+        i_filaments = vessel_fillaments_to_passives[:, i_passive].astype(bool)
 
         if passive_name == "IVC":
             current_distribution_type = "eig"

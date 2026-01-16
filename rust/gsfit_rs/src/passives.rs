@@ -226,13 +226,6 @@ impl Passives {
                     .get_or_insert(&dof_name)
                     .insert("current_distribution", current_distribution_now);
 
-                // // Store the regularisation weight
-                // self.results
-                //     .get_or_insert(name)
-                //     .get_or_insert("dof")
-                //     .get_or_insert(&dof_name)
-                //     .insert("regularisation_weight", regularisations_weight_ndarray[i_eig]);
-
                 // Store time-constant (tau)
                 self.results
                     .get_or_insert(name)
@@ -243,10 +236,6 @@ impl Passives {
         } else {
             panic!("Unknown option current_distribution_type={current_distribution_type}");
         }
-    }
-
-    pub fn greens_with_self(&mut self) {
-        //
     }
 
     /// Print to screen, to be used within Python
@@ -309,8 +298,116 @@ impl Passives {
                     .insert("calculated", calculated_value);
 
                 // Increment counter
-                i_dof = i_dof + 1;
+                i_dof += 1;
             }
         }
     }
+
+    pub fn get_n_passive_filaments(&self) -> usize {
+        let mut n_passive_filaments: usize = 0;
+        for passive_name in &self.results.keys() {
+            let r: Array1<f64> = self.results.get(passive_name).get("geometry").get("r").unwrap_array1();
+            n_passive_filaments += r.len();
+        }
+        return n_passive_filaments;
+    }
+
+    pub fn greens_with_self(&self) -> Array2<f64> {
+        // Collect the passive conductor locations
+        let mut passive_locations_r: Vec<f64> = Vec::new();
+        let mut passive_locations_z: Vec<f64> = Vec::new();
+        let mut passive_locations_d_r: Vec<f64> = Vec::new();
+        let mut passive_locations_d_z: Vec<f64> = Vec::new();
+        let mut passive_locations_angle_1: Vec<f64> = Vec::new();
+        let mut passive_locations_angle_2: Vec<f64> = Vec::new();
+        for passive_name in &self.results.keys() {
+            let r: Array1<f64> = self.results.get(passive_name).get("geometry").get("r").unwrap_array1();
+            passive_locations_r.extend(r.iter());
+            let z: Array1<f64> = self.results.get(passive_name).get("geometry").get("z").unwrap_array1();
+            passive_locations_z.extend(z.iter());
+            let d_r: Array1<f64> = self.results.get(passive_name).get("geometry").get("d_r").unwrap_array1();
+            passive_locations_d_r.extend(d_r.iter());
+            let d_z: Array1<f64> = self.results.get(passive_name).get("geometry").get("d_z").unwrap_array1();
+            passive_locations_d_z.extend(d_z.iter());
+            let angle_1: Array1<f64> = self.results.get(passive_name).get("geometry").get("angle_1").unwrap_array1();
+            passive_locations_angle_1.extend(angle_1.iter());
+            let angle_2: Array1<f64> = self.results.get(passive_name).get("geometry").get("angle_2").unwrap_array1();
+            passive_locations_angle_2.extend(angle_2.iter());
+        }
+
+        let passive_locations_r: Array1<f64> = Array1::from_vec(passive_locations_r);
+        let passive_locations_z: Array1<f64> = Array1::from_vec(passive_locations_z);
+        let passive_locations_d_r: Array1<f64> = Array1::from_vec(passive_locations_d_r);
+        let passive_locations_d_z: Array1<f64> = Array1::from_vec(passive_locations_d_z);
+        let passive_locations_angle_1: Array1<f64> = Array1::from_vec(passive_locations_angle_1);
+        let passive_locations_angle_2: Array1<f64> = Array1::from_vec(passive_locations_angle_2);
+
+        let g_psi: Array2<f64> = mutual_inductance_finite_size_to_finite_size(
+            &passive_locations_r,
+            &passive_locations_z,
+            &passive_locations_d_r,
+            &passive_locations_d_z,
+            &passive_locations_angle_1,
+            &passive_locations_angle_2,
+            &passive_locations_r,
+            &passive_locations_z,
+            &passive_locations_d_r,
+            &passive_locations_d_z,
+            &passive_locations_angle_1,
+            &passive_locations_angle_2,
+        );
+
+        return g_psi;
+    }
+
+    pub fn get_all_passive_filament_geometry(&self) -> PassiveGeometryAll {
+        // Collect the passive conductor locations
+        let mut passive_locations_r: Vec<f64> = Vec::new();
+        let mut passive_locations_z: Vec<f64> = Vec::new();
+        let mut passive_locations_d_r: Vec<f64> = Vec::new();
+        let mut passive_locations_d_z: Vec<f64> = Vec::new();
+        let mut passive_locations_angle_1: Vec<f64> = Vec::new();
+        let mut passive_locations_angle_2: Vec<f64> = Vec::new();
+        let mut passive_resistivity: Vec<f64> = Vec::new();
+        for passive_name in &self.results.keys() {
+            let r: Array1<f64> = self.results.get(passive_name).get("geometry").get("r").unwrap_array1();
+            passive_locations_r.extend(r.iter());
+            let z: Array1<f64> = self.results.get(passive_name).get("geometry").get("z").unwrap_array1();
+            passive_locations_z.extend(z.iter());
+            let d_r: Array1<f64> = self.results.get(passive_name).get("geometry").get("d_r").unwrap_array1();
+            passive_locations_d_r.extend(d_r.iter());
+            let d_z: Array1<f64> = self.results.get(passive_name).get("geometry").get("d_z").unwrap_array1();
+            passive_locations_d_z.extend(d_z.iter());
+            let angle_1: Array1<f64> = self.results.get(passive_name).get("geometry").get("angle_1").unwrap_array1();
+            passive_locations_angle_1.extend(angle_1.iter());
+            let angle_2: Array1<f64> = self.results.get(passive_name).get("geometry").get("angle_2").unwrap_array1();
+            passive_locations_angle_2.extend(angle_2.iter());
+            let resistivity: f64 = self.results.get(passive_name).get("resistivity").unwrap_f64();
+            for _i in 0..r.len() {
+                passive_resistivity.push(resistivity);
+            }
+        }
+
+        let passive_geometry_all = PassiveGeometryAll {
+            r: Array1::from_vec(passive_locations_r),
+            z: Array1::from_vec(passive_locations_z),
+            d_r: Array1::from_vec(passive_locations_d_r),
+            d_z: Array1::from_vec(passive_locations_d_z),
+            angle_1: Array1::from_vec(passive_locations_angle_1),
+            angle_2: Array1::from_vec(passive_locations_angle_2),
+            resistivity: Array1::from_vec(passive_resistivity),
+        };
+
+        return passive_geometry_all;
+    }
+}
+
+pub struct PassiveGeometryAll {
+    pub r: Array1<f64>,
+    pub z: Array1<f64>,
+    pub d_r: Array1<f64>,
+    pub d_z: Array1<f64>,
+    pub angle_1: Array1<f64>,
+    pub angle_2: Array1<f64>,
+    pub resistivity: Array1<f64>,
 }
