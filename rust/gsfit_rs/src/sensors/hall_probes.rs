@@ -5,7 +5,6 @@ use crate::greens::greens_b;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
-use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;

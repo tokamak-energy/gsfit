@@ -7,7 +7,6 @@ use crate::sensors::{BpProbes, FluxLoops, Isoflux, IsofluxBoundary, RogowskiCoil
 use crate::source_functions::SourceFunctionTraits;
 use log::info; // use log::{debug, error, info};
 use ndarray::{Array1, Array2, s};
-use numpy::PyArray1;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::borrow::PyReadonlyArray1;
 use pyo3::prelude::*;

@@ -92,14 +92,14 @@ impl SourceFunctionTraits for EfitPolynomial {
         let mut constant_of_integration: f64 = 0.0;
         let psi_edge: Array1<f64> = Array1::from_vec(vec![1.0]);
         for i_dof in 0..n_dof {
-            constant_of_integration = constant_of_integration - polynomial_dof[i_dof] * self.source_function_integral_single_dof(&psi_edge, i_dof)[0];
+            constant_of_integration -= polynomial_dof[i_dof] * self.source_function_integral_single_dof(&psi_edge, i_dof)[0];
         }
 
         let mut integral: Array1<f64> = Array1::zeros(n_psi_n);
         for i_dof in 0..n_dof {
-            integral = integral + polynomial_dof[i_dof] * self.source_function_integral_single_dof(&psi_n, i_dof);
+            integral = integral + polynomial_dof[i_dof] * self.source_function_integral_single_dof(psi_n, i_dof);
         }
-        integral = integral + constant_of_integration;
+        integral += constant_of_integration;
 
         return integral;
     }

@@ -5,7 +5,6 @@ use crate::greens::greens_d_b_d_z;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
@@ -273,14 +272,14 @@ impl StationaryPoint {
                 for i_passive in 0..n_passives {
                     let passive_name: &str = &passive_names[i_passive];
                     let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                    for dof_name in dof_names {
+                    for dof_name in &dof_names {
                         let greens_with_passives_tmp: Array1<f64> = self
                             .results
                             .get(&sensor_names[i_sensor])
                             .get("greens")
                             .get("passives")
-                            .get(&passive_name)
-                            .get(&dof_name)
+                            .get(passive_name)
+                            .get(dof_name)
                             .unwrap_array1(); // shape = [n_time]
                         greens_with_passives.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
 

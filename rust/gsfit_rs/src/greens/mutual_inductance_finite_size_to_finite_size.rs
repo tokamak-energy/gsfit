@@ -82,8 +82,8 @@ pub fn mutual_inductance_finite_size_to_finite_size(
                 z_sub_filament.clone(),
                 r_sub_filament_prime.clone(),
                 z_sub_filament_prime.clone(),
-                r_sub_filament.clone() * 0.0 + d_r[i_filament] / (n_sub_filaments as f64), // THIS LOOKS WRONG!!! do I need it??
-                z_sub_filament.clone() * 0.0 + d_z[i_filament] / (n_sub_filaments as f64), // THIS LOOKS WRONG!!! do I need it??
+                r_sub_filament.clone() * 0.0 + d_r[i_filament] / (n_sub_filaments as f64), // TODO: Check this!!
+                z_sub_filament.clone() * 0.0 + d_z[i_filament] / (n_sub_filaments as f64), // TODO: Check this!!
             ); // shape = [n_sub_filaments * n_sub_filaments, n_sub_filaments * n_sub_filaments]
 
             g_psi[(i_filament, i_filament_prime)] = g_sub_filaments.sum() / ((n_sub_filaments as f64).powi(4));

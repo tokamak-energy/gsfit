@@ -8,3 +8,7 @@ ndarray = "0.16.1"  # must be same version as used in `gsfit_rs`
 
 [dev-dependencies]
 # For running tests
+
+[lints.clippy]
+needless_range_loop = "allow"
+needless_return = "allow"

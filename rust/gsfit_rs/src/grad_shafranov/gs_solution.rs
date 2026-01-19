@@ -190,7 +190,7 @@ impl<'a> GsSolution<'a> {
 
         // Unpack objects
         let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
-        let plasma: &Plasma = &self.plasma;
+        let plasma: &Plasma = self.plasma;
 
         // Get sensors
         let bp_probes_static: &SensorsStatic = self.bp_probes_static;
@@ -1059,7 +1059,7 @@ impl<'a> GsSolution<'a> {
             } else {
                 delta_z = 0.0;
             }
-            self.delta_z = delta_z.clone();
+            self.delta_z = delta_z;
 
             // Calculate j_2d
             self.calculate_j(&mesh_r); // TODO: I don't like having to pass mesh_r in
@@ -1076,7 +1076,7 @@ impl<'a> GsSolution<'a> {
     /// Calculate the poloidal flux, psi, in the 2d (r, z) grid.
     pub fn calculate_psi(&mut self) {
         // Unpack from self
-        let plasma: &Plasma = &self.plasma;
+        let plasma: &Plasma = self.plasma;
 
         // Get stuff out of class
         let n_r: usize = plasma.results.get("grid").get("n_r").unwrap_usize();
@@ -1162,7 +1162,7 @@ impl<'a> GsSolution<'a> {
     pub fn calculate_b(&mut self) -> (Array2<f64>, Array2<f64>) {
         // Unpack from self
         let plasma: &Plasma = self.plasma;
-        let coils_dynamic: &SensorsDynamic = &self.coils_dynamic;
+        let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
 
         // Unpacking everything;  timing: 15ms, with [n_r, n_z]=[100, 201]
         let n_r: usize = plasma.results.get("grid").get("n_r").unwrap_usize();
@@ -1402,8 +1402,8 @@ impl<'a> GsSolution<'a> {
 
     pub fn initialise_plasma_with_point_source_current(&mut self, initial_ip: f64, initial_cur_r: f64, initial_cur_z: f64) {
         // Unpack objects
-        let plasma: &Plasma = &self.plasma;
-        let coils_dynamic: &SensorsDynamic = &self.coils_dynamic;
+        let plasma: &Plasma = self.plasma;
+        let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
 
         // Extract stuff from Plasma
         let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();

@@ -244,7 +244,7 @@ impl Plasma {
     ///
     fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python types into Rust types
-        let coils_local: &Coils = &*coils;
+        let coils_local: &Coils = &*coils; // TODO: check if "let coils_local: &Coils = &coils;" works!!!!!
 
         // Get variables out of self
         let flat_r: Array1<f64> = self.results.get("grid").get("flat").get("r").unwrap_array1();
@@ -252,10 +252,10 @@ impl Plasma {
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
 
-        for coil_name in coils_local.results.get("pf").keys() {
+        for coil_name in &coils_local.results.get("pf").keys() {
             // Coils
-            let coil_r: Array1<f64> = coils_local.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
-            let coil_z: Array1<f64> = coils_local.results.get("pf").get(&coil_name).get("geometry").get("z").unwrap_array1();
+            let coil_r: Array1<f64> = coils_local.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
+            let coil_z: Array1<f64> = coils_local.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
             let d_r: Array1<f64> = &coil_r * 0.0;
             let d_z: Array1<f64> = &coil_z * 0.0;
 
@@ -334,37 +334,37 @@ impl Plasma {
             self.results
                 .get_or_insert("greens")
                 .get_or_insert("pf")
-                .get_or_insert(&coil_name)
+                .get_or_insert(coil_name)
                 .insert("psi", g_psi); // Array2<f64>; shape = (n_z, n_r)
             self.results
                 .get_or_insert("greens")
                 .get_or_insert("pf")
-                .get_or_insert(&coil_name)
+                .get_or_insert(coil_name)
                 .insert("br", g_br); // Array2<f64>; shape = (n_z, n_r)
             self.results
                 .get_or_insert("greens")
                 .get_or_insert("pf")
-                .get_or_insert(&coil_name)
+                .get_or_insert(coil_name)
                 .insert("bz", g_bz); // Array2<f64>; shape = (n_z, n_r)
             self.results
                 .get_or_insert("greens")
                 .get_or_insert("pf")
-                .get_or_insert(&coil_name)
+                .get_or_insert(coil_name)
                 .insert("d_br_d_z", g_d_br_d_z); // Array2<f64>; shape = (n_z, n_r)
             self.results
                 .get_or_insert("greens")
                 .get_or_insert("pf")
-                .get_or_insert(&coil_name)
+                .get_or_insert(coil_name)
                 .insert("d_bz_d_z", g_d_bz_d_z); // Array2<f64>; shape = (n_z, n_r)
             self.results
                 .get_or_insert("greens")
                 .get_or_insert("pf")
-                .get_or_insert(&coil_name)
+                .get_or_insert(coil_name)
                 .insert("d2_psi_d_r2", g_d2_psi_d_r2); // Array2<f64>; shape = (n_z, n_r)
             self.results
                 .get_or_insert("greens")
                 .get_or_insert("pf")
-                .get_or_insert(&coil_name)
+                .get_or_insert(coil_name)
                 .insert("d_psi_d_z", g_d_psi_d_z); // Array2<f64>; shape = (n_z, n_r)
         }
     }
@@ -559,14 +559,14 @@ impl Plasma {
         for i_passive in 0..n_passives {
             let passive_name: &str = &passive_names[i_passive];
             let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in dof_names {
+            for dof_name in &dof_names {
                 greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
                     &self
                         .results
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .get("psi")
                         .unwrap_array1(),
                 );
@@ -602,14 +602,14 @@ impl Plasma {
         for i_passive in 0..n_passives {
             let passive_name: &str = &passive_names[i_passive];
             let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in dof_names {
+            for dof_name in &dof_names {
                 greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
                     &self
                         .results
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .get("d_psi_d_z")
                         .unwrap_array1(),
                 );
@@ -645,14 +645,14 @@ impl Plasma {
         for i_passive in 0..n_passives {
             let passive_name: &str = &passive_names[i_passive];
             let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in dof_names {
+            for dof_name in &dof_names {
                 greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
                     &self
                         .results
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .get("br")
                         .unwrap_array1(),
                 );
@@ -688,14 +688,14 @@ impl Plasma {
         for i_passive in 0..n_passives {
             let passive_name: &str = &passive_names[i_passive];
             let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in dof_names {
+            for dof_name in &dof_names {
                 greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
                     &self
                         .results
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .get("bz")
                         .unwrap_array1(),
                 );
@@ -731,14 +731,14 @@ impl Plasma {
         for i_passive in 0..n_passives {
             let passive_name: &str = &passive_names[i_passive];
             let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in dof_names {
+            for dof_name in &dof_names {
                 greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
                     &self
                         .results
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .get("d_br_d_z")
                         .unwrap_array1(),
                 );
@@ -774,14 +774,14 @@ impl Plasma {
         for i_passive in 0..n_passives {
             let passive_name: &str = &passive_names[i_passive];
             let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in dof_names {
+            for dof_name in &dof_names {
                 greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
                     &self
                         .results
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .get("d_bz_d_z")
                         .unwrap_array1(),
                 );
@@ -817,14 +817,14 @@ impl Plasma {
         for i_passive in 0..n_passives {
             let passive_name: &str = &passive_names[i_passive];
             let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in dof_names {
+            for dof_name in &dof_names {
                 greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
                     &self
                         .results
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .get("d2_psi_d_r2")
                         .unwrap_array1(),
                 );
@@ -1585,8 +1585,8 @@ fn epp_flux_surfaces(
     let n_psi_n: usize = psi_n.len();
     let n_r: usize = r.len();
     let n_z: usize = z.len();
-    let d_r: f64 = &r[1] - &r[0];
-    let d_z: f64 = &z[1] - &z[0];
+    let d_r: f64 = r[1] - r[0];
+    let d_z: f64 = z[1] - z[0];
     let r_origin: f64 = r[0];
     let z_origin: f64 = z[0];
 
@@ -1832,7 +1832,6 @@ fn epp_hessian_matrix(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>
 
 fn epp_p_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_b: f64) -> Array1<f64> {
     // TODO: We might want to do some 2D interpolation
-    let n_psi_n: usize = psi_n.len();
 
     let p_prime_dof_values: Array1<f64> = gs_solution.p_prime_dof_values.to_owned();
 
@@ -2011,8 +2010,8 @@ fn epp_vol_profile(
     let n_psi_n: usize = psi_n.len();
     let n_r: usize = r.len();
     let n_z: usize = z.len();
-    let d_r: f64 = &r[1] - &r[0];
-    let d_z: f64 = &z[1] - &z[0];
+    let d_r: f64 = r[1] - r[0];
+    let d_z: f64 = z[1] - z[0];
     let r_origin: f64 = r[0];
     let z_origin: f64 = z[0];
 

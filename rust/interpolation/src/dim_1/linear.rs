@@ -33,7 +33,7 @@ impl Dim1Linear {
 
         // Check for the same `x` values
         for i_x in 0..x.len() - 1 {
-            if (x[i_x + 1] - x[i_x]).abs() < std::f64::EPSILON {
+            if (x[i_x + 1] - x[i_x]).abs() < f64::EPSILON {
                 return Err(Error::DuplicateXValues { x_value: x[i_x], index: i_x });
             }
         }

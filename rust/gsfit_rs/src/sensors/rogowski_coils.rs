@@ -6,7 +6,6 @@ use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::{Contains, Coord, LineString, Point, Polygon};
-use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
@@ -217,7 +216,7 @@ impl RogowskiCoils {
                 // (at least there are not many PF coils. but still not good...)
                 let mut g_gap: f64 = 0.0;
                 for i_gap in 0..n_gaps {
-                    let gap_name: String = gap_names[i_gap].clone();
+                    let gap_name: String = gap_names[i_gap].clone(); // TODO: is there a better way than cloning here?
 
                     // Construct virtual bp probes
                     let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
@@ -318,7 +317,7 @@ impl RogowskiCoils {
                     for gap_name in &gap_names {
                         // Construct virtual bp probes
                         let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
-                            self.clone().construct_virtual_bp_probes(&sensor_name, &gap_name);
+                            self.clone().construct_virtual_bp_probes(&sensor_name, gap_name);
 
                         // Calculate Greens betwen the virtual bp-probes and the coils
                         virtual_b_r_probes.greens_with_passives_rs(passives_local.clone());
@@ -412,10 +411,10 @@ impl RogowskiCoils {
             // (at least there are not many PF coils. but still not good...)
             let mut g_gap: Array1<f64> = Array1::zeros(n_rz);
             let mut g_gap_d_plasma_d_z: Array1<f64> = Array1::zeros(n_rz);
-            for gap_name in gap_names {
+            for gap_name in &gap_names {
                 // Construct virtual bp probes
                 let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
-                    self.clone().construct_virtual_bp_probes(&sensor_name, &gap_name);
+                    self.clone().construct_virtual_bp_probes(&sensor_name, gap_name);
 
                 // Calculate Greens betwen the virtual bp-probes and the coils
                 virtual_b_r_probes.greens_with_plasma_rs(plasma.clone());
@@ -665,14 +664,14 @@ impl RogowskiCoils {
             for i_passive in 0..n_passives {
                 let passive_name: &str = &passive_names[i_passive];
                 let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                for dof_name in dof_names {
+                for dof_name in &dof_names {
                     greens_with_passives[(i_dof_total, i_sensor)] = self
                         .results
                         .get(&sensor_names[i_sensor])
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .unwrap_f64();
 
                     // Store the name
@@ -712,7 +711,7 @@ impl RogowskiCoils {
                 .expect("RogowskiCoils.split_into_static_and_dynamic: Can't make interpolator");
             // Do the interpolation
             let measured_this_coil: Array1<f64> = interpolator
-                .interpolate_array1(&times_to_reconstruct)
+                .interpolate_array1(times_to_reconstruct)
                 .expect("RogowskiCoils.split_into_static_and_dynamic: Can't do interpolation");
 
             // Store for later
