@@ -123,7 +123,7 @@ class Coils(DataTreeAccessor):
         :param name: PF coil name
         :param r: PF coil radial positions [metre]
         :param z: PF coil vertical positions [metre]
-        :param d_r: PF coil radial widths [metre]
+        :param d_r: PF coil radial widths (note, area = d_r * d_z) [metre]
         :param d_z: PF coil vertical heights [metre]
         :param time: Experimental time [second]
         :param measured: Experimental PF coil current [ampere]
@@ -139,6 +139,32 @@ class Coils(DataTreeAccessor):
         """
         :param time: Experimental time [second]
         :param measured: Experimental "rod" current [ampere]
+        """
+        ...
+    def greens_with_self(
+        cls,
+    ) -> None:
+        """
+        Calculate the coil self and mutual inductance matrices, [henry]
+        """
+        ...
+    def calculate_coil_resistance(
+        cls,
+    ) -> None:
+        """
+        Calculate the coil resistance matrix, a diagonal matrix, [ohm]
+        """
+        ...
+    def set_pf_voltage_controlled(
+        cls,
+        name: str,
+        time: npt.NDArray[np.float64],
+        measured_voltage: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        :param name: PF coil name
+        :param time: Experimental time [second]
+        :param measured_voltage: Experimental PF coil voltage [volt]
         """
         ...
 
@@ -166,12 +192,12 @@ class Passives(DataTreeAccessor):
     ) -> None:
         """
         :param name: Passive name
-        :param r: A 1D array containing the radial centroid location for each filament [metre]
-        :param z: A 1D array containing the vertical centroid location for each filament [metre]
-        :param d_r: A 1D array containing the radial the width of the filament from the centroid to either side of the filament, total_width=2.0*d_r [metre]
-        :param d_z: A 1D array containing the radial the height of the filament from the centroid to either side of the filament, total_height=2.0*d_z [metre]
-        :param angle_1: A 1D array containing the angle of the filament from the vertical ("DIII-D" parallelogram type) [radians]
-        :param angle_2: A 1D array containing the angle of the filament from the horizontal ("DIII-D" parallelogram type) [radians]
+        :param r: Radial centroid location for each filament [metre]
+        :param z: Vertical centroid location for each filament [metre]
+        :param d_r: Radial the widths of the filaments (note, area = d_r * d_z) [metre]
+        :param d_z: Radial the heights of the filaments [metre]
+        :param angle_1: Angle of the filament from the vertical ("DIII-D" parallelogram type) [radians]
+        :param angle_2: Angle of the filament from the horizontal ("DIII-D" parallelogram type) [radians]
         :param resistivity: Resistivity of this passive (same for all filaments) [ohm * metre]
         :param current_distribution_type: "constant_current_density" or "eig"
         :param n_dof: number of degrees of freedom; if current_distribution_type=="constant_current_density", then n_dof=1; if current_distribution_type=="eig", then n_dof is the number of eigenvalues

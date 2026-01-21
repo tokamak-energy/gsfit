@@ -19,6 +19,8 @@ pub struct Coils {
     pub results: DataTree,
 }
 
+// TODO: I need to add PSU "cable" resistance and inductance
+
 #[pymethods]
 impl Coils {
     #[new]
@@ -49,7 +51,7 @@ impl Coils {
 
     // TODO: I'm not convinced about this implementation.
     // Is there a nicer way of doing this?
-    pub fn set_pf_voltage(&mut self, name: &str, time: PyReadonlyArray1<f64>, measured_voltage: PyReadonlyArray1<f64>) {
+    pub fn set_pf_voltage_controlled(&mut self, name: &str, time: PyReadonlyArray1<f64>, measured_voltage: PyReadonlyArray1<f64>) {
         // Change Python types into Rust types
 
         let time_ndarray: Array1<f64> = time.to_owned_array();
@@ -122,7 +124,7 @@ impl Coils {
             // Calculate the cross sectional area
             let d_r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_r").unwrap_array1();
             let d_z: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_z").unwrap_array1();
-            let area: Array1<f64> = 4.0 * &d_r * &d_z;
+            let area: Array1<f64> = &d_r * &d_z;
 
             // Length of the coil
             let r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
@@ -131,6 +133,7 @@ impl Coils {
             // Resistivity of copper
             let temperature_in_kelvin: f64 = 293.15; // 20 degrees C
             let resistivity_copper_20c: f64 = copper_resistivity(temperature_in_kelvin); // ~ 1.68e-8 ohm * meter
+            println!("resistivity_copper_20c = {}", resistivity_copper_20c);
 
             // Resistance of coil
             let resistance: f64 = (resistivity_copper_20c * length / area).sum();
