@@ -7,13 +7,13 @@ use ndarray::{Array1, Array2, s};
 /// # Arguments
 /// * `r` - R coordinate of the first set of filaments, shape = [n_filaments], metre
 /// * `z` - Z coordinate of the first set of filaments, shape = [n_filaments], metre
-/// * `d_r` - Radial width of the first set of filaments, shape = [n_filaments], metre
+/// * `d_r` - Radial width of the first set of filaments (note, area = d_r * d_z), shape = [n_filaments], metre
 /// * `d_z` - Vertical height of the first set of filaments, shape = [n_filaments], metre
 /// * `angle1` - Angle of the first side of the first set of filaments, shape = [n_filaments], radian
 /// * `angle2` - Angle of the second side of the first set of filaments, shape = [n_filaments], radian
 /// * `r_prime` - R coordinate of the second set of filaments, shape = [n_filaments_prime], metre
 /// * `z_prime` - Z coordinate of the second set of filaments, shape = [n_filaments_prime], metre
-/// * `d_r_prime` - Radial width of the second set of filaments, shape = [n_filaments_prime], metre
+/// * `d_r_prime` - Radial width of the second set of filaments (note, area = d_r_prime * d_z_prime), shape = [n_filaments_prime], metre
 /// * `d_z_prime` - Vertical height of the second set of filaments, shape = [n_filaments_prime], metre
 /// * `angle1_prime` - Angle of the first side of the second set of filaments, shape = [n_filaments_prime], radian
 /// * `angle2_prime` - Angle of the second side of the second set of filaments, shape = [n_filaments_prime], radian

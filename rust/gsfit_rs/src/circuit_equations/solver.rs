@@ -13,12 +13,15 @@ use numpy::borrow::PyReadonlyArray1;
 use ode_solvers::*;
 use pyo3::prelude::*;
 
+// TODO: change to `diffsol` for stiff ODEs
+// The same as ode15s in Matlab
+
 const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone)]
 pub struct CircuitEquationModel {
-    pub a_matrix: Array2<f64>,
-    pub b_matrix: Array2<f64>,
+    pub state_space_a_matrix: Array2<f64>,
+    pub state_space_b_matrix: Array2<f64>,
     pub pf_current_driven_current_interpolators: Vec<interpolation::Dim1Linear>, // I_PF_I
     pub pf_current_driven_current_derivative_interpolators: Vec<interpolation::Dim1Linear>, // d(I_PF_I)/d(t)
     pub n_current_driven: usize,
@@ -36,25 +39,22 @@ impl CircuitEquationModel {
         let mut pf_current_driven_names: Vec<String> = Vec::new();
         let mut pf_voltage_driven_names: Vec<String> = Vec::new();
         for pf_name in pf_names {
-            let is_current_driven: String = coils
+            let controlled_by: String = coils
                 .results
                 .get("pf")
                 .get(&pf_name)
                 .get("driven_by")
                 .unwrap_string();
-            println!("pf_name={}, is_current_driven={}", pf_name, is_current_driven);
-            let mut is_current_driven: bool = true; // TODO: replace with actual check
-            // println!("pf_name={}", pf_name);
-            if pf_name == "BVLT" || pf_name == "BVLB" || pf_name == "DIVT" {
-                // TODO: some random coils are current driven to test code
-                is_current_driven = false;
-            }
-            if is_current_driven {
+            if controlled_by == "current" {
                 pf_current_driven_names.push(pf_name.to_owned());
-            } else {
+            } else if controlled_by == "voltage" {
                 pf_voltage_driven_names.push(pf_name.to_owned());
+            } else {
+                panic!("Unknown PF coil driven_by type: {}", controlled_by);
             }
         }
+        println!("pf_current_driven_names={:#?}", pf_current_driven_names);
+        println!("pf_voltage_driven_names={:#?}", pf_voltage_driven_names);
         let n_current_driven: usize = pf_current_driven_names.len();
         let n_voltage_driven: usize = pf_voltage_driven_names.len();
 
@@ -143,8 +143,8 @@ impl CircuitEquationModel {
         let mut mutual_43: Array2<f64> = Array2::from_elem((n_plasma, n_passives), f64::NAN);
         let mut mutual_44: Array2<f64> = Array2::from_elem((n_plasma, n_plasma), f64::NAN); // plasma
 
-        let mut res_1: Array2<f64> = Array2::zeros((n_current_driven, n_current_driven)); // I_PF_I
-        let mut res_2: Array2<f64> = Array2::zeros((n_voltage_driven, n_voltage_driven)); // V_PF_V
+        let mut res_1: Array2<f64> = Array2::zeros((n_current_driven, n_current_driven)); // PF_I
+        let mut res_2: Array2<f64> = Array2::zeros((n_voltage_driven, n_voltage_driven)); // PF_V
         let mut res_3: Array2<f64> = Array2::zeros((n_passives, n_passives)); // passives
         let mut res_4: Array2<f64> = Array2::zeros((n_plasma, n_plasma)); // plasma
 
@@ -296,11 +296,14 @@ impl CircuitEquationModel {
             res_3[(i_passive, i_passive)] = passive_resistivity[i_passive] * length / area;
         }
 
-        // println!("mutual_21 = {:?}", mutual_21);
-        // println!("mutual_12 = {:?}", mutual_12);
+        // The circuit equation is:
+        // mass_matrix * d(states)/d(t) = stiffness_matrix * states + source_matrix * u
+        //
+        // Late we will rearrange this to state-space form:
+        // d(states)/d(t) = a_matrix * states + b_matrix * u
 
         #[rustfmt::skip]
-        let temp_1: Array2<f64> = concatenate(
+        let circuit_equation_matrix_1_mass: Array2<f64> = concatenate(
             Axis(0),
             &[
                 concatenate(Axis(1), &[(-1.0 * &mutual_12).view(),   (-1.0 * &mutual_13).view(),   Array2::eye(n_current_driven).view(),                       Array2::zeros((n_current_driven, n_plasma)).view()]).unwrap().view(),
@@ -311,7 +314,7 @@ impl CircuitEquationModel {
         ).unwrap();
 
         #[rustfmt::skip]
-        let temp_2: Array2<f64> = concatenate(
+        let circuit_equation_matrix_2_stiffness: Array2<f64> = concatenate(
             Axis(0),
             &[
                 concatenate(Axis(1), &[Array2::zeros((n_current_driven, n_voltage_driven)).view(),   Array2::zeros((n_current_driven, n_passives)).view(),       Array2::zeros((n_current_driven, n_current_driven)).view(),       Array2::zeros((n_current_driven, n_plasma)).view()]).unwrap().view(),
@@ -322,7 +325,7 @@ impl CircuitEquationModel {
         ).unwrap();
 
         #[rustfmt::skip]
-        let temp_3: Array2<f64> = concatenate(
+        let circuit_equation_matrix_3_source: Array2<f64> = concatenate(
             Axis(0),
             &[
                 concatenate(Axis(1), &[res_1.view(),                                               Array2::zeros((n_current_driven, n_voltage_driven)).view(),     Array2::zeros((n_current_driven, n_plasma)).view(),       mutual_11.view(),   mutual_14.view()]).unwrap().view(),
@@ -332,25 +335,25 @@ impl CircuitEquationModel {
             ]
         ).unwrap();
 
-        let a_matrix: Array2<f64> = temp_1.clone().inv().expect("temp_1 inversion failed").dot(&temp_2);
-        let b_matrix: Array2<f64> = temp_1.clone().inv().expect("temp_1 inversion failed").dot(&temp_3);
+        let state_space_a_matrix: Array2<f64> = circuit_equation_matrix_1_mass.clone().inv().expect("circuit_equation_matrix_1_mass inversion failed").dot(&circuit_equation_matrix_2_stiffness);
+        let state_space_b_matrix: Array2<f64> = circuit_equation_matrix_1_mass.clone().inv().expect("circuit_equation_matrix_1_mass inversion failed").dot(&circuit_equation_matrix_3_source);
+        // println!("a_matrix = {:#?}", state_space_a_matrix);
+        // println!("b_matrix = {:#?}", state_space_b_matrix);
 
         // println!("state_names={:#?}", state_names);
         // println!("state_names.len()={:#?}", state_names.len());
 
-        // println!("temp_1={:#?}", temp_1);
-        // println!("temp_2={:#?}", temp_2);
-        // println!("temp_3={:#?}", temp_3);
-        // println!("a_matrix={:#?}", a_matrix);
-        // println!("b_matrix={:#?}", b_matrix);
+        // println!("circuit_equation_matrix_1_mass={:#?}", circuit_equation_matrix_1_mass);
+        // println!("circuit_equation_matrix_2_stiffness={:#?}", circuit_equation_matrix_2_stiffness);
+        // println!("circuit_equation_matrix_3_source={:#?}", circuit_equation_matrix_3_source);
 
         CircuitEquationModel {
             n_current_driven,
             n_voltage_driven,
             n_passives,
             n_plasma,
-            a_matrix,
-            b_matrix,
+            state_space_a_matrix,
+            state_space_b_matrix,
             pf_current_driven_current_interpolators,
             pf_current_driven_current_derivative_interpolators,
             state_names,
@@ -369,7 +372,7 @@ impl ode_solvers::System<f64, DVector<f64>> for CircuitEquationModel {
     /// - `d_states_d_t`: Derivative of state vector to be filled in. This is a mutable output argument.
     ///
     fn system(&self, time_now: f64, states: &DVector<f64>, d_states_d_t: &mut DVector<f64>) {
-        println!("time_now = {}", time_now);
+        // println!("time_now = {}", time_now);
         // Get sizes
         let n_pf_current_driven: usize = self.n_current_driven;
         let n_pf_voltage_driven: usize = self.n_voltage_driven;
@@ -424,7 +427,7 @@ impl ode_solvers::System<f64, DVector<f64>> for CircuitEquationModel {
         // println!("states_ndarray.shape() = {:?}", states_ndarray.shape());
 
         // Calculate d(states)/d(t), what we need to return
-        let d_states_d_t_ndarray: Array1<f64> = self.a_matrix.dot(&states_ndarray) + self.b_matrix.dot(&u);
+        let d_states_d_t_ndarray: Array1<f64> = self.state_space_a_matrix.dot(&states_ndarray) + self.state_space_b_matrix.dot(&u);
 
         // Convert back to DVector, and modify the mutable variable
         let n_states: usize = d_states_d_t_ndarray.len();
@@ -518,8 +521,8 @@ fn solve_circuit_equations_rs(
 
     // Solver tolerances - looser tolerances can help with stiffness detection
     // Try: 1e-3 to 1e-6 for tighter control, or 1e-1 to 1.0 for looser control
-    let rtol: f64 = 1e-3; // Relative tolerance
-    let atol: f64 = 1e-3; // Absolute tolerance
+    let rtol: f64 = 1e-4; // Relative tolerance
+    let atol: f64 = 1e-4; // Absolute tolerance
 
     // println!("here 02");
     let n_plasma: usize = 0; // TODO: need to add plasma
