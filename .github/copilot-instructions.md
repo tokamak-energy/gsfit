@@ -1,0 +1,1 @@
+Read the file `documentation/gsfit_coding_standards.md`
