@@ -186,7 +186,7 @@ let n_time: usize = 100;
 
 let mut matrix: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
 
-for i_time in 0..n_time -1 { // will miss the last element of the matrix
+for i_time in 0..n_time - 1 { // will miss the last element of the matrix
     matrix[i_time] = i_time as f64;
 }
 ```
