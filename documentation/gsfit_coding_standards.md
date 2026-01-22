@@ -97,7 +97,7 @@ let x: Array1<f64> = Array1::linspace(0.0, 1.0, 100);
 let n_x: usize = x.len();
 ```
 
-With `ndarray` I prefer the use `Array1`, `Array2`, `Array3`, ..., instead of using `Array` paired with the dimension.
+With `ndarray` I prefer to use `Array1`, `Array2`, `Array3`, ..., instead of using `Array` paired with the dimension.
 
 ### Types
 * For floats we should use `f64`
