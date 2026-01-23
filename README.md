@@ -222,127 +222,65 @@ By storing all the settings needed to run GSFit in JSON files allows changes to 
 
 ## 2.2 Data structures
 <details>
-<summary><strong><code>Coils</code> object</strong></summary>
+<summary><strong>Coils</code> object</strong></summary>
 
 <details>
-<summary style='padding-left: 20px;'><code>pf</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;<code>pf</code></summary>
 
 <details>
-<summary style='padding-left: 40px;'><code>BVLB</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>BVLB</code></summary>
 
-<div style='padding-left: 80px;'><code>controlled_by:</code>	<code>str</code>	<code>[1]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>controlled_by:</code>	<code>str</code>	<code>[1]</code></div>
 <details>
-<summary style='padding-left: 60px;'><code>geometry</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>geometry</code></summary>
 
-<div style='padding-left: 100px;'><code>d_r:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
-<div style='padding-left: 100px;'><code>d_z:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
-<div style='padding-left: 100px;'><code>r:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
-<div style='padding-left: 100px;'><code>z:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>d_r:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>d_z:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>r:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>z:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
 
 </details>
 <details>
-<summary style='padding-left: 60px;'><code>greens</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>greens</code></summary>
 
-<div style='padding-left: 100px;'><code>BVLT:</code>	<code>f64</code>	<code>[1]</code></div>
-
-</details>
-<details>
-<summary style='padding-left: 60px;'><code>i</code></summary>
-
-<details>
-<summary style='padding-left: 80px;'><code>measured</code></summary>
-
-<div style='padding-left: 120px;'><code>time:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
-<div style='padding-left: 120px;'><code>value:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>BVLT:</code>	<code>f64</code>	<code>[1]</code></div>
 
 </details>
 <details>
-<summary style='padding-left: 80px;'><code>simulated</code></summary>
-
-<div style='padding-left: 120px;'><code>time:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
-<div style='padding-left: 120px;'><code>value:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
-
-</details>
-
-</details>
-<div style='padding-left: 80px;'><code>resistance:</code>	<code>float</code>	<code>[1]</code></div>
-<details>
-<summary style='padding-left: 60px;'><code>v</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>i</code></summary>
 
 <details>
-<summary style='padding-left: 80px;'><code>measured</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>measured</code></summary>
 
-<div style='padding-left: 120px;'><code>time:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
-<div style='padding-left: 120px;'><code>value:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>time:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>value:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
 
 </details>
 <details>
-<summary style='padding-left: 80px;'><code>simulated</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>simulated</code></summary>
 
-<div style='padding-left: 120px;'><code>time:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
-<div style='padding-left: 120px;'><code>value:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>time:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>value:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
 
 </details>
 
 </details>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>resistance:</code>	<code>float</code>	<code>[1]</code></div>
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>v</code></summary>
+
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>measured</code></summary>
+
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>time:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>value:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
 
 </details>
 <details>
-<summary style='padding-left: 40px;'><code>BVLT</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>simulated</code></summary>
 
-<div style='padding-left: 80px;'><code>controlled_by:</code>	<code>str</code>	<code>[1]</code></div>
-<details>
-<summary style='padding-left: 60px;'><code>geometry</code></summary>
-
-<div style='padding-left: 100px;'><code>d_r:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
-<div style='padding-left: 100px;'><code>d_z:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
-<div style='padding-left: 100px;'><code>r:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
-<div style='padding-left: 100px;'><code>z:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
-
-</details>
-<details>
-<summary style='padding-left: 60px;'><code>greens</code></summary>
-
-<div style='padding-left: 100px;'><code>BVLB:</code>	<code>f64</code>	<code>[1]</code></div>
-
-</details>
-<details>
-<summary style='padding-left: 60px;'><code>i</code></summary>
-
-<details>
-<summary style='padding-left: 80px;'><code>measured</code></summary>
-
-<div style='padding-left: 120px;'><code>time:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
-<div style='padding-left: 120px;'><code>value:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
-
-</details>
-<details>
-<summary style='padding-left: 80px;'><code>simulated</code></summary>
-
-<div style='padding-left: 120px;'><code>time:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
-<div style='padding-left: 120px;'><code>value:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
-
-</details>
-
-</details>
-<div style='padding-left: 80px;'><code>resistance:</code>	<code>float</code>	<code>[1]</code></div>
-<details>
-<summary style='padding-left: 60px;'><code>v</code></summary>
-
-<details>
-<summary style='padding-left: 80px;'><code>measured</code></summary>
-
-<div style='padding-left: 120px;'><code>time:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
-<div style='padding-left: 120px;'><code>value:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
-
-</details>
-<details>
-<summary style='padding-left: 80px;'><code>simulated</code></summary>
-
-<div style='padding-left: 120px;'><code>time:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
-<div style='padding-left: 120px;'><code>value:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
-
-</details>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>time:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>value:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
 
 </details>
 
@@ -350,23 +288,85 @@ By storing all the settings needed to run GSFit in JSON files allows changes to 
 
 </details>
 <details>
-<summary style='padding-left: 20px;'><code>tf</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>BVLT</code></summary>
 
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>controlled_by:</code>	<code>str</code>	<code>[1]</code></div>
 <details>
-<summary style='padding-left: 40px;'><code>rod_i</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>geometry</code></summary>
 
-<details>
-<summary style='padding-left: 60px;'><code>measured</code></summary>
-
-<div style='padding-left: 100px;'><code>time:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
-<div style='padding-left: 100px;'><code>value:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>d_r:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>d_z:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>r:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>z:</code>	<code>Array1</code>	<code>[n_filaments]</code></div>
 
 </details>
 <details>
-<summary style='padding-left: 60px;'><code>simulated</code></summary>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>greens</code></summary>
 
-<div style='padding-left: 100px;'><code>time:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
-<div style='padding-left: 100px;'><code>value:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>BVLB:</code>	<code>f64</code>	<code>[1]</code></div>
+
+</details>
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>i</code></summary>
+
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>measured</code></summary>
+
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>time:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>value:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+
+</details>
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>simulated</code></summary>
+
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>time:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>value:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
+
+</details>
+
+</details>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>resistance:</code>	<code>float</code>	<code>[1]</code></div>
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>v</code></summary>
+
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>measured</code></summary>
+
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>time:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>value:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+
+</details>
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>simulated</code></summary>
+
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>time:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>value:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
+
+</details>
+
+</details>
+
+</details>
+
+</details>
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;<code>tf</code></summary>
+
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>rod_i</code></summary>
+
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>measured</code></summary>
+
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>time:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>value:</code>	<code>Array1</code>	<code>[n_time_measured]</code></div>
+
+</details>
+<details>
+<summary>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>simulated</code></summary>
+
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>time:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>value:</code>	<code>Array1</code>	<code>[n_time_simulated]</code></div>
 
 </details>
 
