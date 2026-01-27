@@ -97,13 +97,14 @@ impl CircuitEquationModel {
 
             let n_time: usize = times.len();
             let mut current_derivatives: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+            // Users will send in non-uniform time, when designing a waveform for the PF coils
             // Forward difference for first point
             if n_time > 1 {
                 current_derivatives[0] = (currents[1] - currents[0]) / (times[1] - times[0]);
             }
             // Central difference for interior points
-            for i_currents in 1..n_time - 1 {
-                current_derivatives[i_currents] = (currents[i_currents + 1] - currents[i_currents - 1]) / (times[i_currents + 1] - times[i_currents - 1]);
+            for i_time in 1..n_time - 1 {
+                current_derivatives[i_time] = (currents[i_time + 1] - currents[i_time - 1]) / (times[i_time + 1] - times[i_time - 1]);
             }
             // Backward difference for last point
             if n_time > 1 {
@@ -574,8 +575,8 @@ fn solve_circuit_equations_rs(
     states_out.push(initial_states.clone());
 
     let (calculated_states, calculated_times) = solver
-        .solve(times_to_solve.last().expect("find last value").to_owned())
-        .expect("failed to solve");
+        .solve(times_to_solve.last().expect("Expected at least one time point in times_to_solve").to_owned())
+        .expect("Failed to solve ODE system");
 
     println!("Integration completed!");
     println!("  Successfully solved {} time points", time_out.len());
