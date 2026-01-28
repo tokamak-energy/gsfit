@@ -62,17 +62,18 @@ impl Coils {
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("v")
-            .insert("time_experimental", time_ndarray);
+            .get_or_insert("measured")
+            .insert("time", time_ndarray);
         self.results
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("v")
-            .insert("measured_experimental", voltages_ndarray);
-
+            .get_or_insert("measured")
+            .insert("value", voltages_ndarray);
         self.results
             .get_or_insert("pf")
             .get_or_insert(name)
-            .insert("driven_by", "voltage".to_string());
+            .insert("controlled_by", "voltage".to_string());
     }
 
     pub fn add_tf_coil(&mut self, time: PyReadonlyArray1<f64>, measured: PyReadonlyArray1<f64>) {
@@ -84,11 +85,13 @@ impl Coils {
         self.results
             .get_or_insert("tf")
             .get_or_insert("rod_i")
-            .insert("time_experimental", time_ndarray);
+            .get_or_insert("measured")
+            .insert("time", time_ndarray);
         self.results
             .get_or_insert("tf")
             .get_or_insert("rod_i")
-            .insert("measured_experimental", measured_ndarray);
+            .get_or_insert("measured")
+            .insert("value", measured_ndarray);
     }
 
     pub fn greens_with_self(&mut self) {
@@ -201,22 +204,24 @@ impl Coils {
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("i")
-            .insert("time_experimental", time.to_owned()); // Array1<f64>; shape = (n_time)
+            .get_or_insert("measured")
+            .insert("time", time.to_owned()); // Array1<f64>; shape = (n_time)
         self.results
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("i")
-            .insert("measured_experimental", measured.to_owned()); // Array1<f64>; shape = (n_time)
+            .get_or_insert("measured")
+            .insert("value", measured.to_owned()); // Array1<f64>; shape = (n_time)
         self.results
             .get_or_insert("pf")
             .get_or_insert(name)
-            .insert("driven_by", "current".to_string());
+            .insert("controlled_by", "current".to_string());
     }
 
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> Vec<SensorsDynamic> {
         // TF coil
-        let time_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("time_experimental").unwrap_array1();
-        let measured_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("measured_experimental").unwrap_array1();
+        let time_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("measured").get("time").unwrap_array1();
+        let measured_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("measured").get("value").unwrap_array1();
 
         // Create the interpolator
         let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
@@ -241,8 +246,8 @@ impl Coils {
         for i_coil in 0..n_coils {
             // Coils
             let coil_name: &String = &coil_names[i_coil];
-            let time_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("time_experimental").unwrap_array1();
-            let measured_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("measured_experimental").unwrap_array1();
+            let time_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("measured").get("time").unwrap_array1();
+            let measured_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("measured").get("value").unwrap_array1();
 
             // Create the interpolator
             let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())

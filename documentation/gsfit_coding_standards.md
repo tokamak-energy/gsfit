@@ -192,3 +192,6 @@ for i_time in 0..n_time - 1 { // will miss the last element of the matrix
 ```
 
 This is not a hard rule, if we are only going to assign to the matrix diagonal then we can initialize the matrix to zeros.
+
+## Array dimensions
+Time should always be the first index in multidimensional arrays, e.g. `array([i_time, i_psi_n])`
