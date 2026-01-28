@@ -17,7 +17,7 @@ use circuit_equations::solve_circuit_equations;
 mod source_functions;
 pub use grad_shafranov::solve_grad_shafranov;
 use greens::greens_py;
-use source_functions::{EfitPolynomial, LiuqePolynomial};
+use source_functions::{EfitPolynomial, LiuqePolynomial, TensionedCubicBSpline};
 // mod solovev_equilibrium;
 // pub use solovev_equilibrium::run_solovev;
 // mod analytic_grad_shafranov;
@@ -49,6 +49,7 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Expose source functions
     m.add_class::<EfitPolynomial>()?;
     m.add_class::<LiuqePolynomial>()?;
+    m.add_class::<TensionedCubicBSpline>()?;
 
     // Expose solovev equilibrium function
     // m.add_function(wrap_pyfunction!(run_solovev, m)?)?;

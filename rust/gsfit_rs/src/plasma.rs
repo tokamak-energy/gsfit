@@ -5,7 +5,7 @@ use crate::passives::Passives;
 use crate::plasma_geometry::marching_squares::MarchingContour;
 use crate::plasma_geometry::marching_squares::marching_squares;
 use crate::source_functions::SourceFunctionTraits;
-use crate::source_functions::{EfitPolynomial, LiuqePolynomial};
+use crate::source_functions::{EfitPolynomial, LiuqePolynomial, TensionedCubicBSpline};
 use contour::ContourBuilder;
 use core::{f64, panic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
@@ -102,6 +102,12 @@ impl Plasma {
                             n_dof: liuqe.n_dof,
                             regularisations: liuqe.regularisations.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
+                    } else if let Ok(cubic_bspline) = obj.extract::<PyRef<TensionedCubicBSpline>>(py) {
+                        Ok(Arc::new(TensionedCubicBSpline {
+                            n_dof: cubic_bspline.n_dof,
+                            regularisations: cubic_bspline.regularisations.clone(),
+                            dof_values: cubic_bspline.dof_values.clone(),
+                        }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("p_prime_source_function must implement SourceFunctionTraits");
                     }
@@ -124,6 +130,12 @@ impl Plasma {
                         Ok(Arc::new(LiuqePolynomial {
                             n_dof: liuqe.n_dof,
                             regularisations: liuqe.regularisations.clone(),
+                        }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
+                    } else if let Ok(cubic_bspline) = obj.extract::<PyRef<TensionedCubicBSpline>>(py) {
+                        Ok(Arc::new(TensionedCubicBSpline {
+                            n_dof: cubic_bspline.n_dof,
+                            regularisations: cubic_bspline.regularisations.clone(),
+                            dof_values: cubic_bspline.dof_values.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("ff_prime_source_function must implement SourceFunctionTraits");

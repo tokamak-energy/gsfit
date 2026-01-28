@@ -220,8 +220,8 @@ class Plasma(DataTreeAccessor):
         limit_pts_z: npt.NDArray[np.float64],
         vessel_r: npt.NDArray[np.float64],
         vessel_z: npt.NDArray[np.float64],
-        p_prime_source_function: "EfitPolynomial" | "LiuqePolynomial",
-        ff_prime_source_function: "EfitPolynomial" | "LiuqePolynomial",
+        p_prime_source_function: "EfitPolynomial" | "LiuqePolynomial" | "TensionedCubicBSpline",
+        ff_prime_source_function: "EfitPolynomial" | "LiuqePolynomial" | "TensionedCubicBSpline",
         initial_ip: float,
         initial_cur_r: float,
         initial_cur_z: float,
@@ -596,6 +596,18 @@ class LiuqePolynomial(DataTreeAccessor):
         n_dof: int,
         regularisations: npt.NDArray[np.float64],
     ) -> LiuqePolynomial:
+        """
+        :param n_dof: Number of degrees of freedom
+        :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values [dimensionless]
+        """
+        ...
+        
+class TensionedCubicBSpline(DataTreeAccessor):
+    def __new__(
+        cls,
+        n_dof: int,
+        regularisations: npt.NDArray[np.float64],
+    ) -> TensionedCubicBSpline:
         """
         :param n_dof: Number of degrees of freedom
         :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values [dimensionless]
