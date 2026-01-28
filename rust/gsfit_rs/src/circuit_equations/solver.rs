@@ -27,7 +27,7 @@ use pyo3::prelude::*;
 
 const PI: f64 = std::f64::consts::PI;
 
-#[derive(PartialEq, Clone)]
+#[derive(Clone)]
 enum CurrentSourceType {
     PF,
     Alpha,
@@ -38,26 +38,26 @@ enum CurrentSourceType {
 #[derive(Clone)]
 struct StateIdentifier {
     current_source_type: CurrentSourceType,
-    circuit_name: String,        // e.g., "SOL", "BVLT", "IVC", "plasma"
-    passive_number: Option<usize>, // only for passive filaments
+    circuit_name: String, // e.g., "SOL", "BVLT", "IVC", "plasma"
+    passive_filament_index: Option<usize>, // only used for passive filaments
 }
 
 #[derive(Clone)]
-pub struct CircuitEquationModel {
-    pub state_space_matrix_a: Array2<f64>,
-    pub state_space_matrix_b: Array2<f64>,
-    pub pf_current_controlled_current_interpolators: Vec<interpolation::Dim1Linear>, // I_PF_I
-    pub pf_current_controlled_current_derivative_interpolators: Vec<interpolation::Dim1Linear>, // d(I_PF_I)/d(t)
-    pub n_current_controlled: usize,
-    pub n_voltage_controlled: usize,
-    pub n_passive_filaments: usize,
-    pub n_plasma: usize,
+struct CircuitEquationModel {
+    state_space_matrix_a: Array2<f64>,
+    state_space_matrix_b: Array2<f64>,
+    pf_current_controlled_current_interpolators: Vec<interpolation::Dim1Linear>, // I_PF_I
+    pf_current_controlled_current_derivative_interpolators: Vec<interpolation::Dim1Linear>, // d(I_PF_I)/d(t)
+    n_current_controlled: usize,
+    n_voltage_controlled: usize,
+    n_passive_filaments: usize,
+    n_plasma: usize,
     state_identifiers: Vec<StateIdentifier>,
 }
 
 impl CircuitEquationModel {
     /// Constructor for CircuitEquationModel
-    pub fn new(coils: Coils, passives: Passives) -> Self {
+    fn new(coils: Coils, passives: Passives) -> Self {
         // Find which PF coils are current controlled and which are voltage controlled
         let pf_names: Vec<String> = coils.results.get("pf").keys();
         let mut pf_current_controlled_names: Vec<String> = Vec::new();
@@ -128,20 +128,20 @@ impl CircuitEquationModel {
         let n_variables_solving: usize = n_voltage_controlled + n_passive_filaments + n_current_controlled + n_plasma;
         let mut state_identifiers: Vec<StateIdentifier> = Vec::with_capacity(n_variables_solving);
         for pf_name in &pf_voltage_controlled_names {
-            state_identifiers.push(StateIdentifier { current_source_type: CurrentSourceType::PF, circuit_name: pf_name.to_string(), passive_number: None });
+            state_identifiers.push(StateIdentifier { current_source_type: CurrentSourceType::PF, circuit_name: pf_name.to_string(), passive_filament_index: None });
         }
         for passive_name in &passives.results.keys() {
             let n_filaments: usize = passives.results.get(passive_name).get("geometry").get("r").unwrap_array1().len();
             for i_filament in 0..n_filaments {
-                state_identifiers.push(StateIdentifier { current_source_type: CurrentSourceType::Passive, circuit_name: passive_name.to_string(), passive_number: Some(i_filament) });
+                state_identifiers.push(StateIdentifier { current_source_type: CurrentSourceType::Passive, circuit_name: passive_name.to_string(), passive_filament_index: Some(i_filament) });
             }
         }
         for pf_name in &pf_current_controlled_names {
-            state_identifiers.push(StateIdentifier { current_source_type: CurrentSourceType::Alpha, circuit_name: pf_name.to_string(), passive_number: None });
+            state_identifiers.push(StateIdentifier { current_source_type: CurrentSourceType::Alpha, circuit_name: pf_name.to_string(), passive_filament_index: None });
         }
         for _ in 0..n_plasma {
             // will only add if plasma is included
-            state_identifiers.push(StateIdentifier { current_source_type: CurrentSourceType::Beta, circuit_name: "plasma".to_string(), passive_number: None });
+            state_identifiers.push(StateIdentifier { current_source_type: CurrentSourceType::Beta, circuit_name: "plasma".to_string(), passive_filament_index: None });
         }
 
         // Matrix dimensions are: (vertical, horizontal)
@@ -460,7 +460,6 @@ impl CircuitEquationModel {
 }
 
 #[pyfunction]
-/// Python wrapper for `solve_circuit_equations_rs`
 pub fn solve_circuit_equations(
     mut coils: PyRefMut<Coils>,
     mut passives: PyRefMut<Passives>,
@@ -469,34 +468,19 @@ pub fn solve_circuit_equations(
     mut rogowski_coils: PyRefMut<RogowskiCoils>,
     times_to_solve: PyReadonlyArray1<f64>,
 ) {
-    // let coils_rs: Coils = coils.to_owned();
-    // let passives_rs: Passives = passives.to_owned();
-    // let bp_probes_rs: BpProbes = bp_probes.to_owned();
-    // let flux_loops_rs: FluxLoops = flux_loops.to_owned();
-    // let rogowski_coils_rs: RogowskiCoils = rogowski_coils.to_owned();
     let times_to_solve_ndarray: Array1<f64> = times_to_solve.to_owned_array();
 
-    solve_circuit_equations_rs(coils, passives, bp_probes, flux_loops, rogowski_coils, times_to_solve_ndarray);
-    // coils_rs.results.get_or_insert("pf").get_or_insert("testing").insert("data", 123.456);
-}
+    let time_start: f64 = times_to_solve_ndarray[0];
+    let time_end: f64 = times_to_solve_ndarray.last().unwrap().to_owned();
+    let n_time: usize = times_to_solve_ndarray.len();
 
-fn solve_circuit_equations_rs(
-    mut coils: PyRefMut<Coils>,
-    mut passives: PyRefMut<Passives>,
-    mut bp_probes: PyRefMut<BpProbes>,
-    mut flux_loops: PyRefMut<FluxLoops>,
-    mut rogowski_coils: PyRefMut<RogowskiCoils>,
-    times_to_solve: Array1<f64>,
-) {
     // Construct the circuit equation model
-    let model: CircuitEquationModel = CircuitEquationModel::new(coils.to_owned(), passives.to_owned());
-
-    let time_start: f64 = times_to_solve[0];
-    let time_end: f64 = times_to_solve.last().unwrap().to_owned();
+    let model: CircuitEquationModel = CircuitEquationModel::new(coils.clone(), passives.clone());
 
     // Solver tolerances
     let rtol: f64 = 1e-4; // Relative tolerance [dimensionless]
-    let atol: f64 = 1e-6; // Absolute tolerance [ampere]
+    // TODO: atol can be either a vector per state or a vector with a single value used for all states
+    let atol: f64 = 1e-6; // Absolute tolerance [multiple_units]
 
     // `states = [I_PF_V; I_passives; alpha; beta]`
     let n_states: usize = model.n_voltage_controlled + model.n_passive_filaments + model.n_current_controlled + model.n_plasma;
@@ -529,7 +513,7 @@ fn solve_circuit_equations_rs(
                 // Calculate d(states)/d(t) = A*states + B*u [ampere / second]
                 let d_states_d_t_ndarray: Array1<f64> = state_space_matrix_a_rhs.dot(&states_ndarray) + state_space_matrix_b_rhs.dot(&u);
 
-                // Convert back to DVector
+                // Convert back to DVector TODO: figure this one out!
                 for (i, &value) in d_states_d_t_ndarray.iter().enumerate() {
                     d_states_d_t[i] = value;
                 }
@@ -565,27 +549,16 @@ fn solve_circuit_equations_rs(
     type LS = diffsol::NalgebraLU<f64>;
     let mut solver = problem.bdf::<LS>().expect("Failed to create BDF solver");
 
-    // Allocate output storage
-    let n_time: usize = times_to_solve.len();
-    let mut time_out: Vec<f64> = Vec::with_capacity(n_time);
-    let mut states_out: Vec<NalgebraVec<f64>> = Vec::with_capacity(n_time);
-
-    // Store initial condition
-    time_out.push(time_start);
-    states_out.push(initial_states.clone());
-
-    let (calculated_states, calculated_times) = solver
-        .solve(times_to_solve.last().expect("Expected at least one time point in times_to_solve").to_owned())
+    // Solve the ODE system
+    let (calculated_states, calculated_times_vec) = solver
+        .solve(time_end)
         .expect("Failed to solve ODE system");
+    println!("Integration completed");
 
-    println!("Integration completed!");
-    println!("  Successfully solved {} time points", time_out.len());
-
-    let time_out: Array1<f64> = Array1::from_vec(calculated_times.clone());
+    // Extract results
+    let calculated_times: Array1<f64> = Array1::from_vec(calculated_times_vec.clone());
     let n_time: usize = calculated_times.len();
-
     println!("n_time = {}", n_time);
-    // println!("calculated_states = {:#?}", calculated_states);
 
     // Allocate passive currents
     for passive_name in passives.results.keys() {
@@ -603,15 +576,12 @@ fn solve_circuit_equations_rs(
             .get_or_insert(&passive_name)
             .get_or_insert("i_filaments")
             .get_or_insert("simulated")
-            .insert("time", time_out.clone());
+            .insert("time", calculated_times.clone());
     }
     passives.results.print_keys();
 
-    // println!("model.state_identifiers = {:#?}", model.state_identifiers);
-
+    // Store results into `Coils` and `Passives` structures
     for (i_state, state_identifier) in model.state_identifiers.iter().enumerate() {
-        // println!("circuit_type = {}", state_identifier.current_source_type);
-        // println!("circuit_name = {}", state_identifier.circuit_name);
         match state_identifier.current_source_type {
             CurrentSourceType::PF => {
             // Extract simulated current
@@ -634,7 +604,7 @@ fn solve_circuit_equations_rs(
                 .get_or_insert(&state_identifier.circuit_name)
                 .get_or_insert("i")
                 .get_or_insert("simulated")
-                .insert("time", time_out.clone());
+                .insert("time", calculated_times.clone());
             }
             CurrentSourceType::Passive => {
                 // Extract simulated current
@@ -652,7 +622,7 @@ fn solve_circuit_equations_rs(
                     .get("simulated")
                     .get("value").unwrap_array2();
                 simulated_currents
-                    .slice_mut(s![.., state_identifier.passive_number.unwrap()])
+                    .slice_mut(s![.., state_identifier.passive_filament_index.unwrap()])
                     .assign(&current_simulated.to_owned());
                 passives
                     .results

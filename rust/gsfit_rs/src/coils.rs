@@ -85,12 +85,12 @@ impl Coils {
         self.results
             .get_or_insert("tf")
             .get_or_insert("rod_i")
-            .get_or_insert("meaasured")
+            .get_or_insert("measured")
             .insert("time", time_ndarray);
         self.results
             .get_or_insert("tf")
             .get_or_insert("rod_i")
-            .get_or_insert("meaasured")
+            .get_or_insert("measured")
             .insert("value", measured_ndarray);
     }
 
