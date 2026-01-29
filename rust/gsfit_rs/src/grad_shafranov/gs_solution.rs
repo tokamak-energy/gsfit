@@ -222,7 +222,7 @@ impl<'a> GsSolution<'a> {
         // Degrees of freedom
         let passives_shape: &[usize] = bp_probes_static.greens_with_passives.shape();
         let n_passive_dof: usize = passives_shape[0];
-        let n_p_prime_dof: usize = ff_prime_source_function.source_function_n_dof();
+        let n_p_prime_dof: usize = p_prime_source_function.source_function_n_dof();
         let n_ff_prime_dof: usize = ff_prime_source_function.source_function_n_dof();
         let n_iter_no_vertical_feedback: usize = self.n_iter_no_vertical_feedback;
 
