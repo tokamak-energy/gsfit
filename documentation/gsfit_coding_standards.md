@@ -177,6 +177,7 @@ The following would be incorrect:
 
 
 ## Initializing empty arrays
+### Safety
 For safety I like to initialize numerical arrays full with `f64::NAN` this way if an index is missed an error will most likely be thrown, e.g.
 
 ```rust
@@ -193,5 +194,20 @@ for i_time in 0..n_time - 1 { // will miss the last element of the matrix
 
 This is not a hard rule, if we are only going to assign to the matrix diagonal then we can initialize the matrix to zeros.
 
+### Multidimensional arrays
+The standard within the `ndarray` crate is to use tuples to initialize multidimensional arrays, e.g.
+```rust
+use ndarray::Array2;
+
+let n_time: usize = 1000;
+let n_psi_n: usize = 100;
+
+let multidimensional_array: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
+```
+
 ## Array dimensions
-Time should always be the first index in multidimensional arrays, e.g. `array([i_time, i_psi_n])`
+Time should always be the first index in multidimensional arrays, e.g. `array((i_time, i_psi_n))`
+
+## Error handling
+When unwrapping an object with `Result` type, I prefer to use `.expect("description")` as I find it helps with tracking down the problem.
+Instead of simply using `.unwrap()`.

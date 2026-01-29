@@ -19,7 +19,19 @@ pub struct Coils {
     pub results: DataTree,
 }
 
-// TODO: I need to add PSU "cable" resistance and inductance
+// TODO: I need to add PSU "current leads" resistance and inductance
+
+// Data structure:
+// * "experimental": from the experimental data
+// * "measured": from the experimental data, but interpolated onto the reconstruction time-base
+// * "calculated": calculated from the GS solution, on the reconstruction time-base
+// * "simulated": calculated from `circuit_equations`, on the simulation time-base
+//
+// I will want to calculate the magnetic sensor values for:
+// * "measured"
+// * "calculated"
+// * "simulated"
+// I'm not certain if I will need to calculate the sensor values for "experimental"?
 
 #[pymethods]
 impl Coils {
@@ -62,13 +74,13 @@ impl Coils {
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("v")
-            .get_or_insert("measured")
+            .get_or_insert("experimental")
             .insert("time", time_ndarray);
         self.results
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("v")
-            .get_or_insert("measured")
+            .get_or_insert("experimental")
             .insert("value", voltages_ndarray);
         self.results
             .get_or_insert("pf")
@@ -85,12 +97,12 @@ impl Coils {
         self.results
             .get_or_insert("tf")
             .get_or_insert("rod_i")
-            .get_or_insert("measured")
+            .get_or_insert("experimental")
             .insert("time", time_ndarray);
         self.results
             .get_or_insert("tf")
             .get_or_insert("rod_i")
-            .get_or_insert("measured")
+            .get_or_insert("experimental")
             .insert("value", measured_ndarray);
     }
 
@@ -204,13 +216,13 @@ impl Coils {
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("i")
-            .get_or_insert("measured")
+            .get_or_insert("experimental")
             .insert("time", time.to_owned()); // Array1<f64>; shape = (n_time)
         self.results
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("i")
-            .get_or_insert("measured")
+            .get_or_insert("experimental")
             .insert("value", measured.to_owned()); // Array1<f64>; shape = (n_time)
         self.results
             .get_or_insert("pf")
@@ -220,8 +232,8 @@ impl Coils {
 
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> Vec<SensorsDynamic> {
         // TF coil
-        let time_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("measured").get("time").unwrap_array1();
-        let measured_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("measured").get("value").unwrap_array1();
+        let time_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("experimental").get("time").unwrap_array1();
+        let measured_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("experimental").get("value").unwrap_array1();
 
         // Create the interpolator
         let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
@@ -233,7 +245,7 @@ impl Coils {
             .expect("Coils.split_into_static_and_dynamic: Can't do TF interpolation");
 
         // Store in self
-        self.results.get_or_insert("tf").get_or_insert("rod_i").insert("measured", measured_tf);
+        self.results.get_or_insert("tf").get_or_insert("rod_i").get_or_insert("measured").insert("value", measured_tf);
 
         // PF coils
         let coil_names: Vec<String> = self.results.get("pf").keys();
@@ -246,8 +258,8 @@ impl Coils {
         for i_coil in 0..n_coils {
             // Coils
             let coil_name: &String = &coil_names[i_coil];
-            let time_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("measured").get("time").unwrap_array1();
-            let measured_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("measured").get("value").unwrap_array1();
+            let time_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("experimental").get("time").unwrap_array1();
+            let measured_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("experimental").get("value").unwrap_array1();
 
             // Create the interpolator
             let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
@@ -266,7 +278,8 @@ impl Coils {
                 .get_or_insert("pf")
                 .get_or_insert(coil_name)
                 .get_or_insert("i")
-                .insert("measured", measured_this_coil);
+                .get_or_insert("measured")
+                .insert("value", measured_this_coil);
         }
 
         // MDSplus is "Coil-Major", but we want to rearrange the data to be "Time-Major"

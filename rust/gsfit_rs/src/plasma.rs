@@ -947,7 +947,7 @@ impl Plasma {
         let mut rho_tor_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut rho_pol_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
 
-        let i_rod: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").unwrap_array1();
+        let i_rod: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").get("value").unwrap_array1();
 
         let mut boundary_contours: Vec<MarchingContour> = Vec::with_capacity(n_time);
 
