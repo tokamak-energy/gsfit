@@ -1,7 +1,7 @@
 use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2};
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
-use numpy::borrow::PyReadonlyArray2;
+use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
 
 #[derive(Clone)]
@@ -9,6 +9,7 @@ use pyo3::prelude::*;
 pub struct TensionedCubicBSpline {
     pub n_dof: usize,
     pub regularisations: Array2<f64>,
+    pub interior_knots: Array1<f64>,
     pub dof_values: Array1<f64>,
 }
 
@@ -21,15 +22,17 @@ impl TensionedCubicBSpline {
     /// L. Lao, et. al., "Reconstruction of current profile parameters and plasma shapes in tokamaks", Nucl. Fusion, 1985
     /// https://doi.org/10.1088/0029-5515/25/11/007
     #[new]
-    pub fn new(n_dof: usize, regularisations: PyReadonlyArray2<f64>) -> Self {
+    pub fn new(n_dof: usize, regularisations: PyReadonlyArray2<f64>, interior_knots: PyReadonlyArray1<f64>) -> Self {
         // Change Python types into Rust types
         let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
+        let interior_knots_ndarray: Array1<f64> = interior_knots.to_owned_array();
         let polynomial_coeficients_ndarray: Array1<f64> = Array1::zeros(0);
 
         // Create the struct
         TensionedCubicBSpline {
             n_dof,
             regularisations: regularisations_ndarray,
+            interior_knots: interior_knots_ndarray,
             dof_values: polynomial_coeficients_ndarray,
         }
     }

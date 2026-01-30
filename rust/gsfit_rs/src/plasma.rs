@@ -107,6 +107,7 @@ impl Plasma {
                             n_dof: cubic_bspline.n_dof,
                             regularisations: cubic_bspline.regularisations.clone(),
                             dof_values: cubic_bspline.dof_values.clone(),
+                            interior_knots: cubic_bspline.interior_knots.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("p_prime_source_function must implement SourceFunctionTraits");
@@ -136,6 +137,7 @@ impl Plasma {
                             n_dof: cubic_bspline.n_dof,
                             regularisations: cubic_bspline.regularisations.clone(),
                             dof_values: cubic_bspline.dof_values.clone(),
+                            interior_knots: cubic_bspline.interior_knots.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("ff_prime_source_function must implement SourceFunctionTraits");

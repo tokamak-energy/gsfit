@@ -607,6 +607,7 @@ class TensionedCubicBSpline(DataTreeAccessor):
         cls,
         n_dof: int,
         regularisations: npt.NDArray[np.float64],
+        interior_knots: npt.NDArray[np.float64],
     ) -> TensionedCubicBSpline:
         """
         :param n_dof: Number of degrees of freedom
