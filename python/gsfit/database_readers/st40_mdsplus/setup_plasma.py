@@ -53,14 +53,14 @@ def setup_plasma(
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
         p_prime_source_function = gsfit_rs.LiuqePolynomial(n_dof, regularisations)
     elif settings["source_function_p_prime.json"]["method"] == "tensioned_cubic_b_spline":
-        n_dof = settings["source_function_p_prime.json"]["tensioned_cubic_b_spline"]["n_dof"]
         regularisations = np.array(settings["source_function_p_prime.json"]["tensioned_cubic_b_spline"]["regularizations"])
         # If `regularisations` is [[]] in the json file, will be interpreted by numpy as having size (1, 0).
         # Which would be interpreted as (n_regularisations, n_dof). So it would cause an error
+        interior_knots = np.array(settings["source_function_p_prime.json"]["tensioned_cubic_b_spline"]["interior_knots"])
+        n_dof = len(interior_knots) + 3
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
-        interior_knots = np.array(settings["source_function_p_prime.json"]["tensioned_cubic_b_spline"]["interior_knots"])
-        p_prime_source_function = gsfit_rs.TensionedCubicBSpline(n_dof, regularisations, interior_knots)
+        p_prime_source_function = gsfit_rs.TensionedCubicBSpline(regularisations, interior_knots)
     else:
         raise ValueError(f"Unknown method for p_prime source function: {settings['source_function_p_prime.json']['method']}")
 
@@ -81,14 +81,14 @@ def setup_plasma(
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
         ff_prime_source_function = gsfit_rs.LiuqePolynomial(n_dof, regularisations, interior_knots)
     elif settings["source_function_ff_prime.json"]["method"] == "tensioned_cubic_b_spline":
-        n_dof = settings["source_function_ff_prime.json"]["tensioned_cubic_b_spline"]["n_dof"]
         regularisations = np.array(settings["source_function_ff_prime.json"]["tensioned_cubic_b_spline"]["regularizations"])
         # If `regularisations` is [[]] in the json file, will be interpreted by numpy as having size (1, 0).
         # Which would be interpreted as (n_regularisations, n_dof). So it would cause an error
+        interior_knots = np.array(settings["source_function_ff_prime.json"]["tensioned_cubic_b_spline"]["interior_knots"])
+        n_dof = len(interior_knots) + 3
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
-        interior_knots = np.array(settings["source_function_ff_prime.json"]["tensioned_cubic_b_spline"]["interior_knots"])
-        ff_prime_source_function = gsfit_rs.TensionedCubicBSpline(n_dof, regularisations, interior_knots)
+        ff_prime_source_function = gsfit_rs.TensionedCubicBSpline(regularisations, interior_knots)
     else:
         raise ValueError(f"Unknown method for ff_prime source function: {settings['source_function_ff_prime.json']['method']}")
 

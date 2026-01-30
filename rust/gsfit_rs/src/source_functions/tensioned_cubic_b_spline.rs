@@ -18,11 +18,12 @@ pub struct TensionedCubicBSpline {
 impl TensionedCubicBSpline {
     /// Create a new TensionedCubicBSpline
     #[new]
-    pub fn new(n_dof: usize, regularisations: PyReadonlyArray2<f64>, interior_knots: PyReadonlyArray1<f64>) -> Self {
+    pub fn new(regularisations: PyReadonlyArray2<f64>, interior_knots: PyReadonlyArray1<f64>) -> Self {
         // Change Python types into Rust types
         let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
         let interior_knots_ndarray: Array1<f64> = interior_knots.to_owned_array();
 
+        let n_dof: usize = regularisations_ndarray.ncols();
         let n_knots: usize = interior_knots_ndarray.len() + 8;
         let mut knots: Array1<f64> = Array1::from_elem(n_knots, f64::NAN);
         knots.slice_mut(s![0..4]).fill(0.0);
