@@ -1,5 +1,5 @@
 use crate::source_functions::SourceFunctionTraits;
-use ndarray::{Array1, Array2};
+use ndarray::{Array1, Array2, s};
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
@@ -10,6 +10,7 @@ pub struct TensionedCubicBSpline {
     pub n_dof: usize,
     pub regularisations: Array2<f64>,
     pub interior_knots: Array1<f64>,
+    pub knots: Array1<f64>,
 }
 
 /// Python accessible methods
@@ -22,11 +23,20 @@ impl TensionedCubicBSpline {
         let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
         let interior_knots_ndarray: Array1<f64> = interior_knots.to_owned_array();
 
+        let n_knots: usize = interior_knots_ndarray.len() + 8;
+        let mut knots: Array1<f64> = Array1::from_elem(n_knots, f64::NAN);
+        knots.slice_mut(s![0..4]).fill(0.0);
+        knots.slice_mut(s![4..(n_knots - 4)]).assign(&interior_knots_ndarray);
+        knots.slice_mut(s![(n_knots - 4)..n_knots]).fill(1.0);
+        // Now make knots immutable
+        let knots: Array1<f64> = knots;
+
         // Create the struct
         TensionedCubicBSpline {
             n_dof,
             regularisations: regularisations_ndarray,
             interior_knots: interior_knots_ndarray,
+            knots,
         }
     }
 
