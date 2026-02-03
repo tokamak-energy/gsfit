@@ -108,6 +108,7 @@ impl Plasma {
                             regularisations: cubic_bspline.regularisations.clone(),
                             interior_knots: cubic_bspline.interior_knots.clone(),
                             knots: cubic_bspline.knots.clone(),
+                            interval_tensions: cubic_bspline.interval_tensions.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("p_prime_source_function must implement SourceFunctionTraits");
@@ -138,6 +139,7 @@ impl Plasma {
                             regularisations: cubic_bspline.regularisations.clone(),
                             interior_knots: cubic_bspline.interior_knots.clone(),
                             knots: cubic_bspline.knots.clone(),
+                            interval_tensions: cubic_bspline.interval_tensions.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("ff_prime_source_function must implement SourceFunctionTraits");

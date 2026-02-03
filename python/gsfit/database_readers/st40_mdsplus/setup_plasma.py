@@ -60,7 +60,8 @@ def setup_plasma(
         n_dof = len(interior_knots) + 3
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
-        p_prime_source_function = gsfit_rs.TensionedCubicBSpline(regularisations, interior_knots)
+        interval_tensions = np.array(settings["source_function_p_prime.json"]["tensioned_cubic_b_spline"]["interval_tensions"])
+        p_prime_source_function = gsfit_rs.TensionedCubicBSpline(regularisations, interior_knots, interval_tensions)
     else:
         raise ValueError(f"Unknown method for p_prime source function: {settings['source_function_p_prime.json']['method']}")
 
@@ -88,7 +89,8 @@ def setup_plasma(
         n_dof = len(interior_knots) + 3
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
-        ff_prime_source_function = gsfit_rs.TensionedCubicBSpline(regularisations, interior_knots)
+        interval_tensions = np.array(settings["source_function_ff_prime.json"]["tensioned_cubic_b_spline"]["interval_tensions"])
+        ff_prime_source_function = gsfit_rs.TensionedCubicBSpline(regularisations, interior_knots, interval_tensions)
     else:
         raise ValueError(f"Unknown method for ff_prime source function: {settings['source_function_ff_prime.json']['method']}")
 

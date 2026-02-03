@@ -11,6 +11,7 @@ pub struct TensionedCubicBSpline {
     pub regularisations: Array2<f64>,
     pub interior_knots: Array1<f64>,
     pub knots: Array1<f64>,
+    pub interval_tensions: Array1<f64>,
 }
 
 /// Python accessible methods
@@ -18,10 +19,11 @@ pub struct TensionedCubicBSpline {
 impl TensionedCubicBSpline {
     /// Create a new TensionedCubicBSpline
     #[new]
-    pub fn new(regularisations: PyReadonlyArray2<f64>, interior_knots: PyReadonlyArray1<f64>) -> Self {
+    pub fn new(regularisations: PyReadonlyArray2<f64>, interior_knots: PyReadonlyArray1<f64>, interval_tensions: PyReadonlyArray1<f64>) -> Self {
         // Change Python types into Rust types
         let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
         let interior_knots_ndarray: Array1<f64> = interior_knots.to_owned_array();
+        let interval_tensions_ndarray: Array1<f64> = interval_tensions.to_owned_array();
 
         let n_dof: usize = regularisations_ndarray.ncols();
         let n_knots: usize = interior_knots_ndarray.len() + 8;
@@ -38,6 +40,7 @@ impl TensionedCubicBSpline {
             regularisations: regularisations_ndarray,
             interior_knots: interior_knots_ndarray,
             knots,
+            interval_tensions: interval_tensions_ndarray,
         }
     }
 
@@ -57,6 +60,48 @@ impl TensionedCubicBSpline {
         return string_output;
     }
 }
+
+// impl TensionedCubicBSpline {
+
+//     // This is Equation (2.1) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
+//     // Note that we have added an extra case for large rho to avoid taking the exponential of a large number.
+//     fn gamma3(&self, x_val: f64, rho: f64, delta: f64) -> f64 {
+//         let delta_min_threshold: f64 = 1e-8;
+//         let rho_min_threshold: f64 = 1e-8;
+//         let rho_max_threshold: f64 = 1e+2; // above this we consider rho to be "large"
+
+//         // x_val, rho and delta must be positive
+//         assert!(x_val >= 0.0, "x_val must be non-negative");
+//         assert!(rho >= 0.0, "rho must be non-negative");
+//         assert!(delta >= 0.0, "delta must be non-negative");
+
+//         if delta < delta_min_threshold{
+//             return 0.0;
+//         }
+
+//         if rho < rho_min_threshold {
+//             return delta.powi(3) / (6.0 * delta);
+//         }
+
+//         if rho > rho_max_threshold {
+//             return 0.0;
+//         }
+
+//         // if rho > rho_min_threshold and delta > delta_min_threshold
+//         if rho
+//     }
+
+//     // Additional Rust only methods can go here
+//     fn gamma3_delta(&self, tension: f64, delta_knot: f64) -> f64 {
+//         if tension.abs() < 1e-12 {
+//             return h.powi(3) / 6.0;
+//         } else {
+//             let sinh_th: f64 = (tension * h).sinh();
+//             let cosh_th: f64 = (tension * h).cosh();
+//             return (sinh_th - tension * h) / (tension.powi(3));
+//         }
+//     }
+// }
 
 impl SourceFunctionTraits for TensionedCubicBSpline {
     fn source_function_value_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
