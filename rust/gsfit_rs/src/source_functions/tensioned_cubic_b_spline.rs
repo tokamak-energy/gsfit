@@ -12,6 +12,9 @@ pub struct TensionedCubicBSpline {
     pub interior_knots: Array1<f64>,
     pub knots: Array1<f64>,
     pub interval_tensions: Array1<f64>,
+    pub hyperbolic_upper_cutoff: f64,
+    pub hyperbolic_lower_cutoff: f64,
+    pub delta_cutoff: f64,
 }
 
 /// Python accessible methods
@@ -34,6 +37,30 @@ impl TensionedCubicBSpline {
         // Now make knots immutable
         let knots: Array1<f64> = knots;
 
+        let mut max_knot_distance: f64 = 0.0;
+        for i_knot in 0..(n_knots - 1) {
+            let knot_distance: f64 = knots[i_knot + 1] - knots[i_knot];
+            if knot_distance > max_knot_distance {
+                max_knot_distance = knot_distance;
+            }
+        }
+
+        // The `rho_delta_upper_cutoff` value is used by the gamma3 and gamma2 functions below to avoid overflow issues
+        // when taking the cosh and sinh of large numbers.
+        // Note that the largest number you can take exp(x) in rust for 64-bit floats should be around
+        // ln(1.7976931348623157e308) = 709.782712893384, but we use 500 to be safe.
+        let hyperbolic_upper_cutoff: f64 = 100.0;
+
+        // Decides the cutoff for when we take the taylor series for small arguments for sinh and cosh in the
+        // gamma3 and gamma2 functions.
+        // This prevents taking e.g. sinh(x) - x of a very small number which results in numerical precision loss.
+        let hyperbolic_lower_cutoff: f64 = 1e-3;
+
+        //  Used by gamma3 and gamma2 functions below.
+        // Decides the cut off for when we consider the distance between knots to be zero,
+        // and therefore we must be in a exterioir (clamped) knot region, not the interior knot region.
+        let delta_cutoff: f64 = 1e-12;
+
         // Create the struct
         TensionedCubicBSpline {
             n_dof,
@@ -41,6 +68,9 @@ impl TensionedCubicBSpline {
             interior_knots: interior_knots_ndarray,
             knots,
             interval_tensions: interval_tensions_ndarray,
+            hyperbolic_upper_cutoff,
+            hyperbolic_lower_cutoff,
+            delta_cutoff,
         }
     }
 
@@ -61,47 +91,45 @@ impl TensionedCubicBSpline {
     }
 }
 
-// impl TensionedCubicBSpline {
+impl TensionedCubicBSpline {
 
-//     // This is Equation (2.1) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
-//     // Note that we have added an extra case for large rho to avoid taking the exponential of a large number.
-//     fn gamma3(&self, x_val: f64, rho: f64, delta: f64) -> f64 {
-//         let delta_min_threshold: f64 = 1e-8;
-//         let rho_min_threshold: f64 = 1e-8;
-//         let rho_max_threshold: f64 = 1e+2; // above this we consider rho to be "large"
+    // This is Equation (2.1) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
+    // Note that we have added extra checks to avoid overflow and numerical precision issues
+    fn gamma3(&self, x_val: f64, rho: f64, delta: f64) -> f64 {
 
-//         // x_val, rho and delta must be positive
-//         assert!(x_val >= 0.0, "x_val must be non-negative");
-//         assert!(rho >= 0.0, "rho must be non-negative");
-//         assert!(delta >= 0.0, "delta must be non-negative");
+        // x_val, rho and delta must be positive
+        assert!(x_val >= 0.0, "x_val must be non-negative");
+        assert!(rho >= 0.0, "rho must be non-negative");
+        assert!(delta >= 0.0, "delta must be non-negative");
 
-//         if delta < delta_min_threshold{
-//             return 0.0;
-//         }
+        let rho_delta: f64 = rho * delta;
+        let rho_x: f64 = rho * x_val;
 
-//         if rho < rho_min_threshold {
-//             return delta.powi(3) / (6.0 * delta);
-//         }
+        if delta < self.delta_cutoff {
+            // We are in the exterior (clamped) knot region where delta is zero
+            return 0.0;
+        }
 
-//         if rho > rho_max_threshold {
-//             return 0.0;
-//         }
+        if rho_delta > self.hyperbolic_upper_cutoff {
+            // To avoid overflow issues when taking sinh of large numbers we replace sinh() with exp()/2 approximation
+            return (rho * (x_val - delta)).exp() * rho.powi(-2);
+        }
 
-//         // if rho > rho_min_threshold and delta > delta_min_threshold
-//         if rho
-//     }
+        if rho_delta < self.hyperbolic_lower_cutoff {
+            // Since x_val < delta, then we need to taylor expand both the numerator and denominator for small arguments
+            return x_val.powi(3) / 6.0;
+        }
 
-//     // Additional Rust only methods can go here
-//     fn gamma3_delta(&self, tension: f64, delta_knot: f64) -> f64 {
-//         if tension.abs() < 1e-12 {
-//             return h.powi(3) / 6.0;
-//         } else {
-//             let sinh_th: f64 = (tension * h).sinh();
-//             let cosh_th: f64 = (tension * h).cosh();
-//             return (sinh_th - tension * h) / (tension.powi(3));
-//         }
-//     }
-// }
+        if rho_x < self.hyperbolic_lower_cutoff {
+            // Use Taylor series expansion for just the numerator
+            return rho * x_val.powi(3) / (6.0 * (rho_delta).sinh());
+        }
+
+        // Normal case        
+        ((rho_x).sinh() - rho_x) / (rho.powi(2) * (rho_delta).sinh())
+        }
+
+}
 
 impl SourceFunctionTraits for TensionedCubicBSpline {
     fn source_function_value_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {

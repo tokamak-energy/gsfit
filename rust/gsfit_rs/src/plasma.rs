@@ -109,6 +109,9 @@ impl Plasma {
                             interior_knots: cubic_bspline.interior_knots.clone(),
                             knots: cubic_bspline.knots.clone(),
                             interval_tensions: cubic_bspline.interval_tensions.clone(),
+                            hyperbolic_upper_cutoff: cubic_bspline.hyperbolic_upper_cutoff,
+                            hyperbolic_lower_cutoff: cubic_bspline.hyperbolic_lower_cutoff,
+                            delta_cutoff: cubic_bspline.delta_cutoff,
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("p_prime_source_function must implement SourceFunctionTraits");
@@ -140,6 +143,9 @@ impl Plasma {
                             interior_knots: cubic_bspline.interior_knots.clone(),
                             knots: cubic_bspline.knots.clone(),
                             interval_tensions: cubic_bspline.interval_tensions.clone(),
+                            hyperbolic_upper_cutoff: cubic_bspline.hyperbolic_upper_cutoff,
+                            hyperbolic_lower_cutoff: cubic_bspline.hyperbolic_lower_cutoff,
+                            delta_cutoff: cubic_bspline.delta_cutoff,
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("ff_prime_source_function must implement SourceFunctionTraits");
