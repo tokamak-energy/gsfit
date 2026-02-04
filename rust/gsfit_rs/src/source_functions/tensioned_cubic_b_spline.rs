@@ -58,7 +58,7 @@ impl TensionedCubicBSpline {
 
         //  Used by gamma3 and gamma2 functions below.
         // Decides the cut off for when we consider the distance between knots to be zero,
-        // and therefore we must be in a exterioir (clamped) knot region, not the interior knot region.
+        // and therefore we must be in an exterioir (clamped) knot region, not the interior knot region.
         let delta_cutoff: f64 = 1e-12;
 
         // Create the struct
@@ -92,11 +92,9 @@ impl TensionedCubicBSpline {
 }
 
 impl TensionedCubicBSpline {
-
     // This is Equation (2.1) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
     // Note that we have added extra checks to avoid overflow and numerical precision issues
     fn gamma3(&self, x_val: f64, rho: f64, delta: f64) -> f64 {
-
         // x_val, rho and delta must be positive
         assert!(x_val >= 0.0, "x_val must be non-negative");
         assert!(rho >= 0.0, "rho must be non-negative");
@@ -122,13 +120,42 @@ impl TensionedCubicBSpline {
 
         if rho_x < self.hyperbolic_lower_cutoff {
             // Use Taylor series expansion for just the numerator
-            return rho * x_val.powi(3) / (6.0 * (rho_delta).sinh());
+            return rho * x_val.powi(3) / (6.0 * rho_delta.sinh());
         }
 
-        // Normal case        
-        ((rho_x).sinh() - rho_x) / (rho.powi(2) * (rho_delta).sinh())
+        // Normal case
+        (rho_x.sinh() - rho_x) / (rho.powi(2) * rho_delta.sinh())
+    }
+
+    // This is Equation (2.2) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
+    // Note that x always equals delta in our implementation so we have removed x as an argument.
+    fn gamma2(&self, rho: f64, delta: f64) -> f64 {
+        assert!(rho >= 0.0, "rho must be non-negative");
+        assert!(delta >= 0.0, "delta must be non-negative");
+
+        let rho_delta: f64 = rho * delta;
+
+        if delta < self.delta_cutoff {
+            // We are in the exterior (clamped) knot region where delta is zero
+            return 0.0;
         }
 
+        if rho_delta > self.hyperbolic_upper_cutoff {
+            // To avoid overflow issues when taking sinh or cosh of large numbers we replace sinh and cosh with exp()/2 approximation
+            return rho.powi(-1);
+        }
+
+        if rho_delta < self.hyperbolic_lower_cutoff {
+            // Use Taylor series expansion for small arguments to avoid numerical precision loss
+            return 0.5 * delta;
+        }
+
+        // Normal case
+        (rho_delta.cosh() - 1.0) / (rho * rho_delta.sinh())
+    }
+
+    // This is Equation (2.6) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
+    // For the case where r = 2.
 }
 
 impl SourceFunctionTraits for TensionedCubicBSpline {
