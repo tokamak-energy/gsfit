@@ -112,6 +112,8 @@ impl Plasma {
                             hyperbolic_upper_cutoff: cubic_bspline.hyperbolic_upper_cutoff,
                             hyperbolic_lower_cutoff: cubic_bspline.hyperbolic_lower_cutoff,
                             delta_cutoff: cubic_bspline.delta_cutoff,
+                            tensions: cubic_bspline.tensions.clone(),
+                            delta_knots: cubic_bspline.delta_knots.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("p_prime_source_function must implement SourceFunctionTraits");
@@ -146,6 +148,8 @@ impl Plasma {
                             hyperbolic_upper_cutoff: cubic_bspline.hyperbolic_upper_cutoff,
                             hyperbolic_lower_cutoff: cubic_bspline.hyperbolic_lower_cutoff,
                             delta_cutoff: cubic_bspline.delta_cutoff,
+                            tensions: cubic_bspline.tensions.clone(),
+                            delta_knots: cubic_bspline.delta_knots.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("ff_prime_source_function must implement SourceFunctionTraits");

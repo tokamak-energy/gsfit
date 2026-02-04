@@ -1,5 +1,6 @@
 use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2, s};
+use ndarray_linalg::assert;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
@@ -15,6 +16,8 @@ pub struct TensionedCubicBSpline {
     pub hyperbolic_upper_cutoff: f64,
     pub hyperbolic_lower_cutoff: f64,
     pub delta_cutoff: f64,
+    pub tensions: Array1<f64>,
+    pub delta_knots: Array1<f64>,
 }
 
 /// Python accessible methods
@@ -34,16 +37,19 @@ impl TensionedCubicBSpline {
         knots.slice_mut(s![0..4]).fill(0.0);
         knots.slice_mut(s![4..(n_knots - 4)]).assign(&interior_knots_ndarray);
         knots.slice_mut(s![(n_knots - 4)..n_knots]).fill(1.0);
-        // Now make knots immutable
         let knots: Array1<f64> = knots;
 
-        let mut max_knot_distance: f64 = 0.0;
+        let mut delta_knots: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
         for i_knot in 0..(n_knots - 1) {
-            let knot_distance: f64 = knots[i_knot + 1] - knots[i_knot];
-            if knot_distance > max_knot_distance {
-                max_knot_distance = knot_distance;
-            }
+            delta_knots[i_knot] = knots[i_knot + 1] - knots[i_knot];
         }
+        let delta_knots: Array1<f64> = delta_knots;
+
+        let mut tensions: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
+        tensions.slice_mut(s![0..3]).fill(0.0);
+        tensions.slice_mut(s![3..(n_knots - 4)]).assign(&interval_tensions_ndarray);
+        tensions.slice_mut(s![(n_knots - 4)..(n_knots - 1)]).fill(0.0);
+        let tensions: Array1<f64> = tensions;
 
         // The `rho_delta_upper_cutoff` value is used by the gamma3 and gamma2 functions below to avoid overflow issues
         // when taking the cosh and sinh of large numbers.
@@ -71,6 +77,8 @@ impl TensionedCubicBSpline {
             hyperbolic_upper_cutoff,
             hyperbolic_lower_cutoff,
             delta_cutoff,
+            tensions,
+            delta_knots,
         }
     }
 
@@ -154,8 +162,34 @@ impl TensionedCubicBSpline {
         (rho_delta.cosh() - 1.0) / (rho * rho_delta.sinh())
     }
 
+    // This is Equation (2.7) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
+    // For the case where r = 2.
+    // fn b_spline2(&self, j_index: usize, psi_n: f64) -> f64 {
+    //     assert!(j_index < self.n_dof, "j_index for b_spline2 out of bounds");
+    //     assert!(j_index >= 0, "j_index for b_spline2 must be non-negative");
+    //     assert!(psi_n >= 0.0 && psi_n <= 1.0, "psi_n must be in the range [0, 1]");
+
+    //     let sigma_j = gamma2(self.tensions[j_index], self.delta_knots[j_index]) + gamma2(self.tensions[j_index + 1], self.delta_knots[j_index + 1]);
+    //     let sigma_j1 = gamma2(self.tensions[j_index + 1], self.delta_knots[j_index + 1]) + gamma2(self.tensions[j_index + 2], self.delta_knots[j_index + 2]);
+
+    //     if psi_n < self.knots[j_index] || psi_n >= self.knots[j_index + 3] {
+    //         return 0.0;
+    //     }
+
+    //     if psi_n < self.knots[j_index + 1] && psi_n >= self.knots[j_index] {
+    //         return gamma2(psi_n - self.knots[j_index]) / sigma_j;
+    //     }
+
+    //     if psi_n < self.knots[j_index + 2] && psi_n >= self.knots[j_index + 1] {
+    //         return 1 - gamma2(psi_n - self.knots[j_index + 1]) / sigma_j1 - gamma2(self.knots[j_index + 3] - psi_n) / sigma_j1;
+    //     }
+
+    //     0.0
+    // }
+
     // This is Equation (2.6) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
     // For the case where r = 2.
+    // fn phi2(spline_index: usize, x_val: f64,)
 }
 
 impl SourceFunctionTraits for TensionedCubicBSpline {
