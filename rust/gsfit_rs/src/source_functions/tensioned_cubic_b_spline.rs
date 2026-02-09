@@ -65,7 +65,7 @@ impl TensionedCubicBSpline {
         //  Used by gamma3 and gamma2 functions below.
         // Decides the cut off for when we consider the distance between knots to be zero,
         // and therefore we must be in an exterioir (clamped) knot region, not the interior knot region.
-        let delta_cutoff: f64 = 1e-12;
+        let delta_cutoff: f64 = 1e-6;
 
         // Create the struct
         TensionedCubicBSpline {
@@ -107,6 +107,7 @@ impl TensionedCubicBSpline {
         assert!(x_val >= 0.0, "x_val must be non-negative");
         assert!(rho >= 0.0, "rho must be non-negative");
         assert!(delta >= 0.0, "delta must be non-negative");
+        assert!(x_val <= delta, "x_val must be less than or equal to delta");
 
         let rho_delta: f64 = rho * delta;
         let rho_x: f64 = rho * x_val;
@@ -162,34 +163,146 @@ impl TensionedCubicBSpline {
         (rho_delta.cosh() - 1.0) / (rho * rho_delta.sinh())
     }
 
-    // This is Equation (2.7) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
+    // This is Equation (2.6) with Equation (2.7) substiuted in and integrated
+    // from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
     // For the case where r = 2.
-    // fn b_spline2(&self, j_index: usize, psi_n: f64) -> f64 {
-    //     assert!(j_index < self.n_dof, "j_index for b_spline2 out of bounds");
-    //     assert!(j_index >= 0, "j_index for b_spline2 must be non-negative");
-    //     assert!(psi_n >= 0.0 && psi_n <= 1.0, "psi_n must be in the range [0, 1]");
+    fn phi2(&self, j_index: usize, x_val: f64) -> f64 {
+        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+        assert!(j_index >= 0, "j_index for phi2 must be non-negative");
 
-    //     let sigma_j = gamma2(self.tensions[j_index], self.delta_knots[j_index]) + gamma2(self.tensions[j_index + 1], self.delta_knots[j_index + 1]);
-    //     let sigma_j1 = gamma2(self.tensions[j_index + 1], self.delta_knots[j_index + 1]) + gamma2(self.tensions[j_index + 2], self.delta_knots[j_index + 2]);
+        if x_val < self.knots[j_index] {
+            return 0.0;
+        }
 
-    //     if psi_n < self.knots[j_index] || psi_n >= self.knots[j_index + 3] {
-    //         return 0.0;
-    //     }
+        if (self.knots[j_index + 3] - self.knots[j_index]) < self.delta_cutoff {
+            // See note just below Equation (2.6)
+            return 1.0;
+        }
 
-    //     if psi_n < self.knots[j_index + 1] && psi_n >= self.knots[j_index] {
-    //         return gamma2(psi_n - self.knots[j_index]) / sigma_j;
-    //     }
+        // Calculate sigma2_j using Equation (2.9)
+        // Note that since self.knots[j_index + 3] - self.knots[j_index] > 0 we know that sigma2_j is not zero.
+        let gamma3_j: f64 = self.gamma3(self.delta_knots[j_index], self.tensions[j_index], self.delta_knots[j_index]); // gamma3(delta_t_j, rho_j, delta_t_j)
+        let gamma3_jp: f64 = self.gamma3(self.delta_knots[j_index + 1], self.tensions[j_index + 1], self.delta_knots[j_index + 1]); // gamma3(delta_t_{j+1}, rho_{j+1}, delta_t_{j+1})
+        let gamma3_jpp: f64 = self.gamma3(self.delta_knots[j_index + 2], self.tensions[j_index + 2], self.delta_knots[j_index + 2]); // gamma3(delta_t_{j+2}, rho_{
+        let gamma2_j: f64 = self.gamma2(self.tensions[j_index], self.delta_knots[j_index]); // gamma2(delta_t_j, rho_j, delta_t_j)
+        let gamma2_jp: f64 = self.gamma2(self.tensions[j_index + 1], self.delta_knots[j_index + 1]); // gamma2(delta_t_{j+1}, rho_{j+1}, delta_t_{j+1})
+        let gamma2_jpp: f64 = self.gamma2(self.tensions[j_index + 2], self.delta_knots[j_index + 2]); // gamma2(delta_t_{j+2}, rho_{j+2}, delta_t_{j+2})
+        let tstar_jp: f64 = if self.knots[j_index + 2] - self.knots[j_index] > self.delta_cutoff {
+            self.knots[j_index + 1] + (gamma3_jp - gamma3_j) / (gamma2_j + gamma2_jp)
+        } else {
+            self.knots[j_index + 1]
+        };
+        let tstar_jpp: f64 = if self.knots[j_index + 3] - self.knots[j_index] > self.delta_cutoff {
+            self.knots[j_index + 2] + (gamma3_jpp - gamma3_jp) / (gamma2_jp + gamma2_jpp)
+        } else {
+            self.knots[j_index + 2]
+        };
+        let sigma2_j: f64 = tstar_jpp - tstar_jp;
 
-    //     if psi_n < self.knots[j_index + 2] && psi_n >= self.knots[j_index + 1] {
-    //         return 1 - gamma2(psi_n - self.knots[j_index + 1]) / sigma_j1 - gamma2(self.knots[j_index + 3] - psi_n) / sigma_j1;
-    //     }
+        // Evaluate integral of the first row of Equation (2.7)
+        let sigma1_j: f64 = gamma2_j + gamma2_jp;
+        if x_val < self.knots[j_index + 1] {
+            if self.delta_knots[j_index] < self.delta_cutoff {
+                // Since the distance between knots is very small the integral over the range will be approximately zero.
+                // But we explicitally set integral to zero to avoid possible numerical issue of dividing by zero when sigma1_j is zero
+                return 0.0;
+            } else {
+                // Need to calculate int_{t_j}^x B2_j(y) dy
+                // int_{t_j}^x B2_j(y) dy =
+                // int_{t_j}^x gamma2(y-t_j) / sigma1_j dy =
+                // [gamma3(y-t_j) / sigma1_j]_{t_j}^x =
+                // gamma3(x-t_j) / sigma1_j - gamma3(0) / sigma1_j
+                // Note that gamma3(0) = 0, so we do not need to subtract anything.
 
-    //     0.0
-    // }
+                // gamma3(x-t_j, rho_j, delta_t_j):
+                let gamma3_x_m_tj: f64 = self.gamma3(x_val - self.knots[j_index], self.tensions[j_index], self.delta_knots[j_index]);
 
-    // This is Equation (2.6) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
-    // For the case where r = 2.
-    // fn phi2(spline_index: usize, x_val: f64,)
+                // int_{t_j}^{x} B2_j(y) dy
+                let integral_tj_x: f64 = gamma3_x_m_tj / sigma1_j;
+
+                return integral_tj_x / sigma2_j;
+            }
+        }
+        // x >= t_{j+1} so we need to calculate int_{t_j}^{t_{j+1}} B2_j(y) dy
+        let integral_tj_tjp: f64 = if self.delta_knots[j_index] < self.delta_cutoff {
+            // Since the distance between knots is very small the integral over the range will be approximately zero.
+            // But we explicitally set integral to zero to avoid possible numerical issue of dividing by zero when sigma1_j is zero
+            0.0
+        } else {
+            // Using expression above
+            // int_{t_j}^{t_{j+1}} B2_j(y) dy =
+            // gamma3(t_{j+1}-t_j) / sigma1_j
+            self.gamma3(self.delta_knots[j_index], self.tensions[j_index + 1], self.delta_knots[j_index + 1]) / sigma1_j
+        };
+
+        // Evaluate integral of the second row of Equation (2.7)
+        let sigma1_jp: f64 = gamma2_jp + gamma2_jpp;
+        if x_val < self.knots[j_index + 2] {
+            if self.delta_knots[j_index + 1] < self.delta_cutoff {
+                // Since the distance between knots is very small the integral over the range will be approximately zero.
+                // But we explicitally set integral of second row to zero (so only first row remains) to avoid possible
+                // numerical issue of dividing by zero when sigma1_j or sigma1_{j+1} is zero
+                return integral_tj_tjp / sigma2_j;
+            } else {
+                // Need to calculate int_{t_{j+1}}^x B2_j(y) dy
+                // int_{t_{j+1}}^x B2_j(y) dy =
+                // int_{t_{j+1}}^x (1 - gamma2(y-t_{j+1}) / sigma1_jp - gamma2(t_{j+2}-y) / sigma1_j) dy
+                // = [y - gamma3(y-t_{j+1}) / sigma1_jp + gamma3(t_{j+2}-y) / sigma1_j]_{t_{j+1}}^x
+                // = x - gamma3(x-t_{j+1}) / sigma1_jp + gamma3(t_{j+2}-x) / sigma1_j
+                // - (t_{j+1} - gamma3(0) / sigma1_jp + gamma3(t_{j+2}-t_{j+1}) / sigma1_j)
+                // Note that gamma3(0) = 0
+                let gamma3_x_m_tjp: f64 = self.gamma3(x_val - self.knots[j_index + 1], self.tensions[j_index + 1], self.delta_knots[j_index + 1]);
+                let gamma3_tjpp_m_x: f64 = self.gamma3(self.knots[j_index + 2] - x_val, self.tensions[j_index + 1], self.delta_knots[j_index + 1]);
+
+                let integral_tjp_x: f64 = x_val
+                    - gamma3_x_m_tjp / sigma1_jp
+                    + gamma3_tjpp_m_x / sigma1_j
+                    - self.knots[j_index + 1]
+                    - gamma3_jp / sigma1_j;
+
+                return (integral_tj_tjp + integral_tjp_x) / sigma2_j;
+            }
+        }
+        // x >= t_{j+2} so we need to calculate int_{t_{j+1}}^{t_{j+2}} B2_j(y) dy
+        let integral_tjp_tjpp: f64 = if self.delta_knots[j_index + 1] < self.delta_cutoff {
+            // Since the distance between knots is very small the integral over the range will be approximately zero.
+            // But we explicitally set integral of second row to zero to avoid possible
+            // numerical issue of dividing by zero when sigma1_j or sigma1_{j+1} is zero
+            0.0
+        } else {
+            // Using expression above
+            // int_{t_{j+1}}^{t_{j+2}} B2_j(y) dy =
+            // t_{j+2} - gamma3(t_{j+2}-t_{j+1}) / sigma1_jp + gamma3(0) / sigma1_j
+            // - (t_{j+1} - gamma3(0) / sigma1_jp + gamma3(t_{j+2}-t_{j+1}) / sigma1_j) =
+            // Δt_{j+1} - gamma3(Δt_{j+1}) / sigma1_jp - gamma3(Δt_{j+1}) / sigma1_j
+            self.delta_knots[j_index + 1] -
+            gamma3_jp / sigma1_jp -
+            gamma3_jp / sigma1_j
+        };
+
+        // Evaluate integral of the third row of Equation (2.7)
+        if x_val < self.knots[j_index + 3] {
+            if self.delta_knots[j_index + 2] < self.delta_cutoff {
+                // Since the distance between knots is very small the integral over the range will be approximately zero.
+                // But we explicitally set integral of third row to zero (so only first and second rows remain) to avoid possible
+                // numerical issue of dividing by zero when sigma1_{j+1} is zero
+                return (integral_tj_tjp + integral_tjp_tjpp) / sigma2_j;
+            } else {
+                // Need to calculate int_{t_{j+2}}^x B2_j(y) dy
+                // int_{t_{j+2}}^x B2_j(y) dy =
+                // int_{t_{j+2}}^x gamma2(t_{j+3} - y) / sigma1_jp dy =
+                // [-gamma3(t_{j+3} - y) / sigma1_jp]_{t_{j+2}}^x =
+                // -gamma3(t_{j+3} - x) / sigma1_jp + gamma3(t_{j+3} - t_{j+2}) / sigma1_jp
+                let gamma3_tjppp_m_x: f64 = self.gamma3(self.knots[j_index + 3] - x_val, self.tensions[j_index + 2], self.delta_knots[j_index + 2]);
+                let integral_tjpp_x: f64 = (gamma3_jpp - gamma3_tjppp_m_x) / sigma1_jp;
+                return (integral_tj_tjp + integral_tjp_tjpp + integral_tjpp_x) / sigma2_j;
+            }
+        }
+
+        // x >= t_{j+3}
+        // Return 1.0, see third row of Equation (2.6) P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
+        1.0
+    }
 }
 
 impl SourceFunctionTraits for TensionedCubicBSpline {
