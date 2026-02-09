@@ -195,7 +195,7 @@ impl TensionedCubicBSpline {
         } else {
             self.knots[j_index + 1]
         };
-        let tstar_jpp: f64 = if self.knots[j_index + 3] - self.knots[j_index] > self.delta_cutoff {
+        let tstar_jpp: f64 = if self.knots[j_index + 3] - self.knots[j_index + 1] > self.delta_cutoff {
             self.knots[j_index + 2] + (gamma3_jpp - gamma3_jp) / (gamma2_jp + gamma2_jpp)
         } else {
             self.knots[j_index + 2]
