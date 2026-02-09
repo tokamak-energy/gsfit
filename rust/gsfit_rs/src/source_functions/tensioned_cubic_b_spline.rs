@@ -1,6 +1,5 @@
 use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2, s};
-use ndarray_linalg::assert;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
@@ -173,7 +172,6 @@ impl TensionedCubicBSpline {
     // For the case where r = 2.
     fn phi2(&self, j_index: usize, x_val: f64) -> f64 {
         assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
-        assert!(j_index >= 0, "j_index for phi2 must be non-negative");
 
         if x_val < self.knots[j_index] {
             return 0.0;
