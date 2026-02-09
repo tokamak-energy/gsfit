@@ -97,6 +97,11 @@ impl TensionedCubicBSpline {
 
         return string_output;
     }
+
+    pub fn phi2_python(&self, j_index: usize, x_val: f64) -> f64 {
+        self.phi2(j_index, x_val)
+    }
+
 }
 
 impl TensionedCubicBSpline {
@@ -232,7 +237,7 @@ impl TensionedCubicBSpline {
             // Using expression above
             // int_{t_j}^{t_{j+1}} B2_j(y) dy =
             // gamma3(t_{j+1}-t_j) / sigma1_j
-            self.gamma3(self.delta_knots[j_index], self.tensions[j_index + 1], self.delta_knots[j_index + 1]) / sigma1_j
+            gamma3_j / sigma1_j
         };
 
         // Evaluate integral of the second row of Equation (2.7)
@@ -317,8 +322,8 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     }
 
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
-        let integral: Array1<f64> = (1.0 - psi_n / 2.0) * psi_n.mapv(|x| x.powi(i_dof as i32 + 1)) / (i_dof as f64 + 1.0);
-        return integral;
+        // This function is not implemented yet
+        unimplemented!("Source function is not implemented yet");
     }
 
     fn source_function_value(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
@@ -339,22 +344,8 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     }
 
     fn source_function_integral(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
-        let n_dof: usize = self.n_dof;
-        let n_psi_n: usize = psi_n.len();
-
-        let mut constant_of_integration: f64 = 0.0;
-        let psi_edge: Array1<f64> = Array1::from_vec(vec![1.0]);
-        for i_dof in 0..n_dof {
-            constant_of_integration = constant_of_integration - polynomial_dof[i_dof] * self.source_function_integral_single_dof(&psi_edge, i_dof)[0];
-        }
-
-        let mut integral: Array1<f64> = Array1::zeros(n_psi_n);
-        for i_dof in 0..n_dof {
-            integral = integral + polynomial_dof[i_dof] * self.source_function_integral_single_dof(&psi_n, i_dof);
-        }
-        integral = integral + constant_of_integration;
-
-        return integral;
+        // This function is not implemented yet
+        unimplemented!("Source function is not implemented yet");
     }
 
     fn source_function_regularisation(&self) -> Array2<f64> {
