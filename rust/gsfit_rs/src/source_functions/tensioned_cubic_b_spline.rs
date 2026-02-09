@@ -101,6 +101,13 @@ impl TensionedCubicBSpline {
         self.phi2(j_index, x_val)
     }
 
+    pub fn gamma3_python(&self, x_val: f64, rho: f64, delta: f64) -> f64 {
+        self.gamma3(x_val, rho, delta)
+    }
+
+    pub fn gamma2_python(&self, rho: f64, delta: f64) -> f64 {
+        self.gamma2(rho, delta)
+    }
 }
 
 impl TensionedCubicBSpline {
@@ -128,7 +135,7 @@ impl TensionedCubicBSpline {
 
         if rho_delta < self.hyperbolic_lower_cutoff {
             // Since x_val < delta, then we need to taylor expand both the numerator and denominator for small arguments
-            return x_val.powi(3) / 6.0;
+            return x_val.powi(3) / (6.0 * delta);
         }
 
         if rho_x < self.hyperbolic_lower_cutoff {
