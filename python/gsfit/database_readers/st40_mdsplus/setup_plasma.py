@@ -74,13 +74,13 @@ def setup_plasma(
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
         ff_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
     elif settings["source_function_ff_prime.json"]["method"] == "liuqe_polynomial":
-        n_dof = settings["source_function_ff_prime.json"]["efit_polynomial"]["n_dof"]
+        n_dof = settings["source_function_ff_prime.json"]["liuqe_polynomial"]["n_dof"]
         regularisations = np.array(settings["source_function_ff_prime.json"]["efit_polynomial"]["regularizations"])
         # If `regularisations` is [[]] in the json file, will be interpreted by numpy as having size (1, 0).
         # Which would be interpreted as (n_regularisations, n_dof). So it would cause an error
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
-        ff_prime_source_function = gsfit_rs.LiuqePolynomial(n_dof, regularisations, interior_knots)
+        ff_prime_source_function = gsfit_rs.LiuqePolynomial(n_dof, regularisations)
     elif settings["source_function_ff_prime.json"]["method"] == "tensioned_cubic_b_spline":
         regularisations = np.array(settings["source_function_ff_prime.json"]["tensioned_cubic_b_spline"]["regularizations"])
         # If `regularisations` is [[]] in the json file, will be interpreted by numpy as having size (1, 0).
