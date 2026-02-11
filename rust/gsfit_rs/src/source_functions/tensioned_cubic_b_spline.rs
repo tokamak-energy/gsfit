@@ -264,11 +264,7 @@ impl TensionedCubicBSpline {
                 let gamma3_x_m_tjp: f64 = self.gamma3(x_val - self.knots[j_index + 1], self.tensions[j_index + 1], self.delta_knots[j_index + 1]);
                 let gamma3_tjpp_m_x: f64 = self.gamma3(self.knots[j_index + 2] - x_val, self.tensions[j_index + 1], self.delta_knots[j_index + 1]);
 
-                let integral_tjp_x: f64 = x_val
-                    - gamma3_x_m_tjp / sigma1_jp
-                    + gamma3_tjpp_m_x / sigma1_j
-                    - self.knots[j_index + 1]
-                    - gamma3_jp / sigma1_j;
+                let integral_tjp_x: f64 = x_val - gamma3_x_m_tjp / sigma1_jp + gamma3_tjpp_m_x / sigma1_j - self.knots[j_index + 1] - gamma3_jp / sigma1_j;
 
                 return (integral_tj_tjp + integral_tjp_x) / sigma2_j;
             }
@@ -285,9 +281,7 @@ impl TensionedCubicBSpline {
             // t_{j+2} - gamma3(t_{j+2}-t_{j+1}) / sigma1_jp + gamma3(0) / sigma1_j
             // - (t_{j+1} - gamma3(0) / sigma1_jp + gamma3(t_{j+2}-t_{j+1}) / sigma1_j) =
             // Δt_{j+1} - gamma3(Δt_{j+1}) / sigma1_jp - gamma3(Δt_{j+1}) / sigma1_j
-            self.delta_knots[j_index + 1] -
-            gamma3_jp / sigma1_jp -
-            gamma3_jp / sigma1_j
+            self.delta_knots[j_index + 1] - gamma3_jp / sigma1_jp - gamma3_jp / sigma1_j
         };
 
         // Evaluate integral of the third row of Equation (2.7)
@@ -317,7 +311,10 @@ impl TensionedCubicBSpline {
 
 impl SourceFunctionTraits for TensionedCubicBSpline {
     fn source_function_value_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
-        let value: Array1<f64> = (1.0 - psi_n) * &psi_n.powi(i_dof as i32);
+        let mut value: Array1<f64> = Array1::from_elem(psi_n.len(), f64::NAN);
+        for i_psi_n in 0..psi_n.len() {
+            value[i_psi_n] = self.phi2(i_dof, psi_n[i_psi_n]) - self.phi2(i_dof + 1, psi_n[i_psi_n]);
+        }
         return value;
     }
 
@@ -327,8 +324,20 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     }
 
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
-        // This function is not implemented yet
-        unimplemented!("Source function is not implemented yet");
+        let n = psi_n.len();
+        let mut out = Array1::zeros(n);
+
+        // Compute f(psi) at all points
+        let f_vals = self.source_function_value_single_dof(psi_n, i_dof);
+
+        // Trapezoidal cumulative integral
+        for i in 1..n {
+            let dx: f64 = psi_n[i] - psi_n[i - 1];
+            let trap: f64 = 0.5 * dx * (f_vals[i] + f_vals[i - 1]);
+            out[i] = out[i - 1] + trap;
+        }
+
+        out
     }
 
     fn source_function_value(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
@@ -349,8 +358,17 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     }
 
     fn source_function_integral(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
-        // This function is not implemented yet
-        unimplemented!("Source function is not implemented yet");
+        let n_dof: usize = self.n_dof;
+        let n_psi_n: usize = psi_n.len();
+
+        let mut integral: Array1<f64> = Array1::zeros(n_psi_n);
+        for i_dof in 0..n_dof {
+            integral = integral + polynomial_dof[i_dof] * self.source_function_integral_single_dof(psi_n, i_dof);
+        }
+
+        let last_value = integral[n_psi_n - 1];
+
+        return integral - last_value;
     }
 
     fn source_function_regularisation(&self) -> Array2<f64> {
