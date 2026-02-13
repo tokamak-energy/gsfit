@@ -108,6 +108,12 @@ impl TensionedCubicBSpline {
     pub fn gamma2_python(&self, rho: f64, delta: f64) -> f64 {
         self.gamma2(rho, delta)
     }
+
+    pub fn source_function_value_single_dof_python(&self, psi_n: f64, i_dof: usize) -> f64 {
+        // convert single value to array of length 1 to reuse existing function
+        let psi_n_array: Array1<f64> = Array1::from_elem(1, psi_n);
+        self.source_function_value_single_dof(&psi_n_array, i_dof)[0]
+    }
 }
 
 impl TensionedCubicBSpline {
@@ -311,9 +317,21 @@ impl TensionedCubicBSpline {
 
 impl SourceFunctionTraits for TensionedCubicBSpline {
     fn source_function_value_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
+        // See equation (2.5) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
         let mut value: Array1<f64> = Array1::from_elem(psi_n.len(), f64::NAN);
         for i_psi_n in 0..psi_n.len() {
-            value[i_psi_n] = self.phi2(i_dof, psi_n[i_psi_n]) - self.phi2(i_dof + 1, psi_n[i_psi_n]);
+            let x = psi_n[i_psi_n];
+            if x <= self.knots[i_dof] {
+                value[i_psi_n] = 0.0;
+            } else if x <= self.knots[i_dof + 1] {
+                value[i_psi_n] = self.phi2(i_dof, x);
+            } else if x <= self.knots[i_dof + 3] {
+                value[i_psi_n] = self.phi2(i_dof, x) - self.phi2(i_dof + 1, x);
+            } else if x <= self.knots[i_dof + 4] {
+                value[i_psi_n] = 1.0 - self.phi2(i_dof + 1, x);
+            } else {
+                value[i_psi_n] = 0.0;
+            }
         }
         return value;
     }
