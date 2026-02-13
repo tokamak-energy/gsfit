@@ -17,6 +17,9 @@ pub struct TensionedCubicBSpline {
     pub delta_cutoff: f64,
     pub tensions: Array1<f64>,
     pub delta_knots: Array1<f64>,
+    pub gamma3_array: Array1<f64>,
+    pub sigma1_array: Array1<f64>,
+    pub sigma2_array: Array1<f64>,
 }
 
 /// Python accessible methods
@@ -50,10 +53,10 @@ impl TensionedCubicBSpline {
         tensions.slice_mut(s![(n_knots - 4)..(n_knots - 1)]).fill(0.0);
         let tensions: Array1<f64> = tensions;
 
-        // The `hyperbolic_upper_cutoff` value is used by the gamma3 and gamma2 functions below to avoid overflow issues
+        // The `rho_delta_upper_cutoff` value is used by the gamma3 and gamma2 functions below to avoid overflow issues
         // when taking the cosh and sinh of large numbers.
         // Note that the largest number you can take exp(x) in rust for 64-bit floats should be around
-        // ln(1.7976931348623157e308) = 709.782712893384, but we use 100 to be safe.
+        // ln(1.7976931348623157e308) = 709.782712893384, but we use 500 to be safe.
         let hyperbolic_upper_cutoff: f64 = 100.0;
 
         // Decides the cutoff for when we take the taylor series for small arguments for sinh and cosh in the
@@ -65,6 +68,56 @@ impl TensionedCubicBSpline {
         // Decides the cut off for when we consider the distance between knots to be zero,
         // and therefore we must be in an exterioir (clamped) knot region, not the interior knot region.
         let delta_cutoff: f64 = 1e-6;
+
+        let mut gamma3_array: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
+        let mut gamma2_array: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
+        for i_knot in 0..n_knots-1 {
+            gamma3_array[i_knot] = TensionedCubicBSpline::gamma3(
+                delta_knots[i_knot],
+                tensions[i_knot],
+                delta_knots[i_knot],
+                hyperbolic_upper_cutoff,
+                hyperbolic_lower_cutoff,
+                delta_cutoff,
+            );
+            gamma2_array[i_knot] = TensionedCubicBSpline::gamma2(
+                tensions[i_knot],
+                delta_knots[i_knot],
+                hyperbolic_upper_cutoff,
+                hyperbolic_lower_cutoff,
+                delta_cutoff,
+            );
+        }
+        let gamma3_array: Array1<f64> = gamma3_array;
+        let gamma2_array: Array1<f64> = gamma2_array;
+        let mut sigma1_array: Array1<f64> = Array1::from_elem(n_knots - 2, f64::NAN);
+        for i in 0..n_knots - 2 {
+            if knots[i + 2] - knots[i] < delta_cutoff {
+                sigma1_array[i] = 0.0;
+            } else {
+                sigma1_array[i] = gamma2_array[i] + gamma2_array[i + 1];
+            }
+        }
+        let sigma1_array: Array1<f64> = sigma1_array;
+        let mut sigma2_array: Array1<f64> = Array1::from_elem(n_knots - 3, f64::NAN);
+        for i in 0..n_knots - 3 {
+            if knots[i + 3] - knots[i] < delta_cutoff {
+                sigma2_array[i] = 0.0;
+            } else {
+                let tstar_jp: f64 = if knots[i + 2] - knots[i] > delta_cutoff {
+                    knots[i + 1] + (gamma3_array[i + 1] - gamma3_array[i]) / (gamma2_array[i] + gamma2_array[i + 1])
+                } else {
+                    knots[i + 1]
+                };
+                let tstar_jpp: f64 = if knots[i + 3] - knots[i + 1] > delta_cutoff {
+                    knots[i + 2] + (gamma3_array[i + 2] - gamma3_array[i + 1]) / (gamma2_array[i + 1] + gamma2_array[i + 2])
+                } else {
+                    knots[i + 2]
+                };
+                sigma2_array[i] = tstar_jpp - tstar_jp;
+            }
+        }
+        let sigma2_array: Array1<f64> = sigma2_array;
 
         // Create the struct
         TensionedCubicBSpline {
@@ -78,6 +131,9 @@ impl TensionedCubicBSpline {
             delta_cutoff,
             tensions,
             delta_knots,
+            gamma3_array,
+            sigma1_array,
+            sigma2_array,
         }
     }
 
@@ -101,12 +157,12 @@ impl TensionedCubicBSpline {
         self.phi2(j_index, x_val)
     }
 
-    pub fn gamma3_python(&self, x_val: f64, rho: f64, delta: f64) -> f64 {
-        self.gamma3(x_val, rho, delta)
+    pub fn gamma3_python(&self, x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
+        TensionedCubicBSpline::gamma3(x_val, rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
     }
 
-    pub fn gamma2_python(&self, rho: f64, delta: f64) -> f64 {
-        self.gamma2(rho, delta)
+    pub fn gamma2_python(&self, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
+        TensionedCubicBSpline::gamma2(rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
     }
 
     pub fn source_function_value_single_dof_python(&self, psi_n: f64, i_dof: usize) -> f64 {
@@ -119,7 +175,7 @@ impl TensionedCubicBSpline {
 impl TensionedCubicBSpline {
     // This is Equation (2.1) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
     // Note that we have added extra checks to avoid overflow and numerical precision issues
-    fn gamma3(&self, x_val: f64, rho: f64, delta: f64) -> f64 {
+    fn gamma3(x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
         // x_val, rho and delta must be positive
         assert!(x_val >= 0.0, "x_val must be non-negative");
         assert!(rho >= 0.0, "rho must be non-negative");
@@ -129,22 +185,22 @@ impl TensionedCubicBSpline {
         let rho_delta: f64 = rho * delta;
         let rho_x: f64 = rho * x_val;
 
-        if delta < self.delta_cutoff {
+        if delta < delta_cutoff {
             // We are in the exterior (clamped) knot region where delta is zero
             return 0.0;
         }
 
-        if rho_delta > self.hyperbolic_upper_cutoff {
+        if rho_delta > hyperbolic_upper_cutoff {
             // To avoid overflow issues when taking sinh of large numbers we replace sinh() with exp()/2 approximation
             return (rho * (x_val - delta)).exp() * rho.powi(-2);
         }
 
-        if rho_delta < self.hyperbolic_lower_cutoff {
+        if rho_delta < hyperbolic_lower_cutoff {
             // Since x_val < delta, then we need to taylor expand both the numerator and denominator for small arguments
             return x_val.powi(3) / (6.0 * delta);
         }
 
-        if rho_x < self.hyperbolic_lower_cutoff {
+        if rho_x < hyperbolic_lower_cutoff {
             // Use Taylor series expansion for just the numerator
             return rho * x_val.powi(3) / (6.0 * rho_delta.sinh());
         }
@@ -155,23 +211,23 @@ impl TensionedCubicBSpline {
 
     // This is Equation (2.2) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
     // Note that x always equals delta in our implementation so we have removed x as an argument.
-    fn gamma2(&self, rho: f64, delta: f64) -> f64 {
+    fn gamma2(rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
         assert!(rho >= 0.0, "rho must be non-negative");
         assert!(delta >= 0.0, "delta must be non-negative");
 
         let rho_delta: f64 = rho * delta;
 
-        if delta < self.delta_cutoff {
+        if delta < delta_cutoff {
             // We are in the exterior (clamped) knot region where delta is zero
             return 0.0;
         }
 
-        if rho_delta > self.hyperbolic_upper_cutoff {
+        if rho_delta > hyperbolic_upper_cutoff {
             // To avoid overflow issues when taking sinh or cosh of large numbers we replace sinh and cosh with exp()/2 approximation
             return rho.powi(-1);
         }
 
-        if rho_delta < self.hyperbolic_lower_cutoff {
+        if rho_delta < hyperbolic_lower_cutoff {
             // Use Taylor series expansion for small arguments to avoid numerical precision loss
             return 0.5 * delta;
         }
@@ -197,26 +253,13 @@ impl TensionedCubicBSpline {
 
         // Calculate sigma2_j using Equation (2.9)
         // Note that since self.knots[j_index + 3] - self.knots[j_index] > 0 we know that sigma2_j is not zero.
-        let gamma3_j: f64 = self.gamma3(self.delta_knots[j_index], self.tensions[j_index], self.delta_knots[j_index]); // gamma3(delta_t_j, rho_j, delta_t_j)
-        let gamma3_jp: f64 = self.gamma3(self.delta_knots[j_index + 1], self.tensions[j_index + 1], self.delta_knots[j_index + 1]); // gamma3(delta_t_{j+1}, rho_{j+1}, delta_t_{j+1})
-        let gamma3_jpp: f64 = self.gamma3(self.delta_knots[j_index + 2], self.tensions[j_index + 2], self.delta_knots[j_index + 2]); // gamma3(delta_t_{j+2}, rho_{
-        let gamma2_j: f64 = self.gamma2(self.tensions[j_index], self.delta_knots[j_index]); // gamma2(delta_t_j, rho_j, delta_t_j)
-        let gamma2_jp: f64 = self.gamma2(self.tensions[j_index + 1], self.delta_knots[j_index + 1]); // gamma2(delta_t_{j+1}, rho_{j+1}, delta_t_{j+1})
-        let gamma2_jpp: f64 = self.gamma2(self.tensions[j_index + 2], self.delta_knots[j_index + 2]); // gamma2(delta_t_{j+2}, rho_{j+2}, delta_t_{j+2})
-        let tstar_jp: f64 = if self.knots[j_index + 2] - self.knots[j_index] > self.delta_cutoff {
-            self.knots[j_index + 1] + (gamma3_jp - gamma3_j) / (gamma2_j + gamma2_jp)
-        } else {
-            self.knots[j_index + 1]
-        };
-        let tstar_jpp: f64 = if self.knots[j_index + 3] - self.knots[j_index + 1] > self.delta_cutoff {
-            self.knots[j_index + 2] + (gamma3_jpp - gamma3_jp) / (gamma2_jp + gamma2_jpp)
-        } else {
-            self.knots[j_index + 2]
-        };
-        let sigma2_j: f64 = tstar_jpp - tstar_jp;
+        let gamma3_j: f64 = self.gamma3_array[j_index]; // gamma3(delta_t_j, rho_j, delta_t_j)
+        let gamma3_jp: f64 = self.gamma3_array[j_index + 1]; // gamma3(delta_t_{j+1}, rho_{j+1}, delta_t_{j+1})
+        let gamma3_jpp: f64 = self.gamma3_array[j_index + 2]; // gamma3(delta_t_{j+2}, rho_{
+        let sigma2_j: f64 = self.sigma2_array[j_index];
 
         // Evaluate integral of the first row of Equation (2.7)
-        let sigma1_j: f64 = gamma2_j + gamma2_jp;
+        let sigma1_j: f64 = self.sigma1_array[j_index];
         if x_val < self.knots[j_index + 1] {
             if self.delta_knots[j_index] < self.delta_cutoff {
                 // Since the distance between knots is very small the integral over the range will be approximately zero.
@@ -231,7 +274,14 @@ impl TensionedCubicBSpline {
                 // Note that gamma3(0) = 0, so we do not need to subtract anything.
 
                 // gamma3(x-t_j, rho_j, delta_t_j):
-                let gamma3_x_m_tj: f64 = self.gamma3(x_val - self.knots[j_index], self.tensions[j_index], self.delta_knots[j_index]);
+                let gamma3_x_m_tj: f64 = TensionedCubicBSpline::gamma3(
+                    x_val - self.knots[j_index],
+                    self.tensions[j_index],
+                    self.delta_knots[j_index],
+                    self.hyperbolic_upper_cutoff,
+                    self.hyperbolic_lower_cutoff,
+                    self.delta_cutoff,
+                );
 
                 // int_{t_j}^{x} B2_j(y) dy
                 let integral_tj_x: f64 = gamma3_x_m_tj / sigma1_j;
@@ -252,7 +302,7 @@ impl TensionedCubicBSpline {
         };
 
         // Evaluate integral of the second row of Equation (2.7)
-        let sigma1_jp: f64 = gamma2_jp + gamma2_jpp;
+        let sigma1_jp: f64 = self.sigma1_array[j_index + 1];
         if x_val < self.knots[j_index + 2] {
             if self.delta_knots[j_index + 1] < self.delta_cutoff {
                 // Since the distance between knots is very small the integral over the range will be approximately zero.
@@ -267,8 +317,22 @@ impl TensionedCubicBSpline {
                 // = x - gamma3(x-t_{j+1}) / sigma1_jp + gamma3(t_{j+2}-x) / sigma1_j
                 // - (t_{j+1} - gamma3(0) / sigma1_jp + gamma3(t_{j+2}-t_{j+1}) / sigma1_j)
                 // Note that gamma3(0) = 0
-                let gamma3_x_m_tjp: f64 = self.gamma3(x_val - self.knots[j_index + 1], self.tensions[j_index + 1], self.delta_knots[j_index + 1]);
-                let gamma3_tjpp_m_x: f64 = self.gamma3(self.knots[j_index + 2] - x_val, self.tensions[j_index + 1], self.delta_knots[j_index + 1]);
+                let gamma3_x_m_tjp: f64 = TensionedCubicBSpline::gamma3(
+                    x_val - self.knots[j_index + 1],
+                    self.tensions[j_index + 1],
+                    self.delta_knots[j_index + 1],
+                    self.hyperbolic_upper_cutoff,
+                    self.hyperbolic_lower_cutoff,
+                    self.delta_cutoff,
+                );
+                let gamma3_tjpp_m_x: f64 = TensionedCubicBSpline::gamma3(
+                    self.knots[j_index + 2] - x_val,
+                    self.tensions[j_index + 1],
+                    self.delta_knots[j_index + 1],
+                    self.hyperbolic_upper_cutoff,
+                    self.hyperbolic_lower_cutoff,
+                    self.delta_cutoff,
+                );
 
                 let integral_tjp_x: f64 = x_val - gamma3_x_m_tjp / sigma1_jp + gamma3_tjpp_m_x / sigma1_j - self.knots[j_index + 1] - gamma3_jp / sigma1_j;
 
@@ -303,7 +367,14 @@ impl TensionedCubicBSpline {
                 // int_{t_{j+2}}^x gamma2(t_{j+3} - y) / sigma1_jp dy =
                 // [-gamma3(t_{j+3} - y) / sigma1_jp]_{t_{j+2}}^x =
                 // -gamma3(t_{j+3} - x) / sigma1_jp + gamma3(t_{j+3} - t_{j+2}) / sigma1_jp
-                let gamma3_tjppp_m_x: f64 = self.gamma3(self.knots[j_index + 3] - x_val, self.tensions[j_index + 2], self.delta_knots[j_index + 2]);
+                let gamma3_tjppp_m_x: f64 = TensionedCubicBSpline::gamma3(
+                    self.knots[j_index + 3] - x_val,
+                    self.tensions[j_index + 2],
+                    self.delta_knots[j_index + 2],
+                    self.hyperbolic_upper_cutoff,
+                    self.hyperbolic_lower_cutoff,
+                    self.delta_cutoff,
+                );
                 let integral_tjpp_x: f64 = (gamma3_jpp - gamma3_tjppp_m_x) / sigma1_jp;
                 return (integral_tj_tjp + integral_tjp_tjpp + integral_tjpp_x) / sigma2_j;
             }
