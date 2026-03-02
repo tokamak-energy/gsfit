@@ -36,6 +36,10 @@ def setup_plasma(
     initial_cur_r = settings["GSFIT_code_settings.json"]["initial_guess"]["r_cur"]
     initial_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["z_cur"]
 
+    # Set the source functions types
+    p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial | gsfit_rs.TensionedCubicBSpline
+    ff_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial | gsfit_rs.TensionedCubicBSpline
+
     if settings["source_function_p_prime.json"]["method"] == "efit_polynomial":
         n_dof = settings["source_function_p_prime.json"]["efit_polynomial"]["n_dof"]
         regularisations = np.array(settings["source_function_p_prime.json"]["efit_polynomial"]["regularizations"])
