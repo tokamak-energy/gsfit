@@ -5,7 +5,7 @@ use crate::passives::Passives;
 use crate::plasma_geometry::marching_squares::MarchingContour;
 use crate::plasma_geometry::marching_squares::marching_squares;
 use crate::source_functions::SourceFunctionTraits;
-use crate::source_functions::{EfitPolynomial, LiuqePolynomial};
+use crate::source_functions::{EfitPolynomial, LiuqePolynomial, TensionedCubicBSpline};
 use contour::ContourBuilder;
 use core::{f64, panic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
@@ -102,6 +102,22 @@ impl Plasma {
                             n_dof: liuqe.n_dof,
                             regularisations: liuqe.regularisations.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
+                    } else if let Ok(cubic_bspline) = obj.extract::<PyRef<TensionedCubicBSpline>>(py) {
+                        Ok(Arc::new(TensionedCubicBSpline {
+                            n_dof: cubic_bspline.n_dof,
+                            regularisations: cubic_bspline.regularisations.clone(),
+                            interior_knots: cubic_bspline.interior_knots.clone(),
+                            knots: cubic_bspline.knots.clone(),
+                            interval_tensions: cubic_bspline.interval_tensions.clone(),
+                            hyperbolic_upper_cutoff: cubic_bspline.hyperbolic_upper_cutoff,
+                            hyperbolic_lower_cutoff: cubic_bspline.hyperbolic_lower_cutoff,
+                            delta_cutoff: cubic_bspline.delta_cutoff,
+                            tensions: cubic_bspline.tensions.clone(),
+                            delta_knots: cubic_bspline.delta_knots.clone(),
+                            gamma3_array: cubic_bspline.gamma3_array.clone(),
+                            sigma1_array: cubic_bspline.sigma1_array.clone(),
+                            sigma2_array: cubic_bspline.sigma2_array.clone(),
+                        }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("p_prime_source_function must implement SourceFunctionTraits");
                     }
@@ -124,6 +140,22 @@ impl Plasma {
                         Ok(Arc::new(LiuqePolynomial {
                             n_dof: liuqe.n_dof,
                             regularisations: liuqe.regularisations.clone(),
+                        }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
+                    } else if let Ok(cubic_bspline) = obj.extract::<PyRef<TensionedCubicBSpline>>(py) {
+                        Ok(Arc::new(TensionedCubicBSpline {
+                            n_dof: cubic_bspline.n_dof,
+                            regularisations: cubic_bspline.regularisations.clone(),
+                            interior_knots: cubic_bspline.interior_knots.clone(),
+                            knots: cubic_bspline.knots.clone(),
+                            interval_tensions: cubic_bspline.interval_tensions.clone(),
+                            hyperbolic_upper_cutoff: cubic_bspline.hyperbolic_upper_cutoff,
+                            hyperbolic_lower_cutoff: cubic_bspline.hyperbolic_lower_cutoff,
+                            delta_cutoff: cubic_bspline.delta_cutoff,
+                            tensions: cubic_bspline.tensions.clone(),
+                            delta_knots: cubic_bspline.delta_knots.clone(),
+                            gamma3_array: cubic_bspline.gamma3_array.clone(),
+                            sigma1_array: cubic_bspline.sigma1_array.clone(),
+                            sigma2_array: cubic_bspline.sigma2_array.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("ff_prime_source_function must implement SourceFunctionTraits");

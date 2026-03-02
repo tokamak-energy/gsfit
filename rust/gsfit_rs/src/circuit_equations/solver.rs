@@ -39,12 +39,7 @@ impl CircuitEquationModel {
         let mut pf_current_driven_names: Vec<String> = Vec::new();
         let mut pf_voltage_driven_names: Vec<String> = Vec::new();
         for pf_name in pf_names {
-            let controlled_by: String = coils
-                .results
-                .get("pf")
-                .get(&pf_name)
-                .get("driven_by")
-                .unwrap_string();
+            let controlled_by: String = coils.results.get("pf").get(&pf_name).get("driven_by").unwrap_string();
             if controlled_by == "current" {
                 pf_current_driven_names.push(pf_name.to_owned());
             } else if controlled_by == "voltage" {
@@ -335,8 +330,16 @@ impl CircuitEquationModel {
             ]
         ).unwrap();
 
-        let state_space_a_matrix: Array2<f64> = circuit_equation_matrix_1_mass.clone().inv().expect("circuit_equation_matrix_1_mass inversion failed").dot(&circuit_equation_matrix_2_stiffness);
-        let state_space_b_matrix: Array2<f64> = circuit_equation_matrix_1_mass.clone().inv().expect("circuit_equation_matrix_1_mass inversion failed").dot(&circuit_equation_matrix_3_source);
+        let state_space_a_matrix: Array2<f64> = circuit_equation_matrix_1_mass
+            .clone()
+            .inv()
+            .expect("circuit_equation_matrix_1_mass inversion failed")
+            .dot(&circuit_equation_matrix_2_stiffness);
+        let state_space_b_matrix: Array2<f64> = circuit_equation_matrix_1_mass
+            .clone()
+            .inv()
+            .expect("circuit_equation_matrix_1_mass inversion failed")
+            .dot(&circuit_equation_matrix_3_source);
         // println!("a_matrix = {:#?}", state_space_a_matrix);
         // println!("b_matrix = {:#?}", state_space_b_matrix);
 

@@ -220,8 +220,8 @@ class Plasma(DataTreeAccessor):
         limit_pts_z: npt.NDArray[np.float64],
         vessel_r: npt.NDArray[np.float64],
         vessel_z: npt.NDArray[np.float64],
-        p_prime_source_function: "EfitPolynomial" | "LiuqePolynomial",
-        ff_prime_source_function: "EfitPolynomial" | "LiuqePolynomial",
+        p_prime_source_function: "EfitPolynomial" | "LiuqePolynomial" | "TensionedCubicBSpline",
+        ff_prime_source_function: "EfitPolynomial" | "LiuqePolynomial" | "TensionedCubicBSpline",
         initial_ip: float,
         initial_cur_r: float,
         initial_cur_z: float,
@@ -599,5 +599,19 @@ class LiuqePolynomial(DataTreeAccessor):
         """
         :param n_dof: Number of degrees of freedom
         :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values [dimensionless]
+        """
+        ...
+        
+class TensionedCubicBSpline(DataTreeAccessor):
+    def __new__(
+        cls,
+        regularisations: npt.NDArray[np.float64],
+        interior_knots: npt.NDArray[np.float64],
+        interval_tensions: npt.NDArray[np.float64],
+    ) -> TensionedCubicBSpline:
+        """
+        :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values [dimensionless]
+        :param interior_knots: A 1D array of size [n_interior_knots] with the interior knots [dimensionless]
+        :param interval_tensions: A 1D array of size [n_intervals] with the interval tensions [dimensionless]
         """
         ...

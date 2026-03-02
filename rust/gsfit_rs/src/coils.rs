@@ -69,10 +69,7 @@ impl Coils {
             .get_or_insert("v")
             .insert("measured_experimental", voltages_ndarray);
 
-        self.results
-            .get_or_insert("pf")
-            .get_or_insert(name)
-            .insert("driven_by", "voltage".to_string());
+        self.results.get_or_insert("pf").get_or_insert(name).insert("driven_by", "voltage".to_string());
     }
 
     pub fn add_tf_coil(&mut self, time: PyReadonlyArray1<f64>, measured: PyReadonlyArray1<f64>) {
@@ -207,10 +204,7 @@ impl Coils {
             .get_or_insert(name)
             .get_or_insert("i")
             .insert("measured_experimental", measured.to_owned()); // Array1<f64>; shape = (n_time)
-        self.results
-            .get_or_insert("pf")
-            .get_or_insert(name)
-            .insert("driven_by", "current".to_string());
+        self.results.get_or_insert("pf").get_or_insert(name).insert("driven_by", "current".to_string());
     }
 
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> Vec<SensorsDynamic> {

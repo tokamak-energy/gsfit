@@ -30,7 +30,7 @@ impl LiuqePolynomial {
         let version: &str = env!("CARGO_PKG_VERSION");
 
         let mut string_output = String::from("╔═════════════════════════════════════════════════════════════════════════════╗\n");
-        string_output += &format!("║ {:<75} ║\n", " <gsfit_rs.Coils>");
+        string_output += &format!("║ {:<75} ║\n", " <gsfit_rs.LiuqePolynomial>");
         string_output += &format!("║  {:<74} ║\n", version);
 
         let n_dof: usize = self.n_dof;
