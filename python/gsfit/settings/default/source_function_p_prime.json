@@ -1,5 +1,5 @@
 {
-    "method": "tensioned_cubic_b_spline",
+    "method": "efit_polynomial",
     "efit_polynomial": {
         "n_dof": 2,
         "regularizations": [
