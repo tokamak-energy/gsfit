@@ -1,7 +1,9 @@
 use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2, s};
+use numpy::PyArray1;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
 #[derive(Clone)]
@@ -71,7 +73,7 @@ impl TensionedCubicBSpline {
 
         let mut gamma3_array: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
         let mut gamma2_array: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
-        for i_knot in 0..n_knots-1 {
+        for i_knot in 0..n_knots - 1 {
             gamma3_array[i_knot] = TensionedCubicBSpline::gamma3(
                 delta_knots[i_knot],
                 tensions[i_knot],
@@ -93,7 +95,7 @@ impl TensionedCubicBSpline {
         let mut sigma1_array: Array1<f64> = Array1::from_elem(n_knots - 2, f64::NAN);
         for i in 0..n_knots - 2 {
             if knots[i + 2] - knots[i] < delta_cutoff {
-                sigma1_array[i] = 0.0;
+                sigma1_array[i] = 1.0;
             } else {
                 sigma1_array[i] = gamma2_array[i] + gamma2_array[i + 1];
             }
@@ -102,7 +104,7 @@ impl TensionedCubicBSpline {
         let mut sigma2_array: Array1<f64> = Array1::from_elem(n_knots - 3, f64::NAN);
         for i in 0..n_knots - 3 {
             if knots[i + 3] - knots[i] < delta_cutoff {
-                sigma2_array[i] = 0.0;
+                sigma2_array[i] = 1.0;
             } else {
                 let tstar_jp: f64 = if knots[i + 2] - knots[i] > delta_cutoff {
                     knots[i + 1] + (gamma3_array[i + 1] - gamma3_array[i]) / (gamma2_array[i] + gamma2_array[i + 1])
@@ -142,7 +144,7 @@ impl TensionedCubicBSpline {
         let version: &str = env!("CARGO_PKG_VERSION");
 
         let mut string_output = String::from("╔═════════════════════════════════════════════════════════════════════════════╗\n");
-        string_output += &format!("║ {:<75} ║\n", " <gsfit_rs.TensionedCubicBSpline>");
+        string_output += &format!("║ {:<75} ║\n", " <gsfit_rs.Coils>");
         string_output += &format!("║  {:<74} ║\n", version);
 
         let n_dof: usize = self.n_dof;
@@ -169,6 +171,20 @@ impl TensionedCubicBSpline {
         // convert single value to array of length 1 to reuse existing function
         let psi_n_array: Array1<f64> = Array1::from_elem(1, psi_n);
         self.source_function_value_single_dof(&psi_n_array, i_dof)[0]
+    }
+
+    pub fn get_array1<'py>(&self, py: Python<'py>, name: &str) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        match name {
+            "interior_knots" => Ok(PyArray1::from_array(py, &self.interior_knots)),
+            "knots" => Ok(PyArray1::from_array(py, &self.knots)),
+            "interval_tensions" => Ok(PyArray1::from_array(py, &self.interval_tensions)),
+            "tensions" => Ok(PyArray1::from_array(py, &self.tensions)),
+            "delta_knots" => Ok(PyArray1::from_array(py, &self.delta_knots)),
+            "gamma3_array" => Ok(PyArray1::from_array(py, &self.gamma3_array)),
+            "sigma1_array" => Ok(PyArray1::from_array(py, &self.sigma1_array)),
+            "sigma2_array" => Ok(PyArray1::from_array(py, &self.sigma2_array)),
+            _ => Err(PyValueError::new_err(format!("Unknown Array1 attribute: {}", name))),
+        }
     }
 }
 
@@ -391,8 +407,8 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
         // See equation (2.5) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
         let mut value: Array1<f64> = Array1::from_elem(psi_n.len(), f64::NAN);
         for i_psi_n in 0..psi_n.len() {
-            let x: f64 = psi_n[i_psi_n];
-            if x <= self.knots[i_dof] {
+            let x = psi_n[i_psi_n];
+            if x < self.knots[i_dof] {
                 value[i_psi_n] = 0.0;
             } else if x <= self.knots[i_dof + 1] {
                 value[i_psi_n] = self.phi2(i_dof, x);
@@ -413,20 +429,20 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     }
 
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
-        let n_psi_n: usize = psi_n.len();
-        let mut integral: Array1<f64> = Array1::zeros(n_psi_n);
+        let n = psi_n.len();
+        let mut out = Array1::zeros(n);
 
         // Compute f(psi) at all points
         let f_vals = self.source_function_value_single_dof(psi_n, i_dof);
 
         // Trapezoidal cumulative integral
-        for i_psi_n in 1..n_psi_n {
-            let dx: f64 = psi_n[i_psi_n] - psi_n[i_psi_n - 1];
-            let trap: f64 = 0.5 * dx * (f_vals[i_psi_n] + f_vals[i_psi_n - 1]);
-            integral[i_psi_n] = integral[i_psi_n - 1] + trap;
+        for i in 1..n {
+            let dx: f64 = psi_n[i] - psi_n[i - 1];
+            let trap: f64 = 0.5 * dx * (f_vals[i] + f_vals[i - 1]);
+            out[i] = out[i - 1] + trap;
         }
 
-        integral
+        out
     }
 
     fn source_function_value(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
@@ -455,7 +471,7 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
             integral = integral + polynomial_dof[i_dof] * self.source_function_integral_single_dof(psi_n, i_dof);
         }
 
-        let last_value: f64 = integral[n_psi_n - 1];
+        let last_value = integral[n_psi_n - 1];
 
         return integral - last_value;
     }
