@@ -144,7 +144,7 @@ impl TensionedCubicBSpline {
         let version: &str = env!("CARGO_PKG_VERSION");
 
         let mut string_output = String::from("╔═════════════════════════════════════════════════════════════════════════════╗\n");
-        string_output += &format!("║ {:<75} ║\n", " <gsfit_rs.Coils>");
+        string_output += &format!("║ {:<75} ║\n", " <gsfit_rs.TensionedCubicBSpline>");
         string_output += &format!("║  {:<74} ║\n", version);
 
         let n_dof: usize = self.n_dof;
@@ -407,7 +407,7 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
         // See equation (2.5) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
         let mut value: Array1<f64> = Array1::from_elem(psi_n.len(), f64::NAN);
         for i_psi_n in 0..psi_n.len() {
-            let x = psi_n[i_psi_n];
+            let x: f64 = psi_n[i_psi_n];
             if x < self.knots[i_dof] {
                 value[i_psi_n] = 0.0;
             } else if x <= self.knots[i_dof + 1] {
@@ -429,20 +429,20 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     }
 
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
-        let n = psi_n.len();
-        let mut out = Array1::zeros(n);
+        let n_psi_n: usize = psi_n.len();
+        let mut integral: Array1<f64> = Array1::zeros(n_psi_n);
 
         // Compute f(psi) at all points
         let f_vals = self.source_function_value_single_dof(psi_n, i_dof);
 
         // Trapezoidal cumulative integral
-        for i in 1..n {
-            let dx: f64 = psi_n[i] - psi_n[i - 1];
-            let trap: f64 = 0.5 * dx * (f_vals[i] + f_vals[i - 1]);
-            out[i] = out[i - 1] + trap;
+        for i_psi_n in 1..n_psi_n {
+            let dx: f64 = psi_n[i_psi_n] - psi_n[i_psi_n - 1];
+            let trap: f64 = 0.5 * dx * (f_vals[i_psi_n] + f_vals[i_psi_n - 1]);
+            integral[i_psi_n] = integral[i_psi_n - 1] + trap;
         }
 
-        out
+        integral
     }
 
     fn source_function_value(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
@@ -471,7 +471,7 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
             integral = integral + polynomial_dof[i_dof] * self.source_function_integral_single_dof(psi_n, i_dof);
         }
 
-        let last_value = integral[n_psi_n - 1];
+        let last_value: f64 = integral[n_psi_n - 1];
 
         return integral - last_value;
     }
