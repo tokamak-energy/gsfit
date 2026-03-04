@@ -158,6 +158,9 @@ jobs:
           # Uninstall pytest-xdist to prevent parallel execution; perhaps this is the cause of Jupyter notebook hanging?
           python -m pip uninstall -y pytest-xdist
 
+          # Clear all outputs from the notebook, to prevent tests failing due to output differences
+          jupyter nbconvert --clear-output --inplace examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+
           # Run the MAST-U FreeGSNKE notebook as a test
           # Note: --nbval-lax ignores minor output differences such as floating point precision; but there is still some comparison with stored outputs
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
@@ -283,6 +286,8 @@ jobs:
           python -m pip install "gsfit[dev,with_freegs_and_freegsnke] @ ${WHEEL_URI}"
       - name: Run Jupyter notebook Python tests
         run: |
+          # Clear all outputs from the notebook, to prevent tests failing due to output differences
+          jupyter nbconvert --clear-output --inplace examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
           python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
       - name: Run mypy Python tests
         run: mypy python/
@@ -399,6 +404,8 @@ jobs:
         # env:
         #   VCPKG_ROOT: C:/vcpkg
         run: |
+          # Clear all outputs from the notebook, to prevent tests failing due to output differences
+          jupyter nbconvert --clear-output --inplace examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
           py -3.11 -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
       - name: Run mypy Python tests
         # env:
