@@ -36,8 +36,8 @@ def setup_plasma(
     initial_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["z_cur"]
 
     # Set the source functions types
-    p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
-    ff_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
+    p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial | gsfit_rs.TensionedCubicBSpline
+    ff_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial | gsfit_rs.TensionedCubicBSpline
 
     # p_prime source function
     if settings["source_function_p_prime.json"]["method"] == "efit_polynomial":
