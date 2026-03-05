@@ -8,8 +8,8 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
     let bp_probe_names: Vec<String> = bp_probes.results.keys();
     let n_bp_probes: usize = bp_probe_names.len();
     if n_bp_probes > 0 {
-        let bp_probes_measured: Array2<f64> = bp_probes.results.get("*").get("b").get("measured").unwrap_array2();
-        let bp_probes_calculated: Array2<f64> = bp_probes.results.get("*").get("b").get("calculated").unwrap_array2();
+        let bp_probes_measured: Array2<f64> = bp_probes.results.get("*").get("b").get("measured").get("value").unwrap_array2();
+        let bp_probes_calculated: Array2<f64> = bp_probes.results.get("*").get("b").get("calculated").get("value").unwrap_array2();
         let bp_probes_weight: Array1<f64> = bp_probes.results.get("*").get("fit_settings").get("weight").unwrap_array1();
         let bp_probes_expected_value: Array1<f64> = bp_probes.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
         let bp_probes_include: Vec<bool> = bp_probes.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();

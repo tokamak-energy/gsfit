@@ -22,6 +22,7 @@ use source_functions::{EfitPolynomial, LiuqePolynomial, TensionedCubicBSpline};
 // pub use solovev_equilibrium::run_solovev;
 // mod analytic_grad_shafranov;
 mod material_properties;
+pub mod python_pickling_methods;
 
 /// A Python module implemented in Rust; bindings added here
 #[pymodule]

@@ -1,5 +1,6 @@
 use crate::greens::greens_psi;
 use crate::material_properties::copper_resistivity;
+use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::SensorsDynamic;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use interpolation;
@@ -8,18 +9,31 @@ use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
-
+use pyo3::types::{PyDict, PyList};
 use std::f64::consts::PI;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass]
+#[pyclass(module = "gsfit_rs")]
 pub struct Coils {
     pub results: DataTree,
 }
 
-// TODO: I need to add PSU "cable" resistance and inductance
+// TODO: I need to add PSU "current leads" resistance and inductance
+
+// Data structure:
+// * "experimental": from the experimental data
+// * "measured": from the experimental data, but interpolated onto the reconstruction time-base
+// * "calculated": calculated from the GS solution, on the reconstruction time-base
+// * "simulated": calculated from `circuit_equations`, on the simulation time-base
+//
+// I will want to calculate the magnetic sensor values for:
+// * "measured"
+// * "calculated"
+// * "simulated"
+// I'm not certain if I will need to calculate the sensor values for "experimental"?
 
 #[pymethods]
 impl Coils {
@@ -62,14 +76,18 @@ impl Coils {
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("v")
-            .insert("time_experimental", time_ndarray);
+            .get_or_insert("experimental")
+            .insert("time", time_ndarray);
         self.results
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("v")
-            .insert("measured_experimental", voltages_ndarray);
-
-        self.results.get_or_insert("pf").get_or_insert(name).insert("driven_by", "voltage".to_string());
+            .get_or_insert("experimental")
+            .insert("value", voltages_ndarray);
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .insert("controlled_by", "voltage".to_string());
     }
 
     pub fn add_tf_coil(&mut self, time: PyReadonlyArray1<f64>, measured: PyReadonlyArray1<f64>) {
@@ -81,11 +99,13 @@ impl Coils {
         self.results
             .get_or_insert("tf")
             .get_or_insert("rod_i")
-            .insert("time_experimental", time_ndarray);
+            .get_or_insert("experimental")
+            .insert("time", time_ndarray);
         self.results
             .get_or_insert("tf")
             .get_or_insert("rod_i")
-            .insert("measured_experimental", measured_ndarray);
+            .get_or_insert("experimental")
+            .insert("value", measured_ndarray);
     }
 
     pub fn greens_with_self(&mut self) {
@@ -101,8 +121,6 @@ impl Coils {
 
                 let greens_filament_matrix: Array2<f64> =
                     greens_psi(coil_r.clone(), coil_z.clone(), other_coil_r, other_coil_z, coil_d_r.clone(), coil_d_z.clone());
-                // println!("coil_name={}, other_coil_name={}", coil_name, other_coil_name);
-                // println!("greens_filament_matrix={:?}", greens_filament_matrix);
 
                 let g: f64 = greens_filament_matrix.sum();
 
@@ -130,7 +148,6 @@ impl Coils {
             // Resistivity of copper
             let temperature_in_kelvin: f64 = 293.15; // 20 degrees C
             let resistivity_copper_20c: f64 = copper_resistivity(temperature_in_kelvin); // ~ 1.68e-8 ohm * meter
-            println!("resistivity_copper_20c = {}", resistivity_copper_20c);
 
             // Resistance of coil
             let resistance: f64 = (resistivity_copper_20c * length / area).sum();
@@ -157,6 +174,67 @@ impl Coils {
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
         return string_output;
+    }
+
+    /// Python pickling method
+    fn __getstate__(&self, py: Python) -> PyResult<Py<PyAny>> {
+        // Create a Python dictionary, which will be pickled
+        let state_dict: Bound<'_, PyDict> = PyDict::new(py);
+
+        // Store the self.results DataTree under "results" key
+        let results_dict: Py<PyDict> = data_tree_to_py_dict(py, &self.results).expect("Failed to convert DataTree to PyDict");
+        state_dict.set_item("results", results_dict).expect("Failed to add `results` key to dictionary");
+
+        // Store `gsfit_rs` version
+        state_dict
+            .set_item("version", env!("CARGO_PKG_VERSION"))
+            .expect("Failed to add `version` key to dictionary");
+
+        // Store current datetime as Unix timestamp (seconds since epoch)
+        let system_time_now: SystemTime = SystemTime::now();
+        let datetime: f64 = system_time_now
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs_f64())
+            .expect("Failed to get current datetime");
+        state_dict
+            .set_item("pickled_datetime", datetime)
+            .expect("Failed to add `pickled_datetime` key to dictionary");
+
+        Ok(state_dict.into())
+    }
+
+    /// Python unpickling method
+    fn __setstate__(&mut self, state: Bound<'_, PyDict>) -> PyResult<()> {
+        // Extract `gsfit_rs` version from the pickled data
+        let current_version: &str = env!("CARGO_PKG_VERSION");
+        let pickled_version: String = state
+            .get_item("version")
+            .ok()
+            .flatten()
+            .and_then(|v| v.extract::<String>().ok())
+            .expect("Failed to extract `version` from pickled object");
+
+        // Print warning if versions are different
+        if pickled_version != current_version {
+            eprintln!(
+                "Warning: Unpickling object created with gsfit_rs v{}, but current version is v{}",
+                pickled_version, current_version
+            );
+        }
+
+        // Extract the "results" key and convert back to DataTree
+        let results_dict: Bound<'_, PyAny> = state
+            .get_item("results")
+            .expect("Missing 'results' key in pickled data")
+            .ok_or_else(|| PyTypeError::new_err("Missing 'results' key in pickled data"))
+            .expect("Failed to get `results` from pickled data");
+        let results_dict_bound: &Bound<'_, PyDict> = results_dict.downcast::<PyDict>().expect("Failed to downcast `results` to PyDict");
+
+        // Insert into self
+        self.results = py_dict_to_data_tree(results_dict_bound).expect("Failed to convert PyDict to DataTree");
+
+        // Return Ok to signal successful completion, no "data" returned
+        Ok(())
     }
 }
 
@@ -198,19 +276,24 @@ impl Coils {
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("i")
-            .insert("time_experimental", time.to_owned()); // Array1<f64>; shape = (n_time)
+            .get_or_insert("experimental")
+            .insert("time", time.to_owned()); // Array1<f64>; shape = (n_time)
         self.results
             .get_or_insert("pf")
             .get_or_insert(name)
             .get_or_insert("i")
-            .insert("measured_experimental", measured.to_owned()); // Array1<f64>; shape = (n_time)
-        self.results.get_or_insert("pf").get_or_insert(name).insert("driven_by", "current".to_string());
+            .get_or_insert("experimental")
+            .insert("value", measured.to_owned()); // Array1<f64>; shape = (n_time)
+        self.results
+            .get_or_insert("pf")
+            .get_or_insert(name)
+            .insert("controlled_by", "current".to_string());
     }
 
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> Vec<SensorsDynamic> {
         // TF coil
-        let time_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("time_experimental").unwrap_array1();
-        let measured_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("measured_experimental").unwrap_array1();
+        let time_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("experimental").get("time").unwrap_array1();
+        let measured_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("experimental").get("value").unwrap_array1();
 
         // Create the interpolator
         let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
@@ -222,7 +305,11 @@ impl Coils {
             .expect("Coils.split_into_static_and_dynamic: Can't do TF interpolation");
 
         // Store in self
-        self.results.get_or_insert("tf").get_or_insert("rod_i").insert("measured", measured_tf);
+        self.results
+            .get_or_insert("tf")
+            .get_or_insert("rod_i")
+            .get_or_insert("measured")
+            .insert("value", measured_tf);
 
         // PF coils
         let coil_names: Vec<String> = self.results.get("pf").keys();
@@ -235,8 +322,8 @@ impl Coils {
         for i_coil in 0..n_coils {
             // Coils
             let coil_name: &String = &coil_names[i_coil];
-            let time_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("time_experimental").unwrap_array1();
-            let measured_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("measured_experimental").unwrap_array1();
+            let time_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("experimental").get("time").unwrap_array1();
+            let measured_experimental: Array1<f64> = self.results.get("pf").get(coil_name).get("i").get("experimental").get("value").unwrap_array1();
 
             // Create the interpolator
             let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
@@ -255,7 +342,8 @@ impl Coils {
                 .get_or_insert("pf")
                 .get_or_insert(coil_name)
                 .get_or_insert("i")
-                .insert("measured", measured_this_coil);
+                .get_or_insert("measured")
+                .insert("value", measured_this_coil);
         }
 
         // MDSplus is "Coil-Major", but we want to rearrange the data to be "Time-Major"

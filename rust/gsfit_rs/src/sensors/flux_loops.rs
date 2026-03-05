@@ -1,8 +1,9 @@
-use crate::Plasma;
 use crate::coils::Coils;
 use crate::greens::greens_b;
 use crate::greens::greens_psi;
 use crate::passives::Passives;
+use crate::plasma::Plasma;
+use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
@@ -11,13 +12,15 @@ use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyDict, PyList};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass]
+#[pyclass(module = "gsfit_rs")]
 pub struct FluxLoops {
     pub results: DataTree,
 }
@@ -239,6 +242,50 @@ impl FluxLoops {
 
         return string_output;
     }
+
+    /// Python pickling method
+    fn __getstate__(&self, py: Python) -> PyResult<Py<PyAny>> {
+        let state_dict: Bound<'_, PyDict> = PyDict::new(py);
+        let results_dict: Py<PyDict> = data_tree_to_py_dict(py, &self.results).expect("Failed to convert DataTree to PyDict");
+        state_dict.set_item("results", results_dict).expect("Failed to add `results` key to dictionary");
+        state_dict
+            .set_item("version", env!("CARGO_PKG_VERSION"))
+            .expect("Failed to add `version` key to dictionary");
+        let system_time_now: SystemTime = SystemTime::now();
+        let datetime: f64 = system_time_now
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs_f64())
+            .expect("Failed to get current datetime");
+        state_dict
+            .set_item("pickled_datetime", datetime)
+            .expect("Failed to add `pickled_datetime` key to dictionary");
+        Ok(state_dict.into())
+    }
+
+    /// Python unpickling method
+    fn __setstate__(&mut self, state: Bound<'_, PyDict>) -> PyResult<()> {
+        let current_version: &str = env!("CARGO_PKG_VERSION");
+        let pickled_version: String = state
+            .get_item("version")
+            .ok()
+            .flatten()
+            .and_then(|v| v.extract::<String>().ok())
+            .expect("Pickled FluxLoops object has no version information");
+        if pickled_version != current_version {
+            eprintln!(
+                "Warning: Unpickling FluxLoops object created with gsfit_rs v{}, but current version is v{}",
+                pickled_version, current_version
+            );
+        }
+        let results_dict: Bound<'_, PyAny> = state
+            .get_item("results")
+            .expect("Missing 'results' key in pickled data")
+            .ok_or_else(|| PyTypeError::new_err("Missing 'results' key in pickled data"))
+            .expect("Failed to get `results` from pickled data");
+        let results_dict_bound: &Bound<'_, PyDict> = results_dict.downcast::<PyDict>().expect("Failed to downcast `results` to PyDict");
+        self.results = py_dict_to_data_tree(results_dict_bound).expect("Failed to convert PyDict to DataTree");
+        Ok(())
+    }
 }
 
 // Rust only methods
@@ -278,8 +325,16 @@ impl FluxLoops {
             .insert("weight", fit_settings_weight);
 
         // Measurements
-        self.results.get_or_insert(name).get_or_insert("psi").insert("time_experimental", time);
-        self.results.get_or_insert(name).get_or_insert("psi").insert("measured_experimental", measured);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("psi")
+            .get_or_insert("experimental")
+            .insert("time", time);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("psi")
+            .get_or_insert("experimental")
+            .insert("value", measured);
     }
 
     pub fn greens_with_coils_rs(&mut self, coils: &Coils) {
@@ -424,11 +479,11 @@ impl FluxLoops {
             let sensor_name: &str = &sensor_names_all[i_sensor];
 
             // Measured values
-            let time_experimental: Array1<f64> = self.results.get(sensor_name).get("psi").get("time_experimental").unwrap_array1();
-            let measured_experimental: Array1<f64> = self.results.get(sensor_name).get("psi").get("measured_experimental").unwrap_array1();
+            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("psi").get("experimental").get("time").unwrap_array1();
+            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("psi").get("experimental").get("value").unwrap_array1();
 
             // Create the interpolator
-            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
+            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone())
                 .expect("FluxLoops.split_into_static_and_dynamic: Can't make interpolator");
 
             // Do the interpolation
@@ -467,7 +522,7 @@ impl FluxLoops {
         for sensor_name in self.results.keys() {
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(&sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = [n_pf]
-            let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("measured").unwrap_array2(); // shape = [n_time, n_pf]
+            let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("measured").get("value").unwrap_array2(); // shape = [n_time, n_pf]
             let n_time: usize = coil_currents.len_of(Axis(0));
 
             // Plasma

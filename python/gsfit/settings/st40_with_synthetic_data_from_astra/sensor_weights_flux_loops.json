@@ -58,7 +58,7 @@
     "L008": {
         "fit_settings": {
             "expected_value": 0.126682735,
-            "weight": 6.28,
+            "weight": 30.0,
             "include": true,
             "comment": ""
         }
@@ -154,7 +154,7 @@
     "L020": {
         "fit_settings": {
             "expected_value": 0.05,
-            "weight": 20.0,
+            "weight": 6.28,
             "include": true,
             "comment": ""
         }
@@ -162,7 +162,7 @@
     "L021": {
         "fit_settings": {
             "expected_value": 0.097758039,
-            "weight": 16.28,
+            "weight": 6.28,
             "include": true,
             "comment": ""
         }
@@ -170,8 +170,8 @@
     "L022": {
         "fit_settings": {
             "expected_value": 0.094437077,
-            "weight": 0.0,
-            "include": false,
+            "weight": 6.28,
+            "include": true,
             "comment": ""
         }
     },
@@ -186,7 +186,7 @@
     "L024": {
         "fit_settings": {
             "expected_value": 0.042032448,
-            "weight": 6.28,
+            "weight": 20.0,
             "include": true,
             "comment": ""
         }
@@ -226,8 +226,8 @@
     "L030": {
         "fit_settings": {
             "expected_value": 0.114159463,
-            "weight": 0.0,
-            "include": false,
+            "weight": 30.0,
+            "include": true,
             "comment": ""
         }
     },

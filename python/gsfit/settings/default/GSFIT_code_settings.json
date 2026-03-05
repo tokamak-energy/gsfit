@@ -22,6 +22,26 @@
             },
             "isoflux_code_name": null
         },
+        "st40_mdsplus_full_ip_rog": {
+            "workflow": {
+                "elmag": {
+                    "pulseNo": null,
+                    "run_name": "RUN16",
+                    "usage": "PF and vessel geometry and resistance"
+                },
+                "mag": {
+                    "pulseNo": null,
+                    "run_name": "BEST",
+                    "usage": "Magneitc sensors geometry and measured values"
+                },
+                "psu2coil": {
+                    "pulseNo": null,
+                    "run_name": "RUN02",
+                    "usage": "PF and TF coil currents"
+                }
+            },
+            "isoflux_code_name": null
+        },
         "freegs": {
             "workflow": {
             }

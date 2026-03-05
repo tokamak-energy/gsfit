@@ -84,6 +84,25 @@ def solve_grad_shafranov(
     """
     ...
 
+def solve_circuit_equations(
+    coils: Coils,
+    passives: Passives,
+    times_to_solve: npt.NDArray[np.float64],
+    adaptive_time_stepping: bool,
+) -> None:
+    """
+    Solves the circuit equations
+    
+    Note: the adaptive time-stepping can produce a lot of simulated time-points,
+    so `adaptive_time_stepping = False` should be used to avoid unwieldly large outputs
+    
+    :param coils: Coils data structure containing either current or voltage waveforms, note this is mutated and contains the solution
+    :param passives: Passives object, note this is mutated and contains the solution
+    :param times_to_solve: Times to solve the circuit equations at [second]
+    :param adaptive_time_stepping: The calculation always uses adaptive time stepping, this flag interpolates results onto `times_to_solve`
+    """
+    ...
+
 def greens_py(
     r: npt.NDArray[np.float64],
     z: npt.NDArray[np.float64],

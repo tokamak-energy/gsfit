@@ -1,4 +1,3 @@
-import typing
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -78,9 +77,9 @@ def map_results_to_database(
     bp_names = bp_probes.keys()
     bp_names = [bp_name.replace("P", "B_BPPROBE_") for bp_name in bp_names]
     results["CONSTRAINTS"]["BPPROBE"]["NAME"] = bp_names  # shape = [n_sensors]
-    results["CONSTRAINTS"]["BPPROBE"]["CVALUE"] = bp_probes.get_array2(["*", "b", "calculated"])  # shape = [n_time, n_sensors]
+    results["CONSTRAINTS"]["BPPROBE"]["CVALUE"] = bp_probes.get_array2(["*", "b", "calculated", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["BPPROBE"]["INCLUDE"] = np.array(bp_probes.get_vec_bool(["*", "fit_settings", "include"]))
-    results["CONSTRAINTS"]["BPPROBE"]["MVALUE"] = bp_probes.get_array2(["*", "b", "measured"])  # shape = [n_time, n_sensors]
+    results["CONSTRAINTS"]["BPPROBE"]["MVALUE"] = bp_probes.get_array2(["*", "b", "measured", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["BPPROBE"]["WEIGHT"] = bp_probes.get_array1(["*", "fit_settings", "weight"])  # shape = [n_sensors]
 
     # Flux loops (note, this is all the sensors, both the ones we fit and the ones we don't)
