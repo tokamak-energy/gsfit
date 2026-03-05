@@ -36,8 +36,8 @@ def setup_plasma(
     initial_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["z_cur"]
 
     # Set the source functions types
-    p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
-    ff_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
+    p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial | gsfit_rs.TensionedCubicBSpline
+    ff_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial | gsfit_rs.TensionedCubicBSpline
 
     # p_prime source function
     if settings["source_function_p_prime.json"]["method"] == "efit_polynomial":
@@ -56,6 +56,16 @@ def setup_plasma(
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
         p_prime_source_function = gsfit_rs.LiuqePolynomial(n_dof, regularisations)
+    elif settings["source_function_p_prime.json"]["method"] == "tensioned_cubic_b_spline":
+        regularisations = np.array(settings["source_function_p_prime.json"]["tensioned_cubic_b_spline"]["regularizations"])
+        # If `regularisations` is [[]] in the json file, will be interpreted by numpy as having size (1, 0).
+        # Which would be interpreted as (n_regularisations, n_dof). So it would cause an error
+        interior_knots = np.array(settings["source_function_p_prime.json"]["tensioned_cubic_b_spline"]["interior_knots"])
+        n_dof = len(interior_knots) + 4
+        if regularisations.shape == (1, 0):
+            regularisations = np.zeros((0, n_dof), dtype=np.float64)
+        interval_tensions = np.array(settings["source_function_p_prime.json"]["tensioned_cubic_b_spline"]["interval_tensions"])
+        p_prime_source_function = gsfit_rs.TensionedCubicBSpline(regularisations, interior_knots, interval_tensions)
     else:
         raise ValueError(f"Unknown method for p_prime source function: {settings['source_function_p_prime.json']['method']}")
 
@@ -69,13 +79,26 @@ def setup_plasma(
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
         ff_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
     elif settings["source_function_ff_prime.json"]["method"] == "liuqe_polynomial":
-        n_dof = settings["source_function_ff_prime.json"]["efit_polynomial"]["n_dof"]
-        regularisations = np.array(settings["source_function_ff_prime.json"]["efit_polynomial"]["regularizations"])
+        n_dof = settings["source_function_ff_prime.json"]["liuqe_polynomial"]["n_dof"]
+        regularisations = np.array(settings["source_function_ff_prime.json"]["liuqe_polynomial"]["regularizations"])
         # If `regularisations` is [[]] in the json file, will be interpreted by numpy as having size (1, 0).
         # Which would be interpreted as (n_regularisations, n_dof). So it would cause an error
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
         ff_prime_source_function = gsfit_rs.LiuqePolynomial(n_dof, regularisations)
+    elif settings["source_function_ff_prime.json"]["method"] == "tensioned_cubic_b_spline":
+        regularisations = np.array(settings["source_function_ff_prime.json"]["tensioned_cubic_b_spline"]["regularizations"])
+        # If `regularisations` is [[]] in the json file, will be interpreted by numpy as having size (1, 0).
+        # Which would be interpreted as (n_regularisations, n_dof). So it would cause an error
+        interior_knots = np.array(settings["source_function_ff_prime.json"]["tensioned_cubic_b_spline"]["interior_knots"])
+        n_dof = len(interior_knots) + 4
+        if regularisations.shape == (1, 0):
+            regularisations = np.zeros((0, n_dof), dtype=np.float64)
+        interval_tensions = np.array(settings["source_function_ff_prime.json"]["tensioned_cubic_b_spline"]["interval_tensions"])
+        ff_prime_source_function = gsfit_rs.TensionedCubicBSpline(regularisations, interior_knots, interval_tensions)
+    else:
+        raise ValueError(f"Unknown method for ff_prime source function: {settings['source_function_ff_prime.json']['method']}")
+
 
     # Grid size and shape
     n_r = settings["GSFIT_code_settings.json"]["grid"]["n_r"]
