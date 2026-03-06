@@ -773,7 +773,13 @@ impl RogowskiCoils {
             self.results
                 .get_or_insert(sensor_name)
                 .get_or_insert("i")
-                .insert("measured", measured_this_coil);
+                .get_or_insert("measured")
+                .insert("value", measured_this_coil);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("i")
+                .get_or_insert("measured")
+                .insert("time", times_to_reconstruct.clone());
         }
 
         // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
@@ -798,12 +804,14 @@ impl RogowskiCoils {
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(&sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = [n_pf]
             let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("measured").get("value").unwrap_array2(); // shape = [n_time, n_pf]
-            let n_time: usize = coil_currents.len_of(Axis(0));
+            // let n_time: usize = coil_currents.len_of(Axis(0));
 
             // Plasma
             let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1(); // shape = [n_z * n_r]
             let j_2d: Array3<f64> = plasma.results.get("two_d").get("j").unwrap_array3(); // shape = [n_time, n_z, n_r]
             let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
+            let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
+            let n_time: usize = time.len();
 
             // Loop over time
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -840,7 +848,16 @@ impl RogowskiCoils {
             }
 
             // Store this sensor
-            self.results.get_or_insert(&sensor_name).get_or_insert("i").insert("calculated", sensor_values);
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("i")
+                .get_or_insert("calculated")
+                .insert("value", sensor_values);
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("i")
+                .get_or_insert("calculated")
+                .insert("time", time.clone());
         }
     }
 }

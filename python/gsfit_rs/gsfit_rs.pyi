@@ -303,6 +303,34 @@ class BpProbes(DataTreeAccessor):
         :param measured: Measured values [tesla]
         """
         ...
+    def calculate_sensor_values(
+        cls,
+        coils: Coils,
+        passives: Passives,
+        plasma: Plasma,
+    ) -> None:
+        """
+        Calculate the sensor values from the coils, passives and plasma.
+        Mutates self
+
+        :param coils: Coils object
+        :param passives: Passives object
+        :param plasma: Plasma object
+        """
+        ...
+    def calculate_sensor_values_vacuum(
+        cls,
+        coils: Coils,
+        passives: Passives,
+    ) -> None:
+        """
+        Calculate the sensor values from the coils and passives.
+        Mutates self
+
+        :param coils: Coils object
+        :param passives: Passives object
+        """
+        ...
     def greens_with_coils(
         cls,
         coils: Coils,
@@ -313,12 +341,6 @@ class BpProbes(DataTreeAccessor):
     ) -> None: ...
     def greens_with_plasma(
         cls,
-        plasma: Plasma,
-    ) -> None: ...
-    def calculate_sensor_values(
-        cls,
-        coils: Coils,
-        passives: Passives,
         plasma: Plasma,
     ) -> None: ...
 

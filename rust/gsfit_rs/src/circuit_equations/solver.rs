@@ -550,7 +550,7 @@ impl CircuitEquationModel {
 ///
 /// Note: the adaptive time-stepping can produce a lot of simulated time-points,
 /// so `adaptive_time_stepping = false` should be used to avoid unwieldly large outputs
-/// 
+///
 /// # Arguments
 /// * `coils` - Coils data structure containing either current or voltage waveforms
 /// * `passives` - Passives
@@ -635,8 +635,10 @@ pub fn solve_circuit_equations(
                 .get_or_insert("simulated")
                 .insert("time", calculated_times.clone());
         } else {
-            passives.results
-                .get_or_insert(&passive_name).get_or_insert("i_filaments")
+            passives
+                .results
+                .get_or_insert(&passive_name)
+                .get_or_insert("i_filaments")
                 .get_or_insert("simulated")
                 .insert("time", times_to_solve_ndarray.clone());
         }

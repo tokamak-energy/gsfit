@@ -14,10 +14,18 @@ def get_database_reader(method: str) -> DatabaseReaderProtocol:
         from .st40_mdsplus import DatabaseReaderSt40MDSplus
 
         return DatabaseReaderSt40MDSplus()
+    elif method == "st40_mdsplus_full_ip_rog":
+        from .st40_mdsplus_full_ip_rog import DatabaseReaderSt40MDSplus
+
+        return DatabaseReaderSt40MDSplus()
     elif method == "st40_astra_mdsplus":
         from .st40_astra_mdsplus import DatabaseReaderST40AstraMDSplus
 
         return DatabaseReaderST40AstraMDSplus()
+    elif method == "st40_spider_mdsplus":
+        from .st40_spider_mdsplus import DatabaseReader
+
+        return DatabaseReader()
     elif method == "freegs":
         from .freegs import DatabaseReaderFreeGS
 

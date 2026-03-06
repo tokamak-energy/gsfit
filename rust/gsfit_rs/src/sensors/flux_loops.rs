@@ -15,6 +15,7 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::time;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const PI: f64 = std::f64::consts::PI;
@@ -498,7 +499,13 @@ impl FluxLoops {
             self.results
                 .get_or_insert(sensor_name)
                 .get_or_insert("psi")
-                .insert("measured", measured_this_sensor);
+                .get_or_insert("measured")
+                .insert("value", measured_this_sensor);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("psi")
+                .get_or_insert("measured")
+                .insert("time", times_to_reconstruct.clone());
         }
 
         // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
@@ -523,12 +530,14 @@ impl FluxLoops {
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(&sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = [n_pf]
             let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("measured").get("value").unwrap_array2(); // shape = [n_time, n_pf]
-            let n_time: usize = coil_currents.len_of(Axis(0));
+            // let n_time: usize = coil_currents.len_of(Axis(0));
 
             // Plasma
             let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1(); // shape = [n_z*n_r]
             let j_2d: Array3<f64> = plasma.results.get("two_d").get("j").unwrap_array3(); // shape = [n_time, n_z, n_r]
             let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
+            let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
+            let n_time: usize = time.len();
 
             // Loop over time
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -568,7 +577,13 @@ impl FluxLoops {
             self.results
                 .get_or_insert(&sensor_name)
                 .get_or_insert("psi")
-                .insert("calculated", sensor_values);
+                .get_or_insert("calculated")
+                .insert("value", sensor_values);
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("psi")
+                .get_or_insert("calculated")
+                .insert("time", time.clone());
         }
     }
 }

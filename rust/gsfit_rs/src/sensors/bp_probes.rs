@@ -168,7 +168,11 @@ impl BpProbes {
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = (n_pf)
             let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("simulated").get("value").unwrap_array2(); // shape = (n_time, n_pf)
-            let n_time: usize = coil_currents.len_of(Axis(0));
+            // let n_time: usize = coil_currents.len_of(Axis(0));
+
+            let pf_names: Vec<String> = coils.results.get("pf").keys();
+            let simulated_time: Array1<f64> = coils.results.get("pf").get(&pf_names[0]).get("i").get("simulated").get("time").unwrap_array1();
+            let n_time: usize = simulated_time.len();
 
             // Loop over time
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -183,12 +187,17 @@ impl BpProbes {
                 sensor_values[i_time] = sensor_value_from_coils + sensor_value_from_passives;
             }
 
-            // Store this sensor
+            // Store simulated sensor values
             self.results
                 .get_or_insert(&sensor_name)
                 .get_or_insert("b")
                 .get_or_insert("simulated")
                 .insert("value", sensor_values);
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("simulated")
+                .insert("time", simulated_time.clone());
         }
     }
 
@@ -385,6 +394,11 @@ impl BpProbes {
                 .get_or_insert("b")
                 .get_or_insert("measured")
                 .insert("value", measured_this_sensor);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("measured")
+                .insert("time", times_to_reconstruct.clone());
         }
 
         // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
@@ -410,12 +424,14 @@ impl BpProbes {
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(&sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = [n_pf]
             let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("measured").get("value").unwrap_array2(); // shape = [n_time, n_pf]
-            let n_time: usize = coil_currents.len_of(Axis(0));
+            // let n_time: usize = coil_currents.len_of(Axis(0));
 
             // Plasma
             let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1(); // shape = [n_z*n_r]
             let j_2d: Array3<f64> = plasma.results.get("two_d").get("j").unwrap_array3(); // shape = [n_time, n_z, n_r]
             let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
+            let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
+            let n_time: usize = time.len();
 
             // Loop over time
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -457,6 +473,11 @@ impl BpProbes {
                 .get_or_insert("b")
                 .get_or_insert("calculated")
                 .insert("value", sensor_values);
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("calculated")
+                .insert("time", time.clone());
         }
     }
 
