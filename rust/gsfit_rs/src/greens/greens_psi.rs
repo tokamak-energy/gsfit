@@ -8,7 +8,7 @@ use physical_constants;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
-use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind // converting to python data types
+use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 

@@ -1,20 +1,23 @@
 use crate::grad_shafranov::GsSolution;
 use crate::greens::mutual_inductance_finite_size_to_finite_size;
+use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use lapack::*;
-use ndarray::{Array1, Array2, Array3, s};
+use ndarray::{Array1, Array2, Array3, Axis, s};
 use ndarray_linalg::Norm;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
 use numpy::{PyArray1, PyArray2, PyArray3};
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyDict, PyList};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass]
+#[pyclass(module = "gsfit_rs")]
 pub struct Passives {
     pub results: DataTree,
 }
@@ -255,6 +258,50 @@ impl Passives {
 
         return string_output;
     }
+
+    /// Python pickling method
+    fn __getstate__(&self, py: Python) -> PyResult<Py<PyAny>> {
+        // Create a Python dictionary, which will be pickled
+        let state_dict: Bound<'_, PyDict> = PyDict::new(py);
+
+        // Store the self.results DataTree under "results" key
+        let results_dict: Py<PyDict> = data_tree_to_py_dict(py, &self.results).expect("Failed to convert DataTree to PyDict");
+        state_dict.set_item("results", results_dict).expect("Failed to add `results` key to dictionary");
+
+        // Store `gsfit_rs` version
+        state_dict
+            .set_item("version", env!("CARGO_PKG_VERSION"))
+            .expect("Failed to add `version` key to dictionary");
+
+        // Store current datetime as Unix timestamp (seconds since epoch)
+        let system_time_now: SystemTime = SystemTime::now();
+        let datetime: f64 = system_time_now
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs_f64())
+            .expect("Failed to get current datetime");
+        state_dict
+            .set_item("pickled_datetime", datetime)
+            .expect("Failed to add `pickled_datetime` key to dictionary");
+
+        Ok(state_dict.into())
+    }
+
+    /// Python unpickling method
+    fn __setstate__(&mut self, state: Bound<'_, PyDict>) -> PyResult<()> {
+        // Extract the "results" key and convert back to DataTree
+        let results_dict: Bound<'_, PyAny> = state
+            .get_item("results")
+            .expect("Missing 'results' key in pickled data")
+            .ok_or_else(|| PyTypeError::new_err("Missing 'results' key in pickled data"))
+            .expect("Failed to get `results` from pickled data");
+        let results_dict_bound: &Bound<'_, PyDict> = results_dict.downcast::<PyDict>().expect("Failed to downcast `results` to PyDict");
+
+        // Insert into self
+        self.results = py_dict_to_data_tree(results_dict_bound).expect("Failed to convert PyDict to DataTree");
+
+        // Return Ok to signal successful completion, no "data" returned
+        Ok(())
+    }
 }
 
 /// Rust only methods (either because we want to keep the methods private
@@ -399,6 +446,34 @@ impl Passives {
         };
 
         return passive_geometry_all;
+    }
+
+    pub fn get_passive_filament_currents_from_simulated(&self) -> Array2<f64> {
+        let passive_names: Vec<String> = self.results.keys();
+        let n_passive_filaments: usize = self.get_n_passive_filaments();
+        let n_time: usize = self
+            .results
+            .get(&passive_names[0])
+            .get("i_filaments")
+            .get("simulated")
+            .get("time")
+            .unwrap_array1()
+            .len();
+
+        // Collect the passive filament currents
+        let mut passive_currents: Array2<f64> = Array2::from_elem((n_time, n_passive_filaments), f64::NAN);
+        let mut i_start: usize = 0;
+        let mut i_end: usize;
+        for passive_name in &passive_names {
+            let passive_currents_local: Array2<f64> = self.results.get(passive_name).get("i_filaments").get("simulated").get("value").unwrap_array2();
+
+            i_end = i_start + passive_currents_local.len_of(Axis(1));
+            passive_currents.slice_mut(s![.., i_start..i_end]).assign(&passive_currents_local);
+            i_start = i_end;
+        }
+
+        // Return the passive filament currents
+        passive_currents
     }
 }
 

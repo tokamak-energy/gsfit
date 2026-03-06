@@ -1,9 +1,10 @@
 use super::SensorsDynamic;
-use crate::Plasma;
 use crate::coils::Coils;
 use crate::greens::greens_b;
 use crate::greens::greens_psi;
 use crate::passives::Passives;
+use crate::plasma::Plasma;
+use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::SensorsStatic;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use ndarray::{Array1, Array2, Array3, Axis, s};
@@ -11,13 +12,15 @@ use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyDict, PyList};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass]
+#[pyclass(module = "gsfit_rs")]
 pub struct Isoflux {
     pub results: DataTree,
 }
@@ -532,6 +535,50 @@ impl Isoflux {
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
         return string_output;
+    }
+
+    /// Python pickling method
+    pub fn __getstate__(&self, py: Python) -> PyResult<Py<PyAny>> {
+        let state_dict: Bound<'_, PyDict> = PyDict::new(py);
+        let results_dict: Py<PyDict> = data_tree_to_py_dict(py, &self.results).expect("Failed to convert DataTree to PyDict");
+        state_dict.set_item("results", results_dict).expect("Failed to add `results` key to dictionary");
+        state_dict
+            .set_item("version", env!("CARGO_PKG_VERSION"))
+            .expect("Failed to add `version` key to dictionary");
+        let system_time_now: SystemTime = SystemTime::now();
+        let datetime: f64 = system_time_now
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs_f64())
+            .expect("Failed to get current datetime");
+        state_dict
+            .set_item("pickled_datetime", datetime)
+            .expect("Failed to add `pickled_datetime` key to dictionary");
+        Ok(state_dict.into())
+    }
+
+    /// Python unpickling method
+    pub fn __setstate__(&mut self, state: Bound<'_, PyDict>) -> PyResult<()> {
+        let current_version: &str = env!("CARGO_PKG_VERSION");
+        let pickled_version: String = state
+            .get_item("version")
+            .ok()
+            .flatten()
+            .and_then(|v| v.extract::<String>().ok())
+            .expect("Pickled Isoflux object has no version information");
+        if pickled_version != current_version {
+            eprintln!(
+                "Warning: Unpickling Isoflux object created with gsfit_rs v{}, but current version is v{}",
+                pickled_version, current_version
+            );
+        }
+        let results_dict: Bound<'_, PyAny> = state
+            .get_item("results")
+            .expect("Missing 'results' key in pickled data")
+            .ok_or_else(|| PyTypeError::new_err("Missing 'results' key in pickled data"))
+            .expect("Failed to get `results` from pickled data");
+        let results_dict_bound: &Bound<'_, PyDict> = results_dict.downcast::<PyDict>().expect("Failed to downcast `results` to PyDict");
+        self.results = py_dict_to_data_tree(results_dict_bound).expect("Failed to convert PyDict to DataTree");
+        Ok(())
     }
 }
 

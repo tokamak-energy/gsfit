@@ -58,8 +58,8 @@
     "P108": {
         "fit_settings": {
             "expected_value": 0.001666667,
-            "weight": 0.0,
-            "include": false,
+            "weight": 0.2,
+            "include": true,
             "comment": ""
         }
     },
@@ -74,16 +74,16 @@
     "P110": {
         "fit_settings": {
             "expected_value": 0.001666667,
-            "weight": 0.0,
-            "include": false,
+            "weight": 0.5,
+            "include": true,
             "comment": ""
         }
     },
     "P111": {
         "fit_settings": {
             "expected_value": 0.001682883,
-            "weight": 0.0,
-            "include": false,
+            "weight": 0.2,
+            "include": true,
             "comment": ""
         }
     },
@@ -106,7 +106,7 @@
     "P114": {
         "fit_settings": {
             "expected_value": 0.00574388,
-            "weight": 0.2,
+            "weight": 1.0,
             "include": true,
             "comment": ""
         }
@@ -122,16 +122,16 @@
     "P116": {
         "fit_settings": {
             "expected_value": 0.008938699,
-            "weight": 0.0,
-            "include": false,
+            "weight": 1.0,
+            "include": true,
             "comment": ""
         }
     },
     "P117": {
         "fit_settings": {
             "expected_value": 0.010049853,
-            "weight": 0.0,
-            "include": false,
+            "weight": 1.0,
+            "include": true,
             "comment": ""
         }
     },
@@ -154,7 +154,7 @@
     "P120": {
         "fit_settings": {
             "expected_value": 0.010474212,
-            "weight": 0.0,
+            "weight": 1.0,
             "include": true,
             "comment": ""
         }
@@ -178,8 +178,8 @@
     "P123": {
         "fit_settings": {
             "expected_value": 0.004608339,
-            "weight": 0.0,
-            "include": false,
+            "weight": 0.2,
+            "include": true,
             "comment": ""
         }
     },
@@ -250,16 +250,16 @@
     "P132": {
         "fit_settings": {
             "expected_value": 0.014577528,
-            "weight": 0.0,
-            "include": false,
+            "weight": 1.0,
+            "include": true,
             "comment": ""
         }
     },
     "P133": {
         "fit_settings": {
             "expected_value": 0.023541206,
-            "weight": 0.0,
-            "include": false,
+            "weight": 1.0,
+            "include": true,
             "comment": ""
         }
     },

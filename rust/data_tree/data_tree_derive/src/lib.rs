@@ -8,9 +8,10 @@ use syn::{Data, DeriveInput, Fields, parse_macro_input};
 /// - get_array1(&self, keys: Vec<String>, py: Python) -> Py<PyArray1<f64>>
 /// - get_array2(&self, keys: Vec<String>, py: Python) -> Py<PyArray2<f64>>
 /// - get_array3(&self, keys: Vec<String>, py: Python) -> Py<PyArray3<f64>>
-/// - get_f64(&self, keys: Vec<String>) -> f64
-/// - get_usize(&self, keys: Vec<String>) -> usize
 /// - get_bool(&self, keys: Vec<String>) -> bool
+/// - get_f64(&self, keys: Vec<String>) -> f64
+/// - get_string(&self, keys: Vec<String>) -> String // TODO
+/// - get_usize(&self, keys: Vec<String>) -> usize
 /// - get_vec_bool(&self, keys: Vec<String>, py: Python) -> Py<PyList>
 /// - get_vec_usize(&self, keys: Vec<String>, py: Python) -> Py<PyList>
 /// - keys(&self, py: Python, key_path: Option<&Bound<'_, PyList>>) -> Py<PyList>
@@ -117,6 +118,20 @@ pub fn add_data_tree_getters(input: TokenStream) -> TokenStream {
                 return result_accumulator.unwrap_f64();
             }
 
+            // Get String
+            pub fn get_string(&self, keys: Vec<String>) -> String {
+                // Start with the root accumulator
+                let mut result_accumulator: DataTreeAccumulator<'_> = self.results.get(&keys[0]);
+
+                // Traverse the keys to reach the desired value
+                for key in &keys[1..] {
+                    result_accumulator = result_accumulator.get(key);
+                }
+
+                // Unwrap the String, and return
+                return result_accumulator.unwrap_string();
+            }
+
             /// Get usize value and return a int
             pub fn get_usize(&self, keys: Vec<String>) -> usize {
                 // Start with the root accumulator
@@ -186,6 +201,32 @@ pub fn add_data_tree_getters(input: TokenStream) -> TokenStream {
                 };
                 let result: Py<PyList> = PyList::new(py, keys).unwrap().into();
                 return result;
+            }
+
+            /// Remove a nested key from the DataTree
+            ///
+            /// # Arguments
+            /// * `keys` - A list of keys to traverse (e.g., ["pf", "SOL"] to remove results["pf"]["SOL"])
+            pub fn pop(&mut self, keys: Vec<String>) {
+                if keys.is_empty() {
+                    panic!("pop requires at least one key");
+                }
+
+                if keys.len() == 1 {
+                    // Pop from root level
+                    self.results.pop(&keys[0]);
+                } else {
+                    // Navigate to parent node (all keys except last)
+                    let parent_keys = &keys[..keys.len()-1];
+                    let last_key = &keys[keys.len()-1];
+
+                    // Get mutable reference to parent and pop the last key
+                    let mut parent = self.results.get_or_insert(&parent_keys[0]);
+                    for key in &parent_keys[1..] {
+                        parent = parent.get_or_insert(key);
+                    }
+                    parent.pop(last_key);
+                }
             }
 
             /// Print keys to screen, to be used within Python

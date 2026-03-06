@@ -1,4 +1,4 @@
-use crate::Plasma;
+use crate::plasma::Plasma;
 use crate::coils::Coils;
 use crate::greens::greens_d_b_d_z;
 use crate::greens::greens_b;
@@ -14,7 +14,7 @@ use pyo3::types::PyList;
 use numpy::borrow::PyReadonlyArray1;
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass]
+#[pyclass(module = "gsfit_rs")]
 pub struct HallProbes {
     pub results: DataTree,
 }

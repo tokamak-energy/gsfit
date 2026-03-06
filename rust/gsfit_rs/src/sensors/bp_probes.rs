@@ -1,8 +1,10 @@
-use crate::Plasma;
 use crate::coils::Coils;
 use crate::greens::greens_b;
 use crate::greens::greens_d_b_d_z;
+use crate::passives::PassiveGeometryAll;
 use crate::passives::Passives;
+use crate::plasma::Plasma;
+use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
@@ -11,11 +13,13 @@ use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyDict, PyList};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass]
+#[pyclass(module = "gsfit_rs")]
 pub struct BpProbes {
     pub results: DataTree,
 }
@@ -88,12 +92,17 @@ impl BpProbes {
             .get_or_insert("fit_settings")
             .insert("weight", fit_settings_weight);
 
-        // Measurements
-        self.results.get_or_insert(name).get_or_insert("b").insert("time_experimental", time_ndarray);
+        // Experimental measurements
         self.results
             .get_or_insert(name)
             .get_or_insert("b")
-            .insert("measured_experimental", measured_ndarray);
+            .get_or_insert("experimental")
+            .insert("time", time_ndarray);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("b")
+            .get_or_insert("experimental")
+            .insert("value", measured_ndarray);
     }
 
     /// Greens with coils
@@ -134,6 +143,64 @@ impl BpProbes {
         self.calculate_sensor_values_rs(coils_rs, passives_rs, plasma_rs);
     }
 
+    /// Calculate sensor values
+    pub fn calculate_sensor_values_vacuum(&mut self, coils: PyRef<Coils>, passives: PyRef<Passives>) {
+        // TODO: this should be combined with `calculate_sensor_values`
+
+        let passives_geometry: PassiveGeometryAll = passives.get_all_passive_filament_geometry();
+        let passives_r: Array1<f64> = passives_geometry.r;
+        let passives_z: Array1<f64> = passives_geometry.z;
+
+        let passive_currents: Array2<f64> = passives.get_passive_filament_currents_from_simulated();
+        for sensor_name in &self.results.keys() {
+            let sensor_r: f64 = self.results.get(sensor_name).get("geometry").get("r").unwrap_f64();
+            let sensor_z: f64 = self.results.get(sensor_name).get("geometry").get("z").unwrap_f64();
+            let sensor_angle_pol: f64 = self.results.get(sensor_name).get("geometry").get("angle_pol").unwrap_f64();
+            let sensor_r_array: Array1<f64> = Array1::from_vec(vec![sensor_r]);
+            let sensor_z_array: Array1<f64> = Array1::from_vec(vec![sensor_z]);
+
+            // Calculate Greens:  g_br.shape() = (1, n_passives);  g_bz.shape() = (1, n_passives)
+            let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(sensor_r_array, sensor_z_array, passives_r.clone(), passives_z.clone());
+            let g_br: Array1<f64> = g_br.sum_axis(Axis(0));
+            let g_bz: Array1<f64> = g_bz.sum_axis(Axis(0));
+            let g: Array1<f64> = g_br * sensor_angle_pol.cos() + g_bz * sensor_angle_pol.sin(); // shape = (n_passives)
+
+            // Coils
+            let g_with_coils: Array1<f64> = self.results.get(sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = (n_pf)
+            let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("simulated").get("value").unwrap_array2(); // shape = (n_time, n_pf)
+            // let n_time: usize = coil_currents.len_of(Axis(0));
+
+            let pf_names: Vec<String> = coils.results.get("pf").keys();
+            let simulated_time: Array1<f64> = coils.results.get("pf").get(&pf_names[0]).get("i").get("simulated").get("time").unwrap_array1();
+            let n_time: usize = simulated_time.len();
+
+            // Loop over time
+            let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+            for i_time in 0..n_time {
+                // PF coil
+                let sensor_value_from_coils: f64 = g_with_coils.dot(&coil_currents.slice(s![i_time, ..]));
+
+                // Passives
+                let sensor_value_from_passives: f64 = g.dot(&passive_currents.slice(s![i_time, ..]));
+
+                // Total
+                sensor_values[i_time] = sensor_value_from_coils + sensor_value_from_passives;
+            }
+
+            // Store simulated sensor values
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("simulated")
+                .insert("value", sensor_values);
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("simulated")
+                .insert("time", simulated_time.clone());
+        }
+    }
+
     /// Print to screen, to be used within Python
     pub fn __repr__(&self) -> String {
         let version: &str = env!("CARGO_PKG_VERSION");
@@ -149,6 +216,50 @@ impl BpProbes {
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
         return string_output;
+    }
+
+    /// Python pickling method
+    fn __getstate__(&self, py: Python) -> PyResult<Py<PyAny>> {
+        // Create a Python dictionary, which will be pickled
+        let state_dict: Bound<'_, PyDict> = PyDict::new(py);
+
+        // Store the self.results DataTree under "results" key
+        let results_dict: Py<PyDict> = data_tree_to_py_dict(py, &self.results).expect("Failed to convert DataTree to PyDict");
+        state_dict.set_item("results", results_dict).expect("Failed to add `results` key to dictionary");
+
+        // Store `gsfit_rs` version
+        state_dict
+            .set_item("version", env!("CARGO_PKG_VERSION"))
+            .expect("Failed to add `version` key to dictionary");
+
+        // Store current datetime as Unix timestamp (seconds since epoch)
+        let system_time_now: SystemTime = SystemTime::now();
+        let datetime: f64 = system_time_now
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs_f64())
+            .expect("Failed to get current datetime");
+        state_dict
+            .set_item("pickled_datetime", datetime)
+            .expect("Failed to add `pickled_datetime` key to dictionary");
+
+        Ok(state_dict.into())
+    }
+
+    /// Python unpickling method
+    fn __setstate__(&mut self, state: Bound<'_, PyDict>) -> PyResult<()> {
+        // Extract the "results" key and convert back to DataTree
+        let results_dict: Bound<'_, PyAny> = state
+            .get_item("results")
+            .expect("Missing 'results' key in pickled data")
+            .ok_or_else(|| PyTypeError::new_err("Missing 'results' key in pickled data"))
+            .expect("Failed to get `results` from pickled data");
+        let results_dict_bound: &Bound<'_, PyDict> = results_dict.downcast::<PyDict>().expect("Failed to downcast `results` to PyDict");
+
+        // Insert into self
+        self.results = py_dict_to_data_tree(results_dict_bound).expect("Failed to convert PyDict to DataTree");
+
+        // Return Ok to signal successful completion, no "data" returned
+        Ok(())
     }
 }
 
@@ -264,17 +375,15 @@ impl BpProbes {
             let sensor_name: &str = &sensor_names_all[i_sensor];
 
             // Measured values
-            let time_experimental: Array1<f64> = self.results.get(sensor_name).get("b").get("time_experimental").unwrap_array1();
-            let measured_experimental: Array1<f64> = self.results.get(sensor_name).get("b").get("measured_experimental").unwrap_array1();
+            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("b").get("experimental").get("time").unwrap_array1();
+            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("b").get("experimental").get("value").unwrap_array1();
 
             // Create the interpolator
-            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
-                .expect("BpProbes.split_into_static_and_dynamic: Can't make interpolator");
+            let interpolator: interpolation::Dim1Linear =
+                interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone()).expect("Can't make interpolator");
 
             // Do the interpolation
-            let measured_this_sensor: Array1<f64> = interpolator
-                .interpolate_array1(&times_to_reconstruct)
-                .expect("BpProbes.split_into_static_and_dynamic: Can't do interpolation");
+            let measured_this_sensor: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct).expect("Can't do interpolation");
 
             // Store for later
             measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_sensor);
@@ -283,7 +392,13 @@ impl BpProbes {
             self.results
                 .get_or_insert(sensor_name)
                 .get_or_insert("b")
-                .insert("measured", measured_this_sensor);
+                .get_or_insert("measured")
+                .insert("value", measured_this_sensor);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("measured")
+                .insert("time", times_to_reconstruct.clone());
         }
 
         // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
@@ -308,13 +423,15 @@ impl BpProbes {
         for sensor_name in self.results.keys() {
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(&sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = [n_pf]
-            let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("measured").unwrap_array2(); // shape = [n_time, n_pf]
-            let n_time: usize = coil_currents.len_of(Axis(0));
+            let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("measured").get("value").unwrap_array2(); // shape = [n_time, n_pf]
+            // let n_time: usize = coil_currents.len_of(Axis(0));
 
             // Plasma
             let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1(); // shape = [n_z*n_r]
             let j_2d: Array3<f64> = plasma.results.get("two_d").get("j").unwrap_array3(); // shape = [n_time, n_z, n_r]
             let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
+            let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
+            let n_time: usize = time.len();
 
             // Loop over time
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -351,7 +468,16 @@ impl BpProbes {
             }
 
             // Store this sensor
-            self.results.get_or_insert(&sensor_name).get_or_insert("b").insert("calculated", sensor_values);
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("calculated")
+                .insert("value", sensor_values);
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("calculated")
+                .insert("time", time.clone());
         }
     }
 
@@ -395,8 +521,16 @@ impl BpProbes {
             .insert("weight", fit_settings_weight);
 
         // Measurements
-        self.results.get_or_insert(name).get_or_insert("b").insert("time_experimental", time);
-        self.results.get_or_insert(name).get_or_insert("b").insert("measured_experimental", measured);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("b")
+            .get_or_insert("experimental")
+            .insert("time", time);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("b")
+            .get_or_insert("experimental")
+            .insert("value", measured);
     }
 
     pub fn greens_with_coils_rs(&mut self, coils: Coils) {

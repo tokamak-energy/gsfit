@@ -701,6 +701,10 @@ impl DataTree {
         self.data.insert(key.to_string(), value.into());
     }
 
+    pub fn pop(&mut self, key: &str) -> Option<DataValue> {
+        self.data.remove(key)
+    }
+
     pub fn get<'a>(&'a self, key: &str) -> DataTreeAccumulator<'a> {
         DataTreeAccumulator::new(self, vec![key.to_string()])
     }

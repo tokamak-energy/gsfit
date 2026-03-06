@@ -1,4 +1,3 @@
-import typing
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -78,27 +77,27 @@ def map_results_to_database(
     bp_names = bp_probes.keys()
     bp_names = [bp_name.replace("P", "B_BPPROBE_") for bp_name in bp_names]
     results["CONSTRAINTS"]["BPPROBE"]["NAME"] = bp_names  # shape = [n_sensors]
-    results["CONSTRAINTS"]["BPPROBE"]["CVALUE"] = bp_probes.get_array2(["*", "b", "calculated"])  # shape = [n_time, n_sensors]
+    results["CONSTRAINTS"]["BPPROBE"]["CVALUE"] = bp_probes.get_array2(["*", "b", "calculated", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["BPPROBE"]["INCLUDE"] = np.array(bp_probes.get_vec_bool(["*", "fit_settings", "include"]))
-    results["CONSTRAINTS"]["BPPROBE"]["MVALUE"] = bp_probes.get_array2(["*", "b", "measured"])  # shape = [n_time, n_sensors]
+    results["CONSTRAINTS"]["BPPROBE"]["MVALUE"] = bp_probes.get_array2(["*", "b", "measured", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["BPPROBE"]["WEIGHT"] = bp_probes.get_array1(["*", "fit_settings", "weight"])  # shape = [n_sensors]
 
     # Flux loops (note, this is all the sensors, both the ones we fit and the ones we don't)
     fl_names = flux_loops.keys()
     fl_names = [fl_name.replace("L", "PSI_FLOOP_") for fl_name in fl_names]
     results["CONSTRAINTS"]["FLOOP"]["NAME"] = fl_names  # shape = [n_sensors]
-    results["CONSTRAINTS"]["FLOOP"]["CVALUE"] = flux_loops.get_array2(["*", "psi", "calculated"])  # shape = [n_time, n_sensors]
+    results["CONSTRAINTS"]["FLOOP"]["CVALUE"] = flux_loops.get_array2(["*", "psi", "calculated", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["FLOOP"]["INCLUDE"] = np.array(flux_loops.get_vec_bool(["*", "fit_settings", "include"]))
-    results["CONSTRAINTS"]["FLOOP"]["MVALUE"] = flux_loops.get_array2(["*", "psi", "measured"])  # shape = [n_time, n_sensors]
+    results["CONSTRAINTS"]["FLOOP"]["MVALUE"] = flux_loops.get_array2(["*", "psi", "measured", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["FLOOP"]["WEIGHT"] = flux_loops.get_array1(["*", "fit_settings", "weight"])  # shape = [n_sensors]
 
     # Rogowski coils (note, this is all the sensors, both the ones we fit and the ones we don't)
     rog_names = rogowski_coils.keys()
     rog_names = [f"I_ROG_{rog_name}" for rog_name in rog_names]
     results["CONSTRAINTS"]["ROG"]["NAME"] = rog_names  # shape = [n_sensors]
-    results["CONSTRAINTS"]["ROG"]["CVALUE"] = rogowski_coils.get_array2(["*", "i", "calculated"])  # shape = [n_time, n_sensors]
+    results["CONSTRAINTS"]["ROG"]["CVALUE"] = rogowski_coils.get_array2(["*", "i", "calculated", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["ROG"]["INCLUDE"] = np.array(rogowski_coils.get_vec_bool(["*", "fit_settings", "include"]))
-    results["CONSTRAINTS"]["ROG"]["MVALUE"] = rogowski_coils.get_array2(["*", "i", "measured"])  # shape = [n_time, n_sensors]
+    results["CONSTRAINTS"]["ROG"]["MVALUE"] = rogowski_coils.get_array2(["*", "i", "measured", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["ROG"]["WEIGHT"] = rogowski_coils.get_array1(["*", "fit_settings", "weight"])  # shape = [n_sensors]
 
     # Plasma boundary

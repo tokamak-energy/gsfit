@@ -8,8 +8,8 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
     let bp_probe_names: Vec<String> = bp_probes.results.keys();
     let n_bp_probes: usize = bp_probe_names.len();
     if n_bp_probes > 0 {
-        let bp_probes_measured: Array2<f64> = bp_probes.results.get("*").get("b").get("measured").unwrap_array2();
-        let bp_probes_calculated: Array2<f64> = bp_probes.results.get("*").get("b").get("calculated").unwrap_array2();
+        let bp_probes_measured: Array2<f64> = bp_probes.results.get("*").get("b").get("measured").get("value").unwrap_array2();
+        let bp_probes_calculated: Array2<f64> = bp_probes.results.get("*").get("b").get("calculated").get("value").unwrap_array2();
         let bp_probes_weight: Array1<f64> = bp_probes.results.get("*").get("fit_settings").get("weight").unwrap_array1();
         let bp_probes_expected_value: Array1<f64> = bp_probes.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
         let bp_probes_include: Vec<bool> = bp_probes.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
@@ -28,8 +28,8 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
     let flux_loop_names: Vec<String> = flux_loops.results.keys();
     let n_flux_loops: usize = flux_loop_names.len();
     if n_flux_loops > 0 {
-        let flux_loops_measured: Array2<f64> = flux_loops.results.get("*").get("psi").get("measured").unwrap_array2();
-        let flux_loops_calculated: Array2<f64> = flux_loops.results.get("*").get("psi").get("calculated").unwrap_array2();
+        let flux_loops_measured: Array2<f64> = flux_loops.results.get("*").get("psi").get("measured").get("value").unwrap_array2();
+        let flux_loops_calculated: Array2<f64> = flux_loops.results.get("*").get("psi").get("calculated").get("value").unwrap_array2();
         let flux_loops_weight: Array1<f64> = flux_loops.results.get("*").get("fit_settings").get("weight").unwrap_array1();
         let flux_loops_expected_value: Array1<f64> = flux_loops.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
         let flux_loops_include: Vec<bool> = flux_loops.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
@@ -48,8 +48,8 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
     let rogowski_coil_names: Vec<String> = rogowski_coils.results.keys();
     let n_rogowski_coils: usize = rogowski_coil_names.len();
     if n_rogowski_coils > 0 {
-        let rogowski_coils_measured: Array2<f64> = rogowski_coils.results.get("*").get("i").get("measured").unwrap_array2();
-        let rogowski_coils_calculated: Array2<f64> = rogowski_coils.results.get("*").get("i").get("calculated").unwrap_array2();
+        let rogowski_coils_measured: Array2<f64> = rogowski_coils.results.get("*").get("i").get("measured").get("value").unwrap_array2();
+        let rogowski_coils_calculated: Array2<f64> = rogowski_coils.results.get("*").get("i").get("calculated").get("value").unwrap_array2();
         let rogowski_coils_weight: Array1<f64> = rogowski_coils.results.get("*").get("fit_settings").get("weight").unwrap_array1();
         let rogowski_coils_expected_value: Array1<f64> = rogowski_coils.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
         let rogowski_coils_include: Vec<bool> = rogowski_coils.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();

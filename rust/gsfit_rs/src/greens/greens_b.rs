@@ -42,6 +42,7 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// let r_prime: Array1<f64> = Array1::from(vec![5.0, 6.0]);
 /// let z_prime: Array1<f64> = Array1::from(vec![7.0, 8.0]);
 ///
+/// // Calculate Greens, with shape = (n_rz, n_rz_prime)
 /// let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(r, z, r_prime, z_prime);
 ///
 /// println!("g_br: {:?}", g_br);
