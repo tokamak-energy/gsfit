@@ -2,7 +2,6 @@ use crate::coils::Coils;
 use crate::greens::mutual_inductance_finite_size_to_finite_size;
 use crate::passives::PassiveGeometryAll;
 use crate::passives::Passives;
-use crate::sensors::{BpProbes, FluxLoops, RogowskiCoils};
 use diffsol::{NalgebraMat, NalgebraVec, OdeBuilder, OdeSolverMethod, Vector, VectorHost};
 use ndarray::{Array1, Array2, Axis, concatenate, s};
 use ndarray_linalg::Solve;

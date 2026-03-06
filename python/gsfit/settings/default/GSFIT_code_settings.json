@@ -12,7 +12,7 @@
                 "mag": {
                     "pulseNo": null,
                     "run_name": "BEST",
-                    "usage": "Magneitc sensors geometry and measured values"
+                    "usage": "Magnetic sensors geometry and measured values"
                 },
                 "psu2coil": {
                     "pulseNo": null,
@@ -32,7 +32,7 @@
                 "mag": {
                     "pulseNo": null,
                     "run_name": "BEST",
-                    "usage": "Magneitc sensors geometry and measured values"
+                    "usage": "Magnetic sensors geometry and measured values"
                 },
                 "psu2coil": {
                     "pulseNo": null,
@@ -56,12 +56,12 @@
                 "mag": {
                     "pulseNo": null,
                     "run_name": "BEST",
-                    "usage": "Magneitc sensors geometry"
+                    "usage": "Magnetic sensors geometry"
                 },
                 "astra": {
                     "pulseNo": null,
                     "run_name": "RUN202",
-                    "usage": "PF and TF measured values, and magneitc sensors measured values"
+                    "usage": "PF and TF measured values, and magnetic sensors measured values"
                 }
             }
         }
