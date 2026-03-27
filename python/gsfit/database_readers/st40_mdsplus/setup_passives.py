@@ -7,11 +7,11 @@ from gsfit_rs import Passives
 from st40_database import GetData  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderSt40MDSplus
+    from . import DatabaseReader
 
 
 def setup_passives(
-    self: "DatabaseReaderSt40MDSplus",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
 ) -> Passives:

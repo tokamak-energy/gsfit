@@ -95,10 +95,10 @@ def solve_circuit_equations(
 ) -> None:
     """
     Solves the circuit equations
-    
+
     Note: the adaptive time-stepping can produce a lot of simulated time-points,
     so `adaptive_time_stepping = False` should be used to avoid unwieldly large outputs
-    
+
     :param coils: Coils data structure containing either current or voltage waveforms, note this is mutated and contains the solution
     :param passives: Passives object, note this is mutated and contains the solution
     :param times_to_solve: Times to solve the circuit equations at [second]
@@ -639,7 +639,7 @@ class LiuqePolynomial(DataTreeAccessor):
         :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values [dimensionless]
         """
         ...
-        
+
 class TensionedCubicBSpline(DataTreeAccessor):
     def __new__(
         cls,

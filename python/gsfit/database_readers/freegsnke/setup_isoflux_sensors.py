@@ -9,11 +9,11 @@ from gsfit_rs import Isoflux
 from shapely.geometry import LineString  # type: ignore
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGSNKE
+    from . import DatabaseReader
 
 
 def setup_isoflux_sensors(
-    self: "DatabaseReaderFreeGSNKE",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     times_to_reconstruct: npt.NDArray[np.float64],

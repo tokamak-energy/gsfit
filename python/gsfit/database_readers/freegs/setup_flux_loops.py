@@ -7,11 +7,11 @@ import numpy.typing as npt
 from gsfit_rs import FluxLoops
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGS
+    from . import DatabaseReader
 
 
 def setup_flux_loops(
-    self: "DatabaseReaderFreeGS",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     time: npt.NDArray[np.float64],
@@ -23,7 +23,7 @@ def setup_flux_loops(
     :param pulseNo: Pulse number, used to read from the database
     :param settings: Dictionary containing the JSON settings read from the `settings` directory
     :param time: Measured time vector
-    :param freegsnke_eqs: List of FreeGS equilibrium objects, one for each time-slice
+    :param freegs_eqs: List of FreeGS equilibrium objects, one for each time-slice
 
     **This method is specific to FreeGS.**
 
@@ -69,7 +69,7 @@ def setup_flux_loops(
                 fit_settings_include = False
                 fit_settings_weight = np.nan
 
-            # Add the sensor to the BpProbes class
+            # Add the sensor to the FluxLoops class
             flux_loops.add_sensor(
                 name=sensor_name,
                 geometry_r=r,

@@ -45,151 +45,152 @@ def dividing_parallograms(coil_dictionary) -> tuple[int, int]:
     ndivh = int(sh)
     return ndivw, ndivh
 
+
 def calculate_coil_filament_positions(coil_dictionary) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """
-    Calculate the coil filament positions from the coil description dictionary.
+        Calculate the coil filament positions from the coil description dictionary.
 
-    :param coil_dictionary: Dictionary containing the coil description
-    :return: Tuple of numpy arrays containing the r and z positions of the coil filaments
+        :param coil_dictionary: Dictionary containing the coil description
+        :return: Tuple of numpy arrays containing the r and z positions of the coil filaments
 
-    ```
-C**************************************************************
-C        SUBROUTINE FOR DIVIDING OF PARALLELOGRAM
-C                ( FOR PFC CROSS-SECTION )
-C**************************************************************
-C  INPUT DATE:
-C  ----------
-C   RC,ZC - CILINDER COORDINATES OF CENTER OF PARALLELOGRAM
-C   WC    - PROJECTION OF THE FIRST SIDE OF PARALLELOGRAM
-C           ON AXIS "R" (IN METER)
-C   HC    - PROJECTION OF THE SECOND SIDE OF PARALLELOGRAM
-C           ON AXIS "Z" (IN METER)
-C   AWC   - ANGLE BETWEEN THE FIRST SIDE OF PARAL. AND
-C           AXIS "R" (IN DEGREES, IT MUST NOT BE EQUAL 90 ,
-C                                 IT MUST BE :  -90 < AWC < 90 )
-C   AHC   - ANGLE BETWEEN THE SECOND SIDE OF PARAL. AND
-C           AXIS "R" (IN DEGREES, IT MUST NOT BE EQUAL 0 ,
-C                                 IT MUST BE :  0 < AHC < 180 )
-C   CURC  - CURRENT OF PARALLELOGRAM (IN MA)
-C   NDIV  - APPROXIMATE NUMBER OF CELLS OF DIVIDING:
-C           NDIV=0 - A SPECIAL CASE: AUTOMATICALLY NDIVRE=1,
-C                    RS(1)=RC, ZS(1)=ZC, PS=CURC
-C           IF NDIV > 0 THEN WE HAVE THE MOST TOTAL ALGORITHM OF
-C                            DIVIDING
-C           IF NDIV < 0 THEN NDIVW AND NDIVH ARE CUT OFF BY ABS(NDIV)
-C
-C  OUTPUT DATE:
-C  ----------
-C   NDIVRE      - REAL NUMBER OF CELLS OF DIVIDING ( = NDIVW*NDIVH )
-C   NDIVW       - NUMBER OF DIVIDING OF THE FIRST  SIDE OF PARAL.
-C   NDIVH       - NUMBER OF DIVIDING OF THE SECOND SIDE OF PARAL.
-C   RS(L),ZS(L) - CILINDER COORDINATES OF CENTERS OF CELLS OF DIVIDING
-C                 L = 1,2,...,NDIVRE ! (IN METER)
-C   PS          - CURRENT OF EVERY CELL OF DIVIDING  (IN MA)
-C   VERS - VERTICAL (OR LINEAR, OR RADIUS) SIZE OF CELL CROSS-S.
-C   HORS - HORIZONTAL SIZE OF CELL CROSS-SECTION
-C
-C**************************************************************
-C
-        SUBROUTINE DIVPAR( RC, ZC, WC, HC, AWC, AHC, CURC, NDIV,
-     *                     NDIVRE, NDIVW, NDIVH, RS, ZS, PS,
-     *                     VERS, HORS )
-C
-C
-       include 'double.inc'
-C
-        DIMENSION  RS(1), ZS(1)
-C
-C**************************************************************
-                SIN(X) = DSIN(X)
-                COS(X) = DCOS(X)
-               ATAN(X) = DATAN(X)
-               SQRT(X) = DSQRT(X)
-C**************************************************************
-C
-       IF(NDIV.EQ.0) THEN
-          NDIVW  = 1
-          NDIVH  = 1
-          NDIVRE = 1
-          RS(1)  = RC
-          ZS(1)  = ZC
-          PS     = CURC
-          VERS   = HC
-          HORS   = WC
-          RETURN
-       END IF
-C***************************************
-C
-       IF(AHC.LT.0) AHC = AHC + 180.
-C
-       IF(NDIV.GE.0) THEN
-          NDIVA =  NDIV
-       ELSE
-          NDIVA = -NDIV
-       END IF
-C***************************************
-C   PARAMETERS OF PARALLELOGRAM
-C
-       XX    = 1.
-       PI    = 4.*ATAN(XX)
-C
-       AWCR  = AWC * PI /180.
-       AHCR  = AHC * PI /180.
-C
-       R0    = RC - 0.5*( WC + HC * COS(AHCR)/SIN(AHCR) )
-       Z0    = ZC - 0.5*( HC + WC * SIN(AWCR)/COS(AWCR) )
-C
-       WSIZE = WC / COS(AWCR)
-       HSIZE = HC / SIN(AHCR)
-C
-       WR    = WC
-       WZ    = WC * SIN(AWCR) / COS(AWCR)
-       HR    = HC * COS(AHCR) / SIN(AHCR)
-       HZ    = HC
-C***************************************
-C   CALCULATION  NDIVW, NDIVH, NDIVRE, PS
-C
-       SW    = SQRT( NDIVA*WSIZE/HSIZE )
-       SH    = SQRT( NDIVA*HSIZE/WSIZE )
-       SW    = SW + 0.5
-       SH    = SH + 0.5
-C
-       NDIVW = IDINT(SW)
-       NDIVH = IDINT(SH)
-C
-       IF(NDIVW.EQ.0)  NDIVW = 1
-       IF(NDIVH.EQ.0)  NDIVH = 1
-C
-       IF((NDIV.LT.0).AND.(NDIVW.GT.NDIVA)) NDIVW = NDIVA
-       IF((NDIV.LT.0).AND.(NDIVH.GT.NDIVA)) NDIVH = NDIVA
-C
-       NDIVRE = NDIVW * NDIVH
-       PS     = CURC / NDIVRE
-C***************************************
-C   CALCULATION  RS(L), ZS(L) : L = 1,2,...,NDIVRE
-C
-       WR  = WR / NDIVW
-       WZ  = WZ / NDIVW
-       HR  = HR / NDIVH
-       HZ  = HZ / NDIVH
-C
-       HORS = WR
-       VERS = HZ
-C
-       RS(1) = R0 + 0.5*(WR + HR)
-       ZS(1) = Z0 + 0.5*(WZ + HZ)
-C
-      DO 1 I=1,NDIVW
-      DO 1 J=1,NDIVH
-         L     = (I-1)*NDIVH + J
-         RS(L) = RS(1) + (I-1)*WR + (J-1)*HR
-         ZS(L) = ZS(1) + (I-1)*WZ + (J-1)*HZ
-    1 CONTINUE
-C***************************************
-C
-        RETURN
-        END
-    ```
+        ```
+    C**************************************************************
+    C        SUBROUTINE FOR DIVIDING OF PARALLELOGRAM
+    C                ( FOR PFC CROSS-SECTION )
+    C**************************************************************
+    C  INPUT DATE:
+    C  ----------
+    C   RC,ZC - CILINDER COORDINATES OF CENTER OF PARALLELOGRAM
+    C   WC    - PROJECTION OF THE FIRST SIDE OF PARALLELOGRAM
+    C           ON AXIS "R" (IN METER)
+    C   HC    - PROJECTION OF THE SECOND SIDE OF PARALLELOGRAM
+    C           ON AXIS "Z" (IN METER)
+    C   AWC   - ANGLE BETWEEN THE FIRST SIDE OF PARAL. AND
+    C           AXIS "R" (IN DEGREES, IT MUST NOT BE EQUAL 90 ,
+    C                                 IT MUST BE :  -90 < AWC < 90 )
+    C   AHC   - ANGLE BETWEEN THE SECOND SIDE OF PARAL. AND
+    C           AXIS "R" (IN DEGREES, IT MUST NOT BE EQUAL 0 ,
+    C                                 IT MUST BE :  0 < AHC < 180 )
+    C   CURC  - CURRENT OF PARALLELOGRAM (IN MA)
+    C   NDIV  - APPROXIMATE NUMBER OF CELLS OF DIVIDING:
+    C           NDIV=0 - A SPECIAL CASE: AUTOMATICALLY NDIVRE=1,
+    C                    RS(1)=RC, ZS(1)=ZC, PS=CURC
+    C           IF NDIV > 0 THEN WE HAVE THE MOST TOTAL ALGORITHM OF
+    C                            DIVIDING
+    C           IF NDIV < 0 THEN NDIVW AND NDIVH ARE CUT OFF BY ABS(NDIV)
+    C
+    C  OUTPUT DATE:
+    C  ----------
+    C   NDIVRE      - REAL NUMBER OF CELLS OF DIVIDING ( = NDIVW*NDIVH )
+    C   NDIVW       - NUMBER OF DIVIDING OF THE FIRST  SIDE OF PARAL.
+    C   NDIVH       - NUMBER OF DIVIDING OF THE SECOND SIDE OF PARAL.
+    C   RS(L),ZS(L) - CILINDER COORDINATES OF CENTERS OF CELLS OF DIVIDING
+    C                 L = 1,2,...,NDIVRE ! (IN METER)
+    C   PS          - CURRENT OF EVERY CELL OF DIVIDING  (IN MA)
+    C   VERS - VERTICAL (OR LINEAR, OR RADIUS) SIZE OF CELL CROSS-S.
+    C   HORS - HORIZONTAL SIZE OF CELL CROSS-SECTION
+    C
+    C**************************************************************
+    C
+            SUBROUTINE DIVPAR( RC, ZC, WC, HC, AWC, AHC, CURC, NDIV,
+         *                     NDIVRE, NDIVW, NDIVH, RS, ZS, PS,
+         *                     VERS, HORS )
+    C
+    C
+           include 'double.inc'
+    C
+            DIMENSION  RS(1), ZS(1)
+    C
+    C**************************************************************
+                    SIN(X) = DSIN(X)
+                    COS(X) = DCOS(X)
+                   ATAN(X) = DATAN(X)
+                   SQRT(X) = DSQRT(X)
+    C**************************************************************
+    C
+           IF(NDIV.EQ.0) THEN
+              NDIVW  = 1
+              NDIVH  = 1
+              NDIVRE = 1
+              RS(1)  = RC
+              ZS(1)  = ZC
+              PS     = CURC
+              VERS   = HC
+              HORS   = WC
+              RETURN
+           END IF
+    C***************************************
+    C
+           IF(AHC.LT.0) AHC = AHC + 180.
+    C
+           IF(NDIV.GE.0) THEN
+              NDIVA =  NDIV
+           ELSE
+              NDIVA = -NDIV
+           END IF
+    C***************************************
+    C   PARAMETERS OF PARALLELOGRAM
+    C
+           XX    = 1.
+           PI    = 4.*ATAN(XX)
+    C
+           AWCR  = AWC * PI /180.
+           AHCR  = AHC * PI /180.
+    C
+           R0    = RC - 0.5*( WC + HC * COS(AHCR)/SIN(AHCR) )
+           Z0    = ZC - 0.5*( HC + WC * SIN(AWCR)/COS(AWCR) )
+    C
+           WSIZE = WC / COS(AWCR)
+           HSIZE = HC / SIN(AHCR)
+    C
+           WR    = WC
+           WZ    = WC * SIN(AWCR) / COS(AWCR)
+           HR    = HC * COS(AHCR) / SIN(AHCR)
+           HZ    = HC
+    C***************************************
+    C   CALCULATION  NDIVW, NDIVH, NDIVRE, PS
+    C
+           SW    = SQRT( NDIVA*WSIZE/HSIZE )
+           SH    = SQRT( NDIVA*HSIZE/WSIZE )
+           SW    = SW + 0.5
+           SH    = SH + 0.5
+    C
+           NDIVW = IDINT(SW)
+           NDIVH = IDINT(SH)
+    C
+           IF(NDIVW.EQ.0)  NDIVW = 1
+           IF(NDIVH.EQ.0)  NDIVH = 1
+    C
+           IF((NDIV.LT.0).AND.(NDIVW.GT.NDIVA)) NDIVW = NDIVA
+           IF((NDIV.LT.0).AND.(NDIVH.GT.NDIVA)) NDIVH = NDIVA
+    C
+           NDIVRE = NDIVW * NDIVH
+           PS     = CURC / NDIVRE
+    C***************************************
+    C   CALCULATION  RS(L), ZS(L) : L = 1,2,...,NDIVRE
+    C
+           WR  = WR / NDIVW
+           WZ  = WZ / NDIVW
+           HR  = HR / NDIVH
+           HZ  = HZ / NDIVH
+    C
+           HORS = WR
+           VERS = HZ
+    C
+           RS(1) = R0 + 0.5*(WR + HR)
+           ZS(1) = Z0 + 0.5*(WZ + HZ)
+    C
+          DO 1 I=1,NDIVW
+          DO 1 J=1,NDIVH
+             L     = (I-1)*NDIVH + J
+             RS(L) = RS(1) + (I-1)*WR + (J-1)*HR
+             ZS(L) = ZS(1) + (I-1)*WZ + (J-1)*HZ
+        1 CONTINUE
+    C***************************************
+    C
+            RETURN
+            END
+        ```
     """
 
     # Extract required parameters
@@ -488,9 +489,9 @@ def setup_coils(
     )
 
     # Add TF coil
-    bt_vac = conn.get(f"\\ASTRA::TOP.{astra_run_name}.GLOBAL:BTVAC").data().astype(np.float64) # time-dependent
+    bt_vac = conn.get(f"\\ASTRA::TOP.{astra_run_name}.GLOBAL:BTVAC").data().astype(np.float64)  # time-dependent
     r_reference = 0.5
-    i_rod = bt_vac * (2.0 * np.pi * r_reference) / mu_0 # time-dependent
+    i_rod = bt_vac * (2.0 * np.pi * r_reference) / mu_0  # time-dependent
     coils.add_tf_coil(
         time=time,
         measured=i_rod,

@@ -74,7 +74,7 @@ def map_results_to_database(
     results["GLOBAL"]["XPT_DIVERTED"] = np.array(plasma.get_vec_bool(["global", "xpt_diverted"])).astype(np.int32)
 
     # Bp probes (note, this is all the sensors, both the ones we fit and the ones we don't)
-    bp_names = bp_probes.keys() # list of strings; len(bp_names) = n_sensors
+    bp_names = bp_probes.keys()  # list of strings; len(bp_names) = n_sensors
     bp_names = [bp_name.replace("P", "B_BPPROBE_") for bp_name in bp_names]
     results["CONSTRAINTS"]["BPPROBE"]["NAME"] = np.array(bp_names)  # MDSplus requires numpy objects, not lists of strings; shape = [n_sensors]
     results["CONSTRAINTS"]["BPPROBE"]["CVALUE"] = bp_probes.get_array2(["*", "b", "calculated", "value"])  # shape = [n_time, n_sensors]
@@ -83,7 +83,7 @@ def map_results_to_database(
     results["CONSTRAINTS"]["BPPROBE"]["WEIGHT"] = bp_probes.get_array1(["*", "fit_settings", "weight"])  # shape = [n_sensors]
 
     # Flux loops (note, this is all the sensors, both the ones we fit and the ones we don't)
-    fl_names = flux_loops.keys() # list of strings; len(fl_names) = n_sensors
+    fl_names = flux_loops.keys()  # list of strings; len(fl_names) = n_sensors
     fl_names = [fl_name.replace("L", "PSI_FLOOP_") for fl_name in fl_names]
     results["CONSTRAINTS"]["FLOOP"]["NAME"] = np.array(fl_names)  # MDSplus requires numpy objects, not lists of strings; shape = [n_sensors]
     results["CONSTRAINTS"]["FLOOP"]["CVALUE"] = flux_loops.get_array2(["*", "psi", "calculated", "value"])  # shape = [n_time, n_sensors]
@@ -92,7 +92,7 @@ def map_results_to_database(
     results["CONSTRAINTS"]["FLOOP"]["WEIGHT"] = flux_loops.get_array1(["*", "fit_settings", "weight"])  # shape = [n_sensors]
 
     # Rogowski coils (note, this is all the sensors, both the ones we fit and the ones we don't)
-    rog_names = rogowski_coils.keys() # list of strings; len(rog_names) = n_sensors
+    rog_names = rogowski_coils.keys()  # list of strings; len(rog_names) = n_sensors
     rog_names = [f"I_ROG_{rog_name}" for rog_name in rog_names]
     results["CONSTRAINTS"]["ROG"]["NAME"] = np.array(rog_names)  # MDSplus requires numpy objects, not lists of strings; shape = [n_sensors]
     results["CONSTRAINTS"]["ROG"]["CVALUE"] = rogowski_coils.get_array2(["*", "i", "calculated", "value"])  # shape = [n_time, n_sensors]
@@ -172,8 +172,12 @@ def map_results_to_database(
             results["PASSIVES"]["IVC"]["GEOMETRY"]["R"] = passives.get_array1(["IVC", "geometry", "r"])
             results["PASSIVES"]["IVC"]["GEOMETRY"]["Z"] = passives.get_array1(["IVC", "geometry", "z"])
         else:
-            results["PASSIVES"][passive_name]["DOF"]["CONSTANT_J"]["CVALUE"] = passives.get_array1([passive_name, "dof", "constant_current_density", "calculated"])
-            results["PASSIVES"][passive_name]["DOF"]["CONSTANT_J"]["I_DIST"] = passives.get_array1([passive_name, "dof", "constant_current_density", "current_distribution"])
+            results["PASSIVES"][passive_name]["DOF"]["CONSTANT_J"]["CVALUE"] = passives.get_array1(
+                [passive_name, "dof", "constant_current_density", "calculated"]
+            )
+            results["PASSIVES"][passive_name]["DOF"]["CONSTANT_J"]["I_DIST"] = passives.get_array1(
+                [passive_name, "dof", "constant_current_density", "current_distribution"]
+            )
             results["PASSIVES"][passive_name]["GEOMETRY"]["ANGLE_1"] = passives.get_array1([passive_name, "geometry", "angle_1"])
             results["PASSIVES"][passive_name]["GEOMETRY"]["ANGLE_2"] = passives.get_array1([passive_name, "geometry", "angle_2"])
             results["PASSIVES"][passive_name]["GEOMETRY"]["D_R"] = passives.get_array1([passive_name, "geometry", "d_r"])

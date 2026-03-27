@@ -8,11 +8,11 @@ from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # 
 from gsfit_rs import Pressure
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGSNKE
+    from . import DatabaseReader
 
 
 def setup_pressure_sensors(
-    self: "DatabaseReaderFreeGSNKE",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     time: npt.NDArray[np.float64],

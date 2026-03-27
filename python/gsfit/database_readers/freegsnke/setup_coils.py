@@ -9,11 +9,11 @@ from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # 
 from gsfit_rs import Coils
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGSNKE
+    from . import DatabaseReader
 
 
 def setup_coils(
-    self: "DatabaseReaderFreeGSNKE",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     time: npt.NDArray[np.float64],

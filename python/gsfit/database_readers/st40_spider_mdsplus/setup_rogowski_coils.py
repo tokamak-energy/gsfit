@@ -83,11 +83,11 @@ def setup_rogowski_coils(
             measured = measurements[:, index].squeeze()
 
             if sensor_name == "INIVC000":
-                measured = measured*0.0 + 436_884.0 + 11.0 * 2.0 * -.00012086e6
+                measured = measured * 0.0 + 436_884.0 + 11.0 * 2.0 * -0.00012086e6
             if sensor_name == "BVLB" or sensor_name == "BVLT":
-                measured = measured*0.0 -9059.47387218 * 4.0 * 4.0
+                measured = measured * 0.0 - 9059.47387218 * 4.0 * 4.0
             if sensor_name == "DIVT" or sensor_name == "DIVB":
-                measured = measured*0.0 + 6946.69410586 * 4.0 * 7.0
+                measured = measured * 0.0 + 6946.69410586 * 4.0 * 7.0
 
             # ASTRA does not include gaps in Rogowski coils
             gaps_r = np.array([])

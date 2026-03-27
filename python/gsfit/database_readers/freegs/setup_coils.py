@@ -7,11 +7,11 @@ import numpy.typing as npt
 from gsfit_rs import Coils
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGS
+    from . import DatabaseReader
 
 
 def setup_coils(
-    self: "DatabaseReaderFreeGS",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     time: npt.NDArray[np.float64],
@@ -23,7 +23,7 @@ def setup_coils(
     :param pulseNo: Pulse number, used to read from the database
     :param settings: Dictionary containing the JSON settings read from the `settings` directory
 
-    **This method is specific to ST40's experimental MDSplus database.**
+    **This method is specific to FreeGS.**
 
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """

@@ -9,11 +9,11 @@ from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # 
 from gsfit_rs import Plasma
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGSNKE
+    from . import DatabaseReader
 
 
 def setup_plasma(
-    self: "DatabaseReaderFreeGSNKE",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     time: npt.NDArray[np.float64],
@@ -98,7 +98,6 @@ def setup_plasma(
         ff_prime_source_function = gsfit_rs.TensionedCubicBSpline(regularisations, interior_knots, interval_tensions)
     else:
         raise ValueError(f"Unknown method for ff_prime source function: {settings['source_function_ff_prime.json']['method']}")
-
 
     # Grid size and shape
     n_r = settings["GSFIT_code_settings.json"]["grid"]["n_r"]

@@ -7,11 +7,11 @@ import numpy.typing as npt
 from gsfit_rs import BpProbes
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGS
+    from . import DatabaseReader
 
 
 def setup_bp_probes(
-    self: "DatabaseReaderFreeGS",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     time: npt.NDArray[np.float64],

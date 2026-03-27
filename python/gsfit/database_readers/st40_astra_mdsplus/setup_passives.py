@@ -34,7 +34,7 @@ def setup_passives(
     passives_data = astra_passives_reader()
 
     for passive_name, data in passives_data.items():
-        if passive_name == "ERINGT" or passive_name == "ERINGB": #  or passive_name == "MCTCASE" or passive_name == "MCBCASE"
+        if passive_name == "ERINGT" or passive_name == "ERINGB":  #  or passive_name == "MCTCASE" or passive_name == "MCBCASE"
             continue  # skip to the next passive
 
         if passive_name == "GASBFLB" or passive_name == "GASBFLT":

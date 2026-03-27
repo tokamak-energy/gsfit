@@ -9,6 +9,7 @@ from gsfit_rs import IsofluxBoundary
 from gsfit_rs import StationaryPoint
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
+from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
 from gsfit_rs import solve_grad_shafranov
 
@@ -21,6 +22,7 @@ from gsfit_rs import solve_grad_shafranov
 # 2. rogowski_coil = plasma current
 # 3. pressure[rho=0] ?
 # 4. ? BT at given R; f=R*BT ?
+
 
 def run() -> None:
     # Make a Helmholtz PF coil
@@ -121,6 +123,7 @@ def run() -> None:
     )
 
     passives = Passives()
+    pressure_sensors = Pressure()
 
     # Greens with coils
     plasma.greens_with_coils(coils)
@@ -129,6 +132,7 @@ def run() -> None:
     rogowski_coils.greens_with_coils(coils)
     isoflux.greens_with_coils(coils)
     isoflux_boundary.greens_with_coils(coils)
+    pressure_sensors.greens_with_coils(coils)
     stationary_point.greens_with_coils(coils)
 
     # Greens with passives
@@ -138,6 +142,7 @@ def run() -> None:
     rogowski_coils.greens_with_passives(passives)
     isoflux.greens_with_passives(passives)
     isoflux_boundary.greens_with_passives(passives)
+    pressure_sensors.greens_with_passives(passives)
     stationary_point.greens_with_passives(passives)
 
     # Greens with plasma
@@ -146,6 +151,7 @@ def run() -> None:
     rogowski_coils.greens_with_plasma(plasma)
     isoflux.greens_with_plasma(plasma)
     isoflux_boundary.greens_with_plasma(plasma)
+    pressure_sensors.greens_with_plasma(plasma)
     stationary_point.greens_with_plasma(plasma)
 
     solve_grad_shafranov(
@@ -157,6 +163,7 @@ def run() -> None:
         rogowski_coils=rogowski_coils,
         isoflux=isoflux,
         isoflux_boundary=isoflux_boundary,
+        pressure_sensors=pressure_sensors,
         stationary_point=stationary_point,
         times_to_reconstruct=np.array([0.5]),
         n_iter_max=30,
@@ -184,7 +191,10 @@ def run() -> None:
     plt.plot(boundary_r, boundary_z, color="red")
     plt.plot()
     plt.savefig("self_test_output.png")
-    import pdb; pdb.set_trace()
+    import pdb
+
+    pdb.set_trace()
+
 
 if __name__ == "__main__":
     run()
