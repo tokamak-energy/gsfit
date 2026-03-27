@@ -29,7 +29,7 @@ jobs:
           command: sdist
           args: --out dist
       - name: Upload sdist to artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-sdist
           path: dist
@@ -99,7 +99,7 @@ jobs:
             maturin build --release --features vendored-openssl -i python3.12
             maturin build --release --features vendored-openssl -i python3.13
       - name: Upload wheels to artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux
           path: rust/target/wheels/
@@ -116,7 +116,7 @@ jobs:
         with:
           python-version: '3.13'
       - name: Download built wheels
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: wheels-linux
       - name: List files
@@ -192,7 +192,7 @@ jobs:
               write(nb, f)
           PY
       - name: Upload executed notebook artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: linux_jupyter_notebooks
           path: examples/artifacts/
@@ -236,7 +236,7 @@ jobs:
           maturin build --release -i python3.12
           maturin build --release -i python3.13
       - name: Upload wheels to artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-macos
           path: rust/target/wheels/
@@ -253,7 +253,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Download built wheels
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: wheels-macos
       - name: List files
@@ -361,7 +361,7 @@ jobs:
           maturin build --release -i python3.12
           maturin build --release -i python3.13
       - name: Upload wheels to artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-windows
           path: rust/target/wheels/
@@ -378,7 +378,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Download built wheels
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: wheels-windows
       - name: List files
@@ -429,7 +429,7 @@ jobs:
       attestations: write
     steps:
       - name: Download all artifacts (wheels-linux and sdist)
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v4
         with:
