@@ -1,0 +1,18 @@
+{
+  "BDA_PRESSURE_001": {
+    "fit_settings": {
+      "comment": "inbord measurement",
+      "expected_value": 80000.0,
+      "include": false,
+      "weight": 10.0
+    }
+  },
+  "BDA_PRESSURE_002": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": 80000.0,
+      "include": false,
+      "weight": 10.0
+    }
+  }
+}

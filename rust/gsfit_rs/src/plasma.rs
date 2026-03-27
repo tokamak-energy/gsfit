@@ -872,8 +872,6 @@ impl Plasma {
     }
 
     pub fn equilibrium_post_processor(&mut self, gs_solutions: &mut Vec<GsSolution>, coils: &Coils, plasma: &Plasma) {
-        // TODO: epp fails if there are no time-slices, e.g. if we set:
-        // ["GSFIT_code_settings.json"]["timeslices"]["user_defined"] = []
         println!("equilibrium_post_processor: starting");
 
         let n_time: usize = gs_solutions.len();
@@ -1435,142 +1433,6 @@ fn epp_bt_vac_at_r_geo(i_rod: f64, r_geo: f64) -> f64 {
     return bt_vac_at_r_geo;
 }
 
-// fn epp_clean_boundary(gs_solution: &GsSolution) -> (Array1<f64>, Array1<f64>) {
-//     let boundary_r: Array1<f64> = gs_solution.boundary_r.to_owned();
-//     let boundary_z: Array1<f64> = gs_solution.boundary_z.to_owned();
-//     let mag_axis_r: f64 = gs_solution.r_mag;
-//     let mag_axis_z: f64 = gs_solution.z_mag;
-//     let xpt_r: f64 = gs_solution.bounding_r;
-//     let xpt_z: f64 = gs_solution.bounding_z;
-
-//     // Draw a horizontal line, starting at the magnetic axis, ending +1m away on the LFS
-//     // TODO: improve the +1m, this could fail for large tokamaks!!
-//     let line_along_mag_axis: Line = Line::new((mag_axis_r, mag_axis_z), (mag_axis_r + 1.0, mag_axis_z)); // Horizontal line
-
-//     // Find outboard mid-plane
-//     // Find the intersection of the boundary with the horizontal line
-//     // let mut intersection_points: Vec<(f64, f64)> = Vec::new();
-//     let mut index_outboard: usize = 0;
-//     let n_points: usize = boundary_r.len();
-//     for i_point in 0..n_points - 1 {
-//         let r1 = boundary_r[i_point];
-//         let z1 = boundary_z[i_point];
-//         let r2 = boundary_r[i_point + 1];
-//         let z2 = boundary_z[i_point + 1];
-
-//         // Use the geo crate to calculate the intersection
-//         let boundary_line: Line = Line::new((r1, z1), (r2, z2));
-
-//         // this only "unwraps" when the lines intersect!
-//         if let Some(intersection_between_boundary_and_horizontal_line) = line_intersection(boundary_line, line_along_mag_axis) {
-//             if let LineIntersection::SinglePoint { intersection, .. } = intersection_between_boundary_and_horizontal_line {
-//                 let r: f64 = intersection.x;
-//                 if r > mag_axis_r {
-//                     index_outboard = i_point;
-//                     break;
-//                 }
-//             }
-//         }
-//     }
-
-//     // Find the point nearest to the x-point
-//     // TODO: WRONG! this should be either above or below the x-point, depending on the x-point z-sign
-//     let mut nearest_distance: f64 = f64::MAX;
-//     // let mut index_nearest_to_xpt: usize = 0;
-//     let n_points: usize = boundary_r.len();
-//     let mut point_nearest_to_xpt_r: f64 = f64::NAN;
-//     let mut point_nearest_to_xpt_z: f64 = f64::NAN;
-//     for i_point in 0..n_points {
-//         let r: f64 = boundary_r[i_point];
-//         let z: f64 = boundary_z[i_point];
-//         let distance: f64 = ((r - xpt_r).powi(2) + (z - xpt_z).powi(2)).sqrt();
-//         if distance < nearest_distance {
-//             nearest_distance = distance;
-//             point_nearest_to_xpt_r = r;
-//             point_nearest_to_xpt_z = z;
-//         }
-//     }
-
-//     // Go in one direction to the x-point
-//     let mut tmp_r: Vec<f64> = boundary_r.clone().to_vec();
-//     let mut tmp_z: Vec<f64> = boundary_z.clone().to_vec();
-//     let mut final_direction_1_r: Vec<f64> = Vec::new();
-//     let mut final_direction_1_z: Vec<f64> = Vec::new();
-//     final_direction_1_r.push(tmp_r[index_outboard]);
-//     final_direction_1_z.push(tmp_z[index_outboard]);
-//     tmp_r.remove(index_outboard);
-//     tmp_z.remove(index_outboard);
-//     'looping_over_points: for _i_point in 0..n_points {
-//         // Find the index of the nearest point
-//         let mut nearest_distance: f64 = f64::MAX;
-//         let mut index: usize = 0;
-//         for i_point_min in 0..tmp_r.len() {
-//             let r: f64 = tmp_r[i_point_min];
-//             let z: f64 = tmp_z[i_point_min];
-//             let distance: f64 = ((r - final_direction_1_r.last().unwrap()).powi(2) + (z - final_direction_1_z.last().unwrap()).powi(2)).sqrt();
-//             if distance < nearest_distance {
-//                 nearest_distance = distance;
-//                 index = i_point_min;
-//             }
-//         }
-
-//         // Test if this point is the x-point
-//         if tmp_r.len() == 0 {
-//             // some sort of exception handeling??
-//             return (Array1::from_elem(0, f64::NAN), Array1::from_elem(0, f64::NAN));
-//         }
-//         if tmp_r[index] == point_nearest_to_xpt_r && tmp_z[index] == point_nearest_to_xpt_z {
-//             break 'looping_over_points;
-//         }
-
-//         // Add this point to the final list
-//         final_direction_1_r.push(tmp_r[index]);
-//         final_direction_1_z.push(tmp_z[index]);
-//         tmp_r.remove(index);
-//         tmp_z.remove(index);
-//     }
-
-//     // Go in other direction to the x-point
-//     let mut final_direction_2_r: Vec<f64> = Vec::new();
-//     let mut final_direction_2_z: Vec<f64> = Vec::new();
-//     final_direction_2_r.push(final_direction_1_r[0]);
-//     final_direction_2_z.push(final_direction_1_z[0]);
-//     'looping_over_points: for _i_point in 0..n_points {
-//         // Find the index of the nearest point
-//         let mut nearest_distance: f64 = f64::MAX;
-//         let mut index: usize = 0;
-//         for i_point_min in 0..tmp_r.len() {
-//             let r: f64 = tmp_r[i_point_min];
-//             let z: f64 = tmp_z[i_point_min];
-//             let distance: f64 = ((r - final_direction_2_r.last().unwrap()).powi(2) + (z - final_direction_2_z.last().unwrap()).powi(2)).sqrt();
-//             if distance < nearest_distance {
-//                 nearest_distance = distance;
-//                 index = i_point_min;
-//             }
-//         }
-
-//         // Test if this point is the x-point
-//         if tmp_r[index] == point_nearest_to_xpt_r && tmp_z[index] == point_nearest_to_xpt_z {
-//             break 'looping_over_points;
-//         }
-
-//         // Add this point to the final list
-//         final_direction_2_r.push(tmp_r[index]);
-//         final_direction_2_z.push(tmp_z[index]);
-//         tmp_r.remove(index);
-//         tmp_z.remove(index);
-//     }
-
-//     final_direction_2_r.reverse();
-//     final_direction_2_z.reverse();
-//     final_direction_1_r.extend(final_direction_2_r);
-//     final_direction_1_z.extend(final_direction_2_z);
-//     let boundary_r_clean: Array1<f64> = final_direction_1_r.into();
-//     let boundary_z_clean: Array1<f64> = final_direction_1_z.into();
-
-//     return (boundary_r_clean, boundary_z_clean);
-// }
-
 fn epp_f_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_b: f64, i_rod: f64) -> Array1<f64> {
     let n_psi_n: usize = psi_n.len();
 
@@ -1821,7 +1683,6 @@ fn epp_p_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>) -> Array
     let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
 
     let p_prime_dof_values: Array1<f64> = gs_solution.p_prime_dof_values.to_owned();
-    let n_p_prime_dof: usize = gs_solution.p_prime_source_function.source_function_n_dof();
 
     for i_r in 0..n_r {
         for i_z in 0..n_z {
@@ -1837,7 +1698,7 @@ fn epp_p_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>) -> Array
         }
     }
 
-    return p_2d;
+    p_2d
 }
 
 fn epp_hessian_matrix(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_r: usize, i_z: usize) -> (Array2<f64>, f64, f64) {
@@ -1865,8 +1726,6 @@ fn epp_hessian_matrix(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>
 }
 
 fn epp_p_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_b: f64) -> Array1<f64> {
-    // TODO: We might want to do some 2D interpolation
-
     let p_prime_dof_values: Array1<f64> = gs_solution.p_prime_dof_values.to_owned();
 
     // d(psi)/d(psi_n)
@@ -1875,34 +1734,8 @@ fn epp_p_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_
     // Integrate the source function
     let p_profile: Array1<f64> = gs_solution.p_prime_source_function.source_function_integral(psi_n, &p_prime_dof_values) / d_psi_d_psi_n;
 
-    return p_profile;
+    p_profile
 }
-
-// fn epp_plasma_volume(gs_solution: &GsSolution, r_geo: f64) -> f64 {
-//     let boundary_r: Array1<f64> = gs_solution.boundary_r.to_owned();
-//     let boundary_z: Array1<f64> = gs_solution.boundary_z.to_owned();
-//     let n_boundary_points = boundary_r.len();
-//     // Collect the coordinates
-//     let mut boundary_coordinates: Vec<Coord<f64>> = Vec::with_capacity(n_boundary_points);
-//     for i_boundary_point in 0..n_boundary_points {
-//         boundary_coordinates.push(Coord {
-//             x: boundary_r[i_boundary_point],
-//             y: boundary_z[i_boundary_point],
-//         });
-//     }
-
-//     // Construct the contour
-//     let boundary_contour: Polygon = Polygon::new(
-//         LineString::new(boundary_coordinates),
-//         vec![], // No holes
-//     );
-
-//     let cross_sectional_area: f64 = boundary_contour.unsigned_area();
-
-//     let volume: f64 = 2.0 * PI * r_geo * cross_sectional_area;
-
-//     return volume;
-// }
 
 fn epp_p_prime_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>) -> Array1<f64> {
     let p_prime_dof_values: Array1<f64> = gs_solution.p_prime_dof_values.to_owned();

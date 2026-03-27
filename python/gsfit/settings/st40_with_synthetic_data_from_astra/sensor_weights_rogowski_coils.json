@@ -10,16 +10,16 @@
     "MCT": {
         "fit_settings": {
             "expected_value": -5616.681085,
-            "weight": 1.0,
-            "include": false,
+            "weight": 1000.0,
+            "include": true,
             "comment": ""
         }
     },
     "MCB": {
         "fit_settings": {
             "expected_value": -5616.681085,
-            "weight": 1.0,
-            "include": false,
+            "weight": 1000.0,
+            "include": true,
             "comment": ""
         }
     },
@@ -59,7 +59,7 @@
         "fit_settings": {
             "expected_value": -927749.4327,
             "weight": 1000.0,
-            "include": false,
+            "include": true,
             "comment": "presently, I am not reconstructing the DIV cases, so makes no sense to include case Rogowski"
         }
     },
@@ -67,7 +67,7 @@
         "fit_settings": {
             "expected_value": -927749.4327,
             "weight": 1000.0,
-            "include": false,
+            "include": true,
             "comment": "presently, I am not reconstructing the DIV cases, so makes no sense to include case Rogowski"
         }
     },

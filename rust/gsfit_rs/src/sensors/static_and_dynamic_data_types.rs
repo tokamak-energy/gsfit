@@ -1,6 +1,6 @@
 use ndarray::{Array1, Array2};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SensorsStatic {
     pub greens_with_grid: Array2<f64>,            // shape = [n_z * n_r, n_sensors]
     pub greens_with_pf: Array2<f64>,              // shape = [n_pf, n_sensors]

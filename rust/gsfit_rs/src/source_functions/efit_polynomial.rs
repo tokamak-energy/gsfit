@@ -64,6 +64,7 @@ impl SourceFunctionTraits for EfitPolynomial {
     }
 
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
+        // Indefinate integral, so constant of integration mgiht need to be added
         let integral: Array1<f64> = (1.0 - psi_n / 2.0) * psi_n.mapv(|x| x.powi(i_dof as i32 + 1)) / (i_dof as f64 + 1.0);
         return integral;
     }

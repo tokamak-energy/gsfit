@@ -76,27 +76,27 @@ def map_results_to_database(
     # Bp probes (note, this is all the sensors, both the ones we fit and the ones we don't)
     bp_names = bp_probes.keys()
     bp_names = [bp_name.replace("P", "B_BPPROBE_") for bp_name in bp_names]
-    results["CONSTRAINTS"]["BPPROBE"]["NAME"] = bp_names  # shape = [n_sensors]
+    results["CONSTRAINTS"]["BPPROBE"]["NAME"] = np.array(bp_names)  # shape = [n_sensors]
     results["CONSTRAINTS"]["BPPROBE"]["CVALUE"] = bp_probes.get_array2(["*", "b", "calculated", "value"])  # shape = [n_time, n_sensors]
-    results["CONSTRAINTS"]["BPPROBE"]["INCLUDE"] = np.array(bp_probes.get_vec_bool(["*", "fit_settings", "include"]))
+    results["CONSTRAINTS"]["BPPROBE"]["INCLUDE"] = np.array(bp_probes.get_vec_bool(["*", "fit_settings", "include"])).astype(np.int32)
     results["CONSTRAINTS"]["BPPROBE"]["MVALUE"] = bp_probes.get_array2(["*", "b", "measured", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["BPPROBE"]["WEIGHT"] = bp_probes.get_array1(["*", "fit_settings", "weight"])  # shape = [n_sensors]
 
     # Flux loops (note, this is all the sensors, both the ones we fit and the ones we don't)
     fl_names = flux_loops.keys()
     fl_names = [fl_name.replace("L", "PSI_FLOOP_") for fl_name in fl_names]
-    results["CONSTRAINTS"]["FLOOP"]["NAME"] = fl_names  # shape = [n_sensors]
+    results["CONSTRAINTS"]["FLOOP"]["NAME"] = np.array(fl_names)  # shape = [n_sensors]
     results["CONSTRAINTS"]["FLOOP"]["CVALUE"] = flux_loops.get_array2(["*", "psi", "calculated", "value"])  # shape = [n_time, n_sensors]
-    results["CONSTRAINTS"]["FLOOP"]["INCLUDE"] = np.array(flux_loops.get_vec_bool(["*", "fit_settings", "include"]))
+    results["CONSTRAINTS"]["FLOOP"]["INCLUDE"] = np.array(flux_loops.get_vec_bool(["*", "fit_settings", "include"])).astype(np.int32)
     results["CONSTRAINTS"]["FLOOP"]["MVALUE"] = flux_loops.get_array2(["*", "psi", "measured", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["FLOOP"]["WEIGHT"] = flux_loops.get_array1(["*", "fit_settings", "weight"])  # shape = [n_sensors]
 
     # Rogowski coils (note, this is all the sensors, both the ones we fit and the ones we don't)
     rog_names = rogowski_coils.keys()
     rog_names = [f"I_ROG_{rog_name}" for rog_name in rog_names]
-    results["CONSTRAINTS"]["ROG"]["NAME"] = rog_names  # shape = [n_sensors]
+    results["CONSTRAINTS"]["ROG"]["NAME"] = np.array(rog_names)  # shape = [n_sensors]
     results["CONSTRAINTS"]["ROG"]["CVALUE"] = rogowski_coils.get_array2(["*", "i", "calculated", "value"])  # shape = [n_time, n_sensors]
-    results["CONSTRAINTS"]["ROG"]["INCLUDE"] = np.array(rogowski_coils.get_vec_bool(["*", "fit_settings", "include"]))
+    results["CONSTRAINTS"]["ROG"]["INCLUDE"] = np.array(rogowski_coils.get_vec_bool(["*", "fit_settings", "include"])).astype(np.int32)
     results["CONSTRAINTS"]["ROG"]["MVALUE"] = rogowski_coils.get_array2(["*", "i", "measured", "value"])  # shape = [n_time, n_sensors]
     results["CONSTRAINTS"]["ROG"]["WEIGHT"] = rogowski_coils.get_array1(["*", "fit_settings", "weight"])  # shape = [n_sensors]
 
@@ -136,22 +136,50 @@ def map_results_to_database(
     for passive_name in passives.keys():
         if passive_name == "IVC":
             results["PASSIVES"]["IVC"]["DOF"]["EIG_01"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_01", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_01"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_01", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_02"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_02", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_02"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_02", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_03"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_03", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_03"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_03", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_04"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_04", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_04"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_04", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_05"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_05", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_05"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_05", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_06"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_06", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_06"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_06", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_07"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_07", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_07"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_07", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_08"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_08", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_08"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_08", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_09"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_09", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_09"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_09", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_10"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_10", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_10"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_10", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_11"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_11", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_11"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_11", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_12"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_12", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_12"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_12", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_13"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_13", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_13"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_13", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_14"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_14", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_14"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_14", "current_distribution"])
             results["PASSIVES"]["IVC"]["DOF"]["EIG_15"]["CVALUE"] = passives.get_array1(["IVC", "dof", "eig_15", "calculated"])
-        elif passive_name == "OVC":
-            results["PASSIVES"]["OVC"]["DOF"]["CONSTANT_J"]["CVALUE"] = passives.get_array1(["OVC", "dof", "*", "calculated"])
+            results["PASSIVES"]["IVC"]["DOF"]["EIG_15"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_15", "current_distribution"])
+            results["PASSIVES"]["IVC"]["GEOMETRY"]["ANGLE_1"] = passives.get_array1(["IVC", "geometry", "angle_1"])
+            results["PASSIVES"]["IVC"]["GEOMETRY"]["ANGLE_2"] = passives.get_array1(["IVC", "geometry", "angle_2"])
+            results["PASSIVES"]["IVC"]["GEOMETRY"]["D_R"] = passives.get_array1(["IVC", "geometry", "d_r"])
+            results["PASSIVES"]["IVC"]["GEOMETRY"]["D_Z"] = passives.get_array1(["IVC", "geometry", "d_z"])
+            results["PASSIVES"]["IVC"]["GEOMETRY"]["R"] = passives.get_array1(["IVC", "geometry", "r"])
+            results["PASSIVES"]["IVC"]["GEOMETRY"]["Z"] = passives.get_array1(["IVC", "geometry", "z"])
+        else:
+            results["PASSIVES"][passive_name]["DOF"]["CONSTANT_J"]["CVALUE"] = passives.get_array1([passive_name, "dof", "constant_current_density", "calculated"])
+            results["PASSIVES"][passive_name]["DOF"]["CONSTANT_J"]["I_DIST"] = passives.get_array1([passive_name, "dof", "constant_current_density", "current_distribution"])
+            results["PASSIVES"][passive_name]["GEOMETRY"]["ANGLE_1"] = passives.get_array1([passive_name, "geometry", "angle_1"])
+            results["PASSIVES"][passive_name]["GEOMETRY"]["ANGLE_2"] = passives.get_array1([passive_name, "geometry", "angle_2"])
+            results["PASSIVES"][passive_name]["GEOMETRY"]["D_R"] = passives.get_array1([passive_name, "geometry", "d_r"])
+            results["PASSIVES"][passive_name]["GEOMETRY"]["D_Z"] = passives.get_array1([passive_name, "geometry", "d_z"])
+            results["PASSIVES"][passive_name]["GEOMETRY"]["R"] = passives.get_array1([passive_name, "geometry", "r"])
+            results["PASSIVES"][passive_name]["GEOMETRY"]["Z"] = passives.get_array1([passive_name, "geometry", "z"])
 
     # Store "WORKFLOW"
     database_reader_method = settings["GSFIT_code_settings.json"]["database_reader"]["method"]

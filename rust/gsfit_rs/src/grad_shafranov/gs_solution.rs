@@ -5,6 +5,7 @@ use crate::plasma_geometry;
 use crate::plasma_geometry::BoundaryContour;
 use crate::plasma_geometry::MagneticAxis;
 use crate::plasma_geometry::StationaryPoint;
+use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
 use crate::plasma_geometry::find_stationary_points;
@@ -14,6 +15,7 @@ use core::f64;
 use lapack::*;
 use ndarray::Axis;
 use ndarray::{Array1, Array2, Array3, s};
+use ndarray_stats::QuantileExt;
 use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
@@ -34,6 +36,8 @@ pub struct GsSolution<'a> {
     isoflux_dynamic: &'a SensorsDynamic,
     isoflux_boundary_static: &'a SensorsStatic,
     isoflux_boundary_dynamic: &'a SensorsDynamic,
+    pressure_sensors_static: &'a SensorsStatic,
+    pressure_sensors_dynamic: &'a SensorsDynamic,
     magnetic_axis_static: &'a SensorsStatic,
     magnetic_axis_dynamic: &'a SensorsDynamic,
     n_iter_max: usize,
@@ -88,6 +92,8 @@ impl<'a> GsSolution<'a> {
         isoflux_dynamic: &'a SensorsDynamic,
         isoflux_boundary_static: &'a SensorsStatic,
         isoflux_boundary_dynamic: &'a SensorsDynamic,
+        pressure_sensors_static: &'a SensorsStatic,
+        pressure_sensors_dynamic: &'a SensorsDynamic,
         magnetic_axis_static: &'a SensorsStatic,
         magnetic_axis_dynamic: &'a SensorsDynamic,
         n_iter_max: usize,
@@ -113,6 +119,8 @@ impl<'a> GsSolution<'a> {
             isoflux_dynamic,
             isoflux_boundary_static,
             isoflux_boundary_dynamic,
+            pressure_sensors_static,
+            pressure_sensors_dynamic,
             magnetic_axis_static,
             magnetic_axis_dynamic,
             n_iter_max,
@@ -202,6 +210,8 @@ impl<'a> GsSolution<'a> {
         let isoflux_static: &SensorsStatic = self.isoflux_static;
         let isoflux_dynamic: &SensorsDynamic = self.isoflux_dynamic;
         let isoflux_boundary_static: &SensorsStatic = self.isoflux_boundary_static;
+        let pressure_sensors_static: &SensorsStatic = self.pressure_sensors_static;
+        let pressure_sensors_dynamic: &SensorsDynamic = self.pressure_sensors_dynamic;
         let isoflux_boundary_dynamic: &SensorsDynamic = self.isoflux_boundary_dynamic;
         let magnetic_axis_static: &SensorsStatic = self.magnetic_axis_static;
         let magnetic_axis_dynamic: &SensorsDynamic = self.magnetic_axis_dynamic;
@@ -232,6 +242,7 @@ impl<'a> GsSolution<'a> {
         let n_rog: usize = rogowski_coils_dynamic.measured.len();
         let n_isoflux: usize = isoflux_dynamic.measured.len();
         let n_isoflux_boundary: usize = isoflux_boundary_dynamic.measured.len();
+        let n_pressure_sensors: usize = pressure_sensors_dynamic.measured.len();
         let n_magnetic_axis_constraints: usize = magnetic_axis_dynamic.measured.len();
         let n_p_prime_regularisation: usize = p_prime_source_function.source_function_regularisation().shape()[0];
         let n_ff_prime_regularisation: usize = ff_prime_source_function.source_function_regularisation().shape()[0];
@@ -243,6 +254,7 @@ impl<'a> GsSolution<'a> {
             + n_rog
             + n_isoflux
             + n_isoflux_boundary
+            + n_pressure_sensors
             + n_magnetic_axis_constraints
             + n_p_prime_regularisation
             + n_ff_prime_regularisation
@@ -314,6 +326,7 @@ impl<'a> GsSolution<'a> {
             let psi_2d: Array2<f64> = self.psi_2d.to_owned();
 
             // Apply the `delta_z` stabilisation
+            let d_r: f64 = r[1] - r[0];
             let d_z: f64 = z[1] - z[0];
             let d_bz_d_z_2d: Array2<f64>;
             if i_iter > n_iter_no_vertical_feedback + 1 {
@@ -775,6 +788,120 @@ impl<'a> GsSolution<'a> {
                 i_constraint += 1;
             }
 
+            // Add pressure_sensors to fitting matrix
+            // d(psi)/d(psi_n)
+            let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
+
+            for i_sensor in 0..n_pressure_sensors {
+                // Find the value of psi_n at the location of the pressure sensor
+                let sensor_r: f64 = pressure_sensors_static.geometry_r[i_sensor];
+                let sensor_z: f64 = pressure_sensors_static.geometry_z[i_sensor];
+
+                // Find the nearest grid point to the sensor location
+                let i_r_nearest: usize = (&r - sensor_r).abs().argmin().expect("find_viable_limit_point: unwrapping i_r_nearest");
+                let i_z_nearest: usize = (&z - sensor_z).abs().argmin().expect("find_viable_limit_point: unwrapping i_z_nearest");
+
+                // Find the four corner grid points surrounding the pressure sensor
+                let i_r_nearest_left: usize;
+                let i_r_nearest_right: usize;
+                let i_z_nearest_lower: usize;
+                let i_z_nearest_upper: usize;
+                if pressure_sensors_static.geometry_r[i_sensor] > r[i_r_nearest] {
+                    i_r_nearest_left = i_r_nearest;
+                    i_r_nearest_right = i_r_nearest + 1;
+                } else {
+                    i_r_nearest_left = i_r_nearest - 1;
+                    i_r_nearest_right = i_r_nearest;
+                }
+                if pressure_sensors_static.geometry_z[i_sensor] > z[i_z_nearest] {
+                    i_z_nearest_lower = i_z_nearest;
+                    i_z_nearest_upper = i_z_nearest + 1;
+                } else {
+                    i_z_nearest_lower = i_z_nearest - 1;
+                    i_z_nearest_upper = i_z_nearest;
+                }
+
+                // Find psi at the pressure sensor
+                // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
+                let mut f: Array2<f64> = Array2::zeros([2, 2]);
+                let mut d_f_d_r: Array2<f64> = Array2::zeros([2, 2]);
+                let mut d_f_d_z: Array2<f64> = Array2::zeros([2, 2]);
+                let mut d2_f_d_r_d_z: Array2<f64> = Array2::zeros([2, 2]);
+
+                // Function values
+                f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
+                f[(0, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
+                f[(1, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
+                f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
+
+                // d(psi)/d(r)
+                // bz = 1 / (2.0 * PI * r) * d_psi_d_r
+                d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+                // d(psi)/d(z)
+                // br = - 1 / (2.0 * PI * r) * d_psi_d_z
+                d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+                // d^2(psi)/(d(r)*d(z))
+                // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
+                d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+                // Create a bicubic interpolator
+                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+
+                let x: f64 = (pressure_sensors_static.geometry_r[i_sensor] - r[i_r_nearest_left]) / d_r;
+                let y: f64 = (pressure_sensors_static.geometry_z[i_sensor] - z[i_z_nearest_lower]) / d_z;
+                let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);
+
+                let psi_n_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
+                if psi_n_at_sensor < 0.0 || psi_n_at_sensor > 1.0 {
+                    println!(
+                        "Warning: pressure sensor {} is outside of the plasma boundary (psi_n = {})",
+                        i_sensor, psi_n_at_sensor
+                    );
+                    // Skip to the next sensor
+                    continue;
+                }
+
+                let psi_n_from_sensor_to_boundary: Array1<f64> = Array1::from_vec(vec![psi_n_at_sensor, 1.0]);
+
+                // p_prime degrees of freedom
+                for i_p_prime_dof in 0..n_p_prime_dof {
+                    // Indefinitive integral of p_prime = pressure
+                    let indefinite_integral_p_prime: Array1<f64> =
+                        p_prime_source_function.source_function_integral_single_dof(&psi_n_from_sensor_to_boundary, i_p_prime_dof);
+
+                    // The constant of integration is zero pressure at the boundary; or this can be thought of as a definite integral from the sensor to the boundary
+                    // let definite_integral_p_prime: f64 = indefinite_integral_p_prime[1] - indefinite_integral_p_prime[0];
+                    let definite_integral_p_prime: f64 = indefinite_integral_p_prime[0] - indefinite_integral_p_prime[1];
+
+                    // Add to fitting matrix
+                    fitting_matrix[(i_constraint, i_p_prime_dof)] = definite_integral_p_prime / d_psi_d_psi_n;
+                }
+
+                // Vertical stability (not for pressure sensors)
+                // TODO: should there be vertical stability for pressure sensors? I don't think so?
+
+                // Store sensor values
+                s_measured[i_constraint] = pressure_sensors_dynamic.measured[i_sensor]; // Magnetic axis value is always zero
+
+                // Store weights
+                constraint_weights[i_constraint] =
+                    pressure_sensors_static.fit_settings_weight[i_sensor] / pressure_sensors_static.fit_settings_expected_value[i_sensor];
+
+                // Setup indexer for next sensor or constraint
+                i_constraint += 1;
+            }
+
             // Add magnetic_axis to fitting matrix
             for i_sensor in 0..n_magnetic_axis_constraints {
                 // p_prime degrees of freedom
@@ -832,61 +959,6 @@ impl<'a> GsSolution<'a> {
             // 2.) Calculate the "sensor" measurement matrix:
             //     `pressure[psi_n] = pressure_int_dof_01 * d(psi)/d(psi_n) + pressure_int_dof_02 * d(psi)/d(psi_n) + ... = measured_pressure`
             //     where `pressure_int_dof_xx` = integral from LCFS to psi_n of basis function xx
-
-            // d(psi)/d(psi_n)
-            let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
-            // // Add pressure to fitting matrix
-            // for i_sensor in 0..n_pressure_constraints {
-            //     // p_prime degrees of freedom
-            //     for i_p_prime_dof in 0..n_p_prime_dof {
-            //         fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-            //             * PI
-            //             * d_area
-            //             * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
-            //                 * &mask_flat
-            //                 * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
-            //                 * &flat_r)
-            //                 .sum();
-            //     }
-
-            //     // ff_prime degrees of freedom
-            //     for i_ff_prime_dof in 0..n_ff_prime_dof {
-            //         fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
-            //             * PI
-            //             * d_area
-            //             * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
-            //                 * &mask_flat
-            //                 * ff_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_ff_prime_dof)
-            //                 / (MU_0 * &flat_r))
-            //                 .sum();
-            //     }
-
-            //     // Add passive degrees of freedom
-            //     for i_passive_dof in 0..n_passive_dof {
-            //         fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_magnetic_axis_passives[(i_passive_dof, i_sensor)];
-            //     }
-
-            //     // Vertical stability (using previous iteration)
-            //     if i_iter > n_iter_no_vertical_feedback {
-            //         fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
-            //             d_area * (&greens_d_magnetic_axis_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
-            //     }
-
-            //     // PF coil component
-            //     // TODO: I checked and `greens_rogowski_coils_pf["bvlb", "BVLBCASE"] = 16`
-            //     let tmp: Array1<f64> = greens_magnetic_axis_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
-            //     constraint_values_from_coils[i_constraint] = tmp.sum();
-
-            //     // Store sensor values
-            //     s_measured[i_constraint] = 0.0; // Magnetic axis value is always zero
-
-            //     // Store weights
-            //     constraint_weights[i_constraint] =
-            //         magnetic_axis_static.fit_settings_weight[i_sensor] / magnetic_axis_static.fit_settings_expected_value[i_sensor];
-
-            //     // Setup indexer for next sensor or constraint
-            //     i_constraint += 1;
-            // }
 
             // Add p_prime_regularisation to fitting matrix
             let p_prime_regularisation: Array2<f64> = p_prime_source_function.source_function_regularisation(); // shape = [n_regularisation, n_dof]

@@ -11,20 +11,24 @@ def get_database_reader(method: str) -> DatabaseReaderProtocol:
     """
 
     if method == "st40_mdsplus":
-        from .st40_mdsplus import DatabaseReaderSt40MDSplus
+        from .st40_mdsplus import DatabaseReader
 
-        return DatabaseReaderSt40MDSplus()
+        return DatabaseReader()
     elif method == "st40_astra_mdsplus":
-        from .st40_astra_mdsplus import DatabaseReaderST40AstraMDSplus
+        from .st40_astra_mdsplus import DatabaseReader
 
-        return DatabaseReaderST40AstraMDSplus()
+        return DatabaseReader()
+    elif method == "st40_spider_mdsplus":
+        from .st40_spider_mdsplus import DatabaseReader
+
+        return DatabaseReader()
     elif method == "freegs":
-        from .freegs import DatabaseReaderFreeGS
+        from .freegs import DatabaseReader
 
-        return DatabaseReaderFreeGS()
+        return DatabaseReader()
     elif method == "freegsnke":
-        from .freegsnke import DatabaseReaderFreeGSNKE
+        from .freegsnke import DatabaseReader
 
-        return DatabaseReaderFreeGSNKE()
+        return DatabaseReader()
     else:
         raise ValueError(f"Unknown database reader method: {method}")

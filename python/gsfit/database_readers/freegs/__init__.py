@@ -24,7 +24,7 @@ from .setup_plasma import setup_plasma
 from .setup_rogowski_coils import setup_rogowski_coils
 
 
-class DatabaseReaderFreeGS(DatabaseReaderProtocol):
+class DatabaseReader(DatabaseReaderProtocol):
     """
     This class inherits from the DatabaseReaderProtocol, which defines the inputs and outputs to the class methods.
     The methods in this class are used to initialise the Rust implementations.

@@ -6,16 +6,16 @@ from typing import TYPE_CHECKING
 
 import mdsthin  # type: ignore
 import numpy as np
-import numpy.typing as npt
 from gsfit_rs import BpProbes
-from st40_database import GetData  # type: ignore[import-not-found]
+
+from .astra_bp_probe_reader import astra_bp_probe_reader
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderST40AstraMDSplus
+    from . import DatabaseReader
 
 
 def setup_bp_probes(
-    self: "DatabaseReaderST40AstraMDSplus",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
 ) -> BpProbes:
@@ -34,7 +34,7 @@ def setup_bp_probes(
     bp_probes = BpProbes()
 
     # Extract the astra_run_name from settings
-    astra_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_astra_mdsplus"]["astra_run_name"]
+    astra_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_astra_mdsplus"]["workflow"]["astra"]["run_name"]
 
     # Connect to MDSplus
     conn = mdsthin.Connection("smaug")
@@ -45,20 +45,11 @@ def setup_bp_probes(
     measurements = conn.get(f"\\ASTRA::TOP.{astra_run_name}.BPPROBE.ALL:B").data().astype(np.float64)
     names = conn.get(f"\\ASTRA::TOP.{astra_run_name}.BPPROBE.ALL:NAME").data().astype(str)
 
-    # Read mag data from MDSplus
-    # FIXME: using a fixed shot is not a good idea!
-    mag = GetData(12050, "MAG#BEST", is_fail_quiet=False)
+    # Read Bp probe geometry from pf_probe.dat
+    bp_probes_data = astra_bp_probe_reader()
 
-    # Bp-probes
-    names_long = mag.get("BPPROBE.ALL.NAMES")
-    sensors_names = np.char.replace(names_long, "BPPROBE_", "P")
-    sensors_r = mag.get("BPPROBE.ALL.R")
-    sensors_z = mag.get("BPPROBE.ALL.Z")
-    sensors_angle_pol = mag.get("BPPROBE.ALL.THETA")
-
-    n_sensors = len(sensors_names)
-    for i_sensor in range(0, n_sensors):
-        sensor_name = sensors_names[i_sensor]
+    for bp_probe_name, data in bp_probes_data.items():
+        sensor_name = bp_probe_name.replace("BPPROBE_", "P")
 
         if sensor_name in settings["sensor_weights_bp_probe.json"]:
             fit_settings_comment = settings["sensor_weights_bp_probe.json"][sensor_name]["fit_settings"]["comment"]
@@ -72,15 +63,15 @@ def setup_bp_probes(
             fit_settings_weight = np.nan
 
         # Measured values
-        index = names == sensor_name.replace("P", "BPPROBE_")
+        index = names == bp_probe_name
         measured = measurements[:, index].squeeze()
 
         # Add the sensor to the Rust class
         bp_probes.add_sensor(
             name=sensor_name,
-            geometry_angle_pol=sensors_angle_pol[i_sensor],
-            geometry_r=sensors_r[i_sensor],
-            geometry_z=sensors_z[i_sensor],
+            geometry_angle_pol=data["angle_pol"],
+            geometry_r=data["r"],
+            geometry_z=data["z"],
             fit_settings_comment=fit_settings_comment,
             fit_settings_expected_value=fit_settings_expected_value,
             fit_settings_include=fit_settings_include,

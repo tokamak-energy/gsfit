@@ -13,6 +13,7 @@ from gsfit_rs import StationaryPoint
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
 from gsfit_rs import RogowskiCoils
+from gsfit_rs import Pressure
 
 
 class DatabaseReaderProtocol(Protocol):
@@ -451,5 +452,11 @@ class DatabaseReaderProtocol(Protocol):
 
         return rogowski_coils
         ```
+        """
+        ...
+
+    def setup_pressure_sensors(self, pulseNo: int, settings: dict[str, typing.Any], times_to_reconstruct: npt.NDArray[np.float64], **kwargs: dict[str, typing.Any]) -> Pressure:
+        """
+        TODO: write the docstring
         """
         ...

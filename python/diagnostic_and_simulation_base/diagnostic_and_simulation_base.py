@@ -213,6 +213,7 @@ class DiagnosticAndSimulationBase:
             pulseNo_cal=pulseNo_cal,
             run_name=self.run_name,
             run_description=self.run_description,
+            force_write=True,
         )
 
     def run_with_log(

@@ -46,6 +46,7 @@ class Gsfit(DiagnosticAndSimulationBase):
     rogowski_coils: gsfit_rs.RogowskiCoils
     isoflux: gsfit_rs.Isoflux
     isoflux_boundary: gsfit_rs.IsofluxBoundary
+    pressure_sensors: gsfit_rs.Pressure
     stationary_point: gsfit_rs.StationaryPoint
 
     # TODO: move to DiagnosticAndSimulationBase
@@ -181,6 +182,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         rogowski_coils = self.rogowski_coils
         isoflux = self.isoflux
         isoflux_boundary = self.isoflux_boundary
+        pressure_sensors = self.pressure_sensors
         stationary_point = self.stationary_point
 
         times_to_reconstruct = self.results["TIME"]
@@ -197,6 +199,7 @@ class Gsfit(DiagnosticAndSimulationBase):
             rogowski_coils,
             isoflux,
             isoflux_boundary,
+            pressure_sensors,
             stationary_point,
             times_to_reconstruct,
             self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"],
@@ -223,6 +226,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         rogowski_coils = self.rogowski_coils
         isoflux = self.isoflux
         isoflux_boundary = self.isoflux_boundary
+        pressure_sensors = self.pressure_sensors
         stationary_point = self.stationary_point
 
         # Greens with coils
@@ -233,6 +237,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         rogowski_coils.greens_with_coils(coils)
         isoflux.greens_with_coils(coils)
         isoflux_boundary.greens_with_coils(coils)
+        pressure_sensors.greens_with_coils(coils)
         stationary_point.greens_with_coils(coils)
         toc = time_py.time()
         self.logger.info(f"Finished Greens with coils;  {(toc - tic) * 1e3:,.2f}ms")
@@ -245,6 +250,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         rogowski_coils.greens_with_passives(passives)
         isoflux.greens_with_passives(passives)
         isoflux_boundary.greens_with_passives(passives)
+        pressure_sensors.greens_with_passives(passives)
         stationary_point.greens_with_passives(passives)
         toc = time_py.time()
         self.logger.info(f"Finished Greens with passives;  {(toc - tic) * 1e3:,.2f}ms")
@@ -256,6 +262,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         rogowski_coils.greens_with_plasma(plasma)
         isoflux.greens_with_plasma(plasma)
         isoflux_boundary.greens_with_plasma(plasma)
+        pressure_sensors.greens_with_plasma(plasma)
         stationary_point.greens_with_plasma(plasma)
         toc = time_py.time()
         self.logger.info(f"Finished Greens with plasma;  {(toc - tic) * 1e3:,.2f}ms")
@@ -317,6 +324,11 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.isoflux_boundary = database_reader.setup_isoflux_boundary_sensors(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`isoflux_boundary` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
+        self.pressure_sensors = database_reader.setup_pressure_sensors(pulseNo=self.pulseNo, settings=self.settings, times_to_reconstruct=times_to_reconstruct, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`pressure_sensors` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
         self.stationary_point = database_reader.setup_stationary_point_sensors(
