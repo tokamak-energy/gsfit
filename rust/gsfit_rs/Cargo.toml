@@ -7,7 +7,13 @@ edition = "2024"
 crate-type = ["cdylib", "rlib"]
 name = "gsfit_rs"
 
+[features]
+vendored-openssl = ["openssl/vendored"]
+
 [dependencies]
+# OpenSSL (optional; only used with `vendored-openssl` feature to vendor a
+# compatible OpenSSL for the manylinux CI build, avoiding system version issues)
+openssl = { version = "0.10", optional = true }
 # Local data_tree dependency
 data_tree = { path = "../data_tree" }
 interpolation = { path = "../interpolation" }

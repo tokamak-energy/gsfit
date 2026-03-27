@@ -84,17 +84,19 @@ jobs:
           image: ghcr.io/pyo3/maturin
           options: -v ${{ github.workspace }}:/workspace -w /workspace
           run: |
-            # Install OpenBLAS and OpenSSL from package manager
-            yum update -y && yum install -y openblas-devel openssl-devel
+            # Install OpenBLAS from package manager
+            yum update -y && yum install -y openblas-devel
 
             # Update Rust and print version
             rustup update
             rustc --version
 
             # Build wheels for different Python versions
-            maturin build --release -i python3.11
-            maturin build --release -i python3.12
-            maturin build --release -i python3.13
+            # Note: `vendored-openssl` compiles a compatible OpenSSL from source,
+            # avoiding issues with the container's system OpenSSL version.
+            maturin build --release --features vendored-openssl -i python3.11
+            maturin build --release --features vendored-openssl -i python3.12
+            maturin build --release --features vendored-openssl -i python3.13
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v4
         with:
