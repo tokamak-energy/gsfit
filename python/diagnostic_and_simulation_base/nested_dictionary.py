@@ -205,7 +205,6 @@ class NestedDict(OrderedDict):  # type: ignore
 
     # TODO: need to fix mypy tests
     def print_keys(self, d: None = None, path: list[str] | None = None) -> None:
-        # import pdb; pdb.set_trace()
         if d is None:
             # TODO: this fails `ty` type checking. I think this is because we are re-defining `d` from type None to type NestedDict
             d = self  # Use the current instance as the dictionary

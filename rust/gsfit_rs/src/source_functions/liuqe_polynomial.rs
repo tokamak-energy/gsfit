@@ -5,7 +5,7 @@ use numpy::borrow::PyReadonlyArray2;
 use pyo3::prelude::*;
 
 #[derive(Clone)]
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 pub struct LiuqePolynomial {
     pub n_dof: usize,
     pub regularisations: Array2<f64>,

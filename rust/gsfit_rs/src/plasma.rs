@@ -28,7 +28,7 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 pub struct Plasma {
     pub results: DataTree,
     pub p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,

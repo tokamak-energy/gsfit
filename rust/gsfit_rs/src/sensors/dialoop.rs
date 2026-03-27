@@ -14,7 +14,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyList;
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass(module = "gsfit_rs")]
+#[pyclass(module = "gsfit_rs", skip_from_py_object)]
 pub struct Dialoop {
     pub results: DataTree,
 }
