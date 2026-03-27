@@ -42,6 +42,4 @@ def setup_pressure_sensors(
         measured=np.array([15e3, 15e3]).astype(np.float64),
     )
 
-    # TODO: Implement this method
-
     return pressure

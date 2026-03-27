@@ -455,7 +455,7 @@ class DatabaseReaderProtocol(Protocol):
         """
         ...
 
-    def setup_pressure_sensors(self, pulseNo: int, settings: dict[str, typing.Any], times_to_reconstruct: npt.NDArray[np.float64], **kwargs: dict[str, typing.Any]) -> Pressure:
+    def setup_pressure_sensors(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> Pressure:
         """
         TODO: write the docstring
         """

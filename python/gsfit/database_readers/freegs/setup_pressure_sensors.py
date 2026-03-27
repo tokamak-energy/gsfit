@@ -33,6 +33,4 @@ def setup_pressure_sensors(
     # Initialise the Pressure Rust class
     pressure = Pressure()
 
-    # TODO: implement the method
-
     return pressure

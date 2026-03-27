@@ -326,7 +326,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.logger.info(msg=f"`isoflux_boundary` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
-        self.pressure_sensors = database_reader.setup_pressure_sensors(pulseNo=self.pulseNo, settings=self.settings, times_to_reconstruct=times_to_reconstruct, **kwargs)
+        self.pressure_sensors = database_reader.setup_pressure_sensors(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`pressure_sensors` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 

@@ -53,7 +53,7 @@ def astra_passives_reader() -> dict[str, dict[str, Any]]:
     # Get the path to the fires.dat file (in the same directory as this module)
     # Taken from:
     # https://tokamak-devlin.tokamak.local/gitlab/physics/astra_te/-/blob/master/exp/equ/MCVC/fires.dat
-    fires_dat_path = os.path.join(os.path.dirname(__file__), " fires.dat")
+    fires_dat_path = os.path.join(os.path.dirname(__file__), "fires.dat")
 
     # Read and parse the fires.dat file
     filaments: dict[str, dict[str, list[float]]] = defaultdict(
