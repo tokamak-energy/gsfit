@@ -84,9 +84,9 @@ jobs:
           image: ghcr.io/pyo3/maturin
           options: -v ${{ github.workspace }}:/workspace -w /workspace
           run: |
-            # Install OpenBLAS from package manager, plus perl (needed to compile
-            # vendored OpenSSL from source via the `vendored-openssl` feature)
-            yum update -y && yum install -y openblas-devel perl-IPC-Cmd
+            # Install OpenBLAS from package manager, plus perl modules needed to
+            # compile vendored OpenSSL from source via the `vendored-openssl` feature
+            yum update -y && yum install -y openblas-devel perl-IPC-Cmd perl-Time-Piece
 
             # Update Rust and print version
             rustup update
