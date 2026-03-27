@@ -8,12 +8,18 @@ crate-type = ["cdylib", "rlib"]
 name = "gsfit_rs"
 
 [features]
-vendored-openssl = ["openssl/vendored"]
+vendored-openssl = ["dep:openssl-sys"]
+
+[build-dependencies]
+# OpenSSL (optional; only activated with `vendored-openssl` feature to compile a
+# compatible OpenSSL from source for the manylinux CI build, where the system
+# OpenSSL may be too new for `openssl-sys`). This must be a build-dependency
+# (not a regular dependency) so that Cargo's resolver v3 unifies its `vendored`
+# feature with the transitive `openssl-sys` in the host dependency graph
+# (openblas-build -> ureq -> native-tls -> openssl-sys).
+openssl-sys = { version = "0.9", features = ["vendored"], optional = true }
 
 [dependencies]
-# OpenSSL (optional; only used with `vendored-openssl` feature to vendor a
-# compatible OpenSSL for the manylinux CI build, avoiding system version issues)
-openssl = { version = "0.10", optional = true }
 # Local data_tree dependency
 data_tree = { path = "../data_tree" }
 interpolation = { path = "../interpolation" }
