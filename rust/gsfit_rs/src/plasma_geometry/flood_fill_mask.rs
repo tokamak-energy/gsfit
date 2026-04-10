@@ -49,7 +49,7 @@ pub fn flood_fill_mask(
     });
 
     // Label points we should not cross
-    let mut indicies_do_not_cross: HashMap<(usize, usize), ()> = HashMap::new();
+    let mut indices_do_not_cross: HashMap<(usize, usize), ()> = HashMap::new();
     for stationary_point in stationary_points.iter() {
         // Find the nearest grid point to the stationary point
         let i_r_nearest: usize = stationary_point.i_r_nearest;
@@ -62,32 +62,32 @@ pub fn flood_fill_mask(
         // x-point could conceivably escape left/right too
         if z[i_z_nearest] > 0.0 {
             if i_r_nearest > 1 {
-                indicies_do_not_cross.insert((i_z_nearest_upper, i_r_nearest - 2), ());
+                indices_do_not_cross.insert((i_z_nearest_upper, i_r_nearest - 2), ());
             }
             if i_r_nearest > 0 {
-                indicies_do_not_cross.insert((i_z_nearest_upper, i_r_nearest - 1), ());
+                indices_do_not_cross.insert((i_z_nearest_upper, i_r_nearest - 1), ());
             }
-            indicies_do_not_cross.insert((i_z_nearest_upper, i_r_nearest), ());
+            indices_do_not_cross.insert((i_z_nearest_upper, i_r_nearest), ());
             if i_r_nearest < r.len() - 1 {
-                indicies_do_not_cross.insert((i_z_nearest_upper, i_r_nearest + 1), ());
+                indices_do_not_cross.insert((i_z_nearest_upper, i_r_nearest + 1), ());
             }
             if i_r_nearest < r.len() - 2 {
-                indicies_do_not_cross.insert((i_z_nearest_upper, i_r_nearest + 2), ());
+                indices_do_not_cross.insert((i_z_nearest_upper, i_r_nearest + 2), ());
             }
         }
         if z[i_z_nearest] < 0.0 {
             if i_r_nearest > 1 {
-                indicies_do_not_cross.insert((i_z_nearest_lower, i_r_nearest - 2), ());
+                indices_do_not_cross.insert((i_z_nearest_lower, i_r_nearest - 2), ());
             }
             if i_r_nearest > 0 {
-                indicies_do_not_cross.insert((i_z_nearest_lower, i_r_nearest - 1), ());
+                indices_do_not_cross.insert((i_z_nearest_lower, i_r_nearest - 1), ());
             }
-            indicies_do_not_cross.insert((i_z_nearest_lower, i_r_nearest), ());
+            indices_do_not_cross.insert((i_z_nearest_lower, i_r_nearest), ());
             if i_r_nearest < r.len() - 1 {
-                indicies_do_not_cross.insert((i_z_nearest_lower, i_r_nearest + 1), ());
+                indices_do_not_cross.insert((i_z_nearest_lower, i_r_nearest + 1), ());
             }
             if i_r_nearest < r.len() - 2 {
-                indicies_do_not_cross.insert((i_z_nearest_lower, i_r_nearest + 2), ());
+                indices_do_not_cross.insert((i_z_nearest_lower, i_r_nearest + 2), ());
             }
         }
     }
@@ -165,14 +165,14 @@ pub fn flood_fill_mask(
             }
 
             // Check if we are going past a saddle point
-            if indicies_do_not_cross.contains_key(&(new_i_z, new_i_r)) {
+            if indices_do_not_cross.contains_key(&(new_i_z, new_i_r)) {
                 // Don't add this point to the `mask`, and don't add it to the `queue`
                 continue;
             }
 
             if mask_2d[(new_i_z, new_i_r)] == 0.0 && psi_2d[(new_i_z, new_i_r)] > psi_b {
                 // `mask` is not allowed to pass a saddle point, regardless of if the plasma is diverted or limited
-                if !indicies_do_not_cross.contains_key(&(new_i_z, new_i_r)) {
+                if !indices_do_not_cross.contains_key(&(new_i_z, new_i_r)) {
                     mask_2d[(new_i_z, new_i_r)] = 1.0;
                     queue.push_back((new_i_z, new_i_r));
                 }

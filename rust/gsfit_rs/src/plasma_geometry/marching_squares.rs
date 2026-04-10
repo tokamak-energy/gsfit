@@ -3,8 +3,7 @@ use approx::abs_diff_eq;
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
-
-const PI: f64 = std::f64::consts::PI;
+use std::f64::consts::PI;
 
 #[derive(Debug, Clone)]
 pub struct MarchingContour {

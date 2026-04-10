@@ -25,7 +25,7 @@ pub fn solve_grad_shafranov(
     mut isoflux: PyRefMut<Isoflux>,
     mut isoflux_boundary: PyRefMut<IsofluxBoundary>,
     mut pressure_sensors: PyRefMut<Pressure>,
-    mut stationay_point: PyRefMut<StationaryPoint>,
+    mut stationary_point: PyRefMut<StationaryPoint>,
     times_to_reconstruct: PyReadonlyArray1<f64>,
     n_iter_max: usize,
     n_iter_min: usize,
@@ -80,10 +80,10 @@ pub fn solve_grad_shafranov(
         isoflux_boundary.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (pressure_statics, pressure_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (stationay_point_statics, stationay_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
-        stationay_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (stationary_point_statics, stationary_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+        stationary_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
-    // TOD: might be better to combine all sensors here, before passing to the solver
+    // TODO: might be better to combine all sensors here, before passing to the solver
 
     // Create a local copy
     let coils_owned: Coils = coils.to_owned();
@@ -162,8 +162,8 @@ pub fn solve_grad_shafranov(
                 &isoflux_boundary_dynamic[i_time],
                 &pressure_statics[i_time],
                 &pressure_dynamic[i_time],
-                &stationay_point_statics[i_time],
-                &stationay_point_dynamic[i_time],
+                &stationary_point_statics[i_time],
+                &stationary_point_dynamic[i_time],
                 n_iter_max,
                 n_iter_min,
                 n_iter_no_vertical_feedback,

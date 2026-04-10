@@ -139,7 +139,7 @@ impl Coils {
             // Calculate the cross sectional area
             let d_r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_r").unwrap_array1();
             let d_z: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_z").unwrap_array1();
-            let area: Array1<f64> = &d_r * &d_z;
+            let area: Array1<f64> = d_r * d_z;
 
             // Length of the coil
             let r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
@@ -318,7 +318,7 @@ impl Coils {
         // Time dependent
         // Interpolate to `times_to_reconstruct`
         let n_time: usize = times_to_reconstruct.len();
-        let mut measured: Array2<f64> = Array2::zeros((n_coils, n_time));
+        let mut measured: Array2<f64> = Array2::from_elem((n_coils, n_time), f64::NAN);
         for i_coil in 0..n_coils {
             // Coils
             let coil_name: &String = &coil_names[i_coil];

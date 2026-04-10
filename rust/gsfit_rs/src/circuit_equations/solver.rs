@@ -8,6 +8,7 @@ use ndarray_linalg::Solve;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
 use pyo3::prelude::*;
+use std::f64::consts::PI;
 
 // Choice of ODE solver:
 //
@@ -23,8 +24,6 @@ use pyo3::prelude::*;
 //
 // The BDF (Backward Differentiation Formula) method switches between BDF1, BDF2, BDF3, BDF4, and BDF5 depending on stiffness.
 // It is **very** complicated to implement BDF, so we use the excellent `diffsol` crate.
-
-const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, PartialEq)]
 enum CurrentSourceType {

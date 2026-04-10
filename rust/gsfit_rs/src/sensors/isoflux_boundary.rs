@@ -15,9 +15,8 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::f64::consts::PI;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass(module = "gsfit_rs", skip_from_py_object)]

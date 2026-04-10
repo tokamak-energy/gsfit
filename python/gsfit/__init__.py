@@ -13,7 +13,7 @@ __python_library__ = version_storage.__python_library__
 __user__ = version_storage.__user__
 __version__ = version_storage.__version__
 
-# Define interfaces
+# Define public interfaces
 __all__ = [
     "__datetime__",
     "__git_is_dirty__",

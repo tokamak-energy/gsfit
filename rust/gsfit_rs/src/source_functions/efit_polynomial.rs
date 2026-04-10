@@ -25,13 +25,13 @@ impl EfitPolynomial {
     pub fn new(n_dof: usize, regularisations: PyReadonlyArray2<f64>) -> Self {
         // Change Python types into Rust types
         let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
-        let polynomial_coeficients_ndarray: Array1<f64> = Array1::zeros(0);
+        let polynomial_coefficients_ndarray: Array1<f64> = Array1::zeros(0);
 
         // Create the struct
         EfitPolynomial {
             n_dof,
             regularisations: regularisations_ndarray,
-            dof_values: polynomial_coeficients_ndarray,
+            dof_values: polynomial_coefficients_ndarray,
         }
     }
 
@@ -59,12 +59,12 @@ impl SourceFunctionTraits for EfitPolynomial {
     }
 
     fn source_function_derivative_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
-        // This function is not implemented yet
+        // TODO: This function is not implemented yet
         unimplemented!("Source function is not implemented yet");
     }
 
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
-        // Indefinate integral, so constant of integration mgiht need to be added
+        // TODO: Indefinite integral, so constant of integration might need to be added
         let integral: Array1<f64> = (1.0 - psi_n / 2.0) * psi_n.mapv(|x| x.powi(i_dof as i32 + 1)) / (i_dof as f64 + 1.0);
         return integral;
     }
@@ -82,7 +82,7 @@ impl SourceFunctionTraits for EfitPolynomial {
     }
 
     fn source_function_derivative(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
-        // This function is not implemented yet
+        // TODO: This function is not implemented yet
         unimplemented!("Source function is not implemented yet");
     }
 

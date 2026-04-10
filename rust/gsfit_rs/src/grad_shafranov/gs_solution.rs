@@ -16,10 +16,10 @@ use lapack::*;
 use ndarray::Axis;
 use ndarray::{Array1, Array2, Array3, s};
 use ndarray_stats::QuantileExt;
+use std::f64::consts::PI;
 use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
-const PI: f64 = std::f64::consts::PI;
 
 /// Grad-Shafranov solution, at single time-slice
 pub struct GsSolution<'a> {

@@ -39,6 +39,7 @@ ndarray-interp = "0.6.0"  # TODO: I want to remove this dependency, because it h
 env_logger = "0.11.10"
 log = "0.4.29"
 approx = "0.5.1"
+faer = "0.24.0"
 lapack = "0.20.0"
 ndarray-stats = "0.7.0"  # TODO: I want to remove this dependency, because it restricts `ndarray` version!
 rand = "0.10.0"

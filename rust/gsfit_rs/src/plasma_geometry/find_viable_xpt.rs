@@ -156,7 +156,7 @@ pub fn find_viable_xpt(
 // fn test_find_viable_xpt() {
 //     // use approx::assert_abs_diff_eq;
 
-//     const PI: f64 = std::f64::consts::PI;
+//     use std::f64::consts::PI;
 
 //     let n_r: usize = 100;
 //     let n_z: usize = 201;

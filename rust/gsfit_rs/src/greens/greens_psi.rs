@@ -1,9 +1,9 @@
 use core::f64;
 use ndarray::{Array1, Array2, s};
 use numpy::IntoPyArray;
-use numpy::PyArrayMethods; // used in to convert python data into ndarray
+use numpy::PyArray2;
+use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
-use numpy::{PyArray1, PyArray2};
 use physical_constants;
 use pyo3::prelude::*;
 use rayon::prelude::*;
@@ -20,26 +20,24 @@ pub fn greens_py(
     z: PyReadonlyArray1<f64>,
     r_prime: PyReadonlyArray1<f64>,
     z_prime: PyReadonlyArray1<f64>,
-    d_r: Option<&Bound<'_, PyArray1<f64>>>, // TODO: make this nicer with `PyReadonlyArray1`
-    d_z: Option<&Bound<'_, PyArray1<f64>>>, // TODO: make this nicer with `PyReadonlyArray1`
+    d_r: Option<PyReadonlyArray1<f64>>,
+    d_z: Option<PyReadonlyArray1<f64>>,
 ) -> Py<PyArray2<f64>> {
     let r_ndarray: Array1<f64> = r.to_owned_array();
     let z_ndarray: Array1<f64> = z.to_owned_array();
     let r_prime_ndarray: Array1<f64> = r_prime.to_owned_array();
     let z_prime_ndarray: Array1<f64> = z_prime.to_owned_array();
 
-    // Some horible variable type change and fallback when option not supplied
+    // Fallback when option not supplied
     let n_prime: usize = r_prime_ndarray.len();
-    let d_r_fallback: Array1<f64> = Array1::from_elem(n_prime, f64::NAN);
-    let d_r_fallback_py: &Bound<'_, PyArray1<f64>> = &d_r_fallback.into_pyarray(py);
-    let d_r_unwrapped: &Bound<'_, PyArray1<f64>> = d_r.unwrap_or(d_r_fallback_py);
-    let d_r: Array1<f64> = Array1::from(unsafe { d_r_unwrapped.as_array() }.to_vec());
-    // d_z
-    let n_prime: usize = r_prime_ndarray.len();
-    let d_z_fallback: Array1<f64> = Array1::from_elem(n_prime, f64::NAN);
-    let d_z_fallback_py: &Bound<'_, PyArray1<f64>> = &d_z_fallback.into_pyarray(py);
-    let d_z_unwrapped: &Bound<'_, PyArray1<f64>> = d_z.unwrap_or(d_z_fallback_py);
-    let d_z: Array1<f64> = Array1::from(unsafe { d_z_unwrapped.as_array() }.to_vec());
+    let d_r: Array1<f64> = match d_r {
+        Some(d_r_readonly) => d_r_readonly.to_owned_array(),
+        None => Array1::from_elem(n_prime, f64::NAN),
+    };
+    let d_z: Array1<f64> = match d_z {
+        Some(d_z_readonly) => d_z_readonly.to_owned_array(),
+        None => Array1::from_elem(n_prime, f64::NAN),
+    };
 
     let g_psi: Array2<f64> = greens_psi(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray, d_r, d_z);
 
@@ -112,13 +110,14 @@ pub fn greens_psi(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime:
             // this is for grid-grid calculation
             // If we do this earlier we can skip calculating elliptic integrals
             let epsilon: f64 = 1e-6; // TODO: should this be smaller?
-            for i in 0..n_grid {
-                if (r[i] - r_prime[i_filament]).abs() < epsilon && (z[i] - z_prime[i_filament]).abs() < epsilon {
-                    green_this_filament[i] = MU_0
-                        * r[i]
-                        * ((1.0 + 2.0 * (d_z[i] / (8.0 * r[i])).powi(2) + 2.0 / 3.0 * (d_r[i] / (8.0 * r[i])).powi(2)) * (8.0 * r[i] / (d_r[i] + d_z[i])).ln()
+            for i_grid in 0..n_grid {
+                if (r[i_grid] - r_prime[i_filament]).abs() < epsilon && (z[i_grid] - z_prime[i_filament]).abs() < epsilon {
+                    green_this_filament[i_grid] = MU_0
+                        * r[i_grid]
+                        * ((1.0 + 2.0 * (d_z[i_grid] / (8.0 * r[i_grid])).powi(2) + 2.0 / 3.0 * (d_r[i_grid] / (8.0 * r[i_grid])).powi(2))
+                            * (8.0 * r[i_grid] / (d_r[i_grid] + d_z[i_grid])).ln()
                             - 0.5
-                            + 0.5 * (d_z[i] / (8.0 * r[i])).powi(2))
+                            + 0.5 * (d_z[i_grid] / (8.0 * r[i_grid])).powi(2))
                 }
             }
 
@@ -141,7 +140,7 @@ fn test_greens_mutual_inductance() {
     // Lazy loading of packages which are not used anywhere else in the code
     use approx::assert_abs_diff_eq;
     use ndarray::Axis;
-    const PI: f64 = std::f64::consts::PI;
+    use std::f64::consts::PI;
 
     // Current sources
     // The radius of PF coil is "d", so that I'm consistent with Helmholtz notation / equations

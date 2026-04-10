@@ -15,9 +15,8 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::f64::consts::PI;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass(module = "gsfit_rs", skip_from_py_object)]
@@ -183,7 +182,6 @@ impl Isoflux {
                 include_dynamic[i_time] = false;
             }
         }
-        println!("include_dynamic = {:?}", include_dynamic);
         self.results
             .get_or_insert(name)
             .get_or_insert("fit_settings")
@@ -614,7 +612,6 @@ impl Isoflux {
             let mut include: Vec<bool> = Vec::new();
             for sensor_name in sensor_names_all.clone() {
                 let include_dynamic: Vec<bool> = self.results.get(&sensor_name).get("fit_settings").get("include_dynamic").unwrap_vec_bool();
-                println!("include_dynamic = {:?}", include_dynamic);
 
                 include.push(include_dynamic[i_time]);
             }

@@ -41,7 +41,6 @@ pub fn find_boundary(
     // Find x-points inside the vacuum vessel which could be the plasma boundary
     let xpt_boundary_or_error: Result<BoundaryContour, String> =
         find_viable_xpt(r, z, psi_2d, stationary_points, vessel_r, vessel_z, mag_r_previous, mag_z_previous);
-    // println!("find_boundary: xpt_boundary_or_error = {:?}", xpt_boundary_or_error);
 
     // Extract results from `xpt_boundary` object
     let xpt_r: f64;
@@ -79,7 +78,6 @@ pub fn find_boundary(
         vessel_z,
         stationary_points,
     );
-    // println!("find_boundary: limit_boundary_or_error = {:?}", limit_boundary_or_error);
 
     // Extract results from `limit_boundary` object
     let limit_pt_r: f64;
@@ -159,8 +157,6 @@ pub fn find_boundary(
         });
     }
 
-    // println!("xpt_diverted = {}", xpt_diverted);
-
     // Calculate the mask
     let mask: Array2<f64> = flood_fill_mask(r, z, psi_2d, psi_b, stationary_points, mag_r_previous, mag_z_previous, vessel_r, vessel_z);
 
@@ -175,5 +171,5 @@ pub fn find_boundary(
         mask: Some(mask),
     };
 
-    return Ok(boundary_contour);
+    Ok(boundary_contour)
 }

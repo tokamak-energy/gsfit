@@ -9,11 +9,11 @@ from gsfit_rs import Dialoop
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
-from gsfit_rs import StationaryPoint
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
-from gsfit_rs import RogowskiCoils
 from gsfit_rs import Pressure
+from gsfit_rs import RogowskiCoils
+from gsfit_rs import StationaryPoint
 
 
 class DatabaseReaderProtocol(Protocol):

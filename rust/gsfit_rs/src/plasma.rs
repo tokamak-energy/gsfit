@@ -22,10 +22,10 @@ use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
+use std::f64::consts::PI;
 use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
-const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass(skip_from_py_object)]
@@ -56,7 +56,7 @@ impl Plasma {
     /// * `vessel_r` - vessel radial points (1d array), meter
     /// * `vessel_z` - vessel vertical points (1d array), meter
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
-    /// * `ff_prime_source_function` - Fourier source function (a Rust implementation, initialised in Python)
+    /// * `ff_prime_source_function` - ff_prime source function (a Rust implementation, initialised in Python)
     ///
     /// # Returns
     /// * `self` - a new instance of the Plasma struct
@@ -193,16 +193,9 @@ impl Plasma {
         let flat_z: Array1<f64> = mesh_z.flatten().to_owned();
 
         // Calculate the grid-grid Greens
-        let d_r_flat: Array1<f64> = &r * 0.0 + d_r;
-        let d_z_flat: Array1<f64> = &r * 0.0 + d_z;
-        let g_psi: Array2<f64> = greens_psi(
-            flat_r.clone(),
-            flat_z.clone(),
-            r.clone(),
-            0.0 * r.clone() + z[0],
-            d_r_flat, // TODO: I don't like thsee variables
-            d_z_flat,
-        );
+        let flat_d_r: Array1<f64> = &r * 0.0 + d_r;
+        let flat_d_z: Array1<f64> = &r * 0.0 + d_z;
+        let g_psi: Array2<f64> = greens_psi(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0], flat_d_r, flat_d_z);
         let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(
             flat_r.clone(), // sensors
             flat_z.clone(),
@@ -285,13 +278,14 @@ impl Plasma {
         let flat_z: Array1<f64> = self.results.get("grid").get("flat").get("z").unwrap_array1();
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+        let n_rz: usize = n_r * n_z;
+        let d_r: Array1<f64> = Array1::from_elem(n_rz, f64::NAN); // Using NaN as safety - if we get NaN's we know we have a problem
+        let d_z: Array1<f64> = Array1::from_elem(n_rz, f64::NAN); // Using NaN as safety - if we get NaN's we know we have a problem
 
         for coil_name in &coils_local.results.get("pf").keys() {
             // Coils
             let coil_r: Array1<f64> = coils_local.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
             let coil_z: Array1<f64> = coils_local.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
-            let d_r: Array1<f64> = &coil_r * 0.0;
-            let d_z: Array1<f64> = &coil_z * 0.0;
 
             // Greens function for flux
             let g_psi_all_filaments: Array2<f64> = greens_psi(
@@ -299,7 +293,7 @@ impl Plasma {
                 flat_z.clone(),
                 coil_r.clone(),
                 coil_z.clone(),
-                d_r.clone(), // TODO: can be improved
+                d_r.clone(), // grid should not overlap with coils
                 d_z.clone(),
             ); // shape = (n_z * n_r, n_filaments)
 
@@ -444,8 +438,8 @@ impl Plasma {
                     flat_z.clone(),
                     passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
                     passive_z.clone(),
-                    flat_r.clone() * 0.0, // d_r=0; as there will not be any points which coincide
-                    flat_r.clone() * 0.0, // d_z=0; as there will not be any points which coincide
+                    flat_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+                    flat_r.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
                 );
 
                 // Green's with degrees of freedom
@@ -559,7 +553,7 @@ impl Plasma {
 
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
-        string_output += &format!("║  {:<74} ║\n", format!(" n_r = {}, n_z = {}", n_r.to_string(), n_z.to_string()));
+        string_output += &format!("║  {:<74} ║\n", format!(" n_r = {}, n_z = {}", n_r, n_z));
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
@@ -1042,30 +1036,6 @@ impl Plasma {
             // Stored energy
             w_mhd[i_time] = epp_w_mhd(&p_2d_this_time_slice, &r, d_area);
 
-            // Plasma beta
-            (beta_p_1[i_time], beta_p_2[i_time], beta_p_3[i_time]) = epp_beta_p(w_mhd[i_time], ip[i_time], r_mag[i_time], r_geo[i_time], plasma_volume[i_time]);
-
-            let bt_vac_at_r_geo_this_time: f64 = epp_bt_vac_at_r_geo(i_rod[i_time], r_geo[i_time]);
-            bt_vac_at_r_geo[i_time] = bt_vac_at_r_geo_this_time;
-
-            // Internal inductance: TODO: add li(1)
-            (li_1[i_time], li_2[i_time], li_3[i_time]) = epp_li(
-                ip[i_time],
-                &r,
-                d_area,
-                r_mag[i_time],
-                r_geo[i_time],
-                &br_2d.slice(s![i_time, .., ..]).to_owned(),
-                &bz_2d.slice(s![i_time, .., ..]).to_owned(),
-                &mask_2d.slice(s![i_time, .., ..]).to_owned(),
-            );
-
-            let beta_t_this_time_slice: f64 = epp_beta(w_mhd[i_time], bt_vac_at_r_geo_this_time, plasma_volume[i_time]);
-            beta_t[i_time] = beta_t_this_time_slice;
-
-            let beta_n_this_time_slice: f64 = epp_beta_n(beta_t_this_time_slice, r_minor[i_time], bt_vac_at_r_geo[i_time], ip[i_time]);
-            beta_n[i_time] = beta_n_this_time_slice;
-
             // total pressure
             // TODO: it "could" be better to do integral over flux surfaces ?
             p_1d[i_time] = p_2d.slice(s![i_time, .., ..]).sum();
@@ -1213,6 +1183,30 @@ impl Plasma {
             // elongation
             let plasma_height: f64 = boundary_contour_local.z.max().unwrap().to_owned() - boundary_contour_local.z.min().unwrap().to_owned();
             elongation[i_time] = plasma_height / (2.0 * r_minor[i_time]);
+
+            // Plasma beta (must be after r_geo and plasma_volume are computed)
+            (beta_p_1[i_time], beta_p_2[i_time], beta_p_3[i_time]) = epp_beta_p(w_mhd[i_time], ip[i_time], r_mag[i_time], r_geo[i_time], plasma_volume[i_time]);
+
+            let bt_vac_at_r_geo_this_time: f64 = epp_bt_vac_at_r_geo(i_rod[i_time], r_geo[i_time]);
+            bt_vac_at_r_geo[i_time] = bt_vac_at_r_geo_this_time;
+
+            // Internal inductance: TODO: add li(1)
+            (li_1[i_time], li_2[i_time], li_3[i_time]) = epp_li(
+                ip[i_time],
+                &r,
+                d_area,
+                r_mag[i_time],
+                r_geo[i_time],
+                &br_2d.slice(s![i_time, .., ..]).to_owned(),
+                &bz_2d.slice(s![i_time, .., ..]).to_owned(),
+                &mask_2d.slice(s![i_time, .., ..]).to_owned(),
+            );
+
+            let beta_t_this_time_slice: f64 = epp_beta(w_mhd[i_time], bt_vac_at_r_geo_this_time, plasma_volume[i_time]);
+            beta_t[i_time] = beta_t_this_time_slice;
+
+            let beta_n_this_time_slice: f64 = epp_beta_n(beta_t_this_time_slice, r_minor[i_time], bt_vac_at_r_geo[i_time], ip[i_time]);
+            beta_n[i_time] = beta_n_this_time_slice;
         }
 
         let max_n_boundary: usize = boundary_contours.iter().map(|boundary_contour_local| boundary_contour_local.n).max().unwrap();

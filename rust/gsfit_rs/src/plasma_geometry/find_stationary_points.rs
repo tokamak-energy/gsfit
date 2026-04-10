@@ -8,8 +8,7 @@ use geo::{Line, MultiPolygon};
 use ndarray::{Array1, Array2};
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
-
-const PI: f64 = std::f64::consts::PI;
+use std::f64::consts::PI;
 
 #[derive(Debug, Clone, Copy)]
 pub struct StationaryPoint {

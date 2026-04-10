@@ -6,11 +6,11 @@ from gsfit_rs import EfitPolynomial
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
-from gsfit_rs import StationaryPoint
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
+from gsfit_rs import StationaryPoint
 from gsfit_rs import solve_grad_shafranov
 
 # DOF: 3 dof's

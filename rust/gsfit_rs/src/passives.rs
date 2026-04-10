@@ -1,10 +1,10 @@
 use crate::grad_shafranov::GsSolution;
+use crate::greens::FilamentGeometry;
 use crate::greens::mutual_inductance_finite_size_to_finite_size;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use lapack::*;
+use faer::Side;
 use ndarray::{Array1, Array2, Array3, Axis, s};
-use ndarray_linalg::Norm;
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
@@ -12,9 +12,8 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::f64::consts::PI;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass(module = "gsfit_rs", skip_from_py_object)]
@@ -86,8 +85,19 @@ impl Passives {
             .get_or_insert("geometry")
             .insert("angle_2", angle_2_ndarray.clone()); // Array1<f64>; shape = (n_filaments)
 
-        // TODO: this is WRONG for angled filamanets!!!
-        let area: Array1<f64> = &d_r_ndarray * &d_z_ndarray;
+        // The area is **slightly** different from d_r * d_z, (only not exactly equal if some combination of angle_1 and/or angle_2 is non-zero. TODO: figure out exactly when the area differs)
+        let mut area: Array1<f64> = Array1::from_elem(n_filaments_this_passive, f64::NAN);
+        for i_filament in 0..n_filaments_this_passive {
+            let filament_geometry: FilamentGeometry = FilamentGeometry::new(
+                angle_1_ndarray[i_filament],
+                angle_2_ndarray[i_filament],
+                d_r_ndarray[i_filament],
+                d_z_ndarray[i_filament],
+                r_ndarray[i_filament],
+                z_ndarray[i_filament],
+            );
+            area[i_filament] = filament_geometry.calculate_area();
+        }
 
         self.results.get_or_insert(name).get_or_insert("geometry").insert("area", area.clone()); // Array1<f64>; shape = (n_filaments)
 
@@ -109,7 +119,7 @@ impl Passives {
                 .insert("current_distribution", current_distribution);
         } else if current_distribution_type == "eig" {
             // Mutual inductance matrix
-            let mut mutual_inductance_matrix: Array2<f64> = mutual_inductance_finite_size_to_finite_size(
+            let mutual_inductance_matrix: Array2<f64> = mutual_inductance_finite_size_to_finite_size(
                 &r_ndarray,
                 &z_ndarray,
                 &d_r_ndarray,
@@ -131,90 +141,55 @@ impl Passives {
 
             // Resistance matrix
             let length: Array1<f64> = 2.0 * PI * r_ndarray;
-            let mut resistance_matrix: Array2<f64> = Array2::eye(n_filaments_this_passive) * resistivity * length / area;
+            let resistance_matrix: Array2<f64> = Array2::eye(n_filaments_this_passive) * resistivity * length / area;
 
             // Store the resistance matrix
             self.results.get_or_insert(name).insert("resistance_matrix", resistance_matrix.clone());
 
-            // Initial lapack run figures out the optimal work array size
-            let itype: Vec<i32> = vec![1];
-            let jobz: u8 = b'V';
-            let uplo: u8 = b'U';
-            let n: i32 = n_filaments_this_passive as i32;
-            let a: &mut [f64] = mutual_inductance_matrix.as_slice_mut().unwrap();
-            let lda: i32 = n;
-            let b: &mut [f64] = resistance_matrix.as_slice_mut().unwrap();
-            let ldb: i32 = n;
-            let mut _tmp: Vec<f64> = vec![0.0; n as usize];
-            let w: &mut [f64] = &mut _tmp;
-            let mut _tmp: Vec<f64> = vec![0.0; 1];
-            let work: &mut [f64] = &mut _tmp;
-            let lwork: i32 = -1;
-            let mut _tmp: Vec<i32> = vec![0; 1];
-            let iwork: &mut [i32] = &mut _tmp;
-            let liwork: i32 = -1;
-            let mut _tmp: i32 = -1;
-            let info: &mut i32 = &mut _tmp;
-            unsafe {
-                dsygvd(
-                    // `dsygvd` is a "symmetric" eigenvalue/eigenvector solver.
-                    // It uses "divide and conquer" for the eigenvalues
-                    // TODO: might be better using a direct solver which doesn't use divide and conquer
-                    &itype, // &[i32]
-                    jobz,   // u8
-                    uplo,   // u8
-                    n,      // i32
-                    a,      // &mut [f64]
-                    lda,    // i32
-                    b,      // &mut [f64]
-                    ldb,    // i32
-                    w,      // &mut [f64]
-                    work,   // &mut [f64]
-                    lwork,  // i32
-                    iwork,  // &mut [i32]
-                    liwork, // i32
-                    info,   // &mut i32
-                );
-            }
+            // Generalized symmetric eigenproblem: A x = λ B x
+            // where A = mutual_inductance_matrix, B = resistance_matrix
+            // Solved via: L L^T = B (Cholesky), then standard eigenproblem on L^{-1} A L^{-T}
 
-            // Allocate "work" arrays
-            let lwork: i32 = work[0] as i32;
-            let liwork: i32 = iwork[0];
-            let mut _tmp: Vec<f64> = vec![0.0; lwork as usize];
-            let work: &mut [f64] = &mut _tmp;
-            let mut _tmp: Vec<i32> = vec![0; liwork as usize];
-            let iwork: &mut [i32] = &mut _tmp;
-            unsafe {
-                dsygvd(
-                    &itype, // &[i32]
-                    jobz,   // u8
-                    uplo,   // u8
-                    n,      // i32
-                    a,      // &mut [f64]
-                    lda,    // i32
-                    b,      // &mut [f64]
-                    ldb,    // i32
-                    w,      // &mut [f64]
-                    work,   // &mut [f64]
-                    lwork,  // i32
-                    iwork,  // &mut [i32]
-                    liwork, // i32
-                    info,   // &mut i32
-                );
-            }
+            // Convert ndarray matrices to faer matrices
+            let n: usize = n_filaments_this_passive;
+            let a_faer: faer::Mat<f64> = faer::Mat::from_fn(n, n, |i, j| mutual_inductance_matrix[[i, j]]);
+            let b_faer: faer::Mat<f64> = faer::Mat::from_fn(n, n, |i, j| resistance_matrix[[i, j]]);
 
-            // Eigenvalues are stored from smallest to largest
-            let eigenvectors_unnormalised: Array2<f64> = Array2::from_shape_vec((n_filaments_this_passive, n_filaments_this_passive), a.to_vec()).unwrap();
-            let eigenvalues: Array1<f64> = Array1::from_vec(w.to_vec());
+            // Cholesky factorization of B: B = L L^T
+            let b_llt: faer::linalg::solvers::Llt<f64> = b_faer.llt(Side::Lower).expect("Cholesky factorization of resistance_matrix failed");
+            let l_factor: faer::MatRef<'_, f64> = b_llt.L();
 
-            // Normalize eigenvectors using "2-norm"
+            // Form C = L^{-1} A L^{-T} for the standard symmetric eigenproblem
+            // Step 1: solve L Y = A  (forward substitution, Y = L^{-1} A)
+            let mut y: faer::Mat<f64> = a_faer.clone();
+            faer::linalg::triangular_solve::solve_lower_triangular_in_place(l_factor, y.as_mut(), faer::Par::Seq);
+            // Step 2: C = Y L^{-T}, equivalent to solving L^T C^T = Y^T
+            let mut c: faer::Mat<f64> = y.transpose().to_owned();
+            faer::linalg::triangular_solve::solve_lower_triangular_in_place(l_factor, c.as_mut(), faer::Par::Seq);
+            let c: faer::Mat<f64> = c.transpose().to_owned();
+
+            // Symmetric eigendecomposition of C: eigenvalues in nondecreasing order
+            let eigen: faer::linalg::solvers::SelfAdjointEigen<f64> = c.self_adjoint_eigen(Side::Lower).expect("Symmetric eigendecomposition failed");
+            let eigenvalues_faer: faer::Col<f64> = eigen.S().column_vector().to_owned();
+            let eigenvectors_c: faer::Mat<f64> = eigen.U().to_owned();
+
+            // Back-transform eigenvectors: x = L^{-T} u
+            // Solve L^T X = U  (back substitution)
+            let mut eigenvectors_faer: faer::Mat<f64> = eigenvectors_c;
+            faer::linalg::triangular_solve::solve_upper_triangular_in_place(l_factor.transpose(), eigenvectors_faer.as_mut(), faer::Par::Seq);
+
+            // Convert back to ndarray; eigenvalues are already sorted nondecreasing (smallest to largest)
+            let eigenvalues: Array1<f64> = Array1::from_vec((0..n).map(|i| eigenvalues_faer[i]).collect());
+
+            // Normalize eigenvectors using "2-norm" and store in ndarray (row-major: row i = eigenvector i)
             // This will panic if the eigenvector is itself zero, which should never happen, so let's keep the panic in place as it's the correct behaviour
-            let mut eigenvectors: Array2<f64> = Array2::from_elem((n_filaments_this_passive, n_filaments_this_passive), f64::NAN);
-            for i_eig in 0..n_filaments_this_passive {
-                let eigenvector_unnormalised: Array1<f64> = eigenvectors_unnormalised.slice(s![i_eig, ..]).to_owned();
-                let norm: f64 = eigenvector_unnormalised.norm_l2();
-                let eigenvector_normalised: Array1<f64> = eigenvector_unnormalised / norm;
-                eigenvectors.slice_mut(s![i_eig, ..]).assign(&eigenvector_normalised);
+            let mut eigenvectors: Array2<f64> = Array2::from_elem((n, n), f64::NAN);
+            for i_eig in 0..n {
+                let eigenvector_col: faer::ColRef<'_, f64> = eigenvectors_faer.col(i_eig);
+                let norm: f64 = eigenvector_col.norm_l2();
+                for j_elem in 0..n {
+                    eigenvectors[[i_eig, j_elem]] = eigenvector_col[j_elem] / norm;
+                }
             }
 
             for i_eig in 0..n_dof {
@@ -246,7 +221,7 @@ impl Passives {
         let version: &str = env!("CARGO_PKG_VERSION");
 
         let mut string_output = String::from("╔═════════════════════════════════════════════════════════════════════════════╗\n");
-        string_output += &format!("║ {:<75} ║\n", " <gsfit_rs.Coils>");
+        string_output += &format!("║ {:<75} ║\n", " <gsfit_rs.Passives>");
         string_output += &format!("║  {:<74} ║\n", version);
 
         // // n_sensors = self.results
@@ -288,6 +263,23 @@ impl Passives {
 
     /// Python unpickling method
     fn __setstate__(&mut self, state: Bound<'_, PyDict>) -> PyResult<()> {
+        // Extract `gsfit_rs` version from the pickled data
+        let current_version: &str = env!("CARGO_PKG_VERSION");
+        let pickled_version: String = state
+            .get_item("version")
+            .ok()
+            .flatten()
+            .and_then(|v| v.extract::<String>().ok())
+            .expect("Failed to extract `version` from pickled object");
+
+        // Print warning if versions are different
+        if pickled_version != current_version {
+            eprintln!(
+                "Warning: Unpickling object created with gsfit_rs v{}, but current version is v{}",
+                pickled_version, current_version
+            );
+        }
+
         // Extract the "results" key and convert back to DataTree
         let results_dict: Bound<'_, PyAny> = state
             .get_item("results")
