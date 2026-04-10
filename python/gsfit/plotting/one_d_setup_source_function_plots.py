@@ -1,8 +1,10 @@
+import matplotlib.axes
+import matplotlib.figure
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 
-def plot() -> tuple[plt.Figure, list[plt.Axes]]:
+def plot() -> tuple[matplotlib.figure.Figure, list[matplotlib.axes.Axes]]:
     fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True, gridspec_kw={"wspace": 0.1})
 
     ax[0].set_xlim(0.0, 1.0)

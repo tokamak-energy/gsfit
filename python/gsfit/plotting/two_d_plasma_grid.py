@@ -1,9 +1,10 @@
+import matplotlib.axes
 import matplotlib.pyplot as plt
 
 from ..gsfit import Gsfit
 
 
-def plot(gsfit_controller: Gsfit, ax: plt.Axes) -> None:
+def plot(gsfit_controller: Gsfit, ax: matplotlib.axes.Axes) -> None:
     ax.set_aspect("equal")
 
     plasma = gsfit_controller.plasma

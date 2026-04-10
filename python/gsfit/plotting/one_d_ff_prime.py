@@ -1,3 +1,4 @@
+import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import mu_0
@@ -5,7 +6,7 @@ from scipy.constants import mu_0
 from ..gsfit import Gsfit
 
 
-def plot(gsfit_controller: Gsfit, ax: plt.Axes, time_desired: float, color: str = "blue", linestyle: str = "solid") -> None:
+def plot(gsfit_controller: Gsfit, ax: matplotlib.axes.Axes, time_desired: float, color: str = "blue", linestyle: str = "solid") -> None:
     plasma = gsfit_controller.plasma
 
     time = plasma.get_array1(["time"])
