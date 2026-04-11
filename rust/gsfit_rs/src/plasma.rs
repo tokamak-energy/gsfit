@@ -1358,6 +1358,21 @@ fn epp_beta_n(beta: f64, r_minor: f64, bt_vac_at_r_geo: f64, ip: f64) -> f64 {
     return beta_n;
 }
 
+/// Calculate the poloidal beta using three different normalisations.
+///
+/// beta_p_1 is not yet implemented (returns NAN).
+/// beta_p_2 is normalised to the magnetic axis major radius.
+/// beta_p_3 is normalised to the geometric major radius.
+///
+/// # Arguments
+/// * `w_mhd` - stored MHD energy [joule]
+/// * `ip` - plasma current [ampere]
+/// * `r_mag` - magnetic axis major radius [meter]
+/// * `r_geo` - geometric major radius [meter]
+/// * `plasma_volume` - plasma volume [meter ** 3]
+///
+/// # Returns
+/// * `(beta_p_1, beta_p_2, beta_p_3)` - poloidal beta values [dimensionless]
 fn epp_beta_p(w_mhd: f64, ip: f64, r_mag: f64, r_geo: f64, plasma_volume: f64) -> (f64, f64, f64) {
     let p_vol_int: f64 = w_mhd * 2.0 / 3.0;
 

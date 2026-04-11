@@ -44,7 +44,7 @@ pub fn find_viable_xpt(
     r: &Array1<f64>,
     z: &Array1<f64>,
     psi_2d: &Array2<f64>,
-    stationary_points: &Vec<StationaryPoint>,
+    stationary_points: &[StationaryPoint],
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
     mag_r_previous: f64,
@@ -85,7 +85,7 @@ pub fn find_viable_xpt(
 
         // Only add saddle points
         let test_for_saddle_point: bool = stationary_point.hessian_determinant < 0.0;
-        if test_for_saddle_point == true {
+        if test_for_saddle_point {
             potential_xpts.push(BoundaryContour {
                 boundary_r: Array1::zeros(0),
                 boundary_z: Array1::zeros(0),
@@ -106,7 +106,7 @@ pub fn find_viable_xpt(
     potential_xpts.sort_by(|a, b| {
         b.bounding_psi // using `b` first gives descending order
             .partial_cmp(&a.bounding_psi)
-            .expect("find_viable_limit_point: cannot sort potential_limit_points by bounding_psi")
+            .expect("cannot sort potential_xpts by bounding_psi")
     });
 
     // Find the closest grid point to the magnetic axis
@@ -126,9 +126,12 @@ pub fn find_viable_xpt(
         // Test if there is a LFS boundary at the same height as the magnetic axis
         // March from the magnetic axis to the LFS
         let mut test_intersects_lfs_boundary: bool = false;
-        for i_r in index_mag_r..n_r - 1 {
+        'loop_over_mag_r: for i_r in index_mag_r..n_r - 1 {
             if psi_2d[(index_mag_z, i_r)] < potential_xpt.bounding_psi {
                 test_intersects_lfs_boundary = true;
+
+                // No need to continue
+                break 'loop_over_mag_r;
             }
         }
         // No LFS boundary encountered

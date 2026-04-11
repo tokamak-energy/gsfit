@@ -268,7 +268,7 @@ impl Pressure {
         let n_sensors_all: usize = sensor_names_all.len();
 
         // Interpolate all sensors to `times_to_reconstruct`
-        let mut measured: Array2<f64> = Array2::zeros((n_sensors_all, n_time));
+        let mut measured: Array2<f64> = Array2::from_elem((n_sensors_all, n_time), f64::NAN);
         for i_sensor in 0..n_sensors_all {
             let sensor_name: &str = &sensor_names_all[i_sensor];
 

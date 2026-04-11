@@ -7,7 +7,6 @@ use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Line, MultiPolygon};
 use ndarray::{Array1, Array2};
 use ndarray_interp::interp2d::Interp2D;
-use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;
 
 #[derive(Debug, Clone, Copy)]
@@ -53,16 +52,16 @@ pub fn find_stationary_points(
 
     // Find the contours for br=0
     let br_flattened: Vec<f64> = br_2d.flatten().to_vec();
-    let br_contours_tmp: Vec<contour::Contour> = contour_grid.contours(&br_flattened, &[0.0f64]).expect("br_contours_tmp: error");
-    let br_contours: &MultiPolygon = br_contours_tmp[0].geometry(); // The [0] is because I have only supplied one `thresholds`
+    let br_contours_vec: Vec<contour::Contour> = contour_grid.contours(&br_flattened, &[0.0f64]).expect("br_contours_vec: error");
+    let br_contours: &MultiPolygon = br_contours_vec[0].geometry(); // The [0] is because I have only supplied one `thresholds`
     if br_contours.iter().count() == 0 {
         return Err("find_viable_xpt: no br=0 contours found".to_string());
     }
 
     // Find the contours for bz=0
     let bz_flattened: Vec<f64> = bz_2d.flatten().to_vec();
-    let bz_contours_tmp: Vec<contour::Contour> = contour_grid.contours(&bz_flattened, &[0.0f64]).expect("bz_contours_tmp: error");
-    let bz_contours: &MultiPolygon = bz_contours_tmp[0].geometry(); // The [0] is because I have only supplied one `thresholds`
+    let bz_contours_vec: Vec<contour::Contour> = contour_grid.contours(&bz_flattened, &[0.0f64]).expect("bz_contours_vec: error");
+    let bz_contours: &MultiPolygon = bz_contours_vec[0].geometry(); // The [0] is because I have only supplied one `thresholds`
     if bz_contours.iter().count() == 0 {
         return Err("find_viable_xpt: no bz=0 contours found".to_string());
     }
@@ -141,11 +140,7 @@ pub fn find_stationary_points(
                     // TODO: Very worringly, the contours can be off by 1/2 a grid point.
                     // This has been reported to GitHub as an issue. But until it's fixed we shall add this extra test
                     // that the intersection is within the grid.
-                    if stationary_r < r.max().expect("find_viable_xpt: r.max()").to_owned()
-                        && stationary_r > r.min().expect("find_viable_xpt: r.min()").to_owned()
-                        && stationary_z < z.max().expect("find_viable_xpt: z.max()").to_owned()
-                        && stationary_z > z.min().expect("find_viable_xpt: z.max()").to_owned()
-                    {
+                    if stationary_r > r[0] && stationary_r < r[n_r - 1] && stationary_z > z[0] && stationary_z < z[n_z - 1] {
                         // TODO: need to use bicubic interpolator. So that the boundary is consistent with `psi_boundary`
 
                         // Find the closest grid point

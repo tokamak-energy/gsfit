@@ -52,8 +52,8 @@ pub fn greens_b(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: A
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
 
-    let mut g_br: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
-    let mut g_bz: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
+    let mut g_br: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
+    let mut g_bz: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
 
     for i_rz in 0..n_rz {
         // Define some variables

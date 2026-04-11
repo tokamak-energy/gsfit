@@ -39,7 +39,7 @@ pub struct MagneticAxis {
 /// ```
 ///
 pub fn find_magnetic_axis(
-    stationary_points: &Vec<StationaryPoint>,
+    stationary_points: &[StationaryPoint],
     mag_r_previous: f64,
     mag_z_previous: f64,
     vessel_r: &Array1<f64>,
