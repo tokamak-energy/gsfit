@@ -30,7 +30,7 @@ def map_results_to_database(
 
     # Two-d
     results["TWO_D"]["BR"] = plasma.get_array3(["two_d", "br"])
-    # results["TWO_D"]["BT"] = plasma.get_array3(["two_d", "bt"])
+    results["TWO_D"]["BT"] = plasma.get_array3(["two_d", "bt"])
     results["TWO_D"]["BZ"] = plasma.get_array3(["two_d", "bz"])
     results["TWO_D"]["MASK"] = plasma.get_array3(["two_d", "mask"])
     results["TWO_D"]["P"] = plasma.get_array3(["two_d", "p"])

@@ -128,7 +128,7 @@ pub fn flood_fill_mask(
     }
 
     // Magnetic axis must be inside the vessel, otherwise we cannot start the fill
-    if mask_vessel_2d[(i_z_nearest_mag, i_r_nearest_mag)] == false {
+    if !mask_vessel_2d[(i_z_nearest_mag, i_r_nearest_mag)] {
         return mask_2d;
     }
 
@@ -160,7 +160,7 @@ pub fn flood_fill_mask(
 
             // Respect the vessel wall during the flood fill
             // This prevents the fill from painting the centre post and wrapping all the way round to the opposite Z
-            if mask_vessel_2d[(new_i_z, new_i_r)] == false {
+            if !mask_vessel_2d[(new_i_z, new_i_r)] {
                 continue;
             }
 
@@ -182,7 +182,7 @@ pub fn flood_fill_mask(
 
     // Ensure points outside the vessel are masked out (defensive, should already be zero)
     for (mask_val, inside_vessel) in mask_2d.iter_mut().zip(mask_vessel_2d.iter()) {
-        if inside_vessel == &false {
+        if !inside_vessel {
             *mask_val = 0.0;
         }
     }

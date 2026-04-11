@@ -37,7 +37,7 @@ impl Passives {
     /// [passive_name]["geometry"]["resistivity"]                 = float64
     /// [passive_name]["dof"][dof_name]["current_distribution"]   = np.ndarray;  shape=(388,)
     /// [passive_name]["dof"][dof_name]["cvalue"]                 = np.ndarray;  shape=(388,)
-    ///
+    #[allow(clippy::too_many_arguments)]
     pub fn add_passive(
         &mut self,
         name: &str,
@@ -428,7 +428,7 @@ impl Passives {
             }
         }
 
-        let passive_geometry_all = PassiveGeometryAll {
+        PassiveGeometryAll {
             r: Array1::from_vec(passive_locations_r),
             z: Array1::from_vec(passive_locations_z),
             d_r: Array1::from_vec(passive_locations_d_r),
@@ -436,9 +436,7 @@ impl Passives {
             angle_1: Array1::from_vec(passive_locations_angle_1),
             angle_2: Array1::from_vec(passive_locations_angle_2),
             resistivity: Array1::from_vec(passive_resistivity),
-        };
-
-        passive_geometry_all
+        }
     }
 
     pub fn get_passive_filament_currents_from_simulated(&self) -> Array2<f64> {

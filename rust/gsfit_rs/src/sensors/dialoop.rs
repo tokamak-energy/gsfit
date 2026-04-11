@@ -46,7 +46,7 @@ impl Dialoop {
     /// [probe_name]["greens"]["pf"][pf_name]                           = f64
     /// [probe_name]["greens"]["plasma"]                                = Array1;  shape=[n_z * n_r]
     /// ```
-    ///
+    #[allow(clippy::too_many_arguments)]
     pub fn add_sensor(
         &mut self,
         name: &str,

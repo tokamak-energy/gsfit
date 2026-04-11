@@ -3,7 +3,6 @@ use crate::material_properties::copper_resistivity;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::SensorsDynamic;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use interpolation;
 use ndarray::{Array1, Array2, Array3, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;

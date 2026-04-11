@@ -50,7 +50,7 @@ impl FluxLoops {
     /// [probe_name]["greens"]["pf"][pf_name]                           = f64
     /// [probe_name]["greens"]["plasma"]                                = Array1;  shape=[n_z * n_r]
     /// ```
-    ///
+    #[allow(clippy::too_many_arguments)]
     pub fn add_sensor(
         &mut self,
         name: &str,
@@ -83,15 +83,15 @@ impl FluxLoops {
     ///
     fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python type into Rust
-        let coils_local: &Coils = &*coils;
+        let coils_local: &Coils = &coils;
 
         for sensor_name in self.results.keys() {
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
 
             for pf_coil_name in coils_local.results.get("pf").keys() {
-                let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
-                let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
+                let coil_r: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
+                let coil_z: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
 
                 let g_full: Array2<f64> = greens_psi(
                     Array1::from_vec(vec![sensor_r]),
@@ -118,7 +118,7 @@ impl FluxLoops {
     ///
     fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
         // Change Python type into Rust
-        let passives_local: &Passives = &*passives;
+        let passives_local: &Passives = &passives;
 
         for sensor_name in self.results.keys() {
             // Get variables out of self
@@ -143,7 +143,7 @@ impl FluxLoops {
                     );
 
                     // Current distribution
-                    let current_distribution: Array1<f64> = passives
+                    let current_distribution: Array1<f64> = passives_local
                         .results
                         .get(&passive_name)
                         .get("dof")
@@ -170,7 +170,7 @@ impl FluxLoops {
 
     fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
         // Change Python type into Rust
-        let plasma_local: &Plasma = &*plasma;
+        let plasma_local: &Plasma = &plasma;
 
         let plasma_r: Array1<f64> = plasma_local.results.get("grid").get("flat").get("r").unwrap_array1();
         let plasma_z: Array1<f64> = plasma_local.results.get("grid").get("flat").get("z").unwrap_array1();
@@ -217,9 +217,9 @@ impl FluxLoops {
 
     fn calculate_sensor_values(&mut self, coils: PyRef<Coils>, passives: PyRef<Passives>, plasma: PyRef<Plasma>) {
         // Convert Python types into Rust
-        let coils_rs: &Coils = &*coils;
-        let passives_rs: &Passives = &*passives;
-        let plasma_rs: &Plasma = &*plasma;
+        let coils_rs: &Coils = &coils;
+        let passives_rs: &Passives = &passives;
+        let plasma_rs: &Plasma = &plasma;
 
         // Run the Rust method
         self.calculate_sensor_values_rs(coils_rs, passives_rs, plasma_rs);

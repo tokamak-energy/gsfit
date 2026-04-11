@@ -12,7 +12,6 @@ use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::Area;
 use geo::Centroid;
 use geo::{Contains, Coord, LineString, Point, Polygon};
-use interpolation;
 use ndarray::{Array1, Array2, Array3, ArrayView2, Axis, MeshIndex, meshgrid, s};
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
@@ -62,6 +61,7 @@ impl Plasma {
     /// * `self` - a new instance of the Plasma struct
     ///
     #[new]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         n_r: usize,
         n_z: usize,
@@ -266,7 +266,7 @@ impl Plasma {
     ///
     fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python types into Rust types
-        let coils_local: &Coils = &*coils; // TODO: check if "let coils_local: &Coils = &coils;" works!!!!!
+        let coils_local: &Coils = &coils;
 
         // Get variables out of self
         let flat_r: Array1<f64> = self.results.get("grid").get("flat").get("r").unwrap_array1();
@@ -403,7 +403,7 @@ impl Plasma {
     ///
     fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
         // Change Python types into Rust types
-        let passives_local: &Passives = &*passives;
+        let passives_local: &Passives = &passives;
 
         // Get variables out of self
         let flat_r: Array1<f64> = self.results.get("grid").get("flat").get("r").unwrap_array1();
@@ -419,7 +419,7 @@ impl Plasma {
 
             for dof_name in dof_names {
                 // Current distribution
-                let current_distribution: Array1<f64> = passives
+                let current_distribution: Array1<f64> = passives_local
                     .results
                     .get(&passive_name)
                     .get("dof")
@@ -890,6 +890,7 @@ impl Plasma {
         // let mut psi_2d_coils: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         let mut br_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         let mut bz_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
+        let mut d_bz_d_z_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         let mut mask_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         // Fit values
         let n_p_prime: usize = plasma.p_prime_source_function.source_function_n_dof();
@@ -988,6 +989,7 @@ impl Plasma {
             // Two-d
             br_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].br_2d);
             bz_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].bz_2d);
+            d_bz_d_z_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].d_bz_d_z_2d);
             j_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].j_2d);
             mask_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].mask);
             psi_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].psi_2d);
@@ -1292,6 +1294,7 @@ impl Plasma {
         self.results.get_or_insert("two_d").insert("br", br_2d);
         self.results.get_or_insert("two_d").insert("bt", bt_2d);
         self.results.get_or_insert("two_d").insert("bz", bz_2d);
+        self.results.get_or_insert("two_d").insert("d_bz_d_z", d_bz_d_z_2d);
         self.results.get_or_insert("two_d").insert("j", j_2d);
         self.results.get_or_insert("two_d").insert("mask", mask_2d);
         self.results.get_or_insert("two_d").insert("p", p_2d.clone());
@@ -1822,7 +1825,7 @@ fn epp_q_axis(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, f_prof
 
 /// Safety factor at psi_n=0.95, q95
 fn epp_q95(q_profile: &Array1<f64>, psi_n: &Array1<f64>) -> f64 {
-    let interpolator = interpolation::Dim1Linear::new(psi_n.clone(), q_profile.clone()).expect("find_boundary: Can't make interpolator for q_profile");
+    let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(psi_n.clone(), q_profile.clone()).expect("find_boundary: Can't make interpolator for q_profile");
 
     let psi_95: Array1<f64> = Array1::from_vec(vec![0.95]);
     let q95: f64 = interpolator.interpolate_array1(&psi_95).expect("epp_q95: can't do interpolation")[0];

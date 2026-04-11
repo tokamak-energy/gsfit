@@ -102,7 +102,7 @@ pub fn py_dict_to_data_tree(state_dictionary: &Bound<'_, PyDict>) -> PyResult<Da
 pub fn py_any_to_data_value(value_py: &Bound<'_, PyAny>) -> PyResult<DataValue> {
     // Try dictionary first (for nested DataTrees)
     if let Ok(dict_val) = value_py.cast::<PyDict>() {
-        let nested_data_tree: DataTree = py_dict_to_data_tree(&dict_val)?;
+        let nested_data_tree: DataTree = py_dict_to_data_tree(dict_val)?;
         return Ok(DataValue::DataTree(nested_data_tree));
     }
 

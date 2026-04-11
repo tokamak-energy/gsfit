@@ -119,7 +119,7 @@ pub fn find_viable_xpt(
         let xpt_z_local: f64 = potential_xpt.bounding_z;
         let xpt_point: Point = Point::new(xpt_r_local, xpt_z_local);
         let test_inside_vessel: bool = vessel_polygon.contains(&xpt_point);
-        if test_inside_vessel == false {
+        if !test_inside_vessel {
             continue 'loop_over_potential_xpts;
         }
 

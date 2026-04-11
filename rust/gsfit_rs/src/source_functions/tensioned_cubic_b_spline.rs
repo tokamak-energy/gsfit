@@ -1,5 +1,4 @@
 use crate::source_functions::SourceFunctionTraits;
-use interpolation;
 use ndarray::{Array1, Array2, s};
 use numpy::PyArray1;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
@@ -500,7 +499,7 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
         let psi_n_at_boundary: Array1<f64> = Array1::from_vec(vec![1.0]);
         let mut integral_at_boundary: f64 = 0.0;
         for i_dof in 0..n_dof {
-            integral_at_boundary = integral_at_boundary + spline_dof[i_dof] * self.source_function_integral_single_dof(&psi_n_at_boundary, i_dof)[0];
+            integral_at_boundary += spline_dof[i_dof] * self.source_function_integral_single_dof(&psi_n_at_boundary, i_dof)[0];
         }
 
         integral - integral_at_boundary

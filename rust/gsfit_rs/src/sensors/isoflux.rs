@@ -51,7 +51,7 @@ impl Isoflux {
     /// [probe_name]["greens"]["pf"][pf_name]                           = f64
     /// [probe_name]["greens"]["plasma"]                                = Array1;  shape=[n_z * n_r]
     /// ```
-    ///
+    #[allow(clippy::too_many_arguments)]
     pub fn add_sensor(
         &mut self,
         name: &str,
@@ -191,7 +191,7 @@ impl Isoflux {
     ///
     fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python type into Rust
-        let coils_local: &Coils = &*coils;
+        let coils_local: &Coils = &coils;
 
         for sensor_name in self.results.keys() {
             // Get the isoflux locations
@@ -277,7 +277,7 @@ impl Isoflux {
     ///
     fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
         // Change Python type into Rust
-        let passives_local: &Passives = &*passives;
+        let passives_local: &Passives = &passives;
 
         for sensor_name in self.results.keys() {
             // Get the isoflux locations
@@ -394,7 +394,7 @@ impl Isoflux {
 
     fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
         // Change Python type into Rust
-        let plasma_local: &Plasma = &*plasma;
+        let plasma_local: &Plasma = &plasma;
 
         let n_r: usize = plasma_local.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = plasma_local.results.get("grid").get("n_z").unwrap_usize();
@@ -512,7 +512,7 @@ impl Isoflux {
     /// Calculate the sensor values
     pub fn calculate_sensor_values(&mut self, plasma: PyRef<Plasma>) {
         // Convert Python types into Rust
-        let plasma_rs: &Plasma = &*plasma;
+        let plasma_rs: &Plasma = &plasma;
 
         // Run the Rust method
         self.calculate_sensor_values_rust(plasma_rs);

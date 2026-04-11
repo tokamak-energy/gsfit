@@ -278,7 +278,7 @@ pub fn find_stationary_points(
                             z: stationary_z,
                             psi: stationary_psi,
                             hessian_determinant: hessian_det,
-                            hessian_trace: hessian_trace,
+                            hessian_trace,
                             i_r_nearest,
                             i_z_nearest,
                             i_r_nearest_left,

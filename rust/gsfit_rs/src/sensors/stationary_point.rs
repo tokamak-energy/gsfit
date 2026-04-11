@@ -124,7 +124,7 @@ impl StationaryPoint {
     /// Greens with coils
     pub fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python type into Rust
-        let coils_local: &Coils = &*coils;
+        let coils_local: &Coils = &coils;
 
         // Run the Rust method
         self.greens_with_coils_rs(coils_local.to_owned());
@@ -133,7 +133,7 @@ impl StationaryPoint {
     /// Greens with passives
     pub fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
         // Change Python type into Rust
-        let passives_local: &Passives = &*passives;
+        let passives_local: &Passives = &passives;
 
         // Run the Rust method
         self.greens_with_passives_rs(passives_local.to_owned());
@@ -142,7 +142,7 @@ impl StationaryPoint {
     /// Greens with plasma
     pub fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
         // Change Python type into Rust
-        let plasma_local: &Plasma = &*plasma;
+        let plasma_local: &Plasma = &plasma;
 
         // Run the Rust method
         self.greens_with_plasma_rs(plasma_local.to_owned());
@@ -151,9 +151,9 @@ impl StationaryPoint {
     // /// Calculate sensor values
     // pub fn calculate_sensor_values(&mut self, coils: PyRef<Coils>, passives: PyRef<Passives>, plasma: PyRef<Plasma>) {
     //     // Convert Python types into Rust
-    //     let coils_rs: &Coils = &*coils;
-    //     let passives_rs: &Passives = &*passives;
-    //     let plasma_rs: &Plasma = &*plasma;
+    //     let coils_rs: &Coils = &coils;
+    //     let passives_rs: &Passives = &passives;
+    //     let plasma_rs: &Plasma = &plasma;
 
     //     // Run the Rust method
     //     self.calculate_sensor_values_rust(coils_rs, passives_rs, plasma_rs);

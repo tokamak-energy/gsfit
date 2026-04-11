@@ -131,7 +131,7 @@ pub fn marching_squares(
         let boundary_contour: MarchingContour = MarchingContour {
             r: Array1::from_vec(boundary_r_sorted),
             z: Array1::from_vec(boundary_z_sorted),
-            n: n,
+            n,
         };
 
         return boundary_contour;
@@ -285,10 +285,6 @@ pub fn marching_squares(
     first_and_last_boundary_points.push((boundary_points_near_xpt_r_sorted[0], boundary_points_near_xpt_z_sorted[0]));
     first_and_last_boundary_points.push((boundary_points_near_xpt_r_sorted[1], boundary_points_near_xpt_z_sorted[1]));
 
-    // Collect remaining boundary points from the HashMap
-    let unsorted_boundary_r: Vec<f64> = unsorted_boundary_points.values().map(|&(r_val, _)| r_val).collect();
-    let unsorted_boundary_z: Vec<f64> = unsorted_boundary_points.values().map(|&(_, z_val)| z_val).collect();
-
     let mut boundary_sorted_r: Vec<f64> = Vec::new();
     let mut boundary_sorted_z: Vec<f64> = Vec::new();
 
@@ -320,7 +316,7 @@ pub fn marching_squares(
     let boundary_contour: MarchingContour = MarchingContour {
         r: Array1::from_vec(boundary_sorted_r),
         z: Array1::from_vec(boundary_sorted_z),
-        n: n,
+        n,
     };
 
     boundary_contour

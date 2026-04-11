@@ -48,7 +48,7 @@ impl BpProbes {
     ///
     /// # Returns
     /// None
-    ///
+    #[allow(clippy::too_many_arguments)]
     pub fn add_sensor(
         &mut self,
         name: &str,
@@ -108,7 +108,7 @@ impl BpProbes {
     /// Greens with coils
     pub fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python type into Rust
-        let coils_local: &Coils = &*coils;
+        let coils_local: &Coils = &coils;
 
         // Run the Rust method
         self.greens_with_coils_rs(coils_local.to_owned());
@@ -117,7 +117,7 @@ impl BpProbes {
     /// Greens with passives
     pub fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
         // Change Python type into Rust
-        let passives_local: &Passives = &*passives;
+        let passives_local: &Passives = &passives;
 
         // Run the Rust method
         self.greens_with_passives_rs(passives_local.to_owned());
@@ -126,7 +126,7 @@ impl BpProbes {
     /// Greens with plasma
     pub fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
         // Change Python type into Rust
-        let plasma_local: &Plasma = &*plasma;
+        let plasma_local: &Plasma = &plasma;
 
         // Run the Rust method
         self.greens_with_plasma_rs(plasma_local.to_owned());
@@ -135,9 +135,9 @@ impl BpProbes {
     /// Calculate sensor values
     pub fn calculate_sensor_values(&mut self, coils: PyRef<Coils>, passives: PyRef<Passives>, plasma: PyRef<Plasma>) {
         // Convert Python types into Rust
-        let coils_rs: &Coils = &*coils;
-        let passives_rs: &Passives = &*passives;
-        let plasma_rs: &Plasma = &*plasma;
+        let coils_rs: &Coils = &coils;
+        let passives_rs: &Passives = &passives;
+        let plasma_rs: &Plasma = &plasma;
 
         // Run the Rust method
         self.calculate_sensor_values_rs(coils_rs, passives_rs, plasma_rs);
@@ -189,12 +189,12 @@ impl BpProbes {
 
             // Store simulated sensor values
             self.results
-                .get_or_insert(&sensor_name)
+                .get_or_insert(sensor_name)
                 .get_or_insert("b")
                 .get_or_insert("simulated")
                 .insert("value", sensor_values);
             self.results
-                .get_or_insert(&sensor_name)
+                .get_or_insert(sensor_name)
                 .get_or_insert("b")
                 .get_or_insert("simulated")
                 .insert("time", simulated_time.clone());
@@ -336,14 +336,14 @@ impl BpProbes {
             for i_passive in 0..n_passives {
                 let passive_name: &str = &passive_names[i_passive];
                 let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                for dof_name in dof_names {
+                for dof_name in &dof_names {
                     greens_with_passives[(i_dof_total, i_sensor)] = self
                         .results
                         .get(&sensor_names[i_sensor])
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .unwrap_f64();
 
                     // Store the name
@@ -383,7 +383,7 @@ impl BpProbes {
                 interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone()).expect("Can't make interpolator");
 
             // Do the interpolation
-            let measured_this_sensor: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct).expect("Can't do interpolation");
+            let measured_this_sensor: Array1<f64> = interpolator.interpolate_array1(times_to_reconstruct).expect("Can't do interpolation");
 
             // Store for later
             measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_sensor);
@@ -482,6 +482,7 @@ impl BpProbes {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn add_sensor_rs(
         &mut self,
         name: &str,

@@ -183,12 +183,11 @@ impl D2PsiDR2Calculator {
                 2.0 * PI * delta_z * d_bz_d_z[(i_z, i_r)] + PI * r[i_r] * delta_z * (d_bz_d_z[(i_z, i_r + 1)] - d_bz_d_z[(i_z, i_r - 1)]) / d_r
         };
 
-        let d2_psi_d_r2: f64;
-        if delta_z.is_finite() {
-            d2_psi_d_r2 = d2_psi_d_r2_unshifted + d2_psi_d_r2_delta_z_term;
+        let d2_psi_d_r2: f64 = if delta_z.is_finite() {
+            d2_psi_d_r2_unshifted + d2_psi_d_r2_delta_z_term
         } else {
-            d2_psi_d_r2 = d2_psi_d_r2_unshifted;
-        }
+            d2_psi_d_r2_unshifted
+        };
 
         return d2_psi_d_r2;
     }

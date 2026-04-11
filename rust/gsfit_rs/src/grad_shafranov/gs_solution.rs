@@ -52,6 +52,7 @@ pub struct GsSolution<'a> {
     pub passive_dof_values: Array1<f64>,
     pub br_2d: Array2<f64>,
     pub bz_2d: Array2<f64>,
+    pub d_bz_d_z_2d: Array2<f64>,
     pub psi_2d: Array2<f64>,
     pub psi_n_2d: Array2<f64>,
     pub j_2d: Array2<f64>,
@@ -134,6 +135,7 @@ impl<'a> GsSolution<'a> {
             passive_dof_values: Array1::zeros(0),
             br_2d: Array2::zeros((0, 0)),
             bz_2d: Array2::zeros((0, 0)),
+            d_bz_d_z_2d: Array2::zeros((0, 0)),
             psi_2d: Array2::zeros((0, 0)),
             psi_n_2d: Array2::zeros((0, 0)),
             j_2d: Array2::zeros((0, 0)),
@@ -170,6 +172,7 @@ impl<'a> GsSolution<'a> {
         self.passive_dof_values = self.passive_dof_values.to_owned() * f64::NAN;
         self.br_2d = self.br_2d.to_owned() * f64::NAN;
         self.bz_2d = self.bz_2d.to_owned() * f64::NAN;
+        self.d_bz_d_z_2d = self.d_bz_d_z_2d.to_owned() * f64::NAN;
         self.psi_2d = self.psi_2d.to_owned() * f64::NAN;
         self.psi_n_2d = self.psi_n_2d.to_owned() * f64::NAN;
         self.j_2d = self.j_2d.to_owned() * f64::NAN;
@@ -355,6 +358,7 @@ impl<'a> GsSolution<'a> {
             } else {
                 d_bz_d_z_2d = d_bz_d_z_2d_unshifted;
             }
+            self.d_bz_d_z_2d = d_bz_d_z_2d.to_owned();
 
             // Get `br` and `bz`
             let br_2d: Array2<f64> = self.br_2d.to_owned();
