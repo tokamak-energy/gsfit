@@ -7,8 +7,7 @@ use super::marching_squares::marching_squares;
 use core::f64;
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
-
-const PI: f64 = std::f64::consts::PI;
+use std::f64::consts::PI;
 
 /// Find a viable limit point which can be used to define the plasma boundary
 ///

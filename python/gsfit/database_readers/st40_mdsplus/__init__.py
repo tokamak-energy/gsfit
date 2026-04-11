@@ -6,10 +6,11 @@ from gsfit_rs import Dialoop
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
-from gsfit_rs import StationaryPoint
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
+from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
+from gsfit_rs import StationaryPoint
 
 from ..interface import DatabaseReaderProtocol
 from .setup_bp_probes import setup_bp_probes
@@ -18,13 +19,14 @@ from .setup_dialoop import setup_dialoop
 from .setup_flux_loops import setup_flux_loops
 from .setup_isoflux_boundary_sensors import setup_isoflux_boundary_sensors
 from .setup_isoflux_sensors import setup_isoflux_sensors
-from .setup_stationary_point_sensors import setup_stationary_point_sensors
 from .setup_passives import setup_passives
 from .setup_plasma import setup_plasma
+from .setup_pressure_sensors import setup_pressure_sensors
 from .setup_rogowski_coils import setup_rogowski_coils
+from .setup_stationary_point_sensors import setup_stationary_point_sensors
 
 
-class DatabaseReaderSt40MDSplus(DatabaseReaderProtocol):
+class DatabaseReader(DatabaseReaderProtocol):
     """
     This class inherits from the DatabaseReaderProtocol, which defines the inputs and outputs to the class methods.
     The methods in this class are used to initialise the Rust implementations.
@@ -48,17 +50,20 @@ class DatabaseReaderSt40MDSplus(DatabaseReaderProtocol):
     def setup_isoflux_boundary_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> IsofluxBoundary:
         return setup_isoflux_boundary_sensors(self, *args, **kwargs)
 
-    def setup_stationary_point_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> StationaryPoint:
-        return setup_stationary_point_sensors(self, *args, **kwargs)
-
     def setup_isoflux_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Isoflux:
         return setup_isoflux_sensors(self, *args, **kwargs)
+
+    def setup_stationary_point_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> StationaryPoint:
+        return setup_stationary_point_sensors(self, *args, **kwargs)
 
     def setup_passives(self, *args: typing.Any, **kwargs: typing.Any) -> Passives:
         return setup_passives(self, *args, **kwargs)
 
     def setup_plasma(self, *args: typing.Any, **kwargs: typing.Any) -> Plasma:
         return setup_plasma(self, *args, **kwargs)
+
+    def setup_pressure_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Pressure:
+        return setup_pressure_sensors(self, *args, **kwargs)
 
     def setup_rogowski_coils(self, *args: typing.Any, **kwargs: typing.Any) -> RogowskiCoils:
         return setup_rogowski_coils(self, *args, **kwargs)

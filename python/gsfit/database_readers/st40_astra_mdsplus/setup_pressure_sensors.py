@@ -5,11 +5,11 @@ from gsfit_rs import Pressure
 from st40_database import GetData  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderST40AstraMDSplus
+    from . import DatabaseReader
 
 
 def setup_pressure_sensors(
-    self: "DatabaseReaderST40AstraMDSplus",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
 ) -> Pressure:
@@ -26,7 +26,5 @@ def setup_pressure_sensors(
 
     # Initialise the Pressure Rust class
     pressure = Pressure()
-
-    # TODO: Implement this method
 
     return pressure

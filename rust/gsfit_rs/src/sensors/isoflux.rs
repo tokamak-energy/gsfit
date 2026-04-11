@@ -15,12 +15,11 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::f64::consts::PI;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-const PI: f64 = std::f64::consts::PI;
-
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass(module = "gsfit_rs")]
+#[pyclass(module = "gsfit_rs", skip_from_py_object)]
 pub struct Isoflux {
     pub results: DataTree,
 }
@@ -183,7 +182,6 @@ impl Isoflux {
                 include_dynamic[i_time] = false;
             }
         }
-        println!("include_dynamic = {:?}", include_dynamic);
         self.results
             .get_or_insert(name)
             .get_or_insert("fit_settings")
@@ -576,7 +574,7 @@ impl Isoflux {
             .expect("Missing 'results' key in pickled data")
             .ok_or_else(|| PyTypeError::new_err("Missing 'results' key in pickled data"))
             .expect("Failed to get `results` from pickled data");
-        let results_dict_bound: &Bound<'_, PyDict> = results_dict.downcast::<PyDict>().expect("Failed to downcast `results` to PyDict");
+        let results_dict_bound: &Bound<'_, PyDict> = results_dict.cast::<PyDict>().expect("Failed to downcast `results` to PyDict");
         self.results = py_dict_to_data_tree(results_dict_bound).expect("Failed to convert PyDict to DataTree");
         Ok(())
     }
@@ -614,7 +612,6 @@ impl Isoflux {
             let mut include: Vec<bool> = Vec::new();
             for sensor_name in sensor_names_all.clone() {
                 let include_dynamic: Vec<bool> = self.results.get(&sensor_name).get("fit_settings").get("include_dynamic").unwrap_vec_bool();
-                println!("include_dynamic = {:?}", include_dynamic);
 
                 include.push(include_dynamic[i_time]);
             }

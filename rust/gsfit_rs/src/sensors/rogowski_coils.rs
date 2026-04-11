@@ -15,13 +15,13 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::f64::consts::PI;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
-const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass(module = "gsfit_rs")]
+#[pyclass(module = "gsfit_rs", skip_from_py_object)]
 pub struct RogowskiCoils {
     pub results: DataTree,
 }
@@ -227,8 +227,8 @@ impl RogowskiCoils {
                     let gap_name: String = gap_names[i_gap].clone(); // TODO: is there a better way than cloning here?
 
                     // Construct virtual bp probes
-                    let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
-                        self.clone().construct_virtual_bp_probes(&sensor_name, &gap_name);
+                    let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z): (BpProbes, BpProbes, f64, f64) =
+                        self.construct_virtual_bp_probes(&sensor_name, &gap_name);
 
                     // Calculate Greens betwen the virtual bp-probes and the coils
                     virtual_b_r_probes.greens_with_coils_rs(coils.clone());
@@ -239,7 +239,7 @@ impl RogowskiCoils {
 
                     let n_virtual_bp_probes: usize = g_gaps_b_r.len();
 
-                    g_gap = g_gaps_b_r[0] * 0.5 * gap_virtual_d_r + g_gaps_b_z[0] * 0.5 * gap_virtual_d_z;
+                    g_gap += g_gaps_b_r[0] * 0.5 * gap_virtual_d_r + g_gaps_b_z[0] * 0.5 * gap_virtual_d_z;
                     for i_virtual_bp_probe in 1..n_virtual_bp_probes - 1 {
                         g_gap += g_gaps_b_r[i_virtual_bp_probe] * gap_virtual_d_r + g_gaps_b_z[i_virtual_bp_probe] * gap_virtual_d_z;
                     }
@@ -325,7 +325,7 @@ impl RogowskiCoils {
                     for gap_name in &gap_names {
                         // Construct virtual bp probes
                         let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
-                            self.clone().construct_virtual_bp_probes(&sensor_name, gap_name);
+                            self.construct_virtual_bp_probes(&sensor_name, gap_name);
 
                         // Calculate Greens betwen the virtual bp-probes and the coils
                         virtual_b_r_probes.greens_with_passives_rs(passives_local.clone());
@@ -350,12 +350,11 @@ impl RogowskiCoils {
 
                         let n_virtual_bp_probes: usize = virtual_b_z_probes.results.keys().len();
 
-                        g_gap = g_gaps_b_r[0] * 0.5 * gap_virtual_d_r + g_gaps_b_z[0] * 0.5 * gap_virtual_d_z;
+                        g_gap += g_gaps_b_r[0] * 0.5 * gap_virtual_d_r + g_gaps_b_z[0] * 0.5 * gap_virtual_d_z;
                         for i_virtual_bp_probe in 1..n_virtual_bp_probes - 1 {
-                            g_gap = g_gap + g_gaps_b_r[i_virtual_bp_probe] * gap_virtual_d_r + g_gaps_b_z[i_virtual_bp_probe] * gap_virtual_d_z;
+                            g_gap += g_gaps_b_r[i_virtual_bp_probe] * gap_virtual_d_r + g_gaps_b_z[i_virtual_bp_probe] * gap_virtual_d_z;
                         }
-                        g_gap =
-                            g_gap + g_gaps_b_r[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_r + g_gaps_b_z[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_z;
+                        g_gap += g_gaps_b_r[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_r + g_gaps_b_z[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_z;
                     }
 
                     // Sum over all pasive filaments
@@ -422,7 +421,7 @@ impl RogowskiCoils {
             for gap_name in &gap_names {
                 // Construct virtual bp probes
                 let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
-                    self.clone().construct_virtual_bp_probes(&sensor_name, gap_name);
+                    self.construct_virtual_bp_probes(&sensor_name, gap_name);
 
                 // Calculate Greens betwen the virtual bp-probes and the coils
                 virtual_b_r_probes.greens_with_plasma_rs(plasma.clone());
@@ -433,7 +432,7 @@ impl RogowskiCoils {
 
                 let n_virtual_bp_probes: usize = virtual_b_z_probes.results.keys().len();
 
-                g_gap = g_gaps_b_r.slice(s![.., 0]).to_owned() * 0.5 * gap_virtual_d_r + g_gaps_b_z.slice(s![.., 0]).to_owned() * 0.5 * gap_virtual_d_z;
+                g_gap = g_gap + g_gaps_b_r.slice(s![.., 0]).to_owned() * 0.5 * gap_virtual_d_r + g_gaps_b_z.slice(s![.., 0]).to_owned() * 0.5 * gap_virtual_d_z;
                 for i_virtual_bp_probe in 1..n_virtual_bp_probes - 1 {
                     g_gap = g_gap
                         + g_gaps_b_r.slice(s![.., i_virtual_bp_probe]).to_owned() * gap_virtual_d_r
@@ -447,7 +446,8 @@ impl RogowskiCoils {
                 let g_gap_d_plasma_d_z_radial: Array2<f64> = virtual_b_r_probes.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array2(); // shape = [n_z * n_r, n_virtual_bp_probes]
                 let g_gap_d_plasma_d_z_vertical: Array2<f64> = virtual_b_z_probes.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array2();
 
-                g_gap_d_plasma_d_z = g_gap_d_plasma_d_z_radial.slice(s![.., 0]).to_owned() * 0.5 * gap_virtual_d_r
+                g_gap_d_plasma_d_z = g_gap_d_plasma_d_z
+                    + g_gap_d_plasma_d_z_radial.slice(s![.., 0]).to_owned() * 0.5 * gap_virtual_d_r
                     + g_gap_d_plasma_d_z_vertical.slice(s![.., 0]).to_owned() * 0.5 * gap_virtual_d_z;
                 for i_virtual_bp_probe in 1..n_virtual_bp_probes - 1 {
                     g_gap_d_plasma_d_z = g_gap_d_plasma_d_z
@@ -543,7 +543,7 @@ impl RogowskiCoils {
             .expect("Missing 'results' key in pickled data")
             .ok_or_else(|| PyTypeError::new_err("Missing 'results' key in pickled data"))
             .expect("Failed to get `results` from pickled data");
-        let results_dict_bound: &Bound<'_, PyDict> = results_dict.downcast::<PyDict>().expect("Failed to downcast `results` to PyDict");
+        let results_dict_bound: &Bound<'_, PyDict> = results_dict.cast::<PyDict>().expect("Failed to downcast `results` to PyDict");
         self.results = py_dict_to_data_tree(results_dict_bound).expect("Failed to convert PyDict to DataTree");
         Ok(())
     }
@@ -551,7 +551,7 @@ impl RogowskiCoils {
 
 // Rust only methods
 impl RogowskiCoils {
-    pub fn construct_virtual_bp_probes(self, rogowski_name: &str, gap_name: &str) -> (BpProbes, BpProbes, f64, f64) {
+    pub fn construct_virtual_bp_probes(&self, rogowski_name: &str, gap_name: &str) -> (BpProbes, BpProbes, f64, f64) {
         // Return structures
         let mut virtual_b_r_probes: BpProbes = BpProbes::new();
         let mut virtual_b_z_probes: BpProbes = BpProbes::new();

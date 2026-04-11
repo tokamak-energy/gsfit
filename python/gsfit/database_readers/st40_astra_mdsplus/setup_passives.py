@@ -4,14 +4,15 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Passives
-from st40_database import GetData  # type: ignore[import-not-found]
+
+from .astra_passives_reader import astra_passives_reader
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderST40AstraMDSplus
+    from . import DatabaseReader
 
 
 def setup_passives(
-    self: "DatabaseReaderST40AstraMDSplus",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
 ) -> Passives:
@@ -21,7 +22,7 @@ def setup_passives(
     :param pulseNo: Pulse number, used to read from the database
     :param settings: Dictionary containing the JSON settings read from the `settings` directory
 
-    **This method is specific to ST40's ASTRA stored on MDSplus.**
+    **This method is specific to ASTRA simulations using fires.dat.**
 
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """
@@ -29,24 +30,16 @@ def setup_passives(
     # Initialise the Passives Rust class
     passives = Passives()
 
-    elmag_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_astra_mdsplus"]["elmag_run_name"]
-    # FIXME: using a fixed shot is not a good idea!
-    elmag = GetData(12050, f"ELMAG#{elmag_run_name}", is_fail_quiet=False)
+    # Read passive data from fires.dat
+    passives_data = astra_passives_reader()
 
-    vessel_r = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.R"))
-    vessel_z = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.Z"))
-    vessel_d_r = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.DR"))
-    vessel_d_z = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.DZ"))
-    vessel_angle_1 = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.ANGLE1"))
-    vessel_angle_2 = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.ANGLE2"))
-    vessel_resistivity = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.RESISTIVITY"))
-    vessel_fillaments_to_passives = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.FILS2PASSIVE"))
-    [n_filaments, n_passives] = vessel_fillaments_to_passives.shape
-    passive_names = elmag.get("VESSEL.PASSIVE_NAME")
+    for passive_name, data in passives_data.items():
+        if passive_name == "ERINGT" or passive_name == "ERINGB":  #  or passive_name == "MCTCASE" or passive_name == "MCBCASE"
+            continue  # skip to the next passive
 
-    for i_passive in range(0, n_passives):
-        passive_name = passive_names[i_passive]
-        i_filaments = vessel_fillaments_to_passives[:, i_passive].astype(int) == True
+        if passive_name == "GASBFLB" or passive_name == "GASBFLT":
+            # In our set-up we have the GASBFL's as part of the IVC
+            continue
 
         if passive_name == "IVC":
             current_distribution_type = "eig"
@@ -54,27 +47,23 @@ def setup_passives(
             regularisations = np.array(settings["passive_dof_regularisation.json"]["IVC"]["regularisations"])
             regularisations_weight = np.array(settings["passive_dof_regularisation.json"]["IVC"]["regularisations_weight"])
 
-            # BUXTON: temporary fix to use PFIT eigenvalues
-            from MDSplus import Connection  # type: ignore
-
-            conn = Connection("smaug")
-            conn.openTree("elmag", 206)
-            tmp_vessel_r = conn.get("\\ELMAG::TOP.VESSEL:R").data()[0:480]
-            tmp_vessel_z = conn.get("\\ELMAG::TOP.VESSEL:Z").data()[0:480]
-            tmp_vessel_d_r = conn.get("\\ELMAG::TOP.VESSEL:DR").data()[0:480]
-            tmp_vessel_d_z = conn.get("\\ELMAG::TOP.VESSEL:DZ").data()[0:480]
-            tmp_vessel_angle_1 = 0.0 * tmp_vessel_r
-            tmp_vessel_angle_2 = 0.0 * tmp_vessel_r
+            # Add the GASBFL's to the IVC
+            r = np.concatenate((data["r"], passives_data["GASBFLB"]["r"], passives_data["GASBFLT"]["r"]))
+            z = np.concatenate((data["z"], passives_data["GASBFLB"]["z"], passives_data["GASBFLT"]["z"]))
+            d_r = np.concatenate((data["d_r"], passives_data["GASBFLB"]["d_r"], passives_data["GASBFLT"]["d_r"]))
+            d_z = np.concatenate((data["d_z"], passives_data["GASBFLB"]["d_z"], passives_data["GASBFLT"]["d_z"]))
+            angle_1 = np.concatenate((data["angle_1"], passives_data["GASBFLB"]["angle_1"], passives_data["GASBFLT"]["angle_1"]))
+            angle_2 = np.concatenate((data["angle_2"], passives_data["GASBFLB"]["angle_2"], passives_data["GASBFLT"]["angle_2"]))
 
             passives.add_passive(
                 name=passive_name,
-                r=tmp_vessel_r,
-                z=tmp_vessel_z,
-                d_r=tmp_vessel_d_r,
-                d_z=tmp_vessel_d_z,
-                angle_1=tmp_vessel_angle_1,
-                angle_2=tmp_vessel_angle_2,
-                resistivity=vessel_resistivity[i_passive],
+                r=r,
+                z=z,
+                d_r=d_r,
+                d_z=d_z,
+                angle_1=angle_1,
+                angle_2=angle_2,
+                resistivity=data["resistivity"],
                 current_distribution_type=current_distribution_type,
                 n_dof=n_dof,
                 regularisations=regularisations,
@@ -84,17 +73,17 @@ def setup_passives(
             current_distribution_type = "constant_current_density"
             n_dof = 1
             regularisations = np.array([[1.0]])
-            regularisations_weight = np.array([0.1])
+            regularisations_weight = np.array([0.001])  # original: 0.1
 
             passives.add_passive(
                 name=passive_name,
-                r=vessel_r[i_filaments],
-                z=vessel_z[i_filaments],
-                d_r=vessel_d_r[i_filaments],
-                d_z=vessel_d_z[i_filaments],
-                angle_1=vessel_angle_1[i_filaments],
-                angle_2=vessel_angle_2[i_filaments],
-                resistivity=vessel_resistivity[i_passive],
+                r=data["r"],
+                z=data["z"],
+                d_r=data["d_r"],
+                d_z=data["d_z"],
+                angle_1=data["angle_1"],
+                angle_2=data["angle_2"],
+                resistivity=data["resistivity"],
                 current_distribution_type=current_distribution_type,
                 n_dof=n_dof,
                 regularisations=regularisations,
@@ -108,13 +97,13 @@ def setup_passives(
 
             passives.add_passive(
                 name=passive_name,
-                r=vessel_r[i_filaments],
-                z=vessel_z[i_filaments],
-                d_r=vessel_d_r[i_filaments],
-                d_z=vessel_d_z[i_filaments],
-                angle_1=vessel_angle_1[i_filaments],
-                angle_2=vessel_angle_2[i_filaments],
-                resistivity=vessel_resistivity[i_passive],
+                r=data["r"],
+                z=data["z"],
+                d_r=data["d_r"],
+                d_z=data["d_z"],
+                angle_1=data["angle_1"],
+                angle_2=data["angle_2"],
+                resistivity=data["resistivity"],
                 current_distribution_type=current_distribution_type,
                 n_dof=n_dof,
                 regularisations=regularisations,

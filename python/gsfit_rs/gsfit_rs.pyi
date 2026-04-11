@@ -56,6 +56,7 @@ def solve_grad_shafranov(
     rogowski_coils: RogowskiCoils,
     isoflux: Isoflux,
     isoflux_boundary: IsofluxBoundary,
+    pressure_sensors: Pressure,
     stationary_point: StationaryPoint,
     times_to_reconstruct: npt.NDArray[np.float64],
     n_iter_max: int,
@@ -74,6 +75,8 @@ def solve_grad_shafranov(
     :param rogowski_coils: RogowskiCoils object, note this is mutated and contains the solution
     :param isoflux: Isoflux object, note this is mutated and contains the solution
     :param isoflux_boundary: IsofluxBoundary object, note this is mutated and contains the solution
+    :param pressure_sensors: Pressure object, note this is mutated and contains the solution
+    :param stationary_point: StationaryPoint object, note this is mutated and contains the solution
     :param times_to_reconstruct: Times to reconstruct [second]
     :param n_iter_max: Maximum number of iterations
     :param n_iter_min: Minimum number of iterations
@@ -92,10 +95,10 @@ def solve_circuit_equations(
 ) -> None:
     """
     Solves the circuit equations
-    
+
     Note: the adaptive time-stepping can produce a lot of simulated time-points,
     so `adaptive_time_stepping = False` should be used to avoid unwieldly large outputs
-    
+
     :param coils: Coils data structure containing either current or voltage waveforms, note this is mutated and contains the solution
     :param passives: Passives object, note this is mutated and contains the solution
     :param times_to_solve: Times to solve the circuit equations at [second]
@@ -565,24 +568,18 @@ class Pressure(DataTreeAccessor):
         time: npt.NDArray[np.float64],
         measured: npt.NDArray[np.float64],
     ) -> None: ...
-    # def greens_with_coils(
-    #     cls,
-    #     coils: "Coils",
-    # ) -> None: ...
-    # def greens_with_passives(
-    #     cls,
-    #     coils: "Passives",
-    # ) -> None: ...
-    # def greens_with_plasma(
-    #     cls,
-    #     plasma: "Plasma",
-    # ) -> None: ...
-    # def calculate_sensor_values(
-    # cls,
-    #     coils: "Coils",
-    #     passives: "Passives",
-    #     plasma: "Plasma",
-    # ) -> None: ...
+    def greens_with_coils(
+        cls,
+        coils: Coils,
+    ) -> None: ...
+    def greens_with_passives(
+        cls,
+        passives: Passives,
+    ) -> None: ...
+    def greens_with_plasma(
+        cls,
+        plasma: Plasma,
+    ) -> None: ...
 
 class Dialoop(DataTreeAccessor):
     def __new__(
@@ -642,7 +639,7 @@ class LiuqePolynomial(DataTreeAccessor):
         :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values [dimensionless]
         """
         ...
-        
+
 class TensionedCubicBSpline(DataTreeAccessor):
     def __new__(
         cls,

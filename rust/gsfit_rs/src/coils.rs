@@ -16,7 +16,7 @@ use std::f64::consts::PI;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass(module = "gsfit_rs")]
+#[pyclass(module = "gsfit_rs", skip_from_py_object)]
 pub struct Coils {
     pub results: DataTree,
 }
@@ -139,7 +139,7 @@ impl Coils {
             // Calculate the cross sectional area
             let d_r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_r").unwrap_array1();
             let d_z: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_z").unwrap_array1();
-            let area: Array1<f64> = &d_r * &d_z;
+            let area: Array1<f64> = d_r * d_z;
 
             // Length of the coil
             let r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
@@ -228,7 +228,7 @@ impl Coils {
             .expect("Missing 'results' key in pickled data")
             .ok_or_else(|| PyTypeError::new_err("Missing 'results' key in pickled data"))
             .expect("Failed to get `results` from pickled data");
-        let results_dict_bound: &Bound<'_, PyDict> = results_dict.downcast::<PyDict>().expect("Failed to downcast `results` to PyDict");
+        let results_dict_bound: &Bound<'_, PyDict> = results_dict.cast::<PyDict>().expect("Failed to downcast `results` to PyDict");
 
         // Insert into self
         self.results = py_dict_to_data_tree(results_dict_bound).expect("Failed to convert PyDict to DataTree");
@@ -318,7 +318,7 @@ impl Coils {
         // Time dependent
         // Interpolate to `times_to_reconstruct`
         let n_time: usize = times_to_reconstruct.len();
-        let mut measured: Array2<f64> = Array2::zeros((n_coils, n_time));
+        let mut measured: Array2<f64> = Array2::from_elem((n_coils, n_time), f64::NAN);
         for i_coil in 0..n_coils {
             // Coils
             let coil_name: &String = &coil_names[i_coil];

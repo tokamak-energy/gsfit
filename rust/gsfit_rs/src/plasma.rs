@@ -22,13 +22,13 @@ use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
+use std::f64::consts::PI;
 use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
-const PI: f64 = std::f64::consts::PI;
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 pub struct Plasma {
     pub results: DataTree,
     pub p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
@@ -56,7 +56,7 @@ impl Plasma {
     /// * `vessel_r` - vessel radial points (1d array), meter
     /// * `vessel_z` - vessel vertical points (1d array), meter
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
-    /// * `ff_prime_source_function` - Fourier source function (a Rust implementation, initialised in Python)
+    /// * `ff_prime_source_function` - ff_prime source function (a Rust implementation, initialised in Python)
     ///
     /// # Returns
     /// * `self` - a new instance of the Plasma struct
@@ -193,16 +193,9 @@ impl Plasma {
         let flat_z: Array1<f64> = mesh_z.flatten().to_owned();
 
         // Calculate the grid-grid Greens
-        let d_r_flat: Array1<f64> = &r * 0.0 + d_r;
-        let d_z_flat: Array1<f64> = &r * 0.0 + d_z;
-        let g_psi: Array2<f64> = greens_psi(
-            flat_r.clone(),
-            flat_z.clone(),
-            r.clone(),
-            0.0 * r.clone() + z[0],
-            d_r_flat, // TODO: I don't like thsee variables
-            d_z_flat,
-        );
+        let flat_d_r: Array1<f64> = &r * 0.0 + d_r;
+        let flat_d_z: Array1<f64> = &r * 0.0 + d_z;
+        let g_psi: Array2<f64> = greens_psi(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0], flat_d_r, flat_d_z);
         let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(
             flat_r.clone(), // sensors
             flat_z.clone(),
@@ -285,13 +278,14 @@ impl Plasma {
         let flat_z: Array1<f64> = self.results.get("grid").get("flat").get("z").unwrap_array1();
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+        let n_rz: usize = n_r * n_z;
+        let d_r: Array1<f64> = Array1::from_elem(n_rz, f64::NAN); // Using NaN as safety - if we get NaN's we know we have a problem
+        let d_z: Array1<f64> = Array1::from_elem(n_rz, f64::NAN); // Using NaN as safety - if we get NaN's we know we have a problem
 
         for coil_name in &coils_local.results.get("pf").keys() {
             // Coils
             let coil_r: Array1<f64> = coils_local.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
             let coil_z: Array1<f64> = coils_local.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
-            let d_r: Array1<f64> = &coil_r * 0.0;
-            let d_z: Array1<f64> = &coil_z * 0.0;
 
             // Greens function for flux
             let g_psi_all_filaments: Array2<f64> = greens_psi(
@@ -299,7 +293,7 @@ impl Plasma {
                 flat_z.clone(),
                 coil_r.clone(),
                 coil_z.clone(),
-                d_r.clone(), // TODO: can be improved
+                d_r.clone(), // grid should not overlap with coils
                 d_z.clone(),
             ); // shape = (n_z * n_r, n_filaments)
 
@@ -444,8 +438,8 @@ impl Plasma {
                     flat_z.clone(),
                     passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
                     passive_z.clone(),
-                    flat_r.clone() * 0.0, // d_r=0; as there will not be any points which coincide
-                    flat_r.clone() * 0.0, // d_z=0; as there will not be any points which coincide
+                    flat_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+                    flat_r.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
                 );
 
                 // Green's with degrees of freedom
@@ -559,7 +553,7 @@ impl Plasma {
 
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
-        string_output += &format!("║  {:<74} ║\n", format!(" n_r = {}, n_z = {}", n_r.to_string(), n_z.to_string()));
+        string_output += &format!("║  {:<74} ║\n", format!(" n_r = {}, n_z = {}", n_r, n_z));
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
@@ -872,8 +866,6 @@ impl Plasma {
     }
 
     pub fn equilibrium_post_processor(&mut self, gs_solutions: &mut Vec<GsSolution>, coils: &Coils, plasma: &Plasma) {
-        // TODO: epp fails if there are no time-slices, e.g. if we set:
-        // ["GSFIT_code_settings.json"]["timeslices"]["user_defined"] = []
         println!("equilibrium_post_processor: starting");
 
         let n_time: usize = gs_solutions.len();
@@ -1044,30 +1036,6 @@ impl Plasma {
             // Stored energy
             w_mhd[i_time] = epp_w_mhd(&p_2d_this_time_slice, &r, d_area);
 
-            // Plasma beta
-            (beta_p_1[i_time], beta_p_2[i_time], beta_p_3[i_time]) = epp_beta_p(w_mhd[i_time], ip[i_time], r_mag[i_time], r_geo[i_time], plasma_volume[i_time]);
-
-            let bt_vac_at_r_geo_this_time: f64 = epp_bt_vac_at_r_geo(i_rod[i_time], r_geo[i_time]);
-            bt_vac_at_r_geo[i_time] = bt_vac_at_r_geo_this_time;
-
-            // Internal inductance: TODO: add li(1)
-            (li_1[i_time], li_2[i_time], li_3[i_time]) = epp_li(
-                ip[i_time],
-                &r,
-                d_area,
-                r_mag[i_time],
-                r_geo[i_time],
-                &br_2d.slice(s![i_time, .., ..]).to_owned(),
-                &bz_2d.slice(s![i_time, .., ..]).to_owned(),
-                &mask_2d.slice(s![i_time, .., ..]).to_owned(),
-            );
-
-            let beta_t_this_time_slice: f64 = epp_beta(w_mhd[i_time], bt_vac_at_r_geo_this_time, plasma_volume[i_time]);
-            beta_t[i_time] = beta_t_this_time_slice;
-
-            let beta_n_this_time_slice: f64 = epp_beta_n(beta_t_this_time_slice, r_minor[i_time], bt_vac_at_r_geo[i_time], ip[i_time]);
-            beta_n[i_time] = beta_n_this_time_slice;
-
             // total pressure
             // TODO: it "could" be better to do integral over flux surfaces ?
             p_1d[i_time] = p_2d.slice(s![i_time, .., ..]).sum();
@@ -1215,6 +1183,30 @@ impl Plasma {
             // elongation
             let plasma_height: f64 = boundary_contour_local.z.max().unwrap().to_owned() - boundary_contour_local.z.min().unwrap().to_owned();
             elongation[i_time] = plasma_height / (2.0 * r_minor[i_time]);
+
+            // Plasma beta (must be after r_geo and plasma_volume are computed)
+            (beta_p_1[i_time], beta_p_2[i_time], beta_p_3[i_time]) = epp_beta_p(w_mhd[i_time], ip[i_time], r_mag[i_time], r_geo[i_time], plasma_volume[i_time]);
+
+            let bt_vac_at_r_geo_this_time: f64 = epp_bt_vac_at_r_geo(i_rod[i_time], r_geo[i_time]);
+            bt_vac_at_r_geo[i_time] = bt_vac_at_r_geo_this_time;
+
+            // Internal inductance: TODO: add li(1)
+            (li_1[i_time], li_2[i_time], li_3[i_time]) = epp_li(
+                ip[i_time],
+                &r,
+                d_area,
+                r_mag[i_time],
+                r_geo[i_time],
+                &br_2d.slice(s![i_time, .., ..]).to_owned(),
+                &bz_2d.slice(s![i_time, .., ..]).to_owned(),
+                &mask_2d.slice(s![i_time, .., ..]).to_owned(),
+            );
+
+            let beta_t_this_time_slice: f64 = epp_beta(w_mhd[i_time], bt_vac_at_r_geo_this_time, plasma_volume[i_time]);
+            beta_t[i_time] = beta_t_this_time_slice;
+
+            let beta_n_this_time_slice: f64 = epp_beta_n(beta_t_this_time_slice, r_minor[i_time], bt_vac_at_r_geo[i_time], ip[i_time]);
+            beta_n[i_time] = beta_n_this_time_slice;
         }
 
         let max_n_boundary: usize = boundary_contours.iter().map(|boundary_contour_local| boundary_contour_local.n).max().unwrap();
@@ -1366,6 +1358,21 @@ fn epp_beta_n(beta: f64, r_minor: f64, bt_vac_at_r_geo: f64, ip: f64) -> f64 {
     return beta_n;
 }
 
+/// Calculate the poloidal beta using three different normalisations.
+///
+/// beta_p_1 is not yet implemented (returns NAN).
+/// beta_p_2 is normalised to the magnetic axis major radius.
+/// beta_p_3 is normalised to the geometric major radius.
+///
+/// # Arguments
+/// * `w_mhd` - stored MHD energy [joule]
+/// * `ip` - plasma current [ampere]
+/// * `r_mag` - magnetic axis major radius [meter]
+/// * `r_geo` - geometric major radius [meter]
+/// * `plasma_volume` - plasma volume [meter ** 3]
+///
+/// # Returns
+/// * `(beta_p_1, beta_p_2, beta_p_3)` - poloidal beta values [dimensionless]
 fn epp_beta_p(w_mhd: f64, ip: f64, r_mag: f64, r_geo: f64, plasma_volume: f64) -> (f64, f64, f64) {
     let p_vol_int: f64 = w_mhd * 2.0 / 3.0;
 
@@ -1434,142 +1441,6 @@ fn epp_bt_vac_at_r_geo(i_rod: f64, r_geo: f64) -> f64 {
     let bt_vac_at_r_geo: f64 = MU_0 * i_rod / (2.0 * PI * r_geo);
     return bt_vac_at_r_geo;
 }
-
-// fn epp_clean_boundary(gs_solution: &GsSolution) -> (Array1<f64>, Array1<f64>) {
-//     let boundary_r: Array1<f64> = gs_solution.boundary_r.to_owned();
-//     let boundary_z: Array1<f64> = gs_solution.boundary_z.to_owned();
-//     let mag_axis_r: f64 = gs_solution.r_mag;
-//     let mag_axis_z: f64 = gs_solution.z_mag;
-//     let xpt_r: f64 = gs_solution.bounding_r;
-//     let xpt_z: f64 = gs_solution.bounding_z;
-
-//     // Draw a horizontal line, starting at the magnetic axis, ending +1m away on the LFS
-//     // TODO: improve the +1m, this could fail for large tokamaks!!
-//     let line_along_mag_axis: Line = Line::new((mag_axis_r, mag_axis_z), (mag_axis_r + 1.0, mag_axis_z)); // Horizontal line
-
-//     // Find outboard mid-plane
-//     // Find the intersection of the boundary with the horizontal line
-//     // let mut intersection_points: Vec<(f64, f64)> = Vec::new();
-//     let mut index_outboard: usize = 0;
-//     let n_points: usize = boundary_r.len();
-//     for i_point in 0..n_points - 1 {
-//         let r1 = boundary_r[i_point];
-//         let z1 = boundary_z[i_point];
-//         let r2 = boundary_r[i_point + 1];
-//         let z2 = boundary_z[i_point + 1];
-
-//         // Use the geo crate to calculate the intersection
-//         let boundary_line: Line = Line::new((r1, z1), (r2, z2));
-
-//         // this only "unwraps" when the lines intersect!
-//         if let Some(intersection_between_boundary_and_horizontal_line) = line_intersection(boundary_line, line_along_mag_axis) {
-//             if let LineIntersection::SinglePoint { intersection, .. } = intersection_between_boundary_and_horizontal_line {
-//                 let r: f64 = intersection.x;
-//                 if r > mag_axis_r {
-//                     index_outboard = i_point;
-//                     break;
-//                 }
-//             }
-//         }
-//     }
-
-//     // Find the point nearest to the x-point
-//     // TODO: WRONG! this should be either above or below the x-point, depending on the x-point z-sign
-//     let mut nearest_distance: f64 = f64::MAX;
-//     // let mut index_nearest_to_xpt: usize = 0;
-//     let n_points: usize = boundary_r.len();
-//     let mut point_nearest_to_xpt_r: f64 = f64::NAN;
-//     let mut point_nearest_to_xpt_z: f64 = f64::NAN;
-//     for i_point in 0..n_points {
-//         let r: f64 = boundary_r[i_point];
-//         let z: f64 = boundary_z[i_point];
-//         let distance: f64 = ((r - xpt_r).powi(2) + (z - xpt_z).powi(2)).sqrt();
-//         if distance < nearest_distance {
-//             nearest_distance = distance;
-//             point_nearest_to_xpt_r = r;
-//             point_nearest_to_xpt_z = z;
-//         }
-//     }
-
-//     // Go in one direction to the x-point
-//     let mut tmp_r: Vec<f64> = boundary_r.clone().to_vec();
-//     let mut tmp_z: Vec<f64> = boundary_z.clone().to_vec();
-//     let mut final_direction_1_r: Vec<f64> = Vec::new();
-//     let mut final_direction_1_z: Vec<f64> = Vec::new();
-//     final_direction_1_r.push(tmp_r[index_outboard]);
-//     final_direction_1_z.push(tmp_z[index_outboard]);
-//     tmp_r.remove(index_outboard);
-//     tmp_z.remove(index_outboard);
-//     'looping_over_points: for _i_point in 0..n_points {
-//         // Find the index of the nearest point
-//         let mut nearest_distance: f64 = f64::MAX;
-//         let mut index: usize = 0;
-//         for i_point_min in 0..tmp_r.len() {
-//             let r: f64 = tmp_r[i_point_min];
-//             let z: f64 = tmp_z[i_point_min];
-//             let distance: f64 = ((r - final_direction_1_r.last().unwrap()).powi(2) + (z - final_direction_1_z.last().unwrap()).powi(2)).sqrt();
-//             if distance < nearest_distance {
-//                 nearest_distance = distance;
-//                 index = i_point_min;
-//             }
-//         }
-
-//         // Test if this point is the x-point
-//         if tmp_r.len() == 0 {
-//             // some sort of exception handeling??
-//             return (Array1::from_elem(0, f64::NAN), Array1::from_elem(0, f64::NAN));
-//         }
-//         if tmp_r[index] == point_nearest_to_xpt_r && tmp_z[index] == point_nearest_to_xpt_z {
-//             break 'looping_over_points;
-//         }
-
-//         // Add this point to the final list
-//         final_direction_1_r.push(tmp_r[index]);
-//         final_direction_1_z.push(tmp_z[index]);
-//         tmp_r.remove(index);
-//         tmp_z.remove(index);
-//     }
-
-//     // Go in other direction to the x-point
-//     let mut final_direction_2_r: Vec<f64> = Vec::new();
-//     let mut final_direction_2_z: Vec<f64> = Vec::new();
-//     final_direction_2_r.push(final_direction_1_r[0]);
-//     final_direction_2_z.push(final_direction_1_z[0]);
-//     'looping_over_points: for _i_point in 0..n_points {
-//         // Find the index of the nearest point
-//         let mut nearest_distance: f64 = f64::MAX;
-//         let mut index: usize = 0;
-//         for i_point_min in 0..tmp_r.len() {
-//             let r: f64 = tmp_r[i_point_min];
-//             let z: f64 = tmp_z[i_point_min];
-//             let distance: f64 = ((r - final_direction_2_r.last().unwrap()).powi(2) + (z - final_direction_2_z.last().unwrap()).powi(2)).sqrt();
-//             if distance < nearest_distance {
-//                 nearest_distance = distance;
-//                 index = i_point_min;
-//             }
-//         }
-
-//         // Test if this point is the x-point
-//         if tmp_r[index] == point_nearest_to_xpt_r && tmp_z[index] == point_nearest_to_xpt_z {
-//             break 'looping_over_points;
-//         }
-
-//         // Add this point to the final list
-//         final_direction_2_r.push(tmp_r[index]);
-//         final_direction_2_z.push(tmp_z[index]);
-//         tmp_r.remove(index);
-//         tmp_z.remove(index);
-//     }
-
-//     final_direction_2_r.reverse();
-//     final_direction_2_z.reverse();
-//     final_direction_1_r.extend(final_direction_2_r);
-//     final_direction_1_z.extend(final_direction_2_z);
-//     let boundary_r_clean: Array1<f64> = final_direction_1_r.into();
-//     let boundary_z_clean: Array1<f64> = final_direction_1_z.into();
-
-//     return (boundary_r_clean, boundary_z_clean);
-// }
 
 fn epp_f_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_b: f64, i_rod: f64) -> Array1<f64> {
     let n_psi_n: usize = psi_n.len();
@@ -1821,7 +1692,6 @@ fn epp_p_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>) -> Array
     let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
 
     let p_prime_dof_values: Array1<f64> = gs_solution.p_prime_dof_values.to_owned();
-    let n_p_prime_dof: usize = gs_solution.p_prime_source_function.source_function_n_dof();
 
     for i_r in 0..n_r {
         for i_z in 0..n_z {
@@ -1837,7 +1707,7 @@ fn epp_p_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>) -> Array
         }
     }
 
-    return p_2d;
+    p_2d
 }
 
 fn epp_hessian_matrix(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_r: usize, i_z: usize) -> (Array2<f64>, f64, f64) {
@@ -1865,8 +1735,6 @@ fn epp_hessian_matrix(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>
 }
 
 fn epp_p_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_b: f64) -> Array1<f64> {
-    // TODO: We might want to do some 2D interpolation
-
     let p_prime_dof_values: Array1<f64> = gs_solution.p_prime_dof_values.to_owned();
 
     // d(psi)/d(psi_n)
@@ -1875,34 +1743,8 @@ fn epp_p_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_
     // Integrate the source function
     let p_profile: Array1<f64> = gs_solution.p_prime_source_function.source_function_integral(psi_n, &p_prime_dof_values) / d_psi_d_psi_n;
 
-    return p_profile;
+    p_profile
 }
-
-// fn epp_plasma_volume(gs_solution: &GsSolution, r_geo: f64) -> f64 {
-//     let boundary_r: Array1<f64> = gs_solution.boundary_r.to_owned();
-//     let boundary_z: Array1<f64> = gs_solution.boundary_z.to_owned();
-//     let n_boundary_points = boundary_r.len();
-//     // Collect the coordinates
-//     let mut boundary_coordinates: Vec<Coord<f64>> = Vec::with_capacity(n_boundary_points);
-//     for i_boundary_point in 0..n_boundary_points {
-//         boundary_coordinates.push(Coord {
-//             x: boundary_r[i_boundary_point],
-//             y: boundary_z[i_boundary_point],
-//         });
-//     }
-
-//     // Construct the contour
-//     let boundary_contour: Polygon = Polygon::new(
-//         LineString::new(boundary_coordinates),
-//         vec![], // No holes
-//     );
-
-//     let cross_sectional_area: f64 = boundary_contour.unsigned_area();
-
-//     let volume: f64 = 2.0 * PI * r_geo * cross_sectional_area;
-
-//     return volume;
-// }
 
 fn epp_p_prime_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>) -> Array1<f64> {
     let p_prime_dof_values: Array1<f64> = gs_solution.p_prime_dof_values.to_owned();

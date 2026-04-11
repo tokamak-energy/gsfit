@@ -134,7 +134,7 @@ def greens_py(
 ```
 
 ### Base units
-Wherever possible quantities should be written using the so called "MKS+eV" units.
+Within code, quantities should be written using the so called "MKS+eV" units.
 We should write units using their "full names" in plain text, the most common units are:
 * `ampere`
 * `count`
@@ -154,16 +154,11 @@ We should write units using their "full names" in plain text, the most common un
 
 We have chosen to write units using the "full names" to increase readability and to prevent any potential confusion.
 
-**Example 1**: The symbol for kelvin is `K` (uppercase ), if `k` (lowercase) were used this would be interpreted as the `boltzmann_constant` (extremely easy to make mistakes)!
+**Example 1**: The symbol for kelvin is `K` (uppercase), if `k` (lowercase) were used this would be interpreted as the `boltzmann_constant` (extremely easy to make mistakes)!
 
-**Example 2**: Generally, the ångström should not be used because it's not MKS+eV. But given a good reason we may record data using the ångström, if we do it should be written in "plain text" as:
-* `angstrom` would be correct
-
-The following would be confusing:
-* `Å` not using plain text
-* `A` confusing with ampere
-* `\AA` not everyone understands LaTeX
-* `0x212B` not everyone understands unicode
+**Example 2**: Generally, the ångström should not be used because it's not MKS+eV. But given a good reason we may record data using the ångström, if we do use it, it should be written in "plain text" as:
+* `angstrom`
+which is unambiguous.
 
 ### Compound units
 Quantities containing more than one unit need to include the mathematical operation, for example the following would be correct:
@@ -175,6 +170,8 @@ The following would be incorrect:
 * `ampere * 1 / meter` would work, but not helpful extra mathematical operations
 * `meter ** -3` would work, but not using standard division
 
+### For plotting
+In plotting the compact form should be used with a square bracket, e.g. `[m]` for `meter`, `[s]` for `second`, `[T]` for `tesla`, etc.
 
 ## Initializing empty arrays
 For safety I like to initialize numerical arrays full with `f64::NAN` this way if an index is missed an error will most likely be thrown, e.g.
@@ -192,3 +189,7 @@ for i_time in 0..n_time - 1 { // will miss the last element of the matrix
 ```
 
 This is not a hard rule, if we are only going to assign to the matrix diagonal then we can initialize the matrix to zeros.
+
+## Alphabetically sorting variables
+Where possible variables should be alphabetically sorted, this is not a hard rule, but it can help with readability.
+

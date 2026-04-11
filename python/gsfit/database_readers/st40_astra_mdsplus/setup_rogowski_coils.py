@@ -6,16 +6,16 @@ from typing import TYPE_CHECKING
 
 import mdsthin  # type: ignore
 import numpy as np
-import numpy.typing as npt
 from gsfit_rs import RogowskiCoils
-from st40_database import GetData  # type: ignore[import-not-found]
+
+from .astra_rogowski_coils_reader import astra_rogowski_coils_reader
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderST40AstraMDSplus
+    from . import DatabaseReader
 
 
 def setup_rogowski_coils(
-    self: "DatabaseReaderST40AstraMDSplus",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
 ) -> RogowskiCoils:
@@ -34,7 +34,7 @@ def setup_rogowski_coils(
     rogowski_coils = RogowskiCoils()
 
     # Extract the astra_run_name from settings
-    astra_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_astra_mdsplus"]["astra_run_name"]
+    astra_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_astra_mdsplus"]["workflow"]["astra"]["run_name"]
 
     # Connect to MDSplus
     conn = mdsthin.Connection("smaug")
@@ -45,28 +45,17 @@ def setup_rogowski_coils(
     measurements = conn.get(f"\\ASTRA::TOP.{astra_run_name}.ROG.ALL:I").data().astype(np.float64)
     names = conn.get(f"\\ASTRA::TOP.{astra_run_name}.ROG.ALL:NAME").data().astype(str)
 
-    # Read in mag data from MDSplus
-    # FIXME: using a fixed shot is not a good idea!
-    mag = GetData(12050, "MAG#BEST", is_fail_quiet=False)
+    # Read Rogowski coil geometry from rogpath.dat
+    rogowski_coils_data = astra_rogowski_coils_reader()
 
-    names_long = mag.get("ROG.ALL.NAMES")
-    sensors_names = np.char.replace(names_long, "ROG_", "")
-    paths_r = mag.get("ROG.ALL.R_PATH").astype(np.float64)  # BUXTON: need to fix these data types in MDSplus!
-    paths_z = mag.get("ROG.ALL.Z_PATH").astype(np.float64)
-
-    n_sensors = len(sensors_names)
-    for i_sensor in range(0, n_sensors):
-        sensor_name = sensors_names[i_sensor]
-        path_r = paths_r[i_sensor, :]
-        path_z = paths_z[i_sensor, :]
-
-        # Remove nan's
-        # This is because in MDSplus "ALL" does not allow jagged arrays
-        path_r = path_r[~np.isnan(path_r)]
-        path_z = path_z[~np.isnan(path_z)]
+    for rog_name, data in rogowski_coils_data.items():
+        path_r = data["r"]
+        path_z = data["z"]
 
         # Don't store the "fake" Rogowski coils (e.g. the MC supports)
         if len(path_r) > 4:
+            sensor_name = rog_name.replace("ROG_", "")
+
             if sensor_name in settings["sensor_weights_rogowski_coils.json"]:
                 fit_settings_comment = settings["sensor_weights_rogowski_coils.json"][sensor_name]["fit_settings"]["comment"]
                 fit_settings_expected_value = settings["sensor_weights_rogowski_coils.json"][sensor_name]["fit_settings"]["expected_value"]
@@ -79,7 +68,7 @@ def setup_rogowski_coils(
                 fit_settings_weight = np.nan
 
             # Measured values
-            index = names == "ROG_" + sensor_name
+            index = names == rog_name
             measured = measurements[:, index].squeeze()
 
             # ASTRA does not include gaps in Rogowski coils

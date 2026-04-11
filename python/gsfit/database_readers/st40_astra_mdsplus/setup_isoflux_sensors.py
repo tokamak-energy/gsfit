@@ -8,11 +8,11 @@ from shapely.geometry import LineString  # type: ignore
 from st40_database import GetData  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderST40AstraMDSplus
+    from . import DatabaseReader
 
 
 def setup_isoflux_sensors(
-    self: "DatabaseReaderST40AstraMDSplus",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     times_to_reconstruct: npt.NDArray[np.float64],

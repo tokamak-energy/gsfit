@@ -1,4 +1,5 @@
 use crate::source_functions::SourceFunctionTraits;
+use interpolation;
 use ndarray::{Array1, Array2, s};
 use numpy::PyArray1;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
@@ -7,7 +8,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
 #[derive(Clone)]
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 pub struct TensionedCubicBSpline {
     pub n_dof: usize,
     pub regularisations: Array2<f64>,
@@ -431,52 +432,77 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
         unimplemented!("Source function is not implemented yet");
     }
 
+    /// Integral of a single degree of freedom
+    ///
+    /// # Arguments
+    /// * `psi_n` - The points at which we want to evaluate the integral
+    /// * `i_dof` - The index of the degree of freedom to evaluate
+    ///
+    /// # Returns
+    /// An array of the same length as `psi_n` containing the integral of the source function for the specified degree of freedom
+    ///
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
-        let n_psi_n: usize = psi_n.len();
-        let mut integral: Array1<f64> = Array1::zeros(n_psi_n);
+        // Create a lot of functions
+        let n_psi_n_large: usize = 300;
+        let psi_n_large: Array1<f64> = Array1::linspace(0.0, 1.0, n_psi_n_large);
+        let f_large: Array1<f64> = self.source_function_value_single_dof(&psi_n_large, i_dof);
 
-        // Compute f(psi) at all points
-        let f_vals = self.source_function_value_single_dof(psi_n, i_dof);
-
-        // Trapezoidal cumulative integral
-        for i_psi_n in 1..n_psi_n {
-            let dx: f64 = psi_n[i_psi_n] - psi_n[i_psi_n - 1];
-            let trap: f64 = 0.5 * dx * (f_vals[i_psi_n] + f_vals[i_psi_n - 1]);
-            integral[i_psi_n] = integral[i_psi_n - 1] + trap;
+        // Calculate the cumulative integral for the entire "large" function
+        let mut cumulative_integral_large: Array1<f64> = Array1::zeros(n_psi_n_large);
+        for i_psi_n in 1..n_psi_n_large {
+            let dx: f64 = psi_n_large[i_psi_n] - psi_n_large[i_psi_n - 1];
+            let trap: f64 = 0.5 * dx * (f_large[i_psi_n] + f_large[i_psi_n - 1]);
+            cumulative_integral_large[i_psi_n] = cumulative_integral_large[i_psi_n - 1] + trap;
         }
+        // Set the constant of integration so that cumulative_integral_large(psi_n=1.0) = 0.0
+        cumulative_integral_large = &cumulative_integral_large - cumulative_integral_large[n_psi_n_large - 1];
+
+        // Create an interpolator
+        let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(psi_n_large, cumulative_integral_large.clone())
+            .expect("Can't make interpolator for tensioned cubic B-spline integral");
+
+        // Evaluate the integral at the desired points
+        let integral: Array1<f64> = interpolator
+            .interpolate_array1(psi_n)
+            .expect("Can't interpolate tensioned cubic B-spline integral");
 
         integral
     }
 
-    fn source_function_value(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
+    fn source_function_value(&self, psi_n: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
         let n_psi_n: usize = psi_n.len();
-        let n_dof: usize = polynomial_dof.len();
+        let n_dof: usize = spline_dof.len();
 
         let mut value: Array1<f64> = Array1::zeros(n_psi_n);
         for i_dof in 0..n_dof {
-            value = value + polynomial_dof[i_dof] * self.source_function_value_single_dof(psi_n, i_dof);
+            value = value + spline_dof[i_dof] * self.source_function_value_single_dof(psi_n, i_dof);
         }
 
         return value;
     }
 
-    fn source_function_derivative(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
+    fn source_function_derivative(&self, psi_n: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
         // This function is not implemented yet
         unimplemented!("Source function is not implemented yet");
     }
 
-    fn source_function_integral(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
+    fn source_function_integral(&self, psi_n: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
         let n_dof: usize = self.n_dof;
         let n_psi_n: usize = psi_n.len();
 
         let mut integral: Array1<f64> = Array1::zeros(n_psi_n);
         for i_dof in 0..n_dof {
-            integral = integral + polynomial_dof[i_dof] * self.source_function_integral_single_dof(psi_n, i_dof);
+            integral = integral + spline_dof[i_dof] * self.source_function_integral_single_dof(psi_n, i_dof);
         }
 
-        let last_value: f64 = integral[n_psi_n - 1];
+        // Find the constant of integration
+        let psi_n_at_boundary: Array1<f64> = Array1::from_vec(vec![1.0]);
+        let mut integral_at_boundary: f64 = 0.0;
+        for i_dof in 0..n_dof {
+            integral_at_boundary = integral_at_boundary + spline_dof[i_dof] * self.source_function_integral_single_dof(&psi_n_at_boundary, i_dof)[0];
+        }
 
-        return integral - last_value;
+        integral - integral_at_boundary
     }
 
     fn source_function_regularisation(&self) -> Array2<f64> {

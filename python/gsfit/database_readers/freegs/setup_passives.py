@@ -8,11 +8,11 @@ from gsfit_rs import Passives
 from st40_database import GetData  # type: ignore
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGS
+    from . import DatabaseReader
 
 
 def setup_passives(
-    self: "DatabaseReaderFreeGS",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     time: npt.NDArray[np.float64],
@@ -24,7 +24,7 @@ def setup_passives(
     :param pulseNo: Pulse number, used to read from the database
     :param settings: Dictionary containing the JSON settings read from the `settings` directory
     :param time: Measured time vector
-    :param freegsnke_eqs: List of FreeGS equilibrium objects, one for each time-slice
+    :param freegs_eqs: List of FreeGS equilibrium objects, one for each time-slice
 
     **This method is specific to FreeGS.**
 

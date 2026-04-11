@@ -6,11 +6,11 @@ import numpy.typing as npt
 from gsfit_rs import StationaryPoint
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderSt40MDSplus
+    from . import DatabaseReader
 
 
 def setup_stationary_point_sensors(
-    self: "DatabaseReaderSt40MDSplus",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     times_to_reconstruct: npt.NDArray[np.float64],

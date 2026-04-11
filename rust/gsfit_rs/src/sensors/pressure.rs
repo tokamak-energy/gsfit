@@ -2,8 +2,10 @@ use crate::Plasma;
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
+use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
 use numpy::IntoPyArray; // converting to python data types
 use numpy::PyArrayMethods;
@@ -15,7 +17,7 @@ use pyo3::types::{PyDict, PyList};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
-#[pyclass(module = "gsfit_rs")]
+#[pyclass(module = "gsfit_rs", skip_from_py_object)]
 pub struct Pressure {
     pub results: DataTree,
 }
@@ -64,6 +66,8 @@ impl Pressure {
         let time_ndarray: Array1<f64> = time.to_owned_array();
         let measured_ndarray: Array1<f64> = measured.to_owned_array();
 
+        let n_time: usize = time_ndarray.len();
+
         // Geometry
         self.results.get_or_insert(name).get_or_insert("geometry").insert("r", geometry_r);
         self.results.get_or_insert(name).get_or_insert("geometry").insert("z", geometry_z);
@@ -86,11 +90,26 @@ impl Pressure {
             .get_or_insert("fit_settings")
             .insert("weight", fit_settings_weight);
 
-        // Measurements
-        self.results.get_or_insert(name).get_or_insert("b").insert("time_experimental", time_ndarray);
+        // time-dependent "include"
+        let mut include_dynamic: Vec<bool> = vec![fit_settings_include; n_time];
+        for i_time in 0..n_time {
+            if measured_ndarray[i_time].is_nan() {
+                include_dynamic[i_time] = false;
+            }
+        }
         self.results
             .get_or_insert(name)
-            .get_or_insert("b")
+            .get_or_insert("fit_settings")
+            .insert("include_dynamic", include_dynamic);
+
+        // Measurements
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("pressure")
+            .insert("time_experimental", time_ndarray);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("pressure")
             .insert("measured_experimental", measured_ndarray);
     }
 
@@ -135,6 +154,13 @@ impl Pressure {
         }
     }
 
+    /// Greens function with plasma
+    ///
+    /// # Arguments
+    /// * `plasma` - The plasma object from Python
+    ///
+    /// # Returns
+    /// * None
     ///
     pub fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
         // Change Python type into Rust
@@ -145,9 +171,11 @@ impl Pressure {
 
         for sensor_name in self.results.keys() {
             // Create zero array
+            let g_plasma: Array1<f64> = Array1::from_elem(n_z * n_r, 0.0);
             let g_d_plasma_d_z: Array1<f64> = Array1::from_elem(n_z * n_r, 0.0);
 
             // Store
+            self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_plasma);
             self.results
                 .get_or_insert(&sensor_name)
                 .get_or_insert("greens")
@@ -220,7 +248,7 @@ impl Pressure {
             .expect("Missing 'results' key in pickled data")
             .ok_or_else(|| PyTypeError::new_err("Missing 'results' key in pickled data"))
             .expect("Failed to get `results` from pickled data");
-        let results_dict_bound: &Bound<'_, PyDict> = results_dict.downcast::<PyDict>().expect("Failed to downcast `results` to PyDict");
+        let results_dict_bound: &Bound<'_, PyDict> = results_dict.cast::<PyDict>().expect("Failed to downcast `results` to PyDict");
         self.results = py_dict_to_data_tree(results_dict_bound).expect("Failed to convert PyDict to DataTree");
         Ok(())
     }
@@ -230,41 +258,58 @@ impl Pressure {
 impl Pressure {
     /// This splits the Pressure into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
-    /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
+    /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
-        // Define empty data arrays
-        let results_static_empty: SensorsStatic = SensorsStatic {
-            greens_with_grid: Array2::zeros((0, 0)),
-            greens_with_pf: Array2::zeros((0, 0)),
-            greens_with_passives: Array2::zeros((0, 0)),
-            greens_d_sensor_dz: Array2::zeros((0, 0)),
-            fit_settings_weight: Array1::zeros(0),
-            fit_settings_expected_value: Array1::zeros(0),
-            geometry_r: Array1::zeros(0),
-            geometry_z: Array1::zeros(0),
-        };
-        let results_dynamic_empty: SensorsDynamic = SensorsDynamic { measured: Array1::zeros(0) };
-
         // Number of time-slices to reconstruct
         let n_time: usize = times_to_reconstruct.len();
+
+        // Sensor names
+        let sensor_names_all: Vec<String> = self.results.keys();
+        let n_sensors_all: usize = sensor_names_all.len();
+
+        // Interpolate all sensors to `times_to_reconstruct`
+        let mut measured: Array2<f64> = Array2::from_elem((n_sensors_all, n_time), f64::NAN);
+        for i_sensor in 0..n_sensors_all {
+            let sensor_name: &str = &sensor_names_all[i_sensor];
+
+            // Measured values
+            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("pressure").get("time_experimental").unwrap_array1();
+            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("pressure").get("measured_experimental").unwrap_array1();
+
+            // Create the interpolator
+            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone())
+                .expect("Pressure.split_into_static_and_dynamic: Can't make interpolator");
+
+            // Do the interpolation
+            let measured_this_sensor: Array1<f64> = interpolator
+                .interpolate_array1(times_to_reconstruct)
+                .expect("Pressure.split_into_static_and_dynamic: Can't do interpolation");
+
+            // Store for later
+            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_sensor);
+
+            // Store in self
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("pressure")
+                .get_or_insert("measured")
+                .insert("value", measured_this_sensor);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("pressure")
+                .get_or_insert("measured")
+                .insert("time", times_to_reconstruct.clone());
+        }
 
         // Create the time-dependent data structures
         let mut results_static: Vec<SensorsStatic> = Vec::with_capacity(n_time);
         let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);
 
-        // Sensor names
-        let sensor_names_all: Vec<String> = self.results.keys();
-
         'time_loop: for i_time in 0..n_time {
             let mut include: Vec<bool> = Vec::new();
-            for sensor_name in sensor_names_all.clone() {
-                let include_dynamic: Vec<bool> = self.results.get(&sensor_name).get("fit_settings").get("include_dynamic").unwrap_vec_bool();
-
-                if include_dynamic[i_time] == true {
-                    include.push(true)
-                } else {
-                    include.push(false)
-                }
+            for sensor_name in &sensor_names_all {
+                let include_dynamic: Vec<bool> = self.results.get(sensor_name).get("fit_settings").get("include_dynamic").unwrap_vec_bool();
+                include.push(include_dynamic[i_time]);
             }
 
             // Convert from Vec<bool> to Vec of indices
@@ -275,10 +320,11 @@ impl Pressure {
                 .map(|(i, _)| i) // Extract the indices
                 .collect(); // Collect into a Vec
 
-            // If there are no sensors at this time-slice then we should exit
+            // If there are no sensors at this time-slice then push empty and continue
             if include_indices.is_empty() {
-                results_static.push(results_static_empty.clone());
-                results_dynamic.push(results_dynamic_empty.clone());
+                let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
+                results_static.push(static_data_empty);
+                results_dynamic.push(dynamic_data_empty);
                 continue 'time_loop; // Go to next time-slice
             }
 
@@ -286,28 +332,30 @@ impl Pressure {
             let sensor_names: Vec<String> = include_indices.iter().map(|&index| sensor_names_all[index].clone()).collect();
             let n_sensors: usize = sensor_names.len();
 
-            // Now do the static data
             // Fit settings
             // Weight
             let fit_settings_weight: Array1<f64> = self.results.get("*").get("fit_settings").get("weight").unwrap_array1();
             let fit_settings_weight: Array1<f64> = fit_settings_weight.select(Axis(0), &include_indices);
-
             // Expected value
             let fit_settings_expected_value: Array1<f64> = self.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
             let fit_settings_expected_value: Array1<f64> = fit_settings_expected_value.select(Axis(0), &include_indices);
 
             // Greens
-            // With PF coils (TIMING: accessing greens_with_pf with unwrap_array3() takes ~50microseconds)
-            let greens_with_pf: Array3<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array3(); // shape = [n_time, n_pf, n_sensors]
-            let greens_with_pf: Array3<f64> = greens_with_pf.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_pf, n_sensors]
-
+            // With PF coils
+            let greens_with_pf: Array2<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array2(); // shape = [n_pf, n_sensors]
+            let greens_with_pf: Array2<f64> = greens_with_pf.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_pf, n_sensors]
             // With plasma
-            let greens_with_grid: Array3<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors]
-            let greens_with_grid: Array3<f64> = greens_with_grid.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_z * n_r, n_sensors]
-
+            let greens_with_grid: Array2<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array2(); // shape = [n_z * n_r, n_sensors]
+            let greens_with_grid: Array2<f64> = greens_with_grid.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_z * n_r, n_sensors]
             // With d_sensor_dz (for vertical stability)
-            let greens_d_sensor_dz: Array3<f64> = self.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors]
-            let greens_d_sensor_dz: Array3<f64> = greens_d_sensor_dz.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_z * n_r, n_sensors]
+            let greens_d_sensor_dz: Array2<f64> = self.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array2(); // shape = [n_z * n_r, n_sensors]
+            let greens_d_sensor_dz: Array2<f64> = greens_d_sensor_dz.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_z * n_r, n_sensors]
+
+            // Geometry
+            let geometry_r: Array1<f64> = self.results.get("*").get("geometry").get("r").unwrap_array1();
+            let geometry_r: Array1<f64> = geometry_r.select(Axis(0), &include_indices);
+            let geometry_z: Array1<f64> = self.results.get("*").get("geometry").get("z").unwrap_array1();
+            let geometry_z: Array1<f64> = geometry_z.select(Axis(0), &include_indices);
 
             // With passives
             let passive_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").keys();
@@ -320,23 +368,21 @@ impl Pressure {
                 n_dof_total += dof_names.len();
             }
 
-            // With passives
-            let mut greens_with_passives: Array3<f64> = Array3::zeros((n_time, n_dof_total, n_sensors)) * f64::NAN;
+            let mut greens_with_passives: Array2<f64> = Array2::zeros((n_dof_total, n_sensors));
             for i_sensor in 0..n_sensors {
                 let mut i_dof_total: usize = 0;
                 for i_passive in 0..n_passives {
                     let passive_name: &str = &passive_names[i_passive];
                     let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
                     for dof_name in dof_names {
-                        let greens_with_passives_tmp: Array1<f64> = self
+                        greens_with_passives[(i_dof_total, i_sensor)] = self
                             .results
                             .get(&sensor_names[i_sensor])
                             .get("greens")
                             .get("passives")
                             .get(&passive_name)
                             .get(&dof_name)
-                            .unwrap_array1(); // shape = [n_time]
-                        greens_with_passives.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
+                            .unwrap_f64();
 
                         // Keep count
                         i_dof_total += 1;
@@ -346,20 +392,21 @@ impl Pressure {
 
             // Create the `SensorsStatic` data
             let results_static_this_time_slice: SensorsStatic = SensorsStatic {
-                greens_with_grid: greens_with_grid.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
-                greens_with_pf: greens_with_pf.slice(s![i_time, .., ..]).to_owned(),
-                greens_with_passives: greens_with_passives.slice(s![i_time, .., ..]).to_owned(),
-                greens_d_sensor_dz: greens_d_sensor_dz.slice(s![i_time, .., ..]).to_owned(),
-                fit_settings_weight: fit_settings_weight.clone(),
-                fit_settings_expected_value: fit_settings_expected_value.clone(),
-                geometry_r: Array1::zeros(n_sensors), // used for pressure location
-                geometry_z: Array1::zeros(n_sensors), // used for pressure location
+                greens_with_grid,
+                greens_with_pf,
+                greens_with_passives,
+                greens_d_sensor_dz,
+                fit_settings_weight,
+                fit_settings_expected_value,
+                geometry_r,
+                geometry_z,
             };
             results_static.push(results_static_this_time_slice);
 
-            // The measured sensor values are = 0.0
+            // Select time-slice and the sensors we use in reconstruction
+            let measured_this_time_slice_and_sensors: Array1<f64> = measured.slice(s![.., i_time]).select(Axis(0), &include_indices).to_owned();
             let results_dynamic_this_time_slice: SensorsDynamic = SensorsDynamic {
-                measured: Array1::zeros(n_sensors),
+                measured: measured_this_time_slice_and_sensors,
             };
             results_dynamic.push(results_dynamic_this_time_slice);
         }

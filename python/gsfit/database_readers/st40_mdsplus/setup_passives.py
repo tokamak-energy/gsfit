@@ -7,11 +7,11 @@ from gsfit_rs import Passives
 from st40_database import GetData  # type: ignore[import-not-found]
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderSt40MDSplus
+    from . import DatabaseReader
 
 
 def setup_passives(
-    self: "DatabaseReaderSt40MDSplus",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
 ) -> Passives:
@@ -67,34 +67,6 @@ def setup_passives(
                 regularisations=regularisations,
                 regularisations_weight=regularisations_weight,
             )
-
-
-            # # BUXTON: temporary fix to use PFIT eigenvalues
-            # from MDSplus import Connection  # type: ignore
-
-            # conn = Connection("smaug")
-            # conn.openTree("elmag", 206)
-            # tmp_vessel_r = conn.get("\\ELMAG::TOP.VESSEL:R").data()[0:480]
-            # tmp_vessel_z = conn.get("\\ELMAG::TOP.VESSEL:Z").data()[0:480]
-            # tmp_vessel_d_r = conn.get("\\ELMAG::TOP.VESSEL:DR").data()[0:480]
-            # tmp_vessel_d_z = conn.get("\\ELMAG::TOP.VESSEL:DZ").data()[0:480]
-            # tmp_vessel_angle_1 = 0.0 * tmp_vessel_r
-            # tmp_vessel_angle_2 = 0.0 * tmp_vessel_r
-
-            # passives.add_passive(
-            #     name=passive_name,
-            #     r=tmp_vessel_r,
-            #     z=tmp_vessel_z,
-            #     d_r=tmp_vessel_d_r,
-            #     d_z=tmp_vessel_d_z,
-            #     angle_1=tmp_vessel_angle_1,
-            #     angle_2=tmp_vessel_angle_2,
-            #     resistivity=vessel_resistivity[i_passive],
-            #     current_distribution_type=current_distribution_type,
-            #     n_dof=n_dof,
-            #     regularisations=regularisations,
-            #     regularisations_weight=regularisations_weight,
-            # )
         elif passive_name == "OVC":
             current_distribution_type = "constant_current_density"
             n_dof = 1

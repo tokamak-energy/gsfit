@@ -1,9 +1,8 @@
 use ndarray::{Array1, Array2, s};
-use physical_constants;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
+use std::f64::consts::PI;
 
-const PI: f64 = std::f64::consts::PI;
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
 /// d_g_br_dz = d(g_br)/d(z) = the gradient of br with respect to z
@@ -79,7 +78,7 @@ fn test_greens_d_b_dz() {
     let z_prime: Array1<f64> = Array1::from(vec![-d / 2.0]);
 
     // Calculate br and bz using the `greens_b` function
-    // Rember: g_br[n_rz, n_rz_prime] and g_bz[n_rz, n_rz_prime]
+    // Remember: g_br[n_rz, n_rz_prime] and g_bz[n_rz, n_rz_prime]
     // If we were to assume 1A of current is flowing in the coil, then `br = g_br * 1` and `bz = g_bz * 1`
     let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(r.clone(), z.clone(), r_prime.clone(), z_prime.clone());
 

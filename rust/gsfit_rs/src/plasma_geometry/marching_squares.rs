@@ -3,8 +3,7 @@ use approx::abs_diff_eq;
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
-
-const PI: f64 = std::f64::consts::PI;
+use std::f64::consts::PI;
 
 #[derive(Debug, Clone)]
 pub struct MarchingContour {
@@ -301,17 +300,17 @@ pub fn marching_squares(
     boundary_sorted_r.push(first_and_last_boundary_points[0].0);
     boundary_sorted_z.push(first_and_last_boundary_points[0].1);
 
-    // Sort the boundary points using nearest-neighbor algorithm
-    let (mut boundary_sorted_r, mut boundary_sorted_z): (Vec<f64>, Vec<f64>) =
-        sort_boundary_points(boundary_sorted_r, boundary_sorted_z, &unsorted_boundary_r, &unsorted_boundary_z);
+    // // Sort the boundary points using nearest-neighbor algorithm
+    // let (mut boundary_sorted_r, mut boundary_sorted_z): (Vec<f64>, Vec<f64>) =
+    //     sort_boundary_points(boundary_sorted_r, boundary_sorted_z, &unsorted_boundary_r, &unsorted_boundary_z);
 
-    // Add the last point to close the contour
-    boundary_sorted_r.push(first_and_last_boundary_points[1].0);
-    boundary_sorted_z.push(first_and_last_boundary_points[1].1);
+    // // Add the last point to close the contour
+    // boundary_sorted_r.push(first_and_last_boundary_points[1].0);
+    // boundary_sorted_z.push(first_and_last_boundary_points[1].1);
 
-    // Add the x-point
-    boundary_sorted_r.push(xpt_r);
-    boundary_sorted_z.push(xpt_z);
+    // // Add the x-point
+    // boundary_sorted_r.push(xpt_r);
+    // boundary_sorted_z.push(xpt_z);
 
     // re-add "sort_boundary_points_version_2" here..
     let (boundary_sorted_r, boundary_sorted_z): (Vec<f64>, Vec<f64>) =

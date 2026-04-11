@@ -7,11 +7,11 @@ from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # 
 from gsfit_rs import StationaryPoint
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGSNKE
+    from . import DatabaseReader
 
 
 def setup_stationary_point_sensors(
-    self: "DatabaseReaderFreeGSNKE",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     times_to_reconstruct: npt.NDArray[np.float64],

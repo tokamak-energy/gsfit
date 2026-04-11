@@ -8,14 +8,15 @@ import mdsthin  # type: ignore
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import FluxLoops
-from st40_database import GetData  # type: ignore[import-not-found]
+
+from .astra_flux_loop_reader import astra_flux_loop_reader
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderST40AstraMDSplus
+    from . import DatabaseReader
 
 
 def setup_flux_loops(
-    self: "DatabaseReaderST40AstraMDSplus",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
 ) -> FluxLoops:
@@ -34,29 +35,23 @@ def setup_flux_loops(
     flux_loops = FluxLoops()
 
     # Extract the astra_run_name from settings
-    astra_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_astra_mdsplus"]["astra_run_name"]
+    astra_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_astra_mdsplus"]["workflow"]["astra"]["run_name"]
 
     # Connect to MDSplus
     conn = mdsthin.Connection("smaug")
     conn.openTree("ASTRA", pulseNo)
 
-    # ASTRA bp_probes
+    # ASTRA flux_loops
     time = conn.get(f"\\ASTRA::TOP.{astra_run_name}:TIME").data().astype(np.float64)
     measurements = conn.get(f"\\ASTRA::TOP.{astra_run_name}.FLOOP.ALL:PSI").data().astype(np.float64)
     names = conn.get(f"\\ASTRA::TOP.{astra_run_name}.FLOOP.ALL:NAME").data().astype(str)
 
-    # read in mag data from MDSplus
-    mag = GetData(12050, "MAG#BEST", is_fail_quiet=False)
+    # Read flux loop geometry from fl_loop.dat
+    flux_loops_data = astra_flux_loop_reader()
 
-    # FL-probes
-    names_long = mag.get("FLOOP.ALL.NAMES")
-    sensors_names = np.char.replace(names_long, "FLOOP_", "L")
-    sensors_r = mag.get("FLOOP.ALL.R")
-    sensors_z = mag.get("FLOOP.ALL.Z")
+    for flux_loop_name, data in flux_loops_data.items():
+        sensor_name = flux_loop_name.replace("FLOOP_", "L")
 
-    n_sensors = len(sensors_names)
-    for i_sensor in range(0, n_sensors):
-        sensor_name = sensors_names[i_sensor]
         if sensor_name in settings["sensor_weights_flux_loops.json"]:
             fit_settings_comment = settings["sensor_weights_flux_loops.json"][sensor_name]["fit_settings"]["comment"]
             fit_settings_expected_value = settings["sensor_weights_flux_loops.json"][sensor_name]["fit_settings"]["expected_value"]
@@ -69,14 +64,14 @@ def setup_flux_loops(
             fit_settings_weight = np.nan
 
         # Measured values
-        index = names == sensor_name.replace("L", "FLOOP_")
+        index = names == flux_loop_name
         measured = measurements[:, index].squeeze()
 
         # Add the sensor to the Rust class
         flux_loops.add_sensor(
-            name=sensors_names[i_sensor],
-            geometry_r=sensors_r[i_sensor],
-            geometry_z=sensors_z[i_sensor],
+            name=sensor_name,
+            geometry_r=data["r"],
+            geometry_z=data["z"],
             fit_settings_comment=fit_settings_comment,
             fit_settings_expected_value=fit_settings_expected_value,
             fit_settings_include=fit_settings_include,

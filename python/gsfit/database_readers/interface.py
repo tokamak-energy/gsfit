@@ -9,10 +9,11 @@ from gsfit_rs import Dialoop
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
-from gsfit_rs import StationaryPoint
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
+from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
+from gsfit_rs import StationaryPoint
 
 
 class DatabaseReaderProtocol(Protocol):
@@ -450,6 +451,46 @@ class DatabaseReaderProtocol(Protocol):
             )
 
         return rogowski_coils
+        ```
+        """
+        ...
+
+    def setup_pressure_sensors(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> Pressure:
+        """
+        This method initialises the Rust `Pressure` class (pressure measurements at specific locations in the poloidal plane).
+
+        :param pulseNo: Pulse number, used to read from the database
+        :param settings: Dictionary containing the JSON settings read from the `settings` directory
+        :param kwargs: Additional objects, such as FreeGNSKE object
+
+        Initialising requires reading data from two locations:
+        1. `sensor_weights_pressure.json`: Which contains "fitting parameters", e.g. if a sensor should be used in the fitting
+        2. Database reading (e.g. MDSplus, or FreeGNSKE object): Which contains the measurements and sensor geometry
+
+        Different machines will use different data stores for the sensor geometry and measured signals.
+        This Protocol allows different database readers to be selected.
+        The output of this method must always be a `Pressure` object.
+
+        At a minimum this method should look like this:
+        ```python
+        # Initialise the Pressure Rust class
+        pressure = Pressure()
+
+        # Add all of the pressure sensors
+        for i_pressure_sensor in range(n_pressure_sensors):
+            pressure.add_sensor(
+                name=...,                         # need to be same in database and `sensor_weights_pressure.json` file
+                geometry_r=...,                   # read from a database
+                geometry_z=...,                   # read from a database
+                fit_settings_comment=...,         # read from `sensor_weights_pressure.json` file
+                fit_settings_expected_value=...,  # read from `sensor_weights_pressure.json` file
+                fit_settings_include=...,         # read from `sensor_weights_pressure.json` file
+                fit_settings_weight=...,          # read from `sensor_weights_pressure.json` file
+                time=...,                         # read from a database
+                measured=...,                     # read from a database
+            )
+
+        return pressure
         ```
         """
         ...

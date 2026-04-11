@@ -3,7 +3,7 @@ use super::gs_solution::GsSolution;
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
-use crate::sensors::{BpProbes, FluxLoops, Isoflux, IsofluxBoundary, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
+use crate::sensors::{BpProbes, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
 use crate::source_functions::SourceFunctionTraits;
 use log::info; // use log::{debug, error, info};
 use ndarray::{Array1, Array2, s};
@@ -24,7 +24,8 @@ pub fn solve_grad_shafranov(
     mut rogowski_coils: PyRefMut<RogowskiCoils>,
     mut isoflux: PyRefMut<Isoflux>,
     mut isoflux_boundary: PyRefMut<IsofluxBoundary>,
-    mut stationay_point: PyRefMut<StationaryPoint>,
+    mut pressure_sensors: PyRefMut<Pressure>,
+    mut stationary_point: PyRefMut<StationaryPoint>,
     times_to_reconstruct: PyReadonlyArray1<f64>,
     n_iter_max: usize,
     n_iter_min: usize,
@@ -77,11 +78,12 @@ pub fn solve_grad_shafranov(
     let (isoflux_statics, isoflux_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = isoflux.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (isoflux_boundary_statics, isoflux_boundary_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         isoflux_boundary.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (pressure_statics, pressure_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+        pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (stationary_point_statics, stationary_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+        stationary_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
-    let (stationay_point_statics, stationay_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
-        stationay_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-
-    // TOD: might be better to combine all sensors here, before passing to the solver
+    // TODO: might be better to combine all sensors here, before passing to the solver
 
     // Create a local copy
     let coils_owned: Coils = coils.to_owned();
@@ -158,8 +160,10 @@ pub fn solve_grad_shafranov(
                 &isoflux_dynamic[i_time],
                 &isoflux_boundary_statics[i_time],
                 &isoflux_boundary_dynamic[i_time],
-                &stationay_point_statics[i_time],
-                &stationay_point_dynamic[i_time],
+                &pressure_statics[i_time],
+                &pressure_dynamic[i_time],
+                &stationary_point_statics[i_time],
+                &stationary_point_dynamic[i_time],
                 n_iter_max,
                 n_iter_min,
                 n_iter_no_vertical_feedback,

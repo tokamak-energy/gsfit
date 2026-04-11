@@ -1,11 +1,9 @@
 use approx::abs_diff_eq;
 use ndarray::{Array1, Array2, s};
-use physical_constants;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
+use std::f64::consts::PI;
 
-// Constants
-const PI: f64 = std::f64::consts::PI;
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
 /// Calculates the Green's table for Br and Bz fields
@@ -53,8 +51,8 @@ pub fn greens_b(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: A
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
 
-    let mut g_br: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
-    let mut g_bz: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
+    let mut g_br: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
+    let mut g_bz: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
 
     for i_rz in 0..n_rz {
         // Define some variables
@@ -79,7 +77,6 @@ pub fn greens_b(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: A
         // this is for grid-grid calculation
         // If we do this earlier we can skip calculating elliptic integrals
         // TODO: There is probably a better equation for the self-field!!!
-        let n_rz_prime: usize = r_prime.len();
         for i_rz_prime in 0..n_rz_prime {
             if abs_diff_eq!(r[i_rz], r_prime[i_rz_prime]) && abs_diff_eq!(z[i_rz], z_prime[i_rz_prime]) {
                 g_br_here[i_rz_prime] = 0.0;

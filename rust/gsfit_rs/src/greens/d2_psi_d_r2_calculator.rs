@@ -1,7 +1,5 @@
 use ndarray::{Array1, Array2, Array3, s};
-
-// Constants
-const PI: f64 = std::f64::consts::PI;
+use std::f64::consts::PI;
 
 #[derive(Debug, Clone)]
 pub struct D2PsiDR2Calculator {
@@ -170,7 +168,7 @@ impl D2PsiDR2Calculator {
 
         // Add on the `delta_z` term
         let delta_z: f64 = self.delta_z;
-        let d_bz_d_z: Array2<f64> = self.d_bz_d_z.to_owned();
+        let d_bz_d_z: &Array2<f64> = &self.d_bz_d_z;
         // TODO: protect against i_r at the edges !!!!!
         let d2_psi_d_r2_delta_z_term: f64;
         if i_r == 0 {
@@ -308,7 +306,7 @@ fn test_d2_psi_d_r2_calculator() {
         flat_z.clone(),
         r.clone(),
         0.0 * r.clone() + z[0],
-        d_r_flat, // TODO: I don't like thsee variables
+        d_r_flat, // TODO: I don't like these variables
         d_z_flat,
     );
     let (g_grid_grid_flat, _): (Vec<f64>, Option<usize>) = g_psi.into_raw_vec_and_offset();

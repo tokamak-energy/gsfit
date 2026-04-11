@@ -101,29 +101,29 @@ pub fn py_dict_to_data_tree(state_dictionary: &Bound<'_, PyDict>) -> PyResult<Da
 /// if you need to convert individual Python values.
 pub fn py_any_to_data_value(value_py: &Bound<'_, PyAny>) -> PyResult<DataValue> {
     // Try dictionary first (for nested DataTrees)
-    if let Ok(dict_val) = value_py.downcast::<PyDict>() {
+    if let Ok(dict_val) = value_py.cast::<PyDict>() {
         let nested_data_tree: DataTree = py_dict_to_data_tree(&dict_val)?;
         return Ok(DataValue::DataTree(nested_data_tree));
     }
 
     // Try numpy arrays
-    if let Ok(array1_val) = value_py.downcast::<PyArray1<f64>>() {
+    if let Ok(array1_val) = value_py.cast::<PyArray1<f64>>() {
         let array1: Array1<f64> = array1_val.to_owned_array();
         return Ok(DataValue::Array1(array1));
     }
 
-    if let Ok(array2_val) = value_py.downcast::<PyArray2<f64>>() {
+    if let Ok(array2_val) = value_py.cast::<PyArray2<f64>>() {
         let array2: Array2<f64> = array2_val.to_owned_array();
         return Ok(DataValue::Array2(array2));
     }
 
-    if let Ok(array3_val) = value_py.downcast::<PyArray3<f64>>() {
+    if let Ok(array3_val) = value_py.cast::<PyArray3<f64>>() {
         let array3: Array3<f64> = array3_val.to_owned_array();
         return Ok(DataValue::Array3(array3));
     }
 
     // Try Python lists (for Vec<usize> or Vec<bool>)
-    if let Ok(list_val) = value_py.downcast::<PyList>() {
+    if let Ok(list_val) = value_py.cast::<PyList>() {
         let n_items: usize = list_val.len();
         if n_items == 0 {
             let vec_usize: Vec<usize> = list_val.extract()?;

@@ -8,11 +8,11 @@ from gsfit_rs import Isoflux
 from shapely.geometry import LineString  # type: ignore
 
 if TYPE_CHECKING:
-    from . import DatabaseReaderFreeGS
+    from . import DatabaseReader
 
 
 def setup_isoflux_sensors(
-    self: "DatabaseReaderFreeGS",
+    self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
     times_to_reconstruct: npt.NDArray[np.float64],
@@ -25,7 +25,7 @@ def setup_isoflux_sensors(
     :param pulseNo: Pulse number, used to read from the database
     :param settings: Dictionary containing the JSON settings read from the `settings` directory
     :param time: Measured time vector
-    :param freegsnke_eqs: List of FreeGS equilibrium objects, one for each time-slice
+    :param freegs_eqs: List of FreeGS equilibrium objects, one for each time-slice
 
     **This method is specific to FreeGS.**
 
@@ -34,7 +34,5 @@ def setup_isoflux_sensors(
 
     # Initialise the Isoflux Rust class
     isoflux = Isoflux()
-
-    # TODO: implement the method
 
     return isoflux

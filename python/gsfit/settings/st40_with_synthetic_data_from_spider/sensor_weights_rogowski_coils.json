@@ -1,0 +1,106 @@
+{
+  "BVLB": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": -148704.9999,
+      "include": true,
+      "weight": 1000.0
+    }
+  },
+  "BVLT": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": -148704.9999,
+      "include": true,
+      "weight": 1000.0
+    }
+  },
+  "DIVB": {
+    "fit_settings": {
+      "comment": "presently, I am not reconstructing the DIV cases, so makes no sense to include case Rogowski",
+      "expected_value": -927749.4327,
+      "include": false,
+      "weight": 1000.0
+    }
+  },
+  "DIVPSRB": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": 1000.0,
+      "include": true,
+      "weight": 1000.0
+    }
+  },
+  "DIVPSRT": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": 1000.0,
+      "include": true,
+      "weight": 1000.0
+    }
+  },
+  "DIVT": {
+    "fit_settings": {
+      "comment": "presently, I am not reconstructing the DIV cases, so makes no sense to include case Rogowski",
+      "expected_value": -927749.4327,
+      "include": false,
+      "weight": 1000.0
+    }
+  },
+  "GASBFLB": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": 4281.590177,
+      "include": true,
+      "weight": 100.0
+    }
+  },
+  "GASBFLT": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": 4281.590177,
+      "include": true,
+      "weight": 100.0
+    }
+  },
+  "HFSPSRB": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": 1000.0,
+      "include": true,
+      "weight": 1000000.0
+    }
+  },
+  "HFSPSRT": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": 1000.0,
+      "include": true,
+      "weight": 1000000.0
+    }
+  },
+  "INIVC000": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": 306917.4849,
+      "include": true,
+      "weight": 1000.0
+    }
+  },
+  "MCB": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": -5616.681085,
+      "include": false,
+      "weight": 1.0
+    }
+  },
+  "MCT": {
+    "fit_settings": {
+      "comment": "",
+      "expected_value": -5616.681085,
+      "include": false,
+      "weight": 1.0
+    }
+  }
+}
