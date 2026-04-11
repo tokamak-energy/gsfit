@@ -37,8 +37,8 @@ impl BicubicInterpolator {
     /// https://en.wikipedia.org/wiki/Bicubic_interpolation
     ///
     /// # Arguments
-    /// * `delta_x` - grid spacing in x direction, [dimensionless]
-    /// * `delta_y` - grid spacing in y direction, [dimensionless]
+    /// * `delta_x` - grid spacing in x direction, between 0 and 1, [dimensionless]
+    /// * `delta_y` - grid spacing in y direction, between 0 and 1, [dimensionless]
     /// * `f` - function values at the four corners of the grid, [any]
     /// * `d_f_d_x` - partial derivative of `f` with respect to `x` at the four corners, [any]
     /// * `d_f_d_y` - partial derivative of `f` with respect to `y` at the four corners, [any]

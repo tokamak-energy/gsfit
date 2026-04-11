@@ -7,13 +7,13 @@
 ///     * trace can be any value
 ///
 /// # Arguments
-/// * `d2_psi_d_r2` - Second derivative of poloidal flux `psi` with respect to R, [weber^2 / metre^2]
-/// * `d2_psi_d_z2` - Second derivative of poloidal flux `psi` with respect to Z, [weber^2 / metre^2]
-/// * `d2_psi_d_r_d_z` - Mixed second derivative of poloidal flux `psi` with respect to R and Z, [weber^2 / metre^2]
+/// * `d2_psi_d_r2` - Second derivative of poloidal flux `psi` with respect to R, [weber**2 / metre**2]
+/// * `d2_psi_d_z2` - Second derivative of poloidal flux `psi` with respect to Z, [weber**2 / metre**2]
+/// * `d2_psi_d_r_d_z` - Mixed second derivative of poloidal flux `psi` with respect to R and Z, [weber**2 / metre**2]
 ///
 /// # Returns
-/// * `trace` - the sum of the diagonal elements of the Hessian matrix, [weber^2 / metre^2]
-/// * `determinant` - the determinant of the Hessian matrix, [weber^4 / metre^4]
+/// * `determinant` - the determinant of the Hessian matrix, [weber**4 / metre**4]
+/// * `trace` - the sum of the diagonal elements of the Hessian matrix, [weber**2 / metre**2]
 ///
 /// # Example
 /// ```

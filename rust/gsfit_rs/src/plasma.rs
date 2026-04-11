@@ -46,15 +46,15 @@ impl Plasma {
     /// # Arguments
     /// * `n_r` - number of radial points, [dimensionless]
     /// * `n_z` - number of vertical points, [dimensionless]
-    /// * `r_min` - minimum radial coordinate, [metre]
-    /// * `r_max` - maximum radial coordinate, [metre]
-    /// * `z_min` - minimum vertical coordinate, [metre]
-    /// * `z_max` - maximum vertical coordinate, [metre]
+    /// * `r_min` - minimum radial coordinate, [meter]
+    /// * `r_max` - maximum radial coordinate, [meter]
+    /// * `z_min` - minimum vertical coordinate, [meter]
+    /// * `z_max` - maximum vertical coordinate, [meter]
     /// * `psi_n` - normalized poloidal flux points (1d array), [dimensionless]
-    /// * `limit_pts_r` - radial limit points (1d array), [metre]
-    /// * `limit_pts_z` - vertical limit points (1d array), [metre]
-    /// * `vessel_r` - vessel radial points (1d array), [metre]
-    /// * `vessel_z` - vessel vertical points (1d array), [metre]
+    /// * `limit_pts_r` - radial limit points (1d array), [meter]
+    /// * `limit_pts_z` - vertical limit points (1d array), [meter]
+    /// * `vessel_r` - vessel radial points (1d array), [meter]
+    /// * `vessel_z` - vessel vertical points (1d array), [meter]
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
     /// * `ff_prime_source_function` - ff_prime source function (a Rust implementation, initialised in Python)
     ///

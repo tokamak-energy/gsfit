@@ -22,18 +22,18 @@ impl D2PsiDR2Calculator {
     /// Create a new D2PsiDR2Calculator
     ///
     /// # Arguments
-    /// * `g_d2_psi_d_r2_coils` - Green's function table for d^2(psi)/d(r^2) from PF coil currents, shape (n_z, n_r, n_pf), [weber^2 / (metre^2 * ampere)]
+    /// * `g_d2_psi_d_r2_coils` - Green's function table for d^2(psi)/d(r^2) from PF coil currents, shape (n_z, n_r, n_pf), [weber**2 / (meter**2 * ampere)]
     /// * `pf_coil_currents` - PF coil currents, shape=(n_pf), [ampere]
-    /// * `g_d2_psi_d_r2_passives` - Green's function table for d^2(psi)/d(r^2) from passive currents, shape (n_z * n_r, n_passive_dof), [weber^2 / (metre^2 * ampere)]
+    /// * `g_d2_psi_d_r2_passives` - Green's function table for d^2(psi)/d(r^2) from passive currents, shape (n_z * n_r, n_passive_dof), [weber**2 / (meter**2 * ampere)]
     /// * `passive_dof_values` - Passive current degrees of freedom values, shape (n_passive_dof), [ampere]
-    /// * `g_d2_psi_d_r2_plasma` - Green's function table for d^2(psi)/d(r^2) from plasma current, shape (n_z * n_r, n_r), [weber^2 / (metre^2 * ampere)]
-    /// * `j_2d` - Plasma current density on grid, shape (n_z, n_r), [ampere / metre^2]
-    /// * `d_area` - Area of each grid cell, [metre^2]
+    /// * `g_d2_psi_d_r2_plasma` - Green's function table for d^2(psi)/d(r^2) from plasma current, shape (n_z * n_r, n_r), [weber**2 / (meter**2 * ampere)]
+    /// * `j_2d` - Plasma current density on grid, shape (n_z, n_r), [ampere / meter**2]
+    /// * `d_area` - Area of each grid cell, [meter**2]
     /// * `n_r` - Number of R grid points, [dimensionless]
     /// * `n_z` - Number of Z grid points, [dimensionless]
-    /// * `r` - R grid points, shape (n_r), [metre]
-    /// * `g_bz_plasma` - Green's function table for Bz from plasma current, shape (n_z, n_r), [tesla / (ampere / metre^2)]
-    /// * `delta_z` - Small perturbation to the Z-grid to stabilise the VDE, [metre]
+    /// * `r` - R grid points, shape (n_r), [meter]
+    /// * `g_bz_plasma` - Green's function table for Bz from plasma current, shape (n_z, n_r), [tesla / (ampere / meter**2)]
+    /// * `delta_z` - Small perturbation to the Z-grid to stabilise the VDE, [meter]
     ///
     /// # Returns
     /// * `D2PsiDR2Calculator` - New D2PsiDR2Calculator
@@ -83,7 +83,7 @@ impl D2PsiDR2Calculator {
     /// * `i_z` - Z index where to evaluate d^2(psi)/d(r^2), [dimensionless]
     ///
     /// # Returns
-    /// * `g_d2_psi_d_r2` - d^2(psi)/d(r^2) at (r,z), [weber^2 / metre^2]
+    /// * `g_d2_psi_d_r2` - d^2(psi)/d(r^2) at (r,z), [weber**2 / meter**2]
     pub fn calculate(&self, i_r: usize, i_z: usize) -> f64 {
         // TODO: I am missing the delta_z term throughout this function entirely!
 
