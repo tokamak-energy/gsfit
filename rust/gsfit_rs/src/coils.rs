@@ -147,7 +147,7 @@ impl Coils {
 
             // Resistivity of copper
             let temperature_in_kelvin: f64 = 293.15; // 20 degrees C
-            let resistivity_copper_20c: f64 = copper_resistivity(temperature_in_kelvin); // ~ 1.68e-8 ohm * meter
+            let resistivity_copper_20c: f64 = copper_resistivity(temperature_in_kelvin); // ~ 1.68e-8 ohm * metre
 
             // Resistance of coil
             let resistance: f64 = (resistivity_copper_20c * length / area).sum();

@@ -144,7 +144,7 @@ We should write units using their "full names" in plain text, the most common un
 * `joule`
 * `kelvin`
 * `kilogram`
-* `meter`
+* `metre`
 * `ohm`
 * `radian`
 * `second`
@@ -162,16 +162,20 @@ which is unambiguous.
 
 ### Compound units
 Quantities containing more than one unit need to include the mathematical operation, for example the following would be correct:
-* `ampere * meter`
-* `ampere / meter`
-* `1 / meter ** 3`
+* `ampere * metre`
+* `ampere / metre`
+* `1 / metre ** 3`
 The following would be incorrect:
-* `meter ampere` would not work, missing the multiplication operator (and not alphabetically sorted)
-* `ampere * 1 / meter` would work, but not helpful extra mathematical operations
-* `meter ** -3` would work, but not using standard division
+* `metre ampere` would not work, missing the multiplication operator (and not alphabetically sorted)
+* `ampere * 1 / metre` would work, but not helpful extra mathematical operations
+* `metre ** -3` would work, but not using standard division
+
+### `metre` vs `meter`
+We choose to use `metre`, because it's the SI standard spelling.
+Only the United States and Philippines use `meter`.
 
 ### For plotting
-In plotting the compact form should be used with a square bracket, e.g. `[m]` for `meter`, `[s]` for `second`, `[T]` for `tesla`, etc.
+In plotting the compact form should be used with a square bracket, e.g. `[m]` for `metre`, `[s]` for `second`, `[T]` for `tesla`, etc.
 
 ## Initializing empty arrays
 For safety I like to initialize numerical arrays full with `f64::NAN` this way if an index is missed an error will most likely be thrown, e.g.

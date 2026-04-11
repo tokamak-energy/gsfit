@@ -36,15 +36,15 @@ impl BpProbes {
     ///
     /// # Arguments
     /// * `name` - Name of the sensor
-    /// * `geometry_angle_pol` - Poloidal angle of the sensor, radian
-    /// * `geometry_r` - R coordinate of the sensor, meter
-    /// * `geometry_z` - Z coordinate of the sensor, meter
+    /// * `geometry_angle_pol` - Poloidal angle of the sensor, [radian]
+    /// * `geometry_r` - R coordinate of the sensor, [metre]
+    /// * `geometry_z` - Z coordinate of the sensor, [metre]
     /// * `fit_settings_comment` - Comment for the fit settings
     /// * `fit_settings_expected_value` - Expected value for the fit settings
     /// * `fit_settings_include` - Include in the fit settings
     /// * `fit_settings_weight` - Weight in the fit settings
-    /// * `time` - Time array of the measured data, second
-    /// * `measured` - Measured data array, tesla
+    /// * `time` - Time array of the measured data, [second]
+    /// * `measured` - Measured data array, [tesla]
     ///
     /// # Returns
     /// None

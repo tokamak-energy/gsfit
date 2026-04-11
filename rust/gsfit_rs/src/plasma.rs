@@ -46,15 +46,15 @@ impl Plasma {
     /// # Arguments
     /// * `n_r` - number of radial points, [dimensionless]
     /// * `n_z` - number of vertical points, [dimensionless]
-    /// * `r_min` - minimum radial coordinate, [meter]
-    /// * `r_max` - maximum radial coordinate, [meter]
-    /// * `z_min` - minimum vertical coordinate, [meter]
-    /// * `z_max` - maximum vertical coordinate, [meter]
+    /// * `r_min` - minimum radial coordinate, [metre]
+    /// * `r_max` - maximum radial coordinate, [metre]
+    /// * `z_min` - minimum vertical coordinate, [metre]
+    /// * `z_max` - maximum vertical coordinate, [metre]
     /// * `psi_n` - normalized poloidal flux points (1d array), [dimensionless]
-    /// * `limit_pts_r` - radial limit points (1d array), [meter]
-    /// * `limit_pts_z` - vertical limit points (1d array), [meter]
-    /// * `vessel_r` - vessel radial points (1d array), [meter]
-    /// * `vessel_z` - vessel vertical points (1d array), [meter]
+    /// * `limit_pts_r` - radial limit points (1d array), [metre]
+    /// * `limit_pts_z` - vertical limit points (1d array), [metre]
+    /// * `vessel_r` - vessel radial points (1d array), [metre]
+    /// * `vessel_z` - vessel vertical points (1d array), [metre]
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
     /// * `ff_prime_source_function` - ff_prime source function (a Rust implementation, initialised in Python)
     ///
@@ -1366,9 +1366,9 @@ fn epp_beta_n(beta: f64, r_minor: f64, bt_vac_at_r_geo: f64, ip: f64) -> f64 {
 /// # Arguments
 /// * `w_mhd` - stored MHD energy [joule]
 /// * `ip` - plasma current [ampere]
-/// * `r_mag` - magnetic axis major radius [meter]
-/// * `r_geo` - geometric major radius [meter]
-/// * `plasma_volume` - plasma volume [meter ** 3]
+/// * `r_mag` - magnetic axis major radius [metre]
+/// * `r_geo` - geometric major radius [metre]
+/// * `plasma_volume` - plasma volume [metre ** 3]
 ///
 /// # Returns
 /// * `(beta_p_1, beta_p_2, beta_p_3)` - poloidal beta values [dimensionless]
@@ -1580,6 +1580,15 @@ fn epp_flux_surfaces(
     }
 
     return flux_surfaces;
+}
+
+fn epp_scrape_off_layer(
+    gs_solution: &GsSolution,
+) -> (Array1<f64>, Array1<f64>) {
+    let psi_b: f64 = gs_solution.psi_b;
+    
+
+    unimplemented!("scrape-off layer");
 }
 
 fn epp_flux_toroidal_profile(q_profile: &Array1<f64>, psi_profile: &Array1<f64>) -> Array1<f64> {
