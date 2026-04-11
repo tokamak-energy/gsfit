@@ -25,7 +25,7 @@ def plot() -> tuple[matplotlib.figure.Figure, list[matplotlib.axes.Axes]]:
 
     # Auto-refresh the legend on ax[1] whenever the figure is redrawn,
     # so that any new labeled artists added after setup appear automatically.
-    def _auto_legend(event, _updating=[False]):
+    def _auto_legend(event: object, _updating: list[bool] = [False]) -> None:
         # Guard against infinite recursion: legend() triggers a draw,
         # which would re-enter this callback without the guard.
         if _updating[0]:
