@@ -4,7 +4,6 @@ use numpy::IntoPyArray;
 use numpy::PyArray2;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
-use physical_constants;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind

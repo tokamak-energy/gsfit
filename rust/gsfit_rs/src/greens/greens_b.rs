@@ -1,6 +1,5 @@
 use approx::abs_diff_eq;
 use ndarray::{Array1, Array2, s};
-use physical_constants;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
 use std::f64::consts::PI;

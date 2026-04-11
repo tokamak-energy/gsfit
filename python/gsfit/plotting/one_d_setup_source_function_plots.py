@@ -13,7 +13,6 @@ def plot() -> tuple[matplotlib.figure.Figure, list[matplotlib.axes.Axes]]:
     ax[0].grid()
     ax[1].grid()
 
-    # ax[1].yaxis.tick_right()
     ax[0].set_xlabel("psi_n [-]")
     ax[1].set_xlabel("psi_n [-]")
     ax[0].set_ylabel("p_prime")
@@ -25,12 +24,12 @@ def plot() -> tuple[matplotlib.figure.Figure, list[matplotlib.axes.Axes]]:
 
     # Auto-refresh the legend on ax[1] whenever the figure is redrawn,
     # so that any new labeled artists added after setup appear automatically.
-    def _auto_legend(event: object, _updating: list[bool] = [False]) -> None:
+    def _auto_legend(_event: object, _updating: list[bool] = [False]) -> None:
         # Guard against infinite recursion: legend() triggers a draw,
         # which would re-enter this callback without the guard.
         if _updating[0]:
             return
-        handles, labels = ax[1].get_legend_handles_labels()
+        _handles, labels = ax[1].get_legend_handles_labels()
         if labels:
             _updating[0] = True
             ax[1].legend()
