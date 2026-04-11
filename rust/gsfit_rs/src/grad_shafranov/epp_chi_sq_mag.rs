@@ -16,7 +16,7 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
         for i_time in 0..n_time {
             // bp_probes
             for i_bp_probe in 0..n_bp_probes {
-                if bp_probes_include[i_bp_probe] == true {
+                if bp_probes_include[i_bp_probe] {
                     let sigma: f64 = bp_probes_expected_value[i_bp_probe] / bp_probes_weight[i_bp_probe];
                     chi_sq_mag_result[i_time] +=
                         (bp_probes_measured[(i_time, i_bp_probe)] - bp_probes_calculated[(i_time, i_bp_probe)]).powi(2) / sigma.powi(2);
@@ -36,7 +36,7 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
         for i_time in 0..n_time {
             // flux_loops
             for i_flux_loop in 0..n_flux_loops {
-                if flux_loops_include[i_flux_loop] == true {
+                if flux_loops_include[i_flux_loop] {
                     let sigma: f64 = flux_loops_expected_value[i_flux_loop] / flux_loops_weight[i_flux_loop];
                     chi_sq_mag_result[i_time] +=
                         (flux_loops_measured[(i_time, i_flux_loop)] - flux_loops_calculated[(i_time, i_flux_loop)]).powi(2) / sigma.powi(2);
@@ -56,7 +56,7 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
         for i_time in 0..n_time {
             // rogowski_coils
             for i_rogowski_coil in 0..n_rogowski_coils {
-                if rogowski_coils_include[i_rogowski_coil] == true {
+                if rogowski_coils_include[i_rogowski_coil] {
                     let sigma: f64 = rogowski_coils_expected_value[i_rogowski_coil] / rogowski_coils_weight[i_rogowski_coil];
                     chi_sq_mag_result[i_time] +=
                         (rogowski_coils_measured[(i_time, i_rogowski_coil)] - rogowski_coils_calculated[(i_time, i_rogowski_coil)]).powi(2) / sigma.powi(2);

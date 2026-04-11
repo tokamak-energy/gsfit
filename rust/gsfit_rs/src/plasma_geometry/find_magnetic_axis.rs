@@ -13,15 +13,15 @@ pub struct MagneticAxis {
 ///
 /// # Arguments
 /// * `stationary_points` - vector of stationary points found from intersecting br=0 and bz=0 contours
-/// * `mag_r_previous` - previous magnetic axis radius, (metre)
-/// * `mag_z_previous` - previous magnetic axis height, (metre)
-/// * `vessel_r` - vessel boundary radial coordinates, (metre)
-/// * `vessel_z` - vessel boundary vertical coordinates, (metre)
+/// * `mag_r_previous` - previous magnetic axis radius, [metre]
+/// * `mag_z_previous` - previous magnetic axis height, [metre]
+/// * `vessel_r` - vessel boundary radial coordinates, [metre]
+/// * `vessel_z` - vessel boundary vertical coordinates, [metre]
 ///
 /// # Returns
-/// * `mag_r` - the radial magnetic axis, (metre)
-/// * `mag_z` - the vertical magnetic axis, (metre)
-/// * `mag_psi` - the magnetic flux at the magnetic axis, (weber)
+/// * `mag_r` - the radial magnetic axis, [metre]
+/// * `mag_z` - the vertical magnetic axis, [metre]
+/// * `mag_psi` - the magnetic flux at the magnetic axis, [weber]
 ///
 /// # Algorithm
 /// 1. Find contours where `br=0` and `bz=0`. Return Err if no contours found.
@@ -37,7 +37,6 @@ pub struct MagneticAxis {
 /// use gsfit_rs::plasma_geometry::find_magnetic_axis;
 /// use ndarray::{Array1, Array2};
 /// ```
-///
 pub fn find_magnetic_axis(
     stationary_points: &[StationaryPoint],
     mag_r_previous: f64,
@@ -118,7 +117,7 @@ pub fn find_magnetic_axis(
         psi: mag_psi,
     };
 
-    return Ok(magnetic_axis);
+    Ok(magnetic_axis)
 }
 
 // /// Test finding the magnetic axis

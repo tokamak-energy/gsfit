@@ -40,7 +40,7 @@ pub fn greens_py(
 
     let g_psi: Array2<f64> = greens_psi(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray, d_r, d_z);
 
-    return g_psi.into_pyarray(py).into();
+    g_psi.into_pyarray(py).into()
 }
 
 /// Calculates the Green's table between locations
@@ -51,12 +51,12 @@ pub fn greens_py(
 /// The equations are invariant under the exchange of (r, z) with (r_prime, z_prime)
 ///
 /// # Arguments
-/// * `r` - by convention used for "sensors"
-/// * `z` - by convention used for "sensors", same length as `r`
-/// * `r_prime` - by convention used for "current sources"
-/// * `z_prime` - by convention used for "current sources", same length as `r_prime`
-/// * `d_r` - horizontal width of filament
-/// * `d_z` - vertical height of filament, same length as `r` and `z`
+/// * `r` - by convention used for "sensors", [metre]
+/// * `z` - by convention used for "sensors", same length as `r`, [metre]
+/// * `r_prime` - by convention used for "current sources", [metre]
+/// * `z_prime` - by convention used for "current sources", same length as `r_prime`, [metre]
+/// * `d_r` - horizontal width of filament, [metre]
+/// * `d_z` - vertical height of filament, same length as `r` and `z`, [metre]
 ///
 /// # Returns
 /// * `g_psi[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"
@@ -84,7 +84,6 @@ pub fn greens_py(
 /// ```
 ///
 /// TODO: it would be useful to turn this into a generic where it can accept: `greens_psi(r: f64, z: f64, r_prime: f64, z_prime: f64, d_r: f64, d_z: f64)`
-///
 pub fn greens_psi(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>, d_r: Array1<f64>, d_z: Array1<f64>) -> Array2<f64> {
     let n_grid: usize = r.len();
     let n_filament: usize = r_prime.len();
@@ -129,7 +128,7 @@ pub fn greens_psi(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime:
         g_psi.slice_mut(s![.., i_filament]).assign(&results[i_filament]);
     }
 
-    return g_psi;
+    g_psi
 }
 
 #[test]

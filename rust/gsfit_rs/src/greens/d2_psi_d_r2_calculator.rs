@@ -22,22 +22,21 @@ impl D2PsiDR2Calculator {
     /// Create a new D2PsiDR2Calculator
     ///
     /// # Arguments
-    /// * `g_d2_psi_d_r2_coils` - Green's function table for d^2(psi)/d(r^2) from PF coil currents, shape (n_z, n_r, n_pf), weber^2 / (metre^2 * ampere)
-    /// * `pf_coil_currents` - PF coil currents, shape=(n_pf), ampere
-    /// * `g_d2_psi_d_r2_passives` - Green's function table for d^2(psi)/d(r^2) from passive currents, shape (n_z * n_r, n_passive_dof), weber^2 / (metre^2 * ampere)
-    /// * `passive_dof_values` - Passive current degrees of freedom values, shape (n_passive_dof), ampere
-    /// * `g_d2_psi_d_r2_plasma` - Green's function table for d^2(psi)/d(r^2) from plasma current, shape (n_z * n_r, n_r), weber^2 / (metre^2 * ampere)
-    /// * `j_2d` - Plasma current density on grid, shape (n_z, n_r), ampere / metre^2
-    /// * `d_area` - Area of each grid cell, metre^2
-    /// * `n_r` - Number of R grid points, dimensionless
-    /// * `n_z` - Number of Z grid points, dimensionless
-    /// * `r` - R grid points, shape (n_r), metre
-    /// * `g_bz_plasma` - Green's function table for Bz from plasma current, shape (n_z, n_r), tesla / (ampere / metre^2)
-    /// * `delta_z` - Small perturbation to the Z-grid to stabilise the VDE, metre
+    /// * `g_d2_psi_d_r2_coils` - Green's function table for d^2(psi)/d(r^2) from PF coil currents, shape (n_z, n_r, n_pf), [weber**2 / (metre**2 * ampere)]
+    /// * `pf_coil_currents` - PF coil currents, shape=(n_pf), [ampere]
+    /// * `g_d2_psi_d_r2_passives` - Green's function table for d^2(psi)/d(r^2) from passive currents, shape (n_z * n_r, n_passive_dof), [weber**2 / (metre**2 * ampere)]
+    /// * `passive_dof_values` - Passive current degrees of freedom values, shape (n_passive_dof), [ampere]
+    /// * `g_d2_psi_d_r2_plasma` - Green's function table for d^2(psi)/d(r^2) from plasma current, shape (n_z * n_r, n_r), [weber**2 / (metre**2 * ampere)]
+    /// * `j_2d` - Plasma current density on grid, shape (n_z, n_r), [ampere / metre**2]
+    /// * `d_area` - Area of each grid cell, [metre**2]
+    /// * `n_r` - Number of R grid points, [dimensionless]
+    /// * `n_z` - Number of Z grid points, [dimensionless]
+    /// * `r` - R grid points, shape (n_r), [metre]
+    /// * `g_bz_plasma` - Green's function table for Bz from plasma current, shape (n_z, n_r), [tesla / (ampere / metre**2)]
+    /// * `delta_z` - Small perturbation to the Z-grid to stabilise the VDE, [metre]
     ///
     /// # Returns
     /// * `D2PsiDR2Calculator` - New D2PsiDR2Calculator
-    ///
     pub fn new(
         g_d2_psi_d_r2_coils: &Array3<f64>,
         pf_coil_currents: &Array1<f64>,
@@ -80,12 +79,11 @@ impl D2PsiDR2Calculator {
     /// Calculate d^2(psi)/d(r^2) at a given (r,z) location
     ///
     /// # Arguments
-    /// * `i_r` - R index where to evaluate d^2(psi)/d(r^2), dimensionless
-    /// * `i_z` - Z index where to evaluate d^2(psi)/d(r^2), dimensionless
+    /// * `i_r` - R index where to evaluate d^2(psi)/d(r^2), [dimensionless]
+    /// * `i_z` - Z index where to evaluate d^2(psi)/d(r^2), [dimensionless]
     ///
     /// # Returns
-    /// * `g_d2_psi_d_r2` - d^2(psi)/d(r^2) at (r,z), weber^2 / metre^2
-    ///
+    /// * `g_d2_psi_d_r2` - d^2(psi)/d(r^2) at (r,z), [weber**2 / metre**2]
     pub fn calculate(&self, i_r: usize, i_z: usize) -> f64 {
         // TODO: I am missing the delta_z term throughout this function entirely!
 
@@ -185,12 +183,11 @@ impl D2PsiDR2Calculator {
                 2.0 * PI * delta_z * d_bz_d_z[(i_z, i_r)] + PI * r[i_r] * delta_z * (d_bz_d_z[(i_z, i_r + 1)] - d_bz_d_z[(i_z, i_r - 1)]) / d_r
         };
 
-        let d2_psi_d_r2: f64;
-        if delta_z.is_finite() {
-            d2_psi_d_r2 = d2_psi_d_r2_unshifted + d2_psi_d_r2_delta_z_term;
+        let d2_psi_d_r2: f64 = if delta_z.is_finite() {
+            d2_psi_d_r2_unshifted + d2_psi_d_r2_delta_z_term
         } else {
-            d2_psi_d_r2 = d2_psi_d_r2_unshifted;
-        }
+            d2_psi_d_r2_unshifted
+        };
 
         return d2_psi_d_r2;
     }
@@ -202,7 +199,7 @@ fn test_d2_psi_d_r2_calculator() {
     use crate::greens::greens_d2_psi_d_r2;
     use crate::greens::greens_psi::greens_psi;
     use approx::assert_abs_diff_eq;
-    use ndarray::Axis;
+    use ndarray::{ArrayView2, Axis, MeshIndex, meshgrid};
 
     let n_r_scaling: usize = 2;
     let n_r: usize = 300 * n_r_scaling;
@@ -224,14 +221,9 @@ fn test_d2_psi_d_r2_calculator() {
     let d_area: f64 = d_r * d_z;
 
     // 2d (r, z) mesh
-    let mut mesh_r: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
-    let mut mesh_z: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
-    for i_z in 0..n_z {
-        for i_r in 0..n_r {
-            mesh_r[(i_z, i_r)] = r[i_r];
-            mesh_z[(i_z, i_r)] = z[i_z];
-        }
-    }
+    let (mesh_z_view, mesh_r_view): (ArrayView2<f64>, ArrayView2<f64>) = meshgrid((&z, &r), MeshIndex::IJ);
+    let mesh_z: Array2<f64> = mesh_z_view.to_owned(); // shape = (n_z, n_r)
+    let mesh_r: Array2<f64> = mesh_r_view.to_owned(); // shape = (n_z, n_r)
 
     // Flatten 2d mesh
     let flat_r: Array1<f64> = mesh_r.flatten().to_owned();

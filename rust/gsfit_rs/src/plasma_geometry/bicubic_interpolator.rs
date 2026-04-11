@@ -1,5 +1,5 @@
 use core::f64;
-use ndarray::{Array1, Array2, s};
+use ndarray::{Array1, Array2, array, s};
 
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,
@@ -37,10 +37,12 @@ impl BicubicInterpolator {
     /// https://en.wikipedia.org/wiki/Bicubic_interpolation
     ///
     /// # Arguments
-    /// * `f` - function values at the four corners of the grid
-    /// * `d_f_d_x` - partial derivative of `f` with respect to `x` at the four corners
-    /// * `d_f_d_y` - partial derivative of `f` with respect to `y` at the four corners
-    /// * `d2_f_d_x_d_y` - second partial derivative of `f` with respect to `x` and `y` at the four corners
+    /// * `delta_x` - grid spacing in x direction, between 0 and 1, [dimensionless]
+    /// * `delta_y` - grid spacing in y direction, between 0 and 1, [dimensionless]
+    /// * `f` - function values at the four corners of the grid, [any]
+    /// * `d_f_d_x` - partial derivative of `f` with respect to `x` at the four corners, [any]
+    /// * `d_f_d_y` - partial derivative of `f` with respect to `y` at the four corners, [any]
+    /// * `d2_f_d_x_d_y` - second partial derivative of `f` with respect to `x` and `y` at the four corners, [any]
     ///
     /// # Returns
     /// * `BicubicInterpolator` - the bicubic interpolator object
@@ -70,15 +72,23 @@ impl BicubicInterpolator {
     /// use ndarray::{Array2};
     /// ```
     pub fn new(delta_x: f64, delta_y: f64, f: &Array2<f64>, d_f_d_x: &Array2<f64>, d_f_d_y: &Array2<f64>, d2_f_d_x_d_y: &Array2<f64>) -> Self {
-        let coeff_matrix_1: Array2<f64> =
-            Array2::from_shape_vec((4, 4), vec![1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -3.0, 3.0, -2.0, -1.0, 2.0, -2.0, 1.0, 1.0])
-                .expect("Failed to create coeff_matrix_1");
+        #[rustfmt::skip]
+        let coeff_matrix_1: Array2<f64> = array![
+            [ 1.0,  0.0,  0.0,  0.0],
+            [ 0.0,  0.0,  1.0,  0.0],
+            [-3.0,  3.0, -2.0, -1.0],
+            [ 2.0, -2.0,  1.0,  1.0],
+        ];
 
-        let coeff_matrix_2: Array2<f64> =
-            Array2::from_shape_vec((4, 4), vec![1.0, 0.0, -3.0, 2.0, 0.0, 0.0, 3.0, -2.0, 0.0, 1.0, -2.0, 1.0, 0.0, 0.0, -1.0, 1.0])
-                .expect("Failed to create coeff_matrix_2");
+        #[rustfmt::skip]
+        let coeff_matrix_2: Array2<f64> = array![
+            [ 1.0,  0.0, -3.0,  2.0],
+            [ 0.0,  0.0,  3.0, -2.0],
+            [ 0.0,  1.0, -2.0,  1.0],
+            [ 0.0,  0.0, -1.0,  1.0],
+        ];
 
-        let mut function_matrix: Array2<f64> = Array2::zeros((4, 4));
+        let mut function_matrix: Array2<f64> = Array2::from_elem((4, 4), f64::NAN);
         let d_f_d_x_normalised: Array2<f64> = d_f_d_x.to_owned() * delta_x;
         let d_f_d_y_normalised: Array2<f64> = d_f_d_y.to_owned() * delta_y;
         let d2_f_d_x_d_y_normalised: Array2<f64> = d2_f_d_x_d_y.to_owned() * delta_x * delta_y;
@@ -89,31 +99,32 @@ impl BicubicInterpolator {
 
         let a_matrix: Array2<f64> = coeff_matrix_1.dot(&function_matrix).dot(&coeff_matrix_2);
 
-        return BicubicInterpolator { a_matrix };
+        BicubicInterpolator { a_matrix }
     }
 
     /// Interpolate the value at (x, y)
     ///
     /// # Arguments
-    /// * `x` - x-coordinate, normalised to (0.0, 1.0), (dimensionless)
-    /// * `y` - y-coordinate, normalised to (0.0, 1.0), (dimensionless)
+    /// * `x` - x-coordinate, normalised to (0.0, 1.0), [dimensionless]
+    /// * `y` - y-coordinate, normalised to (0.0, 1.0), [dimensionless]
     ///
     /// # Returns
-    /// * `f` - interpolated value at (x, y)
+    /// * `f` - interpolated value at (x, y), [any]
     ///
     #[allow(dead_code)]
     pub fn interpolate(&self, x: f64, y: f64) -> f64 {
         let x_vec: Array1<f64> = Array1::from_vec(vec![1.0, x, x.powi(2), x.powi(3)]);
         let y_vec: Array1<f64> = Array1::from_vec(vec![1.0, y, y.powi(2), y.powi(3)]);
         let f: f64 = x_vec.dot(&self.a_matrix).dot(&y_vec);
-        return f;
+
+        f
     }
 
     /// Value, first derivatives, and second derivatives
     ///
     /// # Arguments
-    /// * `x` - x-coordinate, normalised to (0.0, 1.0), (dimensionless)
-    /// * `y` - y-coordinate, normalised to (0.0, 1.0), (dimensionless)
+    /// * `x` - x-coordinate, normalised to (0.0, 1.0), [dimensionless]
+    /// * `y` - y-coordinate, normalised to (0.0, 1.0), [dimensionless]
     ///
     /// # Returns
     /// * `BicubicValueAndDerivatives` - struct containing value and derivatives
@@ -147,22 +158,22 @@ impl BicubicInterpolator {
         let d2_f_d_y2: f64 = u.dot(&a_d2_v_d_y2);
 
         // Return results
-        return BicubicValueAndDerivatives {
+        BicubicValueAndDerivatives {
             f,
             d_f_d_x,
             d_f_d_y,
             d2_f_d_x2,
             d2_f_d_x_d_y,
             d2_f_d_y2,
-        };
+        }
     }
 
     /// Finds the stationary point of the bicubic fit
     ///
     /// # Arguments
-    /// * `x_start` - initial x-coordinate guess, note x is normalised to be in (0.0, 1.0), (dimensionless)
-    /// * `y_start` - initial y-coordinate guess, note y is normalised to be in (0.0, 1.0), (dimensionless)
-    /// * `tol` - tolerance for convergence, (dimensionless)
+    /// * `x_start` - initial x-coordinate guess, note x is normalised to be in (0.0, 1.0), [dimensionless]
+    /// * `y_start` - initial y-coordinate guess, note y is normalised to be in (0.0, 1.0), [dimensionless]
+    /// * `tol` - tolerance for convergence, [dimensionless]
     /// * `max_iter` - maximum number of iterations
     ///
     /// # Returns
@@ -272,19 +283,23 @@ fn test_bicubic_interpolation() {
     // This tests a peaked quadratic in both directions
     fn calculate_f(x: f64, y: f64) -> f64 {
         let result: f64 = -(x - 0.5).powi(2) - (y - 0.5).powi(2);
-        return result;
+
+        result
     }
     fn calculate_d_f_d_x(x: f64, _y: f64) -> f64 {
         let result: f64 = 1.0 - 2.0 * x;
-        return result;
+
+        result
     }
     fn calculate_d_f_d_y(_x: f64, y: f64) -> f64 {
         let result: f64 = 1.0 - 2.0 * y;
-        return result;
+
+        result
     }
     fn calculate_d2_f_d_x_d_y(_x: f64, _y: f64) -> f64 {
         let result: f64 = 0.0;
-        return result;
+
+        result
     }
 
     // Empty arrays to store the function values and derivatives at the four corners of the grid

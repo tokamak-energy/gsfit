@@ -11,21 +11,20 @@ use std::f64::consts::PI;
 
 /// Find a viable limit point which can be used to define the plasma boundary
 ///
-///  # Arguments
-/// * `r` - R grid points, metre
-/// * `z` - Z grid points, metre
-/// * `psi_2d` - poloidal flux, shape = (n_z, n_r), weber
-/// * `limit_pts_r` - R coordinates of limiter points, metre
-/// * `limit_pts_z` - Z coordinates of limiter points, metre
-/// * `mag_r_previous` - R coordinate of magnetic axis from previous iteration, metre
-/// * `mag_z_previous` - Z coordinate of magnetic axis from previous iteration, metre
-/// * `vessel_r` - R coordinates of vessel points, metre
-/// * `vessel_z` - Z coordinates of vessel points, metre
+/// # Arguments
+/// * `r` - R grid points, [metre]
+/// * `z` - Z grid points, [metre]
+/// * `psi_2d` - poloidal flux, shape = (n_z, n_r), [weber]
+/// * `limit_pts_r` - R coordinates of limiter points, [metre]
+/// * `limit_pts_z` - Z coordinates of limiter points, [metre]
+/// * `mag_r_previous` - R coordinate of magnetic axis from previous iteration, [metre]
+/// * `mag_z_previous` - Z coordinate of magnetic axis from previous iteration, [metre]
+/// * `vessel_r` - R coordinates of vessel points, [metre]
+/// * `vessel_z` - Z coordinates of vessel points, [metre]
 /// * `stationary_points` - Vector of `StationaryPoint` objects representing stationary points in psi
 ///
 /// # Returns
 /// * `BoundaryContour` - A `BoundaryContour` object representing the plasma boundary
-///
 pub fn find_viable_limit_point(
     r: &Array1<f64>,
     z: &Array1<f64>,
@@ -39,12 +38,12 @@ pub fn find_viable_limit_point(
     mag_z_previous: f64,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
-    stationary_points: &Vec<StationaryPoint>,
+    stationary_points: &[StationaryPoint],
 ) -> Result<BoundaryContour, String> {
     // TODO: add logic for negative plasma current
 
     // Create a mutable copy of `stationary_points`, because we want to filter it
-    let mut saddle_points: Vec<StationaryPoint> = stationary_points.clone();
+    let mut saddle_points: Vec<StationaryPoint> = stationary_points.to_vec();
     // Filter to retain only `stationary_points` which are saddle points
     saddle_points.retain(|stationary_point| {
         let saddle_point_test: bool = stationary_point.hessian_determinant < 0.0;
@@ -98,10 +97,10 @@ pub fn find_viable_limit_point(
 
         // Find psi at the limit point
         // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-        let mut f: Array2<f64> = Array2::zeros([2, 2]);
-        let mut d_f_d_r: Array2<f64> = Array2::zeros([2, 2]);
-        let mut d_f_d_z: Array2<f64> = Array2::zeros([2, 2]);
-        let mut d2_f_d_r_d_z: Array2<f64> = Array2::zeros([2, 2]);
+        let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+        let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+        let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+        let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
 
         // Function values
         f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
@@ -217,5 +216,5 @@ pub fn find_viable_limit_point(
         return Ok(potential_limit_point.to_owned());
     }
 
-    return Err("find_viable_limit_point: no viable limit point found".to_string());
+    Err("find_viable_limit_point: no viable limit point found".to_string())
 }

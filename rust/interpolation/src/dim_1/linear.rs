@@ -49,7 +49,7 @@ impl Dim1Linear {
             }
         }
 
-        return Ok(Dim1Linear { x, f });
+        Ok(Dim1Linear { x, f })
     }
 
     pub fn interpolate_array1(&self, x_new: &Array1<f64>) -> Result<Array1<f64>, Error> {
@@ -82,7 +82,7 @@ impl Dim1Linear {
             }
         }
 
-        return Ok(f_new);
+        Ok(f_new)
     }
 
     pub fn interpolate_scalar(&self, x_new: f64) -> Result<f64, Error> {
@@ -107,6 +107,6 @@ impl Dim1Linear {
             }
         }
 
-        return Ok(f_new);
+        Ok(f_new)
     }
 }

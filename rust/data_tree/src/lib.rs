@@ -463,14 +463,14 @@ impl<'a> DataTreeAccumulator<'a> {
         /// This function finds all the paths to the data and stores where each path should be stored within the Array3
         fn traverse_recursive_to_find_paths_and_slices(
             node: &DataTree,
-            keys: &Vec<String>,
+            keys: &[String],
             path: &mut Vec<String>,
             index_right_to_left: &mut Vec<usize>,
             sizes_right_to_left: &mut Vec<usize>,
             paths: &mut Vec<(Vec<String>, SliceType, [usize; 3])>,
         ) {
             let current_key: &String = &keys[0];
-            let remaining_keys: &Vec<String> = &keys[1..].to_vec();
+            let remaining_keys: &[String] = &keys[1..];
 
             if current_key == "*" {
                 // Get all keys at this level

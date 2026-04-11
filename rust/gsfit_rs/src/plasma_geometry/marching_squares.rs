@@ -131,7 +131,7 @@ pub fn marching_squares(
         let boundary_contour: MarchingContour = MarchingContour {
             r: Array1::from_vec(boundary_r_sorted),
             z: Array1::from_vec(boundary_z_sorted),
-            n: n,
+            n,
         };
 
         return boundary_contour;
@@ -285,10 +285,6 @@ pub fn marching_squares(
     first_and_last_boundary_points.push((boundary_points_near_xpt_r_sorted[0], boundary_points_near_xpt_z_sorted[0]));
     first_and_last_boundary_points.push((boundary_points_near_xpt_r_sorted[1], boundary_points_near_xpt_z_sorted[1]));
 
-    // Collect remaining boundary points from the HashMap
-    let unsorted_boundary_r: Vec<f64> = unsorted_boundary_points.values().map(|&(r_val, _)| r_val).collect();
-    let unsorted_boundary_z: Vec<f64> = unsorted_boundary_points.values().map(|&(_, z_val)| z_val).collect();
-
     let mut boundary_sorted_r: Vec<f64> = Vec::new();
     let mut boundary_sorted_z: Vec<f64> = Vec::new();
 
@@ -320,10 +316,10 @@ pub fn marching_squares(
     let boundary_contour: MarchingContour = MarchingContour {
         r: Array1::from_vec(boundary_sorted_r),
         z: Array1::from_vec(boundary_sorted_z),
-        n: n,
+        n,
     };
 
-    return boundary_contour;
+    boundary_contour
 }
 
 /// Check if two line segments intersect
@@ -361,14 +357,14 @@ fn segments_intersect(r1: f64, z1: f64, r2: f64, z2: f64, r3: f64, z3: f64, r4: 
 }
 
 /// sort points
-fn sort_boundary_points(sorted_r: Vec<f64>, sorted_z: Vec<f64>, unsorted_boundary_r: &Vec<f64>, unsorted_boundary_z: &Vec<f64>) -> (Vec<f64>, Vec<f64>) {
+fn sort_boundary_points(sorted_r: Vec<f64>, sorted_z: Vec<f64>, unsorted_boundary_r: &[f64], unsorted_boundary_z: &[f64]) -> (Vec<f64>, Vec<f64>) {
     // let n_points: usize = unsorted_boundary_r.len();
 
     // Create mutable copies
     let mut sorted_r: Vec<f64> = sorted_r;
     let mut sorted_z: Vec<f64> = sorted_z;
-    let mut unsorted_boundary_r: Vec<f64> = unsorted_boundary_r.clone();
-    let mut unsorted_boundary_z: Vec<f64> = unsorted_boundary_z.clone();
+    let mut unsorted_boundary_r: Vec<f64> = unsorted_boundary_r.to_vec();
+    let mut unsorted_boundary_z: Vec<f64> = unsorted_boundary_z.to_vec();
 
     // Start from the last point in sorted lists
     let mut current_r: f64 = sorted_r.last().copied().unwrap();
@@ -468,7 +464,7 @@ pub fn sort_boundary_points_version_2(
     }
 
     // Helper: would adding segment cross the existing polyline?
-    fn would_cross(r_path: &Vec<f64>, z_path: &Vec<f64>, r_last: f64, z_last: f64, r_new: f64, z_new: f64) -> bool {
+    fn would_cross(r_path: &[f64], z_path: &[f64], r_last: f64, z_last: f64, r_new: f64, z_new: f64) -> bool {
         if r_path.len() < 2 {
             return false;
         }

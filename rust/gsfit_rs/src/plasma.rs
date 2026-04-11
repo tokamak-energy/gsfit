@@ -12,8 +12,7 @@ use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::Area;
 use geo::Centroid;
 use geo::{Contains, Coord, LineString, Point, Polygon};
-use interpolation;
-use ndarray::{Array1, Array2, Array3, Axis, s};
+use ndarray::{Array1, Array2, Array3, ArrayView2, Axis, MeshIndex, meshgrid, s};
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
 use numpy::IntoPyArray;
@@ -44,17 +43,17 @@ impl Plasma {
     /// Create a new Plasma instance
     ///
     /// # Arguments
-    /// * `n_r` - number of radial points, dimensionless
-    /// * `n_z` - number of vertical points, dimensionless
-    /// * `r_min` - minimum radial coordinate, meter
-    /// * `r_max` - maximum radial coordinate, meter
-    /// * `z_min` - minimum vertical coordinate, meter
-    /// * `z_max` - maximum vertical coordinate, meter
-    /// * `psi_n` - normalized poloidal flux points (1d array), dimensionless
-    /// * `limit_pts_r` - radial limit points (1d array), meter
-    /// * `limit_pts_z` - vertical limit points (1d array), meter
-    /// * `vessel_r` - vessel radial points (1d array), meter
-    /// * `vessel_z` - vessel vertical points (1d array), meter
+    /// * `n_r` - number of radial points, [dimensionless]
+    /// * `n_z` - number of vertical points, [dimensionless]
+    /// * `r_min` - minimum radial coordinate, [metre]
+    /// * `r_max` - maximum radial coordinate, [metre]
+    /// * `z_min` - minimum vertical coordinate, [metre]
+    /// * `z_max` - maximum vertical coordinate, [metre]
+    /// * `psi_n` - normalized poloidal flux points (1d array), [dimensionless]
+    /// * `limit_pts_r` - radial limit points (1d array), [metre]
+    /// * `limit_pts_z` - vertical limit points (1d array), [metre]
+    /// * `vessel_r` - vessel radial points (1d array), [metre]
+    /// * `vessel_z` - vessel vertical points (1d array), [metre]
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
     /// * `ff_prime_source_function` - ff_prime source function (a Rust implementation, initialised in Python)
     ///
@@ -62,6 +61,7 @@ impl Plasma {
     /// * `self` - a new instance of the Plasma struct
     ///
     #[new]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         n_r: usize,
         n_z: usize,
@@ -179,14 +179,9 @@ impl Plasma {
         let d_area: f64 = d_r * d_z;
 
         // 2d (r, z) mesh
-        let mut mesh_r: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
-        let mut mesh_z: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
-        for i_z in 0..n_z {
-            for i_r in 0..n_r {
-                mesh_r[(i_z, i_r)] = r[i_r];
-                mesh_z[(i_z, i_r)] = z[i_z];
-            }
-        }
+        let (mesh_z_view, mesh_r_view): (ArrayView2<f64>, ArrayView2<f64>) = meshgrid((&z, &r), MeshIndex::IJ);
+        let mesh_z: Array2<f64> = mesh_z_view.to_owned(); // shape = (n_z, n_r)
+        let mesh_r: Array2<f64> = mesh_r_view.to_owned(); // shape = (n_z, n_r)
 
         // Flatten 2d mesh
         let flat_r: Array1<f64> = mesh_r.flatten().to_owned();
@@ -271,7 +266,7 @@ impl Plasma {
     ///
     fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python types into Rust types
-        let coils_local: &Coils = &*coils; // TODO: check if "let coils_local: &Coils = &coils;" works!!!!!
+        let coils_local: &Coils = &coils;
 
         // Get variables out of self
         let flat_r: Array1<f64> = self.results.get("grid").get("flat").get("r").unwrap_array1();
@@ -408,7 +403,7 @@ impl Plasma {
     ///
     fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
         // Change Python types into Rust types
-        let passives_local: &Passives = &*passives;
+        let passives_local: &Passives = &passives;
 
         // Get variables out of self
         let flat_r: Array1<f64> = self.results.get("grid").get("flat").get("r").unwrap_array1();
@@ -424,7 +419,7 @@ impl Plasma {
 
             for dof_name in dof_names {
                 // Current distribution
-                let current_distribution: Array1<f64> = passives
+                let current_distribution: Array1<f64> = passives_local
                     .results
                     .get(&passive_name)
                     .get("dof")
@@ -580,7 +575,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -623,7 +618,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -666,7 +661,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -709,7 +704,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -752,7 +747,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -795,7 +790,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -838,7 +833,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -865,7 +860,7 @@ impl Plasma {
         return greens_with_passives;
     }
 
-    pub fn equilibrium_post_processor(&mut self, gs_solutions: &mut Vec<GsSolution>, coils: &Coils, plasma: &Plasma) {
+    pub fn equilibrium_post_processor(&mut self, gs_solutions: &mut [GsSolution], coils: &Coils, plasma: &Plasma) {
         println!("equilibrium_post_processor: starting");
 
         let n_time: usize = gs_solutions.len();
@@ -895,6 +890,7 @@ impl Plasma {
         // let mut psi_2d_coils: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         let mut br_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         let mut bz_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
+        let mut d_bz_d_z_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         let mut mask_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         // Fit values
         let n_p_prime: usize = plasma.p_prime_source_function.source_function_n_dof();
@@ -993,6 +989,7 @@ impl Plasma {
             // Two-d
             br_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].br_2d);
             bz_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].bz_2d);
+            d_bz_d_z_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].d_bz_d_z_2d);
             j_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].j_2d);
             mask_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].mask);
             psi_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].psi_2d);
@@ -1141,15 +1138,8 @@ impl Plasma {
 
             plasma_volume[i_time] = volume_profile_this_time.last().unwrap().to_owned();
 
-            let flux_surfaces: Vec<FluxSurface> = epp_flux_surfaces(
-                &gs_solutions[i_time],
-                &boundary_contour_local.r,
-                &boundary_contour_local.z,
-                &psi_n,
-                &r,
-                &z,
-                d_psi,
-            );
+            let flux_surfaces: Vec<FluxSurface> =
+                epp_flux_surfaces(&gs_solutions[i_time], &boundary_contour_local.r, &boundary_contour_local.z, &psi_n, &r, &z);
 
             let q_profile_this_time: Array1<f64> = epp_q_profile(&gs_solutions[i_time], &flux_surfaces, &f_profile_local, &r, &z);
             q_profile.slice_mut(s![i_time, ..]).assign(&q_profile_this_time);
@@ -1304,6 +1294,7 @@ impl Plasma {
         self.results.get_or_insert("two_d").insert("br", br_2d);
         self.results.get_or_insert("two_d").insert("bt", bt_2d);
         self.results.get_or_insert("two_d").insert("bz", bz_2d);
+        self.results.get_or_insert("two_d").insert("d_bz_d_z", d_bz_d_z_2d);
         self.results.get_or_insert("two_d").insert("j", j_2d);
         self.results.get_or_insert("two_d").insert("mask", mask_2d);
         self.results.get_or_insert("two_d").insert("p", p_2d.clone());
@@ -1367,9 +1358,9 @@ fn epp_beta_n(beta: f64, r_minor: f64, bt_vac_at_r_geo: f64, ip: f64) -> f64 {
 /// # Arguments
 /// * `w_mhd` - stored MHD energy [joule]
 /// * `ip` - plasma current [ampere]
-/// * `r_mag` - magnetic axis major radius [meter]
-/// * `r_geo` - geometric major radius [meter]
-/// * `plasma_volume` - plasma volume [meter ** 3]
+/// * `r_mag` - magnetic axis major radius [metre]
+/// * `r_geo` - geometric major radius [metre]
+/// * `plasma_volume` - plasma volume [metre ** 3]
 ///
 /// # Returns
 /// * `(beta_p_1, beta_p_2, beta_p_3)` - poloidal beta values [dimensionless]
@@ -1484,7 +1475,6 @@ fn epp_flux_surfaces(
     psi_n: &Array1<f64>,
     r: &Array1<f64>,
     z: &Array1<f64>,
-    d_psi: f64,
 ) -> Vec<FluxSurface> {
     // Sizes and grid variables
     let n_psi_n: usize = psi_n.len();
@@ -1576,36 +1566,18 @@ fn epp_flux_surfaces(
             let flux_surface = FluxSurface { r: fs_r, z: fs_z };
             flux_surfaces[i_psi_n] = flux_surface;
 
-            // // Calculate the area of the contour
-            // let area: f64 = fs_contour.unsigned_area();
-
-            // let mass_centroid: Point = fs_contour.centroid().unwrap();
-            // let mass_centroid_r: f64 = mass_centroid.x();
-
-            // // Calculate the volume
-            // area_profile[i_psi_n] = area;
-            // volume_profile[i_psi_n] = 2.0 * PI * mass_centroid_r * area;
-
             // Go to the next psi_n
             continue 'psi_n_loop;
         }
     }
 
-    // let mut volume_prime_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-    // volume_prime_profile[0] = (volume_profile[0] - volume_profile[1]) / d_psi;
-    // for i_psi_n in 1..n_psi_n - 1 {
-    //     volume_prime_profile[i_psi_n] = (volume_profile[i_psi_n - 1] - volume_profile[i_psi_n + 1]) / (2.0 * d_psi);
-    // }
-    // volume_prime_profile[n_psi_n - 1] = (volume_profile[n_psi_n - 2] - volume_profile[n_psi_n - 1]) / d_psi;
-
-    // let mut area_prime_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-    // area_prime_profile[0] = (volume_profile[0] - volume_profile[1]) / d_psi;
-    // for i_psi_n in 1..n_psi_n - 1 {
-    //     area_prime_profile[i_psi_n] = (volume_profile[i_psi_n - 1] - volume_profile[i_psi_n + 1]) / (2.0 * d_psi);
-    // }
-    // area_prime_profile[n_psi_n - 1] = (volume_profile[n_psi_n - 2] - volume_profile[n_psi_n - 1]) / d_psi;
-
     return flux_surfaces;
+}
+
+fn epp_scrape_off_layer(gs_solution: &GsSolution) -> (Array1<f64>, Array1<f64>) {
+    let psi_b: f64 = gs_solution.psi_b;
+
+    unimplemented!("scrape-off layer");
 }
 
 fn epp_flux_toroidal_profile(q_profile: &Array1<f64>, psi_profile: &Array1<f64>) -> Array1<f64> {
@@ -1752,7 +1724,7 @@ fn epp_p_prime_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>) -> Array1<
     return p_prime_local;
 }
 
-fn epp_q_profile(gs_solution: &GsSolution, flux_surfaces: &Vec<FluxSurface>, f_profile: &Array1<f64>, r: &Array1<f64>, z: &Array1<f64>) -> Array1<f64> {
+fn epp_q_profile(gs_solution: &GsSolution, flux_surfaces: &[FluxSurface], f_profile: &Array1<f64>, r: &Array1<f64>, z: &Array1<f64>) -> Array1<f64> {
     // g3 = <1/R**2> = (2.0 / vol_prime) * integral(1 / (Bp * R**2) d_ell)
     // where: vol_prime = d(V)/d(psi)
     // where: <1/R**2> is notation for the flux surface average
@@ -1768,7 +1740,7 @@ fn epp_q_profile(gs_solution: &GsSolution, flux_surfaces: &Vec<FluxSurface>, f_p
         .build()
         .expect("find_boundary: Can't make Interp2D");
 
-    let mut q_profile: Array1<f64> = Array1::zeros(n_psi_n);
+    let mut q_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
     'fs_loop: for i_psi_n in 0..n_psi_n {
         let fs_r: Array1<f64> = flux_surfaces[i_psi_n].r.clone();
         let fs_z: Array1<f64> = flux_surfaces[i_psi_n].z.clone();
@@ -1853,7 +1825,8 @@ fn epp_q_axis(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, f_prof
 
 /// Safety factor at psi_n=0.95, q95
 fn epp_q95(q_profile: &Array1<f64>, psi_n: &Array1<f64>) -> f64 {
-    let interpolator = interpolation::Dim1Linear::new(psi_n.clone(), q_profile.clone()).expect("find_boundary: Can't make interpolator for q_profile");
+    let interpolator: interpolation::Dim1Linear =
+        interpolation::Dim1Linear::new(psi_n.clone(), q_profile.clone()).expect("find_boundary: Can't make interpolator for q_profile");
 
     let psi_95: Array1<f64> = Array1::from_vec(vec![0.95]);
     let q95: f64 = interpolator.interpolate_array1(&psi_95).expect("epp_q95: can't do interpolation")[0];

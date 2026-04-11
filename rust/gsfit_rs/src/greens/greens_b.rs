@@ -13,10 +13,10 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 ///
 ///
 /// # Arguments
-/// * `r` - "sensor" locations, metre
-/// * `z` - "sensor" locations, metre
-/// * `r_prime` - "current source" locations, metre
-/// * `z_prime` - "current source" locations, metre
+/// * `r` - "sensor" locations, [metre]
+/// * `z` - "sensor" locations, [metre]
+/// * `r_prime` - "current source" locations, [metre]
+/// * `z_prime` - "current source" locations, [metre]
 ///
 /// # Returns
 /// * `g_br[(n_rz, n_rz_prime)]`, where br = g_br * current
@@ -46,7 +46,6 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// println!("g_br: {:?}", g_br);
 /// println!("g_bz: {:?}", g_bz);
 /// ```
-///
 pub fn greens_b(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> (Array2<f64>, Array2<f64>) {
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
@@ -87,7 +86,9 @@ pub fn greens_b(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: A
         g_br.slice_mut(s![i_rz, ..]).assign(&g_br_here);
         g_bz.slice_mut(s![i_rz, ..]).assign(&g_bz_here);
     }
-    return (g_br, g_bz);
+
+    // Return the Greens tables
+    (g_br, g_bz)
 }
 
 #[test]

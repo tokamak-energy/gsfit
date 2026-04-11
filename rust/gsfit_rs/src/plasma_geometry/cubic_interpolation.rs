@@ -14,7 +14,6 @@ use ndarray::Array1;
 ///
 /// Returns:
 /// * `x` - coordinate where f(x) = f_target
-///
 pub fn cubic_interpolation(
     cell0_x: f64,
     cell0_f: f64,
@@ -125,7 +124,7 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> Vec<f64> {
         }
     }
 
-    return roots;
+    roots
 }
 
 /// Solve quadratic equation: a*x² + b*x + c = 0
@@ -173,13 +172,15 @@ fn test_cubic_interpolation() {
     fn f(x: f64, a: f64, b: f64, c: f64, d: f64) -> f64 {
         // let value: f64 = a + b * x + c * x.powi(2) + d * x.powi(3);
         let value: f64 = a * x.powi(3) + b * x.powi(2) + c * x + d;
-        return value;
+
+        value
     }
     // Derivative of cubic function
     fn d_f_d_x(x: f64, a: f64, b: f64, c: f64, _d: f64) -> f64 {
         // let value: f64 = b + 2.0 * c * x + 3.0 * d * x.powi(2);
         let value: f64 = 3.0 * a * x.powi(2) + 2.0 * b * x + c;
-        return value;
+
+        value
     }
 
     // Calculate the function values

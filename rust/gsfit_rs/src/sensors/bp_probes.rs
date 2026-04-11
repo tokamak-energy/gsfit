@@ -36,19 +36,19 @@ impl BpProbes {
     ///
     /// # Arguments
     /// * `name` - Name of the sensor
-    /// * `geometry_angle_pol` - Poloidal angle of the sensor, radian
-    /// * `geometry_r` - R coordinate of the sensor, meter
-    /// * `geometry_z` - Z coordinate of the sensor, meter
+    /// * `geometry_angle_pol` - Poloidal angle of the sensor, [radian]
+    /// * `geometry_r` - R coordinate of the sensor, [metre]
+    /// * `geometry_z` - Z coordinate of the sensor, [metre]
     /// * `fit_settings_comment` - Comment for the fit settings
     /// * `fit_settings_expected_value` - Expected value for the fit settings
     /// * `fit_settings_include` - Include in the fit settings
     /// * `fit_settings_weight` - Weight in the fit settings
-    /// * `time` - Time array of the measured data, second
-    /// * `measured` - Measured data array, tesla
+    /// * `time` - Time array of the measured data, [second]
+    /// * `measured` - Measured data array, [tesla]
     ///
     /// # Returns
     /// None
-    ///
+    #[allow(clippy::too_many_arguments)]
     pub fn add_sensor(
         &mut self,
         name: &str,
@@ -108,7 +108,7 @@ impl BpProbes {
     /// Greens with coils
     pub fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python type into Rust
-        let coils_local: &Coils = &*coils;
+        let coils_local: &Coils = &coils;
 
         // Run the Rust method
         self.greens_with_coils_rs(coils_local.to_owned());
@@ -117,7 +117,7 @@ impl BpProbes {
     /// Greens with passives
     pub fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
         // Change Python type into Rust
-        let passives_local: &Passives = &*passives;
+        let passives_local: &Passives = &passives;
 
         // Run the Rust method
         self.greens_with_passives_rs(passives_local.to_owned());
@@ -126,7 +126,7 @@ impl BpProbes {
     /// Greens with plasma
     pub fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
         // Change Python type into Rust
-        let plasma_local: &Plasma = &*plasma;
+        let plasma_local: &Plasma = &plasma;
 
         // Run the Rust method
         self.greens_with_plasma_rs(plasma_local.to_owned());
@@ -135,9 +135,9 @@ impl BpProbes {
     /// Calculate sensor values
     pub fn calculate_sensor_values(&mut self, coils: PyRef<Coils>, passives: PyRef<Passives>, plasma: PyRef<Plasma>) {
         // Convert Python types into Rust
-        let coils_rs: &Coils = &*coils;
-        let passives_rs: &Passives = &*passives;
-        let plasma_rs: &Plasma = &*plasma;
+        let coils_rs: &Coils = &coils;
+        let passives_rs: &Passives = &passives;
+        let plasma_rs: &Plasma = &plasma;
 
         // Run the Rust method
         self.calculate_sensor_values_rs(coils_rs, passives_rs, plasma_rs);
@@ -189,12 +189,12 @@ impl BpProbes {
 
             // Store simulated sensor values
             self.results
-                .get_or_insert(&sensor_name)
+                .get_or_insert(sensor_name)
                 .get_or_insert("b")
                 .get_or_insert("simulated")
                 .insert("value", sensor_values);
             self.results
-                .get_or_insert(&sensor_name)
+                .get_or_insert(sensor_name)
                 .get_or_insert("b")
                 .get_or_insert("simulated")
                 .insert("time", simulated_time.clone());
@@ -215,7 +215,7 @@ impl BpProbes {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 
     /// Python pickling method
@@ -328,7 +328,7 @@ impl BpProbes {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_dof_total, n_sensors));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_dof_total, n_sensors), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         for i_sensor in 0..n_sensors {
@@ -336,14 +336,14 @@ impl BpProbes {
             for i_passive in 0..n_passives {
                 let passive_name: &str = &passive_names[i_passive];
                 let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                for dof_name in dof_names {
+                for dof_name in &dof_names {
                     greens_with_passives[(i_dof_total, i_sensor)] = self
                         .results
                         .get(&sensor_names[i_sensor])
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .unwrap_f64();
 
                     // Store the name
@@ -363,13 +363,13 @@ impl BpProbes {
             greens_d_sensor_dz,
             fit_settings_weight,
             fit_settings_expected_value,
-            geometry_r: Array1::zeros(n_sensors), // not used for BpProbes
-            geometry_z: Array1::zeros(n_sensors), // not used for BpProbes
+            geometry_r: Array1::from_elem(n_sensors, f64::NAN), // not used for BpProbes
+            geometry_z: Array1::from_elem(n_sensors, f64::NAN), // not used for BpProbes
         };
 
         // Time dependent
         // Interpolate all sensors to `times_to_reconstruct`
-        let mut measured: Array2<f64> = Array2::zeros((n_sensors_all, n_time));
+        let mut measured: Array2<f64> = Array2::from_elem((n_sensors_all, n_time), f64::NAN);
         for i_sensor in 0..n_sensors_all {
             // Sensor names
             let sensor_name: &str = &sensor_names_all[i_sensor];
@@ -383,7 +383,7 @@ impl BpProbes {
                 interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone()).expect("Can't make interpolator");
 
             // Do the interpolation
-            let measured_this_sensor: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct).expect("Can't do interpolation");
+            let measured_this_sensor: Array1<f64> = interpolator.interpolate_array1(times_to_reconstruct).expect("Can't do interpolation");
 
             // Store for later
             measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_sensor);
@@ -414,8 +414,9 @@ impl BpProbes {
         }
 
         let results_static_time_dependent: Vec<SensorsStatic> = vec![results_static.clone(); n_time];
+
         // Return the static and dynamic results
-        return (results_static_time_dependent, results_dynamic);
+        (results_static_time_dependent, results_dynamic)
     }
 
     /// Calculate sensor values
@@ -481,6 +482,7 @@ impl BpProbes {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn add_sensor_rs(
         &mut self,
         name: &str,

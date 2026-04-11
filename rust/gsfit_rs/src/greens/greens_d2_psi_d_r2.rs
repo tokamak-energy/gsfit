@@ -7,14 +7,13 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// d^2(psi)/d(r^2)
 ///
 /// # Arguments
-/// * `r` - by convention used for "sensors", metre
-/// * `z` - by convention used for "sensors", same length as `r`, metre
-/// * `r_prime` - by convention used for "current sources", metre
-/// * `z_prime` - by convention used for "current sources", same length as `r_prime`, metre
+/// * `r` - by convention used for "sensors", [metre]
+/// * `z` - by convention used for "sensors", same length as `r`, [metre]
+/// * `r_prime` - by convention used for "current sources", [metre]
+/// * `z_prime` - by convention used for "current sources", same length as `r_prime`, [metre]
 ///
 /// # Returns
 /// * `g_d2_psi_d_r2[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"
-///
 pub fn greens_d2_psi_d_r2(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> Array2<f64> {
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
@@ -63,7 +62,8 @@ pub fn greens_d2_psi_d_r2(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, 
         g_d2_psi_d_r2.slice_mut(s![i_rz, ..]).assign(&g_d2_psi_d_r2_local);
     }
 
-    return g_d2_psi_d_r2;
+    // Return the Greens table
+    g_d2_psi_d_r2
 }
 
 #[test]

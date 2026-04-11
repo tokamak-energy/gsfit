@@ -52,6 +52,7 @@ pub struct GsSolution<'a> {
     pub passive_dof_values: Array1<f64>,
     pub br_2d: Array2<f64>,
     pub bz_2d: Array2<f64>,
+    pub d_bz_d_z_2d: Array2<f64>,
     pub psi_2d: Array2<f64>,
     pub psi_n_2d: Array2<f64>,
     pub j_2d: Array2<f64>,
@@ -134,6 +135,7 @@ impl<'a> GsSolution<'a> {
             passive_dof_values: Array1::zeros(0),
             br_2d: Array2::zeros((0, 0)),
             bz_2d: Array2::zeros((0, 0)),
+            d_bz_d_z_2d: Array2::zeros((0, 0)),
             psi_2d: Array2::zeros((0, 0)),
             psi_n_2d: Array2::zeros((0, 0)),
             j_2d: Array2::zeros((0, 0)),
@@ -170,6 +172,7 @@ impl<'a> GsSolution<'a> {
         self.passive_dof_values = self.passive_dof_values.to_owned() * f64::NAN;
         self.br_2d = self.br_2d.to_owned() * f64::NAN;
         self.bz_2d = self.bz_2d.to_owned() * f64::NAN;
+        self.d_bz_d_z_2d = self.d_bz_d_z_2d.to_owned() * f64::NAN;
         self.psi_2d = self.psi_2d.to_owned() * f64::NAN;
         self.psi_n_2d = self.psi_n_2d.to_owned() * f64::NAN;
         self.j_2d = self.j_2d.to_owned() * f64::NAN;
@@ -355,6 +358,7 @@ impl<'a> GsSolution<'a> {
             } else {
                 d_bz_d_z_2d = d_bz_d_z_2d_unshifted;
             }
+            self.d_bz_d_z_2d = d_bz_d_z_2d.to_owned();
 
             // Get `br` and `bz`
             let br_2d: Array2<f64> = self.br_2d.to_owned();
@@ -823,10 +827,10 @@ impl<'a> GsSolution<'a> {
 
                 // Find psi at the pressure sensor
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-                let mut f: Array2<f64> = Array2::zeros([2, 2]);
-                let mut d_f_d_r: Array2<f64> = Array2::zeros([2, 2]);
-                let mut d_f_d_z: Array2<f64> = Array2::zeros([2, 2]);
-                let mut d2_f_d_r_d_z: Array2<f64> = Array2::zeros([2, 2]);
+                let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+                let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+                let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+                let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
 
                 // Function values
                 f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
@@ -1365,7 +1369,7 @@ impl<'a> GsSolution<'a> {
                 .expect("variable: d_br_d_z_2d_passives_this_slice;  probably wrong array dimensions")
                 .to_owned()
                 * passive_dof_values[i_passive_dof];
-            d_br_d_z_2d_passives = d_br_d_z_2d_passives + d_br_d_z_2d_passives_this_slice;
+            d_br_d_z_2d_passives += &d_br_d_z_2d_passives_this_slice;
 
             // d_bz_d_z
             let d_bz_d_z_2d_passives_this_slice: Array2<f64> = g_d_bz_d_z_passives
@@ -1375,7 +1379,7 @@ impl<'a> GsSolution<'a> {
                 .expect("variable: d_bz_d_z_2d_passives_this_slice;  probably wrong array dimensions")
                 .to_owned()
                 * passive_dof_values[i_passive_dof];
-            d_bz_d_z_2d_passives = d_bz_d_z_2d_passives + d_bz_d_z_2d_passives_this_slice;
+            d_bz_d_z_2d_passives += &d_bz_d_z_2d_passives_this_slice;
         }
 
         // Plasma d_br_d_z and d_bz_d_z;  timing: 921ms, with [n_r, n_z]=[100,201]

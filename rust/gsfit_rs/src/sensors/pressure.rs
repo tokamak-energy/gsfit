@@ -1,12 +1,13 @@
 use crate::Plasma;
 use crate::coils::Coils;
 use crate::passives::Passives;
+use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use interpolation;
 use ndarray::{Array1, Array2, Array3, Axis, s};
+use ndarray_stats::QuantileExt;
 use numpy::IntoPyArray; // converting to python data types
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -14,6 +15,7 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::f64::consts::PI;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
@@ -49,7 +51,7 @@ impl Pressure {
     /// [probe_name]["greens"]["pf"][pf_name]                           = f64
     /// [probe_name]["greens"]["plasma"]                                = Array1;  shape=[n_z * n_r]
     /// ```
-    ///
+    #[allow(clippy::too_many_arguments)]
     pub fn add_sensor(
         &mut self,
         name: &str,
@@ -106,26 +108,28 @@ impl Pressure {
         self.results
             .get_or_insert(name)
             .get_or_insert("pressure")
-            .insert("time_experimental", time_ndarray);
+            .get_or_insert("experimental")
+            .insert("time", time_ndarray);
         self.results
             .get_or_insert(name)
             .get_or_insert("pressure")
-            .insert("measured_experimental", measured_ndarray);
+            .get_or_insert("experimental")
+            .insert("value", measured_ndarray);
     }
 
     ///
     pub fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Change Python type into Rust
-        let coils_local: &Coils = &*coils;
+        let coils_local: &Coils = &coils;
 
-        for sensor_name in self.results.keys() {
-            for pf_coil_name in coils_local.results.get("pf").keys() {
+        for sensor_name in &self.results.keys() {
+            for pf_coil_name in &coils_local.results.get("pf").keys() {
                 // Store - zero
                 self.results
-                    .get_or_insert(&sensor_name)
+                    .get_or_insert(sensor_name)
                     .get_or_insert("greens")
                     .get_or_insert("pf")
-                    .insert(&pf_coil_name, 0.0);
+                    .insert(pf_coil_name, 0.0);
             }
         }
     }
@@ -133,22 +137,22 @@ impl Pressure {
     ///
     pub fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
         // Change Python type into Rust
-        let passives_local: &Passives = &*passives;
+        let passives_local: &Passives = &passives;
 
-        for sensor_name in self.results.keys() {
+        for sensor_name in &self.results.keys() {
             // Calculate Greens with each passive degree of freedom
-            for passive_name in passives_local.results.keys() {
-                let _tmp: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
+            for passive_name in &passives_local.results.keys() {
+                let _tmp: DataTreeAccumulator<'_> = passives_local.results.get(passive_name).get("dof");
                 let dof_names: Vec<String> = _tmp.keys();
 
-                for dof_name in dof_names {
+                for dof_name in &dof_names {
                     // Store
                     self.results
-                        .get_or_insert(&sensor_name)
+                        .get_or_insert(sensor_name)
                         .get_or_insert("greens")
                         .get_or_insert("passives")
-                        .get_or_insert(&passive_name)
-                        .insert(&dof_name, 0.0);
+                        .get_or_insert(passive_name)
+                        .insert(dof_name, 0.0);
                 }
             }
         }
@@ -164,20 +168,20 @@ impl Pressure {
     ///
     pub fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
         // Change Python type into Rust
-        let plasma_local: &Plasma = &*plasma;
+        let plasma_local: &Plasma = &plasma;
 
         let n_r: usize = plasma_local.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = plasma_local.results.get("grid").get("n_z").unwrap_usize();
 
-        for sensor_name in self.results.keys() {
+        for sensor_name in &self.results.keys() {
             // Create zero array
             let g_plasma: Array1<f64> = Array1::from_elem(n_z * n_r, 0.0);
             let g_d_plasma_d_z: Array1<f64> = Array1::from_elem(n_z * n_r, 0.0);
 
             // Store
-            self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_plasma);
+            self.results.get_or_insert(sensor_name).get_or_insert("greens").insert("plasma", g_plasma);
             self.results
-                .get_or_insert(&sensor_name)
+                .get_or_insert(sensor_name)
                 .get_or_insert("greens")
                 .insert("d_plasma_d_z", g_d_plasma_d_z);
         }
@@ -186,7 +190,7 @@ impl Pressure {
     /// Calculate the sensor values
     pub fn calculate_sensor_values(&mut self, plasma: PyRef<Plasma>) {
         // Convert Python types into Rust
-        let plasma_rs: &Plasma = &*plasma;
+        let plasma_rs: &Plasma = &plasma;
 
         // Run the Rust method
         self.calculate_sensor_values_rust(plasma_rs);
@@ -206,7 +210,7 @@ impl Pressure {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 
     /// Python pickling method
@@ -273,8 +277,8 @@ impl Pressure {
             let sensor_name: &str = &sensor_names_all[i_sensor];
 
             // Measured values
-            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("pressure").get("time_experimental").unwrap_array1();
-            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("pressure").get("measured_experimental").unwrap_array1();
+            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("pressure").get("experimental").get("time").unwrap_array1();
+            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("pressure").get("experimental").get("value").unwrap_array1();
 
             // Create the interpolator
             let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone())
@@ -368,7 +372,7 @@ impl Pressure {
                 n_dof_total += dof_names.len();
             }
 
-            let mut greens_with_passives: Array2<f64> = Array2::zeros((n_dof_total, n_sensors));
+            let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_dof_total, n_sensors), f64::NAN);
             for i_sensor in 0..n_sensors {
                 let mut i_dof_total: usize = 0;
                 for i_passive in 0..n_passives {
@@ -412,11 +416,135 @@ impl Pressure {
         }
 
         // Return the static and dynamic results
-        return (results_static, results_dynamic);
+        (results_static, results_dynamic)
     }
 
     /// Calculate the sensor values
     pub fn calculate_sensor_values_rust(&mut self, plasma: &Plasma) {
-        for sensor_name in self.results.keys() {}
+        let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
+        let n_time: usize = time.len();
+
+        let d_r: f64 = plasma.results.get("grid").get("d_r").unwrap_f64();
+        let d_z: f64 = plasma.results.get("grid").get("d_z").unwrap_f64();
+        let r: Array1<f64> = plasma.results.get("grid").get("r").unwrap_array1();
+        let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
+        let psi_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("psi").unwrap_array3();
+        let br_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("br").unwrap_array3();
+        let bz_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("bz").unwrap_array3();
+        let d_bz_d_z_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("d_bz_d_z").unwrap_array3();
+
+        let psi_a_vs_time: Array1<f64> = plasma.results.get("global").get("psi_a").unwrap_array1();
+        let psi_b_vs_time: Array1<f64> = plasma.results.get("global").get("psi_b").unwrap_array1();
+
+        for sensor_name in &self.results.keys() {
+            let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+
+            // Find the value of psi_n at the location of the pressure sensor
+            let sensor_r: f64 = self.results.get(sensor_name).get("geometry").get("r").unwrap_f64();
+            let sensor_z: f64 = self.results.get(sensor_name).get("geometry").get("z").unwrap_f64();
+
+            if sensor_r < r[0] || sensor_r > r[r.len() - 1] || sensor_z < z[0] || sensor_z > z[z.len() - 1] {
+                panic!(
+                    "Pressure sensor `{sensor_name}` is outside the plasma grid. sensor_r = {sensor_r}, sensor_z = {sensor_z}, min(r) = {}, max(r) = {}, min(z) = {}, max(z) = {}",
+                    r[0],
+                    r[r.len() - 1],
+                    z[0],
+                    z[z.len() - 1]
+                );
+            }
+
+            // Find the nearest grid point to the sensor location
+            let i_r_nearest: usize = (&r - sensor_r).abs().argmin().expect("unwrapping i_r_nearest");
+            let i_z_nearest: usize = (&z - sensor_z).abs().argmin().expect("unwrapping i_z_nearest");
+
+            // Find the four corner grid points surrounding the pressure sensor
+            let i_r_nearest_left: usize;
+            let i_r_nearest_right: usize;
+            let i_z_nearest_lower: usize;
+            let i_z_nearest_upper: usize;
+            if sensor_r > r[i_r_nearest] {
+                i_r_nearest_left = i_r_nearest;
+                i_r_nearest_right = i_r_nearest + 1;
+            } else {
+                i_r_nearest_left = i_r_nearest - 1;
+                i_r_nearest_right = i_r_nearest;
+            }
+            if sensor_z > z[i_z_nearest] {
+                i_z_nearest_lower = i_z_nearest;
+                i_z_nearest_upper = i_z_nearest + 1;
+            } else {
+                i_z_nearest_lower = i_z_nearest - 1;
+                i_z_nearest_upper = i_z_nearest;
+            }
+
+            for i_time in 0..n_time {
+                let psi_a: f64 = psi_a_vs_time[i_time];
+                let psi_b: f64 = psi_b_vs_time[i_time];
+                let psi_2d: Array2<f64> = psi_2d_vs_time.slice(s![i_time, .., ..]).to_owned();
+                let br_2d: Array2<f64> = br_2d_vs_time.slice(s![i_time, .., ..]).to_owned();
+                let bz_2d: Array2<f64> = bz_2d_vs_time.slice(s![i_time, .., ..]).to_owned();
+                let d_bz_d_z_2d: Array2<f64> = d_bz_d_z_2d_vs_time.slice(s![i_time, .., ..]).to_owned();
+
+                // Find psi at the pressure sensor
+                // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
+                let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+                let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+                let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+                let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+
+                // Function values
+                f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
+                f[(0, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
+                f[(1, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
+                f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
+
+                // d(psi)/d(r)
+                // bz = 1 / (2.0 * PI * r) * d_psi_d_r
+                d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+                // d(psi)/d(z)
+                // br = - 1 / (2.0 * PI * r) * d_psi_d_z
+                d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+                // d^2(psi)/(d(r)*d(z))
+                // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
+                d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+
+                // Create a bicubic interpolator
+                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+
+                let x: f64 = (sensor_r - r[i_r_nearest_left]) / d_r;
+                let y: f64 = (sensor_z - z[i_z_nearest_lower]) / d_z;
+                let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);
+
+                let psi_n_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
+
+                println!("Pressure sensor `{}`: psi_n = {}", sensor_name, psi_n_at_sensor);
+
+                // Need to set pressure here...
+                sensor_values[i_time] = 0.0;
+            }
+
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("pressure")
+                .get_or_insert("calculated")
+                .insert("value", sensor_values);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("psi")
+                .get_or_insert("pressure")
+                .get_or_insert("calculated")
+                .insert("time", time.clone());
+        }
     }
 }
