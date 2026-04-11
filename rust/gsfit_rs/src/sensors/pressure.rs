@@ -436,7 +436,7 @@ impl Pressure {
         let psi_a_vs_time: Array1<f64> = plasma.results.get("global").get("psi_a").unwrap_array1();
         let psi_b_vs_time: Array1<f64> = plasma.results.get("global").get("psi_b").unwrap_array1();
 
-        'loop_over_sensors: for sensor_name in &self.results.keys() {
+        for sensor_name in &self.results.keys() {
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
 
             // Find the value of psi_n at the location of the pressure sensor
