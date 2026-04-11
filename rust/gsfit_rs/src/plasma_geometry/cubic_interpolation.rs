@@ -14,7 +14,6 @@ use ndarray::Array1;
 ///
 /// Returns:
 /// * `x` - coordinate where f(x) = f_target
-///
 pub fn cubic_interpolation(
     cell0_x: f64,
     cell0_f: f64,

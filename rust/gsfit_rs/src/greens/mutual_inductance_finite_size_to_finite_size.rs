@@ -5,22 +5,21 @@ use ndarray::{Array1, Array2, s};
 /// Mutual inductance between filaments of finite size
 ///
 /// # Arguments
-/// * `r` - R coordinate of the first set of filaments, shape = [n_filaments], metre
-/// * `z` - Z coordinate of the first set of filaments, shape = [n_filaments], metre
-/// * `d_r` - Radial width of the first set of filaments (note, area = d_r * d_z), shape = [n_filaments], metre
-/// * `d_z` - Vertical height of the first set of filaments, shape = [n_filaments], metre
-/// * `angle_1` - Angle of the first side of the first set of filaments, shape = [n_filaments], radian
-/// * `angle_2` - Angle of the second side of the first set of filaments, shape = [n_filaments], radian
-/// * `r_prime` - R coordinate of the second set of filaments, shape = [n_filaments_prime], metre
-/// * `z_prime` - Z coordinate of the second set of filaments, shape = [n_filaments_prime], metre
-/// * `d_r_prime` - Radial width of the second set of filaments (note, area = d_r_prime * d_z_prime), shape = [n_filaments_prime], metre
-/// * `d_z_prime` - Vertical height of the second set of filaments, shape = [n_filaments_prime], metre
-/// * `angle_1_prime` - Angle of the first side of the second set of filaments, shape = [n_filaments_prime], radian
-/// * `angle_2_prime` - Angle of the second side of the second set of filaments, shape = [n_filaments_prime], radian
+/// * `r` - R coordinate of the first set of filaments, shape = [n_filaments], [metre]
+/// * `z` - Z coordinate of the first set of filaments, shape = [n_filaments], [metre]
+/// * `d_r` - Radial width of the first set of filaments (note, area = d_r * d_z), shape = [n_filaments], [metre]
+/// * `d_z` - Vertical height of the first set of filaments, shape = [n_filaments], [metre]
+/// * `angle_1` - Angle of the first side of the first set of filaments, shape = [n_filaments], [radian]
+/// * `angle_2` - Angle of the second side of the first set of filaments, shape = [n_filaments], [radian]
+/// * `r_prime` - R coordinate of the second set of filaments, shape = [n_filaments_prime], [metre]
+/// * `z_prime` - Z coordinate of the second set of filaments, shape = [n_filaments_prime], [metre]
+/// * `d_r_prime` - Radial width of the second set of filaments (note, area = d_r_prime * d_z_prime), shape = [n_filaments_prime], [metre]
+/// * `d_z_prime` - Vertical height of the second set of filaments, shape = [n_filaments_prime], [metre]
+/// * `angle_1_prime` - Angle of the first side of the second set of filaments, shape = [n_filaments_prime], [radian]
+/// * `angle_2_prime` - Angle of the second side of the second set of filaments, shape = [n_filaments_prime], [radian]
 ///
 /// # Returns
-/// * `g_psi` - Mutual inductance between the two sets of filaments, shape = [n_filaments, n_filaments_prime], henry
-///
+/// * `g_psi` - Mutual inductance between the two sets of filaments, shape = [n_filaments, n_filaments_prime], [henry]
 pub fn mutual_inductance_finite_size_to_finite_size(
     r: &Array1<f64>,
     z: &Array1<f64>,

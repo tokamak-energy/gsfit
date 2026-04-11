@@ -299,7 +299,7 @@ impl Passives {
 /// Rust only methods (either because we want to keep the methods private
 /// or more likely because we the methods are incompatible with Python)
 impl Passives {
-    pub fn equilibrium_post_processor(&mut self, gs_solutions: &Vec<GsSolution>) {
+    pub fn equilibrium_post_processor(&mut self, gs_solutions: &[GsSolution]) {
         let n_time: usize = gs_solutions.len();
         if n_time == 0 {
             println!("Passives.equilibrium_post_processor: no time slices to process, returning");

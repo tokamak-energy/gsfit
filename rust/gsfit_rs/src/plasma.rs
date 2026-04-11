@@ -44,17 +44,17 @@ impl Plasma {
     /// Create a new Plasma instance
     ///
     /// # Arguments
-    /// * `n_r` - number of radial points, dimensionless
-    /// * `n_z` - number of vertical points, dimensionless
-    /// * `r_min` - minimum radial coordinate, meter
-    /// * `r_max` - maximum radial coordinate, meter
-    /// * `z_min` - minimum vertical coordinate, meter
-    /// * `z_max` - maximum vertical coordinate, meter
-    /// * `psi_n` - normalized poloidal flux points (1d array), dimensionless
-    /// * `limit_pts_r` - radial limit points (1d array), meter
-    /// * `limit_pts_z` - vertical limit points (1d array), meter
-    /// * `vessel_r` - vessel radial points (1d array), meter
-    /// * `vessel_z` - vessel vertical points (1d array), meter
+    /// * `n_r` - number of radial points, [dimensionless]
+    /// * `n_z` - number of vertical points, [dimensionless]
+    /// * `r_min` - minimum radial coordinate, [metre]
+    /// * `r_max` - maximum radial coordinate, [metre]
+    /// * `z_min` - minimum vertical coordinate, [metre]
+    /// * `z_max` - maximum vertical coordinate, [metre]
+    /// * `psi_n` - normalized poloidal flux points (1d array), [dimensionless]
+    /// * `limit_pts_r` - radial limit points (1d array), [metre]
+    /// * `limit_pts_z` - vertical limit points (1d array), [metre]
+    /// * `vessel_r` - vessel radial points (1d array), [metre]
+    /// * `vessel_z` - vessel vertical points (1d array), [metre]
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
     /// * `ff_prime_source_function` - ff_prime source function (a Rust implementation, initialised in Python)
     ///
@@ -865,7 +865,7 @@ impl Plasma {
         return greens_with_passives;
     }
 
-    pub fn equilibrium_post_processor(&mut self, gs_solutions: &mut Vec<GsSolution>, coils: &Coils, plasma: &Plasma) {
+    pub fn equilibrium_post_processor(&mut self, gs_solutions: &mut [GsSolution], coils: &Coils, plasma: &Plasma) {
         println!("equilibrium_post_processor: starting");
 
         let n_time: usize = gs_solutions.len();
@@ -1148,7 +1148,6 @@ impl Plasma {
                 &psi_n,
                 &r,
                 &z,
-                d_psi,
             );
 
             let q_profile_this_time: Array1<f64> = epp_q_profile(&gs_solutions[i_time], &flux_surfaces, &f_profile_local, &r, &z);
@@ -1484,7 +1483,6 @@ fn epp_flux_surfaces(
     psi_n: &Array1<f64>,
     r: &Array1<f64>,
     z: &Array1<f64>,
-    d_psi: f64,
 ) -> Vec<FluxSurface> {
     // Sizes and grid variables
     let n_psi_n: usize = psi_n.len();
@@ -1576,34 +1574,10 @@ fn epp_flux_surfaces(
             let flux_surface = FluxSurface { r: fs_r, z: fs_z };
             flux_surfaces[i_psi_n] = flux_surface;
 
-            // // Calculate the area of the contour
-            // let area: f64 = fs_contour.unsigned_area();
-
-            // let mass_centroid: Point = fs_contour.centroid().unwrap();
-            // let mass_centroid_r: f64 = mass_centroid.x();
-
-            // // Calculate the volume
-            // area_profile[i_psi_n] = area;
-            // volume_profile[i_psi_n] = 2.0 * PI * mass_centroid_r * area;
-
             // Go to the next psi_n
             continue 'psi_n_loop;
         }
     }
-
-    // let mut volume_prime_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-    // volume_prime_profile[0] = (volume_profile[0] - volume_profile[1]) / d_psi;
-    // for i_psi_n in 1..n_psi_n - 1 {
-    //     volume_prime_profile[i_psi_n] = (volume_profile[i_psi_n - 1] - volume_profile[i_psi_n + 1]) / (2.0 * d_psi);
-    // }
-    // volume_prime_profile[n_psi_n - 1] = (volume_profile[n_psi_n - 2] - volume_profile[n_psi_n - 1]) / d_psi;
-
-    // let mut area_prime_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-    // area_prime_profile[0] = (volume_profile[0] - volume_profile[1]) / d_psi;
-    // for i_psi_n in 1..n_psi_n - 1 {
-    //     area_prime_profile[i_psi_n] = (volume_profile[i_psi_n - 1] - volume_profile[i_psi_n + 1]) / (2.0 * d_psi);
-    // }
-    // area_prime_profile[n_psi_n - 1] = (volume_profile[n_psi_n - 2] - volume_profile[n_psi_n - 1]) / d_psi;
 
     return flux_surfaces;
 }
@@ -1752,7 +1726,7 @@ fn epp_p_prime_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>) -> Array1<
     return p_prime_local;
 }
 
-fn epp_q_profile(gs_solution: &GsSolution, flux_surfaces: &Vec<FluxSurface>, f_profile: &Array1<f64>, r: &Array1<f64>, z: &Array1<f64>) -> Array1<f64> {
+fn epp_q_profile(gs_solution: &GsSolution, flux_surfaces: &[FluxSurface], f_profile: &Array1<f64>, r: &Array1<f64>, z: &Array1<f64>) -> Array1<f64> {
     // g3 = <1/R**2> = (2.0 / vol_prime) * integral(1 / (Bp * R**2) d_ell)
     // where: vol_prime = d(V)/d(psi)
     // where: <1/R**2> is notation for the flux surface average

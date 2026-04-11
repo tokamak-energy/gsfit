@@ -15,13 +15,13 @@ use ndarray_stats::QuantileExt;
 /// - The boundary contour is sorted by the largest to smallest `psi` value.
 ///
 /// # Arguments
-/// * `r` - 1D array of R (major radius) grid points.
-/// * `z` - 1D array of Z (vertical) grid points.
-/// * `psi_2d` - 2D array of poloidal flux values.
-/// * `vessel_r` - 1D array of R coordinates defining the vessel boundary polygon.
-/// * `vessel_z` - 1D array of Z coordinates defining the vessel boundary polygon.
-/// * `mag_r` - R coordinate of the magnetic axis. Note, this is from the previous time-step.
-/// * `mag_z` - Z coordinate of the magnetic axis. Note, this is from the previous time-step.
+/// * `r` - 1D array of R (major radius) grid points, [metre]
+/// * `z` - 1D array of Z (vertical) grid points, [metre]
+/// * `psi_2d` - 2D array of poloidal flux values, [weber]
+/// * `vessel_r` - 1D array of R coordinates defining the vessel boundary polygon, [metre]
+/// * `vessel_z` - 1D array of Z coordinates defining the vessel boundary polygon, [metre]
+/// * `mag_r` - R coordinate of the magnetic axis, [metre]. Note, this is from the previous time-step.
+/// * `mag_z` - Z coordinate of the magnetic axis, [metre]. Note, this is from the previous time-step.
 ///
 /// # Returns
 /// * `Ok(BoundaryContour)` - The boundary contour and X-point information for the most viable candidate.

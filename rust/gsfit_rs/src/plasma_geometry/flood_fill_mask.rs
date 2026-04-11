@@ -11,15 +11,15 @@ use std::collections::VecDeque;
 /// * mask=1.0 --> inside the plasma
 ///
 /// # Arguments
-/// * `r` - R grid points, metre
-/// * `z` - Z grid points, metre
-/// * `psi_2d` - poloidal flux, shape = (n_z, n_r), weber
-/// * `psi_b` - poloidal flux at the boundary, weber
+/// * `r` - R grid points, [metre]
+/// * `z` - Z grid points, [metre]
+/// * `psi_2d` - poloidal flux, shape = (n_z, n_r), [weber]
+/// * `psi_b` - poloidal flux at the boundary, [weber]
 /// * `stationary_points` - Vector of `StationaryPoint` objects (including maxima/minima, and can include saddle points)
-/// * `mag_r_previous` - R coordinate of magnetic axis from previous iteration, metre
-/// * `mag_z_previous` - Z coordinate of magnetic axis from previous iteration, metre
-/// * `vessel_r` - R coordinates of vessel points, metre
-/// * `vessel_z` - Z coordinates of vessel points, metre
+/// * `mag_r_previous` - R coordinate of magnetic axis from previous iteration, [metre]
+/// * `mag_z_previous` - Z coordinate of magnetic axis from previous iteration, [metre]
+/// * `vessel_r` - R coordinates of vessel points, [metre]
+/// * `vessel_z` - Z coordinates of vessel points, [metre]
 ///
 /// # Returns
 /// * `mask_2d` - 1.0 = inside plasma boundary, 0.0 for points outside plasma boundary; f64 to make multiplication easier, shape = (n_z, n_r), dimensionless
@@ -29,7 +29,7 @@ pub fn flood_fill_mask(
     z: &Array1<f64>,
     psi_2d: &Array2<f64>, // Might need `br_2d`, `bz_2d`, and others for contouring?
     psi_b: f64,
-    stationary_points: &Vec<StationaryPoint>,
+    stationary_points: &[StationaryPoint],
     mag_r_previous: f64, // Note: mag_r and mag_z are from previous iteration; this can be a problem if the magnetic axis moves significantly
     mag_z_previous: f64, // which can happen when the plasma is significantly displaced vertically from the initial guess location, e.g. during a VDE
     vessel_r: &Array1<f64>,
@@ -42,7 +42,7 @@ pub fn flood_fill_mask(
     // TODO 3: The test for crossing the saddle point should only apply if the saddle point is outside
 
     // Filter stationary points to only include saddle points
-    let mut stationary_points: Vec<StationaryPoint> = stationary_points.clone();
+    let mut stationary_points: Vec<StationaryPoint> = stationary_points.to_vec();
     stationary_points.retain(|stationary_point| {
         let saddle_point_test: bool = stationary_point.hessian_determinant < 0.0;
         return saddle_point_test;

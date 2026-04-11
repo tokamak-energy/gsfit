@@ -10,19 +10,18 @@ use ndarray::{Array1, Array2};
 /// Find the plasma boundary
 ///
 /// # Arguments
-/// * `r` - R grid points, metre
-/// * `z` - Z grid points, metre
-/// * `psi_2d` - poloidal flux, shape = (n_z, n_r), weber
-/// * `limit_pts_r` - R coordinates of limiter points, metre
-/// * `limit_pts_z` - Z coordinates of limiter points, metre
-/// * `vessel_r` - R coordinates of vessel points, metre
-/// * `vessel_z` - Z coordinates of vessel points, metre
-/// * `mag_r_previous` - R coordinate of magnetic axis (from the previous iteration), metre
-/// * `mag_z_previous` - Z coordinate of magnetic axis (from the previous iteration), metre
+/// * `r` - R grid points, [metre]
+/// * `z` - Z grid points, [metre]
+/// * `psi_2d` - poloidal flux, shape = (n_z, n_r), [weber]
+/// * `limit_pts_r` - R coordinates of limiter points, [metre]
+/// * `limit_pts_z` - Z coordinates of limiter points, [metre]
+/// * `vessel_r` - R coordinates of vessel points, [metre]
+/// * `vessel_z` - Z coordinates of vessel points, [metre]
+/// * `mag_r_previous` - R coordinate of magnetic axis (from the previous iteration), [metre]
+/// * `mag_z_previous` - Z coordinate of magnetic axis (from the previous iteration), [metre]
 ///
 /// # Returns
 /// * `boundary_contour` - A `BoundaryContour` object representing the plasma boundary
-///
 pub fn find_boundary(
     r: &Array1<f64>,
     z: &Array1<f64>,
@@ -30,7 +29,7 @@ pub fn find_boundary(
     br_2d: &Array2<f64>,
     bz_2d: &Array2<f64>,
     d_bz_d_z_2d: &Array2<f64>,
-    stationary_points: &Vec<StationaryPoint>,
+    stationary_points: &[StationaryPoint],
     limit_pts_r: &Array1<f64>,
     limit_pts_z: &Array1<f64>,
     vessel_r: &Array1<f64>,

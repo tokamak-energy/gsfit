@@ -9,15 +9,14 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// d_g_bz_dz = d(g_bz)/d(z) = the gradient of bz with respect to z
 ///
 /// # Arguments
-/// * `r` - by convention used for "sensors", metre
-/// * `z` - by convention used for "sensors", same length as `r`, metre
-/// * `r_prime` - by convention used for "current sources", metre
-/// * `z_prime` - by convention used for "current sources", same length as `r_prime`, metre
+/// * `r` - by convention used for "sensors", [metre]
+/// * `z` - by convention used for "sensors", same length as `r`, [metre]
+/// * `r_prime` - by convention used for "current sources", [metre]
+/// * `z_prime` - by convention used for "current sources", same length as `r_prime`, [metre]
 ///
 /// # Returns
 /// * `g_d_br_dz[(i_rz, i_rz_prime)]`
 /// * `g_d_bz_dz[(i_rz, i_rz_prime)]`
-///
 pub fn greens_d_b_d_z(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> (Array2<f64>, Array2<f64>) {
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
