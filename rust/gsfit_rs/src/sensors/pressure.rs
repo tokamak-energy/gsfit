@@ -455,8 +455,8 @@ impl Pressure {
             }
 
             // Find the nearest grid point to the sensor location
-            let i_r_nearest: usize = (&r - sensor_r).abs().argmin().expect("find_viable_limit_point: unwrapping i_r_nearest");
-            let i_z_nearest: usize = (&z - sensor_z).abs().argmin().expect("find_viable_limit_point: unwrapping i_z_nearest");
+            let i_r_nearest: usize = (&r - sensor_r).abs().argmin().expect("unwrapping i_r_nearest");
+            let i_z_nearest: usize = (&z - sensor_z).abs().argmin().expect("unwrapping i_z_nearest");
 
             // Find the four corner grid points surrounding the pressure sensor
             let i_r_nearest_left: usize;
