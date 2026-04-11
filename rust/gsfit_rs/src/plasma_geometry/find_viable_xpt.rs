@@ -143,7 +143,7 @@ pub fn find_viable_xpt(
         return Ok(potential_xpt.to_owned());
     }
 
-    return Err("find_viable_xpt: no viable x-point found".to_string());
+    Err("find_viable_xpt: no viable x-point found".to_string())
 }
 
 // #[test]

@@ -13,7 +13,7 @@ use geo::Area;
 use geo::Centroid;
 use geo::{Contains, Coord, LineString, Point, Polygon};
 use interpolation;
-use ndarray::{Array1, Array2, Array3, Axis, s};
+use ndarray::{Array1, Array2, Array3, ArrayView2, Axis, MeshIndex, meshgrid, s};
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
 use numpy::IntoPyArray;
@@ -179,14 +179,9 @@ impl Plasma {
         let d_area: f64 = d_r * d_z;
 
         // 2d (r, z) mesh
-        let mut mesh_r: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
-        let mut mesh_z: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
-        for i_z in 0..n_z {
-            for i_r in 0..n_r {
-                mesh_r[(i_z, i_r)] = r[i_r];
-                mesh_z[(i_z, i_r)] = z[i_z];
-            }
-        }
+        let (mesh_z_view, mesh_r_view): (ArrayView2<f64>, ArrayView2<f64>) = meshgrid((&z, &r), MeshIndex::IJ);
+        let mesh_z: Array2<f64> = mesh_z_view.to_owned(); // shape = (n_z, n_r)
+        let mesh_r: Array2<f64> = mesh_r_view.to_owned(); // shape = (n_z, n_r)
 
         // Flatten 2d mesh
         let flat_r: Array1<f64> = mesh_r.flatten().to_owned();
@@ -580,7 +575,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -623,7 +618,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -666,7 +661,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -709,7 +704,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -752,7 +747,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -795,7 +790,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -838,7 +833,7 @@ impl Plasma {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_dof_total));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         let mut i_dof_total: usize = 0;
@@ -1141,14 +1136,8 @@ impl Plasma {
 
             plasma_volume[i_time] = volume_profile_this_time.last().unwrap().to_owned();
 
-            let flux_surfaces: Vec<FluxSurface> = epp_flux_surfaces(
-                &gs_solutions[i_time],
-                &boundary_contour_local.r,
-                &boundary_contour_local.z,
-                &psi_n,
-                &r,
-                &z,
-            );
+            let flux_surfaces: Vec<FluxSurface> =
+                epp_flux_surfaces(&gs_solutions[i_time], &boundary_contour_local.r, &boundary_contour_local.z, &psi_n, &r, &z);
 
             let q_profile_this_time: Array1<f64> = epp_q_profile(&gs_solutions[i_time], &flux_surfaces, &f_profile_local, &r, &z);
             q_profile.slice_mut(s![i_time, ..]).assign(&q_profile_this_time);
@@ -1582,11 +1571,8 @@ fn epp_flux_surfaces(
     return flux_surfaces;
 }
 
-fn epp_scrape_off_layer(
-    gs_solution: &GsSolution,
-) -> (Array1<f64>, Array1<f64>) {
+fn epp_scrape_off_layer(gs_solution: &GsSolution) -> (Array1<f64>, Array1<f64>) {
     let psi_b: f64 = gs_solution.psi_b;
-    
 
     unimplemented!("scrape-off layer");
 }
@@ -1751,7 +1737,7 @@ fn epp_q_profile(gs_solution: &GsSolution, flux_surfaces: &[FluxSurface], f_prof
         .build()
         .expect("find_boundary: Can't make Interp2D");
 
-    let mut q_profile: Array1<f64> = Array1::zeros(n_psi_n);
+    let mut q_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
     'fs_loop: for i_psi_n in 0..n_psi_n {
         let fs_r: Array1<f64> = flux_surfaces[i_psi_n].r.clone();
         let fs_z: Array1<f64> = flux_surfaces[i_psi_n].z.clone();

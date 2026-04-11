@@ -40,7 +40,7 @@ pub fn greens_py(
 
     let g_psi: Array2<f64> = greens_psi(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray, d_r, d_z);
 
-    return g_psi.into_pyarray(py).into();
+    g_psi.into_pyarray(py).into()
 }
 
 /// Calculates the Green's table between locations
@@ -128,7 +128,7 @@ pub fn greens_psi(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime:
         g_psi.slice_mut(s![.., i_filament]).assign(&results[i_filament]);
     }
 
-    return g_psi;
+    g_psi
 }
 
 #[test]

@@ -532,7 +532,7 @@ impl Isoflux {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 
     /// Python pickling method
@@ -714,7 +714,7 @@ impl Isoflux {
         }
 
         // Return the static and dynamic results
-        return (results_static, results_dynamic);
+        (results_static, results_dynamic)
     }
 
     ///

@@ -30,5 +30,7 @@ pub fn create_empty_sensor_data() -> (SensorsStatic, SensorsDynamic) {
         geometry_z: Array1::zeros(0),
     };
     let results_dynamic_empty: SensorsDynamic = SensorsDynamic { measured: Array1::zeros(0) };
-    return (results_static_empty, results_dynamic_empty);
+    
+    // Return the empty data structures
+    (results_static_empty, results_dynamic_empty)
 }

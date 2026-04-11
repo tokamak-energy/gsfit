@@ -97,10 +97,10 @@ pub fn find_viable_limit_point(
 
         // Find psi at the limit point
         // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-        let mut f: Array2<f64> = Array2::zeros([2, 2]);
-        let mut d_f_d_r: Array2<f64> = Array2::zeros([2, 2]);
-        let mut d_f_d_z: Array2<f64> = Array2::zeros([2, 2]);
-        let mut d2_f_d_r_d_z: Array2<f64> = Array2::zeros([2, 2]);
+        let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+        let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+        let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+        let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
 
         // Function values
         f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
@@ -216,5 +216,5 @@ pub fn find_viable_limit_point(
         return Ok(potential_limit_point.to_owned());
     }
 
-    return Err("find_viable_limit_point: no viable limit point found".to_string());
+    Err("find_viable_limit_point: no viable limit point found".to_string())
 }

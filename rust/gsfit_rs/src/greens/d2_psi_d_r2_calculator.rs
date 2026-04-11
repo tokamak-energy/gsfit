@@ -200,7 +200,7 @@ fn test_d2_psi_d_r2_calculator() {
     use crate::greens::greens_d2_psi_d_r2;
     use crate::greens::greens_psi::greens_psi;
     use approx::assert_abs_diff_eq;
-    use ndarray::Axis;
+    use ndarray::{ArrayView2, Axis, MeshIndex, meshgrid};
 
     let n_r_scaling: usize = 2;
     let n_r: usize = 300 * n_r_scaling;
@@ -222,14 +222,9 @@ fn test_d2_psi_d_r2_calculator() {
     let d_area: f64 = d_r * d_z;
 
     // 2d (r, z) mesh
-    let mut mesh_r: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
-    let mut mesh_z: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
-    for i_z in 0..n_z {
-        for i_r in 0..n_r {
-            mesh_r[(i_z, i_r)] = r[i_r];
-            mesh_z[(i_z, i_r)] = z[i_z];
-        }
-    }
+    let (mesh_z_view, mesh_r_view): (ArrayView2<f64>, ArrayView2<f64>) = meshgrid((&z, &r), MeshIndex::IJ);
+    let mesh_z: Array2<f64> = mesh_z_view.to_owned(); // shape = (n_z, n_r)
+    let mesh_r: Array2<f64> = mesh_r_view.to_owned(); // shape = (n_z, n_r)
 
     // Flatten 2d mesh
     let flat_r: Array1<f64> = mesh_r.flatten().to_owned();

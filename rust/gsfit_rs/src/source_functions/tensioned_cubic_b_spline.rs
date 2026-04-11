@@ -155,7 +155,7 @@ impl TensionedCubicBSpline {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 
     pub fn phi2_python(&self, j_index: usize, x_val: f64) -> f64 {
@@ -424,7 +424,8 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
                 value[i_psi_n] = 0.0;
             }
         }
-        return value;
+
+        value
     }
 
     fn source_function_derivative_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
@@ -448,7 +449,7 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
         let f_large: Array1<f64> = self.source_function_value_single_dof(&psi_n_large, i_dof);
 
         // Calculate the cumulative integral for the entire "large" function
-        let mut cumulative_integral_large: Array1<f64> = Array1::zeros(n_psi_n_large);
+        let mut cumulative_integral_large: Array1<f64> = Array1::from_elem(n_psi_n_large, f64::NAN);
         for i_psi_n in 1..n_psi_n_large {
             let dx: f64 = psi_n_large[i_psi_n] - psi_n_large[i_psi_n - 1];
             let trap: f64 = 0.5 * dx * (f_large[i_psi_n] + f_large[i_psi_n - 1]);
@@ -478,7 +479,7 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
             value = value + spline_dof[i_dof] * self.source_function_value_single_dof(psi_n, i_dof);
         }
 
-        return value;
+        value
     }
 
     fn source_function_derivative(&self, psi_n: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
@@ -506,10 +507,14 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     }
 
     fn source_function_regularisation(&self) -> Array2<f64> {
-        return self.regularisations.clone();
+        let regularisations: Array2<f64> = self.regularisations.clone();
+
+        regularisations
     }
 
     fn source_function_n_dof(&self) -> usize {
-        return self.n_dof;
+        let n_dof: usize = self.n_dof;
+
+        n_dof
     }
 }

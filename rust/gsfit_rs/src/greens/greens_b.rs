@@ -86,7 +86,9 @@ pub fn greens_b(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: A
         g_br.slice_mut(s![i_rz, ..]).assign(&g_br_here);
         g_bz.slice_mut(s![i_rz, ..]).assign(&g_bz_here);
     }
-    return (g_br, g_bz);
+    
+    // Return the Greens tables
+    (g_br, g_bz)
 }
 
 #[test]

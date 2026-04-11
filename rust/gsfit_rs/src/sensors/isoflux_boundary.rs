@@ -181,7 +181,7 @@ impl IsofluxBoundary {
                 let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
 
-                let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
+                let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                 for i_time in 0..n_time {
                     // Calculate the Green's at location 1
                     let g_full_location_1: Array2<f64> = greens_psi(
@@ -244,7 +244,7 @@ impl IsofluxBoundary {
 
                 // Loop over all degrees of freedom
                 for dof_name in dof_names {
-                    let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
+                    let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                     for i_time in 0..n_time {
                         // Location 1
                         let g_full_location_1: Array2<f64> = greens_psi(
@@ -316,8 +316,8 @@ impl IsofluxBoundary {
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("isoflux_geometry").get("time").unwrap_array1();
             let n_time: usize = times_to_reconstruct.len();
 
-            let mut g_with_plasma: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
-            let mut g_d_plasma_d_z: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
+            let mut g_with_plasma: Array2<f64> = Array2::from_elem([n_time, n_z * n_r], f64::NAN);
+            let mut g_d_plasma_d_z: Array2<f64> = Array2::from_elem([n_time, n_z * n_r], f64::NAN);
             for i_time in 0..n_time {
                 // Plasma component
                 let g_full_location_1: Array2<f64> = greens_psi(
@@ -384,7 +384,7 @@ impl IsofluxBoundary {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 
     /// Python pickling method
@@ -523,7 +523,7 @@ impl IsofluxBoundary {
             }
 
             // With passives
-            let mut greens_with_passives: Array3<f64> = Array3::zeros((n_time, n_dof_total, n_sensors)) * f64::NAN;
+            let mut greens_with_passives: Array3<f64> = Array3::from_elem((n_time, n_dof_total, n_sensors), f64::NAN);
             for i_sensor in 0..n_sensors {
                 let mut i_dof_total: usize = 0;
                 for i_passive in 0..n_passives {
@@ -554,8 +554,8 @@ impl IsofluxBoundary {
                 greens_d_sensor_dz: greens_d_sensor_dz.slice(s![i_time, .., ..]).to_owned(),
                 fit_settings_weight: fit_settings_weight.clone(),
                 fit_settings_expected_value: fit_settings_expected_value.clone(),
-                geometry_r: Array1::zeros(n_sensors), // not used for IsofluxBoundary
-                geometry_z: Array1::zeros(n_sensors), // not used for IsofluxBoundary
+                geometry_r: Array1::from_elem(n_sensors, f64::NAN), // not used for IsofluxBoundary
+                geometry_z: Array1::from_elem(n_sensors, f64::NAN), // not used for IsofluxBoundary
             };
             results_static.push(results_static_this_time_slice);
 
@@ -567,7 +567,7 @@ impl IsofluxBoundary {
         }
 
         // Return the static and dynamic results
-        return (results_static, results_dynamic);
+        (results_static, results_dynamic)
     }
 
     ///

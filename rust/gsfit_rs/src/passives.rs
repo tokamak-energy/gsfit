@@ -231,7 +231,7 @@ impl Passives {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 
     /// Python pickling method
@@ -348,7 +348,8 @@ impl Passives {
             let r: Array1<f64> = self.results.get(passive_name).get("geometry").get("r").unwrap_array1();
             n_passive_filaments += r.len();
         }
-        return n_passive_filaments;
+
+        n_passive_filaments
     }
 
     pub fn greens_with_self(&self) -> Array2<f64> {
@@ -396,7 +397,7 @@ impl Passives {
             &passive_locations_angle_2,
         );
 
-        return g_psi;
+        g_psi
     }
 
     pub fn get_all_passive_filament_geometry(&self) -> PassiveGeometryAll {
@@ -437,7 +438,7 @@ impl Passives {
             resistivity: Array1::from_vec(passive_resistivity),
         };
 
-        return passive_geometry_all;
+        passive_geometry_all
     }
 
     pub fn get_passive_filament_currents_from_simulated(&self) -> Array2<f64> {

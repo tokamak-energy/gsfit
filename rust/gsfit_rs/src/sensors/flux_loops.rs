@@ -239,7 +239,7 @@ impl FluxLoops {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 
     /// Python pickling method
@@ -431,7 +431,7 @@ impl FluxLoops {
             n_dof_total += dof_names.len();
         }
 
-        let mut greens_with_passives: Array2<f64> = Array2::zeros((n_dof_total, n_sensors));
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_dof_total, n_sensors), f64::NAN);
 
         // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
         for i_sensor in 0..n_sensors {
@@ -466,13 +466,13 @@ impl FluxLoops {
             greens_d_sensor_dz,
             fit_settings_weight,
             fit_settings_expected_value,
-            geometry_r: Array1::zeros(n_sensors), // not used for FluxLoops
-            geometry_z: Array1::zeros(n_sensors), // not used for FluxLoops
+            geometry_r: Array1::from_elem(n_sensors, f64::NAN), // not used for FluxLoops
+            geometry_z: Array1::from_elem(n_sensors, f64::NAN), // not used for FluxLoops
         };
 
         // Time dependent
         // Interpolate all sensors to `times_to_reconstruct`
-        let mut measured: Array2<f64> = Array2::zeros((n_sensors_all, n_time));
+        let mut measured: Array2<f64> = Array2::from_elem((n_sensors_all, n_time), f64::NAN);
         for i_sensor in 0..n_sensors_all {
             // Sensor names
             let sensor_name: &str = &sensor_names_all[i_sensor];
@@ -520,7 +520,8 @@ impl FluxLoops {
 
         let results_static_time_dependent: Vec<SensorsStatic> = vec![results_static.clone(); n_time];
 
-        return (results_static_time_dependent, results_dynamic);
+        // Return the static and dynamic results
+        (results_static_time_dependent, results_dynamic)
     }
 
     pub fn calculate_sensor_values_rs(&mut self, coils: &Coils, passives: &Passives, plasma: &Plasma) {

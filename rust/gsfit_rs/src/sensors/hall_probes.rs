@@ -125,7 +125,7 @@ impl HallProbes {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 }
 
@@ -265,7 +265,9 @@ impl HallProbes {
         // Return the static and dynamic results
         // nonlinear least squares algorithm (e.g., Levenberg-Marquardt, Gauss-Newton, or similar iterative methods) to minimize the sum of squared residuals for all sensors
         let results_static_2d: Vec<SensorsStatic> = vec![results_static];
-        return (results_static_2d, results_dynamic);
+        
+        // Return the static and dynamic results
+        (results_static_2d, results_dynamic)
     }
 
     /// Calculate sensor values

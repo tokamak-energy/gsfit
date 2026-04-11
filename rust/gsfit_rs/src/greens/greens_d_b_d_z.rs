@@ -21,8 +21,8 @@ pub fn greens_d_b_d_z(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_pr
     let n_rz: usize = r.len();
     let n_rz_prime: usize = r_prime.len();
 
-    let mut g_d_br_dz: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
-    let mut g_d_bz_dz: Array2<f64> = Array2::zeros((n_rz, n_rz_prime));
+    let mut g_d_br_dz: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
+    let mut g_d_bz_dz: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
 
     for i_rz in 0..n_rz {
         // Define some variables
@@ -50,7 +50,9 @@ pub fn greens_d_b_d_z(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_pr
         g_d_br_dz.slice_mut(s![i_rz, ..]).assign(&g_d_br_dz_local);
         g_d_bz_dz.slice_mut(s![i_rz, ..]).assign(&g_d_bz_dz_local);
     }
-    return (g_d_br_dz, g_d_bz_dz);
+    
+    // Return the gradients
+    (g_d_br_dz, g_d_bz_dz)
 }
 
 #[test]

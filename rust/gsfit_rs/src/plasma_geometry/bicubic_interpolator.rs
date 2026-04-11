@@ -99,7 +99,7 @@ impl BicubicInterpolator {
 
         let a_matrix: Array2<f64> = coeff_matrix_1.dot(&function_matrix).dot(&coeff_matrix_2);
 
-        return BicubicInterpolator { a_matrix };
+        BicubicInterpolator { a_matrix }
     }
 
     /// Interpolate the value at (x, y)
@@ -116,7 +116,8 @@ impl BicubicInterpolator {
         let x_vec: Array1<f64> = Array1::from_vec(vec![1.0, x, x.powi(2), x.powi(3)]);
         let y_vec: Array1<f64> = Array1::from_vec(vec![1.0, y, y.powi(2), y.powi(3)]);
         let f: f64 = x_vec.dot(&self.a_matrix).dot(&y_vec);
-        return f;
+
+        f
     }
 
     /// Value, first derivatives, and second derivatives
@@ -157,14 +158,14 @@ impl BicubicInterpolator {
         let d2_f_d_y2: f64 = u.dot(&a_d2_v_d_y2);
 
         // Return results
-        return BicubicValueAndDerivatives {
+        BicubicValueAndDerivatives {
             f,
             d_f_d_x,
             d_f_d_y,
             d2_f_d_x2,
             d2_f_d_x_d_y,
             d2_f_d_y2,
-        };
+        }
     }
 
     /// Finds the stationary point of the bicubic fit
@@ -282,19 +283,23 @@ fn test_bicubic_interpolation() {
     // This tests a peaked quadratic in both directions
     fn calculate_f(x: f64, y: f64) -> f64 {
         let result: f64 = -(x - 0.5).powi(2) - (y - 0.5).powi(2);
-        return result;
+
+        result
     }
     fn calculate_d_f_d_x(x: f64, _y: f64) -> f64 {
         let result: f64 = 1.0 - 2.0 * x;
-        return result;
+
+        result
     }
     fn calculate_d_f_d_y(_x: f64, y: f64) -> f64 {
         let result: f64 = 1.0 - 2.0 * y;
-        return result;
+
+        result
     }
     fn calculate_d2_f_d_x_d_y(_x: f64, _y: f64) -> f64 {
         let result: f64 = 0.0;
-        return result;
+
+        result
     }
 
     // Empty arrays to store the function values and derivatives at the four corners of the grid

@@ -2,10 +2,10 @@ use interpolation;
 use ndarray::Array1;
 
 /// Returns the resistivity of copper at a given temperature in Kelvin
-/// 
+///
 /// # Arguments
 /// * `temperature_in_kelvin` - temperature in Kelvin, [kelvin]
-/// 
+///
 /// # Returns
 /// * `resistivity` - resistivity of copper at the given temperature, [ohm * metre]
 pub fn copper_resistivity(temperature_in_kelvin: f64) -> f64 {

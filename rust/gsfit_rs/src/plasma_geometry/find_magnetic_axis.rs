@@ -117,7 +117,7 @@ pub fn find_magnetic_axis(
         psi: mag_psi,
     };
 
-    return Ok(magnetic_axis);
+    Ok(magnetic_axis)
 }
 
 // /// Test finding the magnetic axis

@@ -62,7 +62,8 @@ pub fn greens_d2_psi_d_r2(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, 
         g_d2_psi_d_r2.slice_mut(s![i_rz, ..]).assign(&g_d2_psi_d_r2_local);
     }
 
-    return g_d2_psi_d_r2;
+    // Return the Greens table
+    g_d2_psi_d_r2
 }
 
 #[test]

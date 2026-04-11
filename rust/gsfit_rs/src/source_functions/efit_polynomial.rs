@@ -48,14 +48,15 @@ impl EfitPolynomial {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 }
 
 impl SourceFunctionTraits for EfitPolynomial {
     fn source_function_value_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
         let value: Array1<f64> = (1.0 - psi_n) * &psi_n.powi(i_dof as i32);
-        return value;
+
+        value
     }
 
     fn source_function_derivative_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
@@ -66,7 +67,8 @@ impl SourceFunctionTraits for EfitPolynomial {
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
         // TODO: Indefinite integral, so constant of integration might need to be added
         let integral: Array1<f64> = (1.0 - psi_n / 2.0) * psi_n.mapv(|x| x.powi(i_dof as i32 + 1)) / (i_dof as f64 + 1.0);
-        return integral;
+
+        integral
     }
 
     fn source_function_value(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
@@ -78,7 +80,7 @@ impl SourceFunctionTraits for EfitPolynomial {
             value = value + polynomial_dof[i_dof] * self.source_function_value_single_dof(psi_n, i_dof);
         }
 
-        return value;
+        value
     }
 
     fn source_function_derivative(&self, psi_n: &Array1<f64>, polynomial_dof: &Array1<f64>) -> Array1<f64> {
@@ -102,14 +104,18 @@ impl SourceFunctionTraits for EfitPolynomial {
         }
         integral += constant_of_integration;
 
-        return integral;
+        integral
     }
 
     fn source_function_regularisation(&self) -> Array2<f64> {
-        return self.regularisations.clone();
+        let regularisations: Array2<f64> = self.regularisations.clone();
+
+        regularisations
     }
 
     fn source_function_n_dof(&self) -> usize {
-        return self.n_dof;
+        let n_dof: usize = self.n_dof;
+
+        n_dof
     }
 }

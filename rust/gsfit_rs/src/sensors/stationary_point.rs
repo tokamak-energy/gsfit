@@ -172,7 +172,7 @@ impl StationaryPoint {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 
     /// Python pickling method
@@ -357,7 +357,7 @@ impl StationaryPoint {
         }
 
         // Return the static and dynamic results
-        return (results_static, results_dynamic);
+        (results_static, results_dynamic)
     }
 
     pub fn greens_with_coils_rs(&mut self, coils: Coils) {
@@ -371,7 +371,7 @@ impl StationaryPoint {
             let mag_axis_z: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("z").get("measured").unwrap_array1();
 
             for pf_coil_name in coils.results.get("pf").keys() {
-                let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
+                let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                 for i_time in 0..n_time {
                     let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                     let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
@@ -414,8 +414,8 @@ impl StationaryPoint {
             let mag_axis_r: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("r").get("measured").unwrap_array1();
             let mag_axis_z: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("z").get("measured").unwrap_array1();
 
-            let mut g_with_plasma: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
-            let mut g_d_plasma_d_z: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
+            let mut g_with_plasma: Array2<f64> = Array2::from_elem((n_time, n_z * n_r), f64::NAN);
+            let mut g_d_plasma_d_z: Array2<f64> = Array2::from_elem((n_time, n_z * n_r), f64::NAN);
             for i_time in 0..n_time {
                 let (g_br_full, _g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
                     Array1::from_vec(vec![mag_axis_r[i_time]]), // sensor

@@ -187,7 +187,7 @@ pub fn flood_fill_mask(
         }
     }
 
-    return mask_2d;
+    mask_2d
 }
 
 #[test]

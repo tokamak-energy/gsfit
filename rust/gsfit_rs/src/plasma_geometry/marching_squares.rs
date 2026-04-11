@@ -323,7 +323,7 @@ pub fn marching_squares(
         n: n,
     };
 
-    return boundary_contour;
+    boundary_contour
 }
 
 /// Check if two line segments intersect

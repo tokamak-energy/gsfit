@@ -130,5 +130,6 @@ fn discretise_parallelogram(
 
     let area: f64 = filament_geometry.calculate_area();
 
-    return (r_sub_filament_flat, z_sub_filament_flat, d_r_sub_filament_flat, d_z_sub_filament_flat, area);
+    // Return the sub-filaments
+    (r_sub_filament_flat, z_sub_filament_flat, d_r_sub_filament_flat, d_z_sub_filament_flat, area)
 }

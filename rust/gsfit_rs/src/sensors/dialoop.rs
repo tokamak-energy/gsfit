@@ -258,7 +258,7 @@ impl Dialoop {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 }
 
