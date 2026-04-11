@@ -30,16 +30,4 @@ def setup_pressure_sensors(
     # Initialise the Pressure Rust class
     pressure = Pressure()
 
-    pressure.add_sensor(
-        name="pressure_01",
-        geometry_r=0.4,
-        geometry_z=0.0,
-        fit_settings_comment="",
-        fit_settings_expected_value=10e3,
-        fit_settings_include=True,
-        fit_settings_weight=100.0,
-        time=np.array([-1.0, 1.0]).astype(np.float64),
-        measured=np.array([15e3, 15e3]).astype(np.float64),
-    )
-
     return pressure

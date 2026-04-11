@@ -1,5 +1,4 @@
 import matplotlib.axes
-import matplotlib.pyplot as plt
 import numpy as np
 
 from ..gsfit import Gsfit
