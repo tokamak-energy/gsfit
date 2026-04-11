@@ -49,9 +49,12 @@ pub fn copper_resistivity(temperature_in_kelvin: f64) -> f64 {
         10.1690000000000,
     ]) * 1.0e-8;
 
-    let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(temperatures, copper_resistivities).expect("copper resistivity interpolation failed");
-    
-    let resistivity: f64 = interpolator.interpolate_scalar(temperature_in_kelvin).expect("copper resistivity interpolation failed");
-    
+    let interpolator: interpolation::Dim1Linear =
+        interpolation::Dim1Linear::new(temperatures, copper_resistivities).expect("copper resistivity interpolation failed");
+
+    let resistivity: f64 = interpolator
+        .interpolate_scalar(temperature_in_kelvin)
+        .expect("copper resistivity interpolation failed");
+
     resistivity
 }

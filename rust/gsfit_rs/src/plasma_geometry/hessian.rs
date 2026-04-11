@@ -40,6 +40,6 @@ pub fn hessian(d2_psi_d_r2: f64, d2_psi_d_z2: f64, d2_psi_d_r_d_z: f64) -> (f64,
     let hessian_det: f64 = d2_psi_d_r2 * d2_psi_d_z2 - d2_psi_d_r_d_z.powi(2);
 
     let hessian_trace: f64 = d2_psi_d_r2 + d2_psi_d_z2;
-    
+
     (hessian_det, hessian_trace)
 }

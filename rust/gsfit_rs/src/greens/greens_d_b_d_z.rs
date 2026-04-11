@@ -50,7 +50,7 @@ pub fn greens_d_b_d_z(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_pr
         g_d_br_dz.slice_mut(s![i_rz, ..]).assign(&g_d_br_dz_local);
         g_d_bz_dz.slice_mut(s![i_rz, ..]).assign(&g_d_bz_dz_local);
     }
-    
+
     // Return the gradients
     (g_d_br_dz, g_d_bz_dz)
 }

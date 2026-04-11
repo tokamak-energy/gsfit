@@ -436,10 +436,23 @@ impl Pressure {
         let psi_a_vs_time: Array1<f64> = plasma.results.get("global").get("psi_a").unwrap_array1();
         let psi_b_vs_time: Array1<f64> = plasma.results.get("global").get("psi_b").unwrap_array1();
 
-        for sensor_name in &self.results.keys() {
+        'loop_over_sensors: for sensor_name in &self.results.keys() {
+            // Default to NaN, in case we can't calculate the sensor value, e.g. if the sensor is outside the (R,Z) grid
+            let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+
             // Find the value of psi_n at the location of the pressure sensor
             let sensor_r: f64 = self.results.get(sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(sensor_name).get("geometry").get("z").unwrap_f64();
+
+            if sensor_r < r[0] || sensor_r > r[r.len() - 1] || sensor_z < z[0] || sensor_z > z[z.len() - 1] {
+                panic!(
+                    "Pressure sensor `{sensor_name}` is outside the plasma grid. sensor_r = {sensor_r}, sensor_z = {sensor_z}, min(r) = {}, max(r) = {}, min(z) = {}, max(z) = {}",
+                    r[0],
+                    r[r.len() - 1],
+                    z[0],
+                    z[z.len() - 1]
+                );
+            }
 
             // Find the nearest grid point to the sensor location
             let i_r_nearest: usize = (&r - sensor_r).abs().argmin().expect("find_viable_limit_point: unwrapping i_r_nearest");
@@ -465,7 +478,6 @@ impl Pressure {
                 i_z_nearest_upper = i_z_nearest;
             }
 
-            let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
             for i_time in 0..n_time {
                 let psi_a: f64 = psi_a_vs_time[i_time];
                 let psi_b: f64 = psi_b_vs_time[i_time];
@@ -532,6 +544,7 @@ impl Pressure {
                 .get_or_insert(sensor_name)
                 .get_or_insert("psi")
                 .get_or_insert("pressure")
+                .get_or_insert("calculated")
                 .insert("time", time.clone());
         }
     }
