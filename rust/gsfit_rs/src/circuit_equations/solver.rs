@@ -388,7 +388,7 @@ impl CircuitEquationModel {
             let col: Array1<f64> = circuit_equation_matrix_2.column(i_col).to_owned();
             let solution: Array1<f64> = circuit_equation_matrix_1
                 .solve(&col)
-                .unwrap_or_else(|_| panic!("Failed to solve for `state_space_matrix_a` i_col={i_col}"));
+                .expect(&format!("Failed to solve for `state_space_matrix_b` i_col={i_col}"));
             state_space_matrix_a.column_mut(i_col).assign(&solution);
         }
 
@@ -399,7 +399,7 @@ impl CircuitEquationModel {
             let col: Array1<f64> = circuit_equation_matrix_3.column(i_col).to_owned();
             let solution: Array1<f64> = circuit_equation_matrix_1
                 .solve(&col)
-                .unwrap_or_else(|_| panic!("Failed to solve for `state_space_matrix_b` i_col={i_col}"));
+                .expect(&format!("Failed to solve for `state_space_matrix_b` i_col={i_col}"));
             state_space_matrix_b.column_mut(i_col).assign(&solution);
         }
 
