@@ -24,6 +24,12 @@ pub struct Isoflux {
     pub results: DataTree,
 }
 
+impl Default for Isoflux {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Python accessible methods
 #[pymethods]
 impl Isoflux {
@@ -482,7 +488,7 @@ impl Isoflux {
                     plasma_z.clone(),
                 );
 
-                let g_d_plasma_d_z_location_1: Array1<f64> = -2.0 * PI * location_1_r[i_time].clone() * g_br_full_location_1.sum_axis(Axis(0)); // shape = n_r * n_z
+                let g_d_plasma_d_z_location_1: Array1<f64> = -2.0 * PI * location_1_r[i_time] * g_br_full_location_1.sum_axis(Axis(0)); // shape = n_r * n_z
 
                 // location_2
                 let (g_br_full_location_2, _g_bz_full_location_2): (Array2<f64>, Array2<f64>) = greens_b(
@@ -492,7 +498,7 @@ impl Isoflux {
                     plasma_z.clone(),
                 );
 
-                let g_d_plasma_d_z_location_2: Array1<f64> = -2.0 * PI * location_2_r[i_time].clone() * g_br_full_location_2.sum_axis(Axis(0)); // shape = n_r * n_z
+                let g_d_plasma_d_z_location_2: Array1<f64> = -2.0 * PI * location_2_r[i_time] * g_br_full_location_2.sum_axis(Axis(0)); // shape = n_r * n_z
 
                 let g_d_plasma_d_z_now: Array1<f64> = g_d_plasma_d_z_location_1 - g_d_plasma_d_z_location_2;
                 g_d_plasma_d_z.slice_mut(s![i_time, ..]).assign(&g_d_plasma_d_z_now);
@@ -676,14 +682,14 @@ impl Isoflux {
                 for i_passive in 0..n_passives {
                     let passive_name: &str = &passive_names[i_passive];
                     let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                    for dof_name in dof_names {
+                    for dof_name in &dof_names {
                         let greens_with_passives_tmp: Array1<f64> = self
                             .results
                             .get(&sensor_names[i_sensor])
                             .get("greens")
                             .get("passives")
-                            .get(&passive_name)
-                            .get(&dof_name)
+                            .get(passive_name)
+                            .get(dof_name)
                             .unwrap_array1(); // shape = [n_time]
                         greens_with_passives.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
 

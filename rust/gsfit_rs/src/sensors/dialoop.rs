@@ -19,6 +19,12 @@ pub struct Dialoop {
     pub results: DataTree,
 }
 
+impl Default for Dialoop {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Python accessible methods
 #[pymethods]
 impl Dialoop {
@@ -91,7 +97,7 @@ impl Dialoop {
     // ///
     // pub fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
     //     // Change Python type into Rust
-    //     let coils_local: &Coils = &*coils;
+    //     let coils_local: &Coils = &coils;
 
     //     for sensor_name in self.results.keys() {
     //         let sensor_angle_pol: f64 = self.results.get(&sensor_name).get("geometry").get("angle_pol").unwrap_f64();
@@ -129,7 +135,7 @@ impl Dialoop {
     // ///
     // pub fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
     //     // Change Python type into Rust
-    //     let passives_local: &Passives = &*passives;
+    //     let passives_local: &Passives = &passives;
 
     //     for sensor_name in self.results.keys() {
     //         let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
@@ -185,7 +191,7 @@ impl Dialoop {
     // ///
     // pub fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
     //     // Change Python type into Rust
-    //     let plasma_local: &Plasma = &*plasma;
+    //     let plasma_local: &Plasma = &plasma;
 
     //     let plasma_r: Array1<f64> = plasma_local.results.get("grid").get("flat").get("r").unwrap_array1();
     //     let plasma_z: Array1<f64> = plasma_local.results.get("grid").get("flat").get("z").unwrap_array1();
@@ -238,7 +244,7 @@ impl Dialoop {
     /// Calculate the sensor values
     pub fn calculate_sensor_values(&mut self, plasma: PyRef<Plasma>) {
         // Convert Python types into Rust
-        let plasma_rs: &Plasma = &*plasma;
+        let plasma_rs: &Plasma = &plasma;
 
         // Run the Rust method
         self.calculate_sensor_values_rust(plasma_rs);

@@ -19,6 +19,12 @@ pub struct HallProbes {
     pub results: DataTree,
 }
 
+impl Default for HallProbes {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Python accessible methods
 #[pymethods]
 impl HallProbes {

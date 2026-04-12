@@ -24,6 +24,12 @@ pub struct Pressure {
     pub results: DataTree,
 }
 
+impl Default for Pressure {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Python accessible methods
 #[pymethods]
 impl Pressure {
@@ -378,14 +384,14 @@ impl Pressure {
                 for i_passive in 0..n_passives {
                     let passive_name: &str = &passive_names[i_passive];
                     let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                    for dof_name in dof_names {
+                    for dof_name in &dof_names {
                         greens_with_passives[(i_dof_total, i_sensor)] = self
                             .results
                             .get(&sensor_names[i_sensor])
                             .get("greens")
                             .get("passives")
-                            .get(&passive_name)
-                            .get(&dof_name)
+                            .get(passive_name)
+                            .get(dof_name)
                             .unwrap_f64();
 
                         // Keep count

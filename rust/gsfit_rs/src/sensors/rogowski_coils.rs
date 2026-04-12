@@ -26,6 +26,12 @@ pub struct RogowskiCoils {
     pub results: DataTree,
 }
 
+impl Default for RogowskiCoils {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Python accessible methods
 #[pymethods]
 impl RogowskiCoils {
@@ -247,7 +253,7 @@ impl RogowskiCoils {
                 }
 
                 // Add the gap contribution
-                g_with_pf = g_with_pf - g_gap / MU_0;
+                g_with_pf -= g_gap / MU_0;
 
                 // Store
                 self.results

@@ -692,6 +692,12 @@ pub struct DataTree {
     pub data: HashMap<String, DataValue>,
 }
 
+impl Default for DataTree {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DataTree {
     pub fn new() -> Self {
         Self { data: HashMap::new() }

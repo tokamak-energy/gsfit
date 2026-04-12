@@ -28,60 +28,52 @@ impl FilamentGeometry {
     ///
     pub fn new(angle_1: f64, angle_2: f64, d_r: f64, d_z: f64, r: f64, z: f64) -> Self {
         // First coordinate in the parallelogram (bottom; left)
-        let r_1: f64;
-        let z_1: f64;
-        if abs_diff_eq!(angle_1, 0.0) {
-            r_1 = r - d_r / 2.0;
+        let r_1: f64 = if abs_diff_eq!(angle_1, 0.0) {
+            r - d_r / 2.0
         } else {
-            r_1 = r - d_r / 2.0 - d_z / (2.0 * angle_1.tan());
-        }
-        if abs_diff_eq!(angle_2, 0.0) {
-            z_1 = z - d_z / 2.0;
+            r - d_r / 2.0 - d_z / (2.0 * angle_1.tan())
+        };
+        let z_1: f64 = if abs_diff_eq!(angle_2, 0.0) {
+            z - d_z / 2.0
         } else {
-            z_1 = z - d_z / 2.0 - d_r * angle_2.tan() / 2.0;
-        }
+            z - d_z / 2.0 - d_r * angle_2.tan() / 2.0
+        };
 
         // Second coordinate in the parallelogram (bottom; right)
-        let r_2: f64;
-        let z_2: f64;
-        if abs_diff_eq!(angle_1, 0.0) {
-            r_2 = r + d_r / 2.0;
+        let r_2: f64 = if abs_diff_eq!(angle_1, 0.0) {
+            r + d_r / 2.0
         } else {
-            r_2 = r + d_r / 2.0 - d_z / (2.0 * angle_1.tan());
-        }
-        if abs_diff_eq!(angle_2, 0.0) {
-            z_2 = z - d_z / 2.0;
+            r + d_r / 2.0 - d_z / (2.0 * angle_1.tan())
+        };
+        let z_2: f64 = if abs_diff_eq!(angle_2, 0.0) {
+            z - d_z / 2.0
         } else {
-            z_2 = z - d_z / 2.0 + d_r * angle_2.tan() / 2.0;
-        }
+            z - d_z / 2.0 + d_r * angle_2.tan() / 2.0
+        };
 
         // Third coordinate in the parallelogram (top; right)
-        let r_3: f64;
-        let z_3: f64;
-        if abs_diff_eq!(angle_1, 0.0) {
-            r_3 = r + d_r / 2.0;
+        let r_3: f64 = if abs_diff_eq!(angle_1, 0.0) {
+            r + d_r / 2.0
         } else {
-            r_3 = r + d_r / 2.0 + d_z / (2.0 * angle_1.tan());
-        }
-        if abs_diff_eq!(angle_2, 0.0) {
-            z_3 = z + d_z / 2.0;
+            r + d_r / 2.0 + d_z / (2.0 * angle_1.tan())
+        };
+        let z_3: f64 = if abs_diff_eq!(angle_2, 0.0) {
+            z + d_z / 2.0
         } else {
-            z_3 = z + d_z / 2.0 + d_r * angle_2.tan() / 2.0;
-        }
+            z + d_z / 2.0 + d_r * angle_2.tan() / 2.0
+        };
 
         // Fourth coordinate in the parallelogram (top; left)
-        let r_4: f64;
-        let z_4: f64;
-        if abs_diff_eq!(angle_1, 0.0) {
-            r_4 = r - d_r / 2.0;
+        let r_4: f64 = if abs_diff_eq!(angle_1, 0.0) {
+            r - d_r / 2.0
         } else {
-            r_4 = r - d_r / 2.0 + d_z / (2.0 * angle_1.tan());
-        }
-        if abs_diff_eq!(angle_2, 0.0) {
-            z_4 = z + d_z / 2.0;
+            r - d_r / 2.0 + d_z / (2.0 * angle_1.tan())
+        };
+        let z_4: f64 = if abs_diff_eq!(angle_2, 0.0) {
+            z + d_z / 2.0
         } else {
-            z_4 = z + d_z / 2.0 - d_r * angle_2.tan() / 2.0;
-        }
+            z + d_z / 2.0 - d_r * angle_2.tan() / 2.0
+        };
 
         Self {
             r_1,
@@ -100,7 +92,8 @@ impl FilamentGeometry {
     /// Note, Shoelace formula gives:
     /// * Positive for counter-clockwise vertex ordering
     /// * Negative for clockwise vertex ordering
-    /// to avoid this we have added `.abs()`
+    ///
+    /// To avoid this we have added `.abs()`
     ///
     /// # Arguments
     /// * `self` - The `FilamentGeometry` instance
