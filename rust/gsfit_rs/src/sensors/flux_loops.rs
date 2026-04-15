@@ -24,6 +24,12 @@ pub struct FluxLoops {
     pub results: DataTree,
 }
 
+impl Default for FluxLoops {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Python accessible methods
 #[pymethods]
 impl FluxLoops {
@@ -289,6 +295,7 @@ impl FluxLoops {
 
 // Rust only methods
 impl FluxLoops {
+    #[allow(clippy::too_many_arguments)]
     pub fn add_sensor_rs(
         &mut self,
         name: &str,
@@ -439,14 +446,14 @@ impl FluxLoops {
             for i_passive in 0..n_passives {
                 let passive_name: &str = &passive_names[i_passive];
                 let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                for dof_name in dof_names {
+                for dof_name in &dof_names {
                     greens_with_passives[(i_dof_total, i_sensor)] = self
                         .results
                         .get(&sensor_names[i_sensor])
                         .get("greens")
                         .get("passives")
-                        .get(&passive_name)
-                        .get(&dof_name)
+                        .get(passive_name)
+                        .get(dof_name)
                         .unwrap_f64();
 
                     // Store the name
@@ -487,7 +494,7 @@ impl FluxLoops {
 
             // Do the interpolation
             let measured_this_sensor: Array1<f64> = interpolator
-                .interpolate_array1(&times_to_reconstruct)
+                .interpolate_array1(times_to_reconstruct)
                 .expect("FluxLoops.split_into_static_and_dynamic: Can't do interpolation");
 
             // Store for later

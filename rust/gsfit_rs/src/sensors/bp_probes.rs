@@ -24,6 +24,12 @@ pub struct BpProbes {
     pub results: DataTree,
 }
 
+impl Default for BpProbes {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Python accessible methods
 #[pymethods]
 impl BpProbes {

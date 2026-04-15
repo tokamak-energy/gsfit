@@ -21,6 +21,12 @@ pub struct Passives {
     pub results: DataTree,
 }
 
+impl Default for Passives {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Python accessible methods
 #[pymethods]
 impl Passives {

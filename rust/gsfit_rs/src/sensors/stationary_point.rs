@@ -22,6 +22,12 @@ pub struct StationaryPoint {
     pub results: DataTree,
 }
 
+impl Default for StationaryPoint {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Python accessible methods
 #[pymethods]
 impl StationaryPoint {
@@ -30,6 +36,7 @@ impl StationaryPoint {
         Self { results: DataTree::new() }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn add_sensor(
         &mut self,
         name: &str,

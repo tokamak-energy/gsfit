@@ -20,6 +20,12 @@ pub struct Coils {
     pub results: DataTree,
 }
 
+impl Default for Coils {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // TODO: I need to add PSU "current leads" resistance and inductance
 
 // Data structure:
@@ -41,6 +47,7 @@ impl Coils {
         Self { results: DataTree::new() }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn add_pf_coil(
         &mut self,
         name: &str,
@@ -240,6 +247,7 @@ impl Coils {
 /// Rust only methods (either because we want to keep the methods private
 /// or more likely because we the methods are incompatible with Python)
 impl Coils {
+    #[allow(clippy::too_many_arguments)]
     pub fn add_pf_coil_rs(
         &mut self,
         name: &str,
