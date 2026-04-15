@@ -185,6 +185,18 @@ def map_results_to_database(
             results["PASSIVES"][passive_name]["GEOMETRY"]["R"] = passives.get_array1([passive_name, "geometry", "r"])
             results["PASSIVES"][passive_name]["GEOMETRY"]["Z"] = passives.get_array1([passive_name, "geometry", "z"])
 
+    # Scrape off layer (SOL)
+    results["SOL"]["HFS"]["CONTOUR"]["R"] = plasma.get_array2(["sol", "hfs", "contour", "r"]) # shape = [n_time, n_points]
+    results["SOL"]["HFS"]["CONTOUR"]["Z"] = plasma.get_array2(["sol", "hfs", "contour", "z"]) # shape = [n_time, n_points]
+    results["SOL"]["HFS"]["CONTOUR"]["N"] = np.array(plasma.get_vec_usize(["sol", "hfs", "contour", "n"])).astype(np.int32) # shape = [n_time]
+    results["SOL"]["HFS"]["STRIKE_POINT"]["R"] = plasma.get_array1(["sol", "hfs", "strike_point", "r"]) # shape = [n_time]
+    results["SOL"]["HFS"]["STRIKE_POINT"]["Z"] = plasma.get_array1(["sol", "hfs", "strike_point", "z"]) # shape = [n_time]
+    results["SOL"]["LFS"]["CONTOUR"]["R"] = plasma.get_array2(["sol", "lfs", "contour", "r"]) # shape = [n_time, n_points]
+    results["SOL"]["LFS"]["CONTOUR"]["Z"] = plasma.get_array2(["sol", "lfs", "contour", "z"]) # shape = [n_time, n_points]
+    results["SOL"]["LFS"]["CONTOUR"]["N"] = np.array(plasma.get_vec_usize(["sol", "lfs", "contour", "n"])).astype(np.int32) # shape = [n_time]
+    results["SOL"]["LFS"]["STRIKE_POINT"]["R"] = plasma.get_array1(["sol", "lfs", "strike_point", "r"]) # shape = [n_time]
+    results["SOL"]["LFS"]["STRIKE_POINT"]["Z"] = plasma.get_array1(["sol", "lfs", "strike_point", "z"]) # shape = [n_time]
+
     # Store "WORKFLOW"
     database_reader_method = settings["GSFIT_code_settings.json"]["database_reader"]["method"]
 

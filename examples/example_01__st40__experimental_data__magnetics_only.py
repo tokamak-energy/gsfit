@@ -14,7 +14,7 @@ gsfit_controller = Gsfit(
     pulseNo_write=pulseNo_write,
 )
 # gsfit_controller.settings["GSFIT_code_settings.json"]["timeslices"]["method"] = "user_defined"
-# gsfit_controller.settings["GSFIT_code_settings.json"]["timeslices"]["user_defined"] = [80.0e-3, 95.0e-3]
+# gsfit_controller.settings["GSFIT_code_settings.json"]["timeslices"]["user_defined"] = [143.0e-3]
 gsfit_controller.settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus"]["workflow"]["psu2coil"]["run_name"] = "RUN02"
 
 # Run
