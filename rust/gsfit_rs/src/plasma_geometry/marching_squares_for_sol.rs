@@ -145,12 +145,6 @@ pub fn marching_squares_for_sol(
         }
     }
 
-    let empty_marching_contour: MarchingContour = MarchingContour {
-        r: Array1::from_elem(0, f64::NAN),
-        z: Array1::from_elem(0, f64::NAN),
-        n: 0,
-    };
-
     // If empty
     if unsorted_boundary_points.is_empty() {
         return (Err("No boundary points found".to_string()), Err("No boundary points found".to_string()));
@@ -338,7 +332,7 @@ pub fn marching_squares_for_sol(
     let lfs_start_z: f64;
     let lfs_start_edge: (usize, usize, usize, usize);
     if boundary_points_near_xpt_r_sorted[0] > boundary_points_near_xpt_r_sorted[1] {
-        // first point is on the right, so it is the LFS leg
+        // First point is on the right, so it is the LFS leg
         hfs_start_r = boundary_points_near_xpt_r_sorted[1];
         hfs_start_z = boundary_points_near_xpt_z_sorted[1];
         hfs_start_edge = boundary_points_near_xpt_edge_sorted[1];
@@ -346,7 +340,7 @@ pub fn marching_squares_for_sol(
         lfs_start_z = boundary_points_near_xpt_z_sorted[0];
         lfs_start_edge = boundary_points_near_xpt_edge_sorted[0];
     } else {
-        // first point is on the left, so it is the HFS leg
+        // First point is on the left, so it is the HFS leg
         hfs_start_r = boundary_points_near_xpt_r_sorted[0];
         hfs_start_z = boundary_points_near_xpt_z_sorted[0];
         hfs_start_edge = boundary_points_near_xpt_edge_sorted[0];
@@ -355,7 +349,7 @@ pub fn marching_squares_for_sol(
         lfs_start_edge = boundary_points_near_xpt_edge_sorted[1];
     }
 
-    let (hfs_leg, _left_vessel): (MarchingContour, bool) = sort_boundary_points_version_4(
+    let (hfs_leg, _hfs_left_vessel): (MarchingContour, bool) = sort_boundary_points_version_4(
         &unsorted_boundary_points,
         hfs_start_r,
         hfs_start_z,
@@ -368,7 +362,7 @@ pub fn marching_squares_for_sol(
         n_r,
         n_z,
     );
-    let (lfs_leg, _left_vessel): (MarchingContour, bool) = sort_boundary_points_version_4(
+    let (lfs_leg, _lfs_left_vessel): (MarchingContour, bool) = sort_boundary_points_version_4(
         &unsorted_boundary_points,
         lfs_start_r,
         lfs_start_z,

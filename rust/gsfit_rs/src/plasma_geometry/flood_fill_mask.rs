@@ -42,8 +42,10 @@ pub fn flood_fill_mask(
     // TODO 2: this way if the magnetic axis moves vertically a lot we won't lose the plasma?
     // TODO 3: The test for crossing the saddle point should only apply if the saddle point is outside
 
-    // Filter stationary points to only include saddle points
+    // Make a mutable copy of the `stationary_points` vector, so that we can filter out points
     let mut stationary_points: Vec<StationaryPoint> = stationary_points.to_vec();
+
+    // Find the maximum delta_psi between two grid points
     let n_z_grid: usize = psi_2d.nrows();
     let n_r_grid: usize = psi_2d.ncols();
     let mut max_psi_separation: f64 = 0.0_f64;
@@ -57,11 +59,19 @@ pub fn flood_fill_mask(
             max_psi_separation = max_psi_separation.max((psi_2d[(i_z + 1, i_r)] - psi_2d[(i_z, i_r)]).abs());
         }
     }
-    // println!("max_psi_separation = {}", max_psi_separation);
+
+    // Filter out non-saddle points, e.g. magnetic axis
     stationary_points.retain(|stationary_point| {
         let saddle_point_test: bool = stationary_point.hessian_determinant < 0.0;
-        let near_boundary_test: bool = (stationary_point.psi - psi_b).abs() / psi_b.abs() < 2.0 * max_psi_separation;
-        saddle_point_test && near_boundary_test
+
+        saddle_point_test
+    });
+
+    // Filter out saddle points which are not near the boundary, e.g. inside PF coils
+    stationary_points.retain(|stationary_point| {
+        let near_boundary_test: bool = (stationary_point.psi - psi_b).abs() < 2.0 * max_psi_separation;
+
+        near_boundary_test
     });
 
     // Label points we should not cross
