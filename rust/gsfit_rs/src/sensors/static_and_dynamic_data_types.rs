@@ -12,7 +12,7 @@ pub struct SensorsStatic {
     pub geometry_z: Array1<f64>,                  // shape = [n_sensors]; only needed for certain sensor types
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SensorsDynamic {
     pub measured: Array1<f64>, // shape = [n_sensors]
 }

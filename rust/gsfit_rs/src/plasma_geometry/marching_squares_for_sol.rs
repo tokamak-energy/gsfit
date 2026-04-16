@@ -81,8 +81,7 @@ pub fn marching_squares_for_sol(
     for i_z in 0..n_z {
         for i_r in 0..n_r - 1 {
             // Look for where `mask_2d` changes from 0 to 1 or 1 to 0
-            if mask_2d[(i_z, i_r)] + mask_2d[(i_z, i_r + 1)] > 0.9 && mask_2d[(i_z, i_r)] + mask_2d[(i_z, i_r + 1)] < 1.1 {
-                // if abs_diff_eq!(mask_2d[(i_z, i_r)] + mask_2d[(i_z, i_r + 1)], 1.0) {
+            if abs_diff_eq!(mask_2d[(i_z, i_r)] + mask_2d[(i_z, i_r + 1)], 1.0) {
                 let left_r: f64 = r[i_r];
                 let left_psi: f64 = psi_2d[(i_z, i_r)];
                 let left_d_psi_d_r: f64 = bz_2d[(i_z, i_r)] * (2.0 * PI * r[i_r]);
