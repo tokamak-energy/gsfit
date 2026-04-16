@@ -7,6 +7,7 @@ from . import two_d_passives
 from . import two_d_plasma
 from . import two_d_plasma_grid
 from . import two_d_setup_plots
+from . import two_d_grid
 
 # Define public interfaces
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     "two_d_plasma_grid",
     "two_d_plasma",
     "two_d_setup_plots",
+    "two_d_grid",
 ]

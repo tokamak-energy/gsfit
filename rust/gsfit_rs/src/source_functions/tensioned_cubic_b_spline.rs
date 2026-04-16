@@ -448,7 +448,7 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
         let f_large: Array1<f64> = self.source_function_value_single_dof(&psi_n_large, i_dof);
 
         // Calculate the cumulative integral for the entire "large" function
-        let mut cumulative_integral_large: Array1<f64> = Array1::from_elem(n_psi_n_large, f64::NAN);
+        let mut cumulative_integral_large: Array1<f64> = Array1::zeros(n_psi_n_large);
         for i_psi_n in 1..n_psi_n_large {
             let dx: f64 = psi_n_large[i_psi_n] - psi_n_large[i_psi_n - 1];
             let trap: f64 = 0.5 * dx * (f_large[i_psi_n] + f_large[i_psi_n - 1]);

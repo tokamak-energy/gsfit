@@ -2,8 +2,9 @@ use crate::coils::Coils;
 use crate::grad_shafranov::GsSolution;
 use crate::greens::{greens_b, greens_d_b_d_z, greens_d2_psi_d_r2, greens_psi};
 use crate::passives::Passives;
-use crate::plasma_geometry::marching_squares::MarchingContour;
+use crate::plasma_geometry::MarchingContour;
 use crate::plasma_geometry::marching_squares::marching_squares;
+use crate::plasma_geometry::marching_squares_for_sol::marching_squares_for_sol;
 use crate::source_functions::SourceFunctionTraits;
 use crate::source_functions::{EfitPolynomial, LiuqePolynomial, TensionedCubicBSpline};
 use contour::ContourBuilder;
@@ -969,6 +970,13 @@ impl Plasma {
         let mut rho_tor_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut rho_pol_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
 
+        let mut hfs_legs_r: Vec<Array1<f64>> = Vec::with_capacity(n_time);
+        let mut hfs_legs_z: Vec<Array1<f64>> = Vec::with_capacity(n_time);
+        let mut hfs_legs_n: Vec<usize> = vec![0; n_time];
+        let mut lfs_legs_r: Vec<Array1<f64>> = Vec::with_capacity(n_time);
+        let mut lfs_legs_z: Vec<Array1<f64>> = Vec::with_capacity(n_time);
+        let mut lfs_legs_n: Vec<usize> = vec![0; n_time];
+
         let i_rod: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").get("value").unwrap_array1();
 
         let mut boundary_contours: Vec<MarchingContour> = Vec::with_capacity(n_time);
@@ -983,6 +991,10 @@ impl Plasma {
                 };
                 boundary_contours.push(boundary_contour_empty);
                 xpt_diverted.push(false);
+                hfs_legs_r.push(Array1::from_elem(0, f64::NAN));
+                hfs_legs_z.push(Array1::from_elem(0, f64::NAN));
+                lfs_legs_r.push(Array1::from_elem(0, f64::NAN));
+                lfs_legs_z.push(Array1::from_elem(0, f64::NAN));
                 continue 'time_loop;
             }
 
@@ -1111,6 +1123,10 @@ impl Plasma {
                     "equilibrium_post_processor: time slice {} has empty boundary contour, skipping further post-processing for this time slice",
                     i_time
                 );
+                hfs_legs_r.push(Array1::from_elem(0, f64::NAN));
+                hfs_legs_z.push(Array1::from_elem(0, f64::NAN));
+                lfs_legs_r.push(Array1::from_elem(0, f64::NAN));
+                lfs_legs_z.push(Array1::from_elem(0, f64::NAN));
                 continue 'time_loop;
             }
 
@@ -1197,6 +1213,45 @@ impl Plasma {
 
             let beta_n_this_time_slice: f64 = epp_beta_n(beta_t_this_time_slice, r_minor[i_time], bt_vac_at_r_geo[i_time], ip[i_time]);
             beta_n[i_time] = beta_n_this_time_slice;
+
+            // Find SOL boundary contour
+            if gs_solutions[i_time].xpt_diverted {
+                let (hfs_leg_r, hfs_leg_z, lfs_leg_r, lfs_leg_z): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>) =
+                    epp_scrape_off_layer(&gs_solutions[i_time], &self);
+                hfs_legs_r.push(hfs_leg_r);
+                hfs_legs_z.push(hfs_leg_z);
+                lfs_legs_r.push(lfs_leg_r);
+                lfs_legs_z.push(lfs_leg_z);
+            } else {
+                let hfs_leg_r: Array1<f64> = Array1::from_elem(0, f64::NAN);
+                let hfs_leg_z: Array1<f64> = Array1::from_elem(0, f64::NAN);
+                let lfs_leg_r: Array1<f64> = Array1::from_elem(0, f64::NAN);
+                let lfs_leg_z: Array1<f64> = Array1::from_elem(0, f64::NAN);
+                hfs_legs_r.push(hfs_leg_r);
+                hfs_legs_z.push(hfs_leg_z);
+                lfs_legs_r.push(lfs_leg_r);
+                lfs_legs_z.push(lfs_leg_z);
+            }
+        }
+
+        // Find the longest div leg
+        let hfs_leg_n_max: usize = hfs_legs_r.iter().map(|hfs_leg_r_local| hfs_leg_r_local.len()).max().unwrap();
+        let lfs_leg_n_max: usize = lfs_legs_r.iter().map(|lfs_leg_r_local| lfs_leg_r_local.len()).max().unwrap();
+        let mut hfs_leg_r_array: Array2<f64> = Array2::from_elem((n_time, hfs_leg_n_max), f64::NAN);
+        let mut hfs_leg_z_array: Array2<f64> = Array2::from_elem((n_time, hfs_leg_n_max), f64::NAN);
+        let mut lfs_leg_r_array: Array2<f64> = Array2::from_elem((n_time, lfs_leg_n_max), f64::NAN);
+        let mut lfs_leg_z_array: Array2<f64> = Array2::from_elem((n_time, lfs_leg_n_max), f64::NAN);
+        for i_time in 0..n_time {
+            let hfs_leg_r_local: &Array1<f64> = &hfs_legs_r[i_time];
+            let hfs_leg_z_local: &Array1<f64> = &hfs_legs_z[i_time];
+            let lfs_leg_r_local: &Array1<f64> = &lfs_legs_r[i_time];
+            let lfs_leg_z_local: &Array1<f64> = &lfs_legs_z[i_time];
+            hfs_leg_r_array.slice_mut(s![i_time, 0..hfs_leg_r_local.len()]).assign(hfs_leg_r_local);
+            hfs_leg_z_array.slice_mut(s![i_time, 0..hfs_leg_z_local.len()]).assign(hfs_leg_z_local);
+            lfs_leg_r_array.slice_mut(s![i_time, 0..lfs_leg_r_local.len()]).assign(lfs_leg_r_local);
+            lfs_leg_z_array.slice_mut(s![i_time, 0..lfs_leg_z_local.len()]).assign(lfs_leg_z_local);
+            hfs_legs_n[i_time] = hfs_leg_r_local.len();
+            lfs_legs_n[i_time] = lfs_leg_r_local.len();
         }
 
         let max_n_boundary: usize = boundary_contours.iter().map(|boundary_contour_local| boundary_contour_local.n).max().unwrap();
@@ -1306,6 +1361,73 @@ impl Plasma {
         self.results.get_or_insert("xpoints").get_or_insert("upper").insert("z", xpt_upper_z);
         self.results.get_or_insert("xpoints").get_or_insert("lower").insert("r", xpt_lower_r);
         self.results.get_or_insert("xpoints").get_or_insert("lower").insert("z", xpt_lower_z);
+
+        let mut hfs_strike_point_r: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+        let mut hfs_strike_point_z: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+        let mut lfs_strike_point_r: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+        let mut lfs_strike_point_z: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+        for i_time in 0..n_time {
+            // Skip if there are no points in the legs
+            if hfs_legs_n[i_time] == 0 || lfs_legs_n[i_time] == 0 {
+                continue;
+            }
+            hfs_strike_point_r[i_time] = hfs_leg_r_array[[i_time, hfs_legs_n[i_time] - 1]];
+            hfs_strike_point_z[i_time] = hfs_leg_z_array[[i_time, hfs_legs_n[i_time] - 1]];
+            lfs_strike_point_r[i_time] = lfs_leg_r_array[[i_time, lfs_legs_n[i_time] - 1]];
+            lfs_strike_point_z[i_time] = lfs_leg_z_array[[i_time, lfs_legs_n[i_time] - 1]];
+        }
+
+        // Scrape-off layer
+        self.results
+            .get_or_insert("sol")
+            .get_or_insert("hfs")
+            .get_or_insert("contour")
+            .insert("r", hfs_leg_r_array.clone()); // shape = (n_time, n_points)
+        self.results
+            .get_or_insert("sol")
+            .get_or_insert("hfs")
+            .get_or_insert("contour")
+            .insert("z", hfs_leg_z_array.clone());
+        self.results
+            .get_or_insert("sol")
+            .get_or_insert("hfs")
+            .get_or_insert("contour")
+            .insert("n", hfs_legs_n);
+        self.results
+            .get_or_insert("sol")
+            .get_or_insert("hfs")
+            .get_or_insert("strike_point")
+            .insert("r", hfs_strike_point_r);
+        self.results
+            .get_or_insert("sol")
+            .get_or_insert("hfs")
+            .get_or_insert("strike_point")
+            .insert("z", hfs_strike_point_z);
+        self.results
+            .get_or_insert("sol")
+            .get_or_insert("lfs")
+            .get_or_insert("contour")
+            .insert("r", lfs_leg_r_array.clone());
+        self.results
+            .get_or_insert("sol")
+            .get_or_insert("lfs")
+            .get_or_insert("contour")
+            .insert("z", lfs_leg_z_array.clone());
+        self.results
+            .get_or_insert("sol")
+            .get_or_insert("lfs")
+            .get_or_insert("contour")
+            .insert("n", lfs_legs_n);
+        self.results
+            .get_or_insert("sol")
+            .get_or_insert("lfs")
+            .get_or_insert("strike_point")
+            .insert("r", lfs_strike_point_r);
+        self.results
+            .get_or_insert("sol")
+            .get_or_insert("lfs")
+            .get_or_insert("strike_point")
+            .insert("z", lfs_strike_point_z);
     }
 }
 
@@ -1574,10 +1696,86 @@ fn epp_flux_surfaces(
     return flux_surfaces;
 }
 
-fn epp_scrape_off_layer(gs_solution: &GsSolution) -> (Array1<f64>, Array1<f64>) {
-    let psi_b: f64 = gs_solution.psi_b;
+fn epp_scrape_off_layer(gs_solution: &GsSolution, plasma: &Plasma) -> (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>) {
+    // First we need to find the active x-point
+    use crate::plasma_geometry::StationaryPoint;
+    // use crate::plasma_geometry::flood_fill_mask;
+    // use ndarray::array;
 
-    unimplemented!("scrape-off layer");
+    // Find the active x-point
+    // TODO: it would be better to keep track of the active x-point, so that we don't need to search
+    // Note: we can use an exact match on psi, because psi_b was taken from the `stationary_points` implementation, so will be bitwise identical
+    let psi_b: f64 = gs_solution.psi_b;
+    let stationary_points: &Vec<StationaryPoint> = &gs_solution.stationary_points;
+    let xpt: &StationaryPoint = stationary_points
+        .iter()
+        .find(|stationary_point| stationary_point.psi == psi_b)
+        .expect("Active x-point not found in stationary points");
+
+    // Find a point in the private flux region
+    // TODO: 0.5 cm is a bit arbitrary. How can we make it better?
+    // let point_in_private_flux_region_r: f64 = xpt.r;
+    // let point_in_private_flux_region_z: f64 = xpt.z + 2.5 * 1.25e-2 * xpt.z.signum();  // CHECK THE 1.25e-2 FACTOR!!!!!!!!!!!!!!!!!!!!!
+
+    // Get geometry
+    let r: Array1<f64> = plasma.results.get("grid").get("r").unwrap_array1();
+    let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
+    let psi_2d: Array2<f64> = gs_solution.psi_2d.to_owned();
+    let br_2d: Array2<f64> = gs_solution.br_2d.to_owned();
+    let bz_2d: Array2<f64> = gs_solution.bz_2d.to_owned();
+    let vessel_r: Array1<f64> = plasma.results.get("vessel").get("r").unwrap_array1();
+    let vessel_z: Array1<f64> = plasma.results.get("vessel").get("z").unwrap_array1();
+    let n_r: usize = r.len();
+    let n_z: usize = z.len();
+    let mag_r: f64 = gs_solution.r_mag;
+    let mag_z: f64 = gs_solution.z_mag;
+
+    // For `marching_squares_for_sol` we don't segment the mask into core and private flux regions, this is done in `marching_squares_for_sol`
+    let mut mask: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    for i_r in 0..n_r {
+        for i_z in 0..n_z {
+            if psi_2d[(i_z, i_r)] > psi_b {
+                mask[(i_z, i_r)] = 1.0;
+            } else {
+                mask[(i_z, i_r)] = 0.0;
+            }
+        }
+    }
+
+    // TODO: we can use the magnetic axis, just reverse the dot product - so we don't need (point_in_private_flux_region_r, point_in_private_flux_region_z)
+    // let (div_leg_1, div_leg_2): (crate::plasma_geometry::marching_squares_for_sol::MarchingContour, crate::plasma_geometry::marching_squares_for_sol::MarchingContour) = marching_squares_for_sol(&r, &z, &psi_2d, &br_2d, &bz_2d, psi_b, &mask, Some(xpt.r), Some(xpt.z), point_in_private_flux_region_r, point_in_private_flux_region_z, &vessel_r, &vessel_z);
+    let (hfs_leg, lfs_leg): (
+        Result<crate::plasma_geometry::MarchingContour, String>,
+        Result<crate::plasma_geometry::MarchingContour, String>,
+    ) = marching_squares_for_sol(
+        &r,
+        &z,
+        &psi_2d,
+        &br_2d,
+        &bz_2d,
+        psi_b,
+        &mask,
+        Some(xpt.r),
+        Some(xpt.z),
+        mag_r,
+        mag_z,
+        &vessel_r,
+        &vessel_z,
+    );
+
+    match (hfs_leg, lfs_leg) {
+        (Ok(hfs_leg), Ok(lfs_leg)) => {
+            return (hfs_leg.r, hfs_leg.z, lfs_leg.r, lfs_leg.z);
+        }
+        _ => {
+            return (
+                Array1::from_elem(0, f64::NAN),
+                Array1::from_elem(0, f64::NAN),
+                Array1::from_elem(0, f64::NAN),
+                Array1::from_elem(0, f64::NAN),
+            );
+        }
+    }
 }
 
 fn epp_flux_toroidal_profile(q_profile: &Array1<f64>, psi_profile: &Array1<f64>) -> Array1<f64> {

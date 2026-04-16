@@ -896,7 +896,7 @@ impl<'a> GsSolution<'a> {
                 // TODO: should there be vertical stability for pressure sensors? I don't think so?
 
                 // Store sensor values
-                s_measured[i_constraint] = pressure_sensors_dynamic.measured[i_sensor]; // Magnetic axis value is always zero
+                s_measured[i_constraint] = pressure_sensors_dynamic.measured[i_sensor];
 
                 // Store weights
                 constraint_weights[i_constraint] =

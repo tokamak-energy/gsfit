@@ -24,6 +24,8 @@ use std::collections::VecDeque;
 /// # Returns
 /// * `mask_2d` - 1.0 = inside plasma boundary, 0.0 for points outside plasma boundary; f64 to make multiplication easier, shape = (n_z, n_r), dimensionless
 ///
+/// # Algorithm
+/// This is a Breadth-First Search (BFS) flood fill using 4 neighbour connectivity
 pub fn flood_fill_mask(
     r: &Array1<f64>,
     z: &Array1<f64>,
@@ -38,14 +40,38 @@ pub fn flood_fill_mask(
     // TODO 1: Is there a problem left/right of the x-point?
     // TODO 2: Perhaps start the fill between the x-point and the previous magnetic axis location,
     // TODO 2: this way if the magnetic axis moves vertically a lot we won't lose the plasma?
-
     // TODO 3: The test for crossing the saddle point should only apply if the saddle point is outside
 
-    // Filter stationary points to only include saddle points
+    // Make a mutable copy of the `stationary_points` vector, so that we can filter out points
     let mut stationary_points: Vec<StationaryPoint> = stationary_points.to_vec();
+
+    // Find the maximum delta_psi between two grid points
+    let n_z_grid: usize = psi_2d.nrows();
+    let n_r_grid: usize = psi_2d.ncols();
+    let mut max_psi_separation: f64 = 0.0_f64;
+    for i_z in 0..n_z_grid {
+        for i_r in 0..n_r_grid - 1 {
+            max_psi_separation = max_psi_separation.max((psi_2d[(i_z, i_r + 1)] - psi_2d[(i_z, i_r)]).abs());
+        }
+    }
+    for i_z in 0..n_z_grid - 1 {
+        for i_r in 0..n_r_grid {
+            max_psi_separation = max_psi_separation.max((psi_2d[(i_z + 1, i_r)] - psi_2d[(i_z, i_r)]).abs());
+        }
+    }
+
+    // Filter out non-saddle points, e.g. magnetic axis
     stationary_points.retain(|stationary_point| {
         let saddle_point_test: bool = stationary_point.hessian_determinant < 0.0;
-        return saddle_point_test;
+
+        saddle_point_test
+    });
+
+    // Filter out saddle points which are not near the boundary, e.g. inside PF coils
+    stationary_points.retain(|stationary_point| {
+        let near_boundary_test: bool = (stationary_point.psi - psi_b).abs() < 2.0 * max_psi_separation;
+
+        near_boundary_test
     });
 
     // Label points we should not cross
@@ -133,12 +159,12 @@ pub fn flood_fill_mask(
     }
 
     // Start the flood fill algorithm, going anticlockwise from the magnetic axis
-    // Directions: right, up, left, down (anticlockwise)
+    // Directions: right, down, left, up (anticlockwise)
     let directions: [(isize, isize); 4] = [
         (0, 1),  // right (i_z, i_r+1)
-        (-1, 0), // up    (i_z-1, i_r)
+        (-1, 0), // down  (i_z-1, i_r)
         (0, -1), // left  (i_z, i_r-1)
-        (1, 0),  // down  (i_z+1, i_r)
+        (1, 0),  // up    (i_z+1, i_r)
     ];
 
     let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
@@ -146,13 +172,13 @@ pub fn flood_fill_mask(
     mask_2d[(i_z_nearest_mag, i_r_nearest_mag)] = 1.0;
 
     while let Some((i_z, i_r)) = queue.pop_front() {
-        for &(dz, dr) in &directions {
+        'loop_over_directions: for &(dz, dr) in &directions {
             let new_i_z: isize = i_z as isize + dz;
             let new_i_r: isize = i_r as isize + dr;
 
             // Check bounds
             if new_i_z < 0 || new_i_z >= n_z as isize || new_i_r < 0 || new_i_r >= n_r as isize {
-                continue;
+                continue 'loop_over_directions;
             }
 
             let new_i_z: usize = new_i_z as usize;
@@ -161,13 +187,13 @@ pub fn flood_fill_mask(
             // Respect the vessel wall during the flood fill
             // This prevents the fill from painting the centre post and wrapping all the way round to the opposite Z
             if !mask_vessel_2d[(new_i_z, new_i_r)] {
-                continue;
+                continue 'loop_over_directions;
             }
 
             // Check if we are going past a saddle point
             if indices_do_not_cross.contains_key(&(new_i_z, new_i_r)) {
                 // Don't add this point to the `mask`, and don't add it to the `queue`
-                continue;
+                continue 'loop_over_directions;
             }
 
             if mask_2d[(new_i_z, new_i_r)] == 0.0 && psi_2d[(new_i_z, new_i_r)] > psi_b {
@@ -180,12 +206,13 @@ pub fn flood_fill_mask(
         }
     }
 
-    // Ensure points outside the vessel are masked out (defensive, should already be zero)
-    for (mask_val, inside_vessel) in mask_2d.iter_mut().zip(mask_vessel_2d.iter()) {
-        if !inside_vessel {
-            *mask_val = 0.0;
-        }
-    }
+    // Note: this is handled in the flood fill while loop.
+    // // Ensure points outside the vessel are masked out (defensive, should already be zero)
+    // for (mask_val, inside_vessel) in mask_2d.iter_mut().zip(mask_vessel_2d.iter()) {
+    //     if !inside_vessel {
+    //         *mask_val = 0.0;
+    //     }
+    // }
 
     mask_2d
 }
@@ -200,8 +227,8 @@ fn test_flood_fill_mask() {
     let z: Array1<f64> = Array1::linspace(-1.0, 1.0, n_z);
 
     // Load `psi_2d` from `test_data` file
-    let test_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/psi2d.txt");
-    let data_str = fs::read_to_string(test_data_path).expect("Failed to read test data file");
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/psi2d.txt");
+    let data_str: String = fs::read_to_string(test_data_path).expect("Failed to read test data file");
     let v: Vec<f64> = data_str
         .lines()
         .map(|line| line.trim().parse::<f64>().expect("test_flood_fill_mask: Failed to read `psi_2d` from file"))
@@ -210,8 +237,8 @@ fn test_flood_fill_mask() {
     let psi_2d: Array2<f64> = Array2::from_shape_vec((n_z, n_r), v).expect("Failed to create array from test data");
 
     // Load `vessel_r` from `test_data` file
-    let test_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/vessel_r.txt");
-    let data_str = fs::read_to_string(test_data_path).expect("Failed to read test data file");
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/vessel_r.txt");
+    let data_str: String = fs::read_to_string(test_data_path).expect("Failed to read test data file");
     let v: Vec<f64> = data_str
         .lines()
         .map(|line| line.trim().parse::<f64>().expect("test_flood_fill_mask: Failed to read `vessel_r` from file"))
@@ -220,8 +247,8 @@ fn test_flood_fill_mask() {
     let vessel_r: Array1<f64> = Array1::from_shape_vec(150, v).expect("Failed to create array from test data");
 
     // Load `vessel_z` from `test_data` file
-    let test_data_path = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/vessel_z.txt");
-    let data_str = fs::read_to_string(test_data_path).expect("Failed to read test data file");
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/vessel_z.txt");
+    let data_str: String = fs::read_to_string(test_data_path).expect("Failed to read test data file");
     let v: Vec<f64> = data_str
         .lines()
         .map(|line| line.trim().parse::<f64>().expect("test_flood_fill_mask: Failed to read `vessel_z` from file"))
@@ -238,9 +265,9 @@ fn test_flood_fill_mask() {
 
     let mask_2d: Array2<f64> = flood_fill_mask(&r, &z, &psi_2d, psi_b, &stationary_points, mag_r_previous, mag_z_previous, &vessel_r, &vessel_z);
 
-    let painted_cells: f64 = mask_2d.sum();
+    let total_number_of_painted_cells: f64 = mask_2d.sum();
     assert_eq!(
-        painted_cells, 2776.0,
+        total_number_of_painted_cells, 2776.0,
         "test_flood_fill_mask: mask should only paint the plasma interior (2776 cells)",
     );
 
