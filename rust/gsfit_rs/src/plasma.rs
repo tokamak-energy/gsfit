@@ -1763,15 +1763,18 @@ fn epp_scrape_off_layer(gs_solution: &GsSolution, plasma: &Plasma) -> (Array1<f6
         &vessel_z,
     );
 
-    if hfs_leg.is_ok() & lfs_leg.is_ok() {
-        return (hfs_leg.clone().unwrap().r, hfs_leg.unwrap().z, lfs_leg.clone().unwrap().r, lfs_leg.unwrap().z);
-    } else {
-        return (
-            Array1::from_elem(0, f64::NAN),
-            Array1::from_elem(0, f64::NAN),
-            Array1::from_elem(0, f64::NAN),
-            Array1::from_elem(0, f64::NAN),
-        );
+    match (hfs_leg, lfs_leg) {
+        (Ok(hfs_leg), Ok(lfs_leg)) => {
+            return (hfs_leg.r, hfs_leg.z, lfs_leg.r, lfs_leg.z);
+        }
+        _ => {
+            return (
+                Array1::from_elem(0, f64::NAN),
+                Array1::from_elem(0, f64::NAN),
+                Array1::from_elem(0, f64::NAN),
+                Array1::from_elem(0, f64::NAN),
+            );
+        }
     }
 }
 
