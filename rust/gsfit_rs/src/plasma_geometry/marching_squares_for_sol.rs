@@ -232,7 +232,8 @@ pub fn marching_squares_for_sol(
                 cubic_interpolation(left_r, left_psi, left_d_psi_d_r, right_r, right_psi, right_d_psi_d_r, psi_b);
             if cubic_interpolation_or_error.is_ok() {
                 let cubic_interpolation_r: Array1<f64> = cubic_interpolation_or_error.unwrap();
-                for i_r in 0..cubic_interpolation_r.len() {
+                let n_cubic_interpolation_r: usize = cubic_interpolation_r.len();
+                for i_r in 0..n_cubic_interpolation_r {
                     boundary_points_near_xpt_r.push(cubic_interpolation_r[i_r]);
                     boundary_points_near_xpt_z.push(z[i_z_from]);
                     boundary_points_near_xpt_edge.push(cell);
@@ -250,7 +251,8 @@ pub fn marching_squares_for_sol(
                 cubic_interpolation(bottom_z, bottom_psi, bottom_d_psi_d_z, top_z, top_psi, top_d_psi_d_z, psi_b);
             if cubic_interpolation_or_error.is_ok() {
                 let cubic_interpolation_z: Array1<f64> = cubic_interpolation_or_error.unwrap();
-                for i_z in 0..cubic_interpolation_z.len() {
+                let n_cubic_interpolation_z: usize = cubic_interpolation_z.len();
+                for i_z in 0..n_cubic_interpolation_z {
                     boundary_points_near_xpt_r.push(r[i_r_from]);
                     boundary_points_near_xpt_z.push(cubic_interpolation_z[i_z]);
                     boundary_points_near_xpt_edge.push(cell);
