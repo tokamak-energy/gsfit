@@ -1,11 +1,11 @@
 use super::MarchingContour;
 use super::cubic_interpolation::cubic_interpolation;
 use approx::abs_diff_eq;
+use core::f64;
 use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Contains, Coord, Line, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
-use core::f64;
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
@@ -171,8 +171,11 @@ pub fn marching_squares_for_sol(
     let i_r_nearest_xpt: usize = (r - xpt_r).abs().argmin().unwrap();
     let i_z_nearest_xpt: usize = (z - xpt_z).abs().argmin().unwrap();
     // Guard against underflow, when x-point is on grid boundary
-    if i_r_nearest_xpt==0 || i_r_nearest_xpt==n_r-1 || i_z_nearest_xpt==0 || i_z_nearest_xpt==n_z-1 {
-        return (Err("X-point is on the grid boundary, which is not supported".to_string()), Err("X-point is on the grid boundary, which is not supported".to_string()));
+    if i_r_nearest_xpt == 0 || i_r_nearest_xpt == n_r - 1 || i_z_nearest_xpt == 0 || i_z_nearest_xpt == n_z - 1 {
+        return (
+            Err("X-point is on the grid boundary, which is not supported".to_string()),
+            Err("X-point is on the grid boundary, which is not supported".to_string()),
+        );
     }
 
     // Find the four corner grid points surrounding the x-point
@@ -316,7 +319,10 @@ pub fn marching_squares_for_sol(
     }
 
     if boundary_points_near_xpt_r_sorted.len() < 2 {
-        return (Err("Less than 2 boundary points found near x-point, cannot determine leg directions".to_string()), Err("Less than 2 boundary points found near x-point, cannot determine leg directions".to_string()));
+        return (
+            Err("Less than 2 boundary points found near x-point, cannot determine leg directions".to_string()),
+            Err("Less than 2 boundary points found near x-point, cannot determine leg directions".to_string()),
+        );
     }
 
     // The x-point cell, used as the "previous cell" for the first step of contour tracing
