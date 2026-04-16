@@ -5,6 +5,7 @@ use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Contains, Coord, Line, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
+use core::f64;
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
@@ -68,7 +69,7 @@ pub fn marching_squares_for_sol(
     mag_z: f64,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
-) -> (MarchingContour, MarchingContour) {
+) -> (Result<MarchingContour, String>, Result<MarchingContour, String>) {
     let n_z: usize = z.len();
     let n_r: usize = r.len();
 
@@ -152,12 +153,12 @@ pub fn marching_squares_for_sol(
 
     // If empty
     if unsorted_boundary_points.is_empty() {
-        return (empty_marching_contour.clone(), empty_marching_contour);
+        return (Err("No boundary points found".to_string()), Err("No boundary points found".to_string()));
     }
 
     // If x-point is not provided, we are limited
     if xpt_r_or_none.is_none() || xpt_z_or_none.is_none() {
-        return (empty_marching_contour.clone(), empty_marching_contour);
+        return (Err("X-point not provided".to_string()), Err("X-point not provided".to_string()));
     }
 
     // From now on we are handling an x-point diverted plasma
@@ -169,6 +170,10 @@ pub fn marching_squares_for_sol(
     // Find the closest grid point
     let i_r_nearest_xpt: usize = (r - xpt_r).abs().argmin().unwrap();
     let i_z_nearest_xpt: usize = (z - xpt_z).abs().argmin().unwrap();
+    // Guard against underflow, when x-point is on grid boundary
+    if i_r_nearest_xpt==0 || i_r_nearest_xpt==n_r-1 || i_z_nearest_xpt==0 || i_z_nearest_xpt==n_z-1 {
+        return (Err("X-point is on the grid boundary, which is not supported".to_string()), Err("X-point is on the grid boundary, which is not supported".to_string()));
+    }
 
     // Find the four corner grid points surrounding the x-point
     let i_r_nearest_xpt_left: usize;
@@ -262,19 +267,33 @@ pub fn marching_squares_for_sol(
     let delta_r: f64 = mag_r - xpt_r;
     let delta_z: f64 = mag_z - xpt_z;
     let d_mag: f64 = (delta_r.powi(2) + delta_z.powi(2)).sqrt();
-    let delta_r_unit: f64 = delta_r / d_mag;
-    let delta_z_unit: f64 = delta_z / d_mag;
+    // No need to add guard against zero division, the x-point cannot be exactly on the magnetic axis
+    // * Magnetic axis is local maximum/minimum in psi (positive/negative plasma current)
+    // * X-point is saddle point in psi
+    let delta_r_mag_unit: f64 = delta_r / d_mag;
+    let delta_z_mag_unit: f64 = delta_z / d_mag;
 
-    // The dot_product indicates how much the vector points towards teh magnetic axis
-    // The private flux region is in the opposite direction (later we will reverse the sort)
+    // `dot_product = dot(direction_vector_from_x-point_to_candidate_point,  direction_vector_from_x-point_to_magnetic_axis)`
+    // * `dot_product = 1.0` means candidate point is pointing directly towards the magnetic axis
+    // * `dot_product = -1.0` means candidate point is pointing directly towards the private flux region
     let mut dot_products: Vec<f64> = Vec::new();
-    for i in 0..boundary_points_near_xpt_r.len() {
-        let d_r: f64 = boundary_points_near_xpt_r[i] - xpt_r;
-        let d_z: f64 = boundary_points_near_xpt_z[i] - xpt_z;
-        let d: f64 = (d_r.powi(2) + d_z.powi(2)).sqrt();
-        let d_r_unit: f64 = d_r / d;
-        let d_z_unit: f64 = d_z / d;
-        let dot_product: f64 = d_r_unit * delta_r_unit + d_z_unit * delta_z_unit;
+    'loop_over_boundary_points: for i_point in 0..boundary_points_near_xpt_r.len() {
+        let delta_r: f64 = boundary_points_near_xpt_r[i_point] - xpt_r;
+        let delta_z: f64 = boundary_points_near_xpt_z[i_point] - xpt_z;
+        let d_xpt: f64 = (delta_r.powi(2) + delta_z.powi(2)).sqrt();
+        // It is possible the x-point could be exactly on a grid point
+        // The expected values for dot_product are between -1.0 and 1.0.
+        // So let's set the dot_product value to 1.0, which means it will be discarded in the sorting step
+        // Note: in practice this is extremely unlikely to ever happen
+        if d_xpt.abs() < 1e-12 {
+            dot_products.push(1.0);
+
+            // Go to next candidate point
+            continue 'loop_over_boundary_points;
+        }
+        let delta_r_xpt_unit: f64 = delta_r / d_xpt;
+        let delta_z_xpt_unit: f64 = delta_z / d_xpt;
+        let dot_product: f64 = delta_r_xpt_unit * delta_r_mag_unit + delta_z_xpt_unit * delta_z_mag_unit;
         dot_products.push(dot_product);
     }
 
@@ -353,7 +372,7 @@ pub fn marching_squares_for_sol(
         n_z,
     );
 
-    (hfs_leg, lfs_leg)
+    (Ok(hfs_leg), Ok(lfs_leg))
 }
 
 /// Trace a divertor leg contour using cell-adjacency from the marching squares grid.

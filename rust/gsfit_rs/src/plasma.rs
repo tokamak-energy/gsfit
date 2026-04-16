@@ -10,7 +10,6 @@ use crate::source_functions::{EfitPolynomial, LiuqePolynomial, TensionedCubicBSp
 use contour::ContourBuilder;
 use core::{f64, panic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use faer::rand::rand_core::le;
 use geo::Area;
 use geo::Centroid;
 use geo::{Contains, Coord, LineString, Point, Polygon};
@@ -1745,7 +1744,7 @@ fn epp_scrape_off_layer(gs_solution: &GsSolution, plasma: &Plasma) -> (Array1<f6
 
     // TODO: we can use the magnetic axis, just reverse the dot product - so we don't need (point_in_private_flux_region_r, point_in_private_flux_region_z)
     // let (div_leg_1, div_leg_2): (crate::plasma_geometry::marching_squares_for_sol::MarchingContour, crate::plasma_geometry::marching_squares_for_sol::MarchingContour) = marching_squares_for_sol(&r, &z, &psi_2d, &br_2d, &bz_2d, psi_b, &mask, Some(xpt.r), Some(xpt.z), point_in_private_flux_region_r, point_in_private_flux_region_z, &vessel_r, &vessel_z);
-    let (hfs_leg, lfs_leg): (crate::plasma_geometry::MarchingContour, crate::plasma_geometry::MarchingContour) = marching_squares_for_sol(
+    let (hfs_leg, lfs_leg): (Result<crate::plasma_geometry::MarchingContour, String>, Result<crate::plasma_geometry::MarchingContour, String>) = marching_squares_for_sol(
         &r,
         &z,
         &psi_2d,
@@ -1761,7 +1760,12 @@ fn epp_scrape_off_layer(gs_solution: &GsSolution, plasma: &Plasma) -> (Array1<f6
         &vessel_z,
     );
 
-    (hfs_leg.r, hfs_leg.z, lfs_leg.r, lfs_leg.z)
+    if hfs_leg.is_ok() & lfs_leg.is_ok() {
+        return (hfs_leg.clone().unwrap().r, hfs_leg.unwrap().z, lfs_leg.clone().unwrap().r, lfs_leg.unwrap().z);
+    } else {
+        return (Array1::from_elem(0, f64::NAN), Array1::from_elem(0, f64::NAN), Array1::from_elem(0, f64::NAN), Array1::from_elem(0, f64::NAN));
+    }
+    
 }
 
 fn epp_flux_toroidal_profile(q_profile: &Array1<f64>, psi_profile: &Array1<f64>) -> Array1<f64> {
