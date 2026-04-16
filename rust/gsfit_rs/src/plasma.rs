@@ -2,7 +2,7 @@ use crate::coils::Coils;
 use crate::grad_shafranov::GsSolution;
 use crate::greens::{greens_b, greens_d_b_d_z, greens_d2_psi_d_r2, greens_psi};
 use crate::passives::Passives;
-use crate::plasma_geometry::marching_squares::MarchingContour;
+use crate::plasma_geometry::MarchingContour;
 use crate::plasma_geometry::marching_squares::marching_squares;
 use crate::plasma_geometry::marching_squares_for_sol::marching_squares_for_sol;
 use crate::source_functions::SourceFunctionTraits;
@@ -1235,12 +1235,12 @@ impl Plasma {
         }
 
         // Find the longest div leg
-        let n_div_leg_1_max: usize = hfs_legs_r.iter().map(|hfs_leg_r_local| hfs_leg_r_local.len()).max().unwrap();
-        let n_div_leg_2_max: usize = lfs_legs_r.iter().map(|lfs_leg_r_local| lfs_leg_r_local.len()).max().unwrap();
-        let mut hfs_leg_r_array: Array2<f64> = Array2::from_elem((n_time, n_div_leg_1_max), f64::NAN);
-        let mut hfs_leg_z_array: Array2<f64> = Array2::from_elem((n_time, n_div_leg_1_max), f64::NAN);
-        let mut lfs_leg_r_array: Array2<f64> = Array2::from_elem((n_time, n_div_leg_2_max), f64::NAN);
-        let mut lfs_leg_z_array: Array2<f64> = Array2::from_elem((n_time, n_div_leg_2_max), f64::NAN);
+        let hfs_leg_n_max: usize = hfs_legs_r.iter().map(|hfs_leg_r_local| hfs_leg_r_local.len()).max().unwrap();
+        let lfs_leg_n_max: usize = lfs_legs_r.iter().map(|lfs_leg_r_local| lfs_leg_r_local.len()).max().unwrap();
+        let mut hfs_leg_r_array: Array2<f64> = Array2::from_elem((n_time, hfs_leg_n_max), f64::NAN);
+        let mut hfs_leg_z_array: Array2<f64> = Array2::from_elem((n_time, hfs_leg_n_max), f64::NAN);
+        let mut lfs_leg_r_array: Array2<f64> = Array2::from_elem((n_time, lfs_leg_n_max), f64::NAN);
+        let mut lfs_leg_z_array: Array2<f64> = Array2::from_elem((n_time, lfs_leg_n_max), f64::NAN);
         for i_time in 0..n_time {
             let hfs_leg_r_local: &Array1<f64> = &hfs_legs_r[i_time];
             let hfs_leg_z_local: &Array1<f64> = &hfs_legs_z[i_time];
@@ -1712,7 +1712,7 @@ fn epp_scrape_off_layer(gs_solution: &GsSolution, plasma: &Plasma) -> (Array1<f6
         .find(|stationary_point| stationary_point.psi == psi_b)
         .expect("Active x-point not found in stationary points");
 
-    // Find a point in the prive flux region
+    // Find a point in the private flux region
     // TODO: 0.5 cm is a bit arbitrary. How can we make it better?
     // let point_in_private_flux_region_r: f64 = xpt.r;
     // let point_in_private_flux_region_z: f64 = xpt.z + 2.5 * 1.25e-2 * xpt.z.signum();  // CHECK THE 1.25e-2 FACTOR!!!!!!!!!!!!!!!!!!!!!
