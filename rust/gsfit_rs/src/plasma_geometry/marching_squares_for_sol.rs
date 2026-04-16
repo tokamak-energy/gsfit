@@ -315,6 +315,10 @@ pub fn marching_squares_for_sol(
         boundary_points_near_xpt_edge_sorted.push(boundary_points_near_xpt_edge[i]);
     }
 
+    if boundary_points_near_xpt_r_sorted.len() < 2 {
+        return (Err("Less than 2 boundary points found near x-point, cannot determine leg directions".to_string()), Err("Less than 2 boundary points found near x-point, cannot determine leg directions".to_string()));
+    }
+
     // The x-point cell, used as the "previous cell" for the first step of contour tracing
     let xpt_cell: (usize, usize) = (i_r_nearest_xpt_left, i_z_nearest_xpt_lower);
 
