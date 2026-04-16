@@ -162,11 +162,11 @@ jobs:
           python -m pip uninstall -y pytest-xdist
 
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
-          jupyter nbconvert --clear-output --inplace examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+          jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
 
           # Run the MAST-U FreeGSNKE notebook as a test
           # Note: --nbval-lax ignores minor output differences such as floating point precision; but there is still some comparison with stored outputs
-          python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+          python -m pytest --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
 
           # Make an artifacts directory inside `examples/`
           mkdir -p examples/artifacts
@@ -178,7 +178,7 @@ jobs:
           from nbformat import read, write
           from nbclient import NotebookClient
 
-          src = Path("examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb")
+          src = Path("examples/example_02__mastu__freegsnke_data.ipynb")
           out_dir = Path("examples/artifacts")
           dst = out_dir / f"{src.stem}-executed.ipynb"
 
@@ -290,8 +290,8 @@ jobs:
       - name: Run Jupyter notebook Python tests
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
-          jupyter nbconvert --clear-output --inplace examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
-          python -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+          jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
+          python -m pytest --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
       - name: Run mypy Python tests
         run: mypy python/
 
@@ -408,8 +408,8 @@ jobs:
         #   VCPKG_ROOT: C:/vcpkg
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
-          jupyter nbconvert --clear-output --inplace examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
-          py -3.11 -m pytest --nbval-lax examples/example_02_mastu_with_synthetic_data_from_freegsnke.ipynb
+          jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
+          py -3.11 -m pytest --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
       - name: Run mypy Python tests
         # env:
         #   VCPKG_ROOT: C:/vcpkg
