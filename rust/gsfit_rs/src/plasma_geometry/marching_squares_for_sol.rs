@@ -407,7 +407,7 @@ pub fn sort_boundary_points_version_4(
         });
     }
     let vessel_polygon: Polygon = Polygon::new(
-        LineString::new(vessel_coordinates),
+        LineString::from(vessel_coordinates),
         vec![], // No holes
     );
 
