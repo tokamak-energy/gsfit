@@ -219,7 +219,7 @@ pub fn flood_fill_mask(
 
 #[test]
 fn test_flood_fill_mask() {
-    use std::fs;
+    use crate::npy_reader;
 
     let n_r: usize = 80;
     let n_z: usize = 161;
@@ -227,34 +227,16 @@ fn test_flood_fill_mask() {
     let z: Array1<f64> = Array1::linspace(-1.0, 1.0, n_z);
 
     // Load `psi_2d` from `test_data` file
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/psi2d.txt");
-    let data_str: String = fs::read_to_string(test_data_path).expect("Failed to read test data file");
-    let v: Vec<f64> = data_str
-        .lines()
-        .map(|line| line.trim().parse::<f64>().expect("test_flood_fill_mask: Failed to read `psi_2d` from file"))
-        .collect();
-    assert_eq!(v.len(), 12880, "test_flood_fill_mask: `psi_2d` test data should have 12880 values");
-    let psi_2d: Array2<f64> = Array2::from_shape_vec((n_z, n_r), v).expect("Failed to create array from test data");
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/plasma_geometry/flood_fill_mask/psi_2d.npy");
+    let psi_2d: Array2<f64> = npy_reader::read_npy_2d(std::path::Path::new(test_data_path));
 
     // Load `vessel_r` from `test_data` file
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/vessel_r.txt");
-    let data_str: String = fs::read_to_string(test_data_path).expect("Failed to read test data file");
-    let v: Vec<f64> = data_str
-        .lines()
-        .map(|line| line.trim().parse::<f64>().expect("test_flood_fill_mask: Failed to read `vessel_r` from file"))
-        .collect();
-    assert_eq!(v.len(), 150, "test_flood_fill_mask: `vessel_r` test data should have 150 values");
-    let vessel_r: Array1<f64> = Array1::from_shape_vec(150, v).expect("Failed to create array from test data");
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/plasma_geometry/flood_fill_mask/vessel_r.npy");
+    let vessel_r: Array1<f64> = npy_reader::read_npy_1d(std::path::Path::new(test_data_path));
 
     // Load `vessel_z` from `test_data` file
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/vessel_z.txt");
-    let data_str: String = fs::read_to_string(test_data_path).expect("Failed to read test data file");
-    let v: Vec<f64> = data_str
-        .lines()
-        .map(|line| line.trim().parse::<f64>().expect("test_flood_fill_mask: Failed to read `vessel_z` from file"))
-        .collect();
-    assert_eq!(v.len(), 150, "test_flood_fill_mask: `vessel_z` test data should have 150 values");
-    let vessel_z: Array1<f64> = Array1::from_shape_vec(150, v).expect("Failed to create array from test data");
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/plasma_geometry/flood_fill_mask/vessel_z.npy");
+    let vessel_z: Array1<f64> = npy_reader::read_npy_1d(std::path::Path::new(test_data_path));
 
     let psi_b: f64 = -0.05901706777528778;
     let _xpt_r: f64 = 0.1;

@@ -34,7 +34,7 @@ pub fn find_boundary(
     limit_pts_z: &Array1<f64>,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
-    mag_r_previous: f64, // Note: mag_r and mag_z are from previous iteration; this can be a problem if the magnetic axis moves significantly
+    mag_r_previous: f64, // Note: `mag_r_previous` and `mag_z_previous` are from previous iteration; this can be a problem if the magnetic axis moves significantly
     mag_z_previous: f64, // which can happen when the plasma is significantly displaced vertically from the initial guess location, e.g. during a VDE
 ) -> Result<BoundaryContour, Error> {
     // Find x-points inside the vacuum vessel which could be the plasma boundary

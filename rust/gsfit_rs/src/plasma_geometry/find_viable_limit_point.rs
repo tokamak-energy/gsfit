@@ -1,8 +1,8 @@
 use super::BoundaryContour;
+use super::MarchingContour;
 use super::StationaryPoint;
 use super::bicubic_interpolator::BicubicInterpolator;
 use super::flood_fill_mask::flood_fill_mask;
-use super::MarchingContour;
 use super::marching_squares::marching_squares;
 use core::f64;
 use ndarray::{Array1, Array2};
