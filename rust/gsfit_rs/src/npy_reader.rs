@@ -108,6 +108,7 @@ fn parse_npy_header(bytes: &[u8]) -> (Vec<usize>, usize) {
             (len, 10)
         }
         2 => {
+            assert!(bytes.len() >= 12, "npy_reader: File too small for .npy v2.0 header (need at least 12 bytes, got {})", bytes.len());
             let len: usize = u32::from_le_bytes([bytes[8], bytes[9], bytes[10], bytes[11]]) as usize;
             (len, 12)
         }
@@ -115,12 +116,18 @@ fn parse_npy_header(bytes: &[u8]) -> (Vec<usize>, usize) {
     };
 
     let data_offset: usize = header_start + header_len;
+    assert!(
+        data_offset <= bytes.len(),
+        "npy_reader: File is truncated: header indicates data starts at byte {}, but file is only {} bytes",
+        data_offset,
+        bytes.len()
+    );
     let header_bytes: &[u8] = &bytes[header_start..data_offset];
     let header_str: &str = std::str::from_utf8(header_bytes).expect("npy_reader: Header is not valid UTF-8");
 
     // Parse 'descr' — must be '<f8' (little-endian float64)
     assert!(
-        header_str.contains("'<f8'") || header_str.contains("'=f8'"),
+        header_str.contains("'<f8'"),
         "npy_reader: Only little-endian float64 ('<f8') is supported, got header: {}",
         header_str.trim()
     );
@@ -227,11 +234,9 @@ mod tests {
 
     #[test]
     fn test_read_npy_1d_from_test_data() {
-        let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/masking/vessel_r.npy");
+        let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/plasma_geometry/flood_fill_mask/vessel_r.npy");
         let path: &Path = Path::new(test_data_path);
-        if path.exists() {
-            let v: Array1<f64> = read_npy_1d(path);
-            assert!(v.len() > 0, "npy_reader: vessel_r.npy should not be empty");
-        }
+        let v: Array1<f64> = read_npy_1d(path);
+        assert!(v.len() > 0, "npy_reader: vessel_r.npy should not be empty");
     }
 }
