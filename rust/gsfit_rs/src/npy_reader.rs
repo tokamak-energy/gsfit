@@ -1,7 +1,7 @@
 /// Reader for NumPy `.npy` files (format version 1.0 and 2.0)
 ///
 /// Only supports `<f8` (little-endian float64) arrays with C order (fortran_order = False).
-/// Uses only the standard library — no external crates required.
+/// Uses only the standard library — no additional crates required.
 ///
 /// Reference: https://numpy.org/devdocs/reference/generated/numpy.lib.format.html
 use ndarray::{Array1, Array2};
@@ -202,11 +202,11 @@ mod tests {
     fn test_parse_npy_header() {
         // Construct a minimal valid v1.0 .npy file with a 1D shape (3,)
         let header_str: &str = "{'descr': '<f8', 'fortran_order': False, 'shape': (3,), }";
-        let header_bytes: &[u8] = header_str.as_bytes();
+        let mut header_padded: Vec<u8> = header_str.as_bytes().to_vec();
+        header_padded.push(b'\n');
         // Pad header to align total (10 + header_len) to multiple of 64
-        let total_without_pad: usize = 10 + header_bytes.len();
+        let total_without_pad: usize = 10 + header_padded.len();
         let padded_len: usize = ((total_without_pad + 63) / 64) * 64 - 10;
-        let mut header_padded: Vec<u8> = header_bytes.to_vec();
         header_padded.resize(padded_len, b' ');
 
         let mut file_bytes: Vec<u8> = Vec::new();
