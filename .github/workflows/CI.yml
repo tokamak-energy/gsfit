@@ -166,7 +166,7 @@ jobs:
 
           # Run the MAST-U FreeGSNKE notebook as a test
           # Note: --nbval-lax ignores minor output differences such as floating point precision; but there is still some comparison with stored outputs
-          python -m pytest --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+          python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
 
           # Make an artifacts directory inside `examples/`
           mkdir -p examples/artifacts
@@ -291,7 +291,7 @@ jobs:
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
           jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
-          python -m pytest --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+          python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
       - name: Run mypy Python tests
         run: mypy python/
 
@@ -409,7 +409,7 @@ jobs:
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
           jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
-          py -3.11 -m pytest --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+          py -3.11 -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
       - name: Run mypy Python tests
         # env:
         #   VCPKG_ROOT: C:/vcpkg
