@@ -187,79 +187,131 @@ impl BicubicInterpolator {
     ///   * Minima
     /// * Saddle point
     /// * Inflection point
-    pub fn find_stationary_point(&self, x_start: f64, y_start: f64, tol: f64, max_iter: usize) -> Result<BicubicStationaryPoint, String> {
-        let mut x: f64 = x_start;
-        let mut y: f64 = y_start;
+    pub fn find_stationary_point(&self, tol: f64, max_iter: usize) -> Result<BicubicStationaryPoint, String> {
+        // Linear interpolation using the corner values, to give an initial guess for the stationary point
+        // Approximate `d_f_d_x` and `d_f_d_y` as linear functions of `(x, y)` using corner values:
+        //   d_f_d_x(x, y) ≈ g_x_00 + (g_x_10 - g_x_00) * x + (g_x_01 - g_x_00) * y = 0
+        //   d_f_d_y(x, y) ≈ g_y_00 + (g_y_10 - g_y_00) * x + (g_y_01 - g_y_00) * y = 0
+        // Solve this 2x2 linear system via Cramer's rule
+        let corner_00: BicubicValueAndDerivatives = self.value_and_derivatives(0.0, 0.0); // (left, bottom)
+        let corner_10: BicubicValueAndDerivatives = self.value_and_derivatives(1.0, 0.0); // (right, bottom)
+        let corner_01: BicubicValueAndDerivatives = self.value_and_derivatives(0.0, 1.0); // (left, top)
 
-        let in_bounds = |value: f64| value >= 0.0 && value <= 1.0;
-        if !in_bounds(x) || !in_bounds(y) {
-            x = 0.5;
-            y = 0.5;
+        let a_1: f64 = corner_10.d_f_d_x - corner_00.d_f_d_x;
+        let a_2: f64 = corner_01.d_f_d_x - corner_00.d_f_d_x;
+        let b_1: f64 = corner_10.d_f_d_y - corner_00.d_f_d_y;
+        let b_2: f64 = corner_01.d_f_d_y - corner_00.d_f_d_y;
+        let det_linear: f64 = a_1 * b_2 - a_2 * b_1;
+
+        // Give (x, y) a fallback value at the centre of the cell, in case the linear solver fails
+        // TODO: do we need the fallback value? If the linear solver fails perhaps there naturally isn't a stationary point and we should just exit?
+        let mut x: f64 = 0.5;
+        let mut y: f64 = 0.5;
+        if det_linear.abs() > f64::EPSILON {
+            let x_linear: f64 = (-corner_00.d_f_d_x * b_2 + corner_00.d_f_d_y * a_2) / det_linear;
+            let y_linear: f64 = (-corner_00.d_f_d_y * a_1 + corner_00.d_f_d_x * b_1) / det_linear;
+            if (0.0..=1.0).contains(&x_linear) && (0.0..=1.0).contains(&y_linear) {
+                x = x_linear;
+                y = y_linear;
+
+                // println!("x_linear = {x_linear}, y_linear = {y_linear}");
+            }
         }
 
         let bicubic_value_and_derivatives: BicubicValueAndDerivatives = self.value_and_derivatives(x, y);
         let mut f: f64 = bicubic_value_and_derivatives.f;
-        let mut gx: f64 = bicubic_value_and_derivatives.d_f_d_x;
-        let mut gy: f64 = bicubic_value_and_derivatives.d_f_d_y;
-        let mut hxx: f64 = bicubic_value_and_derivatives.d2_f_d_x2;
-        let mut hxy: f64 = bicubic_value_and_derivatives.d2_f_d_x_d_y;
-        let mut hyy: f64 = bicubic_value_and_derivatives.d2_f_d_y2;
+        let mut g_x: f64 = bicubic_value_and_derivatives.d_f_d_x;
+        let mut g_y: f64 = bicubic_value_and_derivatives.d_f_d_y;
+        let mut h_x_x: f64 = bicubic_value_and_derivatives.d2_f_d_x2;
+        let mut h_x_y: f64 = bicubic_value_and_derivatives.d2_f_d_x_d_y;
+        let mut h_y_y: f64 = bicubic_value_and_derivatives.d2_f_d_y2;
 
-        let mut gnorm: f64 = (gx * gx + gy * gy).sqrt();
+        // "gradient norm" = L2 normalisation
+        let mut g_norm: f64 = (g_x * g_x + g_y * g_y).sqrt();
+
+        // Choosing the convergence criteria is actually quite tricky:
+        // * Testing against the absolute gradient norm `g_norm <= tol`, is bad because the functions gradients can naturally be small
+        // * Testing against the relative gradient norm `g_norm / g_norm_initial <= tol`, is bad because if we have a "good" initial guess this can make it harder to converge
+        // * Normalising against the function value `g_norm / f.abs() <= tol`, is bad because the function value can be small/zero at the stationary point
 
         for iter in 0..max_iter {
-            if gnorm <= tol {
-                let det: f64 = hxx * hyy - hxy * hxy;
-                let tr: f64 = hxx + hyy;
-                let is_max: bool = det > 0.0 && tr < 0.0;
+            if g_norm <= tol {
+                let hessian_det: f64 = h_x_x * h_y_y - h_x_y * h_x_y;
+                let hessian_trace: f64 = h_x_x + h_y_y;
+                let is_max: bool = hessian_det > 0.0 && hessian_trace < 0.0;
                 return Ok(BicubicStationaryPoint {
                     x,
                     y,
                     f,
                     is_max,
-                    grad_norm: gnorm,
+                    grad_norm: g_norm,
                     iter,
                 });
             }
 
-            // Solve Hessian * [dx dy]^T = -grad
-            let det: f64 = hxx * hyy - hxy * hxy;
-            if det.abs() < 1e-14 {
+            // Solve Hessian * [delta_x delta_y]^T = -grad
+            let hessian_det: f64 = h_x_x * h_y_y - h_x_y * h_x_y;
+            if hessian_det.abs() < f64::EPSILON {
                 return Err("Hessian is singular".to_string());
             }
-            let dx: f64 = (-gx * hyy + gy * hxy) / det;
-            let dy: f64 = (gx * hxy - gy * hxx) / det;
+            let delta_x: f64 = (-g_x * h_y_y + g_y * h_x_y) / hessian_det;
+            let delta_y: f64 = (g_x * h_x_y - g_y * h_x_x) / hessian_det;
+
+            // Compute maximum step size that stays within [0, 1] bounds
+            let mut alpha: f64 = 1.0;
+            if delta_x > 0.0 {
+                alpha = alpha.min((1.0 - x) / delta_x);
+            } else if delta_x < 0.0 {
+                alpha = alpha.min(-x / delta_x);
+            }
+            if delta_y > 0.0 {
+                alpha = alpha.min((1.0 - y) / delta_y);
+            } else if delta_y < 0.0 {
+                alpha = alpha.min(-y / delta_y);
+            }
+
+            // // If the step size is effectively zero after boundary clamping,
+            // // the stationary point is at or beyond the cell boundary.
+            // // Accept the current position as the best solution within this cell.
+            // if alpha < 1e-14 {
+            //     let hessian_det: f64 = h_x_x * h_y_y - h_x_y * h_x_y;
+            //     let hessian_trace: f64 = h_x_x + h_y_y;
+            //     let is_max: bool = hessian_det > 0.0 && hessian_trace < 0.0;
+            //     return Ok(BicubicStationaryPoint {
+            //         x,
+            //         y,
+            //         f,
+            //         is_max,
+            //         grad_norm: g_norm,
+            //         iter,
+            //     });
+            // }
 
             // Backtracking to stay inside and reduce ||grad||
-            let mut alpha: f64 = 1.0;
             let mut accepted: bool = false;
-            for _adjust_step_size in 0..20usize {
-                let xn: f64 = x + alpha * dx;
-                let yn: f64 = y + alpha * dy;
-                if !in_bounds(xn) || !in_bounds(yn) {
-                    alpha *= 0.5;
-                    continue;
-                }
+            for _adjust_step_size in 0..30usize {
+                let new_x: f64 = x + alpha * delta_x;
+                let new_y: f64 = y + alpha * delta_y;
 
-                let bicubic_value_and_derivatives: BicubicValueAndDerivatives = self.value_and_derivatives(xn, yn);
-                let f_n: f64 = bicubic_value_and_derivatives.f;
-                let gxn: f64 = bicubic_value_and_derivatives.d_f_d_x;
-                let gyn: f64 = bicubic_value_and_derivatives.d_f_d_y;
-                let hxxn: f64 = bicubic_value_and_derivatives.d2_f_d_x2;
-                let hxyn: f64 = bicubic_value_and_derivatives.d2_f_d_x_d_y;
-                let hyyn: f64 = bicubic_value_and_derivatives.d2_f_d_y2;
+                let bicubic_value_and_derivatives: BicubicValueAndDerivatives = self.value_and_derivatives(new_x, new_y);
+                let new_f: f64 = bicubic_value_and_derivatives.f;
+                let new_g_x: f64 = bicubic_value_and_derivatives.d_f_d_x;
+                let new_g_y: f64 = bicubic_value_and_derivatives.d_f_d_y;
+                let new_h_x_x: f64 = bicubic_value_and_derivatives.d2_f_d_x2;
+                let new_h_x_y: f64 = bicubic_value_and_derivatives.d2_f_d_x_d_y;
+                let new_h_y_y: f64 = bicubic_value_and_derivatives.d2_f_d_y2;
 
-                let gnn: f64 = (gxn * gxn + gyn * gyn).sqrt();
-                if gnn < 0.5 * gnorm {
-                    x = xn;
-                    y = yn;
-                    f = f_n;
-                    gx = gxn;
-                    gy = gyn;
-                    hxx = hxxn;
-                    hxy = hxyn;
-                    hyy = hyyn;
-                    gnorm = gnn;
+                let new_g_norm: f64 = (new_g_x * new_g_x + new_g_y * new_g_y).sqrt();
+                if new_g_norm < g_norm {
+                    x = new_x;
+                    y = new_y;
+                    f = new_f;
+                    g_x = new_g_x;
+                    g_y = new_g_y;
+                    h_x_x = new_h_x_x;
+                    h_x_y = new_h_x_y;
+                    h_y_y = new_h_y_y;
+                    g_norm = new_g_norm;
                     accepted = true;
                     break;
                 }
@@ -341,4 +393,94 @@ fn test_bicubic_interpolation() {
     }
 
     assert_abs_diff_eq!(&f_analytic, &f_interpolated);
+}
+
+#[test]
+fn test_bicubic_find_stationary_point_near_boundary() {
+    // Lazy loading for crates which are only used within the tests
+    use approx::assert_abs_diff_eq;
+
+    // Quadratic peaked at (0.9999, 0.9999), near the cell boundary
+    let x_peak: f64 = 0.9999;
+    let y_peak: f64 = 0.9999;
+
+    let calculate_f = |x: f64, y: f64| -> f64 { -(x - x_peak).powi(2) - (y - y_peak).powi(2) };
+    let calculate_d_f_d_x = |x: f64, _y: f64| -> f64 { -2.0 * (x - x_peak) };
+    let calculate_d_f_d_y = |_x: f64, y: f64| -> f64 { -2.0 * (y - y_peak) };
+    let calculate_d2_f_d_x_d_y = |_x: f64, _y: f64| -> f64 { 0.0 };
+
+    let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+    let mut d_f_d_x: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+    let mut d_f_d_y: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+    let mut d2_f_d_x_d_y: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+
+    let n_x: usize = 2;
+    let n_y: usize = 2;
+    let x_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
+    let y_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
+    for i_x in 0..n_x {
+        for i_y in 0..n_y {
+            f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y]);
+            d_f_d_x[(i_x, i_y)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y]);
+            d_f_d_y[(i_x, i_y)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y]);
+            d2_f_d_x_d_y[(i_x, i_y)] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
+        }
+    }
+
+    let delta_x: f64 = x_grid[1] - x_grid[0];
+    let delta_y: f64 = y_grid[1] - y_grid[0];
+    let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(delta_x, delta_y, &f, &d_f_d_x, &d_f_d_y, &d2_f_d_x_d_y);
+
+    let result: BicubicStationaryPoint = bicubic_interpolator
+        .find_stationary_point(1e-12, 100)
+        .expect("Should find stationary point near cell boundary");
+
+    assert_abs_diff_eq!(result.x, x_peak, epsilon = 1e-10);
+    assert_abs_diff_eq!(result.y, y_peak, epsilon = 1e-10);
+    assert!(result.is_max);
+}
+
+#[test]
+fn test_bicubic_find_stationary_point_on_boundary() {
+    // Lazy loading for crates which are only used within the tests
+    use approx::assert_abs_diff_eq;
+
+    // Quadratic peaked at (1.0, 0.78), exactly on the cell boundary
+    let x_peak: f64 = 1.0;
+    let y_peak: f64 = 0.78;
+
+    let calculate_f = |x: f64, y: f64| -> f64 { -(x - x_peak).powi(2) - (y - y_peak).powi(2) };
+    let calculate_d_f_d_x = |x: f64, _y: f64| -> f64 { -2.0 * (x - x_peak) };
+    let calculate_d_f_d_y = |_x: f64, y: f64| -> f64 { -2.0 * (y - y_peak) };
+    let calculate_d2_f_d_x_d_y = |_x: f64, _y: f64| -> f64 { 0.0 };
+
+    let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+    let mut d_f_d_x: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+    let mut d_f_d_y: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+    let mut d2_f_d_x_d_y: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+
+    let n_x: usize = 2;
+    let n_y: usize = 2;
+    let x_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
+    let y_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
+    for i_x in 0..n_x {
+        for i_y in 0..n_y {
+            f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y]);
+            d_f_d_x[(i_x, i_y)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y]);
+            d_f_d_y[(i_x, i_y)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y]);
+            d2_f_d_x_d_y[(i_x, i_y)] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
+        }
+    }
+
+    let delta_x: f64 = x_grid[1] - x_grid[0];
+    let delta_y: f64 = y_grid[1] - y_grid[0];
+    let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(delta_x, delta_y, &f, &d_f_d_x, &d_f_d_y, &d2_f_d_x_d_y);
+
+    let result: BicubicStationaryPoint = bicubic_interpolator
+        .find_stationary_point(1e-12, 100)
+        .expect("Should find stationary point on cell boundary");
+
+    assert_abs_diff_eq!(result.x, x_peak, epsilon = 1e-10);
+    assert_abs_diff_eq!(result.y, y_peak, epsilon = 1e-10);
+    assert!(result.is_max);
 }

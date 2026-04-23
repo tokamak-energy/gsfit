@@ -103,6 +103,10 @@ With `ndarray` I prefer to use `Array1`, `Array2`, `Array3`, ..., instead of usi
 * For floats we should use `f64`
 * For other data use appropriate data types, e.g. `usize`, ...
 
+### `d_r`/`d_z` vs `delta_r`/`delta_z`
+* `d_r`/`d_z` are for grid spacing
+* `delta_r`/`delta_z` are for distances between points
+
 ## Looping style preference
 I prefer for loops rather than `.map` or `.iter` for clarity.
 

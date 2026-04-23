@@ -148,9 +148,9 @@ pub fn find_viable_limit_point(
         })
     }
 
-    // Sort from largest to smallest `psi`
+    // Sort from largest to smallest `psi` (using `b` first gives descending order)
     potential_limit_points.sort_by(|a, b| {
-        b.bounding_psi // using `b` first gives descending order
+        b.bounding_psi
             .partial_cmp(&a.bounding_psi)
             .expect("find_viable_limit_point: cannot sort potential_limit_points by bounding_psi")
     });
@@ -160,13 +160,32 @@ pub fn find_viable_limit_point(
         // Test if there is a LFS boundary at the same height as the magnetic axis
         // March from the magnetic axis to the LFS
         let mut test_intersects_lfs_boundary: bool = false;
-        for i_r in index_mag_r..n_r - 1 {
+        'marching_left_to_right: for i_r in index_mag_r..n_r - 1 {
             if psi_2d[(index_mag_z, i_r)] < potential_limit_point.bounding_psi {
                 test_intersects_lfs_boundary = true;
+
+                // Success, no need to continue
+                break 'marching_left_to_right;
             }
         }
         // No LFS boundary encountered
         if !test_intersects_lfs_boundary {
+            continue 'loop_over_potential_limit_points;
+        }
+
+        // Test if there is a HFS boundary at the same height as the magnetic axis
+        // March from the magnetic axis to the HFS
+        let mut test_intersects_hfs_boundary: bool = false;
+        'marching_right_to_left: for i_r in (0..=index_mag_r).rev() {
+            if psi_2d[(index_mag_z, i_r)] < potential_limit_point.bounding_psi {
+                test_intersects_hfs_boundary = true;
+
+                // Success, no need to continue
+                break 'marching_right_to_left;
+            }
+        }
+        // No HFS boundary encountered
+        if !test_intersects_hfs_boundary {
             continue 'loop_over_potential_limit_points;
         }
 

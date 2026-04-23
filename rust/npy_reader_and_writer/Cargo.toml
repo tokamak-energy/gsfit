@@ -1,0 +1,11 @@
+[package]
+name = "npy_reader_and_writer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ndarray = "0.17.2"  # must be same version as used in `gsfit_rs`
+
+[lints.clippy]
+needless_range_loop = "allow"
+needless_return = "allow"

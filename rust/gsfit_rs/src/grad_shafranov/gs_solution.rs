@@ -375,8 +375,6 @@ impl<'a> GsSolution<'a> {
                 &g_d2_psi_d_r2_plasma,
                 &self.j_2d,
                 d_area,
-                n_r,
-                n_z,
                 &r,
                 &g_bz_plasma,
                 &d_bz_d_z_2d,
@@ -867,7 +865,7 @@ impl<'a> GsSolution<'a> {
                 let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);
 
                 let psi_n_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
-                if psi_n_at_sensor < 0.0 || psi_n_at_sensor > 1.0 {
+                if !(0.0..=1.0).contains(&psi_n_at_sensor) {
                     println!(
                         "Warning: pressure sensor {} is outside of the plasma boundary (psi_n = {})",
                         i_sensor, psi_n_at_sensor
@@ -1146,6 +1144,9 @@ impl<'a> GsSolution<'a> {
             let i_2d: Array2<f64> = &j_2d * d_area;
             let ip: f64 = i_2d.sum();
             self.ip = ip;
+
+            // Write the time-slice to numpy files for debugging
+            self._write_time_slice_to_file(i_iter);
         }
     }
 
@@ -1570,6 +1571,7 @@ impl<'a> GsSolution<'a> {
 
     /// Calculate the Grad Shafranov error by calcuating the LHS and RHS
     /// on the 2D (r, z) grid and seeing the difference = LHS - RHS.
+    ///
     /// **This function is only used for development**
     fn _calculate_gs_error_numerical(&mut self) {
         // get stuff out of self
@@ -1607,40 +1609,35 @@ impl<'a> GsSolution<'a> {
             gs_rhs.slice_mut(s![.., i_r]).assign(&tmp);
         }
 
-        // // TEMPORARY printing
-        // let lhs: f64 = laplacian_psi[(50, 25)];
-        // let rhs: f64 = gs_rhs[(50, 25)];
-        // println!("lhs={lhs}, rhs={rhs}");
-        // let tmp_r: f64 = r[25];
-        // let tmp_z: f64 = z[50];
-        // println!("r={tmp_r}, z={tmp_z}");
-        // // write `laplacian_psi` to file
-        // let file = File::create("gs_lhs.txt").expect("can't make file");
-        // let mut writer = BufWriter::new(file);
-        // for row in laplacian_psi.rows() {
-        //     let line: String = row.iter()
-        //         .map(|&value| value.to_string())
-        //         .collect::<Vec<_>>()
-        //         .join(", ");
-        //     writeln!(writer, "{}", line).expect("can't write line");
-        // }
-        // writer.flush().expect("can't flush writer");
-        // // write `gs_rhs` to file
-        // let file = File::create("gs_rhs.txt").expect("can't make file");
-        // let mut writer = BufWriter::new(file);
-        // for row in gs_rhs.rows() {
-        //     let line: String = row.iter()
-        //         .map(|&value| value.to_string())
-        //         .collect::<Vec<_>>()
-        //         .join(", ");
-        //     writeln!(writer, "{}", line).expect("can't write line");
-        // }
-        // writer.flush().expect("can't flush writer");
-
         // Calculate the residual
         // Note - there is high residual at the boundary
         // Perhaps we should make the mask larger??
         let residual_2d: Array2<f64> = laplacian_psi - gs_rhs;
         println!("{:?}", residual_2d);
+    }
+
+    /// Writes the current time slice to numpy files for debugging
+    ///
+    /// **This function is only used for development**
+    fn _write_time_slice_to_file(&self, i_iter: usize) {
+        use std::path::Path;
+
+        let br_2d: Array2<f64> = self.br_2d.to_owned();
+        let bz_2d: Array2<f64> = self.bz_2d.to_owned();
+        let psi_2d: Array2<f64> = self.psi_2d.to_owned();
+        let psi_b: f64 = self.psi_b;
+        let bounding_r: f64 = self.bounding_r;
+        let bounding_z: f64 = self.bounding_z;
+        let mag_r: f64 = self.r_mag;
+        let mag_z: f64 = self.z_mag;
+
+        npy_reader_and_writer::write_npy_2d(Path::new(&format!("tmp/i_iter={:03}_psi_2d.npy", i_iter)), &psi_2d);
+        npy_reader_and_writer::write_npy_2d(Path::new(&format!("tmp/i_iter={:03}_br_2d.npy", i_iter)), &br_2d);
+        npy_reader_and_writer::write_npy_2d(Path::new(&format!("tmp/i_iter={:03}_bz_2d.npy", i_iter)), &bz_2d);
+        npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_psi_b.npy", i_iter)), psi_b);
+        npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_bounding_r.npy", i_iter)), bounding_r);
+        npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_bounding_z.npy", i_iter)), bounding_z);
+        npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_mag_r.npy", i_iter)), mag_r);
+        npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_mag_z.npy", i_iter)), mag_z);
     }
 }

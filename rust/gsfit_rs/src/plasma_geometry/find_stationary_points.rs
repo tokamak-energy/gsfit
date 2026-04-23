@@ -1,13 +1,16 @@
 use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint};
+use super::calculate_winding_number::calculate_winding_number;
 use crate::greens::D2PsiDR2Calculator;
 use crate::plasma_geometry::hessian;
-use contour::ContourBuilder;
 use core::f64;
-use geo::line_intersection::{LineIntersection, line_intersection};
-use geo::{Line, MultiPolygon};
 use ndarray::{Array1, Array2};
-use ndarray_interp::interp2d::Interp2D;
 use std::f64::consts::PI;
+
+struct PotentialStationaryPoint {
+    i_r: usize,
+    i_z: usize,
+    bicubic_interpolator: BicubicInterpolator,
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct StationaryPoint {
@@ -18,10 +21,10 @@ pub struct StationaryPoint {
     pub hessian_trace: f64,
     pub i_r_nearest: usize,
     pub i_z_nearest: usize,
-    pub i_r_nearest_left: usize,
-    pub i_r_nearest_right: usize,
-    pub i_z_nearest_lower: usize,
-    pub i_z_nearest_upper: usize,
+    pub i_r_left: usize,
+    pub i_r_right: usize,
+    pub i_z_lower: usize,
+    pub i_z_upper: usize,
 }
 
 pub fn find_stationary_points(
@@ -34,260 +37,209 @@ pub fn find_stationary_points(
     d_bz_d_z_2d: &Array2<f64>,
     d2_psi_d_r2_calculator: D2PsiDR2Calculator,
 ) -> Result<Vec<StationaryPoint>, String> {
-    // I'm thinking of always returning a Vec, even if it's empty?
     // Grid variables
     let n_r: usize = r.len();
     let n_z: usize = z.len();
     let d_r: f64 = r[1] - r[0];
     let d_z: f64 = z[1] - z[0];
-    let r_origin: f64 = r[0];
-    let z_origin: f64 = z[0];
 
-    // Construct an empty `contour_grid` object
-    let contour_grid: ContourBuilder = ContourBuilder::new(n_r, n_z, true)
-        .x_step(d_r)
-        .y_step(d_z)
-        .x_origin(r_origin - d_r / 2.0)
-        .y_origin(z_origin - d_z / 2.0);
+    // Assuming the grid resolution is large enough to see features.
+    // The sign-change method is vulnerable to near-tangency contours (false positives).
+    // But the sign-change method is not vulnerable to false negatives (i.e. missing a crossing).
+    // But the winding number is robust against near-tangency contours.
 
-    // Find the contours for br=0
-    let br_flattened: Vec<f64> = br_2d.flatten().to_vec();
-    let br_contours_vec: Vec<contour::Contour> = contour_grid.contours(&br_flattened, &[0.0f64]).expect("br_contours_vec: error");
-    let br_contours: &MultiPolygon = br_contours_vec[0].geometry(); // The [0] is because I have only supplied one `thresholds`
-    if br_contours.iter().count() == 0 {
-        return Err("find_viable_xpt: no br=0 contours found".to_string());
-    }
+    // Find candidate cells using sign-change detection
+    // For each 2x2 cell, check if both `br` and `bz` change sign across the four corners.
+    // A sign change in both fields means the nullclines `br=0` and `bz=0` both pass through the cell,
+    // indicating a candidate stationary point.
+    // Note: this method can produce false positives (near-parallel nullclines passing through the same cell
+    // without crossing), but these are filtered out by the bicubic refinement step below.
+    let mut possible_stationary_points: Vec<PotentialStationaryPoint> = Vec::new();
+    for i_r in 0..n_r - 1 {
+        'cell_loop: for i_z in 0..n_z - 1 {
+            let mut n_br_sign_changes: usize = 0;
+            let mut n_bz_sign_changes: usize = 0;
 
-    // Find the contours for bz=0
-    let bz_flattened: Vec<f64> = bz_2d.flatten().to_vec();
-    let bz_contours_vec: Vec<contour::Contour> = contour_grid.contours(&bz_flattened, &[0.0f64]).expect("bz_contours_vec: error");
-    let bz_contours: &MultiPolygon = bz_contours_vec[0].geometry(); // The [0] is because I have only supplied one `thresholds`
-    if bz_contours.iter().count() == 0 {
-        return Err("find_viable_xpt: no bz=0 contours found".to_string());
-    }
-
-    // Collect br contours
-    let mut br_contour_line_segments: Vec<Line<f64>> = Vec::new();
-    // Loop over all contours
-    for br_contour in br_contours {
-        // "exterior" is the outer boundary of the contour
-        // There is only one "exterior"
-        // `Line` object has two coordinates: "start" and "end", so there will be multiple Lines
-        let br_line: Vec<Line<f64>> = br_contour.exterior().lines().collect();
-        for line_segment in br_line {
-            br_contour_line_segments.push(line_segment);
-        }
-
-        // "interiors" are the holes in the contour
-        // There can be multiple holes or None
-        // `Line` object has two coordinates: "start" and "end", so there will be multiple Lines
-        for br_interior in br_contour.interiors() {
-            let br_line: Vec<Line<f64>> = br_interior.lines().collect();
-            for line_segment in br_line {
-                br_contour_line_segments.push(line_segment);
+            // Lower-left to lower-right
+            if br_2d[(i_z, i_r)] * br_2d[(i_z, i_r + 1)] < 0.0 {
+                n_br_sign_changes += 1;
             }
-        }
-    }
-
-    // Collect bz contours
-    let mut bz_contour_line_segments: Vec<Line<f64>> = Vec::new();
-    // Loop over all contours
-    for bz_contour in bz_contours {
-        // "exterior" is the outer boundary of the contour
-        // There is only one "exterior"
-        // `LineString` object has a list of x and y coordinate pairs
-        // `Line` object has two coordinates: "start" and "end". When casting into `Line` object we can expect many entries in the Vec
-        let bz_line: Vec<Line<f64>> = bz_contour.exterior().lines().collect();
-        for line_segment in bz_line {
-            bz_contour_line_segments.push(line_segment);
-        }
-
-        // "interiors" are the holes in the contour
-        // There can be multiple holes or None
-        // `Line` object has two coordinates: "start" and "end", so there will be multiple Lines
-        for bz_interior in bz_contour.interiors() {
-            let bz_line: Vec<Line<f64>> = bz_interior.lines().collect();
-            for line_segment in bz_line {
-                bz_contour_line_segments.push(line_segment);
+            if bz_2d[(i_z, i_r)] * bz_2d[(i_z, i_r + 1)] < 0.0 {
+                n_bz_sign_changes += 1;
             }
+
+            // Upper-left to upper-right
+            if br_2d[(i_z + 1, i_r)] * br_2d[(i_z + 1, i_r + 1)] < 0.0 {
+                n_br_sign_changes += 1;
+            }
+            if bz_2d[(i_z + 1, i_r)] * bz_2d[(i_z + 1, i_r + 1)] < 0.0 {
+                n_bz_sign_changes += 1;
+            }
+
+            // Lower-left to upper-left
+            if br_2d[(i_z, i_r)] * br_2d[(i_z + 1, i_r)] < 0.0 {
+                n_br_sign_changes += 1;
+            }
+            if bz_2d[(i_z, i_r)] * bz_2d[(i_z + 1, i_r)] < 0.0 {
+                n_bz_sign_changes += 1;
+            }
+
+            // Lower-right to upper-right
+            if br_2d[(i_z, i_r + 1)] * br_2d[(i_z + 1, i_r + 1)] < 0.0 {
+                n_br_sign_changes += 1;
+            }
+            if bz_2d[(i_z, i_r + 1)] * bz_2d[(i_z + 1, i_r + 1)] < 0.0 {
+                n_bz_sign_changes += 1;
+            }
+
+            // both `br` and `bz` must change sign to have a candidate stationary point
+            if !(n_br_sign_changes == 2 && n_bz_sign_changes == 2) {
+                // Go to next cell
+                continue 'cell_loop;
+            }
+
+            let bicubic_interpolator: BicubicInterpolator = setup_bicubic_interpolator(r, z, psi_2d, br_2d, bz_2d, d_bz_d_z_2d, i_r, i_z);
+
+            possible_stationary_points.push(PotentialStationaryPoint {
+                i_r,
+                i_z,
+                bicubic_interpolator,
+            });
         }
     }
 
-    // Create an interpolator for psi
-    let psi_interpolator = Interp2D::builder(psi_2d.clone())
-        .x(z.clone())
-        .y(r.clone())
-        .build()
-        .expect("find_stationary_points: Can't make Interp2D");
+    // Loop over all possible stationary points and see if we should be considering the neighbours
+    let mut additional_stationary_points: Vec<PotentialStationaryPoint> = Vec::new();
+    let mut indices_to_remove: Vec<usize> = Vec::new();
 
-    // Loop over the `br` and `bz` contours to find the intersections, which are the stationary points
-    let mut stationary_points: Vec<StationaryPoint> = Vec::new();
-    for br_line in &br_contour_line_segments {
-        for bz_line in &bz_contour_line_segments {
-            if let Some(line_intersection) = line_intersection(br_line.to_owned(), bz_line.to_owned()) {
-                if let LineIntersection::SinglePoint {
-                    intersection,
-                    is_proper: _is_proper,
-                } = line_intersection
-                {
-                    // Note:
-                    // `_is_proper` is a variable which is assigned but not used. It means:
-                    // * `is_proper = true` means the intersection occurs at a point that is not one of the endpoints of either line
-                    // * `is_proper = false` means the intersection occurs at an endpoint of one or both line segments
-                    let mut stationary_r: f64 = intersection.x;
-                    let mut stationary_z: f64 = intersection.y;
+    for (idx, possible_stationary_point) in possible_stationary_points.iter().enumerate() {
+        // Calculate the winding number to filter out false positives from the sign-change method
+        let winding_number: i64 = calculate_winding_number(&possible_stationary_point.bicubic_interpolator);
 
-                    // TODO: Very worringly, the contours can be off by 1/2 a grid point.
-                    // This has been reported to GitHub as an issue. But until it's fixed we shall add this extra test
-                    // that the intersection is within the grid.
-                    if stationary_r > r[0] && stationary_r < r[n_r - 1] && stationary_z > z[0] && stationary_z < z[n_z - 1] {
-                        // TODO: need to use bicubic interpolator. So that the boundary is consistent with `psi_boundary`
+        // There are occasionally edge cases where the neighbouring cell has the stationary point.
+        // This happens when the contour enters and exits through the same edge (which is missed by the sign-change method).
+        // So we will check the four neighbouring cells for stationary points. No need to check the diagonal neighbours as entering and exiting through the diagonal point is unlikely.
+        if winding_number == 0 {
+            // Remember that we will be removing this point
+            indices_to_remove.push(idx);
 
-                        // Find the closest grid point
-                        let mut i_r_nearest: usize = 0;
-                        let mut min_r_dist: f64 = f64::INFINITY;
-                        for (i, &r_val) in r.iter().enumerate() {
-                            let dist: f64 = (stationary_r - r_val).abs();
-                            if dist < min_r_dist {
-                                min_r_dist = dist;
-                                i_r_nearest = i;
-                            }
-                        }
-                        let mut i_z_nearest: usize = 0;
-                        let mut min_z_dist: f64 = f64::INFINITY;
-                        for (i, &z_val) in z.iter().enumerate() {
-                            let dist: f64 = (stationary_z - z_val).abs();
-                            if dist < min_z_dist {
-                                min_z_dist = dist;
-                                i_z_nearest = i;
-                            }
-                        }
+            let i_r: usize = possible_stationary_point.i_r;
+            let i_z: usize = possible_stationary_point.i_z;
 
-                        // Calculate the Hessian at the nearest grid point
-                        // d^2(psi)/(d_r^2)
-                        let d2_psi_d_r2: f64 = d2_psi_d_r2_calculator.calculate(i_r_nearest, i_z_nearest);
-
-                        // d^2(psi)/(d_z^2)
-                        let d2_psi_d_z2: f64 = -2.0 * PI * r[i_r_nearest] * d_br_d_z_2d[(i_z_nearest, i_r_nearest)];
-
-                        // d^2(psi)/(d_r * d_z)
-                        let d2_psi_d_r_d_z: f64 = 2.0 * PI * r[i_r_nearest] * d_bz_d_z_2d[(i_z_nearest, i_r_nearest)];
-
-                        let (hessian_det, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_d_z);
-
-                        // Calculate the stationary point using bicubic interpolation
-                        // Find the four corner grid points surrounding the magnetic axis
-                        let i_r_nearest_left: usize;
-                        let i_r_nearest_right: usize;
-                        let i_z_nearest_lower: usize;
-                        let i_z_nearest_upper: usize;
-                        if stationary_r > r[i_r_nearest] {
-                            i_r_nearest_left = i_r_nearest;
-                            i_r_nearest_right = i_r_nearest + 1;
-                        } else {
-                            i_r_nearest_left = i_r_nearest - 1;
-                            i_r_nearest_right = i_r_nearest;
-                        }
-                        if stationary_z > z[i_z_nearest] {
-                            i_z_nearest_lower = i_z_nearest;
-                            i_z_nearest_upper = i_z_nearest + 1;
-                        } else {
-                            i_z_nearest_lower = i_z_nearest - 1;
-                            i_z_nearest_upper = i_z_nearest;
-                        }
-
-                        // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-                        let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                        let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                        let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                        let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-
-                        // Function values
-                        f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
-                        f[(0, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
-                        f[(1, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
-                        f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
-
-                        // d(psi)/d(r)
-                        // bz = 1 / (2.0 * PI * r) * d_psi_d_r
-                        d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                        d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                        d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-                        d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-
-                        // d(psi)/d(z)
-                        // br = - 1 / (2.0 * PI * r) * d_psi_d_z
-                        d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                        d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                        d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-                        d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-
-                        // d^2(psi)/(d(r)*d(z))
-                        // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
-                        // TODO: d_bz_d_z_2d has a delta_z correction missing!  <-- I think I have fixed this in `gs_solution`
-                        d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                        d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                        d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-                        d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-
-                        // Create a bicubic interpolator
-                        let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
-
-                        // Find the location of the stationary point in the bicubic fit function:
-                        // `f(x, y) = [1, x, x^2, x^3] * a_matrix * [1, y, y^2, y^3].T`
-                        // `d(f(x,y)/d(x) = 0` and `d(f(x,y)/d(y) = 0)`
-                        // because this is a cubic function in both `x` and `y` we need to use an iterative method to find the stationary point
-
-                        // Initial conditions from the linear interpolation
-                        let x_start: f64 = (stationary_r - r[i_r_nearest_left]) / d_r;
-                        let y_start: f64 = (stationary_z - z[i_z_nearest_lower]) / d_z;
-
-                        // Find the stationary point using the bicubic interpolaton
-                        // The reason why `stationary_point_or_error` sometimes fails to converge is due to "resolution" issues,
-                        // where the features are smaller than the grid spacing. This happens particularly near the PF coils,
-                        // such as DIV/SOL. Because we are effectively randomly sampling the function the contouring can contain
-                        // intersections between `br=0` and `bz=0` contours which are not real stationary points.
-                        let stationary_point_or_error: Result<BicubicStationaryPoint, String> =
-                            bicubic_interpolator.find_stationary_point(x_start, y_start, 1e-6, 100);
-
-                        // Extract the magnetic axis values
-                        let stationary_psi: f64;
-                        match stationary_point_or_error {
-                            Ok(stationary_point) => {
-                                // Extract and store results
-                                // println!("Found stationary point at x={}, y={}", stationary_point.x, stationary_point.y);
-                                stationary_psi = stationary_point.f;
-                                stationary_r = r[i_r_nearest_left] + stationary_point.x * d_r;
-                                stationary_z = z[i_z_nearest_lower] + stationary_point.y * d_z;
-                            }
-                            Err(_error_string) => {
-                                // For now we will fall back on the linear interpolation.
-                                stationary_psi = psi_interpolator
-                                    .interp_scalar(stationary_z, stationary_r)
-                                    .expect("find_stationary_points: can't interpolate psi");
-                                // println!("does this ever happen??")
-                                // NOTE: this happens quite often!
-
-                                // If we fail to converge onto a solution, then fall back on a brute force method
-                                // TODO: Perhaps the first part of the fallback should be to try shifting the four corner grid points?
-                            }
-                        }
-
-                        stationary_points.push(StationaryPoint {
-                            r: stationary_r,
-                            z: stationary_z,
-                            psi: stationary_psi,
-                            hessian_determinant: hessian_det,
-                            hessian_trace,
-                            i_r_nearest,
-                            i_z_nearest,
-                            i_r_nearest_left,
-                            i_r_nearest_right,
-                            i_z_nearest_lower,
-                            i_z_nearest_upper,
-                        });
-                    }
+            // Left neighbour (and check array bounds)
+            if i_r > 0 {
+                let bicubic_interpolator_left: BicubicInterpolator = setup_bicubic_interpolator(r, z, psi_2d, br_2d, bz_2d, d_bz_d_z_2d, i_r - 1, i_z);
+                let winding_number_left: i64 = calculate_winding_number(&bicubic_interpolator_left);
+                if winding_number_left != 0 {
+                    additional_stationary_points.push(PotentialStationaryPoint {
+                        i_r: i_r - 1,
+                        i_z,
+                        bicubic_interpolator: bicubic_interpolator_left,
+                    });
                 }
+            }
+
+            // Right neighbour (and check array bounds)
+            if i_r + 1 < n_r - 1 {
+                let bicubic_interpolator_right: BicubicInterpolator = setup_bicubic_interpolator(r, z, psi_2d, br_2d, bz_2d, d_bz_d_z_2d, i_r + 1, i_z);
+                let winding_number_right: i64 = calculate_winding_number(&bicubic_interpolator_right);
+                if winding_number_right != 0 {
+                    additional_stationary_points.push(PotentialStationaryPoint {
+                        i_r: i_r + 1,
+                        i_z,
+                        bicubic_interpolator: bicubic_interpolator_right,
+                    });
+                }
+            }
+
+            // Lower neighbour (and check array bounds)
+            if i_z > 0 {
+                let bicubic_interpolator_lower: BicubicInterpolator = setup_bicubic_interpolator(r, z, psi_2d, br_2d, bz_2d, d_bz_d_z_2d, i_r, i_z - 1);
+                let winding_number_lower: i64 = calculate_winding_number(&bicubic_interpolator_lower);
+                if winding_number_lower != 0 {
+                    additional_stationary_points.push(PotentialStationaryPoint {
+                        i_r,
+                        i_z: i_z - 1,
+                        bicubic_interpolator: bicubic_interpolator_lower,
+                    });
+                }
+            }
+
+            // Upper neighbour (and check array bounds)
+            if i_z + 1 < n_z - 1 {
+                let bicubic_interpolator_upper: BicubicInterpolator = setup_bicubic_interpolator(r, z, psi_2d, br_2d, bz_2d, d_bz_d_z_2d, i_r, i_z + 1);
+                let winding_number_upper: i64 = calculate_winding_number(&bicubic_interpolator_upper);
+                if winding_number_upper != 0 {
+                    additional_stationary_points.push(PotentialStationaryPoint {
+                        i_r,
+                        i_z: i_z + 1,
+                        bicubic_interpolator: bicubic_interpolator_upper,
+                    });
+                }
+            }
+        }
+    }
+
+    // Remove false positives (in reverse, so that we don't mess up the indices before removing)
+    for &idx in indices_to_remove.iter().rev() {
+        possible_stationary_points.remove(idx);
+    }
+    possible_stationary_points.extend(additional_stationary_points);
+
+    let mut stationary_points: Vec<StationaryPoint> = Vec::new();
+    for possible_stationary_point in &possible_stationary_points {
+        // Find the stationary point using the bicubic interpolation
+        let stationary_point_or_error: Result<BicubicStationaryPoint, String> = possible_stationary_point.bicubic_interpolator.find_stationary_point(1e-6, 100);
+
+        // Extract the stationary point values
+        // If the bicubic solver failed to converge, this cell is a false positive from
+        // the sign-change detection (near-parallel nullclines passing through the cell
+        // without actually crossing), so skip it.
+        match stationary_point_or_error {
+            Ok(stationary_point) => {
+                // Geometry of the cell corners
+                let i_r_left: usize = possible_stationary_point.i_r;
+                let i_r_right: usize = possible_stationary_point.i_r + 1;
+                let i_z_lower: usize = possible_stationary_point.i_z;
+                let i_z_upper: usize = possible_stationary_point.i_z + 1;
+
+                // Extract and store results
+                let stationary_r: f64 = r[i_r_left] + stationary_point.x * d_r;
+                let stationary_z: f64 = z[i_z_lower] + stationary_point.y * d_z;
+                let stationary_psi: f64 = stationary_point.f;
+
+                // Compute nearest grid indices from the refined stationary point position
+                let i_r_nearest: usize = ((stationary_r - r[0]) / d_r).round() as usize;
+                let i_z_nearest: usize = ((stationary_z - z[0]) / d_z).round() as usize;
+
+                // Calculate the Hessian at the nearest grid point of the cell
+                // d^2(psi)/(d_r^2)
+                let d2_psi_d_r2: f64 = d2_psi_d_r2_calculator.calculate(i_r_nearest, i_z_nearest);
+
+                // d^2(psi)/(d_z^2)
+                let d2_psi_d_z2: f64 = -2.0 * PI * r[i_r_nearest] * d_br_d_z_2d[(i_z_nearest, i_r_nearest)];
+
+                // d^2(psi)/(d_r * d_z)
+                let d2_psi_d_r_d_z: f64 = 2.0 * PI * r[i_r_nearest] * d_bz_d_z_2d[(i_z_nearest, i_r_nearest)];
+
+                let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_d_z);
+
+                stationary_points.push(StationaryPoint {
+                    r: stationary_r,
+                    z: stationary_z,
+                    psi: stationary_psi,
+                    hessian_determinant,
+                    hessian_trace,
+                    i_r_nearest,
+                    i_z_nearest,
+                    i_r_left,
+                    i_r_right,
+                    i_z_lower,
+                    i_z_upper,
+                });
+            }
+            Err(_error_string) => {
+                // Do nothing
             }
         }
     }
@@ -299,4 +251,185 @@ pub fn find_stationary_points(
 
     // Return
     Ok(stationary_points)
+}
+
+/// Helper function to reduce code duplication
+fn setup_bicubic_interpolator(
+    r: &Array1<f64>,
+    z: &Array1<f64>,
+    psi_2d: &Array2<f64>,
+    br_2d: &Array2<f64>,
+    bz_2d: &Array2<f64>,
+    d_bz_d_z_2d: &Array2<f64>,
+    i_r: usize,
+    i_z: usize,
+) -> BicubicInterpolator {
+    // Grid variables
+    let d_r: f64 = r[1] - r[0];
+    let d_z: f64 = z[1] - z[0];
+
+    // The cell corners are (i_r, i_z), (i_r+1, i_z), (i_r, i_z+1), (i_r+1, i_z+1)
+    let i_r_left: usize = i_r;
+    let i_r_right: usize = i_r + 1;
+    let i_z_lower: usize = i_z;
+    let i_z_upper: usize = i_z + 1;
+
+    // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
+    let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+    let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+    let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+    let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+
+    // Function values
+    f[(0, 0)] = psi_2d[(i_z_lower, i_r_left)];
+    f[(0, 1)] = psi_2d[(i_z_upper, i_r_left)];
+    f[(1, 0)] = psi_2d[(i_z_lower, i_r_right)];
+    f[(1, 1)] = psi_2d[(i_z_upper, i_r_right)];
+
+    // d(psi)/d(r)
+    // bz = 1 / (2.0 * PI * r) * d_psi_d_r
+    d_f_d_r[(0, 0)] = bz_2d[(i_z_lower, i_r_left)] * (2.0 * PI * r[i_r_left]);
+    d_f_d_r[(0, 1)] = bz_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
+    d_f_d_r[(1, 0)] = bz_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
+    d_f_d_r[(1, 1)] = bz_2d[(i_z_upper, i_r_right)] * (2.0 * PI * r[i_r_right]);
+
+    // d(psi)/d(z)
+    // br = - 1 / (2.0 * PI * r) * d_psi_d_z
+    d_f_d_z[(0, 0)] = -br_2d[(i_z_lower, i_r_left)] * (2.0 * PI * r[i_r_left]);
+    d_f_d_z[(0, 1)] = -br_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
+    d_f_d_z[(1, 0)] = -br_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
+    d_f_d_z[(1, 1)] = -br_2d[(i_z_upper, i_r_right)] * (2.0 * PI * r[i_r_right]);
+
+    // d^2(psi)/(d(r)*d(z))
+    // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
+    // TODO: d_bz_d_z_2d has a delta_z correction missing!  <-- I think I have fixed this in `gs_solution`
+    d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_lower, i_r_left)] * (2.0 * PI * r[i_r_left]);
+    d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
+    d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
+    d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_upper, i_r_right)] * (2.0 * PI * r[i_r_right]);
+
+    // Create a bicubic interpolator
+    let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+
+    bicubic_interpolator
+}
+
+// TODO: Add a test for this function. shot=12050, time=131ms failed with the sign-change method, but succeeded with flood fill.
+
+/// In this test the `bz=0` contour enters and exits through the same cell edge
+///
+/// See the Jupyter notebook for a plot detailing the test
+/// `rust/gsfit_rs/test_data/plasma_geometry/find_stationary_points/test_find_stationary_points.ipynb`
+#[test]
+fn test_find_stationary_points() {
+    use approx::assert_abs_diff_eq;
+    use ndarray::Array3;
+
+    let n_r: usize = 6;
+    let n_z: usize = 4;
+
+    let r: Array1<f64> = Array1::linspace(0.01, 1.01, n_r);
+    let z: Array1<f64> = Array1::linspace(-1.0, 1.0, n_z);
+
+    let mut psi_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut br_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut bz_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d_br_d_z_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d_bz_d_z_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+
+    let vertical_curvature: f64 = 0.35;
+
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            let r_center: f64 = 0.43 - vertical_curvature * z[i_z].powi(2);
+
+            // psi = -(r - r_center)^2 - (z + 0.025)^2
+            psi_2d[(i_z, i_r)] = -(r[i_r] - r_center).powi(2) - (z[i_z] + 25e-3).powi(2);
+
+            // d_psi_d_r = -2 * (r - r_center)
+            let d_psi_d_r: f64 = -2.0 * (r[i_r] - r_center);
+
+            // d_psi_d_z = -2 * (r - r_center) * 2 * vertical_curvature * z - 2 * (z + 0.025)
+            let d_psi_d_z: f64 = -2.0 * (r[i_r] - r_center) * 2.0 * vertical_curvature * z[i_z] - 2.0 * (z[i_z] + 25e-3);
+
+            // bz = d_psi_d_r / (2 * PI * r)
+            bz_2d[(i_z, i_r)] = d_psi_d_r / (2.0 * PI * r[i_r]);
+
+            // br = -d_psi_d_z / (2 * PI * r)
+            br_2d[(i_z, i_r)] = -d_psi_d_z / (2.0 * PI * r[i_r]);
+
+            // d_bz_d_z = d/dz [d_psi_d_r / (2 * PI * r)]
+            d_bz_d_z_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z] / (2.0 * PI * r[i_r]);
+
+            // d_br_d_z = d/dz [-d_psi_d_z / (2 * PI * r)]
+            let d2_psi_d_z2: f64 = -4.0 * vertical_curvature * (r[i_r] - r_center) - 8.0 * vertical_curvature.powi(2) * z[i_z].powi(2) - 2.0;
+            d_br_d_z_2d[(i_z, i_r)] = -d2_psi_d_z2 / (2.0 * PI * r[i_r]);
+        }
+    }
+
+    // The d2_psi_d_r2_calculator is initialised with NaN-filled arrays because the
+    // Hessian values are not being tested here. No coils or passives are included.
+    let n_coils: usize = 0;
+    let n_passives: usize = 0;
+    let g_d2_psi_d_r2_coils: Array3<f64> = Array3::from_elem([n_z, n_r, n_coils], f64::NAN);
+    let pf_coil_currents: Array1<f64> = Array1::from_elem(n_coils, f64::NAN);
+    let g_d2_psi_d_r2_passives: Array2<f64> = Array2::from_elem([n_z * n_r, n_passives], f64::NAN);
+    let passive_dof_values: Array1<f64> = Array1::from_elem(n_passives, f64::NAN);
+    let g_d2_psi_d_r2_plasma: Array2<f64> = Array2::from_elem([n_z * n_r, n_r], f64::NAN);
+    let j_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let d_area: f64 = f64::NAN;
+    let g_bz_plasma: Array2<f64> = Array2::from_elem([n_z * n_r, n_r], f64::NAN);
+    let d_bz_d_z: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let delta_z: f64 = f64::NAN;
+    let d2_psi_d_r2_calculator: D2PsiDR2Calculator = D2PsiDR2Calculator::new(
+        &g_d2_psi_d_r2_coils,
+        &pf_coil_currents,
+        &g_d2_psi_d_r2_passives,
+        &passive_dof_values,
+        &g_d2_psi_d_r2_plasma,
+        &j_2d,
+        d_area,
+        &r,
+        &g_bz_plasma,
+        &d_bz_d_z,
+        delta_z,
+    );
+
+    let stationary_points_or_error: Result<Vec<StationaryPoint>, String> =
+        find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator);
+    let stationary_points: Vec<StationaryPoint> = stationary_points_or_error.expect("test_find_stationary_points: failed to find any stationary points");
+
+    // There should be only one stationary point
+    assert_eq!(stationary_points.len(), 1);
+    let stationary_point: StationaryPoint = stationary_points[0];
+
+    let expected_stationary_point_psi: f64 = 0.0;
+    let expected_stationary_point_z: f64 = -25e-3;
+    let expected_stationary_point_r: f64 = 0.43 - vertical_curvature * expected_stationary_point_z.powi(2);
+
+    // Find the scale which we need to use for the epsilon values
+    let d_r: f64 = r[1] - r[0];
+    let d_z: f64 = z[1] - z[0];
+    let mut max_delta_psi: f64 = 0.0;
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            if i_r + 1 < n_r {
+                let delta_psi: f64 = (psi_2d[(i_z, i_r + 1)] - psi_2d[(i_z, i_r)]).abs();
+                if delta_psi > max_delta_psi {
+                    max_delta_psi = delta_psi;
+                }
+            }
+            if i_z + 1 < n_z {
+                let delta_psi: f64 = (psi_2d[(i_z + 1, i_r)] - psi_2d[(i_z, i_r)]).abs();
+                if delta_psi > max_delta_psi {
+                    max_delta_psi = delta_psi;
+                }
+            }
+        }
+    }
+
+    // Check the stationary point values against the expected values
+    assert_abs_diff_eq!(expected_stationary_point_z, stationary_point.z, epsilon = d_r / 10.0);
+    assert_abs_diff_eq!(expected_stationary_point_r, stationary_point.r, epsilon = d_z / 10.0);
+    assert_abs_diff_eq!(expected_stationary_point_psi, stationary_point.psi, epsilon = max_delta_psi / 10.0);
 }

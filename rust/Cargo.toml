@@ -3,7 +3,8 @@ members = [
     "data_tree",
     "data_tree/data_tree_derive",
     "gsfit_rs",
-    "interpolation"
+    "interpolation",
+    "npy_reader_and_writer"
     # "solovev_with_vacuum"
 ]
 resolver = "3"  # Use Rust 2024 edition resolver

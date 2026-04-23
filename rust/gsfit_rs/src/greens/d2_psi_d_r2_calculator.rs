@@ -45,13 +45,14 @@ impl D2PsiDR2Calculator {
         g_d2_psi_d_r2_plasma: &Array2<f64>,
         j_2d: &Array2<f64>,
         d_area: f64,
-        n_r: usize,
-        n_z: usize,
         r: &Array1<f64>,
         g_bz_plasma: &Array2<f64>,
         d_bz_d_z: &Array2<f64>,
         delta_z: f64,
     ) -> Self {
+        // Get dimensions
+        let (n_z, n_r): (usize, usize) = j_2d.dim();
+
         // Store reshaped version for performance
         let g_d2_psi_d_r2_plasma_3d: Array3<f64> = g_d2_psi_d_r2_plasma
             .to_shape((n_z, n_r, n_r))
@@ -281,8 +282,6 @@ fn test_d2_psi_d_r2_calculator() {
         &g_d2_psi_d_r2_plasma,
         &j_2d,
         d_area,
-        n_r,
-        n_z,
         &r,
         &g_bz_plasma,
         &d_bz_d_z,

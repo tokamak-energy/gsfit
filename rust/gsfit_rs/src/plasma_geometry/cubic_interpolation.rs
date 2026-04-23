@@ -55,8 +55,8 @@ pub fn cubic_interpolation(
     // Find the root in [0, 1] (valid interpolation range)
     let mut x_values: Vec<f64> = Vec::new();
     for &t in &roots {
-        if t >= 0.0 && t <= 1.0 {
-            let t_clamped: f64 = t.max(0.0).min(1.0);
+        if (0.0..=1.0).contains(&t) {
+            let t_clamped: f64 = t.clamp(0.0, 1.0);
             x_values.push(cell0_x + t_clamped * delta_x);
         }
     }
@@ -151,6 +151,38 @@ fn solve_quadratic(a: f64, b: f64, c: f64) -> Vec<f64> {
         let q: f64 = -0.5 * (b + b.signum() * sqrt_disc);
         vec![q / a, c / q]
     }
+}
+
+pub fn cubic_interpolation_at_x(cell0_x: f64, cell0_f: f64, cell0_d_f_d_x: f64, cell1_x: f64, cell1_f: f64, cell1_d_f_d_x: f64, x: f64) -> f64 {
+    let delta_x: f64 = cell1_x - cell0_x;
+
+    // Cubic Hermite basis functions, with `t` in [0.0, 1.0]:
+    // h00(t) = 2t³ - 3t² + 1    d(h00)/dt = 6t² - 6t
+    // h10(t) = t³ - 2t² + t     d(h10)/dt = 3t² - 4t + 1
+    // h01(t) = -2t³ + 3t²       d(h01)/dt = -6t² + 6t
+    // h11(t) = t³ - t²          d(h11)/dt = 3t² - 2t
+    //
+    // With the properties that:
+    // h00(0) = 1, h00(1) = 0;  h00'(0) = 0, h00'(1) = 0
+    // h10(0) = 0, h10(1) = 0;  h10'(0) = 1, h10'(1) = 0
+    // h01(0) = 0, h01(1) = 1;  h01'(0) = 0, h01'(1) = 0
+    // h11(0) = 0, h11(1) = 1;  h11'(0) = 0, h11'(1) = 1
+    //
+    // f(t) = cell0_f * h00(t)
+    //        + d_x * cell0_d_f_d_x * h10(t)
+    //        + cell1_f * h01(t)
+    //        + d_x * cell1_d_f_d_x * h11(t)
+
+    // Solve: a + b*t + c*t² + d*t³ = f_target
+    // Solve: a * t**3 + b * t**2 + c * t + d = f_target // TODO: CHANGE TO THIS FORM!!!!
+    let a: f64 = cell0_f;
+    let b: f64 = delta_x * cell0_d_f_d_x;
+    let c: f64 = -3.0 * cell0_f - 2.0 * delta_x * cell0_d_f_d_x + 3.0 * cell1_f - delta_x * cell1_d_f_d_x;
+    let d: f64 = 2.0 * cell0_f + delta_x * cell0_d_f_d_x - 2.0 * cell1_f + delta_x * cell1_d_f_d_x;
+
+    let value: f64 = a + b * x + c * x.powi(2) + d * x.powi(3);
+
+    value
 }
 
 #[test]
