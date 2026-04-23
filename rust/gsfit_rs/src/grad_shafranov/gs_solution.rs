@@ -1145,8 +1145,8 @@ impl<'a> GsSolution<'a> {
             let ip: f64 = i_2d.sum();
             self.ip = ip;
 
-            // Write the time-slice to numpy files for debugging
-            self._write_time_slice_to_file(i_iter);
+            // // Write the time-slice to numpy files for debugging
+            // self._write_time_slice_to_file(i_iter);
         }
     }
 

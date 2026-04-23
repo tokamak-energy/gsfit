@@ -251,13 +251,18 @@ impl BicubicInterpolator {
 
             // Solve Hessian * [delta_x delta_y]^T = -grad
             let hessian_det: f64 = h_x_x * h_y_y - h_x_y * h_x_y;
-            if hessian_det.abs() < f64::EPSILON {
-                return Err("Hessian is singular".to_string());
+
+            // Check if the Hessian is singular or ill-conditioned
+            let hessian_scale: f64 = h_x_x.abs().max(h_x_y.abs()).max(h_y_y.abs());
+            // Whichever is larger: 1e-12 or 16 * machine epsilon * (largest Hessian element)^2
+            let hessian_det_tol: f64 = 1.0e-12_f64.max(16.0 * f64::EPSILON * hessian_scale * hessian_scale);
+            if hessian_det.abs() <= hessian_det_tol {
+                return Err("Hessian is singular or ill-conditioned".to_string());
             }
-            let delta_x: f64 = (-g_x * h_y_y + g_y * h_x_y) / hessian_det;
-            let delta_y: f64 = (g_x * h_x_y - g_y * h_x_x) / hessian_det;
 
             // Compute maximum step size that stays within [0, 1] bounds
+            let delta_x: f64 = (-g_x * h_y_y + g_y * h_x_y) / hessian_det;
+            let delta_y: f64 = (g_x * h_x_y - g_y * h_x_x) / hessian_det;
             let mut alpha: f64 = 1.0;
             if delta_x > 0.0 {
                 alpha = alpha.min((1.0 - x) / delta_x);

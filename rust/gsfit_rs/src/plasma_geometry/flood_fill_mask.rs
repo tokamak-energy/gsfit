@@ -219,8 +219,6 @@ pub fn flood_fill_mask(
 
 #[test]
 fn test_flood_fill_mask() {
-    use npy_reader_and_writer;
-
     let n_r: usize = 80;
     let n_z: usize = 161;
     let r: Array1<f64> = Array1::linspace(0.01, 1.0, n_r);

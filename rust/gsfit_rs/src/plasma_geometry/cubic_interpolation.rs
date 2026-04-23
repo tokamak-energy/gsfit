@@ -179,6 +179,9 @@ pub fn cubic_interpolation_at_x(cell0_x: f64, cell0_f: f64, cell0_d_f_d_x: f64, 
     let b: f64 = delta_x * cell0_d_f_d_x;
     let c: f64 = -3.0 * cell0_f - 2.0 * delta_x * cell0_d_f_d_x + 3.0 * cell1_f - delta_x * cell1_d_f_d_x;
     let d: f64 = 2.0 * cell0_f + delta_x * cell0_d_f_d_x - 2.0 * cell1_f + delta_x * cell1_d_f_d_x;
+    let t: f64 = (x - cell0_x) / delta_x;
+
+    assert!((0.0..=1.0).contains(&t), "x={x} is out of interpolation range: (cell0_x, cell1_x)=({cell0_x}, {cell1_x})");
 
     let value: f64 = a + b * x + c * x.powi(2) + d * x.powi(3);
 
