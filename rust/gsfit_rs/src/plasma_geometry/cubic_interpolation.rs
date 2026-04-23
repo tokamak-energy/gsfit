@@ -183,7 +183,7 @@ pub fn cubic_interpolation_at_x(cell0_x: f64, cell0_f: f64, cell0_d_f_d_x: f64, 
 
     assert!((0.0..=1.0).contains(&t), "x={x} is out of interpolation range: (cell0_x, cell1_x)=({cell0_x}, {cell1_x})");
 
-    let value: f64 = a + b * x + c * x.powi(2) + d * x.powi(3);
+    let value: f64 = a + b * t + c * t.powi(2) + d * t.powi(3);
 
     value
 }
