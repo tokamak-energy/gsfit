@@ -431,7 +431,7 @@ fn test_find_stationary_points() {
     }
 
     // Check the stationary point values against the expected values
-    assert_abs_diff_eq!(expected_stationary_point_z, stationary_point.z, epsilon = d_r / 10.0);
-    assert_abs_diff_eq!(expected_stationary_point_r, stationary_point.r, epsilon = d_z / 10.0);
+    assert_abs_diff_eq!(expected_stationary_point_r, stationary_point.r, epsilon = d_r / 10.0);
+    assert_abs_diff_eq!(expected_stationary_point_z, stationary_point.z, epsilon = d_z / 10.0);
     assert_abs_diff_eq!(expected_stationary_point_psi, stationary_point.psi, epsilon = max_delta_psi / 10.0);
 }
