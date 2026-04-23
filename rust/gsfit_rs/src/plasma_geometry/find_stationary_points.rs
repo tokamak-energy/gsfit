@@ -2,6 +2,7 @@ use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint};
 use super::calculate_winding_number::calculate_winding_number;
 use crate::greens::D2PsiDR2Calculator;
 use crate::plasma_geometry::hessian;
+use ndarray_stats::QuantileExt;
 use core::f64;
 use ndarray::{Array1, Array2};
 use std::f64::consts::PI;
@@ -209,8 +210,9 @@ pub fn find_stationary_points(
                 let stationary_psi: f64 = stationary_point.f;
 
                 // Compute nearest grid indices from the refined stationary point position
-                let i_r_nearest: usize = ((stationary_r - r[0]) / d_r).round() as usize;
-                let i_z_nearest: usize = ((stationary_z - z[0]) / d_z).round() as usize;
+                // let i_r_nearest: usize = ((stationary_r - r[0]) / d_r).round() as usize;
+                let i_r_nearest: usize = (r - stationary_r).abs().argmin().unwrap();
+                let i_z_nearest: usize = (z - stationary_z).abs().argmin().unwrap();
 
                 // Calculate the Hessian at the nearest grid point of the cell
                 // d^2(psi)/(d_r^2)
