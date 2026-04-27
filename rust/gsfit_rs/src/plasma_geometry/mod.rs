@@ -7,6 +7,7 @@ mod calculate_winding_number;
 mod find_boundary;
 mod find_magnetic_axis;
 mod find_stationary_points;
+mod find_stationary_points_using_full_quadrant_method;
 mod find_viable_limit_point;
 mod find_viable_xpt;
 mod flood_fill_mask;

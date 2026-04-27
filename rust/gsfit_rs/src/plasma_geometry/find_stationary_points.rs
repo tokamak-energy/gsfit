@@ -57,6 +57,10 @@ pub struct StationaryPoint {
 /// The sign-change method can be thought of as a fast search for "interesting" cells,
 /// which are then filtered (or neighbouring cells added) by the winding number method.
 /// Then the bicubic solver finds the stationary point location within the cell.
+///
+/// There is a very specific edge case we miss where the `br=0` contour enters and exits through the same cell edge, and the `bz=0` contour enters and exits through a different cell edge.
+/// In this edge case the sign-change will not flag either this cell or neighbouring cells as "interesting".
+/// The only possible solution is to calculate the `winding_number` for every cell (but this is expensive)
 pub fn find_stationary_points(
     r: &Array1<f64>,
     z: &Array1<f64>,
