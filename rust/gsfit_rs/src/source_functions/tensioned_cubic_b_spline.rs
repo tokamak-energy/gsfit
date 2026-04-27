@@ -22,6 +22,7 @@ pub struct TensionedCubicBSpline {
     pub delta_knots: Array1<f64>,
     pub gamma2_array: Array1<f64>,
     pub gamma3_array: Array1<f64>,
+    pub gamma4_array: Array1<f64>,
     pub sigma1_array: Array1<f64>,
     pub sigma2_array: Array1<f64>,
 }
@@ -75,6 +76,7 @@ impl TensionedCubicBSpline {
 
         let mut gamma3_array: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
         let mut gamma2_array: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
+        let mut gamma4_array: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
         for i_knot in 0..n_knots - 1 {
             gamma3_array[i_knot] = TensionedCubicBSpline::gamma3(
                 delta_knots[i_knot],
@@ -91,9 +93,18 @@ impl TensionedCubicBSpline {
                 hyperbolic_lower_cutoff,
                 delta_cutoff,
             );
+            gamma4_array[i_knot] = TensionedCubicBSpline::gamma4(
+                delta_knots[i_knot],
+                tensions[i_knot],
+                delta_knots[i_knot],
+                hyperbolic_upper_cutoff,
+                hyperbolic_lower_cutoff,
+                delta_cutoff,
+            );
         }
         let gamma3_array: Array1<f64> = gamma3_array;
         let gamma2_array: Array1<f64> = gamma2_array;
+        let gamma4_array: Array1<f64> = gamma4_array;
         let mut sigma1_array: Array1<f64> = Array1::from_elem(n_knots - 2, f64::NAN);
         for i in 0..n_knots - 2 {
             if knots[i + 2] - knots[i] < delta_cutoff {
@@ -137,6 +148,7 @@ impl TensionedCubicBSpline {
             delta_knots,
             gamma2_array,
             gamma3_array,
+            gamma4_array,
             sigma1_array,
             sigma2_array,
         }
@@ -162,6 +174,10 @@ impl TensionedCubicBSpline {
         self.phi2(j_index, x_val)
     }
 
+    pub fn gamma4_python(&self, x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
+        TensionedCubicBSpline::gamma4(x_val, rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
+    }
+
     pub fn gamma3_python(&self, x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
         TensionedCubicBSpline::gamma3(x_val, rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
     }
@@ -185,6 +201,7 @@ impl TensionedCubicBSpline {
             "delta_knots" => Ok(PyArray1::from_array(py, &self.delta_knots)),
             "gamma2_array" => Ok(PyArray1::from_array(py, &self.gamma2_array)),
             "gamma3_array" => Ok(PyArray1::from_array(py, &self.gamma3_array)),
+            "gamma4_array" => Ok(PyArray1::from_array(py, &self.gamma4_array)),
             "sigma1_array" => Ok(PyArray1::from_array(py, &self.sigma1_array)),
             "sigma2_array" => Ok(PyArray1::from_array(py, &self.sigma2_array)),
             _ => Err(PyValueError::new_err(format!("Unknown Array1 attribute: {}", name))),
@@ -214,7 +231,7 @@ impl TensionedCubicBSpline {
             // To avoid overflow for large arguments, we approximate sinh(x) and cosh(x)
             // by exp(x)/2, neglect smaller terms in the numerator, and replace the
             // division by subtraction in the exponent.
-             return (rho * (x_val - delta)).exp() * rho.powi(-2);
+            return (rho * (x_val - delta)).exp() * rho.powi(-2);
         }
 
         if rho_delta < hyperbolic_lower_cutoff {
@@ -287,7 +304,7 @@ impl TensionedCubicBSpline {
             // To avoid overflow for large arguments, we approximate sinh(x) and cosh(x)
             // by exp(x)/2, neglect smaller terms in the numerator, and replace the
             // division by subtraction in the exponent.
-             return rho.powi(-1);
+            return rho.powi(-1);
         }
 
         if rho_delta < hyperbolic_lower_cutoff {
