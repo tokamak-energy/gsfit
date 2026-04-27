@@ -5,13 +5,8 @@ use crate::plasma_geometry::hessian;
 use core::f64;
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
+use std::collections::HashMap;
 use std::f64::consts::PI;
-
-struct PotentialStationaryPoint {
-    i_r: usize,
-    i_z: usize,
-    bicubic_interpolator: BicubicInterpolator,
-}
 
 #[derive(Debug, Clone, Copy)]
 pub struct StationaryPoint {
@@ -78,13 +73,18 @@ pub fn find_stationary_points(
     let d_r: f64 = r[1] - r[0];
     let d_z: f64 = z[1] - z[0];
 
+    // Use a HashMap to store potential stationary points, with:
+    // * keys = (i_r, i_z)
+    // * values = BicubicInterpolator
+    // This prevents duplicate cells when neighbouring cells are added later
+    let mut possible_stationary_points: HashMap<(usize, usize), BicubicInterpolator> = HashMap::new();
+
     // Find candidate cells using sign-change detection
     // For each 2x2 cell, check if both `br` and `bz` change sign across the four corners.
     // A sign change in both fields means the nullclines `br=0` and `bz=0` both pass through the cell,
     // indicating a candidate stationary point.
     // Note: this method can produce false positives (near-parallel nullclines passing through the same cell
     // without crossing), but these are filtered out by the bicubic refinement step below.
-    let mut possible_stationary_points: Vec<PotentialStationaryPoint> = Vec::new();
     for i_r in 0..n_r - 1 {
         'cell_loop: for i_z in 0..n_z - 1 {
             let mut n_br_sign_changes: usize = 0;
@@ -122,7 +122,7 @@ pub fn find_stationary_points(
                 n_bz_sign_changes += 1;
             }
 
-            // both `br` and `bz` must change sign to have a candidate stationary point
+            // Both `br` and `bz` must change sign to have a candidate stationary point
             if !(n_br_sign_changes == 2 && n_bz_sign_changes == 2) {
                 // Go to next cell
                 continue 'cell_loop;
@@ -130,42 +130,31 @@ pub fn find_stationary_points(
 
             let bicubic_interpolator: BicubicInterpolator = setup_bicubic_interpolator(r, z, psi_2d, br_2d, bz_2d, d_bz_d_z_2d, i_r, i_z);
 
-            possible_stationary_points.push(PotentialStationaryPoint {
-                i_r,
-                i_z,
-                bicubic_interpolator,
-            });
+            possible_stationary_points.insert((i_r, i_z), bicubic_interpolator);
         }
     }
 
     // Loop over all possible stationary points and see if we should be considering the neighbours
-    let mut additional_stationary_points: Vec<PotentialStationaryPoint> = Vec::new();
-    let mut indices_to_remove: Vec<usize> = Vec::new();
+    let mut keys_to_remove: Vec<(usize, usize)> = Vec::new();
+    let mut neighbours_to_add: HashMap<(usize, usize), BicubicInterpolator> = HashMap::new();
 
-    for (idx, possible_stationary_point) in possible_stationary_points.iter().enumerate() {
+    for (&(i_r, i_z), bicubic_interpolator) in possible_stationary_points.iter() {
         // Calculate the winding number to filter out false positives from the sign-change method
-        let winding_number: i64 = calculate_winding_number(&possible_stationary_point.bicubic_interpolator);
+        let winding_number: i64 = calculate_winding_number(bicubic_interpolator);
 
         // There are occasionally edge cases where the neighbouring cell has the stationary point.
         // This happens when the contour enters and exits through the same edge (which is missed by the sign-change method).
         // So we will check the four neighbouring cells for stationary points. No need to check the diagonal neighbours as entering and exiting through the diagonal point is unlikely.
         if winding_number == 0 {
             // Remember that we will be removing this point
-            indices_to_remove.push(idx);
-
-            let i_r: usize = possible_stationary_point.i_r;
-            let i_z: usize = possible_stationary_point.i_z;
+            keys_to_remove.push((i_r, i_z));
 
             // Left neighbour (and check array bounds)
             if i_r > 0 {
                 let bicubic_interpolator_left: BicubicInterpolator = setup_bicubic_interpolator(r, z, psi_2d, br_2d, bz_2d, d_bz_d_z_2d, i_r - 1, i_z);
                 let winding_number_left: i64 = calculate_winding_number(&bicubic_interpolator_left);
                 if winding_number_left != 0 {
-                    additional_stationary_points.push(PotentialStationaryPoint {
-                        i_r: i_r - 1,
-                        i_z,
-                        bicubic_interpolator: bicubic_interpolator_left,
-                    });
+                    neighbours_to_add.insert((i_r - 1, i_z), bicubic_interpolator_left);
                 }
             }
 
@@ -174,11 +163,7 @@ pub fn find_stationary_points(
                 let bicubic_interpolator_right: BicubicInterpolator = setup_bicubic_interpolator(r, z, psi_2d, br_2d, bz_2d, d_bz_d_z_2d, i_r + 1, i_z);
                 let winding_number_right: i64 = calculate_winding_number(&bicubic_interpolator_right);
                 if winding_number_right != 0 {
-                    additional_stationary_points.push(PotentialStationaryPoint {
-                        i_r: i_r + 1,
-                        i_z,
-                        bicubic_interpolator: bicubic_interpolator_right,
-                    });
+                    neighbours_to_add.insert((i_r + 1, i_z), bicubic_interpolator_right);
                 }
             }
 
@@ -187,11 +172,7 @@ pub fn find_stationary_points(
                 let bicubic_interpolator_lower: BicubicInterpolator = setup_bicubic_interpolator(r, z, psi_2d, br_2d, bz_2d, d_bz_d_z_2d, i_r, i_z - 1);
                 let winding_number_lower: i64 = calculate_winding_number(&bicubic_interpolator_lower);
                 if winding_number_lower != 0 {
-                    additional_stationary_points.push(PotentialStationaryPoint {
-                        i_r,
-                        i_z: i_z - 1,
-                        bicubic_interpolator: bicubic_interpolator_lower,
-                    });
+                    neighbours_to_add.insert((i_r, i_z - 1), bicubic_interpolator_lower);
                 }
             }
 
@@ -200,26 +181,22 @@ pub fn find_stationary_points(
                 let bicubic_interpolator_upper: BicubicInterpolator = setup_bicubic_interpolator(r, z, psi_2d, br_2d, bz_2d, d_bz_d_z_2d, i_r, i_z + 1);
                 let winding_number_upper: i64 = calculate_winding_number(&bicubic_interpolator_upper);
                 if winding_number_upper != 0 {
-                    additional_stationary_points.push(PotentialStationaryPoint {
-                        i_r,
-                        i_z: i_z + 1,
-                        bicubic_interpolator: bicubic_interpolator_upper,
-                    });
+                    neighbours_to_add.insert((i_r, i_z + 1), bicubic_interpolator_upper);
                 }
             }
         }
     }
 
-    // Remove false positives (in reverse, so that we don't mess up the indices before removing)
-    for &idx in indices_to_remove.iter().rev() {
-        possible_stationary_points.remove(idx);
+    // Remove false positives and add confirmed neighbours
+    for key in &keys_to_remove {
+        possible_stationary_points.remove(key);
     }
-    possible_stationary_points.extend(additional_stationary_points);
+    possible_stationary_points.extend(neighbours_to_add);
 
     let mut stationary_points: Vec<StationaryPoint> = Vec::new();
-    for possible_stationary_point in &possible_stationary_points {
+    for (&(i_r, i_z), bicubic_interpolator) in &possible_stationary_points {
         // Find the stationary point using the bicubic interpolation
-        let stationary_point_or_error: Result<BicubicStationaryPoint, String> = possible_stationary_point.bicubic_interpolator.find_stationary_point(1e-6, 100);
+        let stationary_point_or_error: Result<BicubicStationaryPoint, String> = bicubic_interpolator.find_stationary_point(1e-6, 100);
 
         // Extract the stationary point values
         // If the bicubic solver failed to converge, this cell is a false positive from
@@ -228,10 +205,10 @@ pub fn find_stationary_points(
         match stationary_point_or_error {
             Ok(stationary_point) => {
                 // Geometry of the cell corners
-                let i_r_left: usize = possible_stationary_point.i_r;
-                let i_r_right: usize = possible_stationary_point.i_r + 1;
-                let i_z_lower: usize = possible_stationary_point.i_z;
-                let i_z_upper: usize = possible_stationary_point.i_z + 1;
+                let i_r_left: usize = i_r;
+                let i_r_right: usize = i_r + 1;
+                let i_z_lower: usize = i_z;
+                let i_z_upper: usize = i_z + 1;
 
                 // Extract and store results
                 let stationary_r: f64 = r[i_r_left] + stationary_point.x * d_r;
