@@ -166,7 +166,7 @@ pub fn cubic_interpolation_at_x(cell0_x: f64, cell0_f: f64, cell0_d_f_d_x: f64, 
     // h00(0) = 1, h00(1) = 0;  h00'(0) = 0, h00'(1) = 0
     // h10(0) = 0, h10(1) = 0;  h10'(0) = 1, h10'(1) = 0
     // h01(0) = 0, h01(1) = 1;  h01'(0) = 0, h01'(1) = 0
-    // h11(0) = 0, h11(1) = 1;  h11'(0) = 0, h11'(1) = 1
+    // h11(0) = 0, h11(1) = 0;  h11'(0) = 0, h11'(1) = 1
     //
     // f(t) = cell0_f * h00(t)
     //        + d_x * cell0_d_f_d_x * h10(t)
@@ -181,7 +181,10 @@ pub fn cubic_interpolation_at_x(cell0_x: f64, cell0_f: f64, cell0_d_f_d_x: f64, 
     let d: f64 = 2.0 * cell0_f + delta_x * cell0_d_f_d_x - 2.0 * cell1_f + delta_x * cell1_d_f_d_x;
     let t: f64 = (x - cell0_x) / delta_x;
 
-    assert!((0.0..=1.0).contains(&t), "x={x} is out of interpolation range: (cell0_x, cell1_x)=({cell0_x}, {cell1_x})");
+    assert!(
+        (0.0..=1.0).contains(&t),
+        "x={x} is out of interpolation range: (cell0_x, cell1_x)=({cell0_x}, {cell1_x})"
+    );
 
     let value: f64 = a + b * t + c * t.powi(2) + d * t.powi(3);
 
