@@ -87,7 +87,13 @@ pub(crate) fn build_npy_header(shape_str: &str) -> Vec<u8> {
     let unpadded_len: usize = prefix_len + dict_str.len() + 1; // +1 for '\n'
     let padded_total: usize = unpadded_len.div_ceil(64) * 64;
     let n_padding: usize = padded_total - unpadded_len;
-    let header_len: u16 = (dict_str.len() + n_padding + 1) as u16; // dict + spaces + newline
+    let header_content_len: usize = dict_str.len() + n_padding + 1; // dict + spaces + newline
+    assert!(
+        header_content_len <= u16::MAX as usize,
+        "npy_writer: Header too large for v1.0 format ({} bytes exceeds u16::MAX)",
+        header_content_len
+    );
+    let header_len: u16 = header_content_len as u16;
 
     let mut header_bytes: Vec<u8> = Vec::with_capacity(padded_total);
 
