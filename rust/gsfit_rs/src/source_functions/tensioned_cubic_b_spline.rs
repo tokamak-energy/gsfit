@@ -300,7 +300,7 @@ impl TensionedCubicBSpline {
         (rho_delta.cosh() - 1.0) / (rho * rho_delta.sinh())
     }
 
-    // This is Equation (2.6) with Equation (2.7) substiuted in and integrated
+    // This is Equation (2.6) with Equation (2.7) substituted in and integrated
     // from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
     // For the case where r = 2.
     fn phi2(&self, j_index: usize, x_val: f64) -> f64 {
