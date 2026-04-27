@@ -211,8 +211,9 @@ impl TensionedCubicBSpline {
         }
 
         if rho_delta > hyperbolic_upper_cutoff {
-            // Avoid overflow for large sinh/cosh values by approximating with exp(x)/2
-            // and replacing division with subtraction in the exponent.
+            // To avoid overflow for large arguments, we approximate sinh(x) and cosh(x)
+            // by exp(x)/2, neglect smaller terms in the numerator, and replace the
+            // division by subtraction in the exponent.
              return (rho * (x_val - delta)).exp() * rho.powi(-2);
         }
 
@@ -248,8 +249,9 @@ impl TensionedCubicBSpline {
         }
 
         if rho_delta > hyperbolic_upper_cutoff {
-            // Avoid overflow for large sinh/cosh values by approximating with exp(x)/2
-            // and replacing division with subtraction in the exponent.
+            // To avoid overflow for large arguments, we approximate sinh(x) and cosh(x)
+            // by exp(x)/2, neglect smaller terms in the numerator, and replace the
+            // division by subtraction in the exponent.
             return (rho * (x_val - delta)).exp() * rho.powi(-3);
         }
 
@@ -282,8 +284,9 @@ impl TensionedCubicBSpline {
         }
 
         if rho_delta > hyperbolic_upper_cutoff {
-            // Avoid overflow for large sinh/cosh values by approximating with exp(x)/2
-            // and replacing division with subtraction in the exponent.
+            // To avoid overflow for large arguments, we approximate sinh(x) and cosh(x)
+            // by exp(x)/2, neglect smaller terms in the numerator, and replace the
+            // division by subtraction in the exponent.
              return rho.powi(-1);
         }
 
