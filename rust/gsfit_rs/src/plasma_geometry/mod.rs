@@ -20,7 +20,6 @@ pub mod marching_squares_for_sol;
 
 // Public flattened exports
 pub use boundary_contour::BoundaryContour;
-pub use calculate_winding_number::calculate_winding_number;
 pub use find_boundary::find_boundary;
 pub use find_magnetic_axis::MagneticAxis;
 pub use find_magnetic_axis::find_magnetic_axis;
