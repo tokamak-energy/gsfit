@@ -26,6 +26,7 @@ pub use find_magnetic_axis::MagneticAxis;
 pub use find_magnetic_axis::find_magnetic_axis;
 pub use find_stationary_points::StationaryPoint;
 pub use find_stationary_points::find_stationary_points;
+pub use find_stationary_points_using_full_quadrant_method::find_stationary_points_using_full_quadrant_method;
 pub use find_viable_xpt::find_viable_xpt;
 pub use flood_fill_mask::flood_fill_mask;
 pub use hessian::hessian;
