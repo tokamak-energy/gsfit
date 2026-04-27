@@ -15,10 +15,15 @@ mod tests {
     use super::*;
     use ndarray::{Array1, Array2};
     use std::fs;
-    use std::time::{SystemTime, UNIX_EPOCH};
+    use std::sync::atomic::{AtomicU64, Ordering};
 
-    fn unique_suffix() -> u128 {
-        SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+    /// Generate a unique suffix for temporary test file names.
+    /// Uses PID + atomic counter to avoid filename collisions,
+    /// which could happen if Rust runs tests in parallel across threads.
+    fn unique_suffix() -> String {
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        let count: u64 = COUNTER.fetch_add(1, Ordering::Relaxed);
+        format!("[pid={},atomic={}]", std::process::id(), count)
     }
 
     #[test]
