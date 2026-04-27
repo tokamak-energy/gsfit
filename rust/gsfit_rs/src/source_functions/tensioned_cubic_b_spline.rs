@@ -1,5 +1,6 @@
 use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2, s};
+use ndarray_linalg::assert;
 use numpy::PyArray1;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
@@ -205,17 +206,19 @@ impl TensionedCubicBSpline {
         let rho_x: f64 = rho * x_val;
 
         if delta < delta_cutoff {
-            // We are in the exterior (clamped) knot region where delta is zero
+            // We assume we are in the exterior (clamped) knot region
             return 0.0;
         }
 
         if rho_delta > hyperbolic_upper_cutoff {
-            // To avoid overflow issues when taking sinh of large numbers we replace sinh() with exp()/2 approximation
-            return (rho * (x_val - delta)).exp() * rho.powi(-2);
+            // Avoid overflow for large sinh/cosh values by approximating with exp(x)/2
+            // and replacing division with subtraction in the exponent.
+             return (rho * (x_val - delta)).exp() * rho.powi(-2);
         }
 
         if rho_delta < hyperbolic_lower_cutoff {
-            // Since x_val < delta, then we need to taylor expand both the numerator and denominator for small arguments
+            // Since rho * delta is very small we need to taylor expand both the numerator and denominator for small arguments to avoid
+            // significant numerical precision errors in the numerator and remove possibility of dividing by zero if rho is zero.
             return x_val.powi(3) / (6.0 * delta);
         }
 
@@ -228,6 +231,43 @@ impl TensionedCubicBSpline {
         (rho_x.sinh() - rho_x) / (rho.powi(2) * rho_delta.sinh())
     }
 
+    // This is the integral of gamma3 from 0 to x, which is used in the psi2 function below.
+    fn gamma4(x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
+        // x_val, rho and delta must be positive
+        assert!(x_val >= 0.0, "x_val must be non-negative");
+        assert!(rho >= 0.0, "rho must be non-negative");
+        assert!(delta >= 0.0, "delta must be non-negative");
+        assert!(x_val <= delta, "x_val must be less than or equal to delta");
+
+        let rho_delta: f64 = rho * delta;
+        let rho_x: f64 = rho * x_val;
+
+        if delta < delta_cutoff {
+            // We assume we are in the exterior (clamped) knot region
+            return 0.0;
+        }
+
+        if rho_delta > hyperbolic_upper_cutoff {
+            // Avoid overflow for large sinh/cosh values by approximating with exp(x)/2
+            // and replacing division with subtraction in the exponent.
+            return (rho * (x_val - delta)).exp() * rho.powi(-3);
+        }
+
+        if rho_delta < hyperbolic_lower_cutoff {
+            // Since rho * delta is very small we need to taylor expand both the numerator and denominator for small arguments to avoid
+            // significant numerical precision errors in the numerator and remove possibility of dividing by zero if rho is zero.
+            return x_val.powi(4) / (24.0 * delta);
+        }
+
+        if rho_x < hyperbolic_lower_cutoff {
+            // Use Taylor series expansion for just the numerator
+            return rho * x_val.powi(4) / (24.0 * rho_delta.sinh());
+        }
+
+        // Normal case
+        (rho_x.cosh() - 1.0 - 0.5 * rho_x.powi(2)) / (rho.powi(3) * rho_delta.sinh())
+    }
+
     // This is Equation (2.2) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
     // Note that x always equals delta in our implementation so we have removed x as an argument.
     fn gamma2(rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
@@ -237,17 +277,19 @@ impl TensionedCubicBSpline {
         let rho_delta: f64 = rho * delta;
 
         if delta < delta_cutoff {
-            // We are in the exterior (clamped) knot region where delta is zero
+            // We assume we are in the exterior (clamped) knot region
             return 0.0;
         }
 
         if rho_delta > hyperbolic_upper_cutoff {
-            // To avoid overflow issues when taking sinh or cosh of large numbers we replace sinh and cosh with exp()/2 approximation
-            return rho.powi(-1);
+            // Avoid overflow for large sinh/cosh values by approximating with exp(x)/2
+            // and replacing division with subtraction in the exponent.
+             return rho.powi(-1);
         }
 
         if rho_delta < hyperbolic_lower_cutoff {
-            // Use Taylor series expansion for small arguments to avoid numerical precision loss
+            // Since rho * delta is very small we need to taylor expand both the numerator and denominator for small arguments to avoid
+            // significant numerical precision errors in the numerator and remove possibility of dividing by zero if rho is zero.
             return 0.5 * delta;
         }
 
@@ -276,6 +318,7 @@ impl TensionedCubicBSpline {
         let gamma3_jp: f64 = self.gamma3_array[j_index + 1]; // gamma3(delta_t_{j+1}, rho_{j+1}, delta_t_{j+1})
         let gamma3_jpp: f64 = self.gamma3_array[j_index + 2]; // gamma3(delta_t_{j+2}, rho_{
         let sigma2_j: f64 = self.sigma2_array[j_index];
+        assert!(sigma2_j > 0.0, "sigma2_j must be positive");
 
         // Evaluate integral of the first row of Equation (2.7)
         let sigma1_j: f64 = self.sigma1_array[j_index];
