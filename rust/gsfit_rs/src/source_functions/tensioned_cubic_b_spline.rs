@@ -59,7 +59,7 @@ impl TensionedCubicBSpline {
         // The `rho_delta_upper_cutoff` value is used by the gamma3 and gamma2 functions below to avoid overflow issues
         // when taking the cosh and sinh of large numbers.
         // Note that the largest number you can take exp(x) in rust for 64-bit floats should be around
-        // ln(1.7976931348623157e308) = 709.782712893384, but we use 500 to be safe.
+        // ln(1.7976931348623157e308) = 709.782712893384, but we use 100 to be safe.
         let hyperbolic_upper_cutoff: f64 = 100.0;
 
         // Decides the cutoff for when we take the taylor series for small arguments for sinh and cosh in the
