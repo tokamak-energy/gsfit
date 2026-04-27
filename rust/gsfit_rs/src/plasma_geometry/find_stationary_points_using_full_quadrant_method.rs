@@ -139,6 +139,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
     bz_2d: &Array2<f64>,
     d_br_d_z_2d: &Array2<f64>,
     d_bz_d_z_2d: &Array2<f64>,
+    d_br_d_r_2d: &Array2<f64>,
+    d_bz_d_r_2d: &Array2<f64>,
     d2_psi_d_r2_calculator: D2PsiDR2Calculator,
 ) -> Vec<StationaryPoint> {
 
@@ -159,10 +161,10 @@ pub fn find_stationary_points_using_full_quadrant_method(
             let br_crossings: Vec<f64> = cubic_interpolation_v2(
                 r[i_r],
                 br_2d[(i_z, i_r)],
-                d_br_d_z_2d[(i_z, i_r)],
+                d_br_d_r_2d[(i_z, i_r)],
                 r[i_r + 1],
                 br_2d[(i_z, i_r + 1)],
-                d_br_d_z_2d[(i_z, i_r + 1)],
+                d_br_d_r_2d[(i_z, i_r + 1)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(br_crossings.len());
@@ -174,10 +176,10 @@ pub fn find_stationary_points_using_full_quadrant_method(
             let bz_crossings: Vec<f64> = cubic_interpolation_v2(
                 r[i_r],
                 bz_2d[(i_z, i_r)],
-                d_bz_d_z_2d[(i_z, i_r)],
+                d_bz_d_r_2d[(i_z, i_r)],
                 r[i_r + 1],
                 bz_2d[(i_z, i_r + 1)],
-                d_bz_d_z_2d[(i_z, i_r + 1)],
+                d_bz_d_r_2d[(i_z, i_r + 1)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(bz_crossings.len());
