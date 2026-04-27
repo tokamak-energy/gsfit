@@ -29,8 +29,6 @@ impl D2PsiDR2Calculator {
     /// * `g_d2_psi_d_r2_plasma` - Green's function table for d^2(psi)/d(r^2) from plasma current, shape (n_z * n_r, n_r), [weber**2 / (metre**2 * ampere)]
     /// * `j_2d` - Plasma current density on grid, shape (n_z, n_r), [ampere / metre**2]
     /// * `d_area` - Area of each grid cell, [metre**2]
-    /// * `n_r` - Number of R grid points, [dimensionless]
-    /// * `n_z` - Number of Z grid points, [dimensionless]
     /// * `r` - R grid points, shape (n_r), [metre]
     /// * `g_bz_plasma` - Green's function table for Bz from plasma current, shape (n_z, n_r), [tesla / (ampere / metre**2)]
     /// * `delta_z` - Small perturbation to the Z-grid to stabilise the VDE, [metre]
