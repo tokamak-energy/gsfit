@@ -1622,6 +1622,9 @@ impl<'a> GsSolution<'a> {
     fn _write_time_slice_to_file(&self, i_iter: usize) {
         use std::path::Path;
 
+        // Equivalent to `mkdir -p tmp`
+        std::fs::create_dir_all("tmp").expect("Failed to create 'tmp' directory");
+
         let br_2d: Array2<f64> = self.br_2d.to_owned();
         let bz_2d: Array2<f64> = self.bz_2d.to_owned();
         let psi_2d: Array2<f64> = self.psi_2d.to_owned();
@@ -1631,6 +1634,7 @@ impl<'a> GsSolution<'a> {
         let mag_r: f64 = self.r_mag;
         let mag_z: f64 = self.z_mag;
 
+        // Filename has two leading zeros, e.g. i_iter=000, i_iter=001, ...
         npy_reader_and_writer::write_npy_2d(Path::new(&format!("tmp/i_iter={:03}_psi_2d.npy", i_iter)), &psi_2d);
         npy_reader_and_writer::write_npy_2d(Path::new(&format!("tmp/i_iter={:03}_br_2d.npy", i_iter)), &br_2d);
         npy_reader_and_writer::write_npy_2d(Path::new(&format!("tmp/i_iter={:03}_bz_2d.npy", i_iter)), &bz_2d);
