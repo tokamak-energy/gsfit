@@ -9,20 +9,22 @@ use std::collections::HashMap;
 use std::f64::consts::PI;
 use super::cubic_interpolation::cubic_interpolation_v2;
 
-#[derive(Debug, Clone, Copy)]
-pub struct StationaryPoint {
-    pub r: f64,
-    pub z: f64,
-    pub psi: f64,
-    pub hessian_determinant: f64,
-    pub hessian_trace: f64,
-    pub i_r_nearest: usize,
-    pub i_z_nearest: usize,
-    pub i_r_left: usize,
-    pub i_r_right: usize,
-    pub i_z_lower: usize,
-    pub i_z_upper: usize,
-}
+use super::StationaryPoint;
+
+// #[derive(Debug, Clone, Copy)]
+// pub struct StationaryPoint {
+//     pub r: f64,
+//     pub z: f64,
+//     pub psi: f64,
+//     pub hessian_determinant: f64,
+//     pub hessian_trace: f64,
+//     pub i_r_nearest: usize,
+//     pub i_z_nearest: usize,
+//     pub i_r_left: usize,
+//     pub i_r_right: usize,
+//     pub i_z_lower: usize,
+//     pub i_z_upper: usize,
+// }
 
 #[derive(Clone)]
 struct Coordinate {
@@ -237,7 +239,11 @@ pub fn find_stationary_points_using_full_quadrant_method(
     // Given that we are using bicubic interpolation, which can produce up to 3 crossings for both `br=0` and `bz=0` per edge.
     // The maximum possible `winding_number = 6`.
     for i_r in 0..n_r - 1 {
+        let i_r_left: usize = i_r;
+        let i_r_right: usize = i_r + 1;
         for i_z in 0..n_z - 1 {
+            let i_z_lower: usize = i_z;
+            let i_z_upper: usize = i_z + 1;
 
             // Walk the perimeter of the cell CCW: BL → BR → TR → TL → BL.
             // Track every time `br` or `bz` cross zero.
@@ -247,9 +253,10 @@ pub fn find_stationary_points_using_full_quadrant_method(
             let mut perimeter_events: Vec<CrossingKind> = Vec::new();
 
             // Bottom edge: BL → BR (r increasing at z = z[i_z]).
+            // Bottom edge: (i_r_left, i_z_bottom) → (i_r_right, i_z_bottom)
             let bottom_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &br_crossing_points[&(i_r, i_z, i_r + 1, i_z)],
-                &bz_crossing_points[&(i_r, i_z, i_r + 1, i_z)],
+                &br_crossing_points[&(i_r_left, i_z_lower, i_r_right, i_z_lower)],
+                &bz_crossing_points[&(i_r_left, i_z_lower, i_r_right, i_z_lower)],
                 r[i_r],
                 r[i_r + 1],
                 true,
@@ -260,8 +267,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
 
             // Right edge: BR → TR (z increasing at r = r[i_r+1]).
             let right_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &br_crossing_points[&(i_r + 1, i_z, i_r + 1, i_z + 1)],
-                &bz_crossing_points[&(i_r + 1, i_z, i_r + 1, i_z + 1)],
+                &br_crossing_points[&(i_r_right, i_z_lower, i_r_right, i_z_upper)],
+                &bz_crossing_points[&(i_r_right, i_z_lower, i_r_right, i_z_upper)],
                 z[i_z],
                 z[i_z + 1],
                 false,
@@ -272,8 +279,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
 
             // Top edge: TR → TL (r decreasing at z = z[i_z+1]).
             let top_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &br_crossing_points[&(i_r, i_z + 1, i_r + 1, i_z + 1)],
-                &bz_crossing_points[&(i_r, i_z + 1, i_r + 1, i_z + 1)],
+                &br_crossing_points[&(i_r_left, i_z_upper, i_r_right, i_z_upper)],
+                &bz_crossing_points[&(i_r_left, i_z_upper, i_r_right, i_z_upper)],
                 r[i_r + 1],
                 r[i_r],
                 true,
@@ -284,8 +291,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
 
             // Left edge: TL → BL (z decreasing at r = r[i_r]).
             let left_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &br_crossing_points[&(i_r, i_z, i_r, i_z + 1)],
-                &bz_crossing_points[&(i_r, i_z, i_r, i_z + 1)],
+                &br_crossing_points[&(i_r_left, i_z_lower, i_r_left, i_z_upper)],
+                &bz_crossing_points[&(i_r_left, i_z_lower, i_r_left, i_z_upper)],
                 z[i_z + 1],
                 z[i_z],
                 false,
@@ -298,8 +305,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
             // Each event changes `total_quarter_turns` by +/-1.
             //
             // Seed the walk at the bottom-left grid point.
-            let mut sign_br: i8 = sign_with_tiebreak(br_2d[(i_z, i_r)]); // if `br_2d[(i_z, i_r)] == 0.0`, then `sign_br = 1`
-            let mut sign_bz: i8 = sign_with_tiebreak(bz_2d[(i_z, i_r)]);
+            let mut sign_br: i8 = sign_with_tiebreak(br_2d[(i_z_lower, i_r_left)]); // if `br_2d[(i_z, i_r)] == 0.0`, then `sign_br = 1`
+            let mut sign_bz: i8 = sign_with_tiebreak(bz_2d[(i_z_lower, i_r_left)]);
             let mut prev_q: i8 = classify_quadrant(sign_br, sign_bz);
             let mut total_quarter_turns: i8 = 0;
 
@@ -329,12 +336,6 @@ pub fn find_stationary_points_using_full_quadrant_method(
                 // Grid variables
                 let d_r: f64 = r[1] - r[0];
                 let d_z: f64 = z[1] - z[0];
-
-                // The cell corners are (i_r, i_z), (i_r+1, i_z), (i_r, i_z+1), (i_r+1, i_z+1)
-                let i_r_left: usize = i_r;
-                let i_r_right: usize = i_r + 1;
-                let i_z_lower: usize = i_z;
-                let i_z_upper: usize = i_z + 1;
 
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
                 let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
@@ -417,15 +418,20 @@ pub fn find_stationary_points_using_full_quadrant_method(
                             i_z_lower,
                             i_z_upper,
                         });
+                        // println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'gx')")
                     }
                     Err(_error_string) => {
-                        println!("Warning: bicubic solver failed to converge for cell with corners at (i_r, i_z) = ({}, {}), ({}, {}), ({}, {}), ({}, {}). This cell is a false positive from the sign-change detection, likely due to near-parallel nullclines passing through the cell without actually crossing.", i_r_left, i_z_lower, i_r_right, i_z_lower, i_r_left, i_z_upper, i_r_right, i_z_upper);
+                        // println!("Warning: bicubic solver failed to converge for cell with corners at (i_r, i_z) = ({}, {}), ({}, {}), ({}, {}), ({}, {}). This cell is a false positive from the sign-change detection, likely due to near-parallel nullclines passing through the cell without actually crossing.", i_r_left, i_z_lower, i_r_right, i_z_lower, i_r_left, i_z_upper, i_r_right, i_z_upper);
+                        // println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'ro')")
                     }
                 }
             }
         }
     }
 
+    // use std::path::Path;
+    // npy_reader_and_writer::write_npy_2d(Path::new("/home/peter.buxton/github/gsfit_github/examples/psi_2d.npy"), psi_2d);
+    // panic!("stopping for debugging");
 
     stationary_points
 }
