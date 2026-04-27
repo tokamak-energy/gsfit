@@ -9,6 +9,7 @@ use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
 use crate::plasma_geometry::find_stationary_points;
+use crate::plasma_geometry::find_stationary_points_using_full_quadrant_method;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
 use core::f64;
@@ -316,6 +317,9 @@ impl<'a> GsSolution<'a> {
 
         // Iteration loop
         'iteration_loop: for i_iter in 0..self.n_iter_max {
+            println!("");
+            println!("");
+            println!("i_iter = {i_iter}");
             // From previous iteration
             let j_2d: Array2<f64> = self.j_2d.to_owned();
 
@@ -382,10 +386,12 @@ impl<'a> GsSolution<'a> {
             );
 
             // Find stationary points in `psi`
-            let stationary_points_or_error: Result<Vec<StationaryPoint>, String> =
-                find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
+            // let stationary_points_or_error: Result<Vec<StationaryPoint>, String> =
+            //     find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
+            let stationary_points_or_error: Vec<StationaryPoint> =
+                find_stationary_points_using_full_quadrant_method(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
             // At a minimum we should have found the magnetic axis
-            if stationary_points_or_error.is_err() {
+            if stationary_points_or_error.is_empty() {
                 // Set time-slice to failed
                 self.set_to_failed_time_slice();
 
@@ -396,7 +402,7 @@ impl<'a> GsSolution<'a> {
                 // Exit iteration loop for this time-slice
                 break 'iteration_loop;
             }
-            let stationary_points: Vec<StationaryPoint> = stationary_points_or_error.expect("gs_solution: unwrapping stationary_points");
+            let stationary_points: Vec<StationaryPoint> = stationary_points_or_error.to_owned();
 
             // Store stationary points in the solution
             self.stationary_points = stationary_points.clone();
