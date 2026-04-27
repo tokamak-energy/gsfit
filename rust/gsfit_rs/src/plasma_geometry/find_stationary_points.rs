@@ -91,39 +91,42 @@ pub fn find_stationary_points(
             let mut n_bz_sign_changes: usize = 0;
 
             // Lower-left to lower-right
-            if br_2d[(i_z, i_r)] * br_2d[(i_z, i_r + 1)] < 0.0 {
+            // Note: the `<= 0.0` condition captures both a sign change (normal) and exact zeros on the grid points (edge case)
+            if br_2d[(i_z, i_r)] * br_2d[(i_z, i_r + 1)] <= 0.0 {
                 n_br_sign_changes += 1;
             }
-            if bz_2d[(i_z, i_r)] * bz_2d[(i_z, i_r + 1)] < 0.0 {
+            if bz_2d[(i_z, i_r)] * bz_2d[(i_z, i_r + 1)] <= 0.0 {
                 n_bz_sign_changes += 1;
             }
 
             // Upper-left to upper-right
-            if br_2d[(i_z + 1, i_r)] * br_2d[(i_z + 1, i_r + 1)] < 0.0 {
+            if br_2d[(i_z + 1, i_r)] * br_2d[(i_z + 1, i_r + 1)] <= 0.0 {
                 n_br_sign_changes += 1;
             }
-            if bz_2d[(i_z + 1, i_r)] * bz_2d[(i_z + 1, i_r + 1)] < 0.0 {
+            if bz_2d[(i_z + 1, i_r)] * bz_2d[(i_z + 1, i_r + 1)] <= 0.0 {
                 n_bz_sign_changes += 1;
             }
 
             // Lower-left to upper-left
-            if br_2d[(i_z, i_r)] * br_2d[(i_z + 1, i_r)] < 0.0 {
+            if br_2d[(i_z, i_r)] * br_2d[(i_z + 1, i_r)] <= 0.0 {
                 n_br_sign_changes += 1;
             }
-            if bz_2d[(i_z, i_r)] * bz_2d[(i_z + 1, i_r)] < 0.0 {
+            if bz_2d[(i_z, i_r)] * bz_2d[(i_z + 1, i_r)] <= 0.0 {
                 n_bz_sign_changes += 1;
             }
 
             // Lower-right to upper-right
-            if br_2d[(i_z, i_r + 1)] * br_2d[(i_z + 1, i_r + 1)] < 0.0 {
+            if br_2d[(i_z, i_r + 1)] * br_2d[(i_z + 1, i_r + 1)] <= 0.0 {
                 n_br_sign_changes += 1;
             }
-            if bz_2d[(i_z, i_r + 1)] * bz_2d[(i_z + 1, i_r + 1)] < 0.0 {
+            if bz_2d[(i_z, i_r + 1)] * bz_2d[(i_z + 1, i_r + 1)] <= 0.0 {
                 n_bz_sign_changes += 1;
             }
 
-            // Both `br` and `bz` must change sign to have a candidate stationary point
-            if !(n_br_sign_changes == 2 && n_bz_sign_changes == 2) {
+            // Both `br=0` and `bz=0` nullclines must pass through this cell for it to be a candidate stationary point
+            // Note: normally the test should be `==2`.
+            // But if a nullcline passes exactly through a grid point, it can cause two edges to have sign changes.
+            if !(n_br_sign_changes >= 2 && n_bz_sign_changes >= 2) {
                 // Go to next cell
                 continue 'cell_loop;
             }
@@ -322,8 +325,6 @@ fn setup_bicubic_interpolator(
     bicubic_interpolator
 }
 
-// TODO: Add a test for this function. shot=12050, time=131ms failed with the sign-change method, but succeeded with flood fill.
-
 /// In this test the `bz=0` contour enters and exits through the same cell edge
 ///
 /// See the Jupyter notebook for a plot detailing the test
@@ -441,3 +442,7 @@ fn test_find_stationary_points() {
     assert_abs_diff_eq!(expected_stationary_point_z, stationary_point.z, epsilon = d_z / 10.0);
     assert_abs_diff_eq!(expected_stationary_point_psi, stationary_point.psi, epsilon = max_delta_psi / 10.0);
 }
+
+// TODO: Add a test for this function. shot=12050, time=131ms failed with the sign-change method, but succeeded with flood fill.
+
+// TODO: Add a test where the `br=0` or `bz=0` contour passes exactly through a grid point (this could happen with synthetic data as we might have a perfect double null)
