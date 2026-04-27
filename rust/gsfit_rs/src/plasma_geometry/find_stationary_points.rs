@@ -2,9 +2,9 @@ use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint};
 use super::calculate_winding_number::calculate_winding_number;
 use crate::greens::D2PsiDR2Calculator;
 use crate::plasma_geometry::hessian;
-use ndarray_stats::QuantileExt;
 use core::f64;
 use ndarray::{Array1, Array2};
+use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;
 
 struct PotentialStationaryPoint {
@@ -28,6 +28,40 @@ pub struct StationaryPoint {
     pub i_z_upper: usize,
 }
 
+/// Find stationary points of `psi`:
+/// * Local minima / maxima (e.g. magnetic axis)
+/// * Saddle points (e.g. x-points)
+/// 
+/// # Arguments
+/// * `r` - radial grid, [metre]
+/// * `z` - vertical grid, [metre]
+/// * `psi_2d` - 2D array of `psi` values on the (r, z) grid, shape = (n_z, n_r), [weber]
+/// * `br_2d` - 2D array of `br` values on the (r, z) grid, shape = (n_z, n_r), [tesla]
+/// * `bz_2d` - 2D array of `bz` values on the (r, z) grid, shape = (n_z, n_r), [tesla]
+/// * `d_br_d_z_2d` - 2D array of `d(br)/d(z)` values on the (r, z) grid, shape = (n_z, n_r), [tesla / metre]
+/// * `d_bz_d_z_2d` - 2D array of `d(bz)/d(z)` values on the (r, z) grid, shape = (n_z, n_r), [tesla / metre]
+/// * `d2_psi_d_r2_calculator` - a calculator for `d^2(psi)/d(r)^2` at the grid points, which is needed to compute the Hessian determinant and trace
+/// 
+/// # Returns
+/// * `Result<Vec<StationaryPoint>, String>` - a list of the stationary points found, with their properties
+/// 
+/// # Algorithm
+/// 1. Use the sign-change method to find candidate cells where `br` and `bz` both change sign
+/// 2. Calculate the winding number for each candidate cell to filter out false positives or add missing neighbouring cells
+/// 3. Use the bicubic interpolation to refine the position of the stationary point
+/// 
+/// # Notes
+/// In all cases, we must assume the grid resolution is large enough to see features.
+///
+/// The sign-change method is vulnerable to both:
+/// * False positives: near-tangency contours
+/// * False negatives: contours entering and exiting through the same edge of a cell
+///
+/// The winding number uses the bicubic interpolation along the cell edges, so is more robust. But is also more expensive.
+///
+/// The sign-change method can be thought of as a fast search for "interesting" cells,
+/// which are then filtered (or neighbouring cells added) by the winding number method.
+/// Then the bicubic solver finds the stationary point location within the cell.
 pub fn find_stationary_points(
     r: &Array1<f64>,
     z: &Array1<f64>,
@@ -43,11 +77,6 @@ pub fn find_stationary_points(
     let n_z: usize = z.len();
     let d_r: f64 = r[1] - r[0];
     let d_z: f64 = z[1] - z[0];
-
-    // Assuming the grid resolution is large enough to see features.
-    // The sign-change method is vulnerable to near-tangency contours (false positives).
-    // But the sign-change method is not vulnerable to false negatives (i.e. missing a crossing).
-    // But the winding number is robust against near-tangency contours.
 
     // Find candidate cells using sign-change detection
     // For each 2x2 cell, check if both `br` and `bz` change sign across the four corners.
