@@ -149,7 +149,7 @@ fn combine_and_order_edge_events(
 ///
 /// A subtle failure mode is when there is both an o-point and an x-point in the same cell,
 /// `winding_number = (+1) + (-1) = 0`, which would incorrectly indicate no stationary points.
-pub fn find_stationary_points_using_full_quadrant_method(
+pub fn find_stationary_points_using_winding_number(
     r: ArrayView1<f64>,
     z: ArrayView1<f64>,
     psi_2d: ArrayView2<f64>,
@@ -443,11 +443,11 @@ pub fn find_stationary_points_using_full_quadrant_method(
                                 psi_2d[(i_z_sample, i_r_sample)] = bicubic_interpolator.interpolate(r_s, z_s);
                             }
                         }
-                        println!("psi_2d = {:#?}", psi_2d);
+                        // println!("psi_2d = {:#?}", psi_2d);
 
-                        use std::path::Path;
-                        npy_reader_and_writer::write_npy_2d(Path::new("/home/peter.buxton/github/gsfit_github/examples/psi_2d.npy"), &psi_2d.to_owned());
-                        panic!("stopping for debugging");
+                        // use std::path::Path;
+                        // npy_reader_and_writer::write_npy_2d(Path::new("/home/peter.buxton/github/gsfit_github/examples/psi_2d.npy"), &psi_2d.to_owned());
+                        // panic!("stopping for debugging");
                     }
                 }
             }
@@ -460,9 +460,9 @@ pub fn find_stationary_points_using_full_quadrant_method(
 /// In this test the `d(psi)/d(r)=0` contour enters and exits through the same cell edge
 ///
 /// See the Jupyter notebook for a plot detailing the test
-/// `rust/gsfit_rs/test_data/plasma_geometry/find_stationary_points/test_find_stationary_points.ipynb`
+/// `rust/gsfit_rs/test_data/plasma_geometry/find_stationary_points/test_1_find_stationary_points_using_winding_number_with_contour_entering_and_exiting_same_cell_edge.ipynb`
 #[test]
-fn test_find_stationary_points_using_full_quadrant_method() {
+fn test_1_find_stationary_points_using_winding_number_with_contour_entering_and_exiting_same_cell_edge() {
     use approx::assert_abs_diff_eq;
     use ndarray::Array1;
 
@@ -496,7 +496,7 @@ fn test_find_stationary_points_using_full_quadrant_method() {
         }
     }
 
-    let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_full_quadrant_method(
+    let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
         r.view(),
         z.view(),
         psi_2d.view(),
@@ -547,4 +547,61 @@ fn test_find_stationary_points_using_full_quadrant_method() {
     // * maximum: `hessian_trace < 0`
     assert!(stationary_point.hessian_determinant > 0.0);
     assert!(stationary_point.hessian_trace < 0.0);
+}
+
+/// In this test the stationary point lies exactly on the cell edge
+///
+/// See the Jupyter notebook for a plot detailing the test
+/// `rust/gsfit_rs/test_data/plasma_geometry/find_stationary_points/test_2_find_stationary_points_using_winding_number_with_stationary_point_at_cell_edge.ipynb`
+#[test]
+fn test_2_find_stationary_points_using_winding_number_with_stationary_point_at_cell_edge() {
+    // use approx::assert_abs_diff_eq;
+    use ndarray::Array1;
+
+    let n_r: usize = 7;
+    let n_z: usize = 4;
+
+    let vertical_curvature: f64 = 0.35;
+    let expected_stationary_point_z: f64 = -25e-3;
+    let expected_stationary_point_r: f64 = 0.43 - vertical_curvature * expected_stationary_point_z.powi(2);
+
+    let r: Array1<f64> = Array1::linspace(expected_stationary_point_r-0.35, expected_stationary_point_r+0.35, n_r);
+    let z: Array1<f64> = Array1::linspace(-1.0, 1.0, n_z);
+
+    let mut psi_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d_psi_d_r_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d_psi_d_z_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d2_psi_d_r2_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d2_psi_d_rz_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d2_psi_d_z2_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            let r_center: f64 = 0.43 - vertical_curvature * z[i_z].powi(2);
+            let delta_r: f64 = r[i_r] - r_center;
+            let delta_z: f64 = z[i_z] + 25e-3;
+
+            psi_2d[(i_z, i_r)] = -delta_r.powi(2) - delta_z.powi(2);
+            d_psi_d_r_2d[(i_z, i_r)] = -2.0 * delta_r;
+            d_psi_d_z_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z] * delta_r - 2.0 * delta_z;
+            d2_psi_d_r2_2d[(i_z, i_r)] = -2.0;
+            d2_psi_d_rz_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z];
+            d2_psi_d_z2_2d[(i_z, i_r)] = -4.0 * vertical_curvature * delta_r - 8.0 * vertical_curvature.powi(2) * z[i_z].powi(2) - 2.0;
+        }
+    }
+
+    let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
+        r.view(),
+        z.view(),
+        psi_2d.view(),
+        d_psi_d_r_2d.view(),
+        d_psi_d_z_2d.view(),
+        d2_psi_d_r2_2d.view(),
+        d2_psi_d_rz_2d.view(),
+        d2_psi_d_z2_2d.view(),
+    );
+
+    println!("stationary_points = {:#?}", stationary_points);
+    assert!(stationary_points.len() == 1);
+
 }

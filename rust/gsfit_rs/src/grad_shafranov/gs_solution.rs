@@ -9,7 +9,7 @@ use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
 use crate::plasma_geometry::find_stationary_points;
-use crate::plasma_geometry::find_stationary_points_using_full_quadrant_method;
+use crate::plasma_geometry::find_stationary_points_using_winding_number;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
 use core::f64;
@@ -405,7 +405,7 @@ impl<'a> GsSolution<'a> {
                 }
             }
 
-            let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_full_quadrant_method(
+            let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
                 r.view(),
                 z.view(),
                 psi_2d.view(),
