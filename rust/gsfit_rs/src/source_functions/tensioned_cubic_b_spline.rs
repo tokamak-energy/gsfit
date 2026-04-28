@@ -1,6 +1,5 @@
 use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2, s};
-use ndarray_linalg::assert;
 use numpy::PyArray1;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
