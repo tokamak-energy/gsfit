@@ -508,13 +508,21 @@ impl TensionedCubicBSpline {
             self.hyperbolic_lower_cutoff,
             self.delta_cutoff,
         );
-        gamma4_x_m_tj / (self.sigma1_array[j_index] * self.sigma2_array[j_index])
+        let sigma1_j: f64 = self.sigma1_array[j_index];
+        let sigma2_j: f64 = self.sigma2_array[j_index];
+        assert!(sigma1_j > 0.0, "sigma1_j must be positive");
+        assert!(sigma2_j > 0.0, "sigma2_j must be positive");
+        gamma4_x_m_tj / (sigma1_j * sigma2_j)
     }
 
     // Evaluates phi2_antiderivative_seg1 at x = t_{j+1} by using arrays precomputed in the constructor to avoid doing redundant calculations. 
     fn phi2_antiderivative_seg1_at_tjp(&self, j_index: usize) -> f64 {
         assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
-        self.gamma4_array[j_index] / (self.sigma1_array[j_index] * self.sigma2_array[j_index])
+        let sigma1_j: f64 = self.sigma1_array[j_index];
+        let sigma2_j: f64 = self.sigma2_array[j_index];
+        assert!(sigma1_j > 0.0, "sigma1_j must be positive");
+        assert!(sigma2_j > 0.0, "sigma2_j must be positive");
+        self.gamma4_array[j_index] / (sigma1_j * sigma2_j)
     }
 
     // This is the antiderivative of the phi2 function above in the segment
@@ -546,7 +554,11 @@ impl TensionedCubicBSpline {
         let tstar_jp: f64 = self.tstar_array[j_index + 1];
         let sigma1_j: f64 = self.sigma1_array[j_index];
         let sigma1_jp: f64 = self.sigma1_array[j_index + 1];
-        (0.5 * x_val.powi(2) - gamma4_x_m_tjp / sigma1_jp - gamma4_tjpp_m_x / sigma1_j - tstar_jp * x_val) / self.sigma2_array[j_index]
+        let sigma2_j: f64 = self.sigma2_array[j_index];
+        assert!(sigma1_j > 0.0, "sigma1_j must be positive");
+        assert!(sigma1_jp > 0.0, "sigma1_jp must be positive");
+        assert!(sigma2_j > 0.0, "sigma2_j must be positive");
+        (0.5 * x_val.powi(2) - gamma4_x_m_tjp / sigma1_jp - gamma4_tjpp_m_x / sigma1_j - tstar_jp * x_val) / sigma2_j
     }
 
     // Evaluates phi2_antiderivative_seg2 at x = t_{j+1}
@@ -559,6 +571,8 @@ impl TensionedCubicBSpline {
         let tstar_jp: f64 = self.tstar_array[j_index + 1];
         let sigma1_j: f64 = self.sigma1_array[j_index];
         let sigma2_j: f64 = self.sigma2_array[j_index];
+        assert!(sigma1_j > 0.0, "sigma1_j must be positive");
+        assert!(sigma2_j > 0.0, "sigma2_j must be positive");
         (0.5 * t_jp.powi(2) - gamma4_jp / sigma1_j - tstar_jp * t_jp) / sigma2_j
     }
 
@@ -572,6 +586,8 @@ impl TensionedCubicBSpline {
         let tstar_jp: f64 = self.tstar_array[j_index + 1];
         let sigma1_jp: f64 = self.sigma1_array[j_index + 1];
         let sigma2_j: f64 = self.sigma2_array[j_index];
+        assert!(sigma1_jp > 0.0, "sigma1_jp must be positive");
+        assert!(sigma2_j > 0.0, "sigma2_j must be positive");
         (0.5 * t_jpp.powi(2) - gamma4_jp / sigma1_jp - tstar_jp * t_jpp) / sigma2_j
     }
 
@@ -594,7 +610,11 @@ impl TensionedCubicBSpline {
             self.hyperbolic_lower_cutoff,
             self.delta_cutoff,
         );
-        x_val + gamma4_tjppp_m_x / (self.sigma1_array[j_index + 1] * self.sigma2_array[j_index])
+        let sigma1_jp: f64 = self.sigma1_array[j_index + 1];
+        let sigma2_j: f64 = self.sigma2_array[j_index];
+        assert!(sigma1_jp > 0.0, "sigma1_jp must be positive");
+        assert!(sigma2_j > 0.0, "sigma2_j must be positive");
+        x_val + gamma4_tjppp_m_x / (sigma1_jp * sigma2_j)
     }
 
     // Evaluates phi2_antiderivative_seg3 at x = t_{j+2}
@@ -606,6 +626,8 @@ impl TensionedCubicBSpline {
         let gamma4_jpp: f64 = self.gamma4_array[j_index + 2];
         let sigma1_jp: f64 = self.sigma1_array[j_index + 1];
         let sigma2_j: f64 = self.sigma2_array[j_index];
+        assert!(sigma1_jp > 0.0, "sigma1_jp must be positive");
+        assert!(sigma2_j > 0.0, "sigma2_j must be positive");
         t_jpp + gamma4_jpp / (sigma1_jp * sigma2_j)
     }
 
