@@ -1,13 +1,12 @@
+use super::StationaryPoint;
 use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint};
+use super::cubic_interpolation::cubic_interpolation_v2;
 use crate::plasma_geometry::hessian;
 use core::f64;
-use ndarray::{Array2, s, ArrayView1, ArrayView2};
-use ndarray::{SliceInfo, SliceInfoElem, Dim};
-use ndarray_linalg::assert;
+use ndarray::{Array2, ArrayView1, ArrayView2, s};
+use ndarray::{Dim, SliceInfo, SliceInfoElem};
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
-use super::cubic_interpolation::cubic_interpolation_v2;
-use super::StationaryPoint;
 
 // #[derive(Debug, Clone, Copy)]
 // pub struct StationaryPoint {
@@ -88,10 +87,9 @@ fn combine_and_order_edge_events(
     events.into_iter().map(|(_, k)| k).collect()
 }
 
-
 /// Finds stationary points: extrema's (minima or maxima) and saddle points
 /// TODO: improve documentation - can this method also find higher-order stationary points?
-/// 
+///
 /// # Arguments
 /// * `r` - the radial coordinate, [meters]
 /// * `z` - the vertical coordinate, [meters]
@@ -101,14 +99,18 @@ fn combine_and_order_edge_events(
 /// * `d2_psi_d_r2_2d` - d^2(psi)/d(r)^2, [weber/meter^2]
 /// * `d2_psi_d_rz_2d` - d^2(psi)/d(r)d(z), [weber/meter^2]
 /// * `d2_psi_d_z2_2d` - d^2(psi)/d(z)^2, [weber/meter^2]
-/// 
+///
 /// # Returns
 /// * `Vec<StationaryPoint>` - a vector of stationary points, which may be empty if no stationary points are found
-/// 
+///
 /// # Notes
+/// `br = - 1 / (2.0 * pi) d(psi)/d(z)` and `bz = 1 / (2.0 * pi) * d(psi)/d(r)`, so `d(psi)/d(r) = 0` and `d(psi)/d(z) = 0`
+/// are equivalent to `bz = 0` and `br = 0`. But to avoid the confusion with the minus sign in `br`, we only deal with
+/// gradients of `psi`.
+///
 /// The simplest way to calculate the winding number involves sampling the function along the cell edges and calculating the angle using `atan2`.
 /// However, `atan2` is an expensive operation, so we instead count the number of rotations through the d(ψ)/d(r) d(ψ)/d(z) quadrants.
-/// 
+///
 /// The Q1, Q2, Q3, and Q4 quadrant labels are standard definitions.
 /// Typically, the axes are not part of the quadrants labels.
 /// But for our purposes, we need to assign a quadrant label to the axes:
@@ -120,7 +122,7 @@ fn combine_and_order_edge_events(
 ///     Q3   │   Q4                                │                                    │
 ///   (-,-)  │  (+,-)                              Q4                                   │
 ///          │                                     |                                    │
-/// 
+///
 /// To calculate the winding number, we trace the path around the cell edges (in real space) and plot the quadrants.
 /// The winding number is then the number of full CCW rotations, going through all quadrants.
 /// * `winding_number=-2`
@@ -144,7 +146,7 @@ fn combine_and_order_edge_events(
 ///       7• │ •8
 ///     3 •  │  • 4
 ///          │
-/// 
+///
 /// A subtle failure mode is when there is both an o-point and an x-point in the same cell,
 /// `winding_number = (+1) + (-1) = 0`, which would incorrectly indicate no stationary points.
 pub fn find_stationary_points_using_full_quadrant_method(
@@ -180,7 +182,6 @@ pub fn find_stationary_points_using_full_quadrant_method(
             let i_r_left: usize = i_r;
             let i_r_right: usize = i_r + 1;
 
-            // `br = - 1 / (2.0 * pi) d(psi)/d(z)`
             let d_psi_d_z_zero_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 r[i_r_left],
                 d_psi_d_z_2d[(i_z, i_r_left)],
@@ -196,7 +197,6 @@ pub fn find_stationary_points_using_full_quadrant_method(
             }
             d_psi_d_z_zero_coordinates.insert((i_r_left, i_z, i_r_right, i_z), crossing_coordinates_this_edge);
 
-            // `bz = 1 / (2.0 * pi) * d(psi)/d(r)`
             let d_psi_d_r_zero_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 r[i_r_left],
                 d_psi_d_r_2d[(i_z, i_r_left)],
@@ -230,7 +230,6 @@ pub fn find_stationary_points_using_full_quadrant_method(
         let z_end: f64 = z[i_z_upper];
         let endpoint_tol: f64 = 1e-12 * (z_end - z_start);
         for i_r in 0..n_r {
-            // `br = - 1 / (2.0 * pi) d(psi)/d(z)`
             let br_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 z_start,
                 d_psi_d_z_2d[(i_z_lower, i_r)],
@@ -248,7 +247,6 @@ pub fn find_stationary_points_using_full_quadrant_method(
             }
             d_psi_d_z_zero_coordinates.insert((i_r, i_z_lower, i_r, i_z_upper), crossing_coordinates_this_edge);
 
-            // `bz = 1 / (2.0 * pi) * d(psi)/d(r)`
             let bz_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 z_start,
                 d_psi_d_r_2d[(i_z_lower, i_r)],
@@ -362,7 +360,9 @@ pub fn find_stationary_points_using_full_quadrant_method(
                     1 => total_quarter_turns += 1,
                     2 => println!("Warning: diagonal jump in (Br, Bz) quadrants. This should not happen with proper sampling."),
                     3 => total_quarter_turns -= 1,
-                    _ => {println!("Error: invalid `quadrant_step={}`. This should never happen?", quadrant_step);}
+                    _ => {
+                        println!("Error: invalid `quadrant_step={}`. This should never happen?", quadrant_step);
+                    }
                 }
                 prev_q = new_q;
             }
@@ -422,20 +422,21 @@ pub fn find_stationary_points_using_full_quadrant_method(
                             i_z_lower,
                             i_z_upper,
                         });
-                        // println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'gx')")
+                        println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'gx')")
                     }
                     Err(_error_string) => {
                         // println!("Warning: bicubic solver failed to converge for cell with corners at (i_r, i_z) = ({}, {}), ({}, {}), ({}, {}), ({}, {}). This cell is a false positive from the sign-change detection, likely due to near-parallel nullclines passing through the cell without actually crossing.", i_r_left, i_z_lower, i_r_right, i_z_lower, i_r_left, i_z_upper, i_r_right, i_z_upper);
-                        // println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'ro')")
+                        println!("winding_number = {winding_number}");
+                        println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'ro')");
                     }
                 }
             }
         }
     }
 
-    // use std::path::Path;
-    // npy_reader_and_writer::write_npy_2d(Path::new("/home/peter.buxton/github/gsfit_github/examples/psi_2d.npy"), psi_2d);
-    // panic!("stopping for debugging");
+    use std::path::Path;
+    npy_reader_and_writer::write_npy_2d(Path::new("/home/peter.buxton/github/gsfit_github/examples/psi_2d.npy"), &psi_2d.to_owned());
+    panic!("stopping for debugging");
 
     stationary_points
 }
