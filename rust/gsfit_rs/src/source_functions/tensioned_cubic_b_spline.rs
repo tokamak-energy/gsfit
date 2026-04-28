@@ -211,6 +211,12 @@ impl TensionedCubicBSpline {
         self.source_function_value_single_dof(&psi_n_array, i_dof)[0]
     }
 
+    pub fn source_function_integral_single_dof_python(&self, psi_n: f64, i_dof: usize) -> f64 {
+        // convert single value to array of length 1 to reuse existing function
+        let psi_n_array: Array1<f64> = Array1::from_elem(1, psi_n);
+        self.source_function_integral_single_dof(&psi_n_array, i_dof)[0]
+    }
+
     pub fn get_array1<'py>(&self, py: Python<'py>, name: &str) -> PyResult<Bound<'py, PyArray1<f64>>> {
         match name {
             "interior_knots" => Ok(PyArray1::from_array(py, &self.interior_knots)),
@@ -714,7 +720,6 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
                 value[i_psi_n] = 0.0;
             }
         }
-
         value
     }
 
@@ -733,31 +738,12 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     /// An array of the same length as `psi_n` containing the integral of the source function for the specified degree of freedom
     ///
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
-        // Create a lot of functions
-        let n_psi_n_large: usize = 300;
-        let psi_n_large: Array1<f64> = Array1::linspace(0.0, 1.0, n_psi_n_large);
-        let f_large: Array1<f64> = self.source_function_value_single_dof(&psi_n_large, i_dof);
-
-        // Calculate the cumulative integral for the entire "large" function
-        let mut cumulative_integral_large: Array1<f64> = Array1::zeros(n_psi_n_large);
-        for i_psi_n in 1..n_psi_n_large {
-            let dx: f64 = psi_n_large[i_psi_n] - psi_n_large[i_psi_n - 1];
-            let trap: f64 = 0.5 * dx * (f_large[i_psi_n] + f_large[i_psi_n - 1]);
-            cumulative_integral_large[i_psi_n] = cumulative_integral_large[i_psi_n - 1] + trap;
+        let mut value: Array1<f64> = Array1::from_elem(psi_n.len(), f64::NAN);
+        for i_psi_n in 0..psi_n.len() {
+            let x: f64 = psi_n[i_psi_n];
+            value[i_psi_n] = self.psi2(i_dof, x) - self.psi2(i_dof + 1, x);
         }
-        // Set the constant of integration so that cumulative_integral_large(psi_n=1.0) = 0.0
-        cumulative_integral_large = &cumulative_integral_large - cumulative_integral_large[n_psi_n_large - 1];
-
-        // Create an interpolator
-        let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(psi_n_large, cumulative_integral_large.clone())
-            .expect("Can't make interpolator for tensioned cubic B-spline integral");
-
-        // Evaluate the integral at the desired points
-        let integral: Array1<f64> = interpolator
-            .interpolate_array1(psi_n)
-            .expect("Can't interpolate tensioned cubic B-spline integral");
-
-        integral
+        value
     }
 
     fn source_function_value(&self, psi_n: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
