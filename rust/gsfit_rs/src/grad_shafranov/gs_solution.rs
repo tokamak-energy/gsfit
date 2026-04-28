@@ -407,14 +407,14 @@ impl<'a> GsSolution<'a> {
             
             let stationary_points: Vec<StationaryPoint> =
                 find_stationary_points_using_full_quadrant_method(
-                    &r,
-                    &z,
-                    &psi_2d,
-                    &d_psi_d_r_2d,
-                    &d_psi_d_z_2d,
-                    &d2_psi_d_r2_2d,
-                    &d2_psi_d_rz_2d,
-                    &d2_psi_d_z2_2d
+                    r.view(),
+                    z.view(),
+                    psi_2d.view(),
+                    d_psi_d_r_2d.view(),
+                    d_psi_d_z_2d.view(),
+                    d2_psi_d_r2_2d.view(),
+                    d2_psi_d_rz_2d.view(),
+                    d2_psi_d_z2_2d.view()
                 );
             // At a minimum we should have found the magnetic axis
             if stationary_points.is_empty() {
