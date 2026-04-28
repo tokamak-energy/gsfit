@@ -173,6 +173,7 @@ pub fn find_stationary_points_using_full_quadrant_method(
     // Horizontal march: (i_r, i_z) → (i_r+1, i_z)
     for i_z in 0..n_z {
         for i_r in 0..n_r - 1 {
+            // `br = - 1 / (2.0 * pi) d(psi)/d(z)`
             let br_crossings: Vec<f64> = cubic_interpolation_v2(
                 r[i_r],
                 d_psi_d_z_2d[(i_z, i_r)],
@@ -188,6 +189,7 @@ pub fn find_stationary_points_using_full_quadrant_method(
             }
             br_crossing_points.insert((i_r, i_z, i_r + 1, i_z), crossing_coordinates_this_edge);
 
+            // `bz = 1 / (2.0 * pi) * d(psi)/d(r)`
             let bz_crossings: Vec<f64> = cubic_interpolation_v2(
                 r[i_r],
                 d_psi_d_r_2d[(i_z, i_r)],
@@ -355,12 +357,14 @@ pub fn find_stationary_points_using_full_quadrant_method(
                 // Create a slice that covers the 4 corner points
                 let slice_cell_perimeter: SliceInfo<[SliceInfoElem; 2], Dim<[usize; 2]>, Dim<[usize; 2]>> = s![i_z_lower..=i_z_upper, i_r_left..=i_r_right];
 
-                // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
+                // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis.
+                // `psi_2d` is stored as (i_z, i_r), but `BicubicInterpolator` expects axis 0 to be x (= r)
+                // and axis 1 to be y (= z), so we transpose the slice.
                 // TODO: It is better to use ArrayView2<f64> data types, rather than doing a copy
-                let f: Array2<f64> = psi_2d.slice(slice_cell_perimeter).to_owned();
-                let d_f_d_r: Array2<f64> = d_psi_d_r_2d.slice(slice_cell_perimeter).to_owned();
-                let d_f_d_z: Array2<f64> = d_psi_d_z_2d.slice(slice_cell_perimeter).to_owned();
-                let d2_f_d_r_d_z: Array2<f64> = d2_psi_d_rz_2d.slice(slice_cell_perimeter).to_owned();
+                let f: Array2<f64> = psi_2d.slice(slice_cell_perimeter).t().to_owned();
+                let d_f_d_r: Array2<f64> = d_psi_d_r_2d.slice(slice_cell_perimeter).t().to_owned();
+                let d_f_d_z: Array2<f64> = d_psi_d_z_2d.slice(slice_cell_perimeter).t().to_owned();
+                let d2_f_d_r_d_z: Array2<f64> = d2_psi_d_rz_2d.slice(slice_cell_perimeter).t().to_owned();
 
                 // Create a bicubic interpolator
                 let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
