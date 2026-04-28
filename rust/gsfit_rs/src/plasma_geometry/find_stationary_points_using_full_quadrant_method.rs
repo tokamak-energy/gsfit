@@ -1,7 +1,7 @@
 use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint};
 use crate::plasma_geometry::hessian;
 use core::f64;
-use ndarray::{Array1, Array2, s};
+use ndarray::{Array2, s, ArrayView1, ArrayView2};
 use ndarray::{SliceInfo, SliceInfoElem, Dim};
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
@@ -147,14 +147,14 @@ fn combine_and_order_edge_events(
 /// A subtle failure mode is when there is both an o-point and an x-point in the same cell,
 /// `winding_number = (+1) + (-1) = 0`, which would incorrectly indicate no stationary points.
 pub fn find_stationary_points_using_full_quadrant_method(
-    r: &Array1<f64>,
-    z: &Array1<f64>,
-    psi_2d: &Array2<f64>,
-    d_psi_d_r_2d: &Array2<f64>,
-    d_psi_d_z_2d: &Array2<f64>,
-    d2_psi_d_r2_2d: &Array2<f64>,
-    d2_psi_d_rz_2d: &Array2<f64>,
-    d2_psi_d_z2_2d: &Array2<f64>,
+    r: ArrayView1<f64>,
+    z: ArrayView1<f64>,
+    psi_2d: ArrayView2<f64>,
+    d_psi_d_r_2d: ArrayView2<f64>,
+    d_psi_d_z_2d: ArrayView2<f64>,
+    d2_psi_d_r2_2d: ArrayView2<f64>,
+    d2_psi_d_rz_2d: ArrayView2<f64>,
+    d2_psi_d_z2_2d: ArrayView2<f64>,
 ) -> Vec<StationaryPoint> {
     // Empty stationary_points, ready to return if no stationary points found
     let mut stationary_points: Vec<StationaryPoint> = Vec::new();
@@ -173,6 +173,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
     // Horizontal march: (i_r, i_z) → (i_r+1, i_z)
     for i_z in 0..n_z {
         for i_r in 0..n_r - 1 {
+            // let i_r_left: usize = i_r;
+            // let i_r_right: usize = i_r + 1;
             // `br = - 1 / (2.0 * pi) d(psi)/d(z)`
             let br_crossings: Vec<f64> = cubic_interpolation_v2(
                 r[i_r],
@@ -255,6 +257,11 @@ pub fn find_stationary_points_using_full_quadrant_method(
             }
             bz_crossing_points.insert((i_r, i_z, i_r, i_z + 1), crossing_coordinates_this_edge);
         }
+    }
+
+    if br_crossing_points.len() == 0 || bz_crossing_points.len() == 0 {
+        // No zero-crossings found, so no stationary points possible
+        return stationary_points;
     }
 
     // Given that we are using bicubic interpolation, which can produce up to 3 crossings for both `br=0` and `bz=0` per edge.
@@ -358,9 +365,9 @@ pub fn find_stationary_points_using_full_quadrant_method(
                 let slice_cell_perimeter: SliceInfo<[SliceInfoElem; 2], Dim<[usize; 2]>, Dim<[usize; 2]>> = s![i_z_lower..=i_z_upper, i_r_left..=i_r_right];
 
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis.
-                // `psi_2d` is stored as (i_z, i_r), but `BicubicInterpolator` expects axis 0 to be x (= r)
-                // and axis 1 to be y (= z), so we transpose the slice.
-                // TODO: It is better to use ArrayView2<f64> data types, rather than doing a copy
+                // TODO:`psi_2d` is stored as (i_z, i_r), but `BicubicInterpolator` expects `f[(i_r, i_z)]`.
+                // TODO:So we need to transpose the arrays!
+                // TODO: It is better to use ArrayView2<f64> data types in `BicubicInterpolator::new`, rather than doing a copy
                 let f: Array2<f64> = psi_2d.slice(slice_cell_perimeter).t().to_owned();
                 let d_f_d_r: Array2<f64> = d_psi_d_r_2d.slice(slice_cell_perimeter).t().to_owned();
                 let d_f_d_z: Array2<f64> = d_psi_d_z_2d.slice(slice_cell_perimeter).t().to_owned();
@@ -384,9 +391,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
                         let stationary_psi: f64 = stationary_point.f;
 
                         // Compute nearest grid indices from the refined stationary point position
-                        // let i_r_nearest: usize = ((stationary_r - r[0]) / d_r).round() as usize;
-                        let i_r_nearest: usize = (r - stationary_r).abs().argmin().unwrap();
-                        let i_z_nearest: usize = (z - stationary_z).abs().argmin().unwrap();
+                        let i_r_nearest: usize = (r.to_owned() - stationary_r).abs().argmin().unwrap();
+                        let i_z_nearest: usize = (z.to_owned() - stationary_z).abs().argmin().unwrap();
 
                         // Calculate the Hessian at the nearest grid point of the cell
                         let d2_psi_d_r2: f64 = d2_psi_d_r2_2d[(i_z_nearest, i_r_nearest)];
