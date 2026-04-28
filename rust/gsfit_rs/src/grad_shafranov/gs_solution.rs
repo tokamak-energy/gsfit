@@ -389,7 +389,18 @@ impl<'a> GsSolution<'a> {
             // let stationary_points_or_error: Result<Vec<StationaryPoint>, String> =
             //     find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
             let stationary_points_or_error: Vec<StationaryPoint> =
-                find_stationary_points_using_full_quadrant_method(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
+                find_stationary_points_using_full_quadrant_method(
+                    &r,
+                    &z,
+                    &psi_2d,
+                    &br_2d,
+                    &bz_2d,
+                    &d_br_d_z_2d,
+                    &d_bz_d_z_2d,
+                    &d_br_d_r_2d,
+                    &d_bz_d_r_2d,
+                    d2_psi_d_r2_calculator.clone(),
+                );
             // At a minimum we should have found the magnetic axis
             if stationary_points_or_error.is_empty() {
                 // Set time-slice to failed

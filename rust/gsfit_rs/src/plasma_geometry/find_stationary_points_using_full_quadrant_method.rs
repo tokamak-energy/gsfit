@@ -90,6 +90,25 @@ fn combine_and_order_edge_events(
     events.into_iter().map(|(_, k)| k).collect()
 }
 
+
+/// Finds stationary points
+/// 
+/// # Arguments
+/// * `r` - the radial coordinate, [meters]
+/// * `z` - the vertical coordinate, [meters]
+/// * `psi_2d` - the 2D array of poloidal flux values, [weber]
+/// * `br_2d` - the 2D array of radial magnetic field values, [tesla]
+/// * `bz_2d` - the 2D array of vertical magnetic field values, [tesla]
+/// * `d_br_d_z_2d` - the 2D array of d(Br)/d(z) values, [tesla/meter]
+/// * `d_bz_d_z_2d` - the 2D array of d(Bz)/d(z) values, [tesla/meter]
+/// * `d_br_d_r_2d` - the 2D array of d(Br)/d(r) values, [tesla/meter]
+/// * `d_bz_d_r_2d` - the 2D array of d(Bz)/d(r) values, [tesla/meter]
+/// * `d2_psi_d_r2_calculator` - a struct which can calculate d^2(psi)/d(r)^2 at any grid point, [weber/meter^2]
+/// 
+/// # Returns
+/// * `Vec<StationaryPoint>` - a vector of stationary points, which may be empty if no stationary points are found
+/// 
+/// # Notes
 /// The simplest way to calculate the winding number involves sampling the function along the cell edges and calculating the angle using `atan2`.
 /// However, `atan2` is an expensive operation, so we instead count the number of rotations through the d(ψ)/d(r) d(ψ)/d(z) quadrants.
 /// 
