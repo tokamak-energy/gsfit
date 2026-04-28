@@ -29,7 +29,7 @@ struct Coordinate {
     z: f64,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum CrossingKind {
     BrZero,
     BzZero,
@@ -345,7 +345,7 @@ pub fn find_stationary_points_using_full_quadrant_method(
             let mut prev_q: i8 = classify_quadrant(sign_d_psi_d_z, sign_d_psi_d_r);
             let mut total_quarter_turns: i8 = 0;
 
-            for event in perimeter_events {
+            for event in perimeter_events.clone() {
                 // Flip the sign of whichever component just crossed zero.
                 match event {
                     CrossingKind::BrZero => sign_d_psi_d_z = -sign_d_psi_d_z,
@@ -389,9 +389,7 @@ pub fn find_stationary_points_using_full_quadrant_method(
                 let stationary_point_or_error: Result<BicubicStationaryPoint, String> = bicubic_interpolator.find_stationary_point(1e-6, 100);
 
                 // Extract the stationary point values
-                // If the bicubic solver failed to converge, this cell is a false positive from
-                // the sign-change detection (near-parallel nullclines passing through the cell
-                // without actually crossing), so skip it.
+                // If the bicubic solver failed to converge, this cell is a false positive, so skip it.
                 match stationary_point_or_error {
                     Ok(stationary_point) => {
                         // Extract and store results
@@ -428,15 +426,33 @@ pub fn find_stationary_points_using_full_quadrant_method(
                         // println!("Warning: bicubic solver failed to converge for cell with corners at (i_r, i_z) = ({}, {}), ({}, {}), ({}, {}), ({}, {}). This cell is a false positive from the sign-change detection, likely due to near-parallel nullclines passing through the cell without actually crossing.", i_r_left, i_z_lower, i_r_right, i_z_lower, i_r_left, i_z_upper, i_r_right, i_z_upper);
                         println!("winding_number = {winding_number}");
                         println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'ro')");
+
+                        println!("perimeter_events = {:?}", perimeter_events);
+
+                        // Sample the bicubic interpolation at various points in 2d
+                        let n_r_sample: usize = 70;
+                        let n_z_sample: usize = 65;
+                        use ndarray::Array1;
+                        let r_sample: Array1<f64> = Array1::linspace(r[i_r_left], r[i_r_right], n_r_sample);
+                        let z_sample: Array1<f64> = Array1::linspace(z[i_z_lower], z[i_z_upper], n_z_sample);
+                        let mut psi_2d: Array2<f64> = Array2::from_elem([n_z_sample, n_r_sample], f64::NAN);
+                        for i_z_sample in 0..n_z_sample {
+                            for i_r_sample in 0..n_r_sample {
+                                let r_s: f64 = (r_sample[i_r_sample] - r[i_r_left]) / d_r; // to be between 0.0 and 1.0
+                                let z_s: f64 = (z_sample[i_z_sample] - z[i_z_lower]) / d_z; // to be between 0.0 and 1.0
+                                psi_2d[(i_z_sample, i_r_sample)] = bicubic_interpolator.interpolate(r_s, z_s);
+                            }
+                        }
+                        println!("psi_2d = {:#?}", psi_2d);
+
+                        use std::path::Path;
+                        npy_reader_and_writer::write_npy_2d(Path::new("/home/peter.buxton/github/gsfit_github/examples/psi_2d.npy"), &psi_2d.to_owned());
+                        panic!("stopping for debugging");
                     }
                 }
             }
         }
     }
-
-    use std::path::Path;
-    npy_reader_and_writer::write_npy_2d(Path::new("/home/peter.buxton/github/gsfit_github/examples/psi_2d.npy"), &psi_2d.to_owned());
-    panic!("stopping for debugging");
 
     stationary_points
 }
