@@ -189,6 +189,10 @@ impl TensionedCubicBSpline {
         self.phi2(j_index, x_val)
     }
 
+    pub fn psi2_python(&self, j_index: usize, x_val: f64) -> f64 {
+        self.psi2(j_index, x_val)
+    }
+
     pub fn gamma4_python(&self, x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
         TensionedCubicBSpline::gamma4(x_val, rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
     }
@@ -481,6 +485,214 @@ impl TensionedCubicBSpline {
         // x >= t_{j+3}
         // Return 1.0, see third row of Equation (2.6) P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
         1.0
+    }
+
+    // This is is the antiderivative of the phi2 function above in the segement
+    // where t_{j} <= x < t_{j+1}
+    fn phi2_antiderivative_seg1(&self, j_index: usize, x_val: f64) -> f64 {
+        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+        assert!(x_val >= self.knots[j_index], "x_val must be greater than or equal to t_j");
+        assert!(x_val < self.knots[j_index + 1], "x_val must be less than t_{{j+1}}");
+        // Note that integral_tj_x / sigma2_j in phi2 above simplifies to gamma3(x-t_j) / (sigma1_j * sigma2_j)
+        // Hence the antiderivative of this with respect to x is gamma4_j(x-t_j) / (sigma1_j * sigma2_j).
+        let gamma4_x_m_tj: f64 = TensionedCubicBSpline::gamma4(
+            x_val - self.knots[j_index],
+            self.tensions[j_index],
+            self.delta_knots[j_index],
+            self.hyperbolic_upper_cutoff,
+            self.hyperbolic_lower_cutoff,
+            self.delta_cutoff,
+        );
+        gamma4_x_m_tj / (self.sigma1_array[j_index] * self.sigma2_array[j_index])
+    }
+
+    // Evaluates phi2_antiderivative_seg1 at x = t_{j+1} by using arrays precomputed in the constructor to avoid doing redundant calculations. 
+    fn phi2_antiderivative_seg1_at_tjp(&self, j_index: usize) -> f64 {
+        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+        self.gamma4_array[j_index] / (self.sigma1_array[j_index] * self.sigma2_array[j_index])
+    }
+
+    // This is is the antiderivative of the phi2 function above in the segement
+    // where t_{j+1} <= x < t_{j+2}
+    fn phi2_antiderivative_seg2(&self, j_index: usize, x_val: f64) -> f64 {
+        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+        assert!(x_val >= self.knots[j_index + 1], "x_val must be greater than or equal to t_{{j+1}}");
+        assert!(x_val < self.knots[j_index + 2], "x_val must be less than t_{{j+2}}");
+        // Note that (integral_tj_tjp + integral_tjp_x) / sigma2_j in phi2 above simplifies to
+        // [x - gamma3_{j+1}(x - t_{j+1}) / sigma1_{j+1} + gamma3_{j+1}(t_{j+2}-x) / sigma1_j - tstar_{j+1}] / sigma2_j
+        // Hence the antiderivative of this with respect to x is
+        // [x^2 / 2 - gamma4_{j+1}(x - t_{j+1}) / sigma1_{j+1} - gamma4_{j+1}(t_{j+2}-x) / sigma1_j - tstar_{j+1} * x] / sigma2_j
+        let gamma4_x_m_tjp: f64 = TensionedCubicBSpline::gamma4(
+            x_val - self.knots[j_index + 1],
+            self.tensions[j_index + 1],
+            self.delta_knots[j_index + 1],
+            self.hyperbolic_upper_cutoff,
+            self.hyperbolic_lower_cutoff,
+            self.delta_cutoff,
+        );
+        let gamma4_tjpp_m_x: f64 = TensionedCubicBSpline::gamma4(
+            self.knots[j_index + 2] - x_val,
+            self.tensions[j_index + 1],
+            self.delta_knots[j_index + 1],
+            self.hyperbolic_upper_cutoff,
+            self.hyperbolic_lower_cutoff,
+            self.delta_cutoff,
+        );
+        let tstar_jp: f64 = self.tstar_array[j_index + 1];
+        let sigma1_j: f64 = self.sigma1_array[j_index];
+        let sigma1_jp: f64 = self.sigma1_array[j_index + 1];
+        (0.5 * x_val.powi(2) - gamma4_x_m_tjp / sigma1_jp - gamma4_tjpp_m_x / sigma1_j - tstar_jp * x_val) / self.sigma2_array[j_index]
+    }
+
+    // Evaluates phi2_antiderivative_seg2 at x = t_{j+1}
+    fn phi2_antiderivative_seg2_at_tjp(&self, j_index: usize) -> f64 {
+        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+        // Note that at x = t_{j+1} the expression for phi2_antiderivative_seg2 simplifies to
+        // [t_{j+1}^2 / 2 - gamma4_{j+1}(Δt_{j+1}) / sigma1_j - tstar_{j+1} * t_{j+1}] / sigma2_j
+        let t_jp: f64 = self.knots[j_index + 1];
+        let gamma4_jp: f64 = self.gamma4_array[j_index + 1];
+        let tstar_jp: f64 = self.tstar_array[j_index + 1];
+        let sigma1_j: f64 = self.sigma1_array[j_index];
+        let sigma2_j: f64 = self.sigma2_array[j_index];
+        (0.5 * t_jp.powi(2) - gamma4_jp / sigma1_j - tstar_jp * t_jp) / sigma2_j
+    }
+
+    // Evaluates phi2_antiderivative_seg2 at x = t_{j+2}
+    fn phi2_antiderivative_seg2_at_tjpp(&self, j_index: usize) -> f64 {
+        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+        // Note that at x = t_{j+2} the expression for phi2_antiderivative_seg2 simplifies to
+        // [t_{j+2}^2 / 2 - gamma4_{j+1}(Δt_{j+1}) / sigma1_{j+1} - tstar_{j+1} * t_{j+2}] / sigma2_j
+        let t_jpp: f64 = self.knots[j_index + 2];
+        let gamma4_jp: f64 = self.gamma4_array[j_index + 1];
+        let tstar_jp: f64 = self.tstar_array[j_index + 1];
+        let sigma1_j: f64 = self.sigma1_array[j_index];
+        let sigma1_jp: f64 = self.sigma1_array[j_index + 1];
+        let sigma2_j: f64 = self.sigma2_array[j_index];
+        (0.5 * t_jpp.powi(2) - gamma4_jp / sigma1_jp - tstar_jp * t_jpp) / sigma2_j
+    }
+
+    // This is is the antiderivative of the phi2 function above in the segement
+    // where t_{j+2} <= x < t_{j+3}
+    fn phi2_antiderivative_seg3(&self, j_index: usize, x_val: f64) -> f64 {
+        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+        assert!(x_val >= self.knots[j_index + 2], "x_val must be greater than or equal to t_{{j+2}}");
+        assert!(x_val < self.knots[j_index + 3], "x_val must be less than t_{{j+3}}");
+
+        // Note that (integral_tj_tjp + integral_tjp_tjpp + integral_tjpp_x) / sigma2_j in phi2 above simplifies to
+        // 1 - gamma3_{j+2}(t_{j+3}-x) / (sigma1_jp * sigma2_j)
+        // Hence the antiderivative of this with respect to x is
+        // x + gamma4_{j+2}(t_{j+3}-x) / (sigma1_jp * sigma2_j)
+        let gamma4_tjppp_m_x: f64 = TensionedCubicBSpline::gamma4(
+            self.knots[j_index + 3] - x_val,
+            self.tensions[j_index + 2],
+            self.delta_knots[j_index + 2],
+            self.hyperbolic_upper_cutoff,
+            self.hyperbolic_lower_cutoff,
+            self.delta_cutoff,
+        );
+        x_val + gamma4_tjppp_m_x / (self.sigma1_array[j_index + 1] * self.sigma2_array[j_index])
+    }
+
+    // Evaluates phi2_antiderivative_seg3 at x = t_{j+2}
+    fn phi2_antiderivative_seg3_at_tjpp(&self, j_index: usize) -> f64 {
+        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+        // Note that at x = t_{j+2} the expression for phi2_antiderivative_seg3 simplifies to
+        // t_{j+2} + gamma4_{j+2}(Δt_{j+2}) / (sigma1_{j+1} * sigma2_j)
+        let t_jpp: f64 = self.knots[j_index + 2];
+        let gamma4_jpp: f64 = self.gamma4_array[j_index + 2];
+        let sigma1_jp: f64 = self.sigma1_array[j_index + 1];
+        let sigma2_j: f64 = self.sigma2_array[j_index];
+        t_jpp + gamma4_jpp / (sigma1_jp * sigma2_j)
+    }
+
+    // Evaluates phi2_antiderivative_seg3 at x = t_{j+3}
+    fn phi2_antiderivative_seg3_at_tjppp(&self, j_index: usize) -> f64 {
+        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+        // Note that at x = t_{j+3} the expression for phi2_antiderivative_seg3 simplifies to
+        // t_{j+3} + gamma4_{j+2}(0) / (sigma1_{j+1} * sigma2_j) = t_{j+3}
+        self.knots[j_index + 3]
+    }
+
+    // We define psi2 as
+    // Ψ²_j(x) = ∫_{−∞}^{x} Φ²_j(y) dy
+    // This is used in the source_function_integral_single_dof function below.
+    fn psi2(&self, j_index: usize, x_val: f64) -> f64 {
+        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+
+        if x_val < self.knots[j_index] {
+            return 0.0;
+        }
+
+        if (self.knots[j_index + 3] - self.knots[j_index]) < self.delta_cutoff {
+            return x_val - self.knots[j_index];
+        }
+
+        // Calculate Ψ² in the segment where t_j <= x < t_{j+1}
+        if x_val < self.knots[j_index + 1] {
+            if self.delta_knots[j_index] < self.delta_cutoff {
+                // Since the distance between knots is very small the integral over the range will be approximately zero.
+                // But we explicitally set integral to zero to avoid possible numerical issue of dividing by zero when sigma1_j is zero
+                return 0.0;
+            } else {
+                return self.phi2_antiderivative_seg1(j_index, x_val);
+            }
+        }
+
+        // x >= t_{j+1} so we need to calculate ∫_{t_j}^{t_{j+1}} Φ²_j(y) dy
+        let integral_tj_tjp: f64 = if self.delta_knots[j_index] < self.delta_cutoff {
+            // Since the distance between knots is very small the integral over the range will be approximately zero.
+            // But we explicitally set integral to zero to avoid possible numerical issue of dividing by zero when sigma1_j is zero
+            0.0
+        } else {
+            self.phi2_antiderivative_seg1_at_tjp(j_index)
+        };
+
+        // Calculate Ψ² in the segment where t_{j+1} <= x < t_{j+2}
+        if x_val < self.knots[j_index + 2] {
+            if self.delta_knots[j_index + 1] < self.delta_cutoff {
+                // Since the distance between knots is very small the integral over the range will be approximately zero.
+                // But we explicitally set integral of second segment to zero (so only first segment remains) to avoid possible
+                // numerical issue of dividing by zero when sigma1_j or sigma1_{j+1} is zero
+                return integral_tj_tjp;
+            } else {
+                return integral_tj_tjp + self.phi2_antiderivative_seg2(j_index, x_val) - self.phi2_antiderivative_seg2_at_tjp(j_index);
+            }
+        }
+
+        // x >= t_{j+2} so we need to calculate ∫_{t_{j+1}}^{t_{j+2}} Φ²_j(y) dy
+        let integral_tjp_tjpp: f64 = if self.delta_knots[j_index + 1] < self.delta_cutoff {
+            // Since the distance between knots is very small the integral over the range will be approximately zero.
+            // But we explicitally set integral of second segment to zero (so only first segment remains) to avoid possible
+            // numerical issue of dividing by zero when sigma1_j or sigma1_{j+1} is zero
+            0.0
+        } else {
+            self.phi2_antiderivative_seg2_at_tjpp(j_index) - self.phi2_antiderivative_seg2_at_tjp(j_index)
+        };
+
+        // Calculate Ψ² in the segment where t_{j+2} <= x < t_{j+3}
+        if x_val < self.knots[j_index + 3] {
+            if self.delta_knots[j_index + 2] < self.delta_cutoff {
+                // Since the distance between knots is very small the integral over the range will be approximately zero.
+                // But we explicitally set integral of third segment to zero (so only first and second segments remain) to avoid possible
+                // numerical issue of dividing by zero when sigma1_{j+1} is zero
+                return integral_tj_tjp + integral_tjp_tjpp;
+            } else {
+                return integral_tj_tjp + integral_tjp_tjpp + self.phi2_antiderivative_seg3(j_index, x_val) - self.phi2_antiderivative_seg3_at_tjpp(j_index);
+            }
+        }
+
+        // x >= t_{j+3} so we need to calculate ∫_{t_{j+2}}^{t_{j+3}} Φ²_j(y) dy
+        let integral_tjpp_tjppp: f64 = if self.delta_knots[j_index + 2] < self.delta_cutoff {
+            // Since the distance between knots is very small the integral over the range will be approximately zero.
+            // But we explicitally set integral of third segment to zero (so only first and second segments remain) to avoid possible
+            // numerical issue of dividing by zero when sigma1_{j+1} is zero
+            0.0
+        } else {
+            self.phi2_antiderivative_seg3_at_tjppp(j_index) - self.phi2_antiderivative_seg3_at_tjpp(j_index)
+        };
+
+        // Calculate Ψ² in the segment where x >= t_{j+3}
+        x_val - self.knots[j_index + 3] + integral_tj_tjp + integral_tjp_tjpp + integral_tjpp_tjppp
     }
 }
 
