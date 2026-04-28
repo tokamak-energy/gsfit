@@ -492,7 +492,7 @@ impl TensionedCubicBSpline {
         1.0
     }
 
-    // This is is the antiderivative of the phi2 function above in the segement
+    // This is the antiderivative of the phi2 function above in the segment
     // where t_{j} <= x < t_{j+1}
     fn phi2_antiderivative_seg1(&self, j_index: usize, x_val: f64) -> f64 {
         assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
@@ -517,7 +517,7 @@ impl TensionedCubicBSpline {
         self.gamma4_array[j_index] / (self.sigma1_array[j_index] * self.sigma2_array[j_index])
     }
 
-    // This is is the antiderivative of the phi2 function above in the segement
+    // This is the antiderivative of the phi2 function above in the segment
     // where t_{j+1} <= x < t_{j+2}
     fn phi2_antiderivative_seg2(&self, j_index: usize, x_val: f64) -> f64 {
         assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
@@ -576,7 +576,7 @@ impl TensionedCubicBSpline {
         (0.5 * t_jpp.powi(2) - gamma4_jp / sigma1_jp - tstar_jp * t_jpp) / sigma2_j
     }
 
-    // This is is the antiderivative of the phi2 function above in the segement
+    // This is the antiderivative of the phi2 function above in the segment
     // where t_{j+2} <= x < t_{j+3}
     fn phi2_antiderivative_seg3(&self, j_index: usize, x_val: f64) -> f64 {
         assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
