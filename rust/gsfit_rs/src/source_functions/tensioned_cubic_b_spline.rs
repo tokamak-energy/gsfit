@@ -622,7 +622,7 @@ impl TensionedCubicBSpline {
     // Ψ²_j(x) = ∫_{−∞}^{x} Φ²_j(y) dy
     // This is used in the source_function_integral_single_dof function below.
     fn psi2(&self, j_index: usize, x_val: f64) -> f64 {
-        assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
+        assert!(j_index <= self.n_dof, "j_index for psi2 out of bounds");
 
         if x_val < self.knots[j_index] {
             return 0.0;
