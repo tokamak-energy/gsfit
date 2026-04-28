@@ -117,8 +117,8 @@ impl TensionedCubicBSpline {
         let sigma1_array: Array1<f64> = sigma1_array;
         // tstar calculated using the equation just below Equation (2.7) in P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
         // Note that we remap tstar_j there to tstar_{j+2} here as we think it makes more sense.
-        let mut tstar_array: Array1<f64> = Array1::from_elem(n_knots - 2, f64::NAN);
-        for i in 0..n_knots - 3 {
+        let mut tstar_array: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
+        for i in 0..n_knots - 2 {
             if knots[i + 2] - knots[i] < delta_cutoff {
                 tstar_array[i + 1] = knots[i + 1];
             } else {
@@ -570,7 +570,6 @@ impl TensionedCubicBSpline {
         let t_jpp: f64 = self.knots[j_index + 2];
         let gamma4_jp: f64 = self.gamma4_array[j_index + 1];
         let tstar_jp: f64 = self.tstar_array[j_index + 1];
-        let sigma1_j: f64 = self.sigma1_array[j_index];
         let sigma1_jp: f64 = self.sigma1_array[j_index + 1];
         let sigma2_j: f64 = self.sigma2_array[j_index];
         (0.5 * t_jpp.powi(2) - gamma4_jp / sigma1_jp - tstar_jp * t_jpp) / sigma2_j
