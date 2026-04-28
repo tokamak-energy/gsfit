@@ -413,7 +413,7 @@ impl TensionedCubicBSpline {
         if x_val < self.knots[j_index + 2] {
             if self.delta_knots[j_index + 1] < self.delta_cutoff {
                 // Since the distance between knots is very small the integral over the range will be approximately zero.
-                // But we explicitlyset integral of second row to zero (so only first row remains) to avoid possible
+                // But we explicitly set integral of second row to zero (so only first row remains) to avoid possible
                 // numerical issue of dividing by zero when sigma1_j or sigma1_{j+1} is zero
                 return integral_tj_tjp / sigma2_j;
             } else {
@@ -635,7 +635,7 @@ impl TensionedCubicBSpline {
         if x_val < self.knots[j_index + 1] {
             if self.delta_knots[j_index] < self.delta_cutoff {
                 // Since the distance between knots is very small the integral over the range will be approximately zero.
-                // But we explicitlyset integral to zero to avoid possible numerical issue of dividing by zero when sigma1_j is zero
+                // But we explicitly set integral to zero to avoid possible numerical issue of dividing by zero when sigma1_j is zero
                 return 0.0;
             } else {
                 return self.phi2_antiderivative_seg1(j_index, x_val);
@@ -645,7 +645,7 @@ impl TensionedCubicBSpline {
         // x >= t_{j+1} so we need to calculate ∫_{t_j}^{t_{j+1}} Φ²_j(y) dy
         let integral_tj_tjp: f64 = if self.delta_knots[j_index] < self.delta_cutoff {
             // Since the distance between knots is very small the integral over the range will be approximately zero.
-            // But we explicitlyset integral to zero to avoid possible numerical issue of dividing by zero when sigma1_j is zero
+            // But we explicitly set integral to zero to avoid possible numerical issue of dividing by zero when sigma1_j is zero
             0.0
         } else {
             self.phi2_antiderivative_seg1_at_tjp(j_index)
@@ -655,7 +655,7 @@ impl TensionedCubicBSpline {
         if x_val < self.knots[j_index + 2] {
             if self.delta_knots[j_index + 1] < self.delta_cutoff {
                 // Since the distance between knots is very small the integral over the range will be approximately zero.
-                // But we explicitlyset integral of second segment to zero (so only first segment remains) to avoid possible
+                // But we explicitly set integral of second segment to zero (so only first segment remains) to avoid possible
                 // numerical issue of dividing by zero when sigma1_j or sigma1_{j+1} is zero
                 return integral_tj_tjp;
             } else {
@@ -666,7 +666,7 @@ impl TensionedCubicBSpline {
         // x >= t_{j+2} so we need to calculate ∫_{t_{j+1}}^{t_{j+2}} Φ²_j(y) dy
         let integral_tjp_tjpp: f64 = if self.delta_knots[j_index + 1] < self.delta_cutoff {
             // Since the distance between knots is very small the integral over the range will be approximately zero.
-            // But we explicitlyset integral of second segment to zero (so only first segment remains) to avoid possible
+            // But we explicitly set integral of second segment to zero (so only first segment remains) to avoid possible
             // numerical issue of dividing by zero when sigma1_j or sigma1_{j+1} is zero
             0.0
         } else {
@@ -677,7 +677,7 @@ impl TensionedCubicBSpline {
         if x_val < self.knots[j_index + 3] {
             if self.delta_knots[j_index + 2] < self.delta_cutoff {
                 // Since the distance between knots is very small the integral over the range will be approximately zero.
-                // But we explicitlyset integral of third segment to zero (so only first and second segments remain) to avoid possible
+                // But we explicitly set integral of third segment to zero (so only first and second segments remain) to avoid possible
                 // numerical issue of dividing by zero when sigma1_{j+1} is zero
                 return integral_tj_tjp + integral_tjp_tjpp;
             } else {
@@ -688,7 +688,7 @@ impl TensionedCubicBSpline {
         // x >= t_{j+3} so we need to calculate ∫_{t_{j+2}}^{t_{j+3}} Φ²_j(y) dy
         let integral_tjpp_tjppp: f64 = if self.delta_knots[j_index + 2] < self.delta_cutoff {
             // Since the distance between knots is very small the integral over the range will be approximately zero.
-            // But we explicitlyset integral of third segment to zero (so only first and second segments remain) to avoid possible
+            // But we explicitly set integral of third segment to zero (so only first and second segments remain) to avoid possible
             // numerical issue of dividing by zero when sigma1_{j+1} is zero
             0.0
         } else {
