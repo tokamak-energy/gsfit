@@ -25,6 +25,7 @@ pub struct TensionedCubicBSpline {
     pub gamma4_array: Array1<f64>,
     pub sigma1_array: Array1<f64>,
     pub sigma2_array: Array1<f64>,
+    pub tstar_array: Array1<f64>,
 }
 
 /// Python accessible methods
@@ -105,6 +106,7 @@ impl TensionedCubicBSpline {
         let gamma3_array: Array1<f64> = gamma3_array;
         let gamma2_array: Array1<f64> = gamma2_array;
         let gamma4_array: Array1<f64> = gamma4_array;
+        // sigma1 calcualted using equation just above Equation (2.7) in P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993) 
         let mut sigma1_array: Array1<f64> = Array1::from_elem(n_knots - 2, f64::NAN);
         for i in 0..n_knots - 2 {
             if knots[i + 2] - knots[i] < delta_cutoff {
@@ -114,22 +116,34 @@ impl TensionedCubicBSpline {
             }
         }
         let sigma1_array: Array1<f64> = sigma1_array;
+        // tstar calculated using the equation just below Equation (2.7) in P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
+        // Note that we remap tstar_j there to tstar_{j+2} here as we think it makes more sense.
+        let mut tstar_array: Array1<f64> = Array1::from_elem(n_knots - 2, f64::NAN);
+        for i in 0..n_knots - 3 {
+            if knots[i + 2] - knots[i] < delta_cutoff {
+                tstar_array[i + 1] = knots[i + 1];
+            } else {
+                tstar_array[i + 1] = knots[i + 1] + (gamma3_array[i + 1] - gamma3_array[i]) / (gamma2_array[i] + gamma2_array[i + 1]);
+            }
+        }
+        let tstar_array: Array1<f64> = tstar_array;
         let mut sigma2_array: Array1<f64> = Array1::from_elem(n_knots - 3, f64::NAN);
+        // sigma2 calculated using Equation (2.9) in P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
         for i in 0..n_knots - 3 {
             if knots[i + 3] - knots[i] < delta_cutoff {
                 sigma2_array[i] = 1.0;
             } else {
-                let tstar_jp: f64 = if knots[i + 2] - knots[i] > delta_cutoff {
-                    knots[i + 1] + (gamma3_array[i + 1] - gamma3_array[i]) / (gamma2_array[i] + gamma2_array[i + 1])
-                } else {
-                    knots[i + 1]
-                };
-                let tstar_jpp: f64 = if knots[i + 3] - knots[i + 1] > delta_cutoff {
-                    knots[i + 2] + (gamma3_array[i + 2] - gamma3_array[i + 1]) / (gamma2_array[i + 1] + gamma2_array[i + 2])
-                } else {
-                    knots[i + 2]
-                };
-                sigma2_array[i] = tstar_jpp - tstar_jp;
+                // let tstar_jp: f64 = if knots[i + 2] - knots[i] > delta_cutoff {
+                //     knots[i + 1] + (gamma3_array[i + 1] - gamma3_array[i]) / (gamma2_array[i] + gamma2_array[i + 1])
+                // } else {
+                //     knots[i + 1]
+                // };
+                // let tstar_jpp: f64 = if knots[i + 3] - knots[i + 1] > delta_cutoff {
+                //     knots[i + 2] + (gamma3_array[i + 2] - gamma3_array[i + 1]) / (gamma2_array[i + 1] + gamma2_array[i + 2])
+                // } else {
+                //     knots[i + 2]
+                // };
+                sigma2_array[i] = tstar_array[i+2] - tstar_array[i+1];
             }
         }
         let sigma2_array: Array1<f64> = sigma2_array;
@@ -151,6 +165,7 @@ impl TensionedCubicBSpline {
             gamma4_array,
             sigma1_array,
             sigma2_array,
+            tstar_array,
         }
     }
 
@@ -204,6 +219,7 @@ impl TensionedCubicBSpline {
             "gamma4_array" => Ok(PyArray1::from_array(py, &self.gamma4_array)),
             "sigma1_array" => Ok(PyArray1::from_array(py, &self.sigma1_array)),
             "sigma2_array" => Ok(PyArray1::from_array(py, &self.sigma2_array)),
+            "tstar_array" => Ok(PyArray1::from_array(py, &self.tstar_array)),
             _ => Err(PyValueError::new_err(format!("Unknown Array1 attribute: {}", name))),
         }
     }
