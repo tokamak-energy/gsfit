@@ -370,7 +370,7 @@ impl TensionedCubicBSpline {
         if x_val < self.knots[j_index + 1] {
             if self.delta_knots[j_index] < self.delta_cutoff {
                 // Since the distance between knots is very small the integral over the range will be approximately zero.
-                // But we explicitally set integral to zero to avoid possible numerical issue of dividing by zero when sigma1_j is zero
+                // But we explicitly set integral to zero to avoid possible numerical issue of dividing by zero when sigma1_j is zero
                 return 0.0;
             } else {
                 // Need to calculate int_{t_j}^x B2_j(y) dy
