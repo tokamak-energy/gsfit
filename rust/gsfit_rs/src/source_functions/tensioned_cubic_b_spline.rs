@@ -105,7 +105,7 @@ impl TensionedCubicBSpline {
         let gamma3_array: Array1<f64> = gamma3_array;
         let gamma2_array: Array1<f64> = gamma2_array;
         let gamma4_array: Array1<f64> = gamma4_array;
-        // sigma1 calcualted using equation just above Equation (2.7) in P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993) 
+        // sigma1 calculated using equation just above Equation (2.7) in P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993) 
         let mut sigma1_array: Array1<f64> = Array1::from_elem(n_knots - 2, f64::NAN);
         for i in 0..n_knots - 2 {
             if knots[i + 2] - knots[i] < delta_cutoff {
