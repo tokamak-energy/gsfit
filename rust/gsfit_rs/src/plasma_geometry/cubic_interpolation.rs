@@ -56,8 +56,7 @@ pub fn cubic_interpolation_v2(
     let mut x_values: Vec<f64> = Vec::new();
     for &t in &roots {
         if (0.0..=1.0).contains(&t) {
-            let t_clamped: f64 = t.clamp(0.0, 1.0);
-            x_values.push(cell0_x + t_clamped * delta_x);
+            x_values.push(cell0_x + t * delta_x);
         }
     }
 
@@ -119,8 +118,7 @@ pub fn cubic_interpolation(
     let mut x_values: Vec<f64> = Vec::new();
     for &t in &roots {
         if (0.0..=1.0).contains(&t) {
-            let t_clamped: f64 = t.clamp(0.0, 1.0);
-            x_values.push(cell0_x + t_clamped * delta_x);
+            x_values.push(cell0_x + t * delta_x);
         }
     }
 

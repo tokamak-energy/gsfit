@@ -221,10 +221,10 @@ pub fn find_stationary_points_using_full_quadrant_method(
             let br_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 z_start,
                 d_psi_d_z_2d[(i_z, i_r)],
-                d2_psi_d_rz_2d[(i_z, i_r)],
+                d2_psi_d_z2_2d[(i_z, i_r)],
                 z_end,
                 d_psi_d_z_2d[(i_z + 1, i_r)],
-                d2_psi_d_rz_2d[(i_z + 1, i_r)],
+                d2_psi_d_z2_2d[(i_z + 1, i_r)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(br_crossings_this_edge.len());
