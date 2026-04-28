@@ -3,6 +3,7 @@ use crate::plasma_geometry::hessian;
 use core::f64;
 use ndarray::{Array2, s, ArrayView1, ArrayView2};
 use ndarray::{SliceInfo, SliceInfoElem, Dim};
+use ndarray_linalg::assert;
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
 use super::cubic_interpolation::cubic_interpolation_v2;
@@ -35,8 +36,8 @@ enum CrossingKind {
     BzZero,
 }
 
-/// Quadrant of (Br, Bz). Q1: (+,+), Q2: (-,+), Q3: (-,-), Q4: (+,-).
-/// CCW traversal of the (Br, Bz) plane visits Q1 → Q2 → Q3 → Q4 → Q1.
+/// Quadrant of (-br, bz). Q1: (+,+), Q2: (-,+), Q3: (-,-), Q4: (+,-).
+/// CCW traversal of the (-br, bz) plane visits Q1 → Q2 → Q3 → Q4 → Q1.
 fn classify_quadrant(sign_br: i8, sign_bz: i8) -> i8 {
     match (sign_br > 0, sign_bz > 0) {
         (true, true) => 1,
@@ -59,21 +60,21 @@ fn sign_with_tiebreak(value: f64) -> i8 {
 /// along the traversal direction. Endpoint crossings are dropped — corners are handled
 /// by direct grid-point sampling, not by this list.
 fn combine_and_order_edge_events(
-    br_crossing_points_this_edge: &[Coordinate],
-    bz_crossing_points_this_edge: &[Coordinate],
+    d_psi_d_z_zero_crossings_this_edge: &[Coordinate],
+    d_psi_d_r_zero_crossings_this_edge: &[Coordinate],
     edge_start: f64,
     edge_end: f64,
     use_r_axis: bool,
 ) -> Vec<CrossingKind> {
     let endpoint_tol: f64 = 1e-12 * (edge_end - edge_start).abs();
-    let mut events: Vec<(f64, CrossingKind)> = Vec::with_capacity(br_crossing_points_this_edge.len() + bz_crossing_points_this_edge.len());
-    for c in br_crossing_points_this_edge {
+    let mut events: Vec<(f64, CrossingKind)> = Vec::with_capacity(d_psi_d_z_zero_crossings_this_edge.len() + d_psi_d_r_zero_crossings_this_edge.len());
+    for c in d_psi_d_z_zero_crossings_this_edge {
         let pos: f64 = if use_r_axis { c.r } else { c.z };
         if (pos - edge_start).abs() > endpoint_tol && (edge_end - pos).abs() > endpoint_tol {
             events.push((pos, CrossingKind::BrZero));
         }
     }
-    for c in bz_crossing_points_this_edge {
+    for c in d_psi_d_r_zero_crossings_this_edge {
         let pos: f64 = if use_r_axis { c.r } else { c.z };
         if (pos - edge_start).abs() > endpoint_tol && (edge_end - pos).abs() > endpoint_tol {
             events.push((pos, CrossingKind::BzZero));
@@ -111,14 +112,14 @@ fn combine_and_order_edge_events(
 /// The Q1, Q2, Q3, and Q4 quadrant labels are standard definitions.
 /// Typically, the axes are not part of the quadrants labels.
 /// But for our purposes, we need to assign a quadrant label to the axes:
-///      d(ψ)/d(z) ~ -Br                                   d(ψ)/d(z) ~ -Br                                  d(ψ)/d(z) ~ -Br
-///          ▲                                                 ▲                                                ▲        Special case:
-///     Q2   │   Q1                                            Q2                                               │        (0.0, 0.0) is in Q1
-///   (-,+)  │  (+,+)                                          │                                                │ Q1
-/// ─────────┼─────────► d(ψ)/d(r) ~ Bz               ────Q3───┼───Q1────► d(ψ)/d(r) ∝ Bz               ────────•────────► d(ψ)/d(r) ∝ Bz
-///     Q3   │   Q4                                            │                                                │
-///   (-,-)  │  (+,-)                                          Q4                                               │
-///          │                                                 |                                                │
+///      d(ψ)/d(z)                              d(ψ)/d(z)                           d(ψ)/d(z)
+///          ▲                                     ▲                                    ▲        Special case:
+///     Q2   │   Q1                                Q2                                   │        (0.0, 0.0) is in Q1
+///   (-,+)  │  (+,+)                              │                                    │ Q1
+/// ─────────┼─────────► d(ψ)/d(r)        ────Q3───┼───Q1────► d(ψ)/d(r)        ────────•────────► d(ψ)/d(r)
+///     Q3   │   Q4                                │                                    │
+///   (-,-)  │  (+,-)                              Q4                                   │
+///          │                                     |                                    │
 /// 
 /// To calculate the winding number, we trace the path around the cell edges (in real space) and plot the quadrants.
 /// The winding number is then the number of full CCW rotations, going through all quadrants.
@@ -135,11 +136,11 @@ fn combine_and_order_edge_events(
 ///
 /// Example: `winding_number = +2`; CCW inward spiral
 /// Joining points: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
-///      d(ψ)/d(z) ∝ -Br
+///      d(ψ)/d(z)
 ///          ▲
 ///     2 •  │  • 1
 ///       6• │ •5
-/// ─────────┼─────────► d(ψ)/d(r) ∝ Bz
+/// ─────────┼─────────► d(ψ)/d(r)
 ///       7• │ •8
 ///     3 •  │  • 4
 ///          │
@@ -166,69 +167,77 @@ pub fn find_stationary_points_using_full_quadrant_method(
     let d_z: f64 = z[1] - z[0];
 
     // key: (i_r_from, i_z_from, i_r_to, i_z_to)
-    // value: number of crossings
-    let mut br_crossing_points: HashMap<(usize, usize, usize, usize), Vec<Coordinate>> = HashMap::new();
-    let mut bz_crossing_points: HashMap<(usize, usize, usize, usize), Vec<Coordinate>> = HashMap::new();
+    // value: vector of crossing coordinates
+    // `(r,z)` location where `d(psi)/d(z)=0`, along all edges
+    let mut d_psi_d_z_zero_coordinates: HashMap<(usize, usize, usize, usize), Vec<Coordinate>> = HashMap::new();
+    // `(r,z)` location where `d(psi)/d(r)=0`, along all edges
+    let mut d_psi_d_r_zero_coordinates: HashMap<(usize, usize, usize, usize), Vec<Coordinate>> = HashMap::new();
 
-    // Horizontal march: (i_r, i_z) → (i_r+1, i_z)
+    // Horizontal march: (i_r_left, i_z) → (i_r_right, i_z)
+    // We don't need to do (i_r_left, i_z+1) → (i_r_right, i_z+1) as this will be covered by the next horizontal march
     for i_z in 0..n_z {
         for i_r in 0..n_r - 1 {
-            // let i_r_left: usize = i_r;
-            // let i_r_right: usize = i_r + 1;
+            let i_r_left: usize = i_r;
+            let i_r_right: usize = i_r + 1;
+
             // `br = - 1 / (2.0 * pi) d(psi)/d(z)`
-            let br_crossings: Vec<f64> = cubic_interpolation_v2(
-                r[i_r],
-                d_psi_d_z_2d[(i_z, i_r)],
-                d2_psi_d_rz_2d[(i_z, i_r)],
-                r[i_r + 1],
-                d_psi_d_z_2d[(i_z, i_r + 1)],
-                d2_psi_d_rz_2d[(i_z, i_r + 1)],
+            let d_psi_d_z_zero_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
+                r[i_r_left],
+                d_psi_d_z_2d[(i_z, i_r_left)],
+                d2_psi_d_rz_2d[(i_z, i_r_left)],
+                r[i_r_right],
+                d_psi_d_z_2d[(i_z, i_r_right)],
+                d2_psi_d_rz_2d[(i_z, i_r_right)],
                 0.0,
             );
-            let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(br_crossings.len());
-            for &r_cross in &br_crossings {
+            let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(d_psi_d_z_zero_crossings_this_edge.len());
+            for &r_cross in &d_psi_d_z_zero_crossings_this_edge {
                 crossing_coordinates_this_edge.push(Coordinate { r: r_cross, z: z[i_z] });
             }
-            br_crossing_points.insert((i_r, i_z, i_r + 1, i_z), crossing_coordinates_this_edge);
+            d_psi_d_z_zero_coordinates.insert((i_r_left, i_z, i_r_right, i_z), crossing_coordinates_this_edge);
 
             // `bz = 1 / (2.0 * pi) * d(psi)/d(r)`
-            let bz_crossings: Vec<f64> = cubic_interpolation_v2(
-                r[i_r],
-                d_psi_d_r_2d[(i_z, i_r)],
-                d2_psi_d_r2_2d[(i_z, i_r)],
-                r[i_r + 1],
-                d_psi_d_r_2d[(i_z, i_r + 1)],
-                d2_psi_d_r2_2d[(i_z, i_r + 1)],
+            let d_psi_d_r_zero_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
+                r[i_r_left],
+                d_psi_d_r_2d[(i_z, i_r_left)],
+                d2_psi_d_r2_2d[(i_z, i_r_left)],
+                r[i_r_right],
+                d_psi_d_r_2d[(i_z, i_r_right)],
+                d2_psi_d_r2_2d[(i_z, i_r_right)],
                 0.0,
             );
-            let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(bz_crossings.len());
-            for &r_cross in &bz_crossings {
+            let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(d_psi_d_r_zero_crossings_this_edge.len());
+            for &r_cross in &d_psi_d_r_zero_crossings_this_edge {
                 crossing_coordinates_this_edge.push(Coordinate { r: r_cross, z: z[i_z] });
             }
-            bz_crossing_points.insert((i_r, i_z, i_r + 1, i_z), crossing_coordinates_this_edge);
+            d_psi_d_r_zero_coordinates.insert((i_r_left, i_z, i_r_right, i_z), crossing_coordinates_this_edge);
         }
     }
 
-    // Vertical march: (i_r, i_z) → (i_r, i_z+1)
+    // Vertical march: (i_r, i_z_lower) → (i_r, i_z_upper)
+    // We don't need to do (i_r+1, i_z_lower) → (i_r+1, i_z_upper) as this will be covered by the next vertical march
     //
     // To prevent double counting, we discard crossings which are exactly at the grid points,
     // since they will have already been counted in the horizontal march.
     // In practice, this is fairly unlikely.
     // But it could happen in a perfect double null from synthetic data.
-    for i_r in 0..n_r {
-        for i_z in 0..n_z - 1 {
-            let z_start: f64 = z[i_z];
-            let z_end: f64 = z[i_z + 1];
-            let endpoint_tol: f64 = 1e-12 * (z_end - z_start);
-
+    //
+    // Note: having `i_r` as the inner loop is optimal order to prevent cache thrashing
+    for i_z in 0..n_z - 1 {
+        let i_z_lower: usize = i_z;
+        let i_z_upper: usize = i_z + 1;
+        let z_start: f64 = z[i_z_lower];
+        let z_end: f64 = z[i_z_upper];
+        let endpoint_tol: f64 = 1e-12 * (z_end - z_start);
+        for i_r in 0..n_r {
             // `br = - 1 / (2.0 * pi) d(psi)/d(z)`
             let br_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 z_start,
-                d_psi_d_z_2d[(i_z, i_r)],
-                d2_psi_d_z2_2d[(i_z, i_r)],
+                d_psi_d_z_2d[(i_z_lower, i_r)],
+                d2_psi_d_z2_2d[(i_z_lower, i_r)],
                 z_end,
-                d_psi_d_z_2d[(i_z + 1, i_r)],
-                d2_psi_d_z2_2d[(i_z + 1, i_r)],
+                d_psi_d_z_2d[(i_z_upper, i_r)],
+                d2_psi_d_z2_2d[(i_z_upper, i_r)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(br_crossings_this_edge.len());
@@ -237,29 +246,29 @@ pub fn find_stationary_points_using_full_quadrant_method(
                     crossing_coordinates_this_edge.push(Coordinate { r: r[i_r], z: z_cross });
                 }
             }
-            br_crossing_points.insert((i_r, i_z, i_r, i_z + 1), crossing_coordinates_this_edge);
+            d_psi_d_z_zero_coordinates.insert((i_r, i_z_lower, i_r, i_z_upper), crossing_coordinates_this_edge);
 
             // `bz = 1 / (2.0 * pi) * d(psi)/d(r)`
             let bz_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 z_start,
-                d_psi_d_r_2d[(i_z, i_r)],
-                d2_psi_d_rz_2d[(i_z, i_r)],
+                d_psi_d_r_2d[(i_z_lower, i_r)],
+                d2_psi_d_rz_2d[(i_z_lower, i_r)],
                 z_end,
-                d_psi_d_r_2d[(i_z + 1, i_r)],
-                d2_psi_d_rz_2d[(i_z + 1, i_r)],
+                d_psi_d_r_2d[(i_z_upper, i_r)],
+                d2_psi_d_rz_2d[(i_z_upper, i_r)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(bz_crossings_this_edge.len());
             for &z_cross in &bz_crossings_this_edge {
-                if z_cross - z_start > endpoint_tol && z_end - z_cross > endpoint_tol {
+                if z_cross - z[i_z_lower] > endpoint_tol && z[i_z_upper] - z_cross > endpoint_tol {
                     crossing_coordinates_this_edge.push(Coordinate { r: r[i_r], z: z_cross });
                 }
             }
-            bz_crossing_points.insert((i_r, i_z, i_r, i_z + 1), crossing_coordinates_this_edge);
+            d_psi_d_r_zero_coordinates.insert((i_r, i_z_lower, i_r, i_z_upper), crossing_coordinates_this_edge);
         }
     }
 
-    if br_crossing_points.len() == 0 || bz_crossing_points.len() == 0 {
+    if d_psi_d_z_zero_coordinates.len() == 0 || d_psi_d_r_zero_coordinates.len() == 0 {
         // No zero-crossings found, so no stationary points possible
         return stationary_points;
     }
@@ -283,8 +292,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
             // Bottom edge: BL → BR (r increasing at z = z[i_z]).
             // Bottom edge: (i_r_left, i_z_bottom) → (i_r_right, i_z_bottom)
             let bottom_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &br_crossing_points[&(i_r_left, i_z_lower, i_r_right, i_z_lower)],
-                &bz_crossing_points[&(i_r_left, i_z_lower, i_r_right, i_z_lower)],
+                &d_psi_d_z_zero_coordinates[&(i_r_left, i_z_lower, i_r_right, i_z_lower)],
+                &d_psi_d_r_zero_coordinates[&(i_r_left, i_z_lower, i_r_right, i_z_lower)],
                 r[i_r],
                 r[i_r + 1],
                 true,
@@ -295,8 +304,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
 
             // Right edge: BR → TR (z increasing at r = r[i_r+1]).
             let right_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &br_crossing_points[&(i_r_right, i_z_lower, i_r_right, i_z_upper)],
-                &bz_crossing_points[&(i_r_right, i_z_lower, i_r_right, i_z_upper)],
+                &d_psi_d_z_zero_coordinates[&(i_r_right, i_z_lower, i_r_right, i_z_upper)],
+                &d_psi_d_r_zero_coordinates[&(i_r_right, i_z_lower, i_r_right, i_z_upper)],
                 z[i_z],
                 z[i_z + 1],
                 false,
@@ -307,8 +316,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
 
             // Top edge: TR → TL (r decreasing at z = z[i_z+1]).
             let top_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &br_crossing_points[&(i_r_left, i_z_upper, i_r_right, i_z_upper)],
-                &bz_crossing_points[&(i_r_left, i_z_upper, i_r_right, i_z_upper)],
+                &d_psi_d_z_zero_coordinates[&(i_r_left, i_z_upper, i_r_right, i_z_upper)],
+                &d_psi_d_r_zero_coordinates[&(i_r_left, i_z_upper, i_r_right, i_z_upper)],
                 r[i_r + 1],
                 r[i_r],
                 true,
@@ -319,34 +328,34 @@ pub fn find_stationary_points_using_full_quadrant_method(
 
             // Left edge: TL → BL (z decreasing at r = r[i_r]).
             let left_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &br_crossing_points[&(i_r_left, i_z_lower, i_r_left, i_z_upper)],
-                &bz_crossing_points[&(i_r_left, i_z_lower, i_r_left, i_z_upper)],
-                z[i_z + 1],
-                z[i_z],
+                &d_psi_d_z_zero_coordinates[&(i_r_left, i_z_lower, i_r_left, i_z_upper)],
+                &d_psi_d_r_zero_coordinates[&(i_r_left, i_z_lower, i_r_left, i_z_upper)],
+                z[i_z_upper],
+                z[i_z_lower],
                 false,
             );
             for event in left_events {
                 perimeter_events.push(event);
             }
 
-            // Walk the perimeter event-by-event, tracking which quadrant of (Br, Bz) we are in.
+            // Walk the perimeter event-by-event, tracking which quadrant of we are in.
             // Each event changes `total_quarter_turns` by +/-1.
             //
             // Seed the walk at the bottom-left grid point.
-            let mut sign_br: i8 = sign_with_tiebreak(d_psi_d_z_2d[(i_z_lower, i_r_left)]); // if `d_psi_d_z_2d[(i_z, i_r)] == 0.0`, then `sign_br = 1`
-            let mut sign_bz: i8 = sign_with_tiebreak(d_psi_d_r_2d[(i_z_lower, i_r_left)]);
-            let mut prev_q: i8 = classify_quadrant(sign_br, sign_bz);
+            let mut sign_d_psi_d_z: i8 = sign_with_tiebreak(d_psi_d_z_2d[(i_z_lower, i_r_left)]); // if `d_psi_d_z_2d[(i_z, i_r)] == 0.0`, then `sign_br = 1`
+            let mut sign_d_psi_d_r: i8 = sign_with_tiebreak(d_psi_d_r_2d[(i_z_lower, i_r_left)]);
+            let mut prev_q: i8 = classify_quadrant(sign_d_psi_d_z, sign_d_psi_d_r);
             let mut total_quarter_turns: i8 = 0;
 
             for event in perimeter_events {
                 // Flip the sign of whichever component just crossed zero.
                 match event {
-                    CrossingKind::BrZero => sign_br = -sign_br,
-                    CrossingKind::BzZero => sign_bz = -sign_bz,
+                    CrossingKind::BrZero => sign_d_psi_d_z = -sign_d_psi_d_z,
+                    CrossingKind::BzZero => sign_d_psi_d_r = -sign_d_psi_d_r,
                 }
 
                 // Step the quadrant tracker: +1 for an adjacent CCW step, -1 for an adjacent CW step.
-                let new_q: i8 = classify_quadrant(sign_br, sign_bz);
+                let new_q: i8 = classify_quadrant(sign_d_psi_d_z, sign_d_psi_d_r);
                 let quadrant_step: i8 = (new_q - prev_q).rem_euclid(4) as i8;
                 match quadrant_step {
                     0 => {} // same quadrant; no change in `total_quarter_turns`
@@ -429,4 +438,96 @@ pub fn find_stationary_points_using_full_quadrant_method(
     // panic!("stopping for debugging");
 
     stationary_points
+}
+
+/// In this test the `d(psi)/d(r)=0` contour enters and exits through the same cell edge
+///
+/// See the Jupyter notebook for a plot detailing the test
+/// `rust/gsfit_rs/test_data/plasma_geometry/find_stationary_points/test_find_stationary_points.ipynb`
+#[test]
+fn test_find_stationary_points_using_full_quadrant_method() {
+    use approx::assert_abs_diff_eq;
+    use ndarray::Array1;
+
+    let n_r: usize = 6;
+    let n_z: usize = 4;
+
+    let r: Array1<f64> = Array1::linspace(0.01, 1.01, n_r);
+    let z: Array1<f64> = Array1::linspace(-1.0, 1.0, n_z);
+
+    let mut psi_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d_psi_d_r_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d_psi_d_z_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d2_psi_d_r2_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d2_psi_d_rz_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d2_psi_d_z2_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+
+    let vertical_curvature: f64 = 0.35;
+
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            let r_center: f64 = 0.43 - vertical_curvature * z[i_z].powi(2);
+            let delta_r: f64 = r[i_r] - r_center;
+            let delta_z: f64 = z[i_z] + 25e-3;
+
+            psi_2d[(i_z, i_r)] = -delta_r.powi(2) - delta_z.powi(2);
+            d_psi_d_r_2d[(i_z, i_r)] = -2.0 * delta_r;
+            d_psi_d_z_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z] * delta_r - 2.0 * delta_z;
+            d2_psi_d_r2_2d[(i_z, i_r)] = -2.0;
+            d2_psi_d_rz_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z];
+            d2_psi_d_z2_2d[(i_z, i_r)] = -4.0 * vertical_curvature * delta_r - 8.0 * vertical_curvature.powi(2) * z[i_z].powi(2) - 2.0;
+        }
+    }
+
+    let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_full_quadrant_method(
+        r.view(),
+        z.view(),
+        psi_2d.view(),
+        d_psi_d_r_2d.view(),
+        d_psi_d_z_2d.view(),
+        d2_psi_d_r2_2d.view(),
+        d2_psi_d_rz_2d.view(),
+        d2_psi_d_z2_2d.view(),
+    );
+
+    // There should be only one stationary point
+    assert_eq!(stationary_points.len(), 1);
+    let stationary_point: StationaryPoint = stationary_points[0];
+
+    // Expected stationary point value and location
+    let expected_stationary_point_psi: f64 = 0.0;
+    let expected_stationary_point_z: f64 = -25e-3;
+    let expected_stationary_point_r: f64 = 0.43 - vertical_curvature * expected_stationary_point_z.powi(2);
+
+    // Find the scale which we need to use for the epsilon values
+    let d_r: f64 = r[1] - r[0];
+    let d_z: f64 = z[1] - z[0];
+    let mut max_delta_psi: f64 = 0.0;
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            if i_r + 1 < n_r {
+                let delta_psi: f64 = (psi_2d[(i_z, i_r + 1)] - psi_2d[(i_z, i_r)]).abs();
+                if delta_psi > max_delta_psi {
+                    max_delta_psi = delta_psi;
+                }
+            }
+            if i_z + 1 < n_z {
+                let delta_psi: f64 = (psi_2d[(i_z + 1, i_r)] - psi_2d[(i_z, i_r)]).abs();
+                if delta_psi > max_delta_psi {
+                    max_delta_psi = delta_psi;
+                }
+            }
+        }
+    }
+
+    // Check the stationary point values against the expected values
+    assert_abs_diff_eq!(expected_stationary_point_r, stationary_point.r, epsilon = d_r / 10.0);
+    assert_abs_diff_eq!(expected_stationary_point_z, stationary_point.z, epsilon = d_z / 10.0);
+    assert_abs_diff_eq!(expected_stationary_point_psi, stationary_point.psi, epsilon = max_delta_psi / 10.0);
+
+    // Expected stationary point type:
+    // * extremum: `hessian_determinant > 0`
+    // * maximum: `hessian_trace < 0`
+    assert!(stationary_point.hessian_determinant > 0.0);
+    assert!(stationary_point.hessian_trace < 0.0);
 }
