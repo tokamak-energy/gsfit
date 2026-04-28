@@ -388,21 +388,36 @@ impl<'a> GsSolution<'a> {
             // Find stationary points in `psi`
             // let stationary_points_or_error: Result<Vec<StationaryPoint>, String> =
             //     find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
-            let stationary_points_or_error: Vec<StationaryPoint> =
+            
+            // TODO: TEMPORARY CALCULATIONS for psi gradients; later we will store these and calculate the fields
+            let mut d_psi_d_r_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+            let mut d_psi_d_z_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+            let mut d2_psi_d_r2_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+            let mut d2_psi_d_rz_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+            let mut d2_psi_d_z2_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+            for i_r in 0..n_r {
+                for i_z in 0..n_z {
+                    d_psi_d_r_2d[(i_z, i_r)] = 2.0 * PI * mesh_r[(i_z, i_r)] * bz_2d[(i_z, i_r)];
+                    d_psi_d_z_2d[(i_z, i_r)] = -2.0 * PI * mesh_r[(i_z, i_r)] * br_2d[(i_z, i_r)];
+                    d2_psi_d_r2_2d[(i_z, i_r)] = d2_psi_d_r2_calculator.calculate(i_r, i_z);
+                    d2_psi_d_rz_2d[(i_z, i_r)] = 2.0 * PI * mesh_r[(i_z, i_r)] * d_bz_d_z_2d[(i_z, i_r)];
+                    d2_psi_d_z2_2d[(i_z, i_r)] = -2.0 * PI * mesh_r[(i_z, i_r)] * d_br_d_z_2d[(i_z, i_r)];
+                }
+            }
+            
+            let stationary_points: Vec<StationaryPoint> =
                 find_stationary_points_using_full_quadrant_method(
                     &r,
                     &z,
                     &psi_2d,
-                    &br_2d,
-                    &bz_2d,
-                    &d_br_d_z_2d,
-                    &d_bz_d_z_2d,
-                    &d_br_d_r_2d,
-                    &d_bz_d_r_2d,
-                    d2_psi_d_r2_calculator.clone(),
+                    &d_psi_d_r_2d,
+                    &d_psi_d_z_2d,
+                    &d2_psi_d_r2_2d,
+                    &d2_psi_d_rz_2d,
+                    &d2_psi_d_z2_2d
                 );
             // At a minimum we should have found the magnetic axis
-            if stationary_points_or_error.is_empty() {
+            if stationary_points.is_empty() {
                 // Set time-slice to failed
                 self.set_to_failed_time_slice();
 
@@ -413,7 +428,6 @@ impl<'a> GsSolution<'a> {
                 // Exit iteration loop for this time-slice
                 break 'iteration_loop;
             }
-            let stationary_points: Vec<StationaryPoint> = stationary_points_or_error.to_owned();
 
             // Store stationary points in the solution
             self.stationary_points = stationary_points.clone();

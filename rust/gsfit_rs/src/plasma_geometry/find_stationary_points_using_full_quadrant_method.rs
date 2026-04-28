@@ -1,14 +1,11 @@
 use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint};
-use super::calculate_winding_number::calculate_winding_number;
-use crate::greens::D2PsiDR2Calculator;
 use crate::plasma_geometry::hessian;
 use core::f64;
-use ndarray::{Array1, Array2};
+use ndarray::{Array1, Array2, s};
+use ndarray::{SliceInfo, SliceInfoElem, Dim};
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
-use std::f64::consts::PI;
 use super::cubic_interpolation::cubic_interpolation_v2;
-
 use super::StationaryPoint;
 
 // #[derive(Debug, Clone, Copy)]
@@ -91,19 +88,18 @@ fn combine_and_order_edge_events(
 }
 
 
-/// Finds stationary points
+/// Finds stationary points: extrema's (minima or maxima) and saddle points
+/// TODO: improve documentation - can this method also find higher-order stationary points?
 /// 
 /// # Arguments
 /// * `r` - the radial coordinate, [meters]
 /// * `z` - the vertical coordinate, [meters]
 /// * `psi_2d` - the 2D array of poloidal flux values, [weber]
-/// * `br_2d` - the 2D array of radial magnetic field values, [tesla]
-/// * `bz_2d` - the 2D array of vertical magnetic field values, [tesla]
-/// * `d_br_d_z_2d` - the 2D array of d(Br)/d(z) values, [tesla/meter]
-/// * `d_bz_d_z_2d` - the 2D array of d(Bz)/d(z) values, [tesla/meter]
-/// * `d_br_d_r_2d` - the 2D array of d(Br)/d(r) values, [tesla/meter]
-/// * `d_bz_d_r_2d` - the 2D array of d(Bz)/d(r) values, [tesla/meter]
-/// * `d2_psi_d_r2_calculator` - a struct which can calculate d^2(psi)/d(r)^2 at any grid point, [weber/meter^2]
+/// * `d_psi_d_r_2d` - d(psi)/d(r), [tesla]
+/// * `d_psi_d_z_2d` - d(psi)/d(z), [tesla]
+/// * `d2_psi_d_r2_2d` - d^2(psi)/d(r)^2, [weber/meter^2]
+/// * `d2_psi_d_rz_2d` - d^2(psi)/d(r)d(z), [weber/meter^2]
+/// * `d2_psi_d_z2_2d` - d^2(psi)/d(z)^2, [weber/meter^2]
 /// 
 /// # Returns
 /// * `Vec<StationaryPoint>` - a vector of stationary points, which may be empty if no stationary points are found
@@ -154,20 +150,20 @@ pub fn find_stationary_points_using_full_quadrant_method(
     r: &Array1<f64>,
     z: &Array1<f64>,
     psi_2d: &Array2<f64>,
-    br_2d: &Array2<f64>,
-    bz_2d: &Array2<f64>,
-    d_br_d_z_2d: &Array2<f64>,
-    d_bz_d_z_2d: &Array2<f64>,
-    d_br_d_r_2d: &Array2<f64>,
-    d_bz_d_r_2d: &Array2<f64>,
-    d2_psi_d_r2_calculator: D2PsiDR2Calculator,
+    d_psi_d_r_2d: &Array2<f64>,
+    d_psi_d_z_2d: &Array2<f64>,
+    d2_psi_d_r2_2d: &Array2<f64>,
+    d2_psi_d_rz_2d: &Array2<f64>,
+    d2_psi_d_z2_2d: &Array2<f64>,
 ) -> Vec<StationaryPoint> {
-
     // Empty stationary_points, ready to return if no stationary points found
     let mut stationary_points: Vec<StationaryPoint> = Vec::new();
 
+    // Grid variables
     let n_r: usize = r.len();
     let n_z: usize = z.len();
+    let d_r: f64 = r[1] - r[0];
+    let d_z: f64 = z[1] - z[0];
 
     // key: (i_r_from, i_z_from, i_r_to, i_z_to)
     // value: number of crossings
@@ -179,11 +175,11 @@ pub fn find_stationary_points_using_full_quadrant_method(
         for i_r in 0..n_r - 1 {
             let br_crossings: Vec<f64> = cubic_interpolation_v2(
                 r[i_r],
-                br_2d[(i_z, i_r)],
-                d_br_d_r_2d[(i_z, i_r)],
+                d_psi_d_z_2d[(i_z, i_r)],
+                d2_psi_d_rz_2d[(i_z, i_r)],
                 r[i_r + 1],
-                br_2d[(i_z, i_r + 1)],
-                d_br_d_r_2d[(i_z, i_r + 1)],
+                d_psi_d_z_2d[(i_z, i_r + 1)],
+                d2_psi_d_rz_2d[(i_z, i_r + 1)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(br_crossings.len());
@@ -194,11 +190,11 @@ pub fn find_stationary_points_using_full_quadrant_method(
 
             let bz_crossings: Vec<f64> = cubic_interpolation_v2(
                 r[i_r],
-                bz_2d[(i_z, i_r)],
-                d_bz_d_r_2d[(i_z, i_r)],
+                d_psi_d_r_2d[(i_z, i_r)],
+                d2_psi_d_r2_2d[(i_z, i_r)],
                 r[i_r + 1],
-                bz_2d[(i_z, i_r + 1)],
-                d_bz_d_r_2d[(i_z, i_r + 1)],
+                d_psi_d_r_2d[(i_z, i_r + 1)],
+                d2_psi_d_r2_2d[(i_z, i_r + 1)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(bz_crossings.len());
@@ -221,13 +217,14 @@ pub fn find_stationary_points_using_full_quadrant_method(
             let z_end: f64 = z[i_z + 1];
             let endpoint_tol: f64 = 1e-12 * (z_end - z_start);
 
+            // `br = - 1 / (2.0 * pi) d(psi)/d(z)`
             let br_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 z_start,
-                br_2d[(i_z, i_r)],
-                d_br_d_z_2d[(i_z, i_r)],
+                d_psi_d_z_2d[(i_z, i_r)],
+                d2_psi_d_rz_2d[(i_z, i_r)],
                 z_end,
-                br_2d[(i_z + 1, i_r)],
-                d_br_d_z_2d[(i_z + 1, i_r)],
+                d_psi_d_z_2d[(i_z + 1, i_r)],
+                d2_psi_d_rz_2d[(i_z + 1, i_r)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(br_crossings_this_edge.len());
@@ -238,13 +235,14 @@ pub fn find_stationary_points_using_full_quadrant_method(
             }
             br_crossing_points.insert((i_r, i_z, i_r, i_z + 1), crossing_coordinates_this_edge);
 
+            // `bz = 1 / (2.0 * pi) * d(psi)/d(r)`
             let bz_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 z_start,
-                bz_2d[(i_z, i_r)],
-                d_bz_d_z_2d[(i_z, i_r)],
+                d_psi_d_r_2d[(i_z, i_r)],
+                d2_psi_d_rz_2d[(i_z, i_r)],
                 z_end,
-                bz_2d[(i_z + 1, i_r)],
-                d_bz_d_z_2d[(i_z + 1, i_r)],
+                d_psi_d_r_2d[(i_z + 1, i_r)],
+                d2_psi_d_rz_2d[(i_z + 1, i_r)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(bz_crossings_this_edge.len());
@@ -326,8 +324,8 @@ pub fn find_stationary_points_using_full_quadrant_method(
             // Each event changes `total_quarter_turns` by +/-1.
             //
             // Seed the walk at the bottom-left grid point.
-            let mut sign_br: i8 = sign_with_tiebreak(br_2d[(i_z_lower, i_r_left)]); // if `br_2d[(i_z, i_r)] == 0.0`, then `sign_br = 1`
-            let mut sign_bz: i8 = sign_with_tiebreak(bz_2d[(i_z_lower, i_r_left)]);
+            let mut sign_br: i8 = sign_with_tiebreak(d_psi_d_z_2d[(i_z_lower, i_r_left)]); // if `d_psi_d_z_2d[(i_z, i_r)] == 0.0`, then `sign_br = 1`
+            let mut sign_bz: i8 = sign_with_tiebreak(d_psi_d_r_2d[(i_z_lower, i_r_left)]);
             let mut prev_q: i8 = classify_quadrant(sign_br, sign_bz);
             let mut total_quarter_turns: i8 = 0;
 
@@ -354,43 +352,15 @@ pub fn find_stationary_points_using_full_quadrant_method(
             let winding_number: i8 = total_quarter_turns / 4;
 
             if winding_number != 0 {
-                // Grid variables
-                let d_r: f64 = r[1] - r[0];
-                let d_z: f64 = z[1] - z[0];
+                // Create a slice that covers the 4 corner points
+                let slice_cell_perimeter: SliceInfo<[SliceInfoElem; 2], Dim<[usize; 2]>, Dim<[usize; 2]>> = s![i_z_lower..=i_z_upper, i_r_left..=i_r_right];
 
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-                let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-
-                // Function values
-                f[(0, 0)] = psi_2d[(i_z_lower, i_r_left)];
-                f[(0, 1)] = psi_2d[(i_z_upper, i_r_left)];
-                f[(1, 0)] = psi_2d[(i_z_lower, i_r_right)];
-                f[(1, 1)] = psi_2d[(i_z_upper, i_r_right)];
-
-                // d(psi)/d(r)
-                // bz = 1 / (2.0 * PI * r) * d_psi_d_r
-                d_f_d_r[(0, 0)] = bz_2d[(i_z_lower, i_r_left)] * (2.0 * PI * r[i_r_left]);
-                d_f_d_r[(0, 1)] = bz_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
-                d_f_d_r[(1, 0)] = bz_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
-                d_f_d_r[(1, 1)] = bz_2d[(i_z_upper, i_r_right)] * (2.0 * PI * r[i_r_right]);
-
-                // d(psi)/d(z)
-                // br = - 1 / (2.0 * PI * r) * d_psi_d_z
-                d_f_d_z[(0, 0)] = -br_2d[(i_z_lower, i_r_left)] * (2.0 * PI * r[i_r_left]);
-                d_f_d_z[(0, 1)] = -br_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
-                d_f_d_z[(1, 0)] = -br_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
-                d_f_d_z[(1, 1)] = -br_2d[(i_z_upper, i_r_right)] * (2.0 * PI * r[i_r_right]);
-
-                // d^2(psi)/(d(r)*d(z))
-                // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
-                // TODO: d_bz_d_z_2d has a delta_z correction missing!  <-- I think I have fixed this in `gs_solution`
-                d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_lower, i_r_left)] * (2.0 * PI * r[i_r_left]);
-                d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
-                d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
-                d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_upper, i_r_right)] * (2.0 * PI * r[i_r_right]);
+                // TODO: It is better to use ArrayView2<f64> data types, rather than doing a copy
+                let f: Array2<f64> = psi_2d.slice(slice_cell_perimeter).to_owned();
+                let d_f_d_r: Array2<f64> = d_psi_d_r_2d.slice(slice_cell_perimeter).to_owned();
+                let d_f_d_z: Array2<f64> = d_psi_d_z_2d.slice(slice_cell_perimeter).to_owned();
+                let d2_f_d_r_d_z: Array2<f64> = d2_psi_d_rz_2d.slice(slice_cell_perimeter).to_owned();
 
                 // Create a bicubic interpolator
                 let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
@@ -415,15 +385,9 @@ pub fn find_stationary_points_using_full_quadrant_method(
                         let i_z_nearest: usize = (z - stationary_z).abs().argmin().unwrap();
 
                         // Calculate the Hessian at the nearest grid point of the cell
-                        // d^2(psi)/(d_r^2)
-                        let d2_psi_d_r2: f64 = d2_psi_d_r2_calculator.calculate(i_r_nearest, i_z_nearest);
-
-                        // d^2(psi)/(d_z^2)
-                        let d2_psi_d_z2: f64 = -2.0 * PI * r[i_r_nearest] * d_br_d_z_2d[(i_z_nearest, i_r_nearest)];
-
-                        // d^2(psi)/(d_r * d_z)
-                        let d2_psi_d_r_d_z: f64 = 2.0 * PI * r[i_r_nearest] * d_bz_d_z_2d[(i_z_nearest, i_r_nearest)];
-
+                        let d2_psi_d_r2: f64 = d2_psi_d_r2_2d[(i_z_nearest, i_r_nearest)];
+                        let d2_psi_d_z2: f64 = d2_psi_d_z2_2d[(i_z_nearest, i_r_nearest)];
+                        let d2_psi_d_r_d_z: f64 = d2_psi_d_rz_2d[(i_z_nearest, i_r_nearest)];
                         let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_d_z);
 
                         stationary_points.push(StationaryPoint {
