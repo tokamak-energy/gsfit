@@ -45,7 +45,7 @@ pub fn hessian(d2_psi_d_r2: f64, d2_psi_d_z2: f64, d2_psi_d_r_d_z: f64) -> (f64,
 }
 
 /// Test the `hessian` function with a known maximum point.
-/// 
+///
 /// Note: The `hessian` function will be used on the nearest grid point to the stationary point.
 /// So in the test we will similarly evaluate the Hessian at a nearby point, not exactly at the stationary point.
 ///

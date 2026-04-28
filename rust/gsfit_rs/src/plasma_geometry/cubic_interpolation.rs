@@ -1,7 +1,6 @@
 use core::f64;
 use ndarray::Array1;
 
-
 /// Cubic interpolation (consistent with bicubic interpolation)
 ///
 /// Arguments:
@@ -15,15 +14,7 @@ use ndarray::Array1;
 ///
 /// Returns:
 /// * `x` - array of coordinate where `f(x) = f_target` (minimum 1 `x` value; maximum 3 `x` values), [metre]
-pub fn cubic_interpolation_v2(
-    cell0_x: f64,
-    cell0_f: f64,
-    cell0_d_f_d_x: f64,
-    cell1_x: f64,
-    cell1_f: f64,
-    cell1_d_f_d_x: f64,
-    f_target: f64,
-) -> Vec<f64> {
+pub fn cubic_interpolation_v2(cell0_x: f64, cell0_f: f64, cell0_d_f_d_x: f64, cell1_x: f64, cell1_f: f64, cell1_d_f_d_x: f64, f_target: f64) -> Vec<f64> {
     let delta_x: f64 = cell1_x - cell0_x;
 
     // Cubic Hermite basis functions, with `t` in [0.0, 1.0]:
@@ -62,7 +53,6 @@ pub fn cubic_interpolation_v2(
 
     x_values
 }
-
 
 /// Cubic interpolation (consistent with bicubic interpolation)
 ///

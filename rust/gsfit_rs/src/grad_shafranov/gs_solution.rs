@@ -388,7 +388,7 @@ impl<'a> GsSolution<'a> {
             // Find stationary points in `psi`
             // let stationary_points_or_error: Result<Vec<StationaryPoint>, String> =
             //     find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
-            
+
             // TODO: TEMPORARY CALCULATIONS for psi gradients; later we will store these and calculate the fields
             let mut d_psi_d_r_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
             let mut d_psi_d_z_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
@@ -404,18 +404,17 @@ impl<'a> GsSolution<'a> {
                     d2_psi_d_z2_2d[(i_z, i_r)] = -2.0 * PI * mesh_r[(i_z, i_r)] * d_br_d_z_2d[(i_z, i_r)];
                 }
             }
-            
-            let stationary_points: Vec<StationaryPoint> =
-                find_stationary_points_using_full_quadrant_method(
-                    r.view(),
-                    z.view(),
-                    psi_2d.view(),
-                    d_psi_d_r_2d.view(),
-                    d_psi_d_z_2d.view(),
-                    d2_psi_d_r2_2d.view(),
-                    d2_psi_d_rz_2d.view(),
-                    d2_psi_d_z2_2d.view()
-                );
+
+            let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_full_quadrant_method(
+                r.view(),
+                z.view(),
+                psi_2d.view(),
+                d_psi_d_r_2d.view(),
+                d_psi_d_z_2d.view(),
+                d2_psi_d_r2_2d.view(),
+                d2_psi_d_rz_2d.view(),
+                d2_psi_d_z2_2d.view(),
+            );
             // At a minimum we should have found the magnetic axis
             if stationary_points.is_empty() {
                 // Set time-slice to failed
