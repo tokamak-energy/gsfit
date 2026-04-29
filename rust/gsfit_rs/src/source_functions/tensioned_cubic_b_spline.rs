@@ -758,8 +758,9 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     /// 
     /// # Arguments
     /// * `psi_n` - The points at which we want to evaluate the integral
-    /// * `i_dof` - The index of the degree of freedom to evaluate
-    ///
+        let n_psi_n: usize = psi_n.len();
+        let mut value: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
+        for i_psi_n in 0..n_psi_n {
     /// # Returns
     /// An array of the same length as `psi_n` containing the integral of the source function for the specified degree of freedom
     ///
