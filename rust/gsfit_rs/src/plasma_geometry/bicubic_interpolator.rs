@@ -1,5 +1,5 @@
 use core::f64;
-use ndarray::{Array1, Array2, array, s};
+use ndarray::{Array1, Array2, array, s, ArrayView1, ArrayView2};
 
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,
@@ -37,8 +37,8 @@ impl BicubicInterpolator {
     /// https://en.wikipedia.org/wiki/Bicubic_interpolation
     ///
     /// # Arguments
-    /// * `delta_x` - grid spacing in x direction, between 0 and 1, [dimensionless]
-    /// * `delta_y` - grid spacing in y direction, between 0 and 1, [dimensionless]
+    /// * `d_x` - grid spacing in x direction, between 0.0 and 1.0, [dimensionless]
+    /// * `d_y` - grid spacing in y direction, between 0.0 and 1.0, [dimensionless]
     /// * `f` - function values at the four corners of the grid, [any]
     /// * `d_f_d_x` - partial derivative of `f` with respect to `x` at the four corners, [any]
     /// * `d_f_d_y` - partial derivative of `f` with respect to `y` at the four corners, [any]
@@ -71,7 +71,7 @@ impl BicubicInterpolator {
     /// use gsfit_rs::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
     /// use ndarray::{Array2};
     /// ```
-    pub fn new(delta_x: f64, delta_y: f64, f: &Array2<f64>, d_f_d_x: &Array2<f64>, d_f_d_y: &Array2<f64>, d2_f_d_x_d_y: &Array2<f64>) -> Self {
+    pub fn new(d_x: f64, d_y: f64, f: &Array2<f64>, d_f_d_x: &Array2<f64>, d_f_d_y: &Array2<f64>, d2_f_d_x_d_y: &Array2<f64>) -> Self {
         #[rustfmt::skip]
         let coeff_matrix_1: Array2<f64> = array![
             [ 1.0,  0.0,  0.0,  0.0],
@@ -89,9 +89,9 @@ impl BicubicInterpolator {
         ];
 
         let mut function_matrix: Array2<f64> = Array2::from_elem((4, 4), f64::NAN);
-        let d_f_d_x_normalised: Array2<f64> = d_f_d_x.to_owned() * delta_x;
-        let d_f_d_y_normalised: Array2<f64> = d_f_d_y.to_owned() * delta_y;
-        let d2_f_d_x_d_y_normalised: Array2<f64> = d2_f_d_x_d_y.to_owned() * delta_x * delta_y;
+        let d_f_d_x_normalised: Array2<f64> = d_f_d_x.to_owned() * d_x;
+        let d_f_d_y_normalised: Array2<f64> = d_f_d_y.to_owned() * d_y;
+        let d2_f_d_x_d_y_normalised: Array2<f64> = d2_f_d_x_d_y.to_owned() * d_x * d_y;
         function_matrix.slice_mut(s![0..2, 0..2]).assign(f);
         function_matrix.slice_mut(s![2..4, 0..2]).assign(&d_f_d_x_normalised);
         function_matrix.slice_mut(s![0..2, 2..4]).assign(&d_f_d_y_normalised);
@@ -110,7 +110,6 @@ impl BicubicInterpolator {
     ///
     /// # Returns
     /// * `f` - interpolated value at (x, y), [any]
-    ///
     #[allow(dead_code)]
     pub fn interpolate(&self, x: f64, y: f64) -> f64 {
         let x_vec: Array1<f64> = Array1::from_vec(vec![1.0, x, x.powi(2), x.powi(3)]);
@@ -128,7 +127,6 @@ impl BicubicInterpolator {
     ///
     /// # Returns
     /// * `BicubicValueAndDerivatives` - struct containing value and derivatives
-    ///
     pub fn value_and_derivatives(&self, x: f64, y: f64) -> BicubicValueAndDerivatives {
         // Extract from self
         let a_matrix: &Array2<f64> = &self.a_matrix;
@@ -169,12 +167,17 @@ impl BicubicInterpolator {
     }
 
     /// Finds the stationary point of the bicubic fit
+    /// 
+    /// The bicubic fit is a 3rd degree polynomial in both `x` and `y`:
+    /// f = a_33 * x³ y³ + a_32 * x³ y² + ... + a_00
+    /// The stationary point is where the gradient is zero in both directions:
+    /// ∂f/∂x = 3 a_33 x² y³ + 3 a_32 x² y² + ... + a_10  =  0      (degree: x=2, y=3)
+    /// ∂f/∂y = 3 a_33 x³ y² + 2 a_23 x² y + ... + a_01   =  0      (degree: x=3, y=2)
+    /// This system of equations does not have an exact solution, and must be solved iteratively.
     ///
     /// # Arguments
-    /// * `x_start` - initial x-coordinate guess, note x is normalised to be in (0.0, 1.0), [dimensionless]
-    /// * `y_start` - initial y-coordinate guess, note y is normalised to be in (0.0, 1.0), [dimensionless]
-    /// * `tol` - tolerance for convergence, [dimensionless]
-    /// * `max_iter` - maximum number of iterations
+    /// * `tol` - convergence tolerance, expressed as a fraction of cell width (since `(x, y)` are normalised to `[0, 1]`)
+    /// * `max_iter` - maximum number of Newton iterations
     ///
     /// # Returns
     /// * `Ok(BicubicStationaryPoint)` if a stationary point is found
@@ -182,11 +185,25 @@ impl BicubicInterpolator {
     ///
     /// # Algorithm
     /// A "stationary point" can be:
-    /// * Turning point:
+    /// * Extreme point:
     ///   * Maxima
     ///   * Minima
     /// * Saddle point
     /// * Inflection point
+    /// * Higher order stationary points? TODO: improve documentation here
+    ///
+    /// The initial guess is computed internally by linearising `(d_f_d_x, d_f_d_y)`
+    /// from the corner gradients and solving the resulting 2x2 system; if that
+    /// solve falls outside the cell or is degenerate, we fall back to the cell
+    /// centre `(0.5, 0.5)`.
+    ///
+    /// # Convergence criterion
+    /// Choosing the convergence criteria is actually quite tricky:
+    /// * Testing against the absolute gradient norm `g_norm <= tol`, is bad because the function could have naturally small gradients
+    /// * Testing against the relative gradient norm `g_norm / g_norm_initial <= tol`, is bad because if we have a "good" initial guess this can make it harder to converge
+    /// * Normalising against the function value `g_norm / f.abs() <= tol`, is bad because the function value can be small/zero at the stationary point
+    /// The insight which we use is that the grid size - which is between 0.0 and 1.0 in the normalised coordinates.
+    /// * Our chosen convergence criteria is to test the Newton step size `delta`: **`abs(delta) <= tol`**
     pub fn find_stationary_point(&self, tol: f64, max_iter: usize) -> Result<BicubicStationaryPoint, String> {
         // Linear interpolation using the corner values, to give an initial guess for the stationary point
         // Approximate `d_f_d_x` and `d_f_d_y` as linear functions of `(x, y)` using corner values:
@@ -229,14 +246,84 @@ impl BicubicInterpolator {
         // "gradient norm" = L2 normalisation
         let mut g_norm: f64 = (g_x * g_x + g_y * g_y).sqrt();
 
-        // Choosing the convergence criteria is actually quite tricky:
-        // * Testing against the absolute gradient norm `g_norm <= tol`, is bad because the functions gradients can naturally be small
-        // * Testing against the relative gradient norm `g_norm / g_norm_initial <= tol`, is bad because if we have a "good" initial guess this can make it harder to converge
-        // * Normalising against the function value `g_norm / f.abs() <= tol`, is bad because the function value can be small/zero at the stationary point
+        // Threshold for treating an iterate as sitting exactly on a cell boundary.
+        // Alpha clamping snaps to a boundary in floating point, so this only needs
+        // to absorb roundoff.
+        let boundary_tol: f64 = 1e-12;
 
         for iter in 0..max_iter {
-            if g_norm <= tol {
-                let hessian_det: f64 = h_x_x * h_y_y - h_x_y * h_x_y;
+            println!("iter = {iter}, x = {x}, y = {y}, g_norm = {g_norm}");
+
+            // Hessian determinant for the 2x2 Newton solve.
+            let hessian_det: f64 = h_x_x * h_y_y - h_x_y * h_x_y;
+
+            // Check if the Hessian is singular or ill-conditioned
+            let hessian_scale: f64 = h_x_x.abs().max(h_x_y.abs()).max(h_y_y.abs());
+            // Whichever is larger: 1e-12 or 16 * machine epsilon * (largest Hessian element)^2
+            let hessian_det_tol: f64 = 1.0e-12_f64.max(16.0 * f64::EPSILON * hessian_scale * hessian_scale);
+            if hessian_det.abs() <= hessian_det_tol {
+                return Err("Hessian is singular or ill-conditioned".to_string());
+            }
+
+            // Unconstrained Newton step: predicted displacement to the stationary
+            // point under the local quadratic model. Solves H * delta = -g.
+            let mut delta_x: f64 = (-g_x * h_y_y + g_y * h_x_y) / hessian_det;
+            let mut delta_y: f64 = (g_x * h_x_y - g_y * h_x_x) / hessian_det;
+
+            // If the iterate sits on a cell boundary and the Newton step would push
+            // outward, the bicubic's unconstrained stationary point lies outside this
+            // cell. Switch to a 1D Newton step along the boundary; only the tangential
+            // component then enters the convergence test.
+            let on_x_low: bool = x <= boundary_tol;
+            let on_x_high: bool = x >= 1.0 - boundary_tol;
+            let on_y_low: bool = y <= boundary_tol;
+            let on_y_high: bool = y >= 1.0 - boundary_tol;
+            let pinned_x: bool = (on_x_low && delta_x < 0.0) || (on_x_high && delta_x > 0.0);
+            let pinned_y: bool = (on_y_low && delta_y < 0.0) || (on_y_high && delta_y > 0.0);
+
+            if pinned_x && pinned_y {
+                // Pinned at a corner: no direction inside the cell is descent for ||grad||.
+                // Accept the corner as the best constrained stationary point we can offer.
+                println!("Newton pinned at corner (x = {x}, y = {y}); accepting as constrained stationary point.");
+                let hessian_trace: f64 = h_x_x + h_y_y;
+                let is_max: bool = hessian_det > 0.0 && hessian_trace < 0.0;
+                return Ok(BicubicStationaryPoint {
+                    x,
+                    y,
+                    f,
+                    is_max,
+                    grad_norm: g_norm,
+                    iter,
+                });
+            } else if pinned_x {
+                // Constrained 1D problem along x = boundary; only g_y matters.
+                println!("Newton pinned on x = {x}; switching to 1D Newton along boundary, g_y = {g_y}");
+                if h_y_y.abs() <= f64::EPSILON {
+                    return Err("1D Hessian along x boundary is singular".to_string());
+                }
+                delta_x = 0.0;
+                delta_y = -g_y / h_y_y;
+            } else if pinned_y {
+                println!("Newton pinned on y = {y}; switching to 1D Newton along boundary, g_x = {g_x}");
+                if h_x_x.abs() <= f64::EPSILON {
+                    return Err("1D Hessian along y boundary is singular".to_string());
+                }
+                delta_y = 0.0;
+                delta_x = -g_x / h_x_x;
+            }
+
+            // Convergence test: Newton-step size in cell-normalised coordinates.
+            // ||delta|| is the linear-extrapolation distance from the current iterate
+            // to the stationary point under the local quadratic model. When pinned
+            // to a boundary, only the constrained component is used.
+            let step_norm: f64 = if pinned_x {
+                delta_y.abs()
+            } else if pinned_y {
+                delta_x.abs()
+            } else {
+                (delta_x * delta_x + delta_y * delta_y).sqrt()
+            };
+            if step_norm <= tol {
                 let hessian_trace: f64 = h_x_x + h_y_y;
                 let is_max: bool = hessian_det > 0.0 && hessian_trace < 0.0;
                 return Ok(BicubicStationaryPoint {
@@ -249,20 +336,7 @@ impl BicubicInterpolator {
                 });
             }
 
-            // Solve Hessian * [delta_x delta_y]^T = -grad
-            let hessian_det: f64 = h_x_x * h_y_y - h_x_y * h_x_y;
-
-            // Check if the Hessian is singular or ill-conditioned
-            let hessian_scale: f64 = h_x_x.abs().max(h_x_y.abs()).max(h_y_y.abs());
-            // Whichever is larger: 1e-12 or 16 * machine epsilon * (largest Hessian element)^2
-            let hessian_det_tol: f64 = 1.0e-12_f64.max(16.0 * f64::EPSILON * hessian_scale * hessian_scale);
-            if hessian_det.abs() <= hessian_det_tol {
-                return Err("Hessian is singular or ill-conditioned".to_string());
-            }
-
             // Compute maximum step size that stays within [0, 1] bounds
-            let delta_x: f64 = (-g_x * h_y_y + g_y * h_x_y) / hessian_det;
-            let delta_y: f64 = (g_x * h_x_y - g_y * h_x_x) / hessian_det;
             let mut alpha: f64 = 1.0;
             if delta_x > 0.0 {
                 alpha = alpha.min((1.0 - x) / delta_x);
@@ -275,24 +349,17 @@ impl BicubicInterpolator {
                 alpha = alpha.min(-y / delta_y);
             }
 
-            // // If the step size is effectively zero after boundary clamping,
-            // // the stationary point is at or beyond the cell boundary.
-            // // Accept the current position as the best solution within this cell.
-            // if alpha < 1e-14 {
-            //     let hessian_det: f64 = h_x_x * h_y_y - h_x_y * h_x_y;
-            //     let hessian_trace: f64 = h_x_x + h_y_y;
-            //     let is_max: bool = hessian_det > 0.0 && hessian_trace < 0.0;
-            //     return Ok(BicubicStationaryPoint {
-            //         x,
-            //         y,
-            //         f,
-            //         is_max,
-            //         grad_norm: g_norm,
-            //         iter,
-            //     });
-            // }
-
-            // Backtracking to stay inside and reduce ||grad||
+            // Backtracking to stay inside and reduce the relevant gradient norm.
+            // When constrained to a boundary, only the tangential component of the
+            // gradient should drive sufficient-decrease — the normal component is
+            // expected to remain non-zero.
+            let current_norm: f64 = if pinned_x {
+                g_y.abs()
+            } else if pinned_y {
+                g_x.abs()
+            } else {
+                g_norm
+            };
             let mut accepted: bool = false;
             for _adjust_step_size in 0..30usize {
                 let new_x: f64 = x + alpha * delta_x;
@@ -307,7 +374,14 @@ impl BicubicInterpolator {
                 let new_h_y_y: f64 = bicubic_value_and_derivatives.d2_f_d_y2;
 
                 let new_g_norm: f64 = (new_g_x * new_g_x + new_g_y * new_g_y).sqrt();
-                if new_g_norm < g_norm {
+                let new_decrement_norm: f64 = if pinned_x {
+                    new_g_y.abs()
+                } else if pinned_y {
+                    new_g_x.abs()
+                } else {
+                    new_g_norm
+                };
+                if new_decrement_norm < current_norm {
                     x = new_x;
                     y = new_y;
                     f = new_f;
@@ -454,10 +528,27 @@ fn test_bicubic_find_stationary_point_on_boundary() {
     let x_peak: f64 = 1.0;
     let y_peak: f64 = 0.78;
 
-    let calculate_f = |x: f64, y: f64| -> f64 { -(x - x_peak).powi(2) - (y - y_peak).powi(2) };
-    let calculate_d_f_d_x = |x: f64, _y: f64| -> f64 { -2.0 * (x - x_peak) };
-    let calculate_d_f_d_y = |_x: f64, y: f64| -> f64 { -2.0 * (y - y_peak) };
-    let calculate_d2_f_d_x_d_y = |_x: f64, _y: f64| -> f64 { 0.0 };
+    // Setup an analytic polynomial function
+    fn calculate_f(x: f64, y: f64, x_peak: f64, y_peak: f64) -> f64 {
+        let result: f64 = -(x - x_peak).powi(2) - (y - y_peak).powi(2);
+
+        result
+    }
+    fn calculate_d_f_d_x(x: f64, _y: f64, x_peak: f64) -> f64 {
+        let result: f64 = -2.0 * (x - x_peak);
+
+        result
+    }
+    fn calculate_d_f_d_y(_x: f64, y: f64, y_peak: f64) -> f64 {
+        let result: f64 = -2.0 * (y - y_peak);
+
+        result
+    }
+    fn calculate_d2_f_d_x_d_y(_x: f64, _y: f64) -> f64 {
+        let result: f64 = 0.0;
+
+        result
+    }
 
     let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
     let mut d_f_d_x: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
@@ -470,9 +561,9 @@ fn test_bicubic_find_stationary_point_on_boundary() {
     let y_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
     for i_x in 0..n_x {
         for i_y in 0..n_y {
-            f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y]);
-            d_f_d_x[(i_x, i_y)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y]);
-            d_f_d_y[(i_x, i_y)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y]);
+            f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y], x_peak, y_peak);
+            d_f_d_x[(i_x, i_y)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y], x_peak);
+            d_f_d_y[(i_x, i_y)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y], y_peak);
             d2_f_d_x_d_y[(i_x, i_y)] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
         }
     }
