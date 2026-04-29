@@ -1,5 +1,4 @@
-use core::f64;
-use ndarray::{Array1, Array2, array, s};
+use ndarray::{Array1, Array2, array, s, ArrayView2};
 
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,
@@ -37,8 +36,8 @@ impl BicubicInterpolator {
     /// https://en.wikipedia.org/wiki/Bicubic_interpolation
     ///
     /// # Arguments
-    /// * `delta_x` - grid spacing in x direction, between 0 and 1, [dimensionless]
-    /// * `delta_y` - grid spacing in y direction, between 0 and 1, [dimensionless]
+    /// * `d_x` - grid spacing in x direction, [metre]
+    /// * `d_y` - grid spacing in y direction, [metre]
     /// * `f` - function values at the four corners of the grid, [any]
     /// * `d_f_d_x` - partial derivative of `f` with respect to `x` at the four corners, [any]
     /// * `d_f_d_y` - partial derivative of `f` with respect to `y` at the four corners, [any]
@@ -71,7 +70,7 @@ impl BicubicInterpolator {
     /// use gsfit_rs::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
     /// use ndarray::{Array2};
     /// ```
-    pub fn new(delta_x: f64, delta_y: f64, f: &Array2<f64>, d_f_d_x: &Array2<f64>, d_f_d_y: &Array2<f64>, d2_f_d_x_d_y: &Array2<f64>) -> Self {
+    pub fn new(d_x: f64, d_y: f64, f: ArrayView2<f64>, d_f_d_x: ArrayView2<f64>, d_f_d_y: ArrayView2<f64>, d2_f_d_x_d_y: ArrayView2<f64>) -> Self {
         #[rustfmt::skip]
         let coeff_matrix_1: Array2<f64> = array![
             [ 1.0,  0.0,  0.0,  0.0],
@@ -89,10 +88,10 @@ impl BicubicInterpolator {
         ];
 
         let mut function_matrix: Array2<f64> = Array2::from_elem((4, 4), f64::NAN);
-        let d_f_d_x_normalised: Array2<f64> = d_f_d_x.to_owned() * delta_x;
-        let d_f_d_y_normalised: Array2<f64> = d_f_d_y.to_owned() * delta_y;
-        let d2_f_d_x_d_y_normalised: Array2<f64> = d2_f_d_x_d_y.to_owned() * delta_x * delta_y;
-        function_matrix.slice_mut(s![0..2, 0..2]).assign(f);
+        let d_f_d_x_normalised: Array2<f64> = d_f_d_x.to_owned() * d_x;
+        let d_f_d_y_normalised: Array2<f64> = d_f_d_y.to_owned() * d_y;
+        let d2_f_d_x_d_y_normalised: Array2<f64> = d2_f_d_x_d_y.to_owned() * d_x * d_y;
+        function_matrix.slice_mut(s![0..2, 0..2]).assign(&f);
         function_matrix.slice_mut(s![2..4, 0..2]).assign(&d_f_d_x_normalised);
         function_matrix.slice_mut(s![0..2, 2..4]).assign(&d_f_d_y_normalised);
         function_matrix.slice_mut(s![2..4, 2..4]).assign(&d2_f_d_x_d_y_normalised);
@@ -113,8 +112,8 @@ impl BicubicInterpolator {
     ///
     #[allow(dead_code)]
     pub fn interpolate(&self, x: f64, y: f64) -> f64 {
-        let x_vec: Array1<f64> = Array1::from_vec(vec![1.0, x, x.powi(2), x.powi(3)]);
-        let y_vec: Array1<f64> = Array1::from_vec(vec![1.0, y, y.powi(2), y.powi(3)]);
+        let x_vec: Array1<f64> = array![1.0, x, x.powi(2), x.powi(3)];
+        let y_vec: Array1<f64> = array![1.0, y, y.powi(2), y.powi(3)];
         let f: f64 = x_vec.dot(&self.a_matrix).dot(&y_vec);
 
         f
@@ -368,8 +367,8 @@ fn test_bicubic_interpolation() {
     // Calculate values for a test function at the four corners of the grid
     let n_x: usize = 2;
     let n_y: usize = 2;
-    let x_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
-    let y_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
+    let x_grid: Array1<f64> = array![0.0, 1.0];
+    let y_grid: Array1<f64> = array![0.0, 1.0];
     for i_x in 0..n_x {
         for i_y in 0..n_y {
             f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y]);
@@ -388,7 +387,7 @@ fn test_bicubic_interpolation() {
     let mut f_interpolated: Array2<f64> = Array2::from_elem([n_x_target, n_y_target], f64::NAN);
     let delta_x: f64 = x_grid[1] - x_grid[0];
     let delta_y: f64 = y_grid[1] - y_grid[0];
-    let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(delta_x, delta_y, &f, &d_f_d_x, &d_f_d_y, &d2_f_d_x_d_y);
+    let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(delta_x, delta_y, f.view(), d_f_d_x.view(), d_f_d_y.view(), d2_f_d_x_d_y.view());
     for i_x_target in 0..n_x_target {
         for i_y_target in 0..n_y_target {
             f_analytic[(i_x_target, i_y_target)] = calculate_f(x_targets[i_x_target], y_targets[i_y_target]);
@@ -421,8 +420,8 @@ fn test_bicubic_find_stationary_point_near_boundary() {
 
     let n_x: usize = 2;
     let n_y: usize = 2;
-    let x_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
-    let y_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
+    let x_grid: Array1<f64> = array![0.0, 1.0];
+    let y_grid: Array1<f64> = array![0.0, 1.0];
     for i_x in 0..n_x {
         for i_y in 0..n_y {
             f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y]);
@@ -434,7 +433,7 @@ fn test_bicubic_find_stationary_point_near_boundary() {
 
     let delta_x: f64 = x_grid[1] - x_grid[0];
     let delta_y: f64 = y_grid[1] - y_grid[0];
-    let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(delta_x, delta_y, &f, &d_f_d_x, &d_f_d_y, &d2_f_d_x_d_y);
+    let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(delta_x, delta_y, f.view(), d_f_d_x.view(), d_f_d_y.view(), d2_f_d_x_d_y.view());
 
     let result: BicubicStationaryPoint = bicubic_interpolator
         .find_stationary_point(1e-12, 100)
@@ -466,8 +465,8 @@ fn test_bicubic_find_stationary_point_on_boundary() {
 
     let n_x: usize = 2;
     let n_y: usize = 2;
-    let x_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
-    let y_grid: Array1<f64> = Array1::from_vec(vec![0.0, 1.0]);
+    let x_grid: Array1<f64> = array![0.0, 1.0];
+    let y_grid: Array1<f64> = array![0.0, 1.0];
     for i_x in 0..n_x {
         for i_y in 0..n_y {
             f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y]);
@@ -477,9 +476,9 @@ fn test_bicubic_find_stationary_point_on_boundary() {
         }
     }
 
-    let delta_x: f64 = x_grid[1] - x_grid[0];
-    let delta_y: f64 = y_grid[1] - y_grid[0];
-    let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(delta_x, delta_y, &f, &d_f_d_x, &d_f_d_y, &d2_f_d_x_d_y);
+    let d_x: f64 = x_grid[1] - x_grid[0];
+    let d_y: f64 = y_grid[1] - y_grid[0];
+    let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_x, d_y, f.view(), d_f_d_x.view(), d_f_d_y.view(), d2_f_d_x_d_y.view());
 
     let result: BicubicStationaryPoint = bicubic_interpolator
         .find_stationary_point(1e-12, 100)

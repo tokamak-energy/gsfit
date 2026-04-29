@@ -4,7 +4,6 @@ use super::StationaryPoint;
 use super::bicubic_interpolator::BicubicInterpolator;
 use super::flood_fill_mask::flood_fill_mask;
 use super::marching_squares::marching_squares;
-use core::f64;
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;
@@ -130,7 +129,7 @@ pub fn find_viable_limit_point(
         d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
         // Create a bicubic interpolator
-        let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+        let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f.view(), d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
 
         let x: f64 = (limit_pts_r[i_limit] - r[i_r_nearest_left]) / d_r;
         let y: f64 = (limit_pts_z[i_limit] - z[i_z_nearest_lower]) / d_z;
@@ -157,6 +156,7 @@ pub fn find_viable_limit_point(
 
     // Loop over potential limit points; by doing the loop like this we don't do extra calculations, and exit as soon as we find a viable limit point
     'loop_over_potential_limit_points: for potential_limit_point in &mut potential_limit_points {
+        println!("potential_limit_point.r = {}, potential_limit_point.z = {}", potential_limit_point.bounding_r, potential_limit_point.bounding_z);
         // Test if there is a LFS boundary at the same height as the magnetic axis
         // March from the magnetic axis to the LFS
         let mut test_intersects_lfs_boundary: bool = false;
@@ -170,6 +170,7 @@ pub fn find_viable_limit_point(
         }
         // No LFS boundary encountered
         if !test_intersects_lfs_boundary {
+            println!("potential_limit_point fails LFS boundary test");
             continue 'loop_over_potential_limit_points;
         }
 
@@ -186,6 +187,7 @@ pub fn find_viable_limit_point(
         }
         // No HFS boundary encountered
         if !test_intersects_hfs_boundary {
+            println!("potential_limit_point fails HFS boundary test");
             continue 'loop_over_potential_limit_points;
         }
 
@@ -207,6 +209,7 @@ pub fn find_viable_limit_point(
         let test_mask: bool = potential_limit_point.mask.as_ref().expect("find_viable_limit_point: unwrapping mask")[(index_mag_z, index_mag_r)] > 0.0;
         // Skip if magnetic axis is outside boundary
         if !test_mask {
+            println!("potential_limit_point fails mask test");
             continue 'loop_over_potential_limit_points;
         }
 
@@ -215,6 +218,7 @@ pub fn find_viable_limit_point(
         let psi_b: f64 = potential_limit_point.bounding_psi;
         let plasma_boundary: MarchingContour = marching_squares(r, z, psi_2d, br_2d, bz_2d, psi_b, &mask_2d, None, None, mag_r_previous, mag_z_previous);
         if plasma_boundary.r.is_empty() {
+            println!("potential_limit_point fails marching squares test");
             continue 'loop_over_potential_limit_points;
         }
 
@@ -228,6 +232,7 @@ pub fn find_viable_limit_point(
 
         // Keep if distance to plasma boundary is less than 1 grid spacing
         if distance_min > 1.0 * d_l {
+            println!("potential_limit_point fails distance test");
             continue 'loop_over_potential_limit_points;
         }
 

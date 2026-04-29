@@ -1,6 +1,5 @@
 use super::BoundaryContour;
 use super::StationaryPoint;
-use core::f64;
 use geo::Contains;
 use geo::{Coord, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};

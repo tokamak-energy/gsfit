@@ -4,7 +4,6 @@ use super::StationaryPoint;
 use super::find_viable_limit_point::find_viable_limit_point;
 use super::find_viable_xpt::find_viable_xpt;
 use super::flood_fill_mask::flood_fill_mask;
-use core::f64;
 use ndarray::{Array1, Array2};
 
 /// Find the plasma boundary

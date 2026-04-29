@@ -2,90 +2,10 @@ use super::StationaryPoint;
 use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint};
 use super::cubic_interpolation::cubic_interpolation_v2;
 use crate::plasma_geometry::hessian;
-use core::f64;
 use ndarray::{Array2, ArrayView1, ArrayView2, s};
 use ndarray::{Dim, SliceInfo, SliceInfoElem};
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
-
-// #[derive(Debug, Clone, Copy)]
-// pub struct StationaryPoint {
-//     pub r: f64,
-//     pub z: f64,
-//     pub psi: f64,
-//     pub hessian_determinant: f64,
-//     pub hessian_trace: f64,
-//     pub i_r_nearest: usize,
-//     pub i_z_nearest: usize,
-//     pub i_r_left: usize,
-//     pub i_r_right: usize,
-//     pub i_z_lower: usize,
-//     pub i_z_upper: usize,
-// }
-
-#[derive(Clone)]
-struct Coordinate {
-    r: f64,
-    z: f64,
-}
-
-#[derive(Copy, Clone, Debug)]
-enum CrossingKind {
-    BrZero,
-    BzZero,
-}
-
-/// Quadrant of (-br, bz). Q1: (+,+), Q2: (-,+), Q3: (-,-), Q4: (+,-).
-/// CCW traversal of the (-br, bz) plane visits Q1 → Q2 → Q3 → Q4 → Q1.
-fn classify_quadrant(sign_br: i8, sign_bz: i8) -> i8 {
-    match (sign_br > 0, sign_bz > 0) {
-        (true, true) => 1,
-        (false, true) => 2,
-        (false, false) => 3,
-        (true, false) => 4,
-    }
-}
-
-/// Maps `0.0` to `+1` so corners that lie exactly on an axis still classify into a quadrant.
-fn sign_with_tiebreak(value: f64) -> i8 {
-    if value >= 0.0 {
-        return 1;
-    } else {
-        return -1;
-    }
-}
-
-/// Merge the Br=0 and Bz=0 crossings on a single edge into one ordered event sequence
-/// along the traversal direction. Endpoint crossings are dropped — corners are handled
-/// by direct grid-point sampling, not by this list.
-fn combine_and_order_edge_events(
-    d_psi_d_z_zero_crossings_this_edge: &[Coordinate],
-    d_psi_d_r_zero_crossings_this_edge: &[Coordinate],
-    edge_start: f64,
-    edge_end: f64,
-    use_r_axis: bool,
-) -> Vec<CrossingKind> {
-    let endpoint_tol: f64 = 1e-12 * (edge_end - edge_start).abs();
-    let mut events: Vec<(f64, CrossingKind)> = Vec::with_capacity(d_psi_d_z_zero_crossings_this_edge.len() + d_psi_d_r_zero_crossings_this_edge.len());
-    for c in d_psi_d_z_zero_crossings_this_edge {
-        let pos: f64 = if use_r_axis { c.r } else { c.z };
-        if (pos - edge_start).abs() > endpoint_tol && (edge_end - pos).abs() > endpoint_tol {
-            events.push((pos, CrossingKind::BrZero));
-        }
-    }
-    for c in d_psi_d_r_zero_crossings_this_edge {
-        let pos: f64 = if use_r_axis { c.r } else { c.z };
-        if (pos - edge_start).abs() > endpoint_tol && (edge_end - pos).abs() > endpoint_tol {
-            events.push((pos, CrossingKind::BzZero));
-        }
-    }
-    if edge_end > edge_start {
-        events.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-    } else {
-        events.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
-    }
-    events.into_iter().map(|(_, k)| k).collect()
-}
 
 /// Finds stationary points: extrema's (minima or maxima) and saddle points
 /// TODO: improve documentation - can this method also find higher-order stationary points?
@@ -358,10 +278,12 @@ pub fn find_stationary_points_using_winding_number(
                 match quadrant_step {
                     0 => {} // same quadrant; no change in `total_quarter_turns`
                     1 => total_quarter_turns += 1,
-                    2 => println!("Warning: diagonal jump in (Br, Bz) quadrants. This should not happen with proper sampling."),
+                    2 => {
+                        // println!("Warning: diagonal jump in (Br, Bz) quadrants. This should not happen with proper sampling."),
+                    }
                     3 => total_quarter_turns -= 1,
                     _ => {
-                        println!("Error: invalid `quadrant_step={}`. This should never happen?", quadrant_step);
+                        // println!("Error: invalid `quadrant_step={}`. This should never happen?", quadrant_step);
                     }
                 }
                 prev_q = new_q;
@@ -383,7 +305,7 @@ pub fn find_stationary_points_using_winding_number(
                 let d2_f_d_r_d_z: Array2<f64> = d2_psi_d_rz_2d.slice(slice_cell_perimeter).t().to_owned();
 
                 // Create a bicubic interpolator
-                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f.view(), d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
 
                 // Find the stationary point using the bicubic interpolation
                 let stationary_point_or_error: Result<BicubicStationaryPoint, String> = bicubic_interpolator.find_stationary_point(1e-6, 100);
@@ -420,29 +342,31 @@ pub fn find_stationary_points_using_winding_number(
                             i_z_lower,
                             i_z_upper,
                         });
-                        println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'gx')")
+                        // println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'gx')")
                     }
                     Err(_error_string) => {
+                        // Do nothing
+
                         // println!("Warning: bicubic solver failed to converge for cell with corners at (i_r, i_z) = ({}, {}), ({}, {}), ({}, {}), ({}, {}). This cell is a false positive from the sign-change detection, likely due to near-parallel nullclines passing through the cell without actually crossing.", i_r_left, i_z_lower, i_r_right, i_z_lower, i_r_left, i_z_upper, i_r_right, i_z_upper);
-                        println!("winding_number = {winding_number}");
-                        println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'ro')");
+                        // println!("winding_number = {winding_number}");
+                        // println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'ro')");
 
-                        println!("perimeter_events = {:?}", perimeter_events);
+                        // println!("perimeter_events = {:?}", perimeter_events);
 
-                        // Sample the bicubic interpolation at various points in 2d
-                        let n_r_sample: usize = 70;
-                        let n_z_sample: usize = 65;
-                        use ndarray::Array1;
-                        let r_sample: Array1<f64> = Array1::linspace(r[i_r_left], r[i_r_right], n_r_sample);
-                        let z_sample: Array1<f64> = Array1::linspace(z[i_z_lower], z[i_z_upper], n_z_sample);
-                        let mut psi_2d: Array2<f64> = Array2::from_elem([n_z_sample, n_r_sample], f64::NAN);
-                        for i_z_sample in 0..n_z_sample {
-                            for i_r_sample in 0..n_r_sample {
-                                let r_s: f64 = (r_sample[i_r_sample] - r[i_r_left]) / d_r; // to be between 0.0 and 1.0
-                                let z_s: f64 = (z_sample[i_z_sample] - z[i_z_lower]) / d_z; // to be between 0.0 and 1.0
-                                psi_2d[(i_z_sample, i_r_sample)] = bicubic_interpolator.interpolate(r_s, z_s);
-                            }
-                        }
+                        // // Sample the bicubic interpolation at various points in 2d
+                        // let n_r_sample: usize = 70;
+                        // let n_z_sample: usize = 65;
+                        // use ndarray::Array1;
+                        // let r_sample: Array1<f64> = Array1::linspace(r[i_r_left], r[i_r_right], n_r_sample);
+                        // let z_sample: Array1<f64> = Array1::linspace(z[i_z_lower], z[i_z_upper], n_z_sample);
+                        // let mut psi_2d: Array2<f64> = Array2::from_elem([n_z_sample, n_r_sample], f64::NAN);
+                        // for i_z_sample in 0..n_z_sample {
+                        //     for i_r_sample in 0..n_r_sample {
+                        //         let r_s: f64 = (r_sample[i_r_sample] - r[i_r_left]) / d_r; // to be between 0.0 and 1.0
+                        //         let z_s: f64 = (z_sample[i_z_sample] - z[i_z_lower]) / d_z; // to be between 0.0 and 1.0
+                        //         psi_2d[(i_z_sample, i_r_sample)] = bicubic_interpolator.interpolate(r_s, z_s);
+                        //     }
+                        // }
                         // println!("psi_2d = {:#?}", psi_2d);
 
                         // use std::path::Path;
@@ -455,6 +379,70 @@ pub fn find_stationary_points_using_winding_number(
     }
 
     stationary_points
+}
+
+#[derive(Clone)]
+struct Coordinate {
+    r: f64,
+    z: f64,
+}
+
+#[derive(Copy, Clone, Debug)]
+enum CrossingKind {
+    BrZero,
+    BzZero,
+}
+
+/// Quadrant of (-br, bz). Q1: (+,+), Q2: (-,+), Q3: (-,-), Q4: (+,-).
+/// CCW traversal of the (-br, bz) plane visits Q1 → Q2 → Q3 → Q4 → Q1.
+fn classify_quadrant(sign_br: i8, sign_bz: i8) -> i8 {
+    match (sign_br > 0, sign_bz > 0) {
+        (true, true) => 1,
+        (false, true) => 2,
+        (false, false) => 3,
+        (true, false) => 4,
+    }
+}
+
+/// Maps `0.0` to `+1` so corners that lie exactly on an axis still classify into a quadrant.
+fn sign_with_tiebreak(value: f64) -> i8 {
+    if value >= 0.0 {
+        return 1;
+    } else {
+        return -1;
+    }
+}
+
+/// Merge the Br=0 and Bz=0 crossings on a single edge into one ordered event sequence
+/// along the traversal direction. Endpoint crossings are dropped — corners are handled
+/// by direct grid-point sampling, not by this list.
+fn combine_and_order_edge_events(
+    d_psi_d_z_zero_crossings_this_edge: &[Coordinate],
+    d_psi_d_r_zero_crossings_this_edge: &[Coordinate],
+    edge_start: f64,
+    edge_end: f64,
+    use_r_axis: bool,
+) -> Vec<CrossingKind> {
+    let endpoint_tol: f64 = 1e-12 * (edge_end - edge_start).abs();
+    let mut events: Vec<(f64, CrossingKind)> = Vec::with_capacity(d_psi_d_z_zero_crossings_this_edge.len() + d_psi_d_r_zero_crossings_this_edge.len());
+    for c in d_psi_d_z_zero_crossings_this_edge {
+        let pos: f64 = if use_r_axis { c.r } else { c.z };
+        if (pos - edge_start).abs() > endpoint_tol && (edge_end - pos).abs() > endpoint_tol {
+            events.push((pos, CrossingKind::BrZero));
+        }
+    }
+    for c in d_psi_d_r_zero_crossings_this_edge {
+        let pos: f64 = if use_r_axis { c.r } else { c.z };
+        if (pos - edge_start).abs() > endpoint_tol && (edge_end - pos).abs() > endpoint_tol {
+            events.push((pos, CrossingKind::BzZero));
+        }
+    }
+    if edge_end > edge_start {
+        events.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    } else {
+        events.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+    }
+    events.into_iter().map(|(_, k)| k).collect()
 }
 
 /// In this test the `d(psi)/d(r)=0` contour enters and exits through the same cell edge
@@ -565,7 +553,7 @@ fn test_2_find_stationary_points_using_winding_number_with_stationary_point_at_c
     let expected_stationary_point_z: f64 = -25e-3;
     let expected_stationary_point_r: f64 = 0.43 - vertical_curvature * expected_stationary_point_z.powi(2);
 
-    let r: Array1<f64> = Array1::linspace(expected_stationary_point_r-0.35, expected_stationary_point_r+0.35, n_r);
+    let r: Array1<f64> = Array1::linspace(expected_stationary_point_r - 0.35, expected_stationary_point_r + 0.35, n_r);
     let z: Array1<f64> = Array1::linspace(-1.0, 1.0, n_z);
 
     let mut psi_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
@@ -603,5 +591,4 @@ fn test_2_find_stationary_points_using_winding_number_with_stationary_point_at_c
 
     println!("stationary_points = {:#?}", stationary_points);
     assert!(stationary_points.len() == 1);
-
 }

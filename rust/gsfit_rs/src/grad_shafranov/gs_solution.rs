@@ -8,11 +8,10 @@ use crate::plasma_geometry::StationaryPoint;
 use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
-use crate::plasma_geometry::find_stationary_points;
+use crate::plasma_geometry::find_stationary_points_using_sign_differences;
 use crate::plasma_geometry::find_stationary_points_using_winding_number;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
-use core::f64;
 use lapack::*;
 use ndarray::Axis;
 use ndarray::{Array1, Array2, Array3, s};
@@ -317,9 +316,9 @@ impl<'a> GsSolution<'a> {
 
         // Iteration loop
         'iteration_loop: for i_iter in 0..self.n_iter_max {
-            println!("");
-            println!("");
-            println!("i_iter = {i_iter}");
+            // println!("");
+            // println!("");
+            // println!("i_iter = {i_iter}");
             // From previous iteration
             let j_2d: Array2<f64> = self.j_2d.to_owned();
 
@@ -888,7 +887,7 @@ impl<'a> GsSolution<'a> {
                 d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
                 // Create a bicubic interpolator
-                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f.view(), d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
 
                 let x: f64 = (pressure_sensors_static.geometry_r[i_sensor] - r[i_r_nearest_left]) / d_r;
                 let y: f64 = (pressure_sensors_static.geometry_z[i_sensor] - z[i_z_nearest_lower]) / d_z;

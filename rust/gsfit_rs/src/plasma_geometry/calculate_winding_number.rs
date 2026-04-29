@@ -1,5 +1,4 @@
 use super::bicubic_interpolator::BicubicInterpolator;
-use core::f64;
 use std::f64::consts::PI;
 
 /// Computes the topological winding number

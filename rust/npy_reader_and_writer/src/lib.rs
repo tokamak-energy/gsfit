@@ -13,7 +13,7 @@ pub use writer::{write_npy_0d, write_npy_1d, write_npy_2d};
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::{Array1, Array2};
+    use ndarray::{Array1, Array2, array};
     use std::fs;
     use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -30,7 +30,7 @@ mod tests {
     fn test_write_and_read_npy_1d() {
         let file_path: std::path::PathBuf = std::env::temp_dir().join(format!("gsfit_testing_npy_writer_1d_{}.npy", unique_suffix()));
 
-        let original: Array1<f64> = Array1::from_vec(vec![1.0, 2.5, 3.7, -4.2, 0.0]);
+        let original: Array1<f64> = array![1.0, 2.5, 3.7, -4.2, 0.0];
         write_npy_1d(&file_path, &original);
 
         let loaded: Array1<f64> = read_npy_1d(&file_path);
@@ -69,7 +69,7 @@ mod tests {
     fn test_write_npy_1d_single_element() {
         let file_path: std::path::PathBuf = std::env::temp_dir().join(format!("gsfit_testing_npy_writer_1d_single_{}.npy", unique_suffix()));
 
-        let original: Array1<f64> = Array1::from_vec(vec![42.0]);
+        let original: Array1<f64> = array![42.0];
         write_npy_1d(&file_path, &original);
 
         let loaded: Array1<f64> = read_npy_1d(&file_path);
