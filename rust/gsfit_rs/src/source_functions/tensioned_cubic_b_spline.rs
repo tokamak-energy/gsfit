@@ -758,16 +758,16 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     /// 
     /// # Arguments
     /// * `psi_n` - The points at which we want to evaluate the integral
-        let n_psi_n: usize = psi_n.len();
-        let mut value: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-        for i_psi_n in 0..n_psi_n {
+    /// * `i_dof` - The index of the degree of freedom to evaluate
+    ///
     /// # Returns
     /// An array of the same length as `psi_n` containing the integral of the source function for the specified degree of freedom
     ///
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
         let mut value: Array1<f64> = Array1::from_elem(psi_n.len(), f64::NAN);
         let integration_constant: f64 = self.psi2(i_dof, 1.0) - self.psi2(i_dof + 1, 1.0);
-        for i_psi_n in 0..psi_n.len() {
+        let n_psi_n: usize = psi_n.len();
+        for i_psi_n in 0..n_psi_n {
             let x: f64 = psi_n[i_psi_n];
             // From equation (2.5) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993) we have
             // int_1^x B3_j(y) dy = int_1^x phi2_j(y) dy + int_1^x phi2_{j+1}(y) dy
