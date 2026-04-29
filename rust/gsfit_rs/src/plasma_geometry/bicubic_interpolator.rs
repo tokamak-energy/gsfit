@@ -1,5 +1,4 @@
-use core::f64;
-use ndarray::{Array1, Array2, array, s, ArrayView1, ArrayView2};
+use ndarray::{Array1, Array2, array, s, ArrayView2};
 
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,
@@ -71,7 +70,7 @@ impl BicubicInterpolator {
     /// use gsfit_rs::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
     /// use ndarray::{Array2};
     /// ```
-    pub fn new(d_x: f64, d_y: f64, f: &Array2<f64>, d_f_d_x: &Array2<f64>, d_f_d_y: &Array2<f64>, d2_f_d_x_d_y: &Array2<f64>) -> Self {
+    pub fn new(d_x: f64, d_y: f64, f: ArrayView2<f64>, d_f_d_x: ArrayView2<f64>, d_f_d_y: ArrayView2<f64>, d2_f_d_x_d_y: ArrayView2<f64>) -> Self {
         #[rustfmt::skip]
         let coeff_matrix_1: Array2<f64> = array![
             [ 1.0,  0.0,  0.0,  0.0],
@@ -92,7 +91,7 @@ impl BicubicInterpolator {
         let d_f_d_x_normalised: Array2<f64> = d_f_d_x.to_owned() * d_x;
         let d_f_d_y_normalised: Array2<f64> = d_f_d_y.to_owned() * d_y;
         let d2_f_d_x_d_y_normalised: Array2<f64> = d2_f_d_x_d_y.to_owned() * d_x * d_y;
-        function_matrix.slice_mut(s![0..2, 0..2]).assign(f);
+        function_matrix.slice_mut(s![0..2, 0..2]).assign(&f);
         function_matrix.slice_mut(s![2..4, 0..2]).assign(&d_f_d_x_normalised);
         function_matrix.slice_mut(s![0..2, 2..4]).assign(&d_f_d_y_normalised);
         function_matrix.slice_mut(s![2..4, 2..4]).assign(&d2_f_d_x_d_y_normalised);
