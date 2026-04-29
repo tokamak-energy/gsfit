@@ -750,6 +750,12 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
 
     /// Integral of a single degree of freedom
     ///
+    /// We take the inegral from 1 to psi_n to ensure that the integral is zero at psin = 1.
+    /// Note that the psi2 function above is defined as the integral of phi2 from -infinity to psi_n,
+    /// which is the same as the integral of phi2 from 0 to x since phi2 is zero for x < 0.
+    /// Since int_0^x + int_x^1 = int_0^1, we can rearrange this to get int_1^x = int_0^x - int_0^1.
+    /// Note that int_0^1 phi2(y) dy = psi2(1) - psi2(0) = psi2(1) since psi2(0) = 0.
+    /// 
     /// # Arguments
     /// * `psi_n` - The points at which we want to evaluate the integral
     /// * `i_dof` - The index of the degree of freedom to evaluate
@@ -759,9 +765,15 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     ///
     fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
         let mut value: Array1<f64> = Array1::from_elem(psi_n.len(), f64::NAN);
+        let integration_constant: f64 = self.psi2(i_dof, 1.0) - self.psi2(i_dof + 1, 1.0);
         for i_psi_n in 0..psi_n.len() {
             let x: f64 = psi_n[i_psi_n];
-            value[i_psi_n] = self.psi2(i_dof, x) - self.psi2(i_dof + 1, x);
+            // From equation (2.5) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993) we have
+            // int_1^x B3_j(y) dy = int_1^x phi2_j(y) dy + int_1^x phi2_{j+1}(y) dy
+            //                    = int_0^x phi2_j(y) dy - int_0^1 phi2_j(y) dy - (int_0^x phi2_{j+1}(y) dy - int_0^1 phi2_{j+1}(y) dy)
+            //                    = psi2_j(x) - psi2_{j+1}(x) - (psi2_j(1) - psi2_{j+1}(1))
+            //                    = psi2_j(x) - psi2_{j+1}(x) - integration_constant
+            value[i_psi_n] = self.psi2(i_dof, x) - self.psi2(i_dof + 1, x) - integration_constant;
         }
         value
     }
@@ -792,14 +804,17 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
             integral = integral + spline_dof[i_dof] * self.source_function_integral_single_dof(psi_n, i_dof);
         }
 
-        // Find the constant of integration
-        let psi_n_at_boundary: Array1<f64> = Array1::from_vec(vec![1.0]);
-        let mut integral_at_boundary: f64 = 0.0;
-        for i_dof in 0..n_dof {
-            integral_at_boundary += spline_dof[i_dof] * self.source_function_integral_single_dof(&psi_n_at_boundary, i_dof)[0];
-        }
+        // Alex Prok: Don't need to find the constant of integration as we take integral from 1 to psi_n
+        // in source_function_integral_single_dof which ensures that the integral is zero at psi_n = 1.
+        // Hence we can just return the integral calculated above without adding any constant of integration. 
+        // // Find the constant of integration
+        // let psi_n_at_boundary: Array1<f64> = Array1::from_vec(vec![1.0]);
+        // let mut integral_at_boundary: f64 = 0.0;
+        // for i_dof in 0..n_dof {
+        //     integral_at_boundary += spline_dof[i_dof] * self.source_function_integral_single_dof(&psi_n_at_boundary, i_dof)[0];
+        // }
 
-        integral - integral_at_boundary
+        integral
     }
 
     fn source_function_regularisation(&self) -> Array2<f64> {
