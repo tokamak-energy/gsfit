@@ -58,18 +58,18 @@ impl TensionedCubicBSpline {
         tensions.slice_mut(s![(n_knots - 4)..(n_knots - 1)]).fill(0.0);
         let tensions: Array1<f64> = tensions;
 
-        // The `rho_delta_upper_cutoff` value is used by the gamma3 and gamma2 functions below to avoid overflow issues
+        // The `rho_delta_upper_cutoff` value is used by the gamma functions below to avoid overflow issues
         // when taking the cosh and sinh of large numbers.
         // Note that the largest number you can take exp(x) in rust for 64-bit floats should be around
         // ln(1.7976931348623157e308) = 709.782712893384, but we use 100 to be safe.
         let hyperbolic_upper_cutoff: f64 = 100.0;
 
         // Decides the cutoff for when we take the taylor series for small arguments for sinh and cosh in the
-        // gamma3 and gamma2 functions.
+        // gamma functions.
         // This prevents taking e.g. sinh(x) - x of a very small number which results in numerical precision loss.
         let hyperbolic_lower_cutoff: f64 = 1e-3;
 
-        //  Used by gamma3 and gamma2 functions below.
+        //  Used by gamma functions below.
         // Decides the cut off for when we consider the distance between knots to be zero,
         // and therefore we must be in an exterioir (clamped) knot region, not the interior knot region.
         let delta_cutoff: f64 = 1e-6;
