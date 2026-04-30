@@ -50,7 +50,7 @@ pub fn hessian(d2_psi_d_r2: f64, d2_psi_d_z2: f64, d2_psi_d_r_d_z: f64) -> (f64,
 /// So in the test we will similarly evaluate the Hessian at a nearby point, not exactly at the stationary point.
 ///
 /// See the Jupyter notebook for a plot detailing the test
-/// `rust/gsfit_rs/test_data/plasma_geometry/hessian/test_hessian_for_maximum.ipynb`
+/// `rust/gsfit_rs/test_assets/plasma_geometry/hessian/test_hessian_for_maximum.ipynb`
 #[test]
 fn test_hessian_for_maximum() {
     // Define the plasma geometry parameters

@@ -317,7 +317,7 @@ fn setup_bicubic_interpolator(
 /// In this test the `bz=0` contour enters and exits through the same cell edge
 ///
 /// See the Jupyter notebook for a plot detailing the test
-/// `rust/gsfit_rs/test_data/plasma_geometry/find_stationary_points/test_find_stationary_points.ipynb`
+/// `rust/gsfit_rs/test_assets/plasma_geometry/find_stationary_points/test_find_stationary_points.ipynb`
 #[test]
 fn test_find_stationary_points() {
     use approx::assert_abs_diff_eq;

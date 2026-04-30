@@ -227,16 +227,16 @@ fn test_flood_fill_mask() {
     let r: Array1<f64> = Array1::linspace(0.01, 1.0, n_r);
     let z: Array1<f64> = Array1::linspace(-1.0, 1.0, n_z);
 
-    // Load `psi_2d` from `test_data` file
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/plasma_geometry/flood_fill_mask/psi_2d.npy");
+    // Load `psi_2d` from `test_assets` file
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/flood_fill_mask/psi_2d.npy");
     let psi_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(std::path::Path::new(test_data_path));
 
-    // Load `vessel_r` from `test_data` file
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/plasma_geometry/flood_fill_mask/vessel_r.npy");
+    // Load `vessel_r` from `test_assets` file
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/flood_fill_mask/vessel_r.npy");
     let vessel_r: Array1<f64> = npy_reader_and_writer::read_npy_1d(std::path::Path::new(test_data_path));
 
-    // Load `vessel_z` from `test_data` file
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/plasma_geometry/flood_fill_mask/vessel_z.npy");
+    // Load `vessel_z` from `test_assets` file
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/flood_fill_mask/vessel_z.npy");
     let vessel_z: Array1<f64> = npy_reader_and_writer::read_npy_1d(std::path::Path::new(test_data_path));
 
     let psi_b: f64 = -0.05901706777528778;

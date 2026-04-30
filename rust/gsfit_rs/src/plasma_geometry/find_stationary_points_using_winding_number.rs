@@ -448,7 +448,7 @@ fn combine_and_order_edge_events(
 /// In this test the `d(psi)/d(r)=0` contour enters and exits through the same cell edge
 ///
 /// See the Jupyter notebook for a plot detailing the test
-/// `rust/gsfit_rs/test_data/plasma_geometry/find_stationary_points/test_1_find_stationary_points_using_winding_number_with_contour_entering_and_exiting_same_cell_edge.ipynb`
+/// `rust/gsfit_rs/test_assets/plasma_geometry/find_stationary_points/test_1_find_stationary_points_using_winding_number_with_contour_entering_and_exiting_same_cell_edge.ipynb`
 #[test]
 fn test_1_find_stationary_points_using_winding_number_with_contour_entering_and_exiting_same_cell_edge() {
     use approx::assert_abs_diff_eq;
@@ -540,7 +540,7 @@ fn test_1_find_stationary_points_using_winding_number_with_contour_entering_and_
 /// In this test the stationary point lies exactly on the cell edge
 ///
 /// See the Jupyter notebook for a plot detailing the test
-/// `rust/gsfit_rs/test_data/plasma_geometry/find_stationary_points/test_2_find_stationary_points_using_winding_number_with_stationary_point_at_cell_edge.ipynb`
+/// `rust/gsfit_rs/test_assets/plasma_geometry/find_stationary_points/test_2_find_stationary_points_using_winding_number_with_stationary_point_at_cell_edge.ipynb`
 #[test]
 fn test_2_find_stationary_points_using_winding_number_with_stationary_point_at_cell_edge() {
     // use approx::assert_abs_diff_eq;
