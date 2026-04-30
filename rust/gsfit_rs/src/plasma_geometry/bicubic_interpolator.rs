@@ -229,8 +229,6 @@ impl BicubicInterpolator {
             if (0.0..=1.0).contains(&x_linear) && (0.0..=1.0).contains(&y_linear) {
                 x = x_linear;
                 y = y_linear;
-
-                // println!("x_linear = {x_linear}, y_linear = {y_linear}");
             }
         }
 
@@ -251,8 +249,6 @@ impl BicubicInterpolator {
         let boundary_tol: f64 = 1e-12;
 
         for iter in 0..max_iter {
-            println!("iter = {iter}, x = {x}, y = {y}, g_norm = {g_norm}");
-
             // Hessian determinant for the 2x2 Newton solve.
             let hessian_det: f64 = h_x_x * h_y_y - h_x_y * h_x_y;
 
@@ -283,7 +279,6 @@ impl BicubicInterpolator {
             if pinned_x && pinned_y {
                 // Pinned at a corner: no direction inside the cell is descent for ||grad||.
                 // Accept the corner as the best constrained stationary point we can offer.
-                println!("Newton pinned at corner (x = {x}, y = {y}); accepting as constrained stationary point.");
                 let hessian_trace: f64 = h_x_x + h_y_y;
                 let is_max: bool = hessian_det > 0.0 && hessian_trace < 0.0;
                 return Ok(BicubicStationaryPoint {
@@ -296,14 +291,12 @@ impl BicubicInterpolator {
                 });
             } else if pinned_x {
                 // Constrained 1D problem along x = boundary; only g_y matters.
-                println!("Newton pinned on x = {x}; switching to 1D Newton along boundary, g_y = {g_y}");
                 if h_y_y.abs() <= f64::EPSILON {
                     return Err("1D Hessian along x boundary is singular".to_string());
                 }
                 delta_x = 0.0;
                 delta_y = -g_y / h_y_y;
             } else if pinned_y {
-                println!("Newton pinned on y = {y}; switching to 1D Newton along boundary, g_x = {g_x}");
                 if h_x_x.abs() <= f64::EPSILON {
                     return Err("1D Hessian along y boundary is singular".to_string());
                 }

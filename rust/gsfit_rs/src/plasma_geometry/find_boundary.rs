@@ -16,8 +16,8 @@ use ndarray::{Array1, Array2};
 /// * `limit_pts_z` - Z coordinates of limiter points, [metre]
 /// * `vessel_r` - R coordinates of vessel points, [metre]
 /// * `vessel_z` - Z coordinates of vessel points, [metre]
-/// * `mag_r_previous` - R coordinate of magnetic axis (from the previous iteration), [metre]
-/// * `mag_z_previous` - Z coordinate of magnetic axis (from the previous iteration), [metre]
+/// * `mag_r` - R coordinate of magnetic axis, [metre]
+/// * `mag_z` - Z coordinate of magnetic axis, [metre]
 ///
 /// # Returns
 /// * `boundary_contour` - A `BoundaryContour` object representing the plasma boundary
@@ -33,12 +33,12 @@ pub fn find_boundary(
     limit_pts_z: &Array1<f64>,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
-    mag_r_previous: f64, // Note: `mag_r_previous` and `mag_z_previous` are from previous iteration; this can be a problem if the magnetic axis moves significantly
-    mag_z_previous: f64, // which can happen when the plasma is significantly displaced vertically from the initial guess location, e.g. during a VDE
+    mag_r: f64,
+    mag_z: f64,
 ) -> Result<BoundaryContour, Error> {
     // Find x-points inside the vacuum vessel which could be the plasma boundary
     let xpt_boundary_or_error: Result<BoundaryContour, String> =
-        find_viable_xpt(r, z, psi_2d, stationary_points, vessel_r, vessel_z, mag_r_previous, mag_z_previous);
+        find_viable_xpt(r, z, psi_2d, stationary_points, vessel_r, vessel_z, mag_r, mag_z);
 
     // Extract results from `xpt_boundary` object
     let xpt_r: f64;
@@ -70,8 +70,8 @@ pub fn find_boundary(
         d_bz_d_z_2d,
         limit_pts_r,
         limit_pts_z,
-        mag_r_previous,
-        mag_z_previous,
+        mag_r,
+        mag_z,
         vessel_r,
         vessel_z,
         stationary_points,
@@ -156,7 +156,7 @@ pub fn find_boundary(
     }
 
     // Calculate the mask
-    let mask: Array2<f64> = flood_fill_mask(r, z, psi_2d, psi_b, stationary_points, mag_r_previous, mag_z_previous, vessel_r, vessel_z);
+    let mask: Array2<f64> = flood_fill_mask(r, z, psi_2d, psi_b, stationary_points, mag_r, mag_z, vessel_r, vessel_z);
 
     let boundary_contour: BoundaryContour = BoundaryContour {
         boundary_r: boundary_r.clone(),

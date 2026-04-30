@@ -16,8 +16,8 @@ use std::f64::consts::PI;
 /// * `psi_2d` - poloidal flux, shape = (n_z, n_r), [weber]
 /// * `limit_pts_r` - R coordinates of limiter points, [metre]
 /// * `limit_pts_z` - Z coordinates of limiter points, [metre]
-/// * `mag_r_previous` - R coordinate of magnetic axis from previous iteration, [metre]
-/// * `mag_z_previous` - Z coordinate of magnetic axis from previous iteration, [metre]
+/// * `mag_r` - R coordinate of magnetic axis, [metre]
+/// * `mag_z` - Z coordinate of magnetic axis, [metre]
 /// * `vessel_r` - R coordinates of vessel points, [metre]
 /// * `vessel_z` - Z coordinates of vessel points, [metre]
 /// * `stationary_points` - Vector of `StationaryPoint` objects representing stationary points in psi
@@ -33,8 +33,8 @@ pub fn find_viable_limit_point(
     d_bz_d_z_2d: &Array2<f64>,
     limit_pts_r: &Array1<f64>, // TODO: might be better to have limit_pts_r and limit_pts_z as a "struct"
     limit_pts_z: &Array1<f64>,
-    mag_r_previous: f64,
-    mag_z_previous: f64,
+    mag_r: f64,
+    mag_z: f64,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
     stationary_points: &[StationaryPoint],
@@ -56,8 +56,8 @@ pub fn find_viable_limit_point(
     let d_l: f64 = (d_r.powi(2) + d_z.powi(2)).sqrt();
 
     // Find the closest grid point to the magnetic axis
-    let index_mag_r: usize = (r - mag_r_previous).abs().argmin().expect("find_viable_limit_point: unwrapping index_mag_r");
-    let index_mag_z: usize = (z - mag_z_previous).abs().argmin().expect("find_viable_limit_point: unwrapping index_mag_z");
+    let index_mag_r: usize = (r - mag_r).abs().argmin().expect("find_viable_limit_point: unwrapping index_mag_r");
+    let index_mag_z: usize = (z - mag_z).abs().argmin().expect("find_viable_limit_point: unwrapping index_mag_z");
 
     // Number of limit points
     let n_limit_pts: usize = limit_pts_r.len();
@@ -156,7 +156,6 @@ pub fn find_viable_limit_point(
 
     // Loop over potential limit points; by doing the loop like this we don't do extra calculations, and exit as soon as we find a viable limit point
     'loop_over_potential_limit_points: for potential_limit_point in &mut potential_limit_points {
-        println!("potential_limit_point.r = {}, potential_limit_point.z = {}", potential_limit_point.bounding_r, potential_limit_point.bounding_z);
         // Test if there is a LFS boundary at the same height as the magnetic axis
         // March from the magnetic axis to the LFS
         let mut test_intersects_lfs_boundary: bool = false;
@@ -170,7 +169,6 @@ pub fn find_viable_limit_point(
         }
         // No LFS boundary encountered
         if !test_intersects_lfs_boundary {
-            println!("potential_limit_point fails LFS boundary test");
             continue 'loop_over_potential_limit_points;
         }
 
@@ -187,7 +185,6 @@ pub fn find_viable_limit_point(
         }
         // No HFS boundary encountered
         if !test_intersects_hfs_boundary {
-            println!("potential_limit_point fails HFS boundary test");
             continue 'loop_over_potential_limit_points;
         }
 
@@ -198,8 +195,8 @@ pub fn find_viable_limit_point(
             psi_2d,
             potential_limit_point.bounding_psi,
             stationary_points,
-            mag_r_previous,
-            mag_z_previous,
+            mag_r,
+            mag_z,
             vessel_r,
             vessel_z,
         );
@@ -209,16 +206,14 @@ pub fn find_viable_limit_point(
         let test_mask: bool = potential_limit_point.mask.as_ref().expect("find_viable_limit_point: unwrapping mask")[(index_mag_z, index_mag_r)] > 0.0;
         // Skip if magnetic axis is outside boundary
         if !test_mask {
-            println!("potential_limit_point fails mask test");
             continue 'loop_over_potential_limit_points;
         }
 
         // Calculate the plasma boundary
         // TODO: update `marching_squares` to only do points near limit_point
         let psi_b: f64 = potential_limit_point.bounding_psi;
-        let plasma_boundary: MarchingContour = marching_squares(r, z, psi_2d, br_2d, bz_2d, psi_b, &mask_2d, None, None, mag_r_previous, mag_z_previous);
+        let plasma_boundary: MarchingContour = marching_squares(r, z, psi_2d, br_2d, bz_2d, psi_b, &mask_2d, None, None, mag_r, mag_z);
         if plasma_boundary.r.is_empty() {
-            println!("potential_limit_point fails marching squares test");
             continue 'loop_over_potential_limit_points;
         }
 
@@ -232,7 +227,6 @@ pub fn find_viable_limit_point(
 
         // Keep if distance to plasma boundary is less than 1 grid spacing
         if distance_min > 1.0 * d_l {
-            println!("potential_limit_point fails distance test");
             continue 'loop_over_potential_limit_points;
         }
 

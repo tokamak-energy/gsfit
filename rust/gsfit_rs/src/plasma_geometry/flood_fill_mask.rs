@@ -24,6 +24,8 @@ use std::collections::VecDeque;
 /// # Returns
 /// * `mask_2d` - 1.0 = inside plasma boundary, 0.0 for points outside plasma boundary; f64 to make multiplication easier, shape = (n_z, n_r), dimensionless
 ///
+/// Note: if "bad data" is supplied `mask_2d` will be all zeros
+///
 /// # Algorithm
 /// This is a Breadth-First Search (BFS) flood fill using 4 neighbour connectivity
 pub fn flood_fill_mask(
@@ -40,6 +42,7 @@ pub fn flood_fill_mask(
     // TODO 1: Is there a problem left/right of the x-point?
     // TODO 2: Perhaps start the fill between the x-point and the previous magnetic axis location,
     // TODO 2: this way if the magnetic axis moves vertically a lot we won't lose the plasma?
+    // TODO 2: NO! this would only work if the plasma is x-point diverted. what about limited?
     // TODO 3: The test for crossing the saddle point should only apply if the saddle point is outside
 
     // Make a mutable copy of the `stationary_points` vector, so that we can filter out points

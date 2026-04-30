@@ -430,6 +430,29 @@ impl<'a> GsSolution<'a> {
             // Store stationary points in the solution
             self.stationary_points = stationary_points.clone();
 
+            // Find the magnetic axis (o-point)
+            let magnetic_axis_or_error: Result<MagneticAxis, String> = find_magnetic_axis(&stationary_points, self.r_mag, self.z_mag, &vessel_r, &vessel_z);
+            // Test if we have found the magnetic axis
+            if magnetic_axis_or_error.is_err() {
+                // Set time-slice to failed
+                self.set_to_failed_time_slice();
+
+                // Store error state
+                self.error_state = Some(Error::NoMagneticAxisFound);
+                println!("{:?}", self.error_state.as_ref().unwrap());
+
+                // Exit iteration loop for this time-slice
+                break 'iteration_loop;
+            }
+            // Unwrap and get results out of `magnetic_axis_or_error`
+            let magnetic_axis: MagneticAxis = magnetic_axis_or_error.expect("gs_solution: unwrapping magnetic_axis");
+            let mag_r: f64 = magnetic_axis.r;
+            let mag_z: f64 = magnetic_axis.z;
+            let psi_a: f64 = magnetic_axis.psi;
+            self.r_mag = mag_r;
+            self.z_mag = mag_z;
+            self.psi_a = psi_a;
+
             // Find boundary
             let plasma_boundary_or_error: Result<BoundaryContour, plasma_geometry::Error> = find_boundary(
                 &r,
@@ -443,8 +466,8 @@ impl<'a> GsSolution<'a> {
                 &limit_pts_z,
                 &vessel_r,
                 &vessel_z,
-                self.r_mag, // previous iteration
-                self.z_mag, // previous iteration
+                self.r_mag,
+                self.z_mag,
             );
             // Test if we have found a plasma boundary
             if plasma_boundary_or_error.is_err() {
@@ -479,29 +502,6 @@ impl<'a> GsSolution<'a> {
             let mask: Array2<f64> = self.mask.to_owned();
             let psi_b: f64 = self.psi_b;
             self.xpt_diverted = plasma_boundary.xpt_diverted;
-
-            // Find the magnetic axis (o-point)
-            let magnetic_axis_or_error: Result<MagneticAxis, String> = find_magnetic_axis(&stationary_points, self.r_mag, self.z_mag, &vessel_r, &vessel_z);
-            // Test if we have found the magnetic axis
-            if magnetic_axis_or_error.is_err() {
-                // Set time-slice to failed
-                self.set_to_failed_time_slice();
-
-                // Store error state
-                self.error_state = Some(Error::NoMagneticAxisFound);
-                println!("{:?}", self.error_state.as_ref().unwrap());
-
-                // Exit iteration loop for this time-slice
-                break 'iteration_loop;
-            }
-            // Unwrap and get results out of `magnetic_axis_or_error`
-            let magnetic_axis: MagneticAxis = magnetic_axis_or_error.expect("gs_solution: unwrapping magnetic_axis");
-            let mag_r: f64 = magnetic_axis.r;
-            let mag_z: f64 = magnetic_axis.z;
-            let psi_a: f64 = magnetic_axis.psi;
-            self.r_mag = mag_r;
-            self.z_mag = mag_z;
-            self.psi_a = psi_a;
 
             // Calculate psi_n_2d
             let psi_n_2d: Array2<f64> = &mask * (&psi_2d - psi_a) / (psi_b - psi_a);
