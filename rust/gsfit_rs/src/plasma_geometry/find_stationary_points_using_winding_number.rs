@@ -304,7 +304,6 @@ pub fn find_stationary_points_using_winding_number(
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis.
                 // TODO:`psi_2d` is stored as (i_z, i_r), but `BicubicInterpolator` expects `f[(i_r, i_z)]`.
                 // TODO:So we need to transpose the arrays!
-                // TODO: It is better to use ArrayView2<f64> data types in `BicubicInterpolator::new`, rather than doing a copy
                 let f: Array2<f64> = psi_2d.slice(slice_cell_perimeter).t().to_owned();
                 let d_f_d_r: Array2<f64> = d_psi_d_r_2d.slice(slice_cell_perimeter).t().to_owned();
                 let d_f_d_z: Array2<f64> = d_psi_d_z_2d.slice(slice_cell_perimeter).t().to_owned();
