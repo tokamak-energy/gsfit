@@ -751,7 +751,6 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
     /// Integral of a single degree of freedom
     ///
     /// We take the integral from 1 to `psi_n`, this ensures that the integral is zero at `psi_n = 1`
-    /// and p and f^2 are positive (since dp/psin and df^2/dpsin should be mostly negative)
     /// Note that the psi2 function above is defined as the integral of phi2 from -infinity to `psi_n`,
     /// which is the same as the integral of phi2 from 0 to x since phi2 is zero for x < 0.
     /// Since int_0^x + int_x^1 = int_0^1, we can rearrange this to get int_1^x = int_0^x - int_0^1.
