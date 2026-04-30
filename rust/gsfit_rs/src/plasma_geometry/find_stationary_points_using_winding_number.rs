@@ -186,8 +186,14 @@ pub fn find_stationary_points_using_winding_number(
         }
     }
 
-    if d_psi_d_z_zero_coordinates.len() == 0 || d_psi_d_r_zero_coordinates.len() == 0 {
-        // No zero-crossings found, so no stationary points possible
+    // If no zero-crossings found, then so no stationary points are possible
+    let no_d_psi_d_z_zero_crossings: bool = d_psi_d_z_zero_coordinates
+        .values()
+        .all(|crossings| crossings.is_empty());
+    let no_d_psi_d_r_zero_crossings: bool = d_psi_d_r_zero_coordinates
+        .values()
+        .all(|crossings| crossings.is_empty());
+    if no_d_psi_d_z_zero_crossings || no_d_psi_d_r_zero_crossings {
         return stationary_points;
     }
 

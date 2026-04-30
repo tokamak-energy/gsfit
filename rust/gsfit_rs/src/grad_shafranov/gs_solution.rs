@@ -394,8 +394,8 @@ impl<'a> GsSolution<'a> {
             let mut d2_psi_d_r2_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
             let mut d2_psi_d_rz_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
             let mut d2_psi_d_z2_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
-            for i_r in 0..n_r {
-                for i_z in 0..n_z {
+            for i_z in 0..n_z {
+                for i_r in 0..n_r {
                     d_psi_d_r_2d[(i_z, i_r)] = 2.0 * PI * mesh_r[(i_z, i_r)] * bz_2d[(i_z, i_r)];
                     d_psi_d_z_2d[(i_z, i_r)] = -2.0 * PI * mesh_r[(i_z, i_r)] * br_2d[(i_z, i_r)];
                     d2_psi_d_r2_2d[(i_z, i_r)] = d2_psi_d_r2_calculator.calculate(i_r, i_z);
