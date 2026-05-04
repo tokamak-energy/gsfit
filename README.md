@@ -279,12 +279,18 @@ The advantage of this is that the Rust binary does not need to link agains `libp
 However, for testing, where the Rust code is run as it's own executable, not from within Python, **we must link to Python!**
 
 # 4. Planned future development
-* Pressure constrained.
-* Spline `p_prime` and `ff_prime`
 * Interfacing to and from IMAS & OMAS.
 * More kinetic sensors, such as MSE, polarimeters, and interferometers.
 
-# 5. Citing GSFit
+# 5. Testing
+```shell
+cd rust
+cargo install cargo-llvm-cov
+rustup component add llvm-tools-preview
+cargo llvm-cov --html  # generates target/llvm-cov/html/index.html
+```
+
+# 6. Citing GSFit
 We intend on publishing a paper on GSFit.
 While GSFit is unpublished, please cite it as "P. F. Buxton, GSFit, https://github.com/tokamak-energy/gsfit, 2025"
 

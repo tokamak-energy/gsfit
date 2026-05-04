@@ -192,6 +192,7 @@ impl D2PsiDR2Calculator {
     }
 }
 
+// TODO: this test is very slow. Need to speed it up a lot!
 #[test]
 fn test_d2_psi_d_r2_calculator() {
     use crate::greens::greens_b::greens_b;

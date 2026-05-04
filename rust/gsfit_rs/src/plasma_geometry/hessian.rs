@@ -62,15 +62,6 @@ fn test_hessian_for_maximum() {
     let r: f64 = 0.41000000000000003;
     let z: f64 = 0.33333333333333326;
 
-    // // Calculate the Hessian determinant and trace
-    // let psi_2d: f64 = -(r - r_center).powi(2) - (z + 25e-3).powi(2);
-
-    // // d_psi_d_r = -2 * (r - r_center)
-    // let d_psi_d_r: f64 = -2.0 * (r - r_center);
-
-    // // d_psi_d_z = -2 * (r - r_center) * 2 * vertical_curvature * z - 2 * (z + 0.025)
-    // let d_psi_d_z: f64 = -2.0 * (r - r_center) * 2.0 * vertical_curvature * z - 2.0 * (z + 25e-3);
-
     let d2_psi_d_r2: f64 = -2.0;
 
     let d2_psi_d_z2: f64 = -4.0 * vertical_curvature * (r - r_center) - 8.0 * vertical_curvature.powi(2) * z.powi(2) - 2.0;
