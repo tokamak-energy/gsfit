@@ -24,6 +24,8 @@ use std::collections::VecDeque;
 /// # Returns
 /// * `mask_2d` - 1.0 = inside plasma boundary, 0.0 for points outside plasma boundary; f64 to make multiplication easier, shape = (n_z, n_r), dimensionless
 ///
+/// Note: if "bad data" is supplied `mask_2d` will be all zeros
+///
 /// # Algorithm
 /// This is a Breadth-First Search (BFS) flood fill using 4 neighbour connectivity
 pub fn flood_fill_mask(
@@ -40,6 +42,7 @@ pub fn flood_fill_mask(
     // TODO 1: Is there a problem left/right of the x-point?
     // TODO 2: Perhaps start the fill between the x-point and the previous magnetic axis location,
     // TODO 2: this way if the magnetic axis moves vertically a lot we won't lose the plasma?
+    // TODO 2: NO! this would only work if the plasma is x-point diverted. what about limited?
     // TODO 3: The test for crossing the saddle point should only apply if the saddle point is outside
 
     // Make a mutable copy of the `stationary_points` vector, so that we can filter out points
@@ -80,8 +83,8 @@ pub fn flood_fill_mask(
         // Find the nearest grid point to the stationary point
         let i_r_nearest: usize = stationary_point.i_r_nearest;
         let i_z_nearest: usize = stationary_point.i_z_nearest;
-        let i_z_nearest_lower: usize = stationary_point.i_z_nearest_lower;
-        let i_z_nearest_upper: usize = stationary_point.i_z_nearest_upper;
+        let i_z_nearest_lower: usize = stationary_point.i_z_lower;
+        let i_z_nearest_upper: usize = stationary_point.i_z_upper;
 
         // Apply a **VERY** simple z.max() masking
         // TODO: improve the masking logic near the x-point
@@ -219,42 +222,22 @@ pub fn flood_fill_mask(
 
 #[test]
 fn test_flood_fill_mask() {
-    use std::fs;
-
     let n_r: usize = 80;
     let n_z: usize = 161;
     let r: Array1<f64> = Array1::linspace(0.01, 1.0, n_r);
     let z: Array1<f64> = Array1::linspace(-1.0, 1.0, n_z);
 
-    // Load `psi_2d` from `test_data` file
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/psi2d.txt");
-    let data_str: String = fs::read_to_string(test_data_path).expect("Failed to read test data file");
-    let v: Vec<f64> = data_str
-        .lines()
-        .map(|line| line.trim().parse::<f64>().expect("test_flood_fill_mask: Failed to read `psi_2d` from file"))
-        .collect();
-    assert_eq!(v.len(), 12880, "test_flood_fill_mask: `psi_2d` test data should have 12880 values");
-    let psi_2d: Array2<f64> = Array2::from_shape_vec((n_z, n_r), v).expect("Failed to create array from test data");
+    // Load `psi_2d` from `test_assets` file
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/flood_fill_mask/psi_2d.npy");
+    let psi_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(std::path::Path::new(test_data_path));
 
-    // Load `vessel_r` from `test_data` file
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/vessel_r.txt");
-    let data_str: String = fs::read_to_string(test_data_path).expect("Failed to read test data file");
-    let v: Vec<f64> = data_str
-        .lines()
-        .map(|line| line.trim().parse::<f64>().expect("test_flood_fill_mask: Failed to read `vessel_r` from file"))
-        .collect();
-    assert_eq!(v.len(), 150, "test_flood_fill_mask: `vessel_r` test data should have 150 values");
-    let vessel_r: Array1<f64> = Array1::from_shape_vec(150, v).expect("Failed to create array from test data");
+    // Load `vessel_r` from `test_assets` file
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/flood_fill_mask/vessel_r.npy");
+    let vessel_r: Array1<f64> = npy_reader_and_writer::read_npy_1d(std::path::Path::new(test_data_path));
 
-    // Load `vessel_z` from `test_data` file
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/flood_fill_mask/vessel_z.txt");
-    let data_str: String = fs::read_to_string(test_data_path).expect("Failed to read test data file");
-    let v: Vec<f64> = data_str
-        .lines()
-        .map(|line| line.trim().parse::<f64>().expect("test_flood_fill_mask: Failed to read `vessel_z` from file"))
-        .collect();
-    assert_eq!(v.len(), 150, "test_flood_fill_mask: `vessel_z` test data should have 150 values");
-    let vessel_z: Array1<f64> = Array1::from_shape_vec(150, v).expect("Failed to create array from test data");
+    // Load `vessel_z` from `test_assets` file
+    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/flood_fill_mask/vessel_z.npy");
+    let vessel_z: Array1<f64> = npy_reader_and_writer::read_npy_1d(std::path::Path::new(test_data_path));
 
     let psi_b: f64 = -0.05901706777528778;
     let _xpt_r: f64 = 0.1;

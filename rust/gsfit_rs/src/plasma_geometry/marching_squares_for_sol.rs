@@ -1,7 +1,6 @@
 use super::MarchingContour;
 use super::cubic_interpolation::cubic_interpolation;
 use approx::abs_diff_eq;
-use core::f64;
 use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Contains, Coord, Line, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};

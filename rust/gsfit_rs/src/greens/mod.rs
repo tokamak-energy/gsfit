@@ -1,11 +1,13 @@
 // Load modules
 mod d2_psi_d_r2_calculator;
 mod filament_geometry;
+mod greens;
 mod greens_b;
 mod greens_d2_psi_d_r2;
 mod greens_d_b_d_z;
 mod greens_psi;
 mod mutual_inductance_finite_size_to_finite_size;
+mod mutual_inductance_finite_size_to_point;
 
 // Expose functions to public
 pub use d2_psi_d_r2_calculator::D2PsiDR2Calculator;

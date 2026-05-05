@@ -46,6 +46,10 @@ jobs:
           python-version: '3.12'
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -71,6 +75,15 @@ jobs:
           # Run tests
           cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib -- --show-output
           cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
+      - name: Generate code coverage
+        run: |
+          export LD_LIBRARY_PATH=$(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
+          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --lcov --output-path lcov.info
+      - name: Upload code coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   linux_build_wheels:
     name: "Linux: Build Python wheels"
@@ -166,7 +179,7 @@ jobs:
 
           # Run the MAST-U FreeGSNKE notebook as a test
           # Note: --nbval-lax ignores minor output differences such as floating point precision; but there is still some comparison with stored outputs
-          python -m pytest --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+          python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
 
           # Make an artifacts directory inside `examples/`
           mkdir -p examples/artifacts
@@ -291,7 +304,7 @@ jobs:
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
           jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
-          python -m pytest --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+          python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
       - name: Run mypy Python tests
         run: mypy python/
 
@@ -409,7 +422,7 @@ jobs:
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
           jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
-          py -3.11 -m pytest --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+          py -3.11 -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
       - name: Run mypy Python tests
         # env:
         #   VCPKG_ROOT: C:/vcpkg
