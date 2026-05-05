@@ -60,7 +60,7 @@ jobs:
           apt-cache search libpython
           # In ubuntu-latest, only `libpython3.12-dev` is available
           sudo apt-get install -y libopenblas-dev libpython3.12-dev
-      - name: Run Rust tests
+      - name: Run Rust tests and generate code coverage
         run: |
           # Update Rust and print version
           rustup update
@@ -76,16 +76,14 @@ jobs:
           python3.12 --version
           echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
           ls -la $(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')/libpython* || true
-          # Run tests
-          cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib -- --show-output
-          cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
-      - name: Generate code coverage
-        run: |
-          export LD_LIBRARY_PATH=$(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
-          # Generate an HTML coverage report which can be uploaded to GitHub Pages
-          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --html --output-dir coverage-html
-          # Generate JSON summary to extract coverage percentage for a badge; `--no-clean` means don't remove artifacts (i.e. `lcov.info`); `--no-run` means don't run tests again.
+
+          # Run lib tests with coverage instrumentation and generate an HTML report for GitHub Pages
+          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --html --output-dir coverage-html -- --show-output
+          # Generate JSON summary to extract coverage percentage for a badge; `--no-clean` means don't remove artifacts; `--no-run` means don't run tests again
           cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --json --output-path coverage.json --no-clean --no-run
+
+          # Run doc tests separately (not instrumented for coverage)
+          cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
       - name: Generate coverage badge
         run: |
           # Extract line coverage percentage from the JSON summary
