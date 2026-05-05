@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, array, s, ArrayView2};
+use ndarray::{Array1, Array2, ArrayView2, array, s};
 
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,
@@ -166,7 +166,7 @@ impl BicubicInterpolator {
     }
 
     /// Finds the stationary point of the bicubic fit
-    /// 
+    ///
     /// The bicubic fit is a 3rd degree polynomial in both `x` and `y`:
     /// f = a_33 * x³ y³ + a_32 * x³ y² + ... + a_00
     /// The stationary point is where the gradient is zero in both directions:
