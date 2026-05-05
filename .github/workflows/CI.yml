@@ -15,8 +15,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   sdist:
@@ -39,6 +37,10 @@ jobs:
   linux_rust_tests:
     name: "Linux: Rust tests"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
@@ -82,13 +84,12 @@ jobs:
           export LD_LIBRARY_PATH=$(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
           # Generate a "lcov.info" file which can be uploaded to Codecov
           cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --lcov --output-path lcov.info
-          # Generate an HTML coverage report which can be uploaded to GitHub Pages; note the `--no-clean` means we don't need to re-run tests
-          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --html --output-dir coverage-html --no-clean
+          # Generate an HTML coverage report which can be uploaded to GitHub Pages; note the `--no-clean` means don't remove artifacts (i.e. `lcov.info`). `--no-run` means don't run tests again.
+          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --html --output-dir coverage-html --no-clean --no-run
       - name: Upload code coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: lcov.info
-          token: ${{ secrets.CODECOV_TOKEN }}
       - name: Upload coverage report to Pages artifact
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v3
