@@ -68,7 +68,7 @@ jobs:
 
           # Print cargo tree
           cargo tree --manifest-path rust/Cargo.toml
-          
+
           # Set LD_LIBRARY_PATH so test binaries can find libpython at runtime
           # Python 3.12 from actions/setup-python includes the shared library
           export LD_LIBRARY_PATH=$(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
@@ -82,14 +82,34 @@ jobs:
       - name: Generate code coverage
         run: |
           export LD_LIBRARY_PATH=$(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
-          # Generate a "lcov.info" file which can be uploaded to Codecov
-          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --lcov --output-path lcov.info
-          # Generate an HTML coverage report which can be uploaded to GitHub Pages; note the `--no-clean` means don't remove artifacts (i.e. `lcov.info`). `--no-run` means don't run tests again.
-          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --html --output-dir coverage-html --no-clean --no-run
-      - name: Upload code coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: lcov.info
+          # Generate an HTML coverage report which can be uploaded to GitHub Pages
+          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --html --output-dir coverage-html
+          # Generate JSON summary to extract coverage percentage for a badge; `--no-clean` means don't remove artifacts (i.e. `lcov.info`); `--no-run` means don't run tests again.
+          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --json --output-path coverage.json --no-clean --no-run
+      - name: Generate coverage badge
+        run: |
+          # Extract line coverage percentage from the JSON summary
+          COVERAGE=$(python3.12 -c "import json; data=json.load(open('coverage.json')); print(f'{data[\"data\"][0][\"totals\"][\"lines\"][\"percent\"]:.1f}')")
+          echo "Coverage: ${COVERAGE}%"
+
+          # Choose badge colour based on coverage percentage
+          if python3.12 -c "exit(0 if $COVERAGE >= 80 else 1)"; then
+            COLOR="brightgreen"
+          elif python3.12 -c "exit(0 if $COVERAGE >= 60 else 1)"; then
+            COLOR="yellow"
+          else
+            COLOR="red"
+          fi
+
+          # Write a shields.io endpoint JSON file into the coverage-html directory
+          cat > coverage-html/coverage-badge.json <<EOF
+          {
+            "schemaVersion": 1,
+            "label": "coverage",
+            "message": "${COVERAGE}%",
+            "color": "${COLOR}"
+          }
+          EOF
       - name: Upload coverage report to Pages artifact
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v3
