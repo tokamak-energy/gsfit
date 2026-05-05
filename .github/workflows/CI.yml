@@ -111,12 +111,12 @@ jobs:
           EOF
       - name: Package coverage report into a tarball and upload as `github-pages` artifact
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./coverage-html/html
       - name: Retrieve `github-pages` artifact and deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   linux_build_wheels:
     name: "Linux: Build Python wheels"
