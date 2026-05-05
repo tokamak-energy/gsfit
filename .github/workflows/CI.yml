@@ -90,10 +90,11 @@ jobs:
           COVERAGE=$(python3.12 -c "import json; data=json.load(open('coverage.json')); print(f'{data[\"data\"][0][\"totals\"][\"lines\"][\"percent\"]:.1f}')")
           echo "Coverage: ${COVERAGE}%"
 
-          # Choose badge colour based on coverage percentage
-          if python3.12 -c "exit(0 if $COVERAGE >= 80 else 1)"; then
+          # Choose badge colour based on coverage percentage (truncate to integer for comparison)
+          COV_INT=${COVERAGE%.*}
+          if (( COV_INT >= 80 )); then
             COLOR="brightgreen"
-          elif python3.12 -c "exit(0 if $COVERAGE >= 60 else 1)"; then
+          elif (( COV_INT >= 60 )); then
             COLOR="yellow"
           else
             COLOR="red"
@@ -108,12 +109,12 @@ jobs:
             "color": "${COLOR}"
           }
           EOF
-      - name: Upload coverage report to Pages artifact
+      - name: Package coverage report into a tarball and upload as `github-pages` artifact
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./coverage-html
-      - name: Deploy coverage report to GitHub Pages
+      - name: Retrieve `github-pages` artifact and deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/deploy-pages@v4
 
