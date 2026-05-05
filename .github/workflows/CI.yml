@@ -79,8 +79,8 @@ jobs:
 
           # Run lib tests with coverage instrumentation and generate an HTML report for GitHub Pages
           cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --html --output-dir coverage-html -- --show-output
-          # Generate JSON summary to extract coverage percentage for a badge; `--no-clean` means don't remove artifacts; `--no-run` means don't run tests again
-          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --json --output-path coverage.json --no-clean --no-run
+          # Generate JSON summary to extract coverage percentage for a badge; `report` re-uses the profiling data from the previous run without re-running tests
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --json --output-path coverage.json
 
           # Run doc tests separately (not instrumented for coverage)
           cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
