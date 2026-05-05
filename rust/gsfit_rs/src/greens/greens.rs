@@ -1,7 +1,7 @@
-use ndarray::{Array1, Array2, ShapeBuilder, s};
+use ndarray::{Array1, Array2, s};
+use rayon::prelude::*;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
-use rayon::prelude::*;
 
 /// Greens-function table between "sensors" `(r, z)` and "current sources" `(r_prime, z_prime)`.
 ///
@@ -28,6 +28,16 @@ struct Greens {
 }
 
 impl Greens {
+    /// Create a new Greens object, pre-computing the elliptic integrals.
+    ///
+    /// # Arguments
+    /// * `r` - radial coordinates, by convention used for "sensors", [metre]
+    /// * `z` - vertical coordinates, by convention used for "sensors", same length as `r`, [metre]
+    /// * `r_prime` - radial coordinates, by convention used for "current sources", [metre]
+    /// * `z_prime` - vertical coordinates, by convention used for "current sources", same length as `r_prime`, [metre]
+    ///
+    /// # Returns
+    /// * `greens_calculator` - a Greens object from which we can calculate `g_psi`, `d_g_psi_d_r`, ...
     fn new(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> Self {
         let n_rz: usize = r.len();
         assert!(n_rz == z.len(), "`r` and `z` must have the same length");
@@ -35,7 +45,6 @@ impl Greens {
         assert!(n_rz_prime == z_prime.len(), "`r_prime` and `z_prime` must have the same length");
 
         // Pre-compute the elliptic integrals
-        // Note: Output shape for all methods is (n_rz, n_rz_prime)
         let elliptic_integrals: Vec<(Array1<f64>, Array1<f64>)> = (0..n_rz_prime)
             .into_par_iter()
             .map(|i_rz_prime: usize| {
@@ -51,8 +60,7 @@ impl Greens {
             })
             .collect();
 
-        // Stitch per-filament columns into (n_rz, n_rz_prime) tables, matching the
-        // `[(i_rz, i_rz_prime)]` convention used elsewhere in this module.
+        // Convert to Array2<f64>, with shape = (n_rz, n_rz_prime)
         let mut elliptic_integral_e: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
         let mut elliptic_integral_k: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
         for i_rz_prime in 0..n_rz_prime {
@@ -60,7 +68,14 @@ impl Greens {
             elliptic_integral_k.slice_mut(s![.., i_rz_prime]).assign(&elliptic_integrals[i_rz_prime].1);
         }
 
-        Greens { r, z, r_prime, z_prime, elliptic_integral_e, elliptic_integral_k }
+        Greens {
+            r,
+            z,
+            r_prime,
+            z_prime,
+            elliptic_integral_e,
+            elliptic_integral_k,
+        }
     }
 
     fn psi(&self) -> Array2<f64> {
