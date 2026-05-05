@@ -101,7 +101,7 @@ jobs:
           fi
 
           # Write a shields.io endpoint JSON file into the coverage-html directory
-          cat > coverage-html/coverage-badge.json <<EOF
+          cat > coverage-html/html/coverage-badge.json <<EOF
           {
             "schemaVersion": 1,
             "label": "coverage",
@@ -113,7 +113,7 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./coverage-html
+          path: ./coverage-html/html
       - name: Retrieve `github-pages` artifact and deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/deploy-pages@v4
