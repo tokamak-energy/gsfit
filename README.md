@@ -5,9 +5,9 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) 
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
-[![Coverage (Rust)](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/coverage_from_rust_tests/coverage-badge.json)](https://tokamak-energy.github.io/gsfit/coverage_from_rust_tests/)
-[![Coverage (Python)](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/coverage_from_python_tests/coverage-badge.json)](https://tokamak-energy.github.io/gsfit/coverage_from_python_tests/)
-[![Coverage (Rust + Python)](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/coverage_from_rust_python_tests/coverage-badge.json)](https://tokamak-energy.github.io/gsfit/coverage_from_rust_python_tests/)
+[![Coverage (Rust)](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/coverage_from_rust_tests/coverage-badge.json)](https://tokamak-energy.github.io/gsfit/coverage_from_rust_tests/html/)
+[![Coverage (Python)](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/coverage_from_python_tests/coverage-badge.json)](https://tokamak-energy.github.io/gsfit/coverage_from_python_tests/html/)
+[![Coverage (Rust + Python)](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/coverage_from_rust_python_tests/coverage-badge.json)](https://tokamak-energy.github.io/gsfit/coverage_from_rust_python_tests/html/)
 
 GSFit is a modern tokamak equilibrium reconstruction tool for post-shot experimental analysis and scientific interpretation.
 Developed by Tokamak Energy Ltd. for use on ST40, the world's highest field spherical tokamak.
