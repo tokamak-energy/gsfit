@@ -78,7 +78,7 @@ jobs:
           ls -la $(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')/libpython* || true
           # Run tests
           # cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib -- --show-output
-          # cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
+          cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
       - name: Clone FreeGSNKE repository
         run: |
           mkdir -p ~/github
