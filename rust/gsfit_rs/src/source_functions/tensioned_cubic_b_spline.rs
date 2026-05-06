@@ -844,16 +844,34 @@ fn test_source_function_integral() {
     use ndarray::{Array1, Array2, array};
 
     // Setup with 2 interior knots
+    //
+    //   n_knots             = n_interior_knots + 8 = 10
+    //   n_interval_tensions = n_interior_knots + 1 = 3
+    //   n_dof               = n_interior_knots + 4 = 6
+    //
+    //   Full knot vector:   [0, 0, 0, 0,   0.4,   0.7,   1, 1, 1, 1]
+    //                        ╰─clamped─╯                 ╰─clamped─╯
+    //
+    //   psi_n values:   [0.0,0.4] [0.4,0.7] [0.7,1]
+    //                       ↓         ↓         ↓
+    //   Tension:         [ 1.0,      1.0,      1.0 ]
+    //
+    //   Spline DOFs:     [1.234, 2.345,   3.456, 4.567,   5.678, 6.789]
+    //                    ╰─endpoints─╯  ╰─interior DOFs─╯ ╰─endpoints─╯
+    //
+    // The first two and last two DOFs control behaviour at the boundaries (psi_n = 0, 1).
+
+    // Setup with 2 interior knots
     #[rustfmt::skip]
-    //                                          (0.0 to 0.4)    (0.4 to 0.7)    (0.7 to 1.0)
-    let interior_knots:    Array1<f64> = array![                 0.4,   0.7                 ];
+    //                      full_knot_vector = [  0.0,   0.0,         0.4,         0.7,         1.0,   1.0]
+    let interior_knots: Array1<f64>    = array![                      0.4,         0.7                    ];
     #[rustfmt::skip]
-    //                                          (0.0 to 0.4)    (0.4 to 0.7)    (0.7 to 1.0)
-    let interval_tensions: Array1<f64> = array![     1.0,            1.0,            1.0    ];
+    //                     tension_intervals =               (0.0→0.4)    (0.4→0.7)    (0.7→1.0)
+    let interval_tensions: Array1<f64> = array![                1.0,         1.0,          1.0            ];
     #[rustfmt::skip]
-    //                                          (0.0 to 0.4)    (0.4 to 0.7)    (0.7 to 1.0)
-    let spline_dof:        Array1<f64> = array![1.234, 2.345,   3.456, 4.567,   5.678, 6.789];
-    //                                          ╰─endpoints─╯ ╰─interior DOFs─╯ ╰─endpoints─╯
+    //                                 psi_n = [  0.0,   0.0,         0.4,         0.7,         1.0,   1.0]
+    let spline_dof: Array1<f64>        = array![1.234, 2.345,       3.456,       4.567,       5.678, 6.789];
+    //                                          ╰─endpoints─╯       ╰──interior DOFs──╯       ╰─endpoints─╯
     // The first two and last two DOFs control behaviour at the boundaries (psi_n = 0, 1).
 
     let n_dof: usize = interior_knots.len() + 4;
