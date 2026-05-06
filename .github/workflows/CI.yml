@@ -95,6 +95,13 @@ jobs:
           # This sets RUSTFLAGS="-C instrument-coverage ..." and LLVM_PROFILE_FILE
           # so that any Rust code compiled and executed produces .profraw coverage data
           source <(cargo llvm-cov show-env --sh --no-cfg-coverage --manifest-path rust/Cargo.toml)
+
+          # Redirect CARGO_TARGET_DIR so that maturin develop builds the .so into
+          # the same target directory that cargo llvm-cov report searches.
+          # Without this, the .so lands elsewhere and report can't find it.
+          export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
+          export CARGO_INCREMENTAL=1
+
           cargo llvm-cov clean --workspace --manifest-path rust/Cargo.toml
 
           # Determine the directory where .profraw files are written
@@ -117,24 +124,21 @@ jobs:
           # ===================================================================
           # Report 2: Python-only coverage (coverage_from_python_tests)
           # ===================================================================
+          # A good example of how to do Rust coverage from Python tests is:
+          # ** https://github.com/cjermain/rust-python-coverage **
           # Build an instrumented Python extension (.so) via maturin and install with extras
-          # Note: omit --release for faster builds; coverage data is still valid in debug mode
           python3.12 -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip maturin
           maturin develop -E dev,with_freegs_and_freegsnke
-
-          # Locate the instrumented .so so cargo llvm-cov report can map .profraw data to source lines
-          GSFIT_SO=$(python -c "import gsfit_rs; print(gsfit_rs.__file__)")
-          echo "Instrumented .so: $GSFIT_SO"
 
           # Run the MAST-U FreeGSNKE notebook; the instrumented .so writes .profraw data
           pip uninstall -y pytest-xdist
           jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
           python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
 
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_python_tests --object "$GSFIT_SO"
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json --object "$GSFIT_SO"
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_python_tests
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json
 
           # Back up the Python .profraw files before merging with Rust ones
           mkdir -p /tmp/python_profraw
@@ -145,9 +149,9 @@ jobs:
           # ===================================================================
           # Restore Rust .profraw files alongside the Python ones
           cp /tmp/rust_profraw/*.profraw "$PROFRAW_DIR"/
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_python_tests --object "$GSFIT_SO"
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_python_tests
           # Generate JSON summary from the combined data for the coverage badge
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage.json --object "$GSFIT_SO"
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage.json
       - name: Generate coverage badges
         run: |
           # Helper function: extract coverage % from a JSON file and write a shields.io badge JSON
