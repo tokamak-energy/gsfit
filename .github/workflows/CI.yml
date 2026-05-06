@@ -124,13 +124,17 @@ jobs:
           pip install --upgrade pip maturin
           maturin develop -E dev,with_freegs_and_freegsnke
 
+          # Locate the instrumented .so so cargo llvm-cov report can map .profraw data to source lines
+          GSFIT_SO=$(python -c "import gsfit_rs; print(gsfit_rs.__file__)")
+          echo "Instrumented .so: $GSFIT_SO"
+
           # Run the MAST-U FreeGSNKE notebook; the instrumented .so writes .profraw data
           pip uninstall -y pytest-xdist
           jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
           python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
 
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_python_tests
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_python_tests --object "$GSFIT_SO"
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json --object "$GSFIT_SO"
 
           # Back up the Python .profraw files before merging with Rust ones
           mkdir -p /tmp/python_profraw
@@ -141,9 +145,9 @@ jobs:
           # ===================================================================
           # Restore Rust .profraw files alongside the Python ones
           cp /tmp/rust_profraw/*.profraw "$PROFRAW_DIR"/
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_python_tests
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_python_tests --object "$GSFIT_SO"
           # Generate JSON summary from the combined data for the coverage badge
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage.json
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage.json --object "$GSFIT_SO"
       - name: Generate coverage badges
         run: |
           # Helper function: extract coverage % from a JSON file and write a shields.io badge JSON
@@ -180,12 +184,11 @@ jobs:
           generate_badge "coverage.json"         "pages/coverage_from_rust_python_tests/coverage-badge.json"  "coverage (rust + python)"
 
       - name: Upload coverage report to Pages artifact
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v5
         with:
           path: ./pages
       - name: Deploy coverage report to GitHub Pages
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         uses: actions/deploy-pages@v5
 
   linux_build_wheels:
