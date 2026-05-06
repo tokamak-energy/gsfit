@@ -32,17 +32,89 @@ pub struct TensionedCubicBSpline {
 impl TensionedCubicBSpline {
     /// Create a new TensionedCubicBSpline
     #[new]
-    pub fn new(regularisations: PyReadonlyArray2<f64>, interior_knots: PyReadonlyArray1<f64>, interval_tensions: PyReadonlyArray1<f64>) -> Self {
+    pub fn new_py(regularisations: PyReadonlyArray2<f64>, interior_knots: PyReadonlyArray1<f64>, interval_tensions: PyReadonlyArray1<f64>) -> Self {
         // Change Python types into Rust types
         let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
         let interior_knots_ndarray: Array1<f64> = interior_knots.to_owned_array();
         let interval_tensions_ndarray: Array1<f64> = interval_tensions.to_owned_array();
 
-        let n_dof: usize = regularisations_ndarray.ncols();
-        let n_knots: usize = interior_knots_ndarray.len() + 8;
+        // Call the Rust constructor
+        TensionedCubicBSpline::new(regularisations_ndarray, interior_knots_ndarray, interval_tensions_ndarray)
+    }
+
+    /// Print to screen, to be used within Python
+    fn __repr__(&self) -> String {
+        let version: &str = env!("CARGO_PKG_VERSION");
+
+        let mut string_output = String::from("╔═════════════════════════════════════════════════════════════════════════════╗\n");
+        string_output += &format!("║ {:<75} ║\n", " <gsfit_rs.TensionedCubicBSpline>");
+        string_output += &format!("║  {:<74} ║\n", version);
+
+        let n_dof: usize = self.n_dof;
+        string_output += &format!("║ {:<75} ║\n", format!(" n_dof = {}", n_dof.to_string()));
+
+        string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
+
+        string_output
+    }
+
+    pub fn phi2_python(&self, j_index: usize, x_val: f64) -> f64 {
+        self.phi2(j_index, x_val)
+    }
+
+    pub fn psi2_python(&self, j_index: usize, x_val: f64) -> f64 {
+        self.psi2(j_index, x_val)
+    }
+
+    pub fn gamma4_python(&self, x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
+        TensionedCubicBSpline::gamma4(x_val, rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
+    }
+
+    pub fn gamma3_python(&self, x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
+        TensionedCubicBSpline::gamma3(x_val, rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
+    }
+
+    pub fn gamma2_python(&self, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
+        TensionedCubicBSpline::gamma2(rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
+    }
+
+    pub fn source_function_value_single_dof_python(&self, psi_n: f64, i_dof: usize) -> f64 {
+        // convert single value to array of length 1 to reuse existing function
+        let psi_n_array: Array1<f64> = Array1::from_elem(1, psi_n);
+        self.source_function_value_single_dof(&psi_n_array, i_dof)[0]
+    }
+
+    pub fn source_function_integral_single_dof_python(&self, psi_n: f64, i_dof: usize) -> f64 {
+        // convert single value to array of length 1 to reuse existing function
+        let psi_n_array: Array1<f64> = Array1::from_elem(1, psi_n);
+        self.source_function_integral_single_dof(&psi_n_array, i_dof)[0]
+    }
+
+    pub fn get_array1<'py>(&self, py: Python<'py>, name: &str) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        match name {
+            "interior_knots" => Ok(PyArray1::from_array(py, &self.interior_knots)),
+            "knots" => Ok(PyArray1::from_array(py, &self.knots)),
+            "interval_tensions" => Ok(PyArray1::from_array(py, &self.interval_tensions)),
+            "tensions" => Ok(PyArray1::from_array(py, &self.tensions)),
+            "delta_knots" => Ok(PyArray1::from_array(py, &self.delta_knots)),
+            "gamma2_array" => Ok(PyArray1::from_array(py, &self.gamma2_array)),
+            "gamma3_array" => Ok(PyArray1::from_array(py, &self.gamma3_array)),
+            "gamma4_array" => Ok(PyArray1::from_array(py, &self.gamma4_array)),
+            "sigma1_array" => Ok(PyArray1::from_array(py, &self.sigma1_array)),
+            "sigma2_array" => Ok(PyArray1::from_array(py, &self.sigma2_array)),
+            "tstar_array" => Ok(PyArray1::from_array(py, &self.tstar_array)),
+            _ => Err(PyValueError::new_err(format!("Unknown Array1 attribute: {}", name))),
+        }
+    }
+}
+
+impl TensionedCubicBSpline {
+    pub fn new(regularisations: Array2<f64>, interior_knots: Array1<f64>, interval_tensions: Array1<f64>) -> Self {
+        let n_dof: usize = regularisations.ncols();
+        let n_knots: usize = interior_knots.len() + 8;
         let mut knots: Array1<f64> = Array1::from_elem(n_knots, f64::NAN);
         knots.slice_mut(s![0..4]).fill(0.0);
-        knots.slice_mut(s![4..(n_knots - 4)]).assign(&interior_knots_ndarray);
+        knots.slice_mut(s![4..(n_knots - 4)]).assign(&interior_knots);
         knots.slice_mut(s![(n_knots - 4)..n_knots]).fill(1.0);
         let knots: Array1<f64> = knots;
 
@@ -54,7 +126,7 @@ impl TensionedCubicBSpline {
 
         let mut tensions: Array1<f64> = Array1::from_elem(n_knots - 1, f64::NAN);
         tensions.slice_mut(s![0..3]).fill(0.0);
-        tensions.slice_mut(s![3..(n_knots - 4)]).assign(&interval_tensions_ndarray);
+        tensions.slice_mut(s![3..(n_knots - 4)]).assign(&interval_tensions);
         tensions.slice_mut(s![(n_knots - 4)..(n_knots - 1)]).fill(0.0);
         let tensions: Array1<f64> = tensions;
 
@@ -150,10 +222,10 @@ impl TensionedCubicBSpline {
         // Create the struct
         TensionedCubicBSpline {
             n_dof,
-            regularisations: regularisations_ndarray,
-            interior_knots: interior_knots_ndarray,
+            regularisations,
+            interior_knots,
             knots,
-            interval_tensions: interval_tensions_ndarray,
+            interval_tensions,
             hyperbolic_upper_cutoff,
             hyperbolic_lower_cutoff,
             delta_cutoff,
@@ -168,73 +240,6 @@ impl TensionedCubicBSpline {
         }
     }
 
-    /// Print to screen, to be used within Python
-    fn __repr__(&self) -> String {
-        let version: &str = env!("CARGO_PKG_VERSION");
-
-        let mut string_output = String::from("╔═════════════════════════════════════════════════════════════════════════════╗\n");
-        string_output += &format!("║ {:<75} ║\n", " <gsfit_rs.TensionedCubicBSpline>");
-        string_output += &format!("║  {:<74} ║\n", version);
-
-        let n_dof: usize = self.n_dof;
-        string_output += &format!("║ {:<75} ║\n", format!(" n_dof = {}", n_dof.to_string()));
-
-        string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
-
-        string_output
-    }
-
-    pub fn phi2_python(&self, j_index: usize, x_val: f64) -> f64 {
-        self.phi2(j_index, x_val)
-    }
-
-    pub fn psi2_python(&self, j_index: usize, x_val: f64) -> f64 {
-        self.psi2(j_index, x_val)
-    }
-
-    pub fn gamma4_python(&self, x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
-        TensionedCubicBSpline::gamma4(x_val, rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
-    }
-
-    pub fn gamma3_python(&self, x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
-        TensionedCubicBSpline::gamma3(x_val, rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
-    }
-
-    pub fn gamma2_python(&self, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
-        TensionedCubicBSpline::gamma2(rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
-    }
-
-    pub fn source_function_value_single_dof_python(&self, psi_n: f64, i_dof: usize) -> f64 {
-        // convert single value to array of length 1 to reuse existing function
-        let psi_n_array: Array1<f64> = Array1::from_elem(1, psi_n);
-        self.source_function_value_single_dof(&psi_n_array, i_dof)[0]
-    }
-
-    pub fn source_function_integral_single_dof_python(&self, psi_n: f64, i_dof: usize) -> f64 {
-        // convert single value to array of length 1 to reuse existing function
-        let psi_n_array: Array1<f64> = Array1::from_elem(1, psi_n);
-        self.source_function_integral_single_dof(&psi_n_array, i_dof)[0]
-    }
-
-    pub fn get_array1<'py>(&self, py: Python<'py>, name: &str) -> PyResult<Bound<'py, PyArray1<f64>>> {
-        match name {
-            "interior_knots" => Ok(PyArray1::from_array(py, &self.interior_knots)),
-            "knots" => Ok(PyArray1::from_array(py, &self.knots)),
-            "interval_tensions" => Ok(PyArray1::from_array(py, &self.interval_tensions)),
-            "tensions" => Ok(PyArray1::from_array(py, &self.tensions)),
-            "delta_knots" => Ok(PyArray1::from_array(py, &self.delta_knots)),
-            "gamma2_array" => Ok(PyArray1::from_array(py, &self.gamma2_array)),
-            "gamma3_array" => Ok(PyArray1::from_array(py, &self.gamma3_array)),
-            "gamma4_array" => Ok(PyArray1::from_array(py, &self.gamma4_array)),
-            "sigma1_array" => Ok(PyArray1::from_array(py, &self.sigma1_array)),
-            "sigma2_array" => Ok(PyArray1::from_array(py, &self.sigma2_array)),
-            "tstar_array" => Ok(PyArray1::from_array(py, &self.tstar_array)),
-            _ => Err(PyValueError::new_err(format!("Unknown Array1 attribute: {}", name))),
-        }
-    }
-}
-
-impl TensionedCubicBSpline {
     // This is Equation (2.1) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
     // Note that we have added extra checks to avoid overflow and numerical precision issues
     fn gamma3(x_val: f64, rho: f64, delta: f64, hyperbolic_upper_cutoff: f64, hyperbolic_lower_cutoff: f64, delta_cutoff: f64) -> f64 {
@@ -829,4 +834,86 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
 
         n_dof
     }
+}
+
+/// Test that source_function_integral is consistent with numerical integration of source_function_value
+/// using the trapezoidal rule, and that it returns zero at psi_n = 1.0.
+#[test]
+fn test_source_function_integral() {
+    use approx::assert_abs_diff_eq;
+    use ndarray::{array, Array1, Array2};
+
+    // Setup with 2 interior knots
+    //
+    //   n_knots             = n_interior_knots + 8 = 10
+    //   n_interval_tensions = n_interior_knots + 1 = 3
+    //   n_dof               = n_interior_knots + 4 = 6
+    //
+    //   Full knot vector:   [0, 0, 0, 0,   0.4,   0.7,   1, 1, 1, 1]
+    //                        ╰─clamped─╯                 ╰─clamped─╯
+    //
+    //   psi_n values:   [0.0,0.4] [0.4,0.7] [0.7,1]
+    //                       ↓         ↓         ↓
+    //   Tension:         [ 1.0,      1.0,      1.0 ]
+    //
+    //   Spline DOFs:     [1.234, 2.345,   3.456, 4.567,   5.678, 6.789]
+    //                    ╰─endpoints─╯  ╰─interior DOFs─╯ ╰─endpoints─╯
+    //
+    // The first two and last two DOFs control behaviour at the boundaries (psi_n = 0, 1).
+
+    #[rustfmt::skip]
+    let interior_knots:    Array1<f64> = array![                     0.4,      0.7                     ];
+    #[rustfmt::skip]
+    let interval_tensions: Array1<f64> = array![                1.0,      1.0,      1.0                ];
+    #[rustfmt::skip]
+    let spline_dof:        Array1<f64> = array![1.234,    2.345,    3.456,    4.567,    5.678,    6.789];
+
+    let n_dof: usize = interior_knots.len() + 4;
+
+    // `regularisations` is used within `gs_solution` to calculate `spline_dof` values.
+    // Since we are supplying our own `spline_dof` values, `regularisations` has no effect, so can be set to NaN
+    let regularisations: Array2<f64> = Array2::from_elem((n_dof, n_dof), f64::NAN);
+
+    let spline: TensionedCubicBSpline = TensionedCubicBSpline::new(regularisations, interior_knots, interval_tensions);
+
+    // Test 1: `source_function_integral` should be zero at `psi_n = 1.0`
+    let psi_n_boundary: Array1<f64> = array![1.0];
+    let integral_at_boundary: Array1<f64> = spline.source_function_integral(&psi_n_boundary, &spline_dof);
+    assert_abs_diff_eq!(integral_at_boundary[0], 0.0, epsilon = 1e-12);
+
+    // Test 2: Verify that the numerical derivative of `source_function_integral` equals `source_function_value`
+    // using finite differences: d/dx integral(x) ≈ (integral(x + h) - integral(x - h)) / (2h)
+    let n_test: usize = 50;
+    let psi_n_test: Array1<f64> = Array1::linspace(0.05, 0.95, n_test);
+    let value: Array1<f64> = spline.source_function_value(&psi_n_test, &spline_dof);
+
+    let delta_psi_n: f64 = 1e-7;
+    let mut psi_n_plus: Array1<f64> = Array1::from_elem(1, f64::NAN);
+    let mut psi_n_minus: Array1<f64> = Array1::from_elem(1, f64::NAN);
+    for i_test in 0..n_test {
+        psi_n_plus[0] = psi_n_test[i_test] + delta_psi_n;
+        psi_n_minus[0] = psi_n_test[i_test] - delta_psi_n;
+        let integral_plus: Array1<f64> = spline.source_function_integral(&psi_n_plus, &spline_dof);
+        let integral_minus: Array1<f64> = spline.source_function_integral(&psi_n_minus, &spline_dof);
+        let numerical_derivative: f64 = (integral_plus[0] - integral_minus[0]) / (2.0 * delta_psi_n);
+        assert_abs_diff_eq!(numerical_derivative, value[i_test], epsilon = 1e-5);
+    }
+
+    // Test 3: Verify that `source_function_integral` matches numerical trapezoidal integration of `source_function_value`
+    // Integrate from 1.0 to psi_n using the trapezoidal rule with a fine grid
+    let n_trap: usize = 100_000;
+    let psi_n_eval: f64 = 0.3;
+    let trap_grid: Array1<f64> = Array1::linspace(psi_n_eval, 1.0, n_trap);
+    let trap_values: Array1<f64> = spline.source_function_value(&trap_grid, &spline_dof);
+    let d_psi: f64 = (1.0 - psi_n_eval) / (n_trap as f64 - 1.0);
+    let mut trap_integral: f64 = 0.0;
+    for i_trap in 0..n_trap - 1 {
+        trap_integral += 0.5 * (trap_values[i_trap] + trap_values[i_trap + 1]) * d_psi;
+    }
+    // `source_function_integral` integrates from 1 to psi_n, so the sign is flipped relative to integrating from psi_n to 1
+    let trap_integral: f64 = -trap_integral;
+
+    let psi_n_single: Array1<f64> = array![psi_n_eval];
+    let analytic_integral: Array1<f64> = spline.source_function_integral(&psi_n_single, &spline_dof);
+    assert_abs_diff_eq!(analytic_integral[0], trap_integral, epsilon = 1e-6);
 }
