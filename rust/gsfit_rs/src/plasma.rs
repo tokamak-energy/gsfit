@@ -117,8 +117,10 @@ impl Plasma {
                             delta_knots: cubic_bspline.delta_knots.clone(),
                             gamma2_array: cubic_bspline.gamma2_array.clone(),
                             gamma3_array: cubic_bspline.gamma3_array.clone(),
+                            gamma4_array: cubic_bspline.gamma4_array.clone(),
                             sigma1_array: cubic_bspline.sigma1_array.clone(),
                             sigma2_array: cubic_bspline.sigma2_array.clone(),
+                            tstar_array: cubic_bspline.tstar_array.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("p_prime_source_function must implement SourceFunctionTraits");
@@ -157,8 +159,10 @@ impl Plasma {
                             delta_knots: cubic_bspline.delta_knots.clone(),
                             gamma2_array: cubic_bspline.gamma2_array.clone(),
                             gamma3_array: cubic_bspline.gamma3_array.clone(),
+                            gamma4_array: cubic_bspline.gamma4_array.clone(),
                             sigma1_array: cubic_bspline.sigma1_array.clone(),
                             sigma2_array: cubic_bspline.sigma2_array.clone(),
+                            tstar_array: cubic_bspline.tstar_array.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else {
                         panic!("ff_prime_source_function must implement SourceFunctionTraits");
