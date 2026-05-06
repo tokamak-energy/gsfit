@@ -98,8 +98,8 @@ jobs:
 
           # Redirect CARGO_TARGET_DIR so that maturin develop builds the .so into
           # the same target directory that cargo llvm-cov report searches.
-          # Without this, the .so lands elsewhere and report can't find it.
-          export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
+          # cargo llvm-cov internally builds into $CARGO_LLVM_COV_TARGET_DIR/llvm-cov-target/
+          export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR/llvm-cov-target
           export CARGO_INCREMENTAL=1
 
           cargo llvm-cov clean --workspace --manifest-path rust/Cargo.toml
