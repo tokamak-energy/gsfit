@@ -177,7 +177,7 @@ impl TensionedCubicBSpline {
         let gamma3_array: Array1<f64> = gamma3_array;
         let gamma2_array: Array1<f64> = gamma2_array;
         let gamma4_array: Array1<f64> = gamma4_array;
-        // sigma1 calculated using equation just above Equation (2.7) in P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993) 
+        // sigma1 calculated using equation just above Equation (2.7) in P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
         let mut sigma1_array: Array1<f64> = Array1::from_elem(n_knots - 2, f64::NAN);
         for i in 0..n_knots - 2 {
             if knots[i + 2] - knots[i] < delta_cutoff {
@@ -214,7 +214,7 @@ impl TensionedCubicBSpline {
                 // } else {
                 //     knots[i + 2]
                 // };
-                sigma2_array[i] = tstar_array[i+2] - tstar_array[i+1];
+                sigma2_array[i] = tstar_array[i + 2] - tstar_array[i + 1];
             }
         }
         let sigma2_array: Array1<f64> = sigma2_array;
@@ -520,7 +520,7 @@ impl TensionedCubicBSpline {
         gamma4_x_m_tj / (sigma1_j * sigma2_j)
     }
 
-    // Evaluates phi2_antiderivative_seg1 at x = t_{j+1} by using arrays precomputed in the constructor to avoid doing redundant calculations. 
+    // Evaluates phi2_antiderivative_seg1 at x = t_{j+1} by using arrays precomputed in the constructor to avoid doing redundant calculations.
     fn phi2_antiderivative_seg1_at_tjp(&self, j_index: usize) -> f64 {
         assert!(j_index <= self.n_dof, "j_index for phi2 out of bounds");
         let sigma1_j: f64 = self.sigma1_array[j_index];
@@ -812,7 +812,7 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
 
         // Alex Prok: Don't need to find the constant of integration as we take integral from 1 to psi_n
         // in source_function_integral_single_dof which ensures that the integral is zero at psi_n = 1.
-        // Hence we can just return the integral calculated above without adding any constant of integration. 
+        // Hence we can just return the integral calculated above without adding any constant of integration.
         // // Find the constant of integration
         // let psi_n_at_boundary: Array1<f64> = Array1::from_vec(vec![1.0]);
         // let mut integral_at_boundary: f64 = 0.0;
@@ -841,7 +841,7 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
 #[test]
 fn test_source_function_integral() {
     use approx::assert_abs_diff_eq;
-    use ndarray::{array, Array1, Array2};
+    use ndarray::{Array1, Array2, array};
 
     // Setup with 2 interior knots
     //
