@@ -856,10 +856,12 @@ fn test_source_function_integral() {
     //                       ↓         ↓         ↓
     //   Tension:         [ 1.0,      1.0,      1.0 ]
     //
-    //   Spline DOFs:     [1.234, 2.345,   3.456, 4.567,   5.678, 6.789]
-    //                    ╰─endpoints─╯  ╰─interior DOFs─╯ ╰─endpoints─╯
-    //
-    // The first two and last two DOFs control behaviour at the boundaries (psi_n = 0, 1).
+    //   Spline DOFs:     spline_dof[0] -> corresponds to knots [0, 0, 0, 0, 0.4]
+    //                    spline_dof[1] -> corresponds to knots [0, 0, 0, 0.4, 0.7]
+    //                    spline_dof[2] -> corresponds to knots [0, 0, 0.4, 0.7, 1.0]
+    //                    spline_dof[3] -> corresponds to knots [0, 0.4, 0.7, 1.0, 1.0]
+    //                    spline_dof[4] -> corresponds to knots [0.4, 0.7, 1.0, 1.0, 1.0]
+    //                    spline_dof[5] -> corresponds to knots [0.7, 1.0, 1.0, 1.0, 1.0]
 
     // Setup with 2 interior knots
     #[rustfmt::skip]
@@ -869,10 +871,9 @@ fn test_source_function_integral() {
     //                     tension_intervals =               (0.0→0.4)    (0.4→0.7)    (0.7→1.0)
     let interval_tensions: Array1<f64> = array![                1.0,         1.0,          1.0            ];
     #[rustfmt::skip]
-    //                                 psi_n = [  0.0,   0.0,         0.4,         0.7,         1.0,   1.0]
-    let spline_dof: Array1<f64>        = array![1.234, 2.345,       3.456,       4.567,       5.678, 6.789];
-    //                                          ╰─endpoints─╯       ╰──interior DOFs──╯       ╰─endpoints─╯
-    // The first two and last two DOFs control behaviour at the boundaries (psi_n = 0, 1).
+
+    // Set Spline DOF to arbitrary values.
+    let spline_dof: Array1<f64> = array![1.234, 2.345, 3.456, 4.567, 5.678, 6.789];
 
     let n_dof: usize = interior_knots.len() + 4;
 
