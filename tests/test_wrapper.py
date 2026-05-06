@@ -21,24 +21,13 @@ Typical CI workflow::
 
     jupyter nbconvert --to script examples/my_notebook.ipynb
     python -m pytest -s tests/test_wrapper.py --script examples/my_notebook.py
+
+Note: The ``--script`` option and parametrisation hooks live in
+``tests/conftest.py`` so that pytest registers them before argument parsing.
 """
 
 import runpy
 from pathlib import Path
-
-import pytest
-
-
-def pytest_addoption(parser: pytest.Parser) -> None:
-    """Register the ``--script`` command-line option with pytest."""
-    parser.addoption("--script", action="append", default=[], help="Path(s) to script(s) to run as tests")
-
-
-def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
-    """Parametrise ``test_script`` once per ``--script`` path provided."""
-    if "script" in metafunc.fixturenames:
-        scripts = metafunc.config.getoption("script")
-        metafunc.parametrize("script", scripts, ids=[Path(s).stem for s in scripts])
 
 
 def test_script(script: str) -> None:
