@@ -862,11 +862,13 @@ fn test_source_function_integral() {
     // The first two and last two DOFs control behaviour at the boundaries (psi_n = 0, 1).
 
     #[rustfmt::skip]
-    let interior_knots:    Array1<f64> = array![                     0.4,      0.7                     ];
+    let interior_knots:    Array1<f64> = array![                  0.4,      0.7                     ];
     #[rustfmt::skip]
-    let interval_tensions: Array1<f64> = array![                1.0,      1.0,      1.0                ];
+    //                                               (0.0 to 0.4)  (0.4 to 0.7)  (0.7 to 1.0)
+    let interval_tensions: Array1<f64> = array![             1.0,      1.0,      1.0                ];
     #[rustfmt::skip]
-    let spline_dof:        Array1<f64> = array![1.234,    2.345,    3.456,    4.567,    5.678,    6.789];
+    //                                          (0.0 to 0.4)      (0.4 to 0.7)    (0.7 to 1.0)
+    let spline_dof:        Array1<f64> = array![1.234, 2.345,     3.456, 4.567,   5.678, 6.789];
 
     let n_dof: usize = interior_knots.len() + 4;
 
