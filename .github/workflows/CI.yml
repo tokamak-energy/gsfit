@@ -94,12 +94,8 @@ jobs:
           # Set up LLVM coverage instrumentation environment
           # This sets RUSTFLAGS="-C instrument-coverage ..." and LLVM_PROFILE_FILE
           # so that any Rust code compiled and executed produces .profraw coverage data
-          source <(cargo llvm-cov show-env --sh --no-cfg-coverage --manifest-path rust/Cargo.toml)
-
-          # Redirect CARGO_TARGET_DIR so that maturin develop builds the .so into
-          # the same target directory that cargo llvm-cov report searches.
-          # cargo llvm-cov internally builds into $CARGO_LLVM_COV_TARGET_DIR/llvm-cov-target/
-          export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR/llvm-cov-target
+          source <(cargo llvm-cov show-env --export-prefix --manifest-path rust/Cargo.toml)
+          export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
           export CARGO_INCREMENTAL=1
 
           cargo llvm-cov clean --workspace --manifest-path rust/Cargo.toml
