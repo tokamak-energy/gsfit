@@ -107,7 +107,7 @@ jobs:
           # Run instrumented Rust tests (use plain cargo test since env vars from show-env handle instrumentation)
           cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib
           cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_tests
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_rust.json --no-clean
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_rust.json
 
           # Back up the Rust .profraw files, then clear them so the Python run starts clean
           mkdir -p /tmp/rust_profraw
@@ -130,7 +130,7 @@ jobs:
           python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
 
           cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_python_tests
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json --no-clean
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json
 
           # Back up the Python .profraw files before merging with Rust ones
           mkdir -p /tmp/python_profraw
@@ -143,7 +143,7 @@ jobs:
           cp /tmp/rust_profraw/*.profraw "$PROFRAW_DIR"/
           cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_python_tests
           # Generate JSON summary from the combined data for the coverage badge
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage.json --no-clean
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage.json
       - name: Generate coverage badges
         run: |
           # Helper function: extract coverage % from a JSON file and write a shields.io badge JSON
