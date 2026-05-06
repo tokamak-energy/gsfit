@@ -60,7 +60,7 @@ jobs:
           apt-cache search libpython
           # In ubuntu-latest, only `libpython3.12-dev` is available
           sudo apt-get install -y libopenblas-dev libpython3.12-dev
-      - name: Run Rust tests and generate code coverage
+      - name: Run Rust tests
         run: |
           # Update Rust and print version
           rustup update
@@ -76,45 +76,110 @@ jobs:
           python3.12 --version
           echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
           ls -la $(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')/libpython* || true
-
-          # Run lib tests with coverage instrumentation and generate an HTML report for GitHub Pages
-          cargo llvm-cov --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib --html --output-dir coverage-html -- --show-output
-          # Generate JSON summary to extract coverage percentage for a badge; `report` re-uses the profiling data from the previous run without re-running tests
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage.json
-
-          # Run doc tests separately (not instrumented for coverage)
+          # Run tests
+          # cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib -- --show-output
           cargo test --doc --manifest-path rust/Cargo.toml -- --show-output
-      - name: Generate coverage badge
+      - name: Clone FreeGSNKE repository
         run: |
-          # Extract line coverage percentage from the JSON summary
-          COVERAGE=$(python3.12 -c "import json; data=json.load(open('coverage.json')); print(f'{data[\"data\"][0][\"totals\"][\"lines\"][\"percent\"]:.1f}')")
-          echo "Coverage: ${COVERAGE}%"
+          mkdir -p ~/github
+          git clone https://github.com/FusionComputingLab/freegsnke.git ~/github/freegsnke
+      - name: Generate code coverage (Rust unit tests + Python integration tests)
+        run: |
+          export LD_LIBRARY_PATH=$(python3.12 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH
 
-          # Choose badge colour based on coverage percentage (truncate to integer for comparison)
-          COV_INT=${COVERAGE%.*}
-          if (( COV_INT >= 80 )); then
-            COLOR="brightgreen"
-          elif (( COV_INT >= 60 )); then
-            COLOR="yellow"
-          else
-            COLOR="red"
-          fi
+          # Set up LLVM coverage instrumentation environment
+          # This sets RUSTFLAGS="-C instrument-coverage ..." and LLVM_PROFILE_FILE
+          # so that any Rust code compiled and executed produces .profraw coverage data
+          source <(cargo llvm-cov show-env --export-prefix --manifest-path rust/Cargo.toml)
+          cargo llvm-cov clean --workspace --manifest-path rust/Cargo.toml
 
-          # Write a shields.io endpoint JSON file into the coverage-html directory
-          cat > coverage-html/html/coverage-badge.json <<EOF
+          # Determine the directory where .profraw files are written
+          PROFRAW_DIR=$(dirname "$LLVM_PROFILE_FILE")
+          echo "PROFRAW_DIR=$PROFRAW_DIR"
+
+          # ===================================================================
+          # Report 1: Rust-only coverage (coverage_from_rust_tests)
+          # ===================================================================
+          # Run instrumented Rust tests; --no-report collects data without generating a report yet
+          cargo llvm-cov --no-report --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_tests
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_rust.json --no-clean
+
+          # Back up the Rust .profraw files, then clear them so the Python run starts clean
+          mkdir -p /tmp/rust_profraw
+          find "$PROFRAW_DIR" -name '*.profraw' -exec cp {} /tmp/rust_profraw/ \;
+          find "$PROFRAW_DIR" -name '*.profraw' -delete
+
+          # ===================================================================
+          # Report 2: Python-only coverage (coverage_from_python_tests)
+          # ===================================================================
+          # Build an instrumented Python extension (.so) via maturin and install with extras
+          python3.12 -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip maturin
+          maturin develop --release -E dev,with_freegs_and_freegsnke
+
+          # Run the MAST-U FreeGSNKE notebook; the instrumented .so writes .profraw data
+          pip uninstall -y pytest-xdist
+          jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
+          python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_python_tests
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json --no-clean
+
+          # Back up the Python .profraw files before merging with Rust ones
+          mkdir -p /tmp/python_profraw
+          find "$PROFRAW_DIR" -name '*.profraw' -exec cp {} /tmp/python_profraw/ \;
+
+          # ===================================================================
+          # Report 3: Combined coverage (coverage_from_rust_python_tests)
+          # ===================================================================
+          # Restore Rust .profraw files alongside the Python ones
+          cp /tmp/rust_profraw/*.profraw "$PROFRAW_DIR"/
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_python_tests
+          # Generate JSON summary from the combined data for the coverage badge
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage.json --no-clean
+      - name: Generate coverage badges
+        run: |
+          # Helper function: extract coverage % from a JSON file and write a shields.io badge JSON
+          generate_badge() {
+            local json_file="$1"
+            local badge_file="$2"
+            local label="$3"
+
+            local coverage
+            coverage=$(python3.12 -c "import json; data=json.load(open('$json_file')); print(f'{data[\"data\"][0][\"totals\"][\"lines\"][\"percent\"]:.1f}')")
+            echo "${label}: ${coverage}%"
+
+            local color
+            if python3.12 -c "exit(0 if $coverage >= 80 else 1)"; then
+              color="brightgreen"
+            elif python3.12 -c "exit(0 if $coverage >= 60 else 1)"; then
+              color="yellow"
+            else
+              color="red"
+            fi
+
+            cat > "$badge_file" <<BADGE
           {
             "schemaVersion": 1,
-            "label": "coverage",
-            "message": "${COVERAGE}%",
-            "color": "${COLOR}"
+            "label": "$label",
+            "message": "${coverage}%",
+            "color": "${color}"
           }
-          EOF
-      - name: Package coverage report into a tarball and upload as `github-pages` artifact
+          BADGE
+          }
+
+          generate_badge "coverage_rust.json"   "pages/coverage_from_rust_tests/coverage-badge.json"        "coverage (rust)"
+          generate_badge "coverage_python.json"  "pages/coverage_from_python_tests/coverage-badge.json"      "coverage (python)"
+          generate_badge "coverage.json"         "pages/coverage_from_rust_python_tests/coverage-badge.json"  "coverage (rust + python)"
+
+      - name: Upload coverage report to Pages artifact
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v5
         with:
-          path: ./coverage-html/html
-      - name: Retrieve `github-pages` artifact and deploy to GitHub Pages
+          path: ./pages
+      - name: Deploy coverage report to GitHub Pages
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/deploy-pages@v5
 
