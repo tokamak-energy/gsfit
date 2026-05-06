@@ -94,7 +94,10 @@ jobs:
           # Set up LLVM coverage instrumentation environment
           # This sets RUSTFLAGS="-C instrument-coverage ..." and LLVM_PROFILE_FILE
           # so that any Rust code compiled and executed produces .profraw coverage data
-          source <(cargo llvm-cov show-env --sh --no-cfg-coverage --manifest-path rust/Cargo.toml)
+          source <(cargo llvm-cov show-env --export-prefix --manifest-path rust/Cargo.toml)
+          export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
+          export CARGO_INCREMENTAL=1
+
           cargo llvm-cov clean --workspace --manifest-path rust/Cargo.toml
 
           # Determine the directory where .profraw files are written
@@ -117,8 +120,9 @@ jobs:
           # ===================================================================
           # Report 2: Python-only coverage (coverage_from_python_tests)
           # ===================================================================
+          # A good example of how to do Rust coverage from Python tests is:
+          # ** https://github.com/cjermain/rust-python-coverage **
           # Build an instrumented Python extension (.so) via maturin and install with extras
-          # Note: omit --release for faster builds; coverage data is still valid in debug mode
           python3.12 -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip maturin
@@ -126,8 +130,10 @@ jobs:
 
           # Run the MAST-U FreeGSNKE notebook; the instrumented .so writes .profraw data
           pip uninstall -y pytest-xdist
-          jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
-          python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+          jupyter nbconvert --to script examples/example_02__mastu__freegsnke_data.ipynb
+          python -m pytest -s tests/test_wrapper.py --script examples/example_02__mastu__freegsnke_data.py
+          # `-s` enables printing to stdout
+          # python -m pytest -s tests/test_01_test_run.py
 
           cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_python_tests
           cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json
@@ -180,12 +186,11 @@ jobs:
           generate_badge "coverage.json"         "pages/coverage_from_rust_python_tests/coverage-badge.json"  "coverage (rust + python)"
 
       - name: Upload coverage report to Pages artifact
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v5
         with:
           path: ./pages
       - name: Deploy coverage report to GitHub Pages
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         uses: actions/deploy-pages@v5
 
   linux_build_wheels:

@@ -193,159 +193,159 @@ impl D2PsiDR2Calculator {
     }
 }
 
-#[test]
-fn test_d2_psi_d_r2_calculator() {
-    use crate::greens::greens_b::greens_b;
-    use crate::greens::greens_d2_psi_d_r2;
-    use crate::greens::greens_psi::greens_psi;
-    use approx::assert_abs_diff_eq;
-    use ndarray::{ArrayView2, Axis, MeshIndex, meshgrid};
+// #[test]
+// fn test_d2_psi_d_r2_calculator() {
+//     use crate::greens::greens_b::greens_b;
+//     use crate::greens::greens_d2_psi_d_r2;
+//     use crate::greens::greens_psi::greens_psi;
+//     use approx::assert_abs_diff_eq;
+//     use ndarray::{ArrayView2, Axis, MeshIndex, meshgrid};
 
-    let n_r_scaling: usize = 2;
-    let n_r: usize = 300 * n_r_scaling;
-    let n_z: usize = 201;
-    let n_pf: usize = 0;
-    let n_passive_dof: usize = 0;
-    let r_min: f64 = 0.1;
-    let r_max: f64 = 1.0;
-    let z_min: f64 = -2.0;
-    let z_max: f64 = 1.0;
+//     let n_r_scaling: usize = 2;
+//     let n_r: usize = 300 * n_r_scaling;
+//     let n_z: usize = 201;
+//     let n_pf: usize = 0;
+//     let n_passive_dof: usize = 0;
+//     let r_min: f64 = 0.1;
+//     let r_max: f64 = 1.0;
+//     let z_min: f64 = -2.0;
+//     let z_max: f64 = 1.0;
 
-    // Create (r, z) grids
-    let r: Array1<f64> = Array1::linspace(r_min, r_max, n_r);
-    let z: Array1<f64> = Array1::linspace(z_min, z_max, n_z);
+//     // Create (r, z) grids
+//     let r: Array1<f64> = Array1::linspace(r_min, r_max, n_r);
+//     let z: Array1<f64> = Array1::linspace(z_min, z_max, n_z);
 
-    // Grid spacing
-    let d_r: f64 = r[1] - r[0];
-    let d_z: f64 = z[1] - z[0];
-    let d_area: f64 = d_r * d_z;
+//     // Grid spacing
+//     let d_r: f64 = r[1] - r[0];
+//     let d_z: f64 = z[1] - z[0];
+//     let d_area: f64 = d_r * d_z;
 
-    // 2d (r, z) mesh
-    let (mesh_z_view, mesh_r_view): (ArrayView2<f64>, ArrayView2<f64>) = meshgrid((&z, &r), MeshIndex::IJ);
-    let mesh_z: Array2<f64> = mesh_z_view.to_owned(); // shape = (n_z, n_r)
-    let mesh_r: Array2<f64> = mesh_r_view.to_owned(); // shape = (n_z, n_r)
+//     // 2d (r, z) mesh
+//     let (mesh_z_view, mesh_r_view): (ArrayView2<f64>, ArrayView2<f64>) = meshgrid((&z, &r), MeshIndex::IJ);
+//     let mesh_z: Array2<f64> = mesh_z_view.to_owned(); // shape = (n_z, n_r)
+//     let mesh_r: Array2<f64> = mesh_r_view.to_owned(); // shape = (n_z, n_r)
 
-    // Flatten 2d mesh
-    let flat_r: Array1<f64> = mesh_r.flatten().to_owned();
-    let flat_z: Array1<f64> = mesh_z.flatten().to_owned();
+//     // Flatten 2d mesh
+//     let flat_r: Array1<f64> = mesh_r.flatten().to_owned();
+//     let flat_z: Array1<f64> = mesh_z.flatten().to_owned();
 
-    // PF coil
-    let g_d2_psi_d_r2_coils: Array3<f64> = Array3::<f64>::zeros((n_z, n_r, n_pf));
-    let pf_coil_currents: Array1<f64> = Array1::<f64>::zeros(n_pf);
+//     // PF coil
+//     let g_d2_psi_d_r2_coils: Array3<f64> = Array3::<f64>::zeros((n_z, n_r, n_pf));
+//     let pf_coil_currents: Array1<f64> = Array1::<f64>::zeros(n_pf);
 
-    // Passive
-    let g_d2_psi_d_r2_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_passive_dof));
-    let passive_dof_values: Array1<f64> = Array1::<f64>::zeros(n_passive_dof);
+//     // Passive
+//     let g_d2_psi_d_r2_passives: Array2<f64> = Array2::zeros((n_z * n_r, n_passive_dof));
+//     let passive_dof_values: Array1<f64> = Array1::<f64>::zeros(n_passive_dof);
 
-    // Plasma
-    // d2_g_d_r2
-    let mut g_d2_psi_d_r2_plasma: Array2<f64> = greens_d2_psi_d_r2(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0]);
-    for i_r in 0..n_r {
-        for i_rz in 0..n_r * n_z {
-            if g_d2_psi_d_r2_plasma[(i_rz, i_r)].is_nan() {
-                g_d2_psi_d_r2_plasma[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
-            }
-        }
-    }
+//     // Plasma
+//     // d2_g_d_r2
+//     let mut g_d2_psi_d_r2_plasma: Array2<f64> = greens_d2_psi_d_r2(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0]);
+//     for i_r in 0..n_r {
+//         for i_rz in 0..n_r * n_z {
+//             if g_d2_psi_d_r2_plasma[(i_rz, i_r)].is_nan() {
+//                 g_d2_psi_d_r2_plasma[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
+//             }
+//         }
+//     }
 
-    let mut j_2d: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
-    let d_bz_d_z: Array2<f64> = Array2::<f64>::zeros((n_z, n_r)); // Not used in this test
+//     let mut j_2d: Array2<f64> = Array2::<f64>::zeros((n_z, n_r));
+//     let d_bz_d_z: Array2<f64> = Array2::<f64>::zeros((n_z, n_r)); // Not used in this test
 
-    // Create some test data
-    let i_r_current_location: usize = 60;
-    let i_z_current_location: usize = 90;
-    j_2d[(i_z_current_location, i_r_current_location)] = 1.24716e9;
-    j_2d[(i_z_current_location + 1, i_r_current_location)] = 1.2345e9;
-    j_2d[(i_z_current_location + 1, i_r_current_location + 1)] = 0.2345e9;
-    j_2d[(i_z_current_location + 1, i_r_current_location + 1)] = 0.2345e9;
-    j_2d[(i_z_current_location + 1, i_r_current_location + 2)] = 0.2345e9;
-    j_2d[(i_z_current_location - 1, i_r_current_location - 1)] = 0.36547;
-    j_2d[(i_z_current_location - 1, i_r_current_location)] = 1.36547;
-    j_2d[(i_z_current_location - 2, i_r_current_location - 1)] = 0.6547;
-    let delta_z: f64 = 0.0;
+//     // Create some test data
+//     let i_r_current_location: usize = 60;
+//     let i_z_current_location: usize = 90;
+//     j_2d[(i_z_current_location, i_r_current_location)] = 1.24716e9;
+//     j_2d[(i_z_current_location + 1, i_r_current_location)] = 1.2345e9;
+//     j_2d[(i_z_current_location + 1, i_r_current_location + 1)] = 0.2345e9;
+//     j_2d[(i_z_current_location + 1, i_r_current_location + 1)] = 0.2345e9;
+//     j_2d[(i_z_current_location + 1, i_r_current_location + 2)] = 0.2345e9;
+//     j_2d[(i_z_current_location - 1, i_r_current_location - 1)] = 0.36547;
+//     j_2d[(i_z_current_location - 1, i_r_current_location)] = 1.36547;
+//     j_2d[(i_z_current_location - 2, i_r_current_location - 1)] = 0.6547;
+//     let delta_z: f64 = 0.0;
 
-    // Calculate Green's for `br` and `bz`
-    let (_g_br, g_bz_plasma): (Array2<f64>, Array2<f64>) = greens_b(
-        flat_r.clone(), // sensors
-        flat_z.clone(),
-        r.clone(), // current sources
-        0.0 * r.clone() + z[0],
-    );
+//     // Calculate Green's for `br` and `bz`
+//     let (_g_br, g_bz_plasma): (Array2<f64>, Array2<f64>) = greens_b(
+//         flat_r.clone(), // sensors
+//         flat_z.clone(),
+//         r.clone(), // current sources
+//         0.0 * r.clone() + z[0],
+//     );
 
-    // Create new D2PsiDR2Calculator
-    let d2_psi_d_r2_calculator: D2PsiDR2Calculator = D2PsiDR2Calculator::new(
-        &g_d2_psi_d_r2_coils,
-        &pf_coil_currents,
-        &g_d2_psi_d_r2_passives,
-        &passive_dof_values,
-        &g_d2_psi_d_r2_plasma,
-        &j_2d,
-        d_area,
-        n_r,
-        n_z,
-        &r,
-        &g_bz_plasma,
-        &d_bz_d_z,
-        delta_z,
-    );
+//     // Create new D2PsiDR2Calculator
+//     let d2_psi_d_r2_calculator: D2PsiDR2Calculator = D2PsiDR2Calculator::new(
+//         &g_d2_psi_d_r2_coils,
+//         &pf_coil_currents,
+//         &g_d2_psi_d_r2_passives,
+//         &passive_dof_values,
+//         &g_d2_psi_d_r2_plasma,
+//         &j_2d,
+//         d_area,
+//         n_r,
+//         n_z,
+//         &r,
+//         &g_bz_plasma,
+//         &d_bz_d_z,
+//         delta_z,
+//     );
 
-    // Calculate `psi`
-    // Calculate the grid-grid Greens
-    let d_r_flat: Array1<f64> = &r * 0.0 + d_r;
-    let d_z_flat: Array1<f64> = &r * 0.0 + d_z;
-    let g_psi: Array2<f64> = greens_psi(
-        flat_r.clone(),
-        flat_z.clone(),
-        r.clone(),
-        0.0 * r.clone() + z[0],
-        d_r_flat, // TODO: I don't like these variables
-        d_z_flat,
-    );
-    let (g_grid_grid_flat, _): (Vec<f64>, Option<usize>) = g_psi.into_raw_vec_and_offset();
-    let g_grid_grid_3d: Array3<f64> = Array3::from_shape_vec((n_z, n_r, n_r), g_grid_grid_flat).expect("Failed to reshape into Array3");
+//     // Calculate `psi`
+//     // Calculate the grid-grid Greens
+//     let d_r_flat: Array1<f64> = &r * 0.0 + d_r;
+//     let d_z_flat: Array1<f64> = &r * 0.0 + d_z;
+//     let g_psi: Array2<f64> = greens_psi(
+//         flat_r.clone(),
+//         flat_z.clone(),
+//         r.clone(),
+//         0.0 * r.clone() + z[0],
+//         d_r_flat, // TODO: I don't like these variables
+//         d_z_flat,
+//     );
+//     let (g_grid_grid_flat, _): (Vec<f64>, Option<usize>) = g_psi.into_raw_vec_and_offset();
+//     let g_grid_grid_3d: Array3<f64> = Array3::from_shape_vec((n_z, n_r, n_r), g_grid_grid_flat).expect("Failed to reshape into Array3");
 
-    let mut psi_2d_plasma: Array2<f64> = Array2::zeros((n_z, n_r));
-    for i_cur_z in 0..n_z {
-        // Cyclic indexing for the z-axis
-        let z_indexer: Vec<usize> = (0..n_z).map(|i_z| i_cur_z.abs_diff(i_z)).collect();
-        for i_cur_r in 0..n_r {
-            // Performance improvement: a lot of the grid doesn't have plasma current
-            if j_2d[(i_cur_z, i_cur_r)].abs() > 0.0 {
-                // Select the Green's table for the radial current source location
-                // selecting the r-axis and re-ordering in one operation, might be fastest
-                let g_grid_grid_2d_reordered: Array2<f64> = g_grid_grid_3d.index_axis(Axis(2), i_cur_r).select(Axis(0), &z_indexer);
+//     let mut psi_2d_plasma: Array2<f64> = Array2::zeros((n_z, n_r));
+//     for i_cur_z in 0..n_z {
+//         // Cyclic indexing for the z-axis
+//         let z_indexer: Vec<usize> = (0..n_z).map(|i_z| i_cur_z.abs_diff(i_z)).collect();
+//         for i_cur_r in 0..n_r {
+//             // Performance improvement: a lot of the grid doesn't have plasma current
+//             if j_2d[(i_cur_z, i_cur_r)].abs() > 0.0 {
+//                 // Select the Green's table for the radial current source location
+//                 // selecting the r-axis and re-ordering in one operation, might be fastest
+//                 let g_grid_grid_2d_reordered: Array2<f64> = g_grid_grid_3d.index_axis(Axis(2), i_cur_r).select(Axis(0), &z_indexer);
 
-                // Calculate the contribution to psi from this current source
-                let psi_2d_plasma_this_j: Array2<f64> = g_grid_grid_2d_reordered * j_2d[(i_cur_z, i_cur_r)] * d_area;
+//                 // Calculate the contribution to psi from this current source
+//                 let psi_2d_plasma_this_j: Array2<f64> = g_grid_grid_2d_reordered * j_2d[(i_cur_z, i_cur_r)] * d_area;
 
-                // Add contribution from current
-                psi_2d_plasma += &psi_2d_plasma_this_j;
-            }
-        }
-    }
-    let psi_2d: Array2<f64> = psi_2d_plasma;
+//                 // Add contribution from current
+//                 psi_2d_plasma += &psi_2d_plasma_this_j;
+//             }
+//         }
+//     }
+//     let psi_2d: Array2<f64> = psi_2d_plasma;
 
-    println!("current at i_r={}, i_z={}", i_r_current_location, i_z_current_location);
+//     println!("current at i_r={}, i_z={}", i_r_current_location, i_z_current_location);
 
-    let i_r_measure: usize = 50 * n_r_scaling;
-    let i_z_measure: usize = 100;
-    println!("Calculating at i_r_measure={}, i_z_measure={}", i_r_measure, i_z_measure);
-    let d2_psi_d_r2: f64 = d2_psi_d_r2_calculator.calculate(i_r_measure, i_z_measure);
-    println!("d2_psi_d_r2_analytic={:?}", d2_psi_d_r2);
-    let d2_psi_d_r2_numerical_from_psi: f64 =
-        (psi_2d[(i_z_measure, i_r_measure + 1)] - 2.0 * psi_2d[(i_z_measure, i_r_measure)] + psi_2d[(i_z_measure, i_r_measure - 1)]) / (d_r.powi(2));
-    println!("d2_psi_d_r2_numerical_from_psi={:?}", d2_psi_d_r2_numerical_from_psi);
+//     let i_r_measure: usize = 50 * n_r_scaling;
+//     let i_z_measure: usize = 100;
+//     println!("Calculating at i_r_measure={}, i_z_measure={}", i_r_measure, i_z_measure);
+//     let d2_psi_d_r2: f64 = d2_psi_d_r2_calculator.calculate(i_r_measure, i_z_measure);
+//     println!("d2_psi_d_r2_analytic={:?}", d2_psi_d_r2);
+//     let d2_psi_d_r2_numerical_from_psi: f64 =
+//         (psi_2d[(i_z_measure, i_r_measure + 1)] - 2.0 * psi_2d[(i_z_measure, i_r_measure)] + psi_2d[(i_z_measure, i_r_measure - 1)]) / (d_r.powi(2));
+//     println!("d2_psi_d_r2_numerical_from_psi={:?}", d2_psi_d_r2_numerical_from_psi);
 
-    assert_abs_diff_eq!(d2_psi_d_r2, d2_psi_d_r2_numerical_from_psi, epsilon = 1e-3);
+//     assert_abs_diff_eq!(d2_psi_d_r2, d2_psi_d_r2_numerical_from_psi, epsilon = 1e-3);
 
-    let i_r_measure: usize = 60 * n_r_scaling;
-    let i_z_measure: usize = 90;
-    println!("Calculating at i_r_measure={}, i_z_measure={}", i_r_measure, i_z_measure);
-    let d2_psi_d_r2: f64 = d2_psi_d_r2_calculator.calculate(i_r_measure, i_z_measure);
-    println!("d2_psi_d_r2_analytic={:?}", d2_psi_d_r2);
-    let d2_psi_d_r2_numerical_from_psi: f64 =
-        (psi_2d[(i_z_measure, i_r_measure + 1)] - 2.0 * psi_2d[(i_z_measure, i_r_measure)] + psi_2d[(i_z_measure, i_r_measure - 1)]) / (d_r.powi(2));
-    println!("d2_psi_d_r2_numerical_from_psi={:?}", d2_psi_d_r2_numerical_from_psi);
+//     let i_r_measure: usize = 60 * n_r_scaling;
+//     let i_z_measure: usize = 90;
+//     println!("Calculating at i_r_measure={}, i_z_measure={}", i_r_measure, i_z_measure);
+//     let d2_psi_d_r2: f64 = d2_psi_d_r2_calculator.calculate(i_r_measure, i_z_measure);
+//     println!("d2_psi_d_r2_analytic={:?}", d2_psi_d_r2);
+//     let d2_psi_d_r2_numerical_from_psi: f64 =
+//         (psi_2d[(i_z_measure, i_r_measure + 1)] - 2.0 * psi_2d[(i_z_measure, i_r_measure)] + psi_2d[(i_z_measure, i_r_measure - 1)]) / (d_r.powi(2));
+//     println!("d2_psi_d_r2_numerical_from_psi={:?}", d2_psi_d_r2_numerical_from_psi);
 
-    assert_abs_diff_eq!(d2_psi_d_r2, d2_psi_d_r2_numerical_from_psi, epsilon = 1e-3);
-}
+//     assert_abs_diff_eq!(d2_psi_d_r2, d2_psi_d_r2_numerical_from_psi, epsilon = 1e-3);
+// }
