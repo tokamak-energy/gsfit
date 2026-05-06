@@ -94,7 +94,7 @@ jobs:
           # Set up LLVM coverage instrumentation environment
           # This sets RUSTFLAGS="-C instrument-coverage ..." and LLVM_PROFILE_FILE
           # so that any Rust code compiled and executed produces .profraw coverage data
-          source <(cargo llvm-cov show-env --export-prefix --manifest-path rust/Cargo.toml)
+          source <(cargo llvm-cov show-env --sh --no-cfg-coverage --manifest-path rust/Cargo.toml)
           cargo llvm-cov clean --workspace --manifest-path rust/Cargo.toml
 
           # Determine the directory where .profraw files are written
@@ -104,8 +104,8 @@ jobs:
           # ===================================================================
           # Report 1: Rust-only coverage (coverage_from_rust_tests)
           # ===================================================================
-          # Run instrumented Rust tests; --no-report collects data without generating a report yet
-          cargo llvm-cov --no-report --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib
+          # Run instrumented Rust tests (use plain cargo test since env vars from show-env handle instrumentation)
+          cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib
           cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_tests
           cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_rust.json --no-clean
 
@@ -118,10 +118,11 @@ jobs:
           # Report 2: Python-only coverage (coverage_from_python_tests)
           # ===================================================================
           # Build an instrumented Python extension (.so) via maturin and install with extras
+          # Note: omit --release for faster builds; coverage data is still valid in debug mode
           python3.12 -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip maturin
-          maturin develop --release -E dev,with_freegs_and_freegsnke
+          maturin develop -E dev,with_freegs_and_freegsnke
 
           # Run the MAST-U FreeGSNKE notebook; the instrumented .so writes .profraw data
           pip uninstall -y pytest-xdist
