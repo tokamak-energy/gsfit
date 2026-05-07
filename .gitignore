@@ -3,6 +3,9 @@ target/
 rust/target/
 rust/Cargo.lock
 
+# Rust profil data (used for line coverage in testing)
+*.profraw
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 .pytest_cache/
