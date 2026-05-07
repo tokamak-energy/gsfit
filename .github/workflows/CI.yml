@@ -105,11 +105,11 @@ jobs:
           echo "PROFRAW_DIR=$PROFRAW_DIR"
 
           # ===================================================================
-          # Report 1: Rust-only coverage (coverage_from_rust_tests)
+          # Report 1: Rust-only coverage (rust_coverage_from_rust_tests)
           # ===================================================================
           # Run instrumented Rust tests (use plain cargo test since env vars from show-env handle instrumentation)
           cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_tests
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/rust_coverage_from_rust_tests
           cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_rust.json
 
           # Back up the Rust .profraw files, then clear them so the Python run starts clean
@@ -118,7 +118,7 @@ jobs:
           find "$PROFRAW_DIR" -name '*.profraw' -delete
 
           # ===================================================================
-          # Report 2: Python-only coverage (coverage_from_python_tests)
+          # Report 2: Python-only coverage (rust_coverage_from_python_tests)
           # ===================================================================
           # A good example of how to do Rust coverage from Python tests is:
           # ** https://github.com/cjermain/rust-python-coverage **
@@ -131,11 +131,14 @@ jobs:
           # Run the MAST-U FreeGSNKE notebook; the instrumented .so writes .profraw data
           pip uninstall -y pytest-xdist
           jupyter nbconvert --to script examples/example_02__mastu__freegsnke_data.ipynb
-          python -m pytest -s tests/test_wrapper.py --script examples/example_02__mastu__freegsnke_data.py
+          python -m pytest -s tests/test_wrapper.py --script examples/example_02__mastu__freegsnke_data.py \
+            --cov=gsfit --cov=diagnostic_and_simulation_base \
+            --cov-report=html:pages/python_coverage_from_python_tests/html \
+            --cov-report=json:python_coverage_from_python_tests.json
           # `-s` enables printing to stdout
           # python -m pytest -s tests/test_01_test_run.py
 
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_python_tests
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/rust_coverage_from_python_tests
           cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json
 
           # Back up the Python .profraw files before merging with Rust ones
@@ -143,11 +146,11 @@ jobs:
           find "$PROFRAW_DIR" -name '*.profraw' -exec cp {} /tmp/python_profraw/ \;
 
           # ===================================================================
-          # Report 3: Combined coverage (coverage_from_rust_python_tests)
+          # Report 3: Combined coverage (rust_coverage_from_rust_and_python_tests)
           # ===================================================================
           # Restore Rust .profraw files alongside the Python ones
           cp /tmp/rust_profraw/*.profraw "$PROFRAW_DIR"/
-          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/coverage_from_rust_python_tests
+          cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/rust_coverage_from_rust_and_python_tests
           # Generate JSON summary from the combined data for the coverage badge
           cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage.json
       - name: Generate coverage badges
@@ -181,9 +184,40 @@ jobs:
           BADGE
           }
 
-          generate_badge "coverage_rust.json"   "pages/coverage_from_rust_tests/coverage-badge.json"        "coverage (rust)"
-          generate_badge "coverage_python.json"  "pages/coverage_from_python_tests/coverage-badge.json"      "coverage (python)"
-          generate_badge "coverage.json"         "pages/coverage_from_rust_python_tests/coverage-badge.json"  "coverage (rust + python)"
+          generate_badge "coverage_rust.json"   "pages/rust_coverage_from_rust_tests/coverage-badge.json"        "coverage (rust)"
+          generate_badge "coverage_python.json"  "pages/rust_coverage_from_python_tests/coverage-badge.json"      "coverage (python)"
+          generate_badge "coverage.json"         "pages/rust_coverage_from_rust_and_python_tests/coverage-badge.json"  "coverage (rust + python)"
+
+          # Python coverage badge (coverage.py JSON has a different schema)
+          generate_python_badge() {
+            local json_file="$1"
+            local badge_file="$2"
+            local label="$3"
+
+            local coverage
+            coverage=$(python3.12 -c "import json; data=json.load(open('$json_file')); print(f'{data[\"totals\"][\"percent_covered\"]:.1f}')")
+            echo "${label}: ${coverage}%"
+
+            local color
+            if python3.12 -c "exit(0 if $coverage >= 80 else 1)"; then
+              color="brightgreen"
+            elif python3.12 -c "exit(0 if $coverage >= 60 else 1)"; then
+              color="yellow"
+            else
+              color="red"
+            fi
+
+            cat > "$badge_file" <<PYBADGE
+          {
+            "schemaVersion": 1,
+            "label": "$label",
+            "message": "${coverage}%",
+            "color": "${color}"
+          }
+          PYBADGE
+          }
+
+          generate_python_badge "python_coverage_from_python_tests.json" "pages/python_coverage_from_python_tests/coverage-badge.json" "python coverage"
 
       - name: Upload coverage report to Pages artifact
         uses: actions/upload-pages-artifact@v5
