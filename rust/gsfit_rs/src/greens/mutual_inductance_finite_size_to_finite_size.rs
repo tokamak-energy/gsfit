@@ -33,6 +33,7 @@ pub fn mutual_inductance_finite_size_to_finite_size(
     d_z_prime: &Array1<f64>,
     angle_1_prime: &Array1<f64>,
     angle_2_prime: &Array1<f64>,
+    // greens_function: fn(Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>) -> Array2<f64>
 ) -> Array2<f64> {
     let n_filaments: usize = r.len();
     let n_filaments_prime: usize = r_prime.len();
@@ -44,20 +45,19 @@ pub fn mutual_inductance_finite_size_to_finite_size(
     let n_sub_filaments: usize = 10;
 
     for i_filament in 0..n_filaments {
-        // TODO: Make this a parallel loop
-        for i_filament_prime in 0..n_filaments_prime {
-            // Discretise the first filament
-            let (r_sub_filament, z_sub_filament, _d_r_sub_filament, _d_z_sub_filament, _area): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, f64) =
-                discretise_parallelogram(
-                    r[i_filament],
-                    z[i_filament],
-                    d_r[i_filament],
-                    d_z[i_filament],
-                    angle_1[i_filament],
-                    angle_2[i_filament],
-                    n_sub_filaments,
-                );
+        // Discretise the first filament
+        let (r_sub_filament, z_sub_filament, _d_r_sub_filament, _d_z_sub_filament, _area): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, f64) =
+            discretise_parallelogram(
+                r[i_filament],
+                z[i_filament],
+                d_r[i_filament],
+                d_z[i_filament],
+                angle_1[i_filament],
+                angle_2[i_filament],
+                n_sub_filaments,
+            );
 
+        for i_filament_prime in 0..n_filaments_prime {
             // Discretise the second filament
             let (r_sub_filament_prime, z_sub_filament_prime, _d_r_sub_filament_prime, _d_z_sub_filament_prime, _area_prime): (
                 Array1<f64>,
@@ -89,7 +89,7 @@ pub fn mutual_inductance_finite_size_to_finite_size(
         }
     }
 
-    return g_psi;
+    g_psi
 }
 
 fn discretise_parallelogram(

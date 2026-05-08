@@ -1,4 +1,5 @@
 use crate::coils::Coils;
+use crate::greens::Greens;
 use crate::greens::greens_b;
 use crate::greens::greens_psi;
 use crate::passives::Passives;
@@ -7,7 +8,7 @@ use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree}
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use ndarray::{Array1, Array2, Array3, Axis, s};
+use ndarray::{Array1, Array2, Array3, Axis, array, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -99,24 +100,27 @@ impl FluxLoops {
                 let coil_r: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
 
-                let g_full: Array2<f64> = greens_psi(
-                    Array1::from_vec(vec![sensor_r]),
-                    Array1::from_vec(vec![sensor_z]),
+                let sensor_r_local: Array1<f64> = array![sensor_r];
+                let sensor_z_local: Array1<f64> = array![sensor_z];
+                let greens_calculator: Greens = Greens::new(
+                    sensor_r_local,
+                    sensor_z_local,
+                    coil_r.clone() * 0.0, // TODO: is this correct shape?
+                    coil_z.clone() * 0.0,
                     coil_r.clone(),
                     coil_z.clone(),
-                    coil_r.clone() * 0.0,
-                    coil_z.clone() * 0.0,
                 );
-
+                // Greens between "sensors" and "current sources"
+                let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, coil_r.len())
                 // Sum over all the current sources
-                let g: f64 = g_full.sum();
+                let g_psi: f64 = g_psi_matrix.sum();
 
                 // Store
                 self.results
                     .get_or_insert(&sensor_name)
                     .get_or_insert("greens")
                     .get_or_insert("pf")
-                    .insert(&pf_coil_name, g);
+                    .insert(&pf_coil_name, g_psi);
             }
         }
     }
@@ -130,6 +134,8 @@ impl FluxLoops {
             // Get variables out of self
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
+            let sensor_r_local: Array1<f64> = array![sensor_r];
+            let sensor_z_local: Array1<f64> = array![sensor_z];
 
             // Calculate Greens with each passive degree of freedom
             for passive_name in passives_local.results.keys() {
@@ -139,14 +145,16 @@ impl FluxLoops {
                 let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
                 for dof_name in dof_names {
-                    let g_full: Array2<f64> = greens_psi(
-                        Array1::from_vec(vec![sensor_r]), // by convention (r, z) are "sensors"
-                        Array1::from_vec(vec![sensor_z]),
-                        passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
-                        passive_z.clone(),
-                        passive_r.clone() * 0.0,
+                    
+                    let greens_calculator: Greens = Greens::new(
+                        sensor_r_local.clone(),
+                        sensor_z_local.clone(),
+                        passive_r.clone() * 0.0, // TODO: is this correct shape?
                         passive_z.clone() * 0.0,
+                        passive_r.clone(),
+                        passive_z.clone(),
                     );
+                    let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, passive_r.len())
 
                     // Current distribution
                     let current_distribution: Array1<f64> = passives_local
@@ -157,7 +165,7 @@ impl FluxLoops {
                         .get("current_distribution")
                         .unwrap_array1();
 
-                    let g_with_dof_full: Array2<f64> = g_full * &current_distribution; // shape = [n_r * n_z, n_filament]
+                    let g_with_dof_full: Array2<f64> = g_psi_matrix * &current_distribution; // shape = [n_r * n_z, n_filament]
 
                     // Sum over all filaments
                     let g: f64 = g_with_dof_full.sum(); // shape = [n_r * n_z]

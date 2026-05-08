@@ -1,3 +1,4 @@
+use crate::greens::Greens;
 use crate::greens::greens_psi;
 use crate::material_properties::copper_resistivity;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
@@ -127,15 +128,18 @@ impl Coils {
 
                 let greens_filament_matrix: Array2<f64> =
                     greens_psi(coil_r.clone(), coil_z.clone(), other_coil_r, other_coil_z, coil_d_r.clone(), coil_d_z.clone());
+                let g_psi: f64 = greens_filament_matrix.sum();
 
-                let g: f64 = greens_filament_matrix.sum();
+                // let greens_calculator: Greens = Greens::new(coil_r.clone(), coil_z.clone(), coil_d_r.clone(), coil_d_z.clone(), other_coil_r.clone(), other_coil_z.clone());
+                // let g_psi_matrix: Array2<f64> = greens_calculator.psi();
+                // let g_psi: f64 = g_psi_matrix.sum();
 
                 // Store greens
                 self.results
                     .get_or_insert("pf")
                     .get_or_insert(&coil_name)
                     .get_or_insert("greens")
-                    .insert(&other_coil_name, g);
+                    .insert(&other_coil_name, g_psi);
             }
         }
     }

@@ -1,4 +1,3 @@
-use core::f64;
 use ndarray::{Array1, Array2};
 
 #[derive(Debug, Clone)]

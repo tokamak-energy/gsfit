@@ -526,7 +526,8 @@ impl Pressure {
                 d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
                 // Create a bicubic interpolator
-                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+                let bicubic_interpolator: BicubicInterpolator =
+                    BicubicInterpolator::new(d_r, d_z, f.view(), d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
 
                 let x: f64 = (sensor_r - r[i_r_nearest_left]) / d_r;
                 let y: f64 = (sensor_z - z[i_z_nearest_lower]) / d_z;

@@ -1,4 +1,3 @@
-use core::f64;
 use ndarray::{Array1, Array2, s};
 use numpy::IntoPyArray;
 use numpy::PyArray2;
@@ -131,10 +130,9 @@ pub fn greens_psi(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime:
     g_psi
 }
 
+/// Test the poloidal flux using a Helmholtz coil, which has an analytic solution
 #[test]
 fn test_greens_mutual_inductance() {
-    // Test the poloidal flux using a Helmholtz coil, which has an analytic solution
-
     // Lazy loading of packages which are not used anywhere else in the code
     use approx::assert_abs_diff_eq;
     use ndarray::Axis;
@@ -164,7 +162,7 @@ fn test_greens_mutual_inductance() {
         let integrand_value: f64 = (-2.0 * r - 5.0 * d) / (5.0 * d.powi(2) + 4.0 * d * r + 4.0 * r.powi(2)).sqrt()
             + (2.0 * r - 5.0 * d) / (5.0 * d.powi(2) - 4.0 * d * r + 4.0 * r.powi(2)).sqrt();
 
-        return integrand_value;
+        integrand_value
     }
 
     // Calculate the analytic solution
