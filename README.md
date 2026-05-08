@@ -32,7 +32,7 @@ Rust is a compiled, high-performance language, nearly as fast as C and Fortran.
 It includes modern tooling such as a package manager and centralised registry (cargo and [crates.io](https://crates.io/)), autoformatting ([`rustfmt`](https://github.com/rust-lang/rustfmt)), and has [testing built into the language](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html).
 Rust enforces strict ownership rules, making programs extremely memory efficient without requiring any extra effort.
 These rules also eliminate entire classes of memory issues.
-Additionally, Rust has zero-cost abstractions, allowing "implementations", which are similar to classes in object-oriented programming, to be used without any performance penalty.
+Additionally, Rust has zero-cost abstractions, allowing object-oriented programming (implementations) to be used without a performance penalty.
 For more information, the official [Rust book](https://doc.rust-lang.org/stable/book/) gives a complete introduction to the language with examples.
 
 Python is ubiquitous within the fusion industry.
@@ -276,6 +276,13 @@ However, for testing, where the Rust code is run as it's own executable, not fro
 * Interfacing to and from IMAS & OMAS.
 * More kinetic sensors, such as MSE, polarimeters, and interferometers.
 
+# 5. Citing GSFit
+We intend on publishing a paper on GSFit.
+While GSFit is unpublished, please cite it as "P. F. Buxton, GSFit, https://github.com/tokamak-energy/gsfit, 2025"
+
+Please use the **GSFit** nomenclature, <ins>**not**</ins> GS-Fit, GSFIT, or g/s fit.
+
+<!--
 # 5. Testing
 ```shell
 cd rust
@@ -283,12 +290,7 @@ cargo install cargo-llvm-cov
 rustup component add llvm-tools-preview
 cargo llvm-cov --html  # generates target/llvm-cov/html/index.html
 ```
-
-# 6. Citing GSFit
-We intend on publishing a paper on GSFit.
-While GSFit is unpublished, please cite it as "P. F. Buxton, GSFit, https://github.com/tokamak-energy/gsfit, 2025"
-
-Please use the **GSFit** nomenclature, <ins>**not**</ins> GS-Fit, GSFIT, or g/s fit.
+-->
 
 
 <!-- # 4 Useful Rust code for debugging

@@ -10,7 +10,6 @@ use ndarray::{Array1, Array2, Array3, Axis, array, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
-use numpy::npyffi::array;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
@@ -201,7 +200,7 @@ impl FluxLoops {
             self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_with_plasma);
 
             // Vertical stability
-            let d_psi_d_z: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = (1, coil_r.len())
+            let d_psi_d_z: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = (1, n_r * n_z)
             let g_d_plasma_d_z: Array1<f64> = d_psi_d_z.sum_axis(Axis(0));
             self.results
                 .get_or_insert(&sensor_name)
