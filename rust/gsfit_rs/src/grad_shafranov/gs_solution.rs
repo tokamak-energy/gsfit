@@ -316,8 +316,8 @@ impl<'a> GsSolution<'a> {
 
         // Iteration loop
         'iteration_loop: for i_iter in 0..self.n_iter_max {
-            println!("");
-            println!("Iteration {i_iter}");
+            // println!("");
+            // println!("Iteration {i_iter}");
             // From previous iteration
             let j_2d: Array2<f64> = self.j_2d.to_owned();
 
@@ -441,7 +441,6 @@ impl<'a> GsSolution<'a> {
             self.stationary_points = stationary_points.clone();
 
             // Find the magnetic axis (o-point)
-            self._write_time_slice_to_file(i_iter);
             let magnetic_axis_or_error: Result<MagneticAxis, String> = find_magnetic_axis(&stationary_points, self.r_mag, self.z_mag, &vessel_r, &vessel_z);
             // Test if we have found the magnetic axis
             if magnetic_axis_or_error.is_err() {
@@ -1186,8 +1185,8 @@ impl<'a> GsSolution<'a> {
             let ip: f64 = i_2d.sum();
             self.ip = ip;
 
-            // Write the time-slice to numpy files for debugging
-            self._write_time_slice_to_file(i_iter);
+            // // Write the time-slice to numpy files for debugging
+            // self._write_time_slice_to_file(i_iter);
         }
     }
 

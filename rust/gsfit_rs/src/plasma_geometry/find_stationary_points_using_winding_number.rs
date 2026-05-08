@@ -283,7 +283,7 @@ pub fn find_stationary_points_using_winding_number(
             let mut prev_q: Quadrant = classify_quadrant(sign_d_psi_d_z, sign_d_psi_d_r);
             let mut total_quarter_turns: i8 = 0;
 
-            for event in perimeter_events.clone() {
+            for &event in &perimeter_events {
                 // Flip the sign of whichever component just crossed zero.
                 match event {
                     CrossingKind::BrZero => sign_d_psi_d_z = -sign_d_psi_d_z,
@@ -297,11 +297,11 @@ pub fn find_stationary_points_using_winding_number(
                 let quadrant_steps: Quadrant = new_q.quarter_turns_from(prev_q);
                 match quadrant_steps {
                     Quadrant::Q1 => {
-                        println!("Quadrant step: Q1 (same quadrant); event = {:?}", event);
+                        // println!("Quadrant step: Q1 (same quadrant); event = {:?}", event);
                     } // same quadrant; no change in `total_quarter_turns`
                     Quadrant::Q2 => total_quarter_turns += 1,
                     Quadrant::Q3 => {
-                        println!("Warning: diagonal jump in (Br, Bz); event = {:?}", event);
+                        // println!("Warning: diagonal jump in (Br, Bz); event = {:?}", event);
                         // TODO: what should we do in this case? Skip this cell or count the cell as valid and then wait to see if it converges in BicubicInterpolator?
                     }
                     Quadrant::Q4 => total_quarter_turns -= 1,
