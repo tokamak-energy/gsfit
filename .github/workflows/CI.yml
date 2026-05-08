@@ -108,7 +108,7 @@ jobs:
           # Report 1: Rust-only coverage (rust_coverage_from_rust_tests)
           # ===================================================================
           # Run instrumented Rust tests (use plain cargo test since env vars from show-env handle instrumentation)
-          cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --lib
+          cargo test --manifest-path rust/Cargo.toml --package data_tree --package gsfit_rs --package interpolation --package npy_reader_and_writer --lib
           cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/rust_coverage_from_rust_tests
           cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_rust.json
 
