@@ -320,3 +320,15 @@ writer.flush().expect("can't flush writer");
 
 
 <!-- ruff check --select I --fix . -->
+
+
+<!--
+# To install gnuplot
+
+curl -LO https://sourceforge.net/projects/gnuplot/files/gnuplot/6.0.2/gnuplot-6.0.2.tar.gz
+tar xzf gnuplot-6.0.2.tar.gz && cd gnuplot-6.0.2
+./configure --prefix=$HOME/local --without-x --without-qt
+make -j && make install
+export PATH=$HOME/local/bin:$PATH
+
+-->

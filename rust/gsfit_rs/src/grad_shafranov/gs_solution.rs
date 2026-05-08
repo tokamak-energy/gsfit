@@ -8,7 +8,7 @@ use crate::plasma_geometry::StationaryPoint;
 use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
-use crate::plasma_geometry::find_stationary_points_using_sign_differences;
+// use crate::plasma_geometry::find_stationary_points_using_sign_differences;
 use crate::plasma_geometry::find_stationary_points_using_winding_number;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
@@ -871,29 +871,29 @@ impl<'a> GsSolution<'a> {
 
                 // Function values
                 f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
-                f[(0, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
-                f[(1, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
+                f[(1, 0)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
+                f[(0, 1)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
                 f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
 
                 // d(psi)/d(r)
                 // bz = 1 / (2.0 * PI * r) * d_psi_d_r
                 d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
                 d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
                 // d(psi)/d(z)
                 // br = - 1 / (2.0 * PI * r) * d_psi_d_z
                 d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
                 d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
                 // d^2(psi)/(d(r)*d(z))
                 // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
                 d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
                 d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
                 // Create a bicubic interpolator

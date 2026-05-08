@@ -1,6 +1,4 @@
-use super::filament_geometry::FilamentGeometry;
-use crate::greens::greens_psi;
-use ndarray::{Array1, Array2, s};
+use ndarray::{Array1, Array2};
 
 /// The field from a finite size filament to a point source
 ///

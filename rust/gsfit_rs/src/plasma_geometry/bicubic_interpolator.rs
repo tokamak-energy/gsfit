@@ -71,6 +71,12 @@ impl BicubicInterpolator {
     /// use ndarray::{Array2};
     /// ```
     pub fn new(d_x: f64, d_y: f64, f: ArrayView2<f64>, d_f_d_x: ArrayView2<f64>, d_f_d_y: ArrayView2<f64>, d2_f_d_x_d_y: ArrayView2<f64>) -> Self {
+        // TODO: temporary fix for transposing
+        let f: ArrayView2<f64> = f.t();
+        let d_f_d_x: ArrayView2<f64> = d_f_d_x.t();
+        let d_f_d_y: ArrayView2<f64> = d_f_d_y.t();
+        let d2_f_d_x_d_y: ArrayView2<f64> = d2_f_d_x_d_y.t();
+
         #[rustfmt::skip]
         let coeff_matrix_1: Array2<f64> = array![
             [ 1.0,  0.0,  0.0,  0.0],
@@ -405,24 +411,16 @@ fn test_bicubic_interpolation() {
     // The bicubic interpolation will be exact for polynomials up to cubic
     // This tests a peaked quadratic in both directions
     fn calculate_f(x: f64, y: f64) -> f64 {
-        let result: f64 = -(x - 0.5).powi(2) - (y - 0.5).powi(2);
-
-        result
+        -(x - 0.5).powi(2) - (y - 0.5).powi(2)
     }
     fn calculate_d_f_d_x(x: f64, _y: f64) -> f64 {
-        let result: f64 = 1.0 - 2.0 * x;
-
-        result
+        1.0 - 2.0 * x
     }
     fn calculate_d_f_d_y(_x: f64, y: f64) -> f64 {
-        let result: f64 = 1.0 - 2.0 * y;
-
-        result
+        1.0 - 2.0 * y
     }
     fn calculate_d2_f_d_x_d_y(_x: f64, _y: f64) -> f64 {
-        let result: f64 = 0.0;
-
-        result
+        0.0
     }
 
     // Empty arrays to store the function values and derivatives at the four corners of the grid
@@ -438,10 +436,10 @@ fn test_bicubic_interpolation() {
     let y_grid: Array1<f64> = array![0.0, 1.0];
     for i_x in 0..n_x {
         for i_y in 0..n_y {
-            f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y]);
-            d_f_d_x[(i_x, i_y)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y]);
-            d_f_d_y[(i_x, i_y)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y]);
-            d2_f_d_x_d_y[(i_x, i_y)] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
+            f[(i_y, i_x)] = calculate_f(x_grid[i_x], y_grid[i_y]);
+            d_f_d_x[(i_y, i_x)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y]);
+            d_f_d_y[(i_y, i_x)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y]);
+            d2_f_d_x_d_y[(i_y, i_x)] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
         }
     }
 
@@ -491,10 +489,10 @@ fn test_bicubic_find_stationary_point_near_boundary() {
     let y_grid: Array1<f64> = array![0.0, 1.0];
     for i_x in 0..n_x {
         for i_y in 0..n_y {
-            f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y]);
-            d_f_d_x[(i_x, i_y)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y]);
-            d_f_d_y[(i_x, i_y)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y]);
-            d2_f_d_x_d_y[(i_x, i_y)] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
+            f[(i_y, i_x)] = calculate_f(x_grid[i_x], y_grid[i_y]);
+            d_f_d_x[(i_y, i_x)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y]);
+            d_f_d_y[(i_y, i_x)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y]);
+            d2_f_d_x_d_y[(i_y, i_x)] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
         }
     }
 
@@ -522,24 +520,16 @@ fn test_bicubic_find_stationary_point_on_boundary() {
 
     // Setup an analytic polynomial function
     fn calculate_f(x: f64, y: f64, x_peak: f64, y_peak: f64) -> f64 {
-        let result: f64 = -(x - x_peak).powi(2) - (y - y_peak).powi(2);
-
-        result
+        -(x - x_peak).powi(2) - (y - y_peak).powi(2)
     }
     fn calculate_d_f_d_x(x: f64, _y: f64, x_peak: f64) -> f64 {
-        let result: f64 = -2.0 * (x - x_peak);
-
-        result
+        -2.0 * (x - x_peak)
     }
     fn calculate_d_f_d_y(_x: f64, y: f64, y_peak: f64) -> f64 {
-        let result: f64 = -2.0 * (y - y_peak);
-
-        result
+        -2.0 * (y - y_peak)
     }
     fn calculate_d2_f_d_x_d_y(_x: f64, _y: f64) -> f64 {
-        let result: f64 = 0.0;
-
-        result
+        0.0
     }
 
     let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
@@ -553,10 +543,10 @@ fn test_bicubic_find_stationary_point_on_boundary() {
     let y_grid: Array1<f64> = array![0.0, 1.0];
     for i_x in 0..n_x {
         for i_y in 0..n_y {
-            f[(i_x, i_y)] = calculate_f(x_grid[i_x], y_grid[i_y], x_peak, y_peak);
-            d_f_d_x[(i_x, i_y)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y], x_peak);
-            d_f_d_y[(i_x, i_y)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y], y_peak);
-            d2_f_d_x_d_y[(i_x, i_y)] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
+            f[(i_y, i_x)] = calculate_f(x_grid[i_x], y_grid[i_y], x_peak, y_peak);
+            d_f_d_x[(i_y, i_x)] = calculate_d_f_d_x(x_grid[i_x], y_grid[i_y], x_peak);
+            d_f_d_y[(i_y, i_x)] = calculate_d_f_d_y(x_grid[i_x], y_grid[i_y], y_peak);
+            d2_f_d_x_d_y[(i_y, i_x)] = calculate_d2_f_d_x_d_y(x_grid[i_x], y_grid[i_y]);
         }
     }
 

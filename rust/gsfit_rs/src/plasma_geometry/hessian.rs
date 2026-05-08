@@ -24,30 +24,27 @@
 /// let d2_psi_d_z2: f64 = -1.0;
 /// let d2_psi_d_r_d_z: f64 = 0.0;
 ///
-/// let (hessian_det, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_d_z);
-/// if hessian_det < 0.0 {
+/// let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_r_d_z, d2_psi_d_z2);
+/// if hessian_determinant < 0.0 {
 ///     println!("Saddle point");
-/// } else if hessian_det > 0.0 && hessian_trace > 0.0 {
+/// } else if hessian_determinant > 0.0 && hessian_trace > 0.0 {
 ///     println!("Local minimum");
-/// } else if hessian_det > 0.0 && hessian_trace < 0.0 {
+/// } else if hessian_determinant > 0.0 && hessian_trace < 0.0 {
 ///     println!("Local maximum");
 /// } else {
 ///     println!("This point can be a saddle point, local minimum, or local maximum");
 /// }
 /// ```
-pub fn hessian(d2_psi_d_r2: f64, d2_psi_d_z2: f64, d2_psi_d_r_d_z: f64) -> (f64, f64) {
+pub fn hessian(d2_psi_d_r2: f64, d2_psi_d_r_d_z: f64, d2_psi_d_z2: f64) -> (f64, f64) {
     // Calculate the Hessian determinant
-    let hessian_det: f64 = d2_psi_d_r2 * d2_psi_d_z2 - d2_psi_d_r_d_z.powi(2);
+    let hessian_determinant: f64 = d2_psi_d_r2 * d2_psi_d_z2 - d2_psi_d_r_d_z.powi(2);
 
     let hessian_trace: f64 = d2_psi_d_r2 + d2_psi_d_z2;
 
-    (hessian_det, hessian_trace)
+    (hessian_determinant, hessian_trace)
 }
 
 /// Test the `hessian` function with a known maximum point.
-///
-/// Note: The `hessian` function will be used on the nearest grid point to the stationary point.
-/// So in the test we will similarly evaluate the Hessian at a nearby point, not exactly at the stationary point.
 ///
 /// See the Jupyter notebook for a plot detailing the test
 /// `rust/gsfit_rs/test_assets/plasma_geometry/hessian/test_hessian_for_maximum.ipynb`
@@ -68,8 +65,8 @@ fn test_hessian_for_maximum() {
 
     let d2_psi_d_r_d_z: f64 = -4.0 * vertical_curvature * z;
 
-    let (hessian_det, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_d_z);
+    let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_r_d_z, d2_psi_d_z2);
 
-    assert!(hessian_det > 0.0);
+    assert!(hessian_determinant > 0.0);
     assert!(hessian_trace < 0.0);
 }

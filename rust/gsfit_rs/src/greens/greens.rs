@@ -2,6 +2,7 @@ use ndarray::{Array1, Array2, ArrayView1, ArrayView2, s};
 use rayon::prelude::*;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
+use std::f64::consts::PI;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
@@ -24,10 +25,10 @@ pub struct Greens {
     r: Array1<f64>,
     z: Array1<f64>,
     n_rz: usize,
-    d_r: Array1<f64>,
-    d_z: Array1<f64>,
     r_prime: Array1<f64>,
     z_prime: Array1<f64>,
+    d_r_prime: Array1<f64>,
+    d_z_prime: Array1<f64>,
     n_rz_prime: usize,
     elliptic_integral_e: Array2<f64>, // shape (n_rz, n_rz_prime)
     elliptic_integral_k: Array2<f64>, // shape (n_rz, n_rz_prime)
@@ -57,16 +58,16 @@ impl Greens {
     /// // Conductors:
     /// let r_prime: Array1<f64> = array![1.23456789, 1.23456789];
     /// let z_prime: Array1<f64> = array![-1.23456789 / 2.0, 1.23456789 / 2.0];
-    /// let d_r: Array1<f64> = array![0.0, 0.0];
-    /// let d_z: Array1<f64> = array![0.0, 0.0];
+    /// let d_r_prime: Array1<f64> = array![0.0, 0.0];
+    /// let d_z_prime: Array1<f64> = array![0.0, 0.0];
     ///
     /// let greens_calculator: Greens = Greens::new(
     ///     r,
     ///     z,
-    ///     d_r,
-    ///     d_z,
     ///     r_prime,
     ///     z_prime,
+    ///     d_r_prime,
+    ///     d_z_prime,
     /// );
     ///
     /// // Calculate the Greens between the Helmoltz coils and the flux loops.
@@ -74,16 +75,16 @@ impl Greens {
     ///
     /// println!("g_psi = {:#?}", g_psi);
     /// ```
-    pub fn new(r: Array1<f64>, z: Array1<f64>, d_r: Array1<f64>, d_z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>) -> Self {
+    pub fn new(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>, d_r_prime: Array1<f64>, d_z_prime: Array1<f64>) -> Self {
         // Sensors
         let n_rz: usize = r.len();
         assert!(z.len() == n_rz, "`r` and `z` must have the same length");
-        // assert!(d_r.len() == n_rz, "`d_r` and `r` must have the same length");
-        // assert!(d_z.len() == n_rz, "`d_z` and `z` must have the same length");
 
         // Conductors
         let n_rz_prime: usize = r_prime.len();
         assert!(z_prime.len() == n_rz_prime, "`r_prime` and `z_prime` must have the same length");
+        assert!(d_r_prime.len() == n_rz_prime, "`d_r_prime` and `r_prime` must have the same length");
+        assert!(d_z_prime.len() == n_rz_prime, "`d_z_prime` and `z_prime` must have the same length");
 
         // Pre-compute the elliptic integrals
         let elliptic_integrals: Vec<(Array1<f64>, Array1<f64>)> = (0..n_rz_prime)
@@ -112,11 +113,11 @@ impl Greens {
         Greens {
             r,
             z,
-            d_r,
-            d_z,
             n_rz,
             r_prime,
             z_prime,
+            d_r_prime,
+            d_z_prime,
             n_rz_prime,
             elliptic_integral_e,
             elliptic_integral_k,
@@ -129,10 +130,10 @@ impl Greens {
 
         let r: &Array1<f64> = &self.r;
         let z: &Array1<f64> = &self.z;
-        let d_r: &Array1<f64> = &self.d_r;
-        let d_z: &Array1<f64> = &self.d_z;
         let r_prime: &Array1<f64> = &self.r_prime;
         let z_prime: &Array1<f64> = &self.z_prime;
+        let d_r_prime: &Array1<f64> = &self.d_r_prime;
+        let d_z_prime: &Array1<f64> = &self.d_z_prime;
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
@@ -165,10 +166,10 @@ impl Greens {
                     if (r[i_grid] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_grid] - z_prime[i_rz_prime]).abs() < epsilon {
                         green_this_filament[i_grid] = MU_0
                             * r[i_grid]
-                            * ((1.0 + 2.0 * (d_z[i_grid] / (8.0 * r[i_grid])).powi(2) + 2.0 / 3.0 * (d_r[i_grid] / (8.0 * r[i_grid])).powi(2))
-                                * (8.0 * r[i_grid] / (d_r[i_grid] + d_z[i_grid])).ln()
+                            * ((1.0 + 2.0 * (d_z_prime[i_grid] / (8.0 * r[i_grid])).powi(2) + 2.0 / 3.0 * (d_r_prime[i_grid] / (8.0 * r[i_grid])).powi(2))
+                                * (8.0 * r[i_grid] / (d_r_prime[i_grid] + d_z_prime[i_grid])).ln()
                                 - 0.5
-                                + 0.5 * (d_z[i_grid] / (8.0 * r[i_grid])).powi(2))
+                                + 0.5 * (d_z_prime[i_grid] / (8.0 * r[i_grid])).powi(2))
                     }
                 }
 
@@ -337,7 +338,6 @@ impl Greens {
                 let u_sq: Array1<f64> = (r + r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
                 let rr: Array1<f64> = r * r_prime[i_rz_prime];
                 let d_sq: Array1<f64> = (r - r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let k_sq: Array1<f64> = 4.0 * &rr / &u_sq;
                 let w_sq: Array1<f64> = r.mapv(|x: f64| r_prime[i_rz_prime].powi(2) - x.powi(2)) - &h_sq;
                 let y_sq: Array1<f64> = 4.0 * &rr - &u_sq;
 
@@ -516,6 +516,92 @@ impl Greens {
 
         g_d2_psi_d_z2
     }
+
+    /// Calculates `b_r`, where:
+    /// `b_r = -d(psi)/d(z) / (2.0 * PI * r)`
+    ///
+    /// # Arguments
+    /// * None
+    ///
+    /// # Returns
+    /// * `g_b_r[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
+    pub fn b_r(&self) -> Array2<f64> {
+        let d_psi_d_z: Array2<f64> = self.d_psi_d_z();
+        let r: &Array1<f64> = &self.r;
+
+        let mut g_b_r: Array2<f64> = Array2::from_elem((self.n_rz, self.n_rz_prime), f64::NAN);
+        for i_rz in 0..self.n_rz {
+            for i_rz_prime in 0..self.n_rz_prime {
+                g_b_r[(i_rz, i_rz_prime)] = -d_psi_d_z[(i_rz, i_rz_prime)] / (2.0 * PI * r[i_rz]);
+            }
+        }
+
+        g_b_r
+    }
+
+    /// Calculates `b_z`, where:
+    /// `b_z = d(psi)/d(r) / (2.0 * PI * r)`
+    ///
+    /// # Arguments
+    /// * None
+    ///
+    /// # Returns
+    /// * `g_b_z[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
+    pub fn b_z(&self) -> Array2<f64> {
+        let d_psi_d_r: Array2<f64> = self.d_psi_d_r();
+        let r: &Array1<f64> = &self.r;
+
+        let mut g_b_z: Array2<f64> = Array2::from_elem((self.n_rz, self.n_rz_prime), f64::NAN);
+        for i_rz in 0..self.n_rz {
+            for i_rz_prime in 0..self.n_rz_prime {
+                g_b_z[(i_rz, i_rz_prime)] = d_psi_d_r[(i_rz, i_rz_prime)] / (2.0 * PI * r[i_rz]);
+            }
+        }
+
+        g_b_z
+    }
+
+    /// Calculates d_b_r_d_z
+    ///
+    /// # Arguments
+    /// * None
+    ///
+    /// # Returns
+    /// * `g_d_b_r_d_z[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
+    pub fn d_b_r_d_z(&self) -> Array2<f64> {
+        let d2_psi_d_z2: Array2<f64> = self.d2_psi_d_z2();
+        let r: &Array1<f64> = &self.r;
+
+        let mut g_d_b_r_d_z: Array2<f64> = Array2::from_elem((self.n_rz, self.n_rz_prime), f64::NAN);
+        for i_rz in 0..self.n_rz {
+            for i_rz_prime in 0..self.n_rz_prime {
+                g_d_b_r_d_z[(i_rz, i_rz_prime)] = -d2_psi_d_z2[(i_rz, i_rz_prime)] / (2.0 * PI * r[i_rz]);
+            }
+        }
+
+        g_d_b_r_d_z
+    }
+
+    /// Calculates d_b_z_d_z
+    ///
+    /// # Arguments
+    /// * None
+    ///
+    /// # Returns
+    /// * `g_d_b_z_d_z[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
+    pub fn d_b_z_d_z(&self) -> Array2<f64> {
+        let d2_psi_d_r_d_z: Array2<f64> = self.d2_psi_d_r_d_z();
+        let r: &Array1<f64> = &self.r;
+
+        let mut g_d_b_z_d_z: Array2<f64> = Array2::from_elem((self.n_rz, self.n_rz_prime), f64::NAN);
+        for i_rz in 0..self.n_rz {
+            for i_rz_prime in 0..self.n_rz_prime {
+                g_d_b_z_d_z[(i_rz, i_rz_prime)] = d2_psi_d_r_d_z[(i_rz, i_rz_prime)] / (2.0 * PI * r[i_rz]);
+            }
+        }
+
+        g_d_b_z_d_z
+    }
 }
 
 /// Test the poloidal flux using a Helmholtz coil, which has an analytic solution
@@ -531,6 +617,9 @@ fn test_greens_psi() {
     let d: f64 = 1.23456789;
     let r_prime: Array1<f64> = Array1::from(vec![d, d]);
     let z_prime: Array1<f64> = Array1::from(vec![-d / 2.0, d / 2.0]);
+    let n_rz_prime: usize = r_prime.len();
+    let d_r_prime: Array1<f64> = Array1::zeros(n_rz_prime);
+    let d_z_prime: Array1<f64> = Array1::zeros(n_rz_prime);
 
     // Sensors
     // Define a sensor position
@@ -539,9 +628,7 @@ fn test_greens_psi() {
     let z: Array1<f64> = Array1::from(vec![0.00]);
 
     // Calculate flux
-    let d_r: Array1<f64> = Array1::zeros(r.len());
-    let d_z: Array1<f64> = Array1::zeros(z.len());
-    let greens_calculator: Greens = Greens::new(r.clone(), z.clone(), d_r, d_z, r_prime, z_prime);
+    let greens_calculator: Greens = Greens::new(r.clone(), z.clone(), r_prime, z_prime, d_r_prime, d_z_prime);
     let psi: Array2<f64> = greens_calculator.psi();
     let psi_numerical: Array1<f64> = psi.sum_axis(Axis(1)) * current;
     let psi_numerical: f64 = psi_numerical[0]; // since we have only one sensor
@@ -572,21 +659,19 @@ fn test_d_psi_d_r() {
     let z_value: f64 = 0.12345;
     let r_prime: Array1<f64> = Array1::from(vec![1.52345]);
     let z_prime: Array1<f64> = Array1::from(vec![0.8234]);
+    let d_r_prime: Array1<f64> = Array1::zeros(1);
+    let d_z_prime: Array1<f64> = Array1::zeros(1);
 
     // Compute d_psi_d_r analytically
     let r: Array1<f64> = Array1::from(vec![r_value]);
     let z: Array1<f64> = Array1::from(vec![z_value]);
-    let d_r: Array1<f64> = Array1::zeros(1);
-    let d_z: Array1<f64> = Array1::zeros(1);
-    let greens_calculator: Greens = Greens::new(r, z, d_r, d_z, r_prime.clone(), z_prime.clone());
+    let greens_calculator: Greens = Greens::new(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
     let d_psi_d_r_analytic: f64 = greens_calculator.d_psi_d_r()[(0, 0)];
 
     // Compute d_psi_d_r numerically from psi
     let r_vec: Array1<f64> = Array1::from(vec![r_value - delta_r, r_value + delta_r]);
     let z_vec: Array1<f64> = Array1::from(vec![z_value, z_value]);
-    let d_r_vec: Array1<f64> = Array1::zeros(2);
-    let d_z_vec: Array1<f64> = Array1::zeros(2);
-    let greens_calculator: Greens = Greens::new(r_vec, z_vec, d_r_vec, d_z_vec, r_prime, z_prime);
+    let greens_calculator: Greens = Greens::new(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
     let psi: Array2<f64> = greens_calculator.psi();
     let d_psi_d_r_numerical: f64 = (psi[(1, 0)] - psi[(0, 0)]) / (2.0 * delta_r);
 
@@ -603,21 +688,19 @@ fn test_d_psi_d_z() {
     let z_value: f64 = 0.12345;
     let r_prime: Array1<f64> = Array1::from(vec![1.52345]);
     let z_prime: Array1<f64> = Array1::from(vec![0.8234]);
+    let d_r_prime: Array1<f64> = Array1::zeros(1);
+    let d_z_prime: Array1<f64> = Array1::zeros(1);
 
     // Compute d_psi_d_z analytically
     let r: Array1<f64> = Array1::from(vec![r_value]);
     let z: Array1<f64> = Array1::from(vec![z_value]);
-    let d_r: Array1<f64> = Array1::zeros(1);
-    let d_z: Array1<f64> = Array1::zeros(1);
-    let greens_calculator: Greens = Greens::new(r, z, d_r, d_z, r_prime.clone(), z_prime.clone());
+    let greens_calculator: Greens = Greens::new(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
     let d_psi_d_z_analytic: f64 = greens_calculator.d_psi_d_z()[(0, 0)];
 
     // Compute d_psi_d_z numerically from psi
     let r_vec: Array1<f64> = Array1::from(vec![r_value, r_value]);
     let z_vec: Array1<f64> = Array1::from(vec![z_value - delta_z, z_value + delta_z]);
-    let d_r_vec: Array1<f64> = Array1::zeros(2);
-    let d_z_vec: Array1<f64> = Array1::zeros(2);
-    let greens_calculator: Greens = Greens::new(r_vec, z_vec, d_r_vec, d_z_vec, r_prime, z_prime);
+    let greens_calculator: Greens = Greens::new(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
     let psi: Array2<f64> = greens_calculator.psi();
     let d_psi_d_z_numerical: f64 = (psi[(1, 0)] - psi[(0, 0)]) / (2.0 * delta_z);
 
@@ -634,21 +717,19 @@ fn test_d2_psi_d_r2() {
     let z_value: f64 = 0.12345;
     let r_prime: Array1<f64> = Array1::from(vec![1.52345]);
     let z_prime: Array1<f64> = Array1::from(vec![0.8234]);
+    let d_r_prime: Array1<f64> = Array1::zeros(1);
+    let d_z_prime: Array1<f64> = Array1::zeros(1);
 
     // Compute d2_psi_d_r2 analytically
     let r: Array1<f64> = Array1::from(vec![r_value]);
     let z: Array1<f64> = Array1::from(vec![z_value]);
-    let d_r: Array1<f64> = Array1::zeros(1);
-    let d_z: Array1<f64> = Array1::zeros(1);
-    let greens_calculator: Greens = Greens::new(r, z, d_r, d_z, r_prime.clone(), z_prime.clone());
+    let greens_calculator: Greens = Greens::new(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
     let d2_psi_d_r2_analytic: f64 = greens_calculator.d2_psi_d_r2()[(0, 0)];
 
     // Compute d2_psi_d_r2 numerically from psi: (psi_left - 2*psi_center + psi_right) / delta_r^2
     let r_vec: Array1<f64> = Array1::from(vec![r_value - delta_r, r_value, r_value + delta_r]);
     let z_vec: Array1<f64> = Array1::from(vec![z_value, z_value, z_value]);
-    let d_r_vec: Array1<f64> = Array1::zeros(3);
-    let d_z_vec: Array1<f64> = Array1::zeros(3);
-    let greens_calculator: Greens = Greens::new(r_vec, z_vec, d_r_vec, d_z_vec, r_prime, z_prime);
+    let greens_calculator: Greens = Greens::new(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
     let psi: Array2<f64> = greens_calculator.psi();
     let d2_psi_d_r2_numerical: f64 = (psi[(0, 0)] - 2.0 * psi[(1, 0)] + psi[(2, 0)]) / delta_r.powi(2);
 
@@ -665,21 +746,19 @@ fn test_d2_psi_d_r_d_z() {
     let z_value: f64 = 0.12345;
     let r_prime: Array1<f64> = Array1::from(vec![1.52345]);
     let z_prime: Array1<f64> = Array1::from(vec![0.8234]);
+    let d_r_prime: Array1<f64> = Array1::zeros(1);
+    let d_z_prime: Array1<f64> = Array1::zeros(1);
 
     // Compute d2_psi_d_r_d_z analytically
     let r: Array1<f64> = Array1::from(vec![r_value]);
     let z: Array1<f64> = Array1::from(vec![z_value]);
-    let d_r: Array1<f64> = Array1::zeros(1);
-    let d_z: Array1<f64> = Array1::zeros(1);
-    let greens_calculator: Greens = Greens::new(r, z, d_r, d_z, r_prime.clone(), z_prime.clone());
+    let greens_calculator: Greens = Greens::new(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
     let d2_psi_d_r_d_z_analytic: f64 = greens_calculator.d2_psi_d_r_d_z()[(0, 0)];
 
     // Compute d2_psi_d_r_d_z numerically: d(d_psi_d_r)/d(z)
     let r_vec: Array1<f64> = Array1::from(vec![r_value, r_value]);
     let z_vec: Array1<f64> = Array1::from(vec![z_value - delta_z, z_value + delta_z]);
-    let d_r_vec: Array1<f64> = Array1::zeros(2);
-    let d_z_vec: Array1<f64> = Array1::zeros(2);
-    let greens_calculator: Greens = Greens::new(r_vec, z_vec, d_r_vec, d_z_vec, r_prime, z_prime);
+    let greens_calculator: Greens = Greens::new(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
     let d_psi_d_r: Array2<f64> = greens_calculator.d_psi_d_r();
     let d2_psi_d_r_d_z_numerical: f64 = (d_psi_d_r[(1, 0)] - d_psi_d_r[(0, 0)]) / (2.0 * delta_z);
 
@@ -696,23 +775,25 @@ fn test_d2_psi_d_z2() {
     let z_value: f64 = 0.12345;
     let r_prime: Array1<f64> = Array1::from(vec![1.52345]);
     let z_prime: Array1<f64> = Array1::from(vec![0.8234]);
+    let d_r_prime: Array1<f64> = Array1::zeros(1);
+    let d_z_prime: Array1<f64> = Array1::zeros(1);
 
     // Compute d2_psi_d_z2 analytically
     let r: Array1<f64> = Array1::from(vec![r_value]);
     let z: Array1<f64> = Array1::from(vec![z_value]);
-    let d_r: Array1<f64> = Array1::zeros(1);
-    let d_z: Array1<f64> = Array1::zeros(1);
-    let greens_calculator: Greens = Greens::new(r, z, d_r, d_z, r_prime.clone(), z_prime.clone());
+    let greens_calculator: Greens = Greens::new(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
     let d2_psi_d_z2_analytic: f64 = greens_calculator.d2_psi_d_z2()[(0, 0)];
 
     // Compute d2_psi_d_z2 numerically from psi: (psi_below - 2*psi_center + psi_above) / delta_z^2
     let r_vec: Array1<f64> = Array1::from(vec![r_value, r_value, r_value]);
     let z_vec: Array1<f64> = Array1::from(vec![z_value - delta_z, z_value, z_value + delta_z]);
-    let d_r_vec: Array1<f64> = Array1::zeros(3);
-    let d_z_vec: Array1<f64> = Array1::zeros(3);
-    let greens_calculator: Greens = Greens::new(r_vec, z_vec, d_r_vec, d_z_vec, r_prime, z_prime);
+    let greens_calculator: Greens = Greens::new(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
     let psi: Array2<f64> = greens_calculator.psi();
     let d2_psi_d_z2_numerical: f64 = (psi[(0, 0)] - 2.0 * psi[(1, 0)] + psi[(2, 0)]) / delta_z.powi(2);
 
     assert_abs_diff_eq!(d2_psi_d_z2_analytic, d2_psi_d_z2_numerical, epsilon = 1e-10);
 }
+
+// TODO: add tests for b_r and b_z
+
+// TODO: add tests for sensors and current sources at the same location

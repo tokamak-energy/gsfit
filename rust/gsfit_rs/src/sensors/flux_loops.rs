@@ -1,7 +1,5 @@
 use crate::coils::Coils;
 use crate::greens::Greens;
-use crate::greens::greens_b;
-use crate::greens::greens_psi;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
@@ -12,11 +10,11 @@ use ndarray::{Array1, Array2, Array3, Axis, array, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
+use numpy::npyffi::array;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
-use std::f64::consts::PI;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
@@ -100,15 +98,13 @@ impl FluxLoops {
                 let coil_r: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
 
-                let sensor_r_local: Array1<f64> = array![sensor_r];
-                let sensor_z_local: Array1<f64> = array![sensor_z];
                 let greens_calculator: Greens = Greens::new(
-                    sensor_r_local,
-                    sensor_z_local,
-                    coil_r.clone() * 0.0, // TODO: is this correct shape?
-                    coil_z.clone() * 0.0,
+                    array![sensor_r],
+                    array![sensor_z],
                     coil_r.clone(),
                     coil_z.clone(),
+                    coil_r.clone() * 0.0, // TODO: should I set these to NaN?
+                    coil_z.clone() * 0.0,
                 );
                 // Greens between "sensors" and "current sources"
                 let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, coil_r.len())
@@ -134,8 +130,6 @@ impl FluxLoops {
             // Get variables out of self
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
-            let sensor_r_local: Array1<f64> = array![sensor_r];
-            let sensor_z_local: Array1<f64> = array![sensor_z];
 
             // Calculate Greens with each passive degree of freedom
             for passive_name in passives_local.results.keys() {
@@ -145,14 +139,13 @@ impl FluxLoops {
                 let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
                 for dof_name in dof_names {
-                    
                     let greens_calculator: Greens = Greens::new(
-                        sensor_r_local.clone(),
-                        sensor_z_local.clone(),
-                        passive_r.clone() * 0.0, // TODO: is this correct shape?
-                        passive_z.clone() * 0.0,
+                        array![sensor_r],
+                        array![sensor_z],
                         passive_r.clone(),
                         passive_z.clone(),
+                        passive_r.clone() * 0.0, // TODO: should I set these to NaN?
+                        passive_z.clone() * 0.0,
                     );
                     let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, passive_r.len())
 
@@ -194,34 +187,22 @@ impl FluxLoops {
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
 
-            let g_full: Array2<f64> = greens_psi(
-                Array1::from_vec(vec![sensor_r]), // sensor
-                Array1::from_vec(vec![sensor_z]),
-                plasma_r.clone(), // current source
+            let greens_calculator: Greens = Greens::new(
+                array![sensor_r],
+                array![sensor_z],
+                plasma_r.clone(),
                 plasma_z.clone(),
-                plasma_r.clone() * 0.0, // TODO: I don't like the dr_prime and dz_prime
-                plasma_r.clone() * 0.0,
+                plasma_r.clone() * 0.0, // TODO: should I set these to NaN?
+                plasma_z.clone() * 0.0,
             );
-
             // Sensors Green's function
-            let g_with_plasma: Array1<f64> = g_full.sum_axis(Axis(0)); // g_br_full.shape = [1, n_z * n_r];  g_br.shape = [n_z * n_r]
-
-            // Store greens
+            let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, n_r * n_z)
+            let g_with_plasma: Array1<f64> = g_psi_matrix.sum_axis(Axis(0)); // g_psi_matrix.shape = [1, n_z * n_r];  g_with_plasma.shape = [n_z * n_r]
             self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_with_plasma);
 
             // Vertical stability
-            let (g_br_full, _g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
-                Array1::from_vec(vec![sensor_r]), // sensors
-                Array1::from_vec(vec![sensor_z]),
-                plasma_r.clone(), // current sources
-                plasma_z.clone(),
-            );
-
-            // d(psi)/d(z) = -2.0 * pi * R * B_r
-            let g_d_plasma_d_z: Array1<f64> = -2.0 * PI * sensor_r * g_br_full.sum_axis(Axis(0));
-
-            // Store
-            // TODO: should I reshape to Array2 [n_z, n_r] ????
+            let d_psi_d_z: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = (1, coil_r.len())
+            let g_d_plasma_d_z: Array1<f64> = d_psi_d_z.sum_axis(Axis(0));
             self.results
                 .get_or_insert(&sensor_name)
                 .get_or_insert("greens")
@@ -362,24 +343,26 @@ impl FluxLoops {
                 let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
 
-                let g_full: Array2<f64> = greens_psi(
-                    Array1::from_vec(vec![sensor_r]),
-                    Array1::from_vec(vec![sensor_z]),
+                let greens_calculator: Greens = Greens::new(
+                    array![sensor_r],
+                    array![sensor_z],
                     coil_r.clone(),
                     coil_z.clone(),
-                    coil_r.clone() * 0.0,
-                    coil_r.clone() * 0.0,
+                    coil_r.clone() * 0.0, // TODO: should this be NaN instead?
+                    coil_z.clone() * 0.0,
                 );
 
+                let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, n_coils)
+
                 // Sum over all the current sources
-                let g: f64 = g_full.sum();
+                let g_psi: f64 = g_psi_matrix.sum();
 
                 // Store
                 self.results
                     .get_or_insert(&sensor_name)
                     .get_or_insert("greens")
                     .get_or_insert("pf")
-                    .insert(&pf_coil_name, g);
+                    .insert(&pf_coil_name, g_psi);
             }
         }
     }

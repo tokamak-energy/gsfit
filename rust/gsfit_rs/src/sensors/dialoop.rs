@@ -1,7 +1,5 @@
 use crate::Plasma;
 use crate::coils::Coils;
-use crate::greens::greens_b;
-use crate::greens::greens_d_b_d_z;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};

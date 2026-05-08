@@ -201,3 +201,8 @@ This is not a hard rule, if we are only going to assign to the matrix diagonal t
 ## Alphabetically sorting variables
 Where possible variables should be alphabetically sorted, this is not a hard rule, but it can help with readability.
 
+Try to use a sensible order for function arguments, for example derivatives should be ordered in a way that matches the mathematical notation, e.g. `d2_psi_d_r2`, `d2_psi_d_r_d_z`, `d2_psi_d_z2` instead of `d2_psi_d_r2`, `d2_psi_d_z2`, `d2_psi_d_r_d_z`.
+An example is the Hessian function, which correctly takes:
+```rust
+let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_r_d_z, d2_psi_d_z2);
+```

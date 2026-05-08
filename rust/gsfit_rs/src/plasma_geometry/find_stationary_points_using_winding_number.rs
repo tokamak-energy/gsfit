@@ -1,12 +1,11 @@
 use super::StationaryPoint;
-use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint};
+use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint, BicubicValueAndDerivatives};
 use super::cubic_interpolation::cubic_interpolation_v2;
 use crate::plasma_geometry::hessian;
 use ndarray::{Array2, ArrayView1, ArrayView2, s};
 use ndarray::{Dim, SliceInfo, SliceInfoElem};
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
-
 
 /// Finds stationary points: extrema's (minima or maxima) and saddle points
 /// TODO: improve documentation - can this method also find higher-order stationary points?
@@ -96,10 +95,12 @@ pub fn find_stationary_points_using_winding_number(
     for i_r in 0..n_r {
         for i_z in 0..n_z {
             if d_psi_d_z_2d[(i_z, i_r)].abs() < 1e-10 {
-                d_psi_d_z_2d[(i_z, i_r)] = 1e-10;
+                // Sign preserving perturbation
+                d_psi_d_z_2d[(i_z, i_r)] = if d_psi_d_z_2d[(i_z, i_r)] < 0.0 { -1e-10 } else { 1e-10 };
             }
             if d_psi_d_r_2d[(i_z, i_r)].abs() < 1e-10 {
-                d_psi_d_r_2d[(i_z, i_r)] = 1e-10;
+                // Sign preserving perturbation
+                d_psi_d_r_2d[(i_z, i_r)] = if d_psi_d_r_2d[(i_z, i_r)] < 0.0 { -1e-10 } else { 1e-10 };
             }
         }
     }
@@ -293,18 +294,24 @@ pub fn find_stationary_points_using_winding_number(
                 // Step the quadrant tracker: +1 for an adjacent CCW step, -1 for an adjacent CW step.
                 let new_q: Quadrant = classify_quadrant(sign_d_psi_d_z, sign_d_psi_d_r);
                 // Note `quadrant_steps` is the number of quarter turns, not which quadrant we are in.
-                // TODO: perhaps we define another enum for quadrant steps to avoid confusion?
-                let quadrant_steps: Quadrant = new_q.quarter_turns_from(prev_q);
+                let quadrant_steps: QuarterTurnDelta = new_q.quarter_turns_from(prev_q);
                 match quadrant_steps {
-                    Quadrant::Q1 => {
-                        // println!("Quadrant step: Q1 (same quadrant); event = {:?}", event);
-                    } // same quadrant; no change in `total_quarter_turns`
-                    Quadrant::Q2 => total_quarter_turns += 1,
-                    Quadrant::Q3 => {
+                    QuarterTurnDelta::Zero => {
+                        // zero turns, means same quadrant, so no change in `total_quarter_turns`
+                    }
+                    QuarterTurnDelta::PlusOne => {
+                        // One turn forwards
+                        total_quarter_turns += 1
+                    }
+                    QuarterTurnDelta::Diagonal => {
+                        // Diagonal jump, which should not happen with proper sampling.
                         // println!("Warning: diagonal jump in (Br, Bz); event = {:?}", event);
                         // TODO: what should we do in this case? Skip this cell or count the cell as valid and then wait to see if it converges in BicubicInterpolator?
                     }
-                    Quadrant::Q4 => total_quarter_turns -= 1,
+                    QuarterTurnDelta::MinusOne => {
+                        // One turn backwards
+                        total_quarter_turns -= 1
+                    }
                 }
                 prev_q = new_q;
             }
@@ -318,10 +325,10 @@ pub fn find_stationary_points_using_winding_number(
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis.
                 // TODO:`psi_2d` is stored as (i_z, i_r), but `BicubicInterpolator` expects `f[(i_r, i_z)]`.
                 // TODO:So we need to transpose the arrays!
-                let f: Array2<f64> = psi_2d.slice(slice_cell_perimeter).t().to_owned();
-                let d_f_d_r: Array2<f64> = d_psi_d_r_2d.slice(slice_cell_perimeter).t().to_owned();
-                let d_f_d_z: Array2<f64> = d_psi_d_z_2d.slice(slice_cell_perimeter).t().to_owned();
-                let d2_f_d_r_d_z: Array2<f64> = d2_psi_d_rz_2d.slice(slice_cell_perimeter).t().to_owned();
+                let f: Array2<f64> = psi_2d.slice(slice_cell_perimeter).to_owned();
+                let d_f_d_r: Array2<f64> = d_psi_d_r_2d.slice(slice_cell_perimeter).to_owned();
+                let d_f_d_z: Array2<f64> = d_psi_d_z_2d.slice(slice_cell_perimeter).to_owned();
+                let d2_f_d_r_d_z: Array2<f64> = d2_psi_d_rz_2d.slice(slice_cell_perimeter).to_owned();
 
                 // Create a bicubic interpolator
                 let bicubic_interpolator: BicubicInterpolator =
@@ -343,11 +350,15 @@ pub fn find_stationary_points_using_winding_number(
                         let i_r_nearest: usize = (r.to_owned() - stationary_r).abs().argmin().unwrap();
                         let i_z_nearest: usize = (z.to_owned() - stationary_z).abs().argmin().unwrap();
 
-                        // Calculate the Hessian at the nearest grid point of the cell
-                        let d2_psi_d_r2: f64 = d2_psi_d_r2_2d[(i_z_nearest, i_r_nearest)];
-                        let d2_psi_d_z2: f64 = d2_psi_d_z2_2d[(i_z_nearest, i_r_nearest)];
-                        let d2_psi_d_r_d_z: f64 = d2_psi_d_rz_2d[(i_z_nearest, i_r_nearest)];
-                        let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_d_z);
+                        // Calculate the function and gradients at the stationary point
+                        let function_and_derivatives: BicubicValueAndDerivatives =
+                            bicubic_interpolator.value_and_derivatives(stationary_point.x, stationary_point.y);
+                        let d2_psi_d_r2: f64 = function_and_derivatives.d2_f_d_x2 / (d_r * d_r);
+                        let d2_psi_d_r_d_z: f64 = function_and_derivatives.d2_f_d_x_d_y / (d_r * d_z);
+                        let d2_psi_d_z2: f64 = function_and_derivatives.d2_f_d_y2 / (d_z * d_z);
+
+                        // Calculate the Hessian at the stationary point
+                        let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_r_d_z, d2_psi_d_z2);
 
                         stationary_points.push(StationaryPoint {
                             r: stationary_r,
@@ -421,27 +432,36 @@ enum Quadrant {
     Q4,
 }
 
+/// The number of quarter turn rotations
+#[derive(Copy, Clone, Debug)]
+enum QuarterTurnDelta {
+    Zero,
+    PlusOne,
+    Diagonal,
+    MinusOne,
+}
+
 impl Quadrant {
     /// Returns the number of quarter turns from `prev` to `self` as a `Quadrant`.
     /// * `Q1` (0 turns) — same quadrant
     /// * `Q2` (1 turn)  — one CCW step
     /// * `Q3` (2 turns) — diagonal jump (should not happen with proper sampling)
     /// * `Q4` (3 turns) — one CW step
-    fn quarter_turns_from(self, prev: Quadrant) -> Quadrant {
+    fn quarter_turns_from(self, prev: Quadrant) -> QuarterTurnDelta {
         match (self as i8 - prev as i8).rem_euclid(4) {
-            0 => Quadrant::Q1,
-            1 => Quadrant::Q2,
-            2 => Quadrant::Q3,
-            3 => Quadrant::Q4,
+            0 => QuarterTurnDelta::Zero,
+            1 => QuarterTurnDelta::PlusOne,
+            2 => QuarterTurnDelta::Diagonal,
+            3 => QuarterTurnDelta::MinusOne,
             _ => unreachable!("rem_euclid(4) always returns 0..=3"),
         }
     }
 }
 
-/// Quadrant of (-br, bz). Q1: (+,+), Q2: (-,+), Q3: (-,-), Q4: (+,-).
-/// CCW traversal of the (-br, bz) plane visits Q1 → Q2 → Q3 → Q4 → Q1.
-fn classify_quadrant(sign_br: i8, sign_bz: i8) -> Quadrant {
-    match (sign_br > 0, sign_bz > 0) {
+/// Quadrant of the (d(psi)/d(r), d(psi)/d(z))
+/// CCW traversal of the (d(psi)/d(r), d(psi)/d(z)) plane visits Q1 → Q2 → Q3 → Q4 → Q1.
+fn classify_quadrant(sign_d_psi_d_z: i8, sign_d_psi_d_r: i8) -> Quadrant {
+    match (sign_d_psi_d_r > 0, sign_d_psi_d_z > 0) {
         (true, true) => Quadrant::Q1,
         (false, true) => Quadrant::Q2,
         (false, false) => Quadrant::Q3,
@@ -643,28 +663,52 @@ fn test_2_find_stationary_points_using_winding_number_with_stationary_point_at_c
 fn test_3_find_stationary_points_using_winding_number_with_up_down_symmetry() {
     use ndarray::Array1;
 
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/r.npy");
+    let test_data_path: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/r.npy"
+    );
     let r: Array1<f64> = npy_reader_and_writer::read_npy_1d(std::path::Path::new(test_data_path));
 
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/z.npy");
+    let test_data_path: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/z.npy"
+    );
     let z: Array1<f64> = npy_reader_and_writer::read_npy_1d(std::path::Path::new(test_data_path));
 
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/psi_2d.npy");
+    let test_data_path: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/psi_2d.npy"
+    );
     let psi_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(std::path::Path::new(test_data_path));
 
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d_psi_d_r_2d.npy");
+    let test_data_path: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d_psi_d_r_2d.npy"
+    );
     let d_psi_d_r_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(std::path::Path::new(test_data_path));
 
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d_psi_d_z_2d.npy");
+    let test_data_path: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d_psi_d_z_2d.npy"
+    );
     let d_psi_d_z_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(std::path::Path::new(test_data_path));
 
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d2_psi_d_r2_2d.npy");
+    let test_data_path: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d2_psi_d_r2_2d.npy"
+    );
     let d2_psi_d_r2_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(std::path::Path::new(test_data_path));
 
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d2_psi_d_rz_2d.npy");
+    let test_data_path: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d2_psi_d_rz_2d.npy"
+    );
     let d2_psi_d_rz_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(std::path::Path::new(test_data_path));
 
-    let test_data_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d2_psi_d_z2_2d.npy");
+    let test_data_path: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d2_psi_d_z2_2d.npy"
+    );
     let d2_psi_d_z2_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(std::path::Path::new(test_data_path));
 
     let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
@@ -675,7 +719,7 @@ fn test_3_find_stationary_points_using_winding_number_with_up_down_symmetry() {
         d_psi_d_z_2d.view(),
         d2_psi_d_r2_2d.view(),
         d2_psi_d_rz_2d.view(),
-        d2_psi_d_z2_2d.view()
+        d2_psi_d_z2_2d.view(),
     );
 
     // Search for the magnetic axis

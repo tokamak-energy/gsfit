@@ -1,6 +1,6 @@
 use crate::coils::Coils;
 use crate::grad_shafranov::GsSolution;
-use crate::greens::{greens_b, greens_d_b_d_z, greens_d2_psi_d_r2, greens_psi};
+use crate::greens::Greens;
 use crate::passives::Passives;
 use crate::plasma_geometry::MarchingContour;
 use crate::plasma_geometry::marching_squares::marching_squares;
@@ -195,20 +195,12 @@ impl Plasma {
         // Calculate the grid-grid Greens
         let flat_d_r: Array1<f64> = &r * 0.0 + d_r;
         let flat_d_z: Array1<f64> = &r * 0.0 + d_z;
-        let g_psi: Array2<f64> = greens_psi(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0], flat_d_r, flat_d_z);
-        let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(
-            flat_r.clone(), // sensors
-            flat_z.clone(),
-            r.clone(), // current sources
-            0.0 * r.clone() + z[0],
-        );
-
-        let (mut g_d_br_d_z, mut g_d_bz_d_z): (Array2<f64>, Array2<f64>) = greens_d_b_d_z(
-            flat_r.clone(), // sensors
-            flat_z.clone(),
-            r.clone(), // current sources
-            0.0 * r.clone() + z[0],
-        );
+        let greens_calculator: Greens = Greens::new(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0], flat_d_r, flat_d_z);
+        let g_psi: Array2<f64> = greens_calculator.psi();
+        let g_br: Array2<f64> = greens_calculator.b_r();
+        let g_bz: Array2<f64> = greens_calculator.b_z();
+        let mut g_d_br_d_z: Array2<f64> = greens_calculator.d_b_r_d_z();
+        let mut g_d_bz_d_z: Array2<f64> = greens_calculator.d_b_z_d_z();
 
         // Set the self-values to 0.0
         for i_r in 0..n_r {
@@ -221,7 +213,7 @@ impl Plasma {
         }
 
         // d2_g_d_r2
-        let mut g_d2_psi_d_r2: Array2<f64> = greens_d2_psi_d_r2(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0]);
+        let mut g_d2_psi_d_r2: Array2<f64> = greens_calculator.d2_psi_d_r2();
         for i_r in 0..n_r {
             for i_rz in 0..n_r * n_z {
                 if g_d2_psi_d_r2[(i_rz, i_r)].is_nan() {
@@ -278,60 +270,43 @@ impl Plasma {
         let flat_z: Array1<f64> = self.results.get("grid").get("flat").get("z").unwrap_array1();
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
-        let n_rz: usize = n_r * n_z;
-        let d_r: Array1<f64> = Array1::from_elem(n_rz, f64::NAN); // Using NaN as safety - if we get NaN's we know we have a problem
-        let d_z: Array1<f64> = Array1::from_elem(n_rz, f64::NAN); // Using NaN as safety - if we get NaN's we know we have a problem
 
-        for coil_name in &coils_local.results.get("pf").keys() {
+        for coil_name in &coils.results.get("pf").keys() {
             // Coils
-            let coil_r: Array1<f64> = coils_local.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
-            let coil_z: Array1<f64> = coils_local.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
+            let coil_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
+            let coil_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
+            let n_coil_filaments: usize = coil_r.len();
 
             // Greens function for flux
-            let g_psi_all_filaments: Array2<f64> = greens_psi(
+            let greens_calculator: Greens = Greens::new(
                 flat_r.clone(),
                 flat_z.clone(),
                 coil_r.clone(),
                 coil_z.clone(),
-                d_r.clone(), // grid should not overlap with coils
-                d_z.clone(),
-            ); // shape = (n_z * n_r, n_filaments)
+                Array1::from_elem(n_coil_filaments, f64::NAN), // grid should not overlap with coils
+                Array1::from_elem(n_coil_filaments, f64::NAN),
+            );
+
+            // Greens function for psi, br, bz, and derivatives
+            let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = (n_z * n_r, n_coil_filaments)
+            let g_d_psi_d_z_filaments: Array2<f64> = greens_calculator.b_r(); // shape = (n_z * n_r, n_coil_filaments)
+            let g_br_all_filaments: Array2<f64> = greens_calculator.b_r(); // shape = (n_z * n_r, n_coil_filaments)
+            let g_bz_all_filaments: Array2<f64> = greens_calculator.b_z(); // shape = (n_z * n_r, n_coil_filaments)
+            let g_d_br_d_z_all_filaments: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = (n_z * n_r, n_coil_filaments)
+            let g_d_bz_d_z_all_filaments: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = (n_z * n_r, n_coil_filaments)
+            let d2_g_d_r2_all_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = (n_z * n_r, n_coil_filaments)
 
             // sum over all filaments and convert into shape = (n_z, n_r)
-            let g_psi: Array2<f64> = g_psi_all_filaments
+            let g_psi: Array2<f64> = g_psi_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `g_psi_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_coils: Failed to reshape `g_psi_filaments` into (n_z, n_r)")
                 .to_owned();
-
-            // Greens function for d_psi_d_z
-            // (needed for calculating correction to psi from the vertical sabilisation "delta_z")
-            let (g_br_grid_coil_all_filaments, _g_br_grid_coil_all_filaments): (Array2<f64>, Array2<f64>) = greens_b(
-                flat_r.clone(), // "sensors"
-                flat_z.clone(),
-                coil_r.clone(), // "current sources"
-                coil_z.clone(),
-            ); // shape = (n_r * n_z, n_filaments)
-
-            // d_psi_d_z = -2 * pi * r * br (same equation as in "flux_loops.rs")
-            // sum over all filaments and convert into shape = (n_z, n_r)
-            let g_d_psi_d_z_tmp: Array1<f64> = -2.0 * PI * flat_r.clone() * (g_br_grid_coil_all_filaments.sum_axis(Axis(1)));
-            let g_d_psi_d_z: Array2<f64> = g_d_psi_d_z_tmp
+            let g_d_psi_d_z: Array2<f64> = g_d_psi_d_z_filaments
+                .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `g_d_psi_d_z_tmp` into (n_z, n_r)")
+                .expect("plasma.greens_with_coils: Failed to reshape `g_d_psi_d_z_filaments` into (n_z, n_r)")
                 .to_owned();
-
-            // Greens function for br and bz
-            let (g_br_all_filaments, g_bz_all_filaments): (Array2<f64>, Array2<f64>) = greens_b(flat_r.clone(), flat_z.clone(), coil_r.clone(), coil_z.clone()); // shape = (n_z * n_r, n_filaments)
-
-            // Greens function for d_br_d_z and d_bz_d_z
-            let (g_d_br_d_z_all_filaments, g_d_bz_d_z_all_filaments): (Array2<f64>, Array2<f64>) =
-                greens_d_b_d_z(flat_r.clone(), flat_z.clone(), coil_r.clone(), coil_z.clone()); // shape = (n_z * n_r, n_filaments)
-
-            // d2_psi_d_r2
-            let d2_g_d_r2_all_filaments: Array2<f64> = greens_d2_psi_d_r2(flat_r.clone(), flat_z.clone(), coil_r, coil_z);
-
-            // sum over all filaments and convert into shape = (n_z, n_r)
             let g_br: Array2<f64> = g_br_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
@@ -433,20 +408,41 @@ impl Plasma {
                     .unwrap_array1();
 
                 // Green's table
-                let g_psi_filaments: Array2<f64> = greens_psi(
+                let greens_calculator: Greens = Greens::new(
                     flat_r.clone(), // by convention (r, z) are "sensors"
                     flat_z.clone(),
                     passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
                     passive_z.clone(),
-                    flat_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
-                    flat_r.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+                    passive_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+                    passive_z.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
                 );
 
-                // Green's with degrees of freedom
+                // Green's functions for `psi`, `b_r`, `b_z`, and derivatives
+                let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_r * n_z, n_filament]
+                let g_br_filaments: Array2<f64> = greens_calculator.b_r(); // shape = [n_r * n_z, n_filament]
+                let g_bz_filaments: Array2<f64> = greens_calculator.b_z(); // shape = [n_r * n_z, n_filament]
+                let d_g_br_filaments_d_z: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [n_r * n_z, n_filament]
+                let d_g_bz_filaments_d_z: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = [n_r * n_z, n_filament]
+                let g_d_psi_d_z_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = [n_r * n_z, n_filament]
+                let g_d2_psi_d_r2_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = [n_r * n_z, n_filament]
+
+                // Apply the current_distribution
                 let g_psi_filaments_with_dof: Array2<f64> = g_psi_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
+                let g_br_filaments_with_dof: Array2<f64> = &g_br_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_bz_filaments_with_dof: Array2<f64> = g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
+                let d_g_br_filaments_with_dof_d_z: Array2<f64> = d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
+                let d_g_bz_filaments_with_dof_d_z: Array2<f64> = d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
+                let g_d_psi_d_z_coil_filaments_with_dof: Array2<f64> = g_d_psi_d_z_coil_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_r2_filaments_with_dof: Array2<f64> = g_d2_psi_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
 
                 // Sum over all filaments
                 let g_psi: Array1<f64> = g_psi_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_br: Array1<f64> = g_br_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_bz: Array1<f64> = g_bz_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_d_br_d_z: Array1<f64> = d_g_br_filaments_with_dof_d_z.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_d_bz_d_z: Array1<f64> = d_g_bz_filaments_with_dof_d_z.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_d_psi_d_z: Array1<f64> = g_d_psi_d_z_coil_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_d2_psi_d_r2: Array1<f64> = g_d2_psi_d_r2_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
 
                 // Store
                 self.results
@@ -455,45 +451,6 @@ impl Plasma {
                     .get_or_insert(&passive_name)
                     .get_or_insert(&dof_name)
                     .insert("psi", g_psi);
-
-                // Green's functions for BR and BZ
-                let (g_br_filaments, g_bz_filaments): (Array2<f64>, Array2<f64>) = greens_b(
-                    flat_r.clone(), // by convention (r, z) are "sensors"
-                    flat_z.clone(),
-                    passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
-                    passive_z.clone(),
-                );
-
-                // Green's functions for d_br_d_z and d_bz_d_z
-                let (d_g_br_filaments_d_z, d_g_bz_filaments_d_z): (Array2<f64>, Array2<f64>) = greens_d_b_d_z(
-                    flat_r.clone(), // by convention (r, z) are "sensors"
-                    flat_z.clone(),
-                    passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
-                    passive_z.clone(),
-                );
-
-                let g_d2_psi_d_r2_filaments: Array2<f64> = greens_d2_psi_d_r2(
-                    flat_r.clone(), // by convention (r, z) are "sensors"
-                    flat_z.clone(),
-                    passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
-                    passive_z.clone(),
-                );
-
-                // Apply the current_distribution
-                let g_br_filaments_with_dof: Array2<f64> = &g_br_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_bz_filaments_with_dof: Array2<f64> = g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
-                let d_g_br_filaments_with_dof_d_z: Array2<f64> = d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
-                let d_g_bz_filaments_with_dof_d_z: Array2<f64> = d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_r2_filaments_with_dof: Array2<f64> = g_d2_psi_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
-
-                // Sum over all filaments
-                let g_br: Array1<f64> = g_br_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_bz: Array1<f64> = g_bz_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d_br_d_z: Array1<f64> = d_g_br_filaments_with_dof_d_z.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d_bz_d_z: Array1<f64> = d_g_bz_filaments_with_dof_d_z.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d2_psi_d_r2: Array1<f64> = g_d2_psi_d_r2_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-
-                // Store
                 self.results
                     .get_or_insert("greens")
                     .get_or_insert("passives")
@@ -523,22 +480,13 @@ impl Plasma {
                     .get_or_insert("passives")
                     .get_or_insert(&passive_name)
                     .get_or_insert(&dof_name)
-                    .insert("d2_psi_d_r2", g_d2_psi_d_r2);
-
-                // >> d(psi)/d(z) (needed for calculating correction to psi from the vertical sabilisation "delta_z")
-                // (needed for calculating correction to psi from the vertical sabilisation "delta_z")
-                // d_psi_d_z = -2 * pi * r * br (same equation as in "flux_loops.rs")
-                // apply current_distribtion and sum over all filaments
-                let g_br_filaments_with_dof: Array2<f64> = g_br_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
-                let g_d_psi_d_z_coil: Array1<f64> = -2.0 * PI * flat_r.clone() * (g_br_filaments_with_dof.sum_axis(Axis(1)));
-
-                // Store
+                    .insert("d_psi_d_z", g_d_psi_d_z);
                 self.results
                     .get_or_insert("greens")
                     .get_or_insert("passives")
                     .get_or_insert(&passive_name)
                     .get_or_insert(&dof_name)
-                    .insert("d_psi_d_z", g_d_psi_d_z_coil); // shape = [n_r * n_z]
+                    .insert("d2_psi_d_r2", g_d2_psi_d_r2);
             }
         }
     }

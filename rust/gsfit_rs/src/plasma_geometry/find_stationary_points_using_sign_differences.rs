@@ -222,7 +222,7 @@ pub fn find_stationary_points_using_sign_differences(
                 // d^2(psi)/(d_r * d_z)
                 let d2_psi_d_r_d_z: f64 = 2.0 * PI * r[i_r_nearest] * d_bz_d_z_2d[(i_z_nearest, i_r_nearest)];
 
-                let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_z2, d2_psi_d_r_d_z);
+                let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_r_d_z, d2_psi_d_z2);
 
                 stationary_points.push(StationaryPoint {
                     r: stationary_r,
@@ -282,30 +282,30 @@ fn setup_bicubic_interpolator(
 
     // Function values
     f[(0, 0)] = psi_2d[(i_z_lower, i_r_left)];
-    f[(0, 1)] = psi_2d[(i_z_upper, i_r_left)];
-    f[(1, 0)] = psi_2d[(i_z_lower, i_r_right)];
+    f[(1, 0)] = psi_2d[(i_z_upper, i_r_left)];
+    f[(0, 1)] = psi_2d[(i_z_lower, i_r_right)];
     f[(1, 1)] = psi_2d[(i_z_upper, i_r_right)];
 
     // d(psi)/d(r)
     // bz = 1 / (2.0 * PI * r) * d_psi_d_r
     d_f_d_r[(0, 0)] = bz_2d[(i_z_lower, i_r_left)] * (2.0 * PI * r[i_r_left]);
-    d_f_d_r[(0, 1)] = bz_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
-    d_f_d_r[(1, 0)] = bz_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
+    d_f_d_r[(1, 0)] = bz_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
+    d_f_d_r[(0, 1)] = bz_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
     d_f_d_r[(1, 1)] = bz_2d[(i_z_upper, i_r_right)] * (2.0 * PI * r[i_r_right]);
 
     // d(psi)/d(z)
     // br = - 1 / (2.0 * PI * r) * d_psi_d_z
     d_f_d_z[(0, 0)] = -br_2d[(i_z_lower, i_r_left)] * (2.0 * PI * r[i_r_left]);
-    d_f_d_z[(0, 1)] = -br_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
-    d_f_d_z[(1, 0)] = -br_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
+    d_f_d_z[(1, 0)] = -br_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
+    d_f_d_z[(0, 1)] = -br_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
     d_f_d_z[(1, 1)] = -br_2d[(i_z_upper, i_r_right)] * (2.0 * PI * r[i_r_right]);
 
     // d^2(psi)/(d(r)*d(z))
     // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
     // TODO: d_bz_d_z_2d has a delta_z correction missing!  <-- I think I have fixed this in `gs_solution`
     d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_lower, i_r_left)] * (2.0 * PI * r[i_r_left]);
-    d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
-    d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
+    d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_upper, i_r_left)] * (2.0 * PI * r[i_r_left]);
+    d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_lower, i_r_right)] * (2.0 * PI * r[i_r_right]);
     d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_upper, i_r_right)] * (2.0 * PI * r[i_r_right]);
 
     // Create a bicubic interpolator

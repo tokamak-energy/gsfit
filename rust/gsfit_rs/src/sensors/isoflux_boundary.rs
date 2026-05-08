@@ -1,13 +1,12 @@
 use super::SensorsDynamic;
 use crate::coils::Coils;
-use crate::greens::greens_b;
-use crate::greens::greens_psi;
+use crate::greens::Greens;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::SensorsStatic;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use ndarray::{Array1, Array2, Array3, Axis, s};
+use ndarray::{Array1, Array2, Array3, Axis, array, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -15,7 +14,6 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
-use std::f64::consts::PI;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
@@ -190,14 +188,15 @@ impl IsofluxBoundary {
                 let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                 for i_time in 0..n_time {
                     // Calculate the Green's at location 1
-                    let g_full_location_1: Array2<f64> = greens_psi(
-                        Array1::from_vec(vec![location_1_r[i_time]]),
-                        Array1::from_vec(vec![location_1_z[i_time]]),
+                    let greens_calculator: Greens = Greens::new(
+                        array![location_1_r[i_time]],
+                        array![location_1_z[i_time]],
                         coil_r.clone(),
                         coil_z.clone(),
                         coil_r.clone() * 0.0,
-                        coil_r.clone() * 0.0,
+                        coil_z.clone() * 0.0,
                     );
+                    let g_full_location_1: Array2<f64> = greens_calculator.psi(); // shape = [1, n_z * n_r]
 
                     // Sum over all the current sources
                     g_vs_time[i_time] = g_full_location_1.sum();
@@ -253,14 +252,15 @@ impl IsofluxBoundary {
                     let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                     for i_time in 0..n_time {
                         // Location 1
-                        let g_full_location_1: Array2<f64> = greens_psi(
-                            Array1::from_vec(vec![location_1_r[i_time]]), // by convention (r, z) are "sensors"
-                            Array1::from_vec(vec![location_1_z[i_time]]),
-                            passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
+                        let greens_calculator: Greens = Greens::new(
+                            array![location_1_r[i_time]],
+                            array![location_1_z[i_time]],
+                            passive_r.clone(),
                             passive_z.clone(),
                             passive_r.clone() * 0.0,
                             passive_z.clone() * 0.0,
                         );
+                        let g_full_location_1: Array2<f64> = greens_calculator.psi(); // shape = [1, n_z * n_r]
 
                         // Current distribution
                         let current_distribution: Array1<f64> = passives
@@ -326,14 +326,15 @@ impl IsofluxBoundary {
             let mut g_d_plasma_d_z: Array2<f64> = Array2::from_elem([n_time, n_z * n_r], f64::NAN);
             for i_time in 0..n_time {
                 // Plasma component
-                let g_full_location_1: Array2<f64> = greens_psi(
-                    Array1::from_vec(vec![location_1_r[i_time]]), // sensor
-                    Array1::from_vec(vec![location_1_z[i_time]]),
-                    plasma_r.clone(), // current source
+                let greens_calculator: Greens = Greens::new(
+                    array![location_1_r[i_time]],
+                    array![location_1_z[i_time]],
+                    plasma_r.clone(),
                     plasma_z.clone(),
-                    plasma_r.clone() * 0.0, // TODO: I don't like the dr_prime and dz_prime
                     plasma_r.clone() * 0.0,
+                    plasma_z.clone() * 0.0,
                 );
+                let g_full_location_1: Array2<f64> = greens_calculator.psi(); // shape = [1, n_z * n_r]
 
                 // Sensors Green's function
                 let g_with_plasma_location_1: Array1<f64> = g_full_location_1.sum_axis(Axis(0)); // g_br_full_location_1.shape = [1, n_z * n_r];  g_br_location_1.shape = [n_z * n_r]
@@ -344,14 +345,8 @@ impl IsofluxBoundary {
 
                 // Vertical stability
                 // location_1
-                let (g_br_full_location_1, _g_bz_full_location_1): (Array2<f64>, Array2<f64>) = greens_b(
-                    Array1::from_vec(vec![location_1_r[i_time]]), // sensors
-                    Array1::from_vec(vec![location_1_z[i_time]]),
-                    plasma_r.clone(), // current sources
-                    plasma_z.clone(),
-                );
-
-                let g_d_plasma_d_z_location_1: Array1<f64> = -2.0 * PI * location_1_r[i_time] * g_br_full_location_1.sum_axis(Axis(0)); // shape = n_r * n_z
+                let d_psi_d_z_location_1_matrix: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = [1, n_z * n_r]
+                let g_d_plasma_d_z_location_1: Array1<f64> = d_psi_d_z_location_1_matrix.sum_axis(Axis(0)); // shape = n_r * n_z
 
                 g_d_plasma_d_z.slice_mut(s![i_time, ..]).assign(&g_d_plasma_d_z_location_1);
             }

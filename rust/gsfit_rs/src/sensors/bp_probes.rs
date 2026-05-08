@@ -1,6 +1,5 @@
 use crate::coils::Coils;
-use crate::greens::greens_b;
-use crate::greens::greens_d_b_d_z;
+use crate::greens::Greens;
 use crate::passives::PassiveGeometryAll;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
@@ -8,7 +7,7 @@ use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree}
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use ndarray::{Array1, Array2, Array3, Axis, s};
+use ndarray::{Array1, Array2, Array3, Axis, array, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -162,14 +161,22 @@ impl BpProbes {
             let sensor_r: f64 = self.results.get(sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(sensor_name).get("geometry").get("z").unwrap_f64();
             let sensor_angle_pol: f64 = self.results.get(sensor_name).get("geometry").get("angle_pol").unwrap_f64();
-            let sensor_r_array: Array1<f64> = Array1::from_vec(vec![sensor_r]);
-            let sensor_z_array: Array1<f64> = Array1::from_vec(vec![sensor_z]);
 
-            // Calculate Greens:  g_br.shape() = (1, n_passives);  g_bz.shape() = (1, n_passives)
-            let (g_br, g_bz): (Array2<f64>, Array2<f64>) = greens_b(sensor_r_array, sensor_z_array, passives_r.clone(), passives_z.clone());
-            let g_br_summed: Array1<f64> = g_br.sum_axis(Axis(0));
-            let g_bz_summed: Array1<f64> = g_bz.sum_axis(Axis(0));
-            let g: Array1<f64> = g_br_summed * sensor_angle_pol.cos() + g_bz_summed * sensor_angle_pol.sin(); // shape = (n_passives)
+            let greens_calculator: Greens = Greens::new(
+                array![sensor_r],
+                array![sensor_z],
+                passives_r.clone(),
+                passives_z.clone(),
+                passives_r.clone() * 0.0, // TODO: should this be NaN instead?
+                passives_z.clone() * 0.0,
+            );
+
+            // Calculate Greens
+            let g_br_matrix: Array2<f64> = greens_calculator.b_r(); // shape() = (1, n_passives)
+            let g_bz_matrix: Array2<f64> = greens_calculator.b_z(); // shape() = (1, n_passives)
+            let g_br: Array1<f64> = g_br_matrix.sum_axis(Axis(0));
+            let g_bz: Array1<f64> = g_bz_matrix.sum_axis(Axis(0));
+            let g: Array1<f64> = g_br * sensor_angle_pol.cos() + g_bz * sensor_angle_pol.sin(); // shape = (n_passives)
 
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = (n_pf)
@@ -551,16 +558,21 @@ impl BpProbes {
                 let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
 
-                let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
-                    Array1::from_vec(vec![sensor_r]),
-                    Array1::from_vec(vec![sensor_z]),
+                let greens_calculator: Greens = Greens::new(
+                    array![sensor_r],
+                    array![sensor_z],
                     coil_r.clone(),
                     coil_z.clone(),
+                    coil_r.clone() * 0.0, // TODO: should this be NaN instead?
+                    coil_z.clone() * 0.0,
                 );
 
+                let g_b_r_matrix: Array2<f64> = greens_calculator.b_r(); // shape() = (1, n_coils)
+                let g_b_z_matrix: Array2<f64> = greens_calculator.b_z(); // shape() = (1, n_coils)
+
                 // Sum over all the current sources
-                let g_br: f64 = g_br_full.sum();
-                let g_bz: f64 = g_bz_full.sum();
+                let g_br: f64 = g_b_r_matrix.sum();
+                let g_bz: f64 = g_b_z_matrix.sum();
 
                 // Sensors Green's function
                 let g: f64 = g_br * sensor_angle_pol.cos() + g_bz * sensor_angle_pol.sin();
@@ -585,15 +597,20 @@ impl BpProbes {
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
 
-            let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
-                Array1::from_vec(vec![sensor_r]), // sensor
-                Array1::from_vec(vec![sensor_z]),
-                plasma_r.clone(), // current source
+            let greens_calculator: Greens = Greens::new(
+                array![sensor_r],
+                array![sensor_z],
+                plasma_r.clone(),
                 plasma_z.clone(),
+                plasma_r.clone() * 0.0, // TODO: this should be d_r not 0.0
+                plasma_z.clone() * 0.0,
             );
 
-            let g_br: Array1<f64> = g_br_full.sum_axis(Axis(0)); // g_br_full.shape = [1, n_z * n_r];  g_br.shape = [n_z * n_r]
-            let g_bz: Array1<f64> = g_bz_full.sum_axis(Axis(0));
+            let g_b_r_matrix: Array2<f64> = greens_calculator.b_r(); // shape() = (1, n_z*n_r)
+            let g_b_z_matrix: Array2<f64> = greens_calculator.b_z(); // shape() = (1, n_z*n_r)
+
+            let g_br: Array1<f64> = g_b_r_matrix.sum_axis(Axis(0)); // g_b_r_matrix.shape = [1, n_z * n_r];  g_br.shape = [n_z * n_r]
+            let g_bz: Array1<f64> = g_b_z_matrix.sum_axis(Axis(0));
 
             // Sensors Green's function
             let g_with_plasma: Array1<f64> = g_br * sensor_angle_pol.cos() + g_bz * sensor_angle_pol.sin();
@@ -601,16 +618,21 @@ impl BpProbes {
             // Store
             self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_with_plasma); // shape = [(n_z * n_r)]
 
-            // Vertical stability
-            let (g_d_plasma_br_d_z_full, g_d_plasma_bz_d_z_full): (Array2<f64>, Array2<f64>) = greens_d_b_d_z(
-                Array1::from_vec(vec![sensor_r]), // sensor
-                Array1::from_vec(vec![sensor_z]),
-                plasma_r.clone(), // current source
+            let greens_calculator: Greens = Greens::new(
+                array![sensor_r],
+                array![sensor_z],
+                plasma_r.clone(),
                 plasma_z.clone(),
+                plasma_r.clone() * 0.0, // TODO: should be d_r not 0.0
+                plasma_z.clone() * 0.0,
             );
 
-            let g_d_plasma_br_d_z: Array1<f64> = g_d_plasma_br_d_z_full.sum_axis(Axis(0)); // g_d_plasma_br_d_z_full.shape = [1, n_z * n_r];  g_d_plasma_br_d_z.shape = [n_z * n_r]
-            let g_d_plasma_bz_d_z: Array1<f64> = g_d_plasma_bz_d_z_full.sum_axis(Axis(0));
+            let g_d_b_r_d_z_matrix: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape() = (1, n_z*n_r)
+            let g_d_b_z_d_z_matrix: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape() = (1, n_z*n_r)
+
+            // Vertical stability
+            let g_d_plasma_br_d_z: Array1<f64> = g_d_b_r_d_z_matrix.sum_axis(Axis(0)); // g_d_b_r_d_z_matrix.shape = [1, n_z * n_r];  g_d_plasma_br_d_z.shape = [n_z * n_r]
+            let g_d_plasma_bz_d_z: Array1<f64> = g_d_b_z_d_z_matrix.sum_axis(Axis(0));
 
             // Sensors Green's function
             let g_d_plasma_d_z: Array1<f64> = g_d_plasma_br_d_z * sensor_angle_pol.cos() + g_d_plasma_bz_d_z * sensor_angle_pol.sin();
@@ -633,18 +655,23 @@ impl BpProbes {
 
             // Calculate Greens with each passive degree of freedom
             for passive_name in passives.results.keys() {
-                let _tmp: DataTreeAccumulator<'_> = passives.results.get(&passive_name).get("dof");
-                let dof_names: Vec<String> = _tmp.keys();
+                let passive_dofs: DataTreeAccumulator<'_> = passives.results.get(&passive_name).get("dof");
+                let dof_names: Vec<String> = passive_dofs.keys();
                 let passive_r: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
                 for dof_name in dof_names {
-                    let (g_br_full, g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
-                        Array1::from_vec(vec![sensor_r]), // by convention (r, z) are "sensors"
-                        Array1::from_vec(vec![sensor_z]),
-                        passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
+                    let greens_calculator: Greens = Greens::new(
+                        array![sensor_r],
+                        array![sensor_z],
+                        passive_r.clone(),
                         passive_z.clone(),
+                        passive_r.clone() * 0.0, // TODO: should this be NaN instead?
+                        passive_z.clone() * 0.0,
                     );
+
+                    let g_br_matrix: Array2<f64> = greens_calculator.b_r(); // shape() = (1, n_z*n_r)
+                    let g_bz_matrix: Array2<f64> = greens_calculator.b_z(); // shape() = (1, n_z*n_r)
 
                     // Current distribution
                     let current_distribution: Array1<f64> = passives
@@ -655,8 +682,8 @@ impl BpProbes {
                         .get("current_distribution")
                         .unwrap_array1();
 
-                    let g_br_with_dof_full: Array2<f64> = g_br_full * &current_distribution; // shape = [n_passive_dof, n_filament]
-                    let g_bz_with_dof_full: Array2<f64> = g_bz_full * current_distribution; // shape = [n_passive_dof, n_filament]
+                    let g_br_with_dof_full: Array2<f64> = g_br_matrix * &current_distribution; // shape = [n_passive_dof, n_filament]
+                    let g_bz_with_dof_full: Array2<f64> = g_bz_matrix * current_distribution; // shape = [n_passive_dof, n_filament]
 
                     // Sum over all filaments
                     let g_br: f64 = g_br_with_dof_full.sum(); // shape = [n_passive_dof]
