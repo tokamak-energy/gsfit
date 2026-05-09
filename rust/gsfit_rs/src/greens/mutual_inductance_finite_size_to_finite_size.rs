@@ -76,7 +76,7 @@ pub fn mutual_inductance_finite_size_to_finite_size(
             );
 
             // Calculate the greens function for the sub-filaments to sub-filaments
-            let greens_calculator: Greens = Greens::new(
+            let greens_calculator: Greens = Greens::sensor_to_conductor(
                 r_sub_filament.clone(),
                 z_sub_filament.clone(),
                 r_sub_filament_prime.clone(),

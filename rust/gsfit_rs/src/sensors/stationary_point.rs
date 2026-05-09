@@ -386,7 +386,7 @@ impl StationaryPoint {
                     let mag_axis_r_local: Array1<f64> = array![mag_axis_r[i_time]];
                     let mag_axis_z_local: Array1<f64> = array![mag_axis_z[i_time]];
 
-                    let greens_calculator: Greens = Greens::new(
+                    let greens_calculator: Greens = Greens::sensor_to_conductor(
                         mag_axis_r_local.clone(),
                         mag_axis_z_local.clone(),
                         coil_r.clone(),
@@ -432,7 +432,7 @@ impl StationaryPoint {
             let mut g_with_plasma: Array2<f64> = Array2::from_elem((n_time, n_z * n_r), f64::NAN);
             let mut g_d_plasma_d_z: Array2<f64> = Array2::from_elem((n_time, n_z * n_r), f64::NAN);
             for i_time in 0..n_time {
-                let greens_calculator: Greens = Greens::new(
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
                     array![mag_axis_r[i_time]], // sensor
                     array![mag_axis_z[i_time]],
                     plasma_r.clone(), // current source
@@ -486,7 +486,7 @@ impl StationaryPoint {
                 for dof_name in dof_names {
                     let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                     for i_time in 0..n_time {
-                        let greens_calculator: Greens = Greens::new(
+                        let greens_calculator: Greens = Greens::sensor_to_conductor(
                             array![mag_axis_r[i_time]], // sensor
                             array![mag_axis_z[i_time]],
                             passive_r.clone(), // current source

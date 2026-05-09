@@ -6,7 +6,7 @@ use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree}
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use ndarray::{Array1, Array2, Array3, Axis, s};
+use ndarray::{Array1, Array2, Array3, ArrayView2, Axis, s};
 use ndarray_stats::QuantileExt;
 use numpy::IntoPyArray; // converting to python data types
 use numpy::PyArrayMethods;
@@ -493,16 +493,10 @@ impl Pressure {
 
                 // Find psi at the pressure sensor
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-                let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+                let f: ArrayView2<f64> = psi_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
                 let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
                 let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
                 let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-
-                // Function values
-                f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
-                f[(1, 0)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
-                f[(0, 1)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
-                f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
 
                 // d(psi)/d(r)
                 // bz = 1 / (2.0 * PI * r) * d_psi_d_r

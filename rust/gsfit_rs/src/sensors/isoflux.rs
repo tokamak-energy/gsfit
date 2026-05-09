@@ -244,7 +244,7 @@ impl Isoflux {
                 let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
                 for i_time in 0..n_time {
                     // Calculate the Green's at location 1
-                    let greens_calculator: Greens = Greens::new(
+                    let greens_calculator: Greens = Greens::sensor_to_conductor(
                         array![location_1_r[i_time]],
                         array![location_1_z[i_time]],
                         coil_r.clone(),
@@ -256,7 +256,7 @@ impl Isoflux {
                     let g_location_1: f64 = g_location_1_matrix.sum();
 
                     // Calculate the Green's at location 2
-                    let greens_calculator: Greens = Greens::new(
+                    let greens_calculator: Greens = Greens::sensor_to_conductor(
                         array![location_2_r[i_time]],
                         array![location_2_z[i_time]],
                         coil_r.clone(),
@@ -337,7 +337,7 @@ impl Isoflux {
                     let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
                     for i_time in 0..n_time {
                         // Location 1
-                        let greens_calculator: Greens = Greens::new(
+                        let greens_calculator: Greens = Greens::sensor_to_conductor(
                             array![location_1_r[i_time]],
                             array![location_1_z[i_time]],
                             passive_r.clone(),
@@ -363,7 +363,7 @@ impl Isoflux {
                         let g_location_1: f64 = g_with_dof_full_location_1.sum();
 
                         // Location 2
-                        let greens_calculator: Greens = Greens::new(
+                        let greens_calculator: Greens = Greens::sensor_to_conductor(
                             array![location_2_r[i_time]],
                             array![location_2_z[i_time]],
                             passive_r.clone(),
@@ -456,7 +456,7 @@ impl Isoflux {
             let mut g_d_plasma_d_z: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
             for i_time in 0..n_time {
                 // Location 1
-                let greens_calculator: Greens = Greens::new(
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
                     array![location_1_r[i_time]],
                     array![location_1_z[i_time]],
                     plasma_r.clone(),
@@ -473,7 +473,7 @@ impl Isoflux {
                 let g_d_plasma_d_z_location_1: Array1<f64> = g_d_psi_d_z_location_1.sum_axis(Axis(0)); // shape = n_r * n_z
 
                 // Location 2
-                let greens_calculator: Greens = Greens::new(
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
                     array![location_2_r[i_time]],
                     array![location_2_z[i_time]],
                     plasma_r.clone(),

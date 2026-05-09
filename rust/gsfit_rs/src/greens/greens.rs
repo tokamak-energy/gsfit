@@ -32,6 +32,13 @@ pub struct Greens {
     n_rz_prime: usize,
     elliptic_integral_e: Array2<f64>, // shape (n_rz, n_rz_prime)
     elliptic_integral_k: Array2<f64>, // shape (n_rz, n_rz_prime)
+    mode: Mode,
+}
+
+/// A flag to indicate how the Greens object was initialised
+enum Mode {
+    SensorToConductor,
+    SelfField,
 }
 
 impl Greens {
@@ -61,7 +68,7 @@ impl Greens {
     /// let d_r_prime: Array1<f64> = array![0.0, 0.0];
     /// let d_z_prime: Array1<f64> = array![0.0, 0.0];
     ///
-    /// let greens_calculator: Greens = Greens::new(
+    /// let greens_calculator: Greens = Greens::sensor_to_conductor(
     ///     r,
     ///     z,
     ///     r_prime,
@@ -75,25 +82,32 @@ impl Greens {
     ///
     /// println!("g_psi = {:#?}", g_psi);
     /// ```
-    pub fn new(r: Array1<f64>, z: Array1<f64>, r_prime: Array1<f64>, z_prime: Array1<f64>, d_r_prime: Array1<f64>, d_z_prime: Array1<f64>) -> Self {
+    pub fn sensor_to_conductor(
+        r_sensor: Array1<f64>,
+        z_sensor: Array1<f64>,
+        r_conductor: Array1<f64>,
+        z_conductor: Array1<f64>,
+        d_r_conductor: Array1<f64>,
+        d_z_conductor: Array1<f64>,
+    ) -> Self {
         // Sensors
-        let n_rz: usize = r.len();
-        assert!(z.len() == n_rz, "`r` and `z` must have the same length");
+        let n_rz: usize = r_sensor.len();
+        assert!(z_sensor.len() == n_rz, "`r_sensor` and `z_sensor` must have the same length");
 
         // Conductors
-        let n_rz_prime: usize = r_prime.len();
-        assert!(z_prime.len() == n_rz_prime, "`r_prime` and `z_prime` must have the same length");
-        assert!(d_r_prime.len() == n_rz_prime, "`d_r_prime` and `r_prime` must have the same length");
-        assert!(d_z_prime.len() == n_rz_prime, "`d_z_prime` and `z_prime` must have the same length");
+        let n_rz_prime: usize = r_conductor.len();
+        assert!(z_conductor.len() == n_rz_prime, "`r_conductor` and `z_conductor` must have the same length");
+        assert!(d_r_conductor.len() == n_rz_prime, "`d_r_conductor` and `r_conductor` must have the same length");
+        assert!(d_z_conductor.len() == n_rz_prime, "`d_z_conductor` and `z_conductor` must have the same length");
 
         // Pre-compute the elliptic integrals
         let elliptic_integrals: Vec<(Array1<f64>, Array1<f64>)> = (0..n_rz_prime)
             .into_par_iter()
             .map(|i_rz_prime: usize| {
-                let r_sq: Array1<f64> = (&r + r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2));
-                let z_sq: Array1<f64> = (&z - z_prime[i_rz_prime]).mapv(|x: f64| x.powi(2));
+                let r_sq: Array1<f64> = (&r_sensor + r_conductor[i_rz_prime]).mapv(|x: f64| x.powi(2));
+                let z_sq: Array1<f64> = (&z_sensor - z_conductor[i_rz_prime]).mapv(|x: f64| x.powi(2));
 
-                let rr: Array1<f64> = &r * r_prime[i_rz_prime];
+                let rr: Array1<f64> = &r_sensor * r_conductor[i_rz_prime];
                 let k_sq: Array1<f64> = 4.0 * &rr / (r_sq + z_sq);
 
                 let e: Array1<f64> = k_sq.mapv(|x: f64| ellpe(x));
@@ -111,16 +125,76 @@ impl Greens {
         }
 
         Greens {
-            r,
-            z,
+            r: r_sensor,
+            z: z_sensor,
             n_rz,
-            r_prime,
-            z_prime,
-            d_r_prime,
-            d_z_prime,
+            r_prime: r_conductor,
+            z_prime: z_conductor,
+            d_r_prime: d_r_conductor,
+            d_z_prime: d_z_conductor,
             n_rz_prime,
             elliptic_integral_e,
             elliptic_integral_k,
+            mode: Mode::SensorToConductor,
+        }
+    }
+
+    /// A constructor for the grid-to-grid Greens table, where the "sensors" and "current sources" are at the same locations
+    pub fn self_field(r: Array1<f64>, z: Array1<f64>, d_r: Array1<f64>, d_z: Array1<f64>) -> Self {
+        let r_sensor: Array1<f64> = r.clone();
+        let z_sensor: Array1<f64> = z.clone();
+
+        let r_conductor: Array1<f64> = r.clone();
+        let z_conductor: Array1<f64> = z.clone();
+        let d_r_conductor: Array1<f64> = d_r.clone();
+        let d_z_conductor: Array1<f64> = d_z.clone();
+
+        // Sensors
+        let n_rz: usize = r_sensor.len();
+        assert!(z_sensor.len() == n_rz, "`r_sensor` and `z_sensor` must have the same length");
+
+        // Conductors
+        let n_rz_prime: usize = r_conductor.len();
+        assert!(z_conductor.len() == n_rz_prime, "`r_conductor` and `z_conductor` must have the same length");
+        assert!(d_r_conductor.len() == n_rz_prime, "`d_r_conductor` and `r_conductor` must have the same length");
+        assert!(d_z_conductor.len() == n_rz_prime, "`d_z_conductor` and `z_conductor` must have the same length");
+
+        // Pre-compute the elliptic integrals
+        let elliptic_integrals: Vec<(Array1<f64>, Array1<f64>)> = (0..n_rz_prime)
+            .into_par_iter()
+            .map(|i_rz_prime: usize| {
+                let r_sq: Array1<f64> = (&r_sensor + r_conductor[i_rz_prime]).mapv(|x: f64| x.powi(2));
+                let z_sq: Array1<f64> = (&z_sensor - z_conductor[i_rz_prime]).mapv(|x: f64| x.powi(2));
+
+                let rr: Array1<f64> = &r_sensor * r_conductor[i_rz_prime];
+                let k_sq: Array1<f64> = 4.0 * &rr / (r_sq + z_sq);
+
+                let e: Array1<f64> = k_sq.mapv(|x: f64| ellpe(x));
+                let k: Array1<f64> = k_sq.mapv(|x: f64| ellpk(1.0 - x)); // very annoying how this is defined differently to E
+                (e, k)
+            })
+            .collect();
+
+        // Convert to Array2<f64>, with shape = (n_rz, n_rz_prime)
+        let mut elliptic_integral_e: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
+        let mut elliptic_integral_k: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
+        for i_rz_prime in 0..n_rz_prime {
+            elliptic_integral_e.slice_mut(s![.., i_rz_prime]).assign(&elliptic_integrals[i_rz_prime].0);
+            elliptic_integral_k.slice_mut(s![.., i_rz_prime]).assign(&elliptic_integrals[i_rz_prime].1);
+        }
+
+        Greens {
+            r: r_sensor,
+            z: z_sensor,
+            n_rz,
+            r_prime: r_conductor,
+            z_prime: z_conductor,
+            d_r_prime: d_r_conductor,
+            d_z_prime: d_z_conductor,
+            n_rz_prime,
+            elliptic_integral_e,
+            elliptic_integral_k,
+            mode: Mode::SelfField,
         }
     }
 
@@ -166,10 +240,12 @@ impl Greens {
                     if (r[i_grid] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_grid] - z_prime[i_rz_prime]).abs() < epsilon {
                         green_this_filament[i_grid] = MU_0
                             * r[i_grid]
-                            * ((1.0 + 2.0 * (d_z_prime[i_grid] / (8.0 * r[i_grid])).powi(2) + 2.0 / 3.0 * (d_r_prime[i_grid] / (8.0 * r[i_grid])).powi(2))
-                                * (8.0 * r[i_grid] / (d_r_prime[i_grid] + d_z_prime[i_grid])).ln()
+                            * ((1.0
+                                + 2.0 * (d_z_prime[i_rz_prime] / (8.0 * r[i_grid])).powi(2)
+                                + 2.0 / 3.0 * (d_r_prime[i_rz_prime] / (8.0 * r[i_grid])).powi(2))
+                                * (8.0 * r[i_grid] / (d_r_prime[i_rz_prime] + d_z_prime[i_rz_prime])).ln()
                                 - 0.5
-                                + 0.5 * (d_z_prime[i_grid] / (8.0 * r[i_grid])).powi(2))
+                                + 0.5 * (d_z_prime[i_rz_prime] / (8.0 * r[i_grid])).powi(2))
                     }
                 }
 
@@ -517,6 +593,18 @@ impl Greens {
         g_d2_psi_d_z2
     }
 
+    /// Calculates `g_d3_psi_d_r_d_z2`, where:
+    /// `d3(psi)/d(r)d(z2) = g_d3_psi_d_r_d_z2 * current`
+    ///
+    /// # Arguments
+    /// * None
+    ///
+    /// # Returns
+    /// * `g_d3_psi_d_r_d_z2[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
+    pub fn d3_psi_d_r_d_z2(&self) -> Array2<f64> {
+        unimplemented!("need to derive equation for d3_psi_d_r_d_z2");
+    }
+
     /// Calculates `b_r`, where:
     /// `b_r = -d(psi)/d(z) / (2.0 * PI * r)`
     ///
@@ -628,7 +716,7 @@ fn test_greens_psi() {
     let z: Array1<f64> = Array1::from(vec![0.00]);
 
     // Calculate flux
-    let greens_calculator: Greens = Greens::new(r.clone(), z.clone(), r_prime, z_prime, d_r_prime, d_z_prime);
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r.clone(), z.clone(), r_prime, z_prime, d_r_prime, d_z_prime);
     let psi: Array2<f64> = greens_calculator.psi();
     let psi_numerical: Array1<f64> = psi.sum_axis(Axis(1)) * current;
     let psi_numerical: f64 = psi_numerical[0]; // since we have only one sensor
@@ -665,13 +753,13 @@ fn test_d_psi_d_r() {
     // Compute d_psi_d_r analytically
     let r: Array1<f64> = Array1::from(vec![r_value]);
     let z: Array1<f64> = Array1::from(vec![z_value]);
-    let greens_calculator: Greens = Greens::new(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
     let d_psi_d_r_analytic: f64 = greens_calculator.d_psi_d_r()[(0, 0)];
 
     // Compute d_psi_d_r numerically from psi
     let r_vec: Array1<f64> = Array1::from(vec![r_value - delta_r, r_value + delta_r]);
     let z_vec: Array1<f64> = Array1::from(vec![z_value, z_value]);
-    let greens_calculator: Greens = Greens::new(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
     let psi: Array2<f64> = greens_calculator.psi();
     let d_psi_d_r_numerical: f64 = (psi[(1, 0)] - psi[(0, 0)]) / (2.0 * delta_r);
 
@@ -694,13 +782,13 @@ fn test_d_psi_d_z() {
     // Compute d_psi_d_z analytically
     let r: Array1<f64> = Array1::from(vec![r_value]);
     let z: Array1<f64> = Array1::from(vec![z_value]);
-    let greens_calculator: Greens = Greens::new(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
     let d_psi_d_z_analytic: f64 = greens_calculator.d_psi_d_z()[(0, 0)];
 
     // Compute d_psi_d_z numerically from psi
     let r_vec: Array1<f64> = Array1::from(vec![r_value, r_value]);
     let z_vec: Array1<f64> = Array1::from(vec![z_value - delta_z, z_value + delta_z]);
-    let greens_calculator: Greens = Greens::new(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
     let psi: Array2<f64> = greens_calculator.psi();
     let d_psi_d_z_numerical: f64 = (psi[(1, 0)] - psi[(0, 0)]) / (2.0 * delta_z);
 
@@ -723,13 +811,13 @@ fn test_d2_psi_d_r2() {
     // Compute d2_psi_d_r2 analytically
     let r: Array1<f64> = Array1::from(vec![r_value]);
     let z: Array1<f64> = Array1::from(vec![z_value]);
-    let greens_calculator: Greens = Greens::new(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
     let d2_psi_d_r2_analytic: f64 = greens_calculator.d2_psi_d_r2()[(0, 0)];
 
     // Compute d2_psi_d_r2 numerically from psi: (psi_left - 2*psi_center + psi_right) / delta_r^2
     let r_vec: Array1<f64> = Array1::from(vec![r_value - delta_r, r_value, r_value + delta_r]);
     let z_vec: Array1<f64> = Array1::from(vec![z_value, z_value, z_value]);
-    let greens_calculator: Greens = Greens::new(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
     let psi: Array2<f64> = greens_calculator.psi();
     let d2_psi_d_r2_numerical: f64 = (psi[(0, 0)] - 2.0 * psi[(1, 0)] + psi[(2, 0)]) / delta_r.powi(2);
 
@@ -752,13 +840,13 @@ fn test_d2_psi_d_r_d_z() {
     // Compute d2_psi_d_r_d_z analytically
     let r: Array1<f64> = Array1::from(vec![r_value]);
     let z: Array1<f64> = Array1::from(vec![z_value]);
-    let greens_calculator: Greens = Greens::new(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
     let d2_psi_d_r_d_z_analytic: f64 = greens_calculator.d2_psi_d_r_d_z()[(0, 0)];
 
     // Compute d2_psi_d_r_d_z numerically: d(d_psi_d_r)/d(z)
     let r_vec: Array1<f64> = Array1::from(vec![r_value, r_value]);
     let z_vec: Array1<f64> = Array1::from(vec![z_value - delta_z, z_value + delta_z]);
-    let greens_calculator: Greens = Greens::new(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
     let d_psi_d_r: Array2<f64> = greens_calculator.d_psi_d_r();
     let d2_psi_d_r_d_z_numerical: f64 = (d_psi_d_r[(1, 0)] - d_psi_d_r[(0, 0)]) / (2.0 * delta_z);
 
@@ -781,13 +869,13 @@ fn test_d2_psi_d_z2() {
     // Compute d2_psi_d_z2 analytically
     let r: Array1<f64> = Array1::from(vec![r_value]);
     let z: Array1<f64> = Array1::from(vec![z_value]);
-    let greens_calculator: Greens = Greens::new(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
     let d2_psi_d_z2_analytic: f64 = greens_calculator.d2_psi_d_z2()[(0, 0)];
 
     // Compute d2_psi_d_z2 numerically from psi: (psi_below - 2*psi_center + psi_above) / delta_z^2
     let r_vec: Array1<f64> = Array1::from(vec![r_value, r_value, r_value]);
     let z_vec: Array1<f64> = Array1::from(vec![z_value - delta_z, z_value, z_value + delta_z]);
-    let greens_calculator: Greens = Greens::new(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
     let psi: Array2<f64> = greens_calculator.psi();
     let d2_psi_d_z2_numerical: f64 = (psi[(0, 0)] - 2.0 * psi[(1, 0)] + psi[(2, 0)]) / delta_z.powi(2);
 

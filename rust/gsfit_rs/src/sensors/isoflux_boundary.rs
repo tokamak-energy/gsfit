@@ -188,7 +188,7 @@ impl IsofluxBoundary {
                 let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                 for i_time in 0..n_time {
                     // Calculate the Green's at location 1
-                    let greens_calculator: Greens = Greens::new(
+                    let greens_calculator: Greens = Greens::sensor_to_conductor(
                         array![location_1_r[i_time]],
                         array![location_1_z[i_time]],
                         coil_r.clone(),
@@ -252,7 +252,7 @@ impl IsofluxBoundary {
                     let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                     for i_time in 0..n_time {
                         // Location 1
-                        let greens_calculator: Greens = Greens::new(
+                        let greens_calculator: Greens = Greens::sensor_to_conductor(
                             array![location_1_r[i_time]],
                             array![location_1_z[i_time]],
                             passive_r.clone(),
@@ -326,7 +326,7 @@ impl IsofluxBoundary {
             let mut g_d_plasma_d_z: Array2<f64> = Array2::from_elem([n_time, n_z * n_r], f64::NAN);
             for i_time in 0..n_time {
                 // Plasma component
-                let greens_calculator: Greens = Greens::new(
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
                     array![location_1_r[i_time]],
                     array![location_1_z[i_time]],
                     plasma_r.clone(),

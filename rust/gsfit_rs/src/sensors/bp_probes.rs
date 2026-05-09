@@ -162,7 +162,7 @@ impl BpProbes {
             let sensor_z: f64 = self.results.get(sensor_name).get("geometry").get("z").unwrap_f64();
             let sensor_angle_pol: f64 = self.results.get(sensor_name).get("geometry").get("angle_pol").unwrap_f64();
 
-            let greens_calculator: Greens = Greens::new(
+            let greens_calculator: Greens = Greens::sensor_to_conductor(
                 array![sensor_r],
                 array![sensor_z],
                 passives_r.clone(),
@@ -558,7 +558,7 @@ impl BpProbes {
                 let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
 
-                let greens_calculator: Greens = Greens::new(
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
                     array![sensor_r],
                     array![sensor_z],
                     coil_r.clone(),
@@ -597,7 +597,7 @@ impl BpProbes {
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
 
-            let greens_calculator: Greens = Greens::new(
+            let greens_calculator: Greens = Greens::sensor_to_conductor(
                 array![sensor_r],
                 array![sensor_z],
                 plasma_r.clone(),
@@ -618,7 +618,7 @@ impl BpProbes {
             // Store
             self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_with_plasma); // shape = [(n_z * n_r)]
 
-            let greens_calculator: Greens = Greens::new(
+            let greens_calculator: Greens = Greens::sensor_to_conductor(
                 array![sensor_r],
                 array![sensor_z],
                 plasma_r.clone(),
@@ -661,7 +661,7 @@ impl BpProbes {
                 let passive_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
                 for dof_name in dof_names {
-                    let greens_calculator: Greens = Greens::new(
+                    let greens_calculator: Greens = Greens::sensor_to_conductor(
                         array![sensor_r],
                         array![sensor_z],
                         passive_r.clone(),

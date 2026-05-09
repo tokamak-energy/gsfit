@@ -3,7 +3,6 @@ use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint, B
 use super::cubic_interpolation::cubic_interpolation_v2;
 use crate::plasma_geometry::hessian;
 use ndarray::{Array2, ArrayView1, ArrayView2, s};
-use ndarray::{Dim, SliceInfo, SliceInfoElem};
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
 
@@ -319,20 +318,14 @@ pub fn find_stationary_points_using_winding_number(
             let winding_number: i8 = total_quarter_turns / 4;
 
             if winding_number != 0 {
-                // Create a slice that covers the 4 corner points
-                let slice_cell_perimeter: SliceInfo<[SliceInfoElem; 2], Dim<[usize; 2]>, Dim<[usize; 2]>> = s![i_z_lower..=i_z_upper, i_r_left..=i_r_right];
-
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis.
-                // TODO:`psi_2d` is stored as (i_z, i_r), but `BicubicInterpolator` expects `f[(i_r, i_z)]`.
-                // TODO:So we need to transpose the arrays!
-                let f: Array2<f64> = psi_2d.slice(slice_cell_perimeter).to_owned();
-                let d_f_d_r: Array2<f64> = d_psi_d_r_2d.slice(slice_cell_perimeter).to_owned();
-                let d_f_d_z: Array2<f64> = d_psi_d_z_2d.slice(slice_cell_perimeter).to_owned();
-                let d2_f_d_r_d_z: Array2<f64> = d2_psi_d_rz_2d.slice(slice_cell_perimeter).to_owned();
+                let f: ArrayView2<f64> = psi_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]);
+                let d_f_d_r: ArrayView2<f64> = d_psi_d_r_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]);
+                let d_f_d_z: ArrayView2<f64> = d_psi_d_z_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]);
+                let d2_f_d_r_d_z: ArrayView2<f64> = d2_psi_d_rz_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]);
 
                 // Create a bicubic interpolator
-                let bicubic_interpolator: BicubicInterpolator =
-                    BicubicInterpolator::new(d_r, d_z, f.view(), d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
+                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f, d_f_d_r, d_f_d_z, d2_f_d_r_d_z);
 
                 // Find the stationary point using the bicubic interpolation
                 let stationary_point_or_error: Result<BicubicStationaryPoint, String> = bicubic_interpolator.find_stationary_point(1e-6, 100);

@@ -125,7 +125,8 @@ impl Coils {
                 let other_coil_d_r: Array1<f64> = self.results.get("pf").get(&other_coil_name).get("geometry").get("d_r").unwrap_array1();
                 let other_coil_d_z: Array1<f64> = self.results.get("pf").get(&other_coil_name).get("geometry").get("d_z").unwrap_array1();
 
-                let greens_calculator: Greens = Greens::new(coil_r.clone(), coil_z.clone(), other_coil_r, other_coil_z, other_coil_d_r, other_coil_d_z);
+                let greens_calculator: Greens =
+                    Greens::sensor_to_conductor(coil_r.clone(), coil_z.clone(), other_coil_r, other_coil_z, other_coil_d_r, other_coil_d_z);
                 let g_psi_matrix: Array2<f64> = greens_calculator.psi();
                 let g_psi: f64 = g_psi_matrix.sum();
 

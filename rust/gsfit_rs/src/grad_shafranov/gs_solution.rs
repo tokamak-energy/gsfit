@@ -8,13 +8,12 @@ use crate::plasma_geometry::StationaryPoint;
 use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
-// use crate::plasma_geometry::find_stationary_points_using_sign_differences;
 use crate::plasma_geometry::find_stationary_points_using_winding_number;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
 use lapack::*;
 use ndarray::Axis;
-use ndarray::{Array1, Array2, Array3, s};
+use ndarray::{Array1, Array2, Array3, ArrayView2, s};
 use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;
 use std::sync::Arc;
@@ -339,7 +338,7 @@ impl<'a> GsSolution<'a> {
                 self.br_2d = self.br_2d.to_owned() + self.delta_z * &d_br_d_z_2d;
                 self.bz_2d = self.bz_2d.to_owned() + self.delta_z * &d_bz_d_z_2d_unshifted;
 
-                // d^2(bz)/d(z^2)
+                // d^2(bz)/d(z^2) ~ d^3(psi)/(d(r)*d(z^2)) d3_psi_d_r_d_z2
                 let mut d2_bz_d_z2_unshifted: Array2<f64> = Array2::zeros((n_z, n_r));
                 for i_r in 0..n_r {
                     for i_z in 0..n_z {
@@ -383,10 +382,6 @@ impl<'a> GsSolution<'a> {
                 self.delta_z,
             );
 
-            // Find stationary points in `psi`
-            // let stationary_points_or_error: Result<Vec<StationaryPoint>, String> =
-            //     find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
-
             // TODO: TEMPORARY CALCULATIONS for psi gradients; later we will store these and calculate the fields
             let mut d_psi_d_r_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
             let mut d_psi_d_z_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
@@ -403,6 +398,7 @@ impl<'a> GsSolution<'a> {
                 }
             }
 
+            // Find stationary points in `psi` (magnetic axis and x-points)
             let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
                 r.view(),
                 z.view(),
@@ -413,17 +409,6 @@ impl<'a> GsSolution<'a> {
                 d2_psi_d_rz_2d.view(),
                 d2_psi_d_z2_2d.view(),
             );
-            // let stationary_points_or_error = find_stationary_points_using_sign_differences(
-            //     &r,
-            //     &z,
-            //     &psi_2d,
-            //     &br_2d,
-            //     &bz_2d,
-            //     &d_br_d_z_2d,
-            //     &d_bz_d_z_2d,
-            //     d2_psi_d_r2_calculator.clone(),
-            // );
-            // let stationary_points: Vec<StationaryPoint> = stationary_points_or_error.expect("Failed to find stationary points");
             // At a minimum we should have found the magnetic axis
             if stationary_points.is_empty() {
                 // Set time-slice to failed
@@ -862,44 +847,16 @@ impl<'a> GsSolution<'a> {
                     i_z_nearest_upper = i_z_nearest;
                 }
 
-                // Find psi at the pressure sensor
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-                let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-
-                // Function values
-                f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
-                f[(1, 0)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
-                f[(0, 1)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
-                f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
-
-                // d(psi)/d(r)
-                // bz = 1 / (2.0 * PI * r) * d_psi_d_r
-                d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-                d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-
-                // d(psi)/d(z)
-                // br = - 1 / (2.0 * PI * r) * d_psi_d_z
-                d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-                d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-
-                // d^2(psi)/(d(r)*d(z))
-                // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
-                d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-                d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                let f: ArrayView2<f64> = psi_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
+                let d_f_d_r: ArrayView2<f64> = d_psi_d_r_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
+                let d_f_d_z: ArrayView2<f64> = d_psi_d_z_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
+                let d2_f_d_r_d_z: ArrayView2<f64> = d2_psi_d_rz_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
 
                 // Create a bicubic interpolator
-                let bicubic_interpolator: BicubicInterpolator =
-                    BicubicInterpolator::new(d_r, d_z, f.view(), d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
+                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f, d_f_d_r, d_f_d_z, d2_f_d_r_d_z);
 
+                // Find psi at the pressure sensor
                 let x: f64 = (pressure_sensors_static.geometry_r[i_sensor] - r[i_r_nearest_left]) / d_r;
                 let y: f64 = (pressure_sensors_static.geometry_z[i_sensor] - z[i_z_nearest_lower]) / d_z;
                 let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);

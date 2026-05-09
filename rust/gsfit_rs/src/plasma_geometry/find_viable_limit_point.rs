@@ -4,7 +4,7 @@ use super::StationaryPoint;
 use super::bicubic_interpolator::BicubicInterpolator;
 use super::flood_fill_mask::flood_fill_mask;
 use super::marching_squares::marching_squares;
-use ndarray::{Array1, Array2};
+use ndarray::{Array1, Array2, ArrayView2, s};
 use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;
 
@@ -96,16 +96,12 @@ pub fn find_viable_limit_point(
 
         // Find psi at the limit point
         // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-        let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
         let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
         let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
         let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
 
         // Function values
-        f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
-        f[(1, 0)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
-        f[(0, 1)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
-        f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
+        let f: ArrayView2<f64> = psi_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
 
         // d(psi)/d(r)
         // bz = 1 / (2.0 * PI * r) * d_psi_d_r
@@ -129,7 +125,7 @@ pub fn find_viable_limit_point(
         d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
         // Create a bicubic interpolator
-        let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f.view(), d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
+        let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f, d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
 
         let x: f64 = (limit_pts_r[i_limit] - r[i_r_nearest_left]) / d_r;
         let y: f64 = (limit_pts_z[i_limit] - z[i_z_nearest_lower]) / d_z;

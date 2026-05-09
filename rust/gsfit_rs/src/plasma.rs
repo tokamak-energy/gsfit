@@ -195,7 +195,7 @@ impl Plasma {
         // Calculate the grid-grid Greens
         let flat_d_r: Array1<f64> = &r * 0.0 + d_r;
         let flat_d_z: Array1<f64> = &r * 0.0 + d_z;
-        let greens_calculator: Greens = Greens::new(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0], flat_d_r, flat_d_z);
+        let greens_calculator: Greens = Greens::sensor_to_conductor(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0], flat_d_r, flat_d_z);
         let g_psi: Array2<f64> = greens_calculator.psi();
         let g_br: Array2<f64> = greens_calculator.b_r();
         let g_bz: Array2<f64> = greens_calculator.b_z();
@@ -278,7 +278,7 @@ impl Plasma {
             let n_coil_filaments: usize = coil_r.len();
 
             // Greens function for flux
-            let greens_calculator: Greens = Greens::new(
+            let greens_calculator: Greens = Greens::sensor_to_conductor(
                 flat_r.clone(),
                 flat_z.clone(),
                 coil_r.clone(),
@@ -408,10 +408,10 @@ impl Plasma {
                     .unwrap_array1();
 
                 // Green's table
-                let greens_calculator: Greens = Greens::new(
-                    flat_r.clone(), // by convention (r, z) are "sensors"
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
+                    flat_r.clone(),
                     flat_z.clone(),
-                    passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
+                    passive_r.clone(),
                     passive_z.clone(),
                     passive_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
                     passive_z.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
@@ -1890,7 +1890,8 @@ fn epp_q_profile(gs_solution: &GsSolution, flux_surfaces: &[FluxSurface], f_prof
         .build()
         .expect("find_boundary: Can't make Interp2D");
 
-    let mut q_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
+    // Cumulative integral, so initialise with zeros
+    let mut q_profile: Array1<f64> = Array1::zeros(n_psi_n);
     'fs_loop: for i_psi_n in 0..n_psi_n {
         let fs_r: Array1<f64> = flux_surfaces[i_psi_n].r.clone();
         let fs_z: Array1<f64> = flux_surfaces[i_psi_n].z.clone();
