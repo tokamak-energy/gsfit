@@ -8,7 +8,6 @@ use crate::plasma_geometry::marching_squares_for_sol::marching_squares_for_sol;
 use crate::source_functions::SourceFunctionTraits;
 use crate::source_functions::{EfitPolynomial, LiuqePolynomial, TensionedCubicBSpline};
 use contour::ContourBuilder;
-use core::{f64, panic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::Area;
 use geo::Centroid;

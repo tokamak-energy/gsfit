@@ -537,6 +537,10 @@ impl Greens {
     ///
     /// # Returns
     /// * `g_d2_psi_d_z2[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
+    ///
+    /// TODO: there is a jump condition when the source and sensor are at the same location.
+    /// TODO: I need to derive and implement this jump condition
+    /// TODO: remember- we can use the Mode enum to detect when the "sensors" and "current sources" are at the same location
     pub fn d2_psi_d_z2(&self) -> Array2<f64> {
         let n_rz: usize = self.n_rz;
         let n_rz_prime: usize = self.n_rz_prime;

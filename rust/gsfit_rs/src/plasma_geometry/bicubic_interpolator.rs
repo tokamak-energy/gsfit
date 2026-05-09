@@ -1,4 +1,5 @@
-use ndarray::{Array1, Array2, ArrayView2, array, s};
+use ndarray::{Array1, Array2, ArrayView2, array};
+use ndarray_linalg::assert;
 
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,
@@ -48,10 +49,10 @@ impl BicubicInterpolator {
     ///
     /// # Algorithm
     /// `f`, `d_f_d_x`, `d_f_d_y`, and `d2_f_d_x_d_y` should be indexed like:
-    /// * `f[(0, 0)] = f[(i_x_left, i_y_lower)]`;
-    /// * `f[(0, 1)] = f[(i_x_left, i_y_upper)]`;
-    /// * `f[(1, 0)] = f[(i_x_right, i_y_lower)]`;
-    /// * `f[(1, 1)] = f[(i_x_right, i_y_upper)]`;
+    /// * `f[(0, 0)] = f[(i_y_lower, i_x_left)]`;
+    /// * `f[(0, 1)] = f[(i_y_upper, i_x_left)]`;
+    /// * `f[(1, 0)] = f[(i_y_lower, i_x_right)]`;
+    /// * `f[(1, 1)] = f[(i_y_upper, i_x_right)]`;
     ///
     /// The bicubic fit is:
     /// `P(x, y) = [1, x, x^2, x^3] * a * [1, y, y^2, y^3].T`
@@ -71,11 +72,10 @@ impl BicubicInterpolator {
     /// use ndarray::{Array2};
     /// ```
     pub fn new(d_x: f64, d_y: f64, f: ArrayView2<f64>, d_f_d_x: ArrayView2<f64>, d_f_d_y: ArrayView2<f64>, d2_f_d_x_d_y: ArrayView2<f64>) -> Self {
-        // TODO: temporary fix for transposing
-        let f: ArrayView2<f64> = f.t();
-        let d_f_d_x: ArrayView2<f64> = d_f_d_x.t();
-        let d_f_d_y: ArrayView2<f64> = d_f_d_y.t();
-        let d2_f_d_x_d_y: ArrayView2<f64> = d2_f_d_x_d_y.t();
+        assert!(f.shape() == [2, 2], "f should be a 2x2 array");
+        assert!(d_f_d_x.shape() == [2, 2], "d_f_d_x should be a 2x2 array");
+        assert!(d_f_d_y.shape() == [2, 2], "d_f_d_y should be a 2x2 array");
+        assert!(d2_f_d_x_d_y.shape() == [2, 2], "d2_f_d_x_d_y should be a 2x2 array");
 
         #[rustfmt::skip]
         let coeff_matrix_1: Array2<f64> = array![
@@ -93,14 +93,21 @@ impl BicubicInterpolator {
             [ 0.0,  0.0, -1.0,  1.0],
         ];
 
-        let mut function_matrix: Array2<f64> = Array2::from_elem((4, 4), f64::NAN);
         let d_f_d_x_normalised: Array2<f64> = d_f_d_x.to_owned() * d_x;
         let d_f_d_y_normalised: Array2<f64> = d_f_d_y.to_owned() * d_y;
         let d2_f_d_x_d_y_normalised: Array2<f64> = d2_f_d_x_d_y.to_owned() * d_x * d_y;
-        function_matrix.slice_mut(s![0..2, 0..2]).assign(&f);
-        function_matrix.slice_mut(s![2..4, 0..2]).assign(&d_f_d_x_normalised);
-        function_matrix.slice_mut(s![0..2, 2..4]).assign(&d_f_d_y_normalised);
-        function_matrix.slice_mut(s![2..4, 2..4]).assign(&d2_f_d_x_d_y_normalised);
+
+        // Note: we want the data to come in as (i_y, i_x) because arrays are stored as (i_z, i_r).
+        // To achieve this we have effectively transposed the indexing of `f`, `d_f_d_x`, `d_f_d_y`, and `d2_f_d_x_d_y`, i.e.
+        // function_matrix = [f.t(),       d_f_d_y.t()
+        //                    d_f_d_x.t(), d2_f_d_x_d_y.t()]
+        #[rustfmt::skip]
+        let function_matrix: Array2<f64> = array![
+            [f[(0, 0)],                  f[(1, 0)],                  d_f_d_y_normalised[(0, 0)],      d_f_d_y_normalised[(1, 0)]     ],
+            [f[(0, 1)],                  f[(1, 1)],                  d_f_d_y_normalised[(0, 1)],      d_f_d_y_normalised[(1, 1)]     ],
+            [d_f_d_x_normalised[(0, 0)], d_f_d_x_normalised[(1, 0)], d2_f_d_x_d_y_normalised[(0, 0)], d2_f_d_x_d_y_normalised[(1, 0)]],
+            [d_f_d_x_normalised[(0, 1)], d_f_d_x_normalised[(1, 1)], d2_f_d_x_d_y_normalised[(0, 1)], d2_f_d_x_d_y_normalised[(1, 1)]],
+        ];
 
         let a_matrix: Array2<f64> = coeff_matrix_1.dot(&function_matrix).dot(&coeff_matrix_2);
 
