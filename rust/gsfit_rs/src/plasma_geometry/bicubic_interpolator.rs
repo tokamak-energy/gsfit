@@ -1,5 +1,4 @@
 use ndarray::{Array1, Array2, ArrayView2, array};
-use ndarray_linalg::assert;
 
 pub struct BicubicInterpolator {
     pub a_matrix: Array2<f64>,
