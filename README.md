@@ -32,7 +32,7 @@ Rust is a compiled, high-performance language, nearly as fast as C and Fortran.
 It includes modern tooling such as a package manager and centralised registry (cargo and [crates.io](https://crates.io/)), autoformatting ([`rustfmt`](https://github.com/rust-lang/rustfmt)), and has [testing built into the language](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html).
 Rust enforces strict ownership rules, making programs extremely memory efficient without requiring any extra effort.
 These rules also eliminate entire classes of memory issues.
-Additionally, Rust has zero-cost abstractions, allowing "implementations", which are similar to classes in object-oriented programming, to be used without any performance penalty.
+Additionally, Rust has zero-cost abstractions, allowing object-oriented programming (implementations) to be used without a performance penalty.
 For more information, the official [Rust book](https://doc.rust-lang.org/stable/book/) gives a complete introduction to the language with examples.
 
 Python is ubiquitous within the fusion industry.
@@ -42,29 +42,24 @@ Using Python allows easy integration into existing workflows. For example, in
 # 1. Installation and environment
 
 ## 1.1 Python environment
-GSFit can be run on Python 3.11, 3.12 and 3.13 (see the banner at the top of this page).
+GSFit can be run on Python 3.11, 3.12 and 3.13.
 
-When installing from PyPI, see [section 1.2](#12-installing-from-pypi), you can use the system Python, but it is best practice to use a virtual environment.
-
-There are three main virtual environment providers: [`uv`](https://docs.astral.sh/uv/), [`conda`](https://docs.conda.io/projects/conda/en/latest/index.html), and [`virtualenv`](https://docs.python.org/3/library/venv.html).
-
-`uv` is both an environment and package manager and is the **recommended** option.
-This is because `uv` can create an environment with any version of Python, the installation is done within the user's home directory, and `uv` has been specifically designed for speed.
-This makes it simple and quick to test against multiple Python versions.
+`uv` is both an environment and package manager and is recommended.
+There are several other Python virtual environment providers which *should* work, but we have not tested against them.
 
 ```shell
 # Install the `uv` environment and package manager
 python -m pip install uv
 
 # Creating and activating a virtual environment, called `venv_gsfit`
-python -m uv venv venv_gsfit --python=3.13
-source venv_gsfit/bin/activate
+uv venv --python=3.13
+source .venv/bin/activate
 ```
 
 ## 1.2 Installing from PyPI
 GSFit is available on the [PyPI package registry](https://pypi.org/project/gsfit/) as a pre-compiled binary.
 The binary is compiled for Linux, macOS, and Windows.
-For Linux the "manylinux2014" standard is used, which typically can be run on any Linux machine newer than 2014.
+For Linux the **"manylinux2014"** build system is used, which typically can be run on any Linux machine newer than 2014.
 
 All of the packages GSFit depends on are listed in the [pyproject.toml](pyproject.toml).
 These are divided into essential packages which are always required for any run and optional packages which can be installed for different purposes.
@@ -76,17 +71,10 @@ uv pip install gsfit
 # or install GSFit from the PyPI package registry, with the "developer" packages, such as `pytest` and `mypy`
 uv pip install gsfit[dev]
 # or install GSFit with reading/writing to/from ST40's experimental database
-uv pip install gsfit.[with_st40_mdsplus]  # (this will only work within Tokamak Energy's network)
+uv pip install gsfit[with_st40_mdsplus]  # (this will only work within Tokamak Energy's network)
 # or any combination
-uv pip install gsfit.[dev,with_st40_mdsplus]
+uv pip install gsfit[dev,with_st40_mdsplus]
 ```
-
-<!-- ## 1.3 Compiling and installing from source code
-While GSFit can be installed into the system Python from PyPI, when compiling from source code a virtual environment is <ins>**required**</ins>.
-
-The Rust compiler is easily installed using [`rustup`](https://www.rust-lang.org/tools/install).
-
-GSFit also requires [OpenBLAS](https://github.com/OpenMathLib/OpenBLAS) to perform various LAPACK routines, such as least squares minimisation and eigenvalue/eigenvector calculations. -->
 
 ## 1.3 Compiling and installing from source code on Linux
 
@@ -103,9 +91,9 @@ module avail
 module load OpenBLAS
 
 # Install GSFit
-uv pip install --reinstall .
+uv pip install --reinstall --editable .
 # or install with the "developer" packages, such as `pytest` and `mypy`
-uv pip install --reinstall .[dev]
+uv pip install --reinstall --editable .[dev]
 ```
 
 ## 1.4 Compiling and installing from source code on macOS
@@ -122,9 +110,9 @@ cd gsfit
 brew install openblas
 
 # Install GSFit
-uv pip install --reinstall .
+uv pip install --reinstall --editable .
 # or install with the "developer" packages, such as `pytest` and `mypy`
-uv pip install --reinstall .[dev]
+uv pip install --reinstall --editable .[dev]
 ```
 
 ## 1.5 Compiling and installing from source code on Windows
@@ -158,9 +146,9 @@ cd gsfit
 Copy-Item "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" -Destination "python/gsfit_rs/" -ErrorAction Stop
 
 # Install GSFit
-uv pip install --reinstall .
+uv pip install --reinstall --editable .
 # or install with the "developer" packages, such as `pytest` and `mypy`
-uv pip install --reinstall .[dev]
+uv pip install --reinstall --editable .[dev]
 ```
 
 ## 1.6 IDE
@@ -285,8 +273,6 @@ The advantage of this is that the Rust binary does not need to link agains `libp
 However, for testing, where the Rust code is run as it's own executable, not from within Python, **we must link to Python!**
 
 # 4. Planned future development
-* Pressure constrained.
-* Spline `p_prime` and `ff_prime`
 * Interfacing to and from IMAS & OMAS.
 * More kinetic sensors, such as MSE, polarimeters, and interferometers.
 
@@ -295,6 +281,16 @@ We intend on publishing a paper on GSFit.
 While GSFit is unpublished, please cite it as "P. F. Buxton, GSFit, https://github.com/tokamak-energy/gsfit, 2025"
 
 Please use the **GSFit** nomenclature, <ins>**not**</ins> GS-Fit, GSFIT, or g/s fit.
+
+<!--
+# 5. Testing
+```shell
+cd rust
+cargo install cargo-llvm-cov
+rustup component add llvm-tools-preview
+cargo llvm-cov --html  # generates target/llvm-cov/html/index.html
+```
+-->
 
 
 <!-- # 4 Useful Rust code for debugging
@@ -326,3 +322,15 @@ writer.flush().expect("can't flush writer");
 
 
 <!-- ruff check --select I --fix . -->
+
+
+<!--
+# To install gnuplot
+
+curl -LO https://sourceforge.net/projects/gnuplot/files/gnuplot/6.0.2/gnuplot-6.0.2.tar.gz
+tar xzf gnuplot-6.0.2.tar.gz && cd gnuplot-6.0.2
+./configure --prefix=$HOME/local --without-x --without-qt
+make -j && make install
+export PATH=$HOME/local/bin:$PATH
+
+-->

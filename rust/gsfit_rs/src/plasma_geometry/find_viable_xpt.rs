@@ -1,6 +1,5 @@
 use super::BoundaryContour;
 use super::StationaryPoint;
-use core::f64;
 use geo::Contains;
 use geo::{Coord, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
@@ -123,6 +122,9 @@ pub fn find_viable_xpt(
             continue 'loop_over_potential_xpts;
         }
 
+        // TODO: it would be better to test if the contour produced by the x-point is closed,
+        // rather than simply testing if the LFS and HFS boundaries are present
+
         // Test if there is a LFS boundary at the same height as the magnetic axis
         // March from the magnetic axis to the LFS
         let mut test_intersects_lfs_boundary: bool = false;
@@ -130,7 +132,7 @@ pub fn find_viable_xpt(
             if psi_2d[(index_mag_z, i_r)] < potential_xpt.bounding_psi {
                 test_intersects_lfs_boundary = true;
 
-                // No need to continue
+                // Success, no need to continue
                 break 'loop_over_mag_r;
             }
         }
@@ -138,6 +140,24 @@ pub fn find_viable_xpt(
         if !test_intersects_lfs_boundary {
             continue 'loop_over_potential_xpts;
         }
+
+        // Test if there is a HFS boundary at the same height as the magnetic axis
+        // March from the magnetic axis to the HFS
+        let mut test_intersects_hfs_boundary: bool = false;
+        'loop_over_mag_r_hfs: for i_r in (0..=index_mag_r).rev() {
+            if psi_2d[(index_mag_z, i_r)] < potential_xpt.bounding_psi {
+                test_intersects_hfs_boundary = true;
+
+                // Success, no need to continue
+                break 'loop_over_mag_r_hfs;
+            }
+        }
+        // No HFS boundary encountered
+        if !test_intersects_hfs_boundary {
+            continue 'loop_over_potential_xpts;
+        }
+
+        // TODO: I **could** add upper and lower boundary checks? OR we simply replace with the more robuse contour checking?
 
         // If we make it to the end, then return this, ending `find_viable_xpt` function
         return Ok(potential_xpt.to_owned());

@@ -1,4 +1,4 @@
-use ndarray::Array1;
+use ndarray::{Array1, array};
 
 /// Returns the resistivity of copper at a given temperature in Kelvin
 ///
@@ -8,11 +8,11 @@ use ndarray::Array1;
 /// # Returns
 /// * `resistivity` - resistivity of copper at the given temperature, [ohm * metre]
 pub fn copper_resistivity(temperature_in_kelvin: f64) -> f64 {
-    let temperatures: Array1<f64> = Array1::from_vec(vec![
+    let temperatures: Array1<f64> = array![
         20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 70.0, 80.0, 90.0, 100.0, 125.0, 150.0, 175.0, 200.0, 225.0, 250.0, 273.150, 293.0, 300.0, 350.0,
         400.0, 500.0, 600.0, 700.0, 800.0, 900.0, 1000.0, 1100.0, 1200.0, 1300.0, 1357.60,
-    ]);
-    let copper_resistivities: Array1<f64> = Array1::from_vec(vec![
+    ];
+    let copper_resistivities: Array1<f64> = array![
         0.000798000000000000,
         0.00249000000000000,
         0.00628000000000000,
@@ -47,7 +47,7 @@ pub fn copper_resistivity(temperature_in_kelvin: f64) -> f64 {
         8.62400000000000,
         9.59000000000000,
         10.1690000000000,
-    ]) * 1.0e-8;
+    ] * 1.0e-8;
 
     let interpolator: interpolation::Dim1Linear =
         interpolation::Dim1Linear::new(temperatures, copper_resistivities).expect("copper resistivity interpolation failed");

@@ -23,6 +23,7 @@ openssl-sys = { version = "0.9", features = ["vendored"], optional = true }
 # Local data_tree dependency
 data_tree = { path = "../data_tree" }
 interpolation = { path = "../interpolation" }
+npy_reader_and_writer = { path = "../npy_reader_and_writer" }
 
 # External dependencies
 contour = "0.13.1"

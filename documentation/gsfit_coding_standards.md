@@ -103,6 +103,10 @@ With `ndarray` I prefer to use `Array1`, `Array2`, `Array3`, ..., instead of usi
 * For floats we should use `f64`
 * For other data use appropriate data types, e.g. `usize`, ...
 
+### `d_r`/`d_z` vs `delta_r`/`delta_z`
+* `d_r`/`d_z` are for grid spacing
+* `delta_r`/`delta_z` are for distances between points
+
 ## Looping style preference
 I prefer for loops rather than `.map` or `.iter` for clarity.
 
@@ -197,3 +201,8 @@ This is not a hard rule, if we are only going to assign to the matrix diagonal t
 ## Alphabetically sorting variables
 Where possible variables should be alphabetically sorted, this is not a hard rule, but it can help with readability.
 
+Try to use a sensible order for function arguments, for example derivatives should be ordered in a way that matches the mathematical notation, e.g. `d2_psi_d_r2`, `d2_psi_d_r_d_z`, `d2_psi_d_z2` instead of `d2_psi_d_r2`, `d2_psi_d_z2`, `d2_psi_d_r_d_z`.
+An example is the Hessian function, which correctly takes:
+```rust
+let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_r_d_z, d2_psi_d_z2);
+```

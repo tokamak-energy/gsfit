@@ -6,7 +6,7 @@ use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree}
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use ndarray::{Array1, Array2, Array3, Axis, s};
+use ndarray::{Array1, Array2, Array3, ArrayView2, Axis, s};
 use ndarray_stats::QuantileExt;
 use numpy::IntoPyArray; // converting to python data types
 use numpy::PyArrayMethods;
@@ -493,40 +493,35 @@ impl Pressure {
 
                 // Find psi at the pressure sensor
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-                let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
+                let f: ArrayView2<f64> = psi_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
                 let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
                 let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
                 let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
 
-                // Function values
-                f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
-                f[(0, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
-                f[(1, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
-                f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
-
                 // d(psi)/d(r)
                 // bz = 1 / (2.0 * PI * r) * d_psi_d_r
                 d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
                 d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
                 // d(psi)/d(z)
                 // br = - 1 / (2.0 * PI * r) * d_psi_d_z
                 d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
                 d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
                 // d^2(psi)/(d(r)*d(z))
                 // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
                 d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
+                d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
                 d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
                 // Create a bicubic interpolator
-                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+                let bicubic_interpolator: BicubicInterpolator =
+                    BicubicInterpolator::new(d_r, d_z, f.view(), d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
 
                 let x: f64 = (sensor_r - r[i_r_nearest_left]) / d_r;
                 let y: f64 = (sensor_z - z[i_z_nearest_lower]) / d_z;

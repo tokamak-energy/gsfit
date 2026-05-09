@@ -1,5 +1,4 @@
 use super::StationaryPoint;
-use core::f64;
 use geo::{Contains, Coord, LineString, Point, Polygon};
 use ndarray::Array1;
 

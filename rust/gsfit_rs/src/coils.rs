@@ -1,4 +1,4 @@
-use crate::greens::greens_psi;
+use crate::greens::Greens;
 use crate::material_properties::copper_resistivity;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::SensorsDynamic;
@@ -118,24 +118,24 @@ impl Coils {
         for coil_name in self.results.get("pf").keys() {
             let coil_r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
             let coil_z: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("z").unwrap_array1();
-            let coil_d_r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_r").unwrap_array1();
-            let coil_d_z: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("d_z").unwrap_array1();
 
             for other_coil_name in self.results.get("pf").keys() {
                 let other_coil_r: Array1<f64> = self.results.get("pf").get(&other_coil_name).get("geometry").get("r").unwrap_array1();
                 let other_coil_z: Array1<f64> = self.results.get("pf").get(&other_coil_name).get("geometry").get("z").unwrap_array1();
+                let other_coil_d_r: Array1<f64> = self.results.get("pf").get(&other_coil_name).get("geometry").get("d_r").unwrap_array1();
+                let other_coil_d_z: Array1<f64> = self.results.get("pf").get(&other_coil_name).get("geometry").get("d_z").unwrap_array1();
 
-                let greens_filament_matrix: Array2<f64> =
-                    greens_psi(coil_r.clone(), coil_z.clone(), other_coil_r, other_coil_z, coil_d_r.clone(), coil_d_z.clone());
-
-                let g: f64 = greens_filament_matrix.sum();
+                let greens_calculator: Greens =
+                    Greens::sensor_to_conductor(coil_r.clone(), coil_z.clone(), other_coil_r, other_coil_z, other_coil_d_r, other_coil_d_z);
+                let g_psi_matrix: Array2<f64> = greens_calculator.psi();
+                let g_psi: f64 = g_psi_matrix.sum();
 
                 // Store greens
                 self.results
                     .get_or_insert("pf")
                     .get_or_insert(&coil_name)
                     .get_or_insert("greens")
-                    .insert(&other_coil_name, g);
+                    .insert(&other_coil_name, g_psi);
             }
         }
     }

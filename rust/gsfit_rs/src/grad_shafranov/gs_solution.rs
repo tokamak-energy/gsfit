@@ -8,13 +8,12 @@ use crate::plasma_geometry::StationaryPoint;
 use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::plasma_geometry::find_boundary;
 use crate::plasma_geometry::find_magnetic_axis;
-use crate::plasma_geometry::find_stationary_points;
+use crate::plasma_geometry::find_stationary_points_using_winding_number;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
-use core::f64;
 use lapack::*;
 use ndarray::Axis;
-use ndarray::{Array1, Array2, Array3, s};
+use ndarray::{Array1, Array2, Array3, ArrayView2, s};
 use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;
 use std::sync::Arc;
@@ -316,6 +315,8 @@ impl<'a> GsSolution<'a> {
 
         // Iteration loop
         'iteration_loop: for i_iter in 0..self.n_iter_max {
+            // println!("");
+            // println!("Iteration {i_iter}");
             // From previous iteration
             let j_2d: Array2<f64> = self.j_2d.to_owned();
 
@@ -337,7 +338,7 @@ impl<'a> GsSolution<'a> {
                 self.br_2d = self.br_2d.to_owned() + self.delta_z * &d_br_d_z_2d;
                 self.bz_2d = self.bz_2d.to_owned() + self.delta_z * &d_bz_d_z_2d_unshifted;
 
-                // d^2(bz)/d(z^2)
+                // d^2(bz)/d(z^2) ~ d^3(psi)/(d(r)*d(z^2)) d3_psi_d_r_d_z2
                 let mut d2_bz_d_z2_unshifted: Array2<f64> = Array2::zeros((n_z, n_r));
                 for i_r in 0..n_r {
                     for i_z in 0..n_z {
@@ -375,19 +376,41 @@ impl<'a> GsSolution<'a> {
                 &g_d2_psi_d_r2_plasma,
                 &self.j_2d,
                 d_area,
-                n_r,
-                n_z,
                 &r,
                 &g_bz_plasma,
                 &d_bz_d_z_2d,
                 self.delta_z,
             );
 
-            // Find stationary points in `psi`
-            let stationary_points_or_error: Result<Vec<StationaryPoint>, String> =
-                find_stationary_points(&r, &z, &psi_2d, &br_2d, &bz_2d, &d_br_d_z_2d, &d_bz_d_z_2d, d2_psi_d_r2_calculator.clone());
+            // TODO: TEMPORARY CALCULATIONS for psi gradients; later we will store these and calculate the fields
+            let mut d_psi_d_r_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+            let mut d_psi_d_z_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+            let mut d2_psi_d_r2_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+            let mut d2_psi_d_rz_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+            let mut d2_psi_d_z2_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+            for i_z in 0..n_z {
+                for i_r in 0..n_r {
+                    d_psi_d_r_2d[(i_z, i_r)] = 2.0 * PI * mesh_r[(i_z, i_r)] * bz_2d[(i_z, i_r)];
+                    d_psi_d_z_2d[(i_z, i_r)] = -2.0 * PI * mesh_r[(i_z, i_r)] * br_2d[(i_z, i_r)];
+                    d2_psi_d_r2_2d[(i_z, i_r)] = d2_psi_d_r2_calculator.calculate(i_r, i_z);
+                    d2_psi_d_rz_2d[(i_z, i_r)] = 2.0 * PI * mesh_r[(i_z, i_r)] * d_bz_d_z_2d[(i_z, i_r)];
+                    d2_psi_d_z2_2d[(i_z, i_r)] = -2.0 * PI * mesh_r[(i_z, i_r)] * d_br_d_z_2d[(i_z, i_r)];
+                }
+            }
+
+            // Find stationary points in `psi` (magnetic axis and x-points)
+            let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
+                r.view(),
+                z.view(),
+                psi_2d.view(),
+                d_psi_d_r_2d.view(),
+                d_psi_d_z_2d.view(),
+                d2_psi_d_r2_2d.view(),
+                d2_psi_d_rz_2d.view(),
+                d2_psi_d_z2_2d.view(),
+            );
             // At a minimum we should have found the magnetic axis
-            if stationary_points_or_error.is_err() {
+            if stationary_points.is_empty() {
                 // Set time-slice to failed
                 self.set_to_failed_time_slice();
 
@@ -398,10 +421,32 @@ impl<'a> GsSolution<'a> {
                 // Exit iteration loop for this time-slice
                 break 'iteration_loop;
             }
-            let stationary_points: Vec<StationaryPoint> = stationary_points_or_error.expect("gs_solution: unwrapping stationary_points");
 
             // Store stationary points in the solution
             self.stationary_points = stationary_points.clone();
+
+            // Find the magnetic axis (o-point)
+            let magnetic_axis_or_error: Result<MagneticAxis, String> = find_magnetic_axis(&stationary_points, self.r_mag, self.z_mag, &vessel_r, &vessel_z);
+            // Test if we have found the magnetic axis
+            if magnetic_axis_or_error.is_err() {
+                // Set time-slice to failed
+                self.set_to_failed_time_slice();
+
+                // Store error state
+                self.error_state = Some(Error::NoMagneticAxisFound);
+                println!("{:?}", self.error_state.as_ref().unwrap());
+
+                // Exit iteration loop for this time-slice
+                break 'iteration_loop;
+            }
+            // Unwrap and get results out of `magnetic_axis_or_error`
+            let magnetic_axis: MagneticAxis = magnetic_axis_or_error.expect("gs_solution: unwrapping magnetic_axis");
+            let mag_r: f64 = magnetic_axis.r;
+            let mag_z: f64 = magnetic_axis.z;
+            let psi_a: f64 = magnetic_axis.psi;
+            self.r_mag = mag_r;
+            self.z_mag = mag_z;
+            self.psi_a = psi_a;
 
             // Find boundary
             let plasma_boundary_or_error: Result<BoundaryContour, plasma_geometry::Error> = find_boundary(
@@ -416,8 +461,8 @@ impl<'a> GsSolution<'a> {
                 &limit_pts_z,
                 &vessel_r,
                 &vessel_z,
-                self.r_mag, // previous iteration
-                self.z_mag, // previous iteration
+                self.r_mag,
+                self.z_mag,
             );
             // Test if we have found a plasma boundary
             if plasma_boundary_or_error.is_err() {
@@ -452,29 +497,6 @@ impl<'a> GsSolution<'a> {
             let mask: Array2<f64> = self.mask.to_owned();
             let psi_b: f64 = self.psi_b;
             self.xpt_diverted = plasma_boundary.xpt_diverted;
-
-            // Find the magnetic axis (o-point)
-            let magnetic_axis_or_error: Result<MagneticAxis, String> = find_magnetic_axis(&stationary_points, self.r_mag, self.z_mag, &vessel_r, &vessel_z);
-            // Test if we have found the magnetic axis
-            if magnetic_axis_or_error.is_err() {
-                // Set time-slice to failed
-                self.set_to_failed_time_slice();
-
-                // Store error state
-                self.error_state = Some(Error::NoMagneticAxisFound);
-                println!("{:?}", self.error_state.as_ref().unwrap());
-
-                // Exit iteration loop for this time-slice
-                break 'iteration_loop;
-            }
-            // Unwrap and get results out of `magnetic_axis_or_error`
-            let magnetic_axis: MagneticAxis = magnetic_axis_or_error.expect("gs_solution: unwrapping magnetic_axis");
-            let mag_r: f64 = magnetic_axis.r;
-            let mag_z: f64 = magnetic_axis.z;
-            let psi_a: f64 = magnetic_axis.psi;
-            self.r_mag = mag_r;
-            self.z_mag = mag_z;
-            self.psi_a = psi_a;
 
             // Calculate psi_n_2d
             let psi_n_2d: Array2<f64> = &mask * (&psi_2d - psi_a) / (psi_b - psi_a);
@@ -825,49 +847,22 @@ impl<'a> GsSolution<'a> {
                     i_z_nearest_upper = i_z_nearest;
                 }
 
-                // Find psi at the pressure sensor
                 // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-                let mut f: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-                let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
-
-                // Function values
-                f[(0, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_left)];
-                f[(0, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_left)];
-                f[(1, 0)] = psi_2d[(i_z_nearest_lower, i_r_nearest_right)];
-                f[(1, 1)] = psi_2d[(i_z_nearest_upper, i_r_nearest_right)];
-
-                // d(psi)/d(r)
-                // bz = 1 / (2.0 * PI * r) * d_psi_d_r
-                d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-                d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-
-                // d(psi)/d(z)
-                // br = - 1 / (2.0 * PI * r) * d_psi_d_z
-                d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-                d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-
-                // d^2(psi)/(d(r)*d(z))
-                // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
-                d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-                d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-                d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+                let f: ArrayView2<f64> = psi_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
+                let d_f_d_r: ArrayView2<f64> = d_psi_d_r_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
+                let d_f_d_z: ArrayView2<f64> = d_psi_d_z_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
+                let d2_f_d_r_d_z: ArrayView2<f64> = d2_psi_d_rz_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
 
                 // Create a bicubic interpolator
-                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, &f, &d_f_d_r, &d_f_d_z, &d2_f_d_r_d_z);
+                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f, d_f_d_r, d_f_d_z, d2_f_d_r_d_z);
 
+                // Find psi at the pressure sensor
                 let x: f64 = (pressure_sensors_static.geometry_r[i_sensor] - r[i_r_nearest_left]) / d_r;
                 let y: f64 = (pressure_sensors_static.geometry_z[i_sensor] - z[i_z_nearest_lower]) / d_z;
                 let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);
 
                 let psi_n_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
-                if psi_n_at_sensor < 0.0 || psi_n_at_sensor > 1.0 {
+                if !(0.0..=1.0).contains(&psi_n_at_sensor) {
                     println!(
                         "Warning: pressure sensor {} is outside of the plasma boundary (psi_n = {})",
                         i_sensor, psi_n_at_sensor
@@ -1146,6 +1141,9 @@ impl<'a> GsSolution<'a> {
             let i_2d: Array2<f64> = &j_2d * d_area;
             let ip: f64 = i_2d.sum();
             self.ip = ip;
+
+            // // Write the time-slice to numpy files for debugging
+            // self._write_time_slice_to_file(i_iter);
         }
     }
 
@@ -1570,6 +1568,7 @@ impl<'a> GsSolution<'a> {
 
     /// Calculate the Grad Shafranov error by calcuating the LHS and RHS
     /// on the 2D (r, z) grid and seeing the difference = LHS - RHS.
+    ///
     /// **This function is only used for development**
     fn _calculate_gs_error_numerical(&mut self) {
         // get stuff out of self
@@ -1607,40 +1606,39 @@ impl<'a> GsSolution<'a> {
             gs_rhs.slice_mut(s![.., i_r]).assign(&tmp);
         }
 
-        // // TEMPORARY printing
-        // let lhs: f64 = laplacian_psi[(50, 25)];
-        // let rhs: f64 = gs_rhs[(50, 25)];
-        // println!("lhs={lhs}, rhs={rhs}");
-        // let tmp_r: f64 = r[25];
-        // let tmp_z: f64 = z[50];
-        // println!("r={tmp_r}, z={tmp_z}");
-        // // write `laplacian_psi` to file
-        // let file = File::create("gs_lhs.txt").expect("can't make file");
-        // let mut writer = BufWriter::new(file);
-        // for row in laplacian_psi.rows() {
-        //     let line: String = row.iter()
-        //         .map(|&value| value.to_string())
-        //         .collect::<Vec<_>>()
-        //         .join(", ");
-        //     writeln!(writer, "{}", line).expect("can't write line");
-        // }
-        // writer.flush().expect("can't flush writer");
-        // // write `gs_rhs` to file
-        // let file = File::create("gs_rhs.txt").expect("can't make file");
-        // let mut writer = BufWriter::new(file);
-        // for row in gs_rhs.rows() {
-        //     let line: String = row.iter()
-        //         .map(|&value| value.to_string())
-        //         .collect::<Vec<_>>()
-        //         .join(", ");
-        //     writeln!(writer, "{}", line).expect("can't write line");
-        // }
-        // writer.flush().expect("can't flush writer");
-
         // Calculate the residual
         // Note - there is high residual at the boundary
         // Perhaps we should make the mask larger??
         let residual_2d: Array2<f64> = laplacian_psi - gs_rhs;
         println!("{:?}", residual_2d);
+    }
+
+    /// Writes the current time slice to numpy files for debugging
+    ///
+    /// **This function is only used for development**
+    fn _write_time_slice_to_file(&self, i_iter: usize) {
+        use std::path::Path;
+
+        // Equivalent to `mkdir -p tmp`
+        std::fs::create_dir_all("tmp").expect("Failed to create 'tmp' directory");
+
+        let br_2d: Array2<f64> = self.br_2d.to_owned();
+        let bz_2d: Array2<f64> = self.bz_2d.to_owned();
+        let psi_2d: Array2<f64> = self.psi_2d.to_owned();
+        let psi_b: f64 = self.psi_b;
+        let bounding_r: f64 = self.bounding_r;
+        let bounding_z: f64 = self.bounding_z;
+        let mag_r: f64 = self.r_mag;
+        let mag_z: f64 = self.z_mag;
+
+        // Filename has two leading zeros, e.g. i_iter=000, i_iter=001, ...
+        npy_reader_and_writer::write_npy_2d(Path::new(&format!("tmp/i_iter={:03}_psi_2d.npy", i_iter)), &psi_2d);
+        npy_reader_and_writer::write_npy_2d(Path::new(&format!("tmp/i_iter={:03}_br_2d.npy", i_iter)), &br_2d);
+        npy_reader_and_writer::write_npy_2d(Path::new(&format!("tmp/i_iter={:03}_bz_2d.npy", i_iter)), &bz_2d);
+        npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_psi_b.npy", i_iter)), psi_b);
+        npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_bounding_r.npy", i_iter)), bounding_r);
+        npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_bounding_z.npy", i_iter)), bounding_z);
+        npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_mag_r.npy", i_iter)), mag_r);
+        npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_mag_z.npy", i_iter)), mag_z);
     }
 }

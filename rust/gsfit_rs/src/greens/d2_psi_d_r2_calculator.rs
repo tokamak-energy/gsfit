@@ -29,8 +29,6 @@ impl D2PsiDR2Calculator {
     /// * `g_d2_psi_d_r2_plasma` - Green's function table for d^2(psi)/d(r^2) from plasma current, shape (n_z * n_r, n_r), [weber**2 / (metre**2 * ampere)]
     /// * `j_2d` - Plasma current density on grid, shape (n_z, n_r), [ampere / metre**2]
     /// * `d_area` - Area of each grid cell, [metre**2]
-    /// * `n_r` - Number of R grid points, [dimensionless]
-    /// * `n_z` - Number of Z grid points, [dimensionless]
     /// * `r` - R grid points, shape (n_r), [metre]
     /// * `g_bz_plasma` - Green's function table for Bz from plasma current, shape (n_z, n_r), [tesla / (ampere / metre**2)]
     /// * `delta_z` - Small perturbation to the Z-grid to stabilise the VDE, [metre]
@@ -45,13 +43,14 @@ impl D2PsiDR2Calculator {
         g_d2_psi_d_r2_plasma: &Array2<f64>,
         j_2d: &Array2<f64>,
         d_area: f64,
-        n_r: usize,
-        n_z: usize,
         r: &Array1<f64>,
         g_bz_plasma: &Array2<f64>,
         d_bz_d_z: &Array2<f64>,
         delta_z: f64,
     ) -> Self {
+        // Get dimensions
+        let (n_z, n_r): (usize, usize) = j_2d.dim();
+
         // Store reshaped version for performance
         let g_d2_psi_d_r2_plasma_3d: Array3<f64> = g_d2_psi_d_r2_plasma
             .to_shape((n_z, n_r, n_r))

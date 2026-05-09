@@ -1,12 +1,11 @@
 use crate::coils::Coils;
-use crate::greens::greens_b;
-use crate::greens::greens_d_b_d_z;
+use crate::greens::Greens;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
-use ndarray::{Array1, Array2, Array3, Axis, s};
+use ndarray::{Array1, Array2, Array3, Axis, array, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -382,16 +381,25 @@ impl StationaryPoint {
                 for i_time in 0..n_time {
                     let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                     let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
+                    let n_filaments: usize = coil_r.len();
 
-                    let (g_br_full, _g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
-                        Array1::from_vec(vec![mag_axis_r[i_time]]),
-                        Array1::from_vec(vec![mag_axis_z[i_time]]),
+                    let mag_axis_r_local: Array1<f64> = array![mag_axis_r[i_time]];
+                    let mag_axis_z_local: Array1<f64> = array![mag_axis_z[i_time]];
+
+                    let greens_calculator: Greens = Greens::sensor_to_conductor(
+                        mag_axis_r_local.clone(),
+                        mag_axis_z_local.clone(),
                         coil_r.clone(),
                         coil_z.clone(),
+                        Array1::zeros(n_filaments), // TODO: should this be NaN?
+                        Array1::zeros(n_filaments),
                     );
 
+                    let g_b_r_matrix: Array2<f64> = greens_calculator.b_r(); // shape = [n_sensor, n_coil_filament]
+                    // let g_b_z_matrix: Array2<f64> = greens_calculator.b_z();  // shape = [n_sensor, n_coil_filament]
+
                     // Sum over all the current sources
-                    let g_br: f64 = g_br_full.sum();
+                    let g_br: f64 = g_b_r_matrix.sum();
 
                     // Sensors Green's function
                     g_vs_time[i_time] = g_br;
@@ -424,25 +432,24 @@ impl StationaryPoint {
             let mut g_with_plasma: Array2<f64> = Array2::from_elem((n_time, n_z * n_r), f64::NAN);
             let mut g_d_plasma_d_z: Array2<f64> = Array2::from_elem((n_time, n_z * n_r), f64::NAN);
             for i_time in 0..n_time {
-                let (g_br_full, _g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
-                    Array1::from_vec(vec![mag_axis_r[i_time]]), // sensor
-                    Array1::from_vec(vec![mag_axis_z[i_time]]),
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
+                    array![mag_axis_r[i_time]], // sensor
+                    array![mag_axis_z[i_time]],
                     plasma_r.clone(), // current source
                     plasma_z.clone(),
+                    Array1::zeros(n_z * n_r), // TODO: should this be NaN?
+                    Array1::zeros(n_z * n_r),
                 );
 
+                let g_br_full: Array2<f64> = greens_calculator.b_r(); // shape = [n_sensor, n_z * n_r]
+                // let g_bz_full: Array2<f64> = greens_calculator.b_z();  // shape = [n_sensor, n_z * n_r]
                 let g_br: Array1<f64> = g_br_full.sum_axis(Axis(0)); // g_br_full.shape = [1, n_z * n_r];  g_br.shape = [n_z * n_r]
 
                 // Sensors Green's function
                 g_with_plasma.slice_mut(s![i_time, ..]).assign(&g_br);
 
                 // Vertical stability
-                let (g_d_plasma_br_d_z_full, _g_d_plasma_bz_d_z_full): (Array2<f64>, Array2<f64>) = greens_d_b_d_z(
-                    Array1::from_vec(vec![mag_axis_r[i_time]]), // sensor
-                    Array1::from_vec(vec![mag_axis_z[i_time]]),
-                    plasma_r.clone(), // current source
-                    plasma_z.clone(),
-                );
+                let g_d_plasma_br_d_z_full: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [n_sensor, n_z * n_r]
 
                 let g_d_plasma_br_d_z: Array1<f64> = g_d_plasma_br_d_z_full.sum_axis(Axis(0)); // g_d_plasma_br_d_z_full.shape = [1, n_z * n_r];  g_d_plasma_br_d_z.shape = [n_z * n_r]
 
@@ -479,12 +486,16 @@ impl StationaryPoint {
                 for dof_name in dof_names {
                     let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                     for i_time in 0..n_time {
-                        let (g_br_full, _g_bz_full): (Array2<f64>, Array2<f64>) = greens_b(
-                            Array1::from_vec(vec![mag_axis_r[i_time]]), // by convention (r, z) are "sensors"
-                            Array1::from_vec(vec![mag_axis_z[i_time]]),
-                            passive_r.clone(), // by convention (r_prime, z_prime) are "current sources"
+                        let greens_calculator: Greens = Greens::sensor_to_conductor(
+                            array![mag_axis_r[i_time]], // sensor
+                            array![mag_axis_z[i_time]],
+                            passive_r.clone(), // current source
                             passive_z.clone(),
+                            Array1::zeros(passive_r.len()), // TODO: should this be NaN?
+                            Array1::zeros(passive_r.len()),
                         );
+
+                        let g_br_full: Array2<f64> = greens_calculator.b_r(); // shape = [n_sensor, n_passive_filament]
 
                         // Current distribution
                         let current_distribution: Array1<f64> = passives
