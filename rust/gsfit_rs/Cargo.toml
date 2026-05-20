@@ -17,7 +17,7 @@ vendored-openssl = ["dep:openssl-sys"]
 # (not a regular dependency) so that Cargo's resolver v3 unifies its `vendored`
 # feature with the transitive `openssl-sys` in the host dependency graph
 # (openblas-build -> ureq -> native-tls -> openssl-sys).
-openssl-sys = { version = "0.9", features = ["vendored"], optional = true }
+openssl-sys = { version = "0.9.116", features = ["vendored"], optional = true }
 
 [dependencies]
 # Local data_tree dependency
@@ -27,12 +27,12 @@ npy_reader_and_writer = { path = "../npy_reader_and_writer" }
 
 # External dependencies
 contour = "0.13.1"
-diffsol = "0.10.4"
-geo = "0.32.0"  # For centre of mass; polygon area
-geo-types = "0.7.18"  # For getting geo type out of `contour`
-pyo3 = { version = "0.28.2", features = ["extension-module", "multiple-pymethods"] }  # "extension-module" = this will be a Python package; "multiple-pymethods" = ??
+diffsol = "0.14.0"
+geo = "0.33.1"  # For centre of mass; polygon area
+geo-types = "0.7.19"  # For getting geo type out of `contour`
+pyo3 = { version = "0.28.3", features = ["extension-module", "multiple-pymethods"] }  # "extension-module" = this will be a Python package; "multiple-pymethods" = ??
 physical_constants = "0.5.0"  # For MU_0
-rayon = "1.11.0"
+rayon = "1.12.0"
 spec_math = "0.1.6"  # For elliptic integrals
 numpy = "0.28.0"
 ndarray = { version = "0.17.2", features = ["approx"] }  # must be same version as numpy uses internally
@@ -43,8 +43,8 @@ approx = "0.5.1"
 faer = "0.24.0"
 lapack = "0.20.0"
 ndarray-stats = "0.7.0"  # TODO: I want to remove this dependency, because it restricts `ndarray` version!
-rand = "0.10.0"
-special = "0.13.0" # "special" mathematical functions, used for `Lambert`
+rand = "0.10.1"
+special = "0.13.1" # "special" mathematical functions, used for `Lambert`
 
 # Platform-specific BLAS/LAPACK configurations
 [target.'cfg(not(target_os = "windows"))'.dependencies]
@@ -52,7 +52,7 @@ blas-src = { version = "0.14.0", features = ["openblas"] }
 ndarray-linalg = { version = "0.18.1", features = ["openblas"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-openblas-src = { version = "0.10.15", features = ["system"] }
+openblas-src = { version = "0.10.16", features = ["system"] }
 ndarray-linalg = { version = "0.18.1", features = ["openblas-static"] }
 
 [lints.clippy]

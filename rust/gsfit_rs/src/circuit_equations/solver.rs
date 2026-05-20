@@ -2,7 +2,7 @@ use crate::coils::Coils;
 use crate::greens::mutual_inductance_finite_size_to_finite_size;
 use crate::passives::PassiveGeometryAll;
 use crate::passives::Passives;
-use diffsol::{NalgebraMat, NalgebraVec, OdeBuilder, OdeSolverMethod, Vector, VectorHost};
+use diffsol::{NalgebraMat, NalgebraVec, OdeBuilder, OdeSolverMethod, Vector, VectorHost, OdeSolverStopReason};
 use ndarray::{Array1, Array2, Axis, concatenate, s};
 use ndarray_linalg::Solve;
 use numpy::PyArrayMethods;
@@ -601,7 +601,7 @@ pub fn solve_circuit_equations(
     let mut solver = problem.bdf::<LS>().expect("Failed to create BDF solver");
 
     // Solve the ODE system
-    let (calculated_states, calculated_times_vec): (NalgebraMat<f64>, Vec<f64>) = solver.solve(time_end).expect("Failed to solve ODE system");
+    let (calculated_states, calculated_times_vec, _ode_stop_reason): (NalgebraMat<f64>, Vec<f64>, OdeSolverStopReason<f64>) = solver.solve(time_end).expect("Failed to solve ODE system");
     println!("Integration completed");
 
     // Extract results
