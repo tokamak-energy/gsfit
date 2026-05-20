@@ -45,6 +45,16 @@ class DataTreeAccessor:
     def get_vec_bool(self, keys: list[str]) -> list[bool]: ...
     def get_vec_usize(self, keys: list[str]) -> list[int]: ...
     def keys(self, key_path: list[str] | None = None) -> list[str]: ...
+    def pop(
+        self,
+        path: list[str],
+    ) -> None:
+        """
+        Remove from the data structure
+
+        :param path: Path to remove data structure
+        """
+        ...
     def print_keys(self) -> None: ...
 
 def solve_grad_shafranov(
@@ -393,6 +403,19 @@ class FluxLoops(DataTreeAccessor):
         passives: Passives,
         plasma: Plasma,
     ) -> None: ...
+    def calculate_sensor_values_vacuum(
+        cls,
+        coils: Coils,
+        passives: Passives,
+    ) -> None:
+        """
+        Calculate the sensor values from the coils and passives.
+        Mutates self
+
+        :param coils: Coils object
+        :param passives: Passives object
+        """
+        ...
 
 class RogowskiCoils(DataTreeAccessor):
     def __new__(
