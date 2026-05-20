@@ -47,12 +47,12 @@ class DataTreeAccessor:
     def keys(self, key_path: list[str] | None = None) -> list[str]: ...
     def pop(
         self,
-        path: list[str],
+        keys: list[str],
     ) -> None:
         """
         Remove from the data structure
 
-        :param path: Path to remove data structure
+        :param keys: Path to remove data structure
         """
         ...
     def print_keys(self) -> None: ...
@@ -383,6 +383,19 @@ class FluxLoops(DataTreeAccessor):
         :param fit_settings_weight: Weight for the sensor [dimensionless]
         :param time: Time vector [second]
         :param measured: Measured values [weber]
+        """
+        ...
+    def calculate_sensor_values_vacuum(
+        cls,
+        coils: Coils,
+        passives: Passives,
+    ) -> None:
+        """
+        Calculate the sensor values from the coils and passives.
+        Mutates self
+
+        :param coils: Coils object
+        :param passives: Passives object
         """
         ...
     def greens_with_coils(
