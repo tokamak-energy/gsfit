@@ -206,3 +206,12 @@ An example is the Hessian function, which correctly takes:
 ```rust
 let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_r_d_z, d2_psi_d_z2);
 ```
+
+# Python
+When using strings I prefer a double backslash `\\` instead of raw, e.g.
+```python
+# This is wrong
+mds_path = r"\GSFIT::TOP.BEST.GLOBAL:IP"
+# This is correct
+mds_path = "\\GSFIT::TOP.BEST.GLOBAL:IP"
+```

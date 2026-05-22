@@ -385,6 +385,12 @@ class FluxLoops(DataTreeAccessor):
         :param measured: Measured values [weber]
         """
         ...
+    def calculate_sensor_values(
+        cls,
+        coils: Coils,
+        passives: Passives,
+        plasma: Plasma,
+    ) -> None: ...
     def calculate_sensor_values_vacuum(
         cls,
         coils: Coils,
@@ -410,25 +416,6 @@ class FluxLoops(DataTreeAccessor):
         cls,
         plasma: Plasma,
     ) -> None: ...
-    def calculate_sensor_values(
-        cls,
-        coils: Coils,
-        passives: Passives,
-        plasma: Plasma,
-    ) -> None: ...
-    def calculate_sensor_values_vacuum(
-        cls,
-        coils: Coils,
-        passives: Passives,
-    ) -> None:
-        """
-        Calculate the sensor values from the coils and passives.
-        Mutates self
-
-        :param coils: Coils object
-        :param passives: Passives object
-        """
-        ...
 
 class RogowskiCoils(DataTreeAccessor):
     def __new__(
