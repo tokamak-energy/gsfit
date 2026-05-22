@@ -1,5 +1,5 @@
 # GSFit: Grad-Shafranov Fit
-[![The 3-Clause BSD License](https://img.shields.io/pypi/l/prtg-pyprobe)](LICENSE) 
+[![The 3-Clause BSD License](https://img.shields.io/badge/License-BSD_3--Clause-green)](LICENSE)
 
 [![Rust](https://img.shields.io/badge/Rust-2024_edition-red?logo=rust&logoColor=white)](https://www.rust-lang.org/) 
 [![Rust coverage: Rust tests](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/rust_coverage_from_rust_tests/coverage-badge.json&label=Rust%20coverage:%20Rust%20tests&logo=rust&logoColor=white)](https://tokamak-energy.github.io/gsfit/rust_coverage_from_rust_tests/html/)
