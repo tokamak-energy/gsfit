@@ -253,6 +253,7 @@ jobs:
             maturin build --release --features vendored-openssl -i python3.11
             maturin build --release --features vendored-openssl -i python3.12
             maturin build --release --features vendored-openssl -i python3.13
+            maturin build --release --features vendored-openssl -i python3.14
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -372,6 +373,10 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies
@@ -380,6 +385,7 @@ jobs:
           python3.11 -m pip install --upgrade pip maturin
           python3.12 -m pip install --upgrade pip maturin
           python3.13 -m pip install --upgrade pip maturin
+          python3.14 -m pip install --upgrade pip maturin
       - name: Build Python wheels (compiling Rust)
         run: |
           # Update Rust and print version
@@ -390,6 +396,7 @@ jobs:
           maturin build --release -i python3.11
           maturin build --release -i python3.12
           maturin build --release -i python3.13
+          maturin build --release -i python3.14
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -484,6 +491,10 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies
@@ -491,6 +502,7 @@ jobs:
           py -3.11 -m pip install --upgrade pip maturin
           py -3.12 -m pip install --upgrade pip maturin
           py -3.13 -m pip install --upgrade pip maturin
+          py -3.14 -m pip install --upgrade pip maturin
 
       - name: Copy OpenBLAS and LAPACK DLLs to Python package
         run: |
@@ -515,6 +527,7 @@ jobs:
           maturin build --release -i python3.11
           maturin build --release -i python3.12
           maturin build --release -i python3.13
+          maturin build --release -i python3.14
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v7
         with:

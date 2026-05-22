@@ -1,6 +1,6 @@
 # GSFit: Grad-Shafranov Fit
 [![The 3-Clause BSD License](https://img.shields.io/pypi/l/prtg-pyprobe)](LICENSE) 
-[![Python 3.11|3.12|3.13](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue?logo=python&logoColor=white)](https://www.python.org/) 
+[![Python 3.11|3.12|3.13|3.14](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue?logo=python&logoColor=white)](https://www.python.org/) 
 [![Rust](https://img.shields.io/badge/Rust-1.95-red?logo=rust&logoColor=white)](https://www.rust-lang.org/) 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) 
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
@@ -8,6 +8,7 @@
 [![Rust coverage: Rust tests](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/rust_coverage_from_rust_tests/coverage-badge.json&label=Rust%20coverage:%20Rust%20tests&logo=rust&logoColor=white)](https://tokamak-energy.github.io/gsfit/rust_coverage_from_rust_tests/html/)
 [![Rust coverage: Python tests](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/rust_coverage_from_python_tests/coverage-badge.json&label=Rust%20coverage:%20Python%20tests&logo=rust&logoColor=white)](https://tokamak-energy.github.io/gsfit/rust_coverage_from_python_tests/html/)
 [![Rust coverage: Rust + Python tests](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/rust_coverage_from_rust_and_python_tests/coverage-badge.json&label=Rust%20coverage:%20Rust%20%2B%20Python%20tests&logo=rust&logoColor=white)](https://tokamak-energy.github.io/gsfit/rust_coverage_from_rust_and_python_tests/html/)
+[![dependency status](https://deps.rs/repo/github/tokamak-energy/gsfit/status.svg?path=rust%2F)](https://deps.rs/repo/github/tokamak-energy/gsfit?path=rust%2F)
 
 [![Python coverage: Python tests](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/python_coverage_from_python_tests/coverage-badge.json&label=Python%20coverage&logo=python&logoColor=white)](https://tokamak-energy.github.io/gsfit/python_coverage_from_python_tests/html/)
 
@@ -42,7 +43,7 @@ Using Python allows easy integration into existing workflows. For example, in
 # 1. Installation and environment
 
 ## 1.1 Python environment
-GSFit can be run on Python 3.11, 3.12 and 3.13.
+GSFit can be run on Python 3.11, 3.12, 3.13, and 3.14.
 
 `uv` is both an environment and package manager and is recommended.
 There are several other Python virtual environment providers which *should* work, but we have not tested against them.
