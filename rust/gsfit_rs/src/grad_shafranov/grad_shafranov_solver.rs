@@ -207,7 +207,7 @@ pub fn solve_grad_shafranov(
     bp_probes.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
     flux_loops.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
     rogowski_coils.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
-    if pressure_sensors.len() > 0 {
+    if pressure_sensors.results.data.len() > 0 {
         pressure_sensors.calculate_sensor_values_rust(&plasma_owned);
     }
 
