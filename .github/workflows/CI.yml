@@ -355,7 +355,7 @@ jobs:
       - name: Run mypy Python tests
         run: mypy python/
       - name: Run ty Python tests
-        run: ty python/
+        run: ty check python/
 
   macos_build_wheels:
     name: "macOS: Build Python wheels"
@@ -459,7 +459,7 @@ jobs:
       - name: Run mypy Python tests
         run: mypy python/
       - name: Run ty Python tests
-        run: ty python/
+        run: ty check python/
 
   windows_build_wheels:
     name: "Windows: Build Python wheels"
@@ -587,7 +587,7 @@ jobs:
         #   VCPKG_ROOT: C:/vcpkg
         run: mypy python/
       - name: Run ty Python tests
-        run: ty python/
+        run: ty check python/
 
   release:
     name: Release
