@@ -1,7 +1,6 @@
 import typing
 from typing import TYPE_CHECKING
 
-# import freegs  # type: ignore
 import freegsnke  # type: ignore
 import numpy as np
 import numpy.typing as npt

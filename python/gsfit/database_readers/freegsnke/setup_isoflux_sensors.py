@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # type: ignore
 from gsfit_rs import Isoflux
-from shapely.geometry import LineString  # type: ignore
+from shapely.geometry import LineString
 
 if TYPE_CHECKING:
     from . import DatabaseReader

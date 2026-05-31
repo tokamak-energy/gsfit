@@ -272,7 +272,7 @@ jobs:
         with:
           python-version: '3.13'
       - name: Download built wheels
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: wheels-linux
       - name: List files
@@ -354,6 +354,8 @@ jobs:
           path: examples/artifacts/
       - name: Run mypy Python tests
         run: mypy python/
+      - name: Run ty Python tests
+        run: ty python/
 
   macos_build_wheels:
     name: "macOS: Build Python wheels"
@@ -415,7 +417,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Download built wheels
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: wheels-macos
       - name: List files
@@ -456,6 +458,8 @@ jobs:
           python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
       - name: Run mypy Python tests
         run: mypy python/
+      - name: Run ty Python tests
+        run: ty python/
 
   windows_build_wheels:
     name: "Windows: Build Python wheels"
@@ -546,7 +550,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Download built wheels
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: wheels-windows
       - name: List files
@@ -582,6 +586,8 @@ jobs:
         # env:
         #   VCPKG_ROOT: C:/vcpkg
         run: mypy python/
+      - name: Run ty Python tests
+        run: ty python/
 
   release:
     name: Release
@@ -597,7 +603,7 @@ jobs:
       attestations: write
     steps:
       - name: Download all artifacts (wheels-linux and sdist)
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v4
         with:

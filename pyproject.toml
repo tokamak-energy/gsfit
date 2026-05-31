@@ -43,6 +43,8 @@ dev = [
     "pytest-xdist",
     "scipy-stubs",
     "shapely",
+    "ty",
+    "types-setuptools",
     "types-shapely",
 ]
 with_st40_mdsplus = [
@@ -81,6 +83,11 @@ warn_return_any = true
 warn_unreachable = true
 warn_unused_configs = true
 no_implicit_reexport = true
+
+[tool.ty.src]
+exclude = [
+    "python/diagnostic_and_simulation_base/nested_dictionary.py",
+]
 
 # We use `ruff` not `black`. Here we "try" to prevent `black` from running.
 # There is no "robust" way of disabling `black`

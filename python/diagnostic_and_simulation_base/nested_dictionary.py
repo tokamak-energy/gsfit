@@ -57,7 +57,7 @@ class ListOfNestedDict:
     #     return len(self.nested_dict_data.keys()) # this probably won't work???
 
 
-class NestedDict(OrderedDict):  # type: ignore
+class NestedDict(OrderedDict):
     """A custom nested dictionary
 
     Wild card accumulator: In MDSplus, and all of our code, by convention time is the 0th index.
