@@ -9,7 +9,6 @@ which accelerates the Gaussian elimination process used in the RTGSFIT code.
 import numpy as np
 import numpy.typing as npt
 from scipy.linalg import lu
-from typing import cast
 
 def poisson_matrix(
     r_vec: npt.NDArray[np.float64],
