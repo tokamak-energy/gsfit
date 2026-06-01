@@ -1,4 +1,4 @@
-﻿# mypy: ignore-errors
+# mypy: ignore-errors
 # TODO: need to fix mypy errors
 
 import typing

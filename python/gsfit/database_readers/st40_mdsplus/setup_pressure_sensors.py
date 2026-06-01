@@ -1,4 +1,4 @@
-﻿import typing
+import typing
 from typing import TYPE_CHECKING
 
 from gsfit_rs import Pressure
