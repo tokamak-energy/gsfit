@@ -338,6 +338,8 @@ export PATH=$HOME/local/bin:$PATH
 -->
 
 
+<!--
+
 ```terminal
 rustup update
 ```
@@ -348,4 +350,6 @@ pip install --upgrade pip
 pip install --upgrade uv
 uv python upgrade
 ```
+
+-->
 
