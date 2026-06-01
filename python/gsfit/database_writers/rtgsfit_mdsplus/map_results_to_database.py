@@ -51,7 +51,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     z = plasma.get_array1(["grid", "z"])
     n_z = plasma.get_usize(["grid", "n_z"])
     n_r = plasma.get_usize(["grid", "n_r"])
-    d_r = np.mean(r[1:] - r[0:-1]).astype(np.float64)
+    d_r = np.mean(r[1:] - r[0:-1])
     d_z = np.mean(z[1:] - z[0:-1])
 
     # Number of power supplies
