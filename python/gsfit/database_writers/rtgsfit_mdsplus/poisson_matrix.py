@@ -1,6 +1,3 @@
-# mypy: ignore-errors
-# TODO: need to fix mypy errors
-
 """
 This module contains routines for discretizing the left-hand side of the Grad-Shafranov equation,
 which involves applying a modified Laplacian operator to the poloidal flux function.
@@ -12,7 +9,6 @@ which accelerates the Gaussian elimination process used in the RTGSFIT code.
 import numpy as np
 import numpy.typing as npt
 from scipy.linalg import lu
-
 
 def poisson_matrix(
     r_vec: npt.NDArray[np.float64],
@@ -82,9 +78,9 @@ def poisson_matrix_lup_bands(
     poiss_matrix: npt.NDArray[np.float64],
     n_r: int,
 ) -> tuple[
-    npt.NDArray[np.float64],
-    npt.NDArray[np.float64],
     npt.NDArray[np.int64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
 ]:
     """
     Perform LU decomposition of the Poisson matrix with banded storage.

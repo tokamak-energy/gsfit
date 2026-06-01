@@ -4,7 +4,7 @@
 import typing
 from typing import TYPE_CHECKING
 
-import mdsthin  # type: ignore
+import mdsthin
 import numpy as np
 from gsfit_rs import RogowskiCoils
 

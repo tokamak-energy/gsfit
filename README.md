@@ -10,6 +10,7 @@
 [![Python 3.11|3.12|3.13|3.14](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue?logo=python&logoColor=white)](https://www.python.org/) 
 [![Python coverage: Python tests](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/python_coverage_from_python_tests/coverage-badge.json&label=Python%20coverage&logo=python&logoColor=white)](https://tokamak-energy.github.io/gsfit/python_coverage_from_python_tests/html/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) 
+[![ty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json)](https://github.com/astral-sh/ty)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
 GSFit is a modern tokamak equilibrium reconstruction tool for post-shot experimental analysis and scientific interpretation.
@@ -335,3 +336,20 @@ make -j && make install
 export PATH=$HOME/local/bin:$PATH
 
 -->
+
+
+<!--
+
+```terminal
+rustup update
+```
+
+To update `uv`
+```terminal
+pip install --upgrade pip
+pip install --upgrade uv
+uv python upgrade
+```
+
+-->
+

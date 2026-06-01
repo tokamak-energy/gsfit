@@ -7,7 +7,7 @@ from importlib import resources as resources_py  # BUXTON: this is deprecated an
 from pathlib import Path
 from time import time as time_py
 
-import f90nml  # type: ignore
+import f90nml
 
 from . import version_storage
 from .nested_dictionary import NestedDict
@@ -134,10 +134,6 @@ class DiagnosticAndSimulationBase:
         string_output += f"║ {' run_name = ' + str(self.run_name):<75} ║\n"
         string_output += f"║ {' run_description = ' + str(self.run_description):<75} ║\n"
         string_output += f"║ {' settings_path = ...':<75} ║\n"
-        wrapped_settings_path = textwrap.wrap(self.settings_path, width=75)
-        for i, settings_path in enumerate(wrapped_settings_path):
-            string_output += f"║  {str(settings_path):<75}║\n"
-        string_output += "╚═════════════════════════════════════════════════════════════════════════════╝"
         return string_output
 
     def _load_settings_from_files(self) -> None:
@@ -177,7 +173,7 @@ class DiagnosticAndSimulationBase:
         """Writes data to MDSplus"""
 
         # Lazy loading of `standard_utility` because it's specific to Tokamak Energy.
-        import standard_utility as util  # type: ignore
+        import standard_utility as util
 
         # Add settings files to results.
         # We do this right at the end, as they can be programatially changed, e.g. for scans

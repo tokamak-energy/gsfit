@@ -1,11 +1,11 @@
 import typing
 from typing import TYPE_CHECKING
 
-import freegs  # type: ignore
+import freegs
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Isoflux
-from shapely.geometry import LineString  # type: ignore
+from shapely.geometry import LineString
 
 if TYPE_CHECKING:
     from . import DatabaseReader

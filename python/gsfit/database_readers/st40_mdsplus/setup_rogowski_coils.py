@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import RogowskiCoils
-from st40_database import GetData  # type: ignore[import-not-found]
+from st40_database import GetData
 
 if TYPE_CHECKING:
     from . import DatabaseReader
@@ -75,7 +75,7 @@ def setup_rogowski_coils(
 
             # Only INIVC000 has gaps
             if sensor_name == "INIVC000":
-                import mdsthin  # type: ignore
+                import mdsthin
 
                 conn = mdsthin.Connection("smaug")
                 conn.openTree("st40", 11010605)

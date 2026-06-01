@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
-from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # type: ignore
+from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium
 from gsfit_rs import StationaryPoint
 
 if TYPE_CHECKING:

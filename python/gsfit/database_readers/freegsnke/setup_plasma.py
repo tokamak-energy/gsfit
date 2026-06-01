@@ -1,11 +1,10 @@
 import typing
 from typing import TYPE_CHECKING
 
-import freegsnke  # type: ignore
 import gsfit_rs
 import numpy as np
 import numpy.typing as npt
-from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium  # type: ignore
+from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium
 from gsfit_rs import Plasma
 
 if TYPE_CHECKING:
