@@ -125,19 +125,15 @@ class DiagnosticAndSimulationBase:
     def __repr__(self) -> str:
         """Print to screen"""
         string_output = ""
-        string_output += "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—\n"
-        string_output += f"â•‘ {f' <{self.__class__.__name__}>':<75} â•‘\n"
-        string_output += f"â•‘ {f' {version_storage.__version__}':<75} â•‘\n"
-        string_output += f"â•‘ {' ':<75} â•‘\n"
-        string_output += f"â•‘ {' pulseNo = ' + f'{self.pulseNo:_}':<75} â•‘\n"
-        string_output += f"â•‘ {' pulseNo_write = ' + f'{self.pulseNo_write:_}':<75} â•‘\n"
-        string_output += f"â•‘ {' run_name = ' + str(self.run_name):<75} â•‘\n"
-        string_output += f"â•‘ {' run_description = ' + str(self.run_description):<75} â•‘\n"
-        string_output += f"â•‘ {' settings_path = ...':<75} â•‘\n"
-        wrapped_settings_path = textwrap.wrap(self.settings_path, width=75)
-        for i, settings_path in enumerate(wrapped_settings_path):
-            string_output += f"â•‘  {str(settings_path):<75}â•‘\n"
-        string_output += "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
+        string_output += "╔═════════════════════════════════════════════════════════════════════════════╗\n"
+        string_output += f"║ {f' <{self.__class__.__name__}>':<75} ║\n"
+        string_output += f"║ {f' {version_storage.__version__}':<75} ║\n"
+        string_output += f"║ {' ':<75} ║\n"
+        string_output += f"║ {' pulseNo = ' + f'{self.pulseNo:_}':<75} ║\n"
+        string_output += f"║ {' pulseNo_write = ' + f'{self.pulseNo_write:_}':<75} ║\n"
+        string_output += f"║ {' run_name = ' + str(self.run_name):<75} ║\n"
+        string_output += f"║ {' run_description = ' + str(self.run_description):<75} ║\n"
+        string_output += f"║ {' settings_path = ...':<75} ║\n"
         return string_output
 
     def _load_settings_from_files(self) -> None:
