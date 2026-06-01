@@ -1,4 +1,4 @@
-# mypy: ignore-errors
+﻿# mypy: ignore-errors
 # TODO: need to fix mypy errors
 
 import typing
@@ -8,7 +8,7 @@ import mdsthin  # type: ignore
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import FluxLoops
-from st40_database import GetData  # type: ignore[import-not-found] # ty: ignore[unresolved-import]
+from st40_database import GetData
 
 if TYPE_CHECKING:
     from . import DatabaseReader

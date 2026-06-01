@@ -1,11 +1,11 @@
-import typing
+﻿import typing
 from typing import TYPE_CHECKING
 
-import freegs  # type: ignore
+import freegs
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Passives
-from st40_database import GetData  # type: ignore
+from st40_database import GetData
 
 if TYPE_CHECKING:
     from . import DatabaseReader

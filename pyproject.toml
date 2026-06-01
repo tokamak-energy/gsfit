@@ -67,6 +67,7 @@ python-packages = ["gsfit", "gsfit_rs", "diagnostic_and_simulation_base"]
 manifest-path = "rust/gsfit_rs/Cargo.toml"
 gsfit.data = ["gsfit/settings/"]
 
+# Decide which `mypy` rules to apply
 [tool.mypy]
 ignore_errors = false
 disallow_untyped_calls = true
@@ -84,9 +85,29 @@ warn_unreachable = true
 warn_unused_configs = true
 no_implicit_reexport = true
 
+# `freegs`, `freegsnke` and `freegs4e` ship no type stubs.
+# Tell mypy to treat them as untyped here (instead of per-line `# type: ignore`)
+[[tool.mypy.overrides]]
+module = [
+    "freegs.*", "freegsnke.*", "freegs4e.*",
+    "st40_database.*", "standard_utility.*",
+]
+ignore_missing_imports = true
+
 [tool.ty.src]
 exclude = [
     "python/diagnostic_and_simulation_base/nested_dictionary.py",
+]
+
+# `freegs`, `freegsnke` and `freegs4e` ship no type stubs.
+# This is the `ty` equivalent of mypy's `ignore_missing_imports`
+[tool.ty.analysis]
+replace-imports-with-any = [
+    "freegs", "freegs.**",
+    "freegsnke", "freegsnke.**",
+    "freegs4e", "freegs4e.**",
+    "st40_database", "st40_database.**",
+    "standard_utility", "standard_utility.**",
 ]
 
 # We use `ruff` not `black`. Here we "try" to prevent `black` from running.
