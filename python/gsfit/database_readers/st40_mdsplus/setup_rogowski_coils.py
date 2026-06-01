@@ -75,7 +75,7 @@ def setup_rogowski_coils(
 
             # Only INIVC000 has gaps
             if sensor_name == "INIVC000":
-                import mdsthin  # type: ignore
+                import mdsthin
 
                 conn = mdsthin.Connection("smaug")
                 conn.openTree("st40", 11010605)

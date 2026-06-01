@@ -125,7 +125,7 @@ class NestedDict(OrderedDict):
         # TODO: figure out why this fails mypy tests?
         OrderedDict.__setitem__(self, key, value)
 
-    def update(  # type: ignore
+    def update(
         self,
         dict_to_add: dict[typing.Any, typing.Any] | None = None,
     ) -> None:

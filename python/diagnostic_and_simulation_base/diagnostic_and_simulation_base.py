@@ -7,7 +7,7 @@ from importlib import resources as resources_py  # BUXTON: this is deprecated an
 from pathlib import Path
 from time import time as time_py
 
-import f90nml  # type: ignore[import-untyped]
+import f90nml
 
 from . import version_storage
 from .nested_dictionary import NestedDict
