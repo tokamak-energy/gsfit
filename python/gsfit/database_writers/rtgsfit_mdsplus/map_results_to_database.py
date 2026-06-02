@@ -476,7 +476,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
         # No sensor replacement, so the matrix is just the identity matrix
         sensor_replacement_matrix = np.eye(len(constraint_names), len(sensors_pcs_should_read), dtype=np.float64)
 
-    results["PRESHOT"]["SENS_NAMES"] = sensors_pcs_should_read
+    results["PRESHOT"]["SENS_NAMES"] = np.array(sensors_pcs_should_read)
     results["PRESHOT"]["SENS_REP_MAT"] = sensor_replacement_matrix.flatten()
     results["PRESHOT"]["N_SENS_PCS"] = np.int32(len(sensors_pcs_should_read))
 
@@ -504,7 +504,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
                 coef_names.append(dof_name)
             else:
                 raise ValueError(f"Unknown DoF name: {dof_name}")
-    results["PRESHOT"]["COEF_NAMES"] = coef_names
+    results["PRESHOT"]["COEF_NAMES"] = np.array(coef_names)
 
     # create meas_names list and save it
     meas_names = []
@@ -521,4 +521,4 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
         [n_reg_local, _] = passive_regularisation_local.shape
         for i_reg in range(n_reg_local):
             meas_names.append(f"{passive_name}_reg_{i_reg}")
-    results["PRESHOT"]["MEAS_NAMES"] = meas_names
+    results["PRESHOT"]["MEAS_NAMES"] = np.array(meas_names)
