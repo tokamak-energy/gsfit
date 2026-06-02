@@ -536,8 +536,9 @@ impl Pressure {
                     continue;
                 }
 
-                // Analytically integrate p'(psi_n) from psi_n_at_sensor to the boundary (psi_n = 1)
-                // p(psi_n) = source_function_integral(psi_n, dof) * (psi_b - psi_a)
+                // Analytically integrate p'(psi_n) with boundary condition p(psi_n = 1) = 0.
+                // Note: source_function_integral returns an integral from psi_n = 1 to psi_n,
+                // i.e. p(psi_n) = integral_{1}^{psi_n} p'(x) dx, scaled by (psi_b - psi_a).
                 let p_prime_dof_values: Array1<f64> = p_prime_dof_values_vs_time.row(i_time).to_owned();
                 sensor_values[i_time] = plasma.p_prime_source_function
                     .source_function_integral(&Array1::from_vec(vec![psi_n_at_sensor]), &p_prime_dof_values)[0]
