@@ -304,7 +304,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
             i_dof += 1
     # Store in MDSplus
     results["PRESHOT"]["GREENS"]["GRID_VESSEL"] = g_grid_vessel.flatten()  # .reshape((n_z * n_r, n_passive_dofs))
-    results["PRESHOT"]["N_VESS"] = n_passive_dofs
+    results["PRESHOT"]["N_VESS"] = np.int32(n_passive_dofs)
 
     # Store some settings
     rtgsfit_code_settings = gsfit_controller.settings["RTGSFIT_code_settings.json"]
