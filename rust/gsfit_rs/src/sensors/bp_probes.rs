@@ -176,7 +176,7 @@ impl BpProbes {
             let g_bz_matrix: Array2<f64> = greens_calculator.b_z(); // shape() = (1, n_passives)
             let g_br: Array1<f64> = g_br_matrix.sum_axis(Axis(0));
             let g_bz: Array1<f64> = g_bz_matrix.sum_axis(Axis(0));
-            let g: Array1<f64> = g_br * sensor_angle_pol.cos() + g_bz * sensor_angle_pol.sin(); // shape = (n_passives)
+            let g_with_passives: Array1<f64> = g_br * sensor_angle_pol.cos() + g_bz * sensor_angle_pol.sin(); // shape = (n_passives)
 
             // Coils
             let g_with_coils: Array1<f64> = self.results.get(sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = (n_pf)
@@ -194,7 +194,7 @@ impl BpProbes {
                 let sensor_value_from_coils: f64 = g_with_coils.dot(&coil_currents.slice(s![i_time, ..]));
 
                 // Passives
-                let sensor_value_from_passives: f64 = g.dot(&passive_currents.slice(s![i_time, ..]));
+                let sensor_value_from_passives: f64 = g_with_passives.dot(&passive_currents.slice(s![i_time, ..]));
 
                 // Total
                 sensor_values[i_time] = sensor_value_from_coils + sensor_value_from_passives;

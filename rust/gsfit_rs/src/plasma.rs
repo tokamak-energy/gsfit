@@ -1222,8 +1222,11 @@ impl Plasma {
 
         let v_loop: Array1<f64> = epp_v_loop(&psi_b, &time);
 
+        let area: Array1<f64> = area_profile.slice(s![.., -1]).to_owned(); // last column of area_profile
+
         // Do the assignments
         // Global
+        self.results.get_or_insert("global").insert("area", area);
         self.results.get_or_insert("global").insert("beta_n", beta_n);
         self.results.get_or_insert("global").insert("beta_p_1", beta_p_1);
         self.results.get_or_insert("global").insert("beta_p_2", beta_p_2);

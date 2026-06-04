@@ -1,5 +1,6 @@
 use crate::coils::Coils;
 use crate::greens::Greens;
+use crate::passives::PassiveGeometryAll;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
@@ -217,6 +218,67 @@ impl FluxLoops {
 
         // Run the Rust method
         self.calculate_sensor_values_rs(coils_rs, passives_rs, plasma_rs);
+    }
+
+    fn calculate_sensor_values_vacuum(&mut self, coils: PyRef<Coils>, passives: PyRef<Passives>) {
+        // TODO: this should be combined with `calculate_sensor_values`
+
+        let passives_geometry: PassiveGeometryAll = passives.get_all_passive_filament_geometry();
+        let passives_r: Array1<f64> = passives_geometry.r;
+        let passives_z: Array1<f64> = passives_geometry.z;
+
+        let passive_currents: Array2<f64> = passives.get_passive_filament_currents_from_simulated();
+        for sensor_name in &self.results.keys() {
+            let sensor_r: f64 = self.results.get(sensor_name).get("geometry").get("r").unwrap_f64();
+            let sensor_z: f64 = self.results.get(sensor_name).get("geometry").get("z").unwrap_f64();
+
+            let greens_calculator: Greens = Greens::sensor_to_conductor(
+                array![sensor_r],
+                array![sensor_z],
+                passives_r.clone(),
+                passives_z.clone(),
+                passives_r.clone() * 0.0, // TODO: should this be NaN instead?
+                passives_z.clone() * 0.0,
+            );
+
+            // Calculate Greens
+            let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape() = (1, n_passives)
+            let g_with_passives: Array1<f64> = g_psi_matrix.sum_axis(Axis(0));
+
+            // Coils
+            let g_with_coils: Array1<f64> = self.results.get(sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = (n_pf)
+            let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("simulated").get("value").unwrap_array2(); // shape = (n_time, n_pf)
+            // let n_time: usize = coil_currents.len_of(Axis(0));
+
+            let pf_names: Vec<String> = coils.results.get("pf").keys();
+            let simulated_time: Array1<f64> = coils.results.get("pf").get(&pf_names[0]).get("i").get("simulated").get("time").unwrap_array1();
+            let n_time: usize = simulated_time.len();
+
+            // Loop over time
+            let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+            for i_time in 0..n_time {
+                // PF coil
+                let sensor_value_from_coils: f64 = g_with_coils.dot(&coil_currents.slice(s![i_time, ..]));
+
+                // Passives
+                let sensor_value_from_passives: f64 = g_with_passives.dot(&passive_currents.slice(s![i_time, ..]));
+
+                // Total
+                sensor_values[i_time] = sensor_value_from_coils + sensor_value_from_passives;
+            }
+
+            // Store simulated sensor values
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("psi")
+                .get_or_insert("simulated")
+                .insert("value", sensor_values);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("psi")
+                .get_or_insert("simulated")
+                .insert("time", simulated_time.clone());
+        }
     }
 
     /// Print to screen, to be used within Python

@@ -141,20 +141,23 @@ class Gsfit(DiagnosticAndSimulationBase):
         timeslices_settings = self.settings["GSFIT_code_settings.json"]["timeslices"]
 
         # Calculate the timeslices
-        if timeslices_settings["method"] == "arange":
-            time = np.arange(
-                timeslices_settings["arange"]["time_start"],
-                timeslices_settings["arange"]["time_end"],
-                timeslices_settings["arange"]["dt"],
-            )
-        elif timeslices_settings["method"] == "linspace":
-            time = np.linspace(
-                timeslices_settings["linspace"]["time_start"],
-                timeslices_settings["linspace"]["time_end"],
-                timeslices_settings["linspace"]["n_time"],
-            )
-        elif timeslices_settings["method"] == "user_defined":
-            time = np.array(timeslices_settings["user_defined"])
+        match timeslices_settings["method"]:
+            case "arange":
+                time = np.arange(
+                    timeslices_settings["arange"]["time_start"],
+                    timeslices_settings["arange"]["time_end"],
+                    timeslices_settings["arange"]["dt"],
+                )
+            case "linspace":
+                time = np.linspace(
+                    timeslices_settings["linspace"]["time_start"],
+                    timeslices_settings["linspace"]["time_end"],
+                    timeslices_settings["linspace"]["n_time"],
+                )
+            case "user_defined":
+                time = np.array(timeslices_settings["user_defined"])
+            case _:
+                raise ValueError(f"Unknown timeslices method: {timeslices_settings['method']}")
 
         # Store the times to reconstruct
         self.results["TIME"] = time
