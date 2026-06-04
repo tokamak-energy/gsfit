@@ -1,8 +1,4 @@
-import os
 import time
-
-# Set RAYON_NUM_THREADS before any gsfit_rs import so Rayon picks it up on first initialisation
-os.environ["RAYON_NUM_THREADS"] = "32"
 
 import gsfit_rs
 import mdsthin
