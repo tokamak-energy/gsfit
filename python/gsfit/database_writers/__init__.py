@@ -16,13 +16,18 @@ def get_database_writer(method: str) -> DatabaseWriterProtocol:
     (in Tokamak Energy's case this is MDSplus).
     """
 
-    if method == "tokamak_energy_mdsplus":
-        from .tokamak_energy_mdsplus import DatabaseWriterTokamakEnergyMDSplus
+    match method:
+        case "tokamak_energy_mdsplus":
+            from .tokamak_energy_mdsplus import DatabaseWriterTokamakEnergyMDSplus
 
-        return DatabaseWriterTokamakEnergyMDSplus()
-    elif method == "rtgsfit_mdsplus":
-        from .rtgsfit_mdsplus import DatabaseWriterRTGSFitMDSplus
+            return DatabaseWriterTokamakEnergyMDSplus()
+        case "tokamak_energy_mdsplus_new":
+            from .tokamak_energy_mdsplus_new import DatabaseWriterTokamakEnergyMDSplusNew
 
-        return DatabaseWriterRTGSFitMDSplus()
-    else:
-        raise ValueError(f"Unknown database writer method: {method}")
+            return DatabaseWriterTokamakEnergyMDSplusNew()
+        case "rtgsfit_mdsplus":
+            from .rtgsfit_mdsplus import DatabaseWriterRTGSFitMDSplus
+
+            return DatabaseWriterRTGSFitMDSplus()
+        case _:
+            raise ValueError(f"Unknown database writer method: {method}")

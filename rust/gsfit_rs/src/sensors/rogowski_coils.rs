@@ -89,7 +89,7 @@ impl RogowskiCoils {
         gaps_z: PyReadonlyArray1<f64>,
         gaps_d_r: PyReadonlyArray1<f64>,
         gaps_d_z: PyReadonlyArray1<f64>,
-        gaps_name: &Bound<'_, PyList>, // TODO: is there a better than using the &Bound<'_, PyList> type here?
+        gaps_name: Vec<String>,
     ) {
         // Convert to Rust data types
         let r_ndarray: Array1<f64> = r.to_owned_array();
@@ -108,7 +108,7 @@ impl RogowskiCoils {
             let gap_r_end: f64 = gaps_r_ndarray[i_gap] + gaps_d_r_ndarray[i_gap];
             let gap_z_start: f64 = gaps_z_ndarray[i_gap] - gaps_d_z_ndarray[i_gap];
             let gap_z_end: f64 = gaps_z_ndarray[i_gap] + gaps_d_z_ndarray[i_gap];
-            let gap_name: String = gaps_name.get_item(i_gap).unwrap().extract().unwrap();
+            let gap_name: &str = &gaps_name[i_gap];
 
             self.results
                 .get_or_insert(name)
