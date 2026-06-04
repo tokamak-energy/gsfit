@@ -587,7 +587,7 @@ pub fn solve_circuit_equations(
         match state_identifier.current_source_type {
             CurrentSourceType::PF => atol.push(100.0),    // voltage-controlled PF coil current [ampere]
             CurrentSourceType::Passive => atol.push(0.5), // passive eddy current [ampere]
-            CurrentSourceType::Alpha => atol.push(0.06),  // auxiliary state for current-controlled PF [volt·second]
+            CurrentSourceType::Alpha => atol.push(0.06),  // auxiliary state for current-controlled PF [volt * second]
             CurrentSourceType::Beta => atol.push(10.0),   // auxiliary state for plasma [TODO: set appropriately]
         }
     }
