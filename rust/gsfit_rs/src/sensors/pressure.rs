@@ -2,14 +2,12 @@ use crate::Plasma;
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
-use crate::source_functions::SourceFunctionTraits;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
+use crate::source_functions::SourceFunctionTraits;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use ndarray::{Array1, Array2, Array3, ArrayView2, Axis, s};
-use std::f64::consts::PI;
-use std::time::{SystemTime, UNIX_EPOCH};
 use ndarray_stats::QuantileExt;
 use numpy::IntoPyArray; // converting to python data types
 use numpy::PyArrayMethods;
@@ -18,6 +16,8 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::f64::consts::PI;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass(module = "gsfit_rs", skip_from_py_object)]
@@ -540,7 +540,8 @@ impl Pressure {
                 // Note: source_function_integral returns an integral from psi_n = 1 to psi_n,
                 // i.e. p(psi_n) = integral_{1}^{psi_n} p'(x) dx, scaled by (psi_b - psi_a).
                 let p_prime_dof_values: Array1<f64> = p_prime_dof_values_vs_time.row(i_time).to_owned();
-                sensor_values[i_time] = plasma.p_prime_source_function
+                sensor_values[i_time] = plasma
+                    .p_prime_source_function
                     .source_function_integral(&Array1::from_vec(vec![psi_n_at_sensor]), &p_prime_dof_values)[0]
                     * (psi_b - psi_a);
             }
