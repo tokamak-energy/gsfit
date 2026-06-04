@@ -2,7 +2,7 @@ use crate::coils::Coils;
 use crate::greens::mutual_inductance_finite_size_to_finite_size;
 use crate::passives::PassiveGeometryAll;
 use crate::passives::Passives;
-use diffsol::{NalgebraMat, NalgebraVec, OdeBuilder, OdeSolverMethod, Vector, VectorHost, OdeSolverStopReason};
+use diffsol::{NalgebraMat, NalgebraVec, OdeBuilder, OdeSolverMethod, OdeSolverStopReason, Vector, VectorHost};
 use ndarray::{Array1, Array2, Axis, concatenate, s};
 use ndarray_linalg::Solve;
 use numpy::PyArrayMethods;
@@ -572,12 +572,25 @@ pub fn solve_circuit_equations(
     // Construct the circuit equation model
     let model: CircuitEquationModel = CircuitEquationModel::new(coils.clone(), passives.clone());
 
-    // Solver tolerances
-    let rtol: f64 = 1e-3; // Relative tolerance [dimensionless]
-    // TODO: atol can be either a vector per state or a vector with a single value used for all states
-    // I think this might be the reason why diffsol is slow - some states will have large value, some small value
-    // So we might need to set atol differently for different states?
-    let atol: f64 = 1e-2; // Absolute tolerance [multiple_units]
+    // Solver tolerances [dimensionless]
+    let rtol: f64 = 0.05; // Relative tolerance = 5% [dimensionless]
+
+    // Absolute tolerance per state [multiple_units]
+    // Different states have very different magnitudes:
+    //   - Voltage-controlled PF coil currents: typical scale ~10's of kA, so atol ~ 10 A is fine
+    //   - Passive filament eddy currents. In totality the vessel currents can be large, but since we have
+    //     discretized into many filaments, each filament will be ~500A, so atol ~ 0.5 A
+    //   - d(Alpha)/d(time) = V_PF; checking Alpha ~6 volt * second, so atol ~0.06
+    //   - Beta (plasma state): not yet implemented
+    let mut atol: Vec<f64> = Vec::with_capacity(model.n_states);
+    for state_identifier in &model.state_identifiers {
+        match state_identifier.current_source_type {
+            CurrentSourceType::PF => atol.push(100.0),    // voltage-controlled PF coil current [ampere]
+            CurrentSourceType::Passive => atol.push(0.5), // passive eddy current [ampere]
+            CurrentSourceType::Alpha => atol.push(0.06),  // auxiliary state for current-controlled PF [volt * second]
+            CurrentSourceType::Beta => atol.push(10.0),   // auxiliary state for plasma [TODO: set appropriately]
+        }
+    }
 
     // Build the ODE problem with both RHS and Jacobian
     let problem = OdeBuilder::<NalgebraMat<f64>>::new()
@@ -591,7 +604,7 @@ pub fn solve_circuit_equations(
             model.n_states,         // the number of states, usize
         )
         .rtol(rtol)
-        .atol(vec![atol]) // single absolute tolerance for all states
+        .atol(atol) // per-state absolute tolerances
         .t0(time_start) // initial time [second]
         .build()
         .expect("Failed to build ODE problem");
@@ -601,7 +614,8 @@ pub fn solve_circuit_equations(
     let mut solver = problem.bdf::<LS>().expect("Failed to create BDF solver");
 
     // Solve the ODE system
-    let (calculated_states, calculated_times_vec, _ode_stop_reason): (NalgebraMat<f64>, Vec<f64>, OdeSolverStopReason<f64>) = solver.solve(time_end).expect("Failed to solve ODE system");
+    let (calculated_states, calculated_times_vec, _ode_stop_reason): (NalgebraMat<f64>, Vec<f64>, OdeSolverStopReason<f64>) =
+        solver.solve(time_end).expect("Failed to solve ODE system");
     println!("Integration completed");
 
     // Extract results
