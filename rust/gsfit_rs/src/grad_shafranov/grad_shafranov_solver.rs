@@ -207,6 +207,9 @@ pub fn solve_grad_shafranov(
     bp_probes.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
     flux_loops.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
     rogowski_coils.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
+    if pressure_sensors.results.data.len() > 0 {
+        pressure_sensors.calculate_sensor_values_rust(&plasma_owned);
+    }
 
     // Calculate chi_sq_mag for each time slice
     let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, n_time);

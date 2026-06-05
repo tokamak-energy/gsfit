@@ -5,6 +5,7 @@ use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
+use crate::source_functions::SourceFunctionTraits;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use ndarray::{Array1, Array2, Array3, ArrayView2, Axis, s};
 use ndarray_stats::QuantileExt;
@@ -430,19 +431,26 @@ impl Pressure {
         let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
         let n_time: usize = time.len();
 
-        let d_r: f64 = plasma.results.get("grid").get("d_r").unwrap_f64();
-        let d_z: f64 = plasma.results.get("grid").get("d_z").unwrap_f64();
         let r: Array1<f64> = plasma.results.get("grid").get("r").unwrap_array1();
         let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
+        let d_r: f64 = r[1] - r[0];
+        let d_z: f64 = z[1] - z[0];
         let psi_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("psi").unwrap_array3();
         let br_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("br").unwrap_array3();
         let bz_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("bz").unwrap_array3();
         let d_bz_d_z_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("d_bz_d_z").unwrap_array3();
+        let p_prime_dof_values_vs_time: Array2<f64> = plasma.results.get("source_functions").get("p_prime").get("coefficients").unwrap_array2();
 
         let psi_a_vs_time: Array1<f64> = plasma.results.get("global").get("psi_a").unwrap_array1();
         let psi_b_vs_time: Array1<f64> = plasma.results.get("global").get("psi_b").unwrap_array1();
 
-        for sensor_name in &self.results.keys() {
+        let sensor_names: Vec<String> = self.results.keys();
+        if sensor_names.is_empty() {
+            println!("Warning: Pressure::calculate_sensor_values_rust called with no sensors. Was `pressure_sensors` overwritten by `setup_objects()`?");
+            return;
+        }
+
+        for sensor_name in &sensor_names {
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
 
             // Find the value of psi_n at the location of the pressure sensor
@@ -491,48 +499,51 @@ impl Pressure {
                 let bz_2d: Array2<f64> = bz_2d_vs_time.slice(s![i_time, .., ..]).to_owned();
                 let d_bz_d_z_2d: Array2<f64> = d_bz_d_z_2d_vs_time.slice(s![i_time, .., ..]).to_owned();
 
-                // Find psi at the pressure sensor
-                // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
+                // Bicubic interpolation of psi at the sensor location
                 let f: ArrayView2<f64> = psi_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
                 let mut d_f_d_r: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
                 let mut d_f_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
                 let mut d2_f_d_r_d_z: Array2<f64> = Array2::from_elem([2, 2], f64::NAN);
 
-                // d(psi)/d(r)
-                // bz = 1 / (2.0 * PI * r) * d_psi_d_r
+                // d(psi)/d(r): bz = 1 / (2 * pi * r) * d(psi)/d(r)
                 d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
                 d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
                 d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
                 d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
-                // d(psi)/d(z)
-                // br = - 1 / (2.0 * PI * r) * d_psi_d_z
+                // d(psi)/d(z): br = -1 / (2 * pi * r) * d(psi)/d(z)
                 d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
                 d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
                 d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
                 d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
-                // d^2(psi)/(d(r)*d(z))
-                // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
+                // d^2(psi)/(d(r)*d(z)): d(bz)/d(z) = 1 / (2 * pi * r) * d^2(psi)/(d(r)*d(z))
                 d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
                 d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
                 d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
                 d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
 
-                // Create a bicubic interpolator
                 let bicubic_interpolator: BicubicInterpolator =
                     BicubicInterpolator::new(d_r, d_z, f.view(), d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
-
                 let x: f64 = (sensor_r - r[i_r_nearest_left]) / d_r;
                 let y: f64 = (sensor_z - z[i_z_nearest_lower]) / d_z;
                 let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);
 
                 let psi_n_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
 
-                println!("Pressure sensor `{}`: psi_n = {}", sensor_name, psi_n_at_sensor);
+                // If sensor is outside the plasma boundary, leave sensor_values[i_time] as NaN
+                if !(0.0..=1.0).contains(&psi_n_at_sensor) {
+                    continue;
+                }
 
-                // Need to set pressure here...
-                sensor_values[i_time] = 0.0;
+                // Analytically integrate p'(psi_n) with boundary condition p(psi_n = 1) = 0.
+                // Note: source_function_integral returns an integral from psi_n = 1 to psi_n,
+                // i.e. p(psi_n) = integral_{1}^{psi_n} p'(x) dx, scaled by (psi_b - psi_a).
+                let p_prime_dof_values: Array1<f64> = p_prime_dof_values_vs_time.row(i_time).to_owned();
+                sensor_values[i_time] = plasma
+                    .p_prime_source_function
+                    .source_function_integral(&Array1::from_vec(vec![psi_n_at_sensor]), &p_prime_dof_values)[0]
+                    * (psi_b - psi_a);
             }
 
             self.results
@@ -542,7 +553,6 @@ impl Pressure {
                 .insert("value", sensor_values);
             self.results
                 .get_or_insert(sensor_name)
-                .get_or_insert("psi")
                 .get_or_insert("pressure")
                 .get_or_insert("calculated")
                 .insert("time", time.clone());
