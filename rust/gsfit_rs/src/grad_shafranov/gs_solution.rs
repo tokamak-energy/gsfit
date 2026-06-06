@@ -11,7 +11,7 @@ use crate::plasma_geometry::find_magnetic_axis;
 use crate::plasma_geometry::find_stationary_points_using_winding_number;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
-use lapack::*;
+use faer::linalg::solvers::{SolveLstsq, Svd as FaerSvd};
 use ndarray::Axis;
 use ndarray::{Array1, Array2, Array3, ArrayView2, s};
 use ndarray_stats::QuantileExt;
@@ -1037,53 +1037,15 @@ impl<'a> GsSolution<'a> {
 
             let a_preconditioned: Array2<f64> = a.clone().dot(&d);
 
-            // This uses LAPACK; I found that ndarray_linlg internally sets `rcond = -1`.
-            // "If RCOND < 0, machine precision is used instead."
-            // `ndarray_linlg` uses "dgelsd"
-            // EFIT uses LAPACK's "la_gelss" (https://www.netlib.org/lapack/explore-html/da/d55/group__gelss_gac6159de3953ae0386c2799294745ac90.html)
-            // let dof_values: Array1<f64> = a.least_squares(&b).unwrap().solution;
-            // let dof_values_preconditioned: Array1<f64> = a_preconditioned.least_squares(&b).expect("failed least squares").solution;
+            // SVD-based least squares solve using faer (equivalent to LAPACK dgelss)
+            let (m_usize, n_usize) = a_preconditioned.dim();
+            let a_faer: faer::Mat<f64> = faer::Mat::from_fn(m_usize, n_usize, |i, j| a_preconditioned[(i, j)]);
+            let b_faer: faer::Mat<f64> = faer::Mat::from_fn(m_usize, 1, |i, _| b[i]);
 
-            // Get dimensions of the input
-            let (m_usize, n_usize) = a.dim();
-            let m: i32 = m_usize as i32;
-            let n: i32 = n_usize as i32;
-            let nrhs: i32 = 1; // Number of right-hand sides
+            let svd: FaerSvd<f64> = FaerSvd::new_thin(a_faer.as_ref()).expect("SVD decomposition failed");
+            let x_faer: faer::Mat<f64> = svd.solve_lstsq(b_faer.as_ref());
 
-            // Convert A and B to column-major layout for LAPACK
-            let mut a_vec: Vec<f64> = a_preconditioned.t().iter().cloned().collect();
-            let mut b_vec: Vec<f64> = b.to_vec();
-
-            // Allocate outputs
-            let mut s: Vec<f64> = vec![0.0; n_usize.min(m_usize)]; // Singular values
-            let mut rank: i32 = 0; // Effective rank
-            let rcond: f64 = -1.0; // Use machine precision
-            let mut info: i32 = 999; // TODO: what is this number?
-
-            // Workspace query
-            let lwork: i32 = 4218; // TODO: what is this number?
-            let mut work: Vec<f64> = vec![0.0; lwork as usize];
-
-            // using the same as EFIT
-            unsafe {
-                dgelss(
-                    m,          // `m` the number of rows of the matrix `a`
-                    n,          // `n` the number of columns of the matrix `a`
-                    nrhs,       // `nrhs` the number of right hand sides, i.e., the number of columns of the matrices `b`
-                    &mut a_vec, // `a` is DOUBLE PRECISION array
-                    m,          // `lda` the leading dimension of the array `a`
-                    &mut b_vec, // `b` vector
-                    m,          // `ldb` the leading dimension of the array `b`
-                    &mut s,     // `s` the singular values of A in decreasing order
-                    rcond,      // `rcond` if RCOND < 0, machine precision is used
-                    &mut rank,  // `rank`
-                    &mut work,  // `work`
-                    lwork,      // `lwork` Workspace query
-                    &mut info,  // `info`
-                );
-            }
-
-            let d_new: Array1<f64> = Array1::from_vec(b_vec[0..n_dof].to_vec());
+            let d_new: Array1<f64> = Array1::from_vec((0..n_dof).map(|i| x_faer[(i, 0)]).collect());
 
             let mut dof_values: Array1<f64> = d.dot(&d_new); // `d` is the preconditioning matrix
 
@@ -1093,7 +1055,9 @@ impl<'a> GsSolution<'a> {
             // }
             // let dof_values_old: Array1<f64> = dof_values.clone();
 
-            // Compute the condition number
+            // Compute the condition number from SVD singular values
+            let s_col = svd.S().column_vector();
+            let s: Vec<f64> = (0..s_col.nrows()).map(|i| s_col[i]).collect();
             if let (Some(&sigma_max), Some(&sigma_min)) = (s.first(), s.iter().filter(|&&x| x > 0.0).last()) {
                 let _condition_number: f64 = sigma_max / sigma_min;
             } else {

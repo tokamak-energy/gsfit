@@ -59,7 +59,7 @@ jobs:
           sudo apt-get update
           apt-cache search libpython
           # In ubuntu-latest, only `libpython3.12-dev` is available
-          sudo apt-get install -y libopenblas-dev libpython3.12-dev
+          sudo apt-get install -y libpython3.12-dev
       - name: Run Rust tests
         run: |
           # Update Rust and print version
@@ -239,21 +239,17 @@ jobs:
           image: ghcr.io/pyo3/maturin
           options: -v ${{ github.workspace }}:/workspace -w /workspace
           run: |
-            # Install OpenBLAS from package manager, plus perl modules needed to
-            # compile vendored OpenSSL from source via the `vendored-openssl` feature
-            yum update -y && yum install -y openblas-devel perl-IPC-Cmd perl-Time-Piece
+            yum update -y
 
             # Update Rust and print version
             rustup update
             rustc --version
 
             # Build wheels for different Python versions
-            # Note: `vendored-openssl` compiles a compatible OpenSSL from source,
-            # avoiding issues with the container's system OpenSSL version.
-            maturin build --release --features vendored-openssl -i python3.11
-            maturin build --release --features vendored-openssl -i python3.12
-            maturin build --release --features vendored-openssl -i python3.13
-            maturin build --release --features vendored-openssl -i python3.14
+            maturin build --release -i python3.11
+            maturin build --release -i python3.12
+            maturin build --release -i python3.13
+            maturin build --release -i python3.14
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -383,7 +379,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies
         run: |
-          brew install openblas
           python3.11 -m pip install --upgrade pip maturin
           python3.12 -m pip install --upgrade pip maturin
           python3.13 -m pip install --upgrade pip maturin
@@ -465,22 +460,6 @@ jobs:
     name: "Windows: Build Python wheels"
     runs-on: windows-latest
     steps:
-      - name: Cache installation of OpenBLAS and LAPACK (via `vcpkg`)
-        id: cache-vcpkg
-        uses: actions/cache@v5
-        with:
-          path: "C:/vcpkg"
-          key: vcpkg-${{ runner.os }}-openblas-lapack-v1
-          restore-keys: vcpkg-${{ runner.os }}-openblas-lapack-
-      - name: Install OpenBLAS via `vcpkg` (might be skipped if cached)
-        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          .\vcpkg\bootstrap-vcpkg.bat
-          # Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in `PATH`
-          .\vcpkg\vcpkg integrate install
-          vcpkg install openblas:x64-windows-static-md
-          vcpkg install lapack-reference:x64-windows-static-md
       - name: Checkout source code
         uses: actions/checkout@v6
       - name: Set up Python 3.11
@@ -508,20 +487,7 @@ jobs:
           py -3.13 -m pip install --upgrade pip maturin
           py -3.14 -m pip install --upgrade pip maturin
 
-      - name: Copy OpenBLAS and LAPACK DLLs to Python package
-        run: |
-          # Copy all DLLs from vcpkg to the Python package directory
-          Copy-Item "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" -Destination "python/gsfit_rs/" -ErrorAction Stop
-          # List what DLLs are available in vcpkg (for debugging)
-          Write-Host "Available DLLs in vcpkg bin directory:"
-          Get-ChildItem "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" | Select-Object Name
-          # List what's now in the Python package directory
-          Write-Host "DLLs copied to python/gsfit_rs:"
-          Get-ChildItem "python/gsfit_rs/*.dll" -ErrorAction Stop | Select-Object Name
-
       - name: Build Python wheels (compiling Rust)
-        env:
-          VCPKG_ROOT: C:/vcpkg
         run: |
           # Update Rust and print version
           rustup update
@@ -576,15 +542,11 @@ jobs:
           # Install the locally built wheel with extras using a PEP 508 direct reference
           py -3.11 -m pip install "gsfit[dev,with_freegs_and_freegsnke] @ $env:WHEEL_URI"
       - name: Run Jupyter notebook Python tests
-        # env:
-        #   VCPKG_ROOT: C:/vcpkg
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
           jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
           py -3.11 -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
       - name: Run mypy Python tests
-        # env:
-        #   VCPKG_ROOT: C:/vcpkg
         run: mypy python/
       - name: Run ty Python tests
         run: ty check python/
