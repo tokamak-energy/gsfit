@@ -1061,7 +1061,10 @@ impl<'a> GsSolution<'a> {
 
             // Compute the condition number from SVD singular values
             let s_col = svd.S().column_vector();
-            let s: Vec<f64> = (0..s_col.nrows()).map(|i| s_col[i]).collect();
+            let mut s: Vec<f64> = Vec::with_capacity(s_col.nrows());
+            for i_singular_value in 0..s_col.nrows() {
+                s.push(s_col[i_singular_value]);
+            }
             if let (Some(&sigma_max), Some(&sigma_min)) = (s.first(), s.iter().filter(|&&x| x > 0.0).last()) {
                 let _condition_number: f64 = sigma_max / sigma_min;
             } else {
