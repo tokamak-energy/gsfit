@@ -2,13 +2,6 @@ use std::env;
 use std::process::Command;
 
 fn main() {
-    // Tell the linker where to find the libraries
-    #[cfg(windows)]
-    {
-        println!("cargo:rustc-link-lib=dylib=openblas");
-        println!("cargo:rustc-link-lib=dylib=lapack");
-    }
-
     // // For tests, link against Python 3.13
     // let profile: String = env::var("PROFILE").unwrap_or_default();
     // if profile == "test" || profile == "debug" {

@@ -3,8 +3,8 @@ use crate::greens::mutual_inductance_finite_size_to_finite_size;
 use crate::passives::PassiveGeometryAll;
 use crate::passives::Passives;
 use diffsol::{NalgebraMat, NalgebraVec, OdeBuilder, OdeSolverMethod, OdeSolverStopReason, Vector, VectorHost};
+use faer::linalg::solvers::Solve;
 use ndarray::{Array1, Array2, Axis, concatenate, s};
-use ndarray_linalg::Solve;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
 use pyo3::prelude::*;
@@ -377,31 +377,42 @@ impl CircuitEquationModel {
         ).unwrap();
 
         // In state space notation, `A` = "state matrix"
-        // We could compute it directly by taking the inverse:
-        // `let state_space_matrix_a_old_method: Array2<f64> = circuit_equation_matrix_1.clone().inv().expect("circuit_equation_matrix_1 inversion failed").dot(&circuit_equation_matrix_2);`
-        // However, this is numerically less stable.
-        // It is better to solve the linear system for each column than taking the inverse:
-        let n_cols: usize = circuit_equation_matrix_2.ncols();
+        // We could compute it directly by taking the inverse, but solving the linear system is more stable.
+        //
+        // We use faer's partial pivoting LU decomposition plus 3 iterations of iterative refinement:
+        //   1. Solve M1 * X0 = RHS using LU
+        //   2. Compute residual r = RHS - M1 * X0
+        //   3. Solve M1 * correction = r using the same LU factors
+        //   4. X = X0 + correction
+        // This typically recovers near-full precision for moderate condition numbers (~1e7).
         let n_rows: usize = circuit_equation_matrix_1.nrows();
-        let mut state_space_matrix_a: Array2<f64> = Array2::from_elem((n_rows, n_cols), f64::NAN);
-        for i_col in 0..n_cols {
-            let col: Array1<f64> = circuit_equation_matrix_2.column(i_col).to_owned();
-            let solution: Array1<f64> = circuit_equation_matrix_1
-                .solve(&col)
-                .expect(&format!("Failed to solve for `state_space_matrix_b` i_col={i_col}"));
-            state_space_matrix_a.column_mut(i_col).assign(&solution);
-        }
+        let n_cols_1: usize = circuit_equation_matrix_1.ncols();
+        let n_cols_2: usize = circuit_equation_matrix_2.ncols();
+        let n_cols_3: usize = circuit_equation_matrix_3.ncols();
 
-        // In "state space" notation, `B` = "input matrix"
-        let n_cols: usize = circuit_equation_matrix_3.ncols();
-        let mut state_space_matrix_b: Array2<f64> = Array2::from_elem((n_rows, n_cols), f64::NAN);
-        for i_col in 0..n_cols {
-            let col: Array1<f64> = circuit_equation_matrix_3.column(i_col).to_owned();
-            let solution: Array1<f64> = circuit_equation_matrix_1
-                .solve(&col)
-                .expect(&format!("Failed to solve for `state_space_matrix_b` i_col={i_col}"));
-            state_space_matrix_b.column_mut(i_col).assign(&solution);
+        // Convert to faer and compute LU decomposition once
+        let matrix_1_faer: faer::Mat<f64> = faer::Mat::from_fn(n_rows, n_cols_1, |i, j| circuit_equation_matrix_1[[i, j]]);
+        let rhs_a_faer: faer::Mat<f64> = faer::Mat::from_fn(n_rows, n_cols_2, |i, j| circuit_equation_matrix_2[[i, j]]);
+        let rhs_b_faer: faer::Mat<f64> = faer::Mat::from_fn(n_rows, n_cols_3, |i, j| circuit_equation_matrix_3[[i, j]]);
+        let lu: faer::linalg::solvers::PartialPivLu<f64> = matrix_1_faer.partial_piv_lu();
+
+        // Solve for state_space_matrix_a: circuit_equation_matrix_1 * X = circuit_equation_matrix_2
+        let mut solution_a: faer::Mat<f64> = lu.solve(&rhs_a_faer);
+        for _ in 0..3 {
+            let residual: faer::Mat<f64> = &rhs_a_faer - &matrix_1_faer * &solution_a;
+            let correction: faer::Mat<f64> = lu.solve(&residual);
+            solution_a = &solution_a + &correction;
         }
+        let state_space_matrix_a: Array2<f64> = Array2::from_shape_fn((n_rows, n_cols_2), |(i, j)| solution_a[(i, j)]);
+
+        // Solve for state_space_matrix_b: circuit_equation_matrix_1 * X = circuit_equation_matrix_3
+        let mut solution_b: faer::Mat<f64> = lu.solve(&rhs_b_faer);
+        for _ in 0..3 {
+            let residual: faer::Mat<f64> = &rhs_b_faer - &matrix_1_faer * &solution_b;
+            let correction: faer::Mat<f64> = lu.solve(&residual);
+            solution_b = &solution_b + &correction;
+        }
+        let state_space_matrix_b: Array2<f64> = Array2::from_shape_fn((n_rows, n_cols_3), |(i, j)| solution_b[(i, j)]);
 
         // TODO: by taking the eigenvalues of `state_space_matrix_a`, we can check if the system is stiff or not.
         // * If the eigenvalues have widely different magnitudes, then the "stiffness ratio" is large
@@ -573,7 +584,7 @@ pub fn solve_circuit_equations(
     let model: CircuitEquationModel = CircuitEquationModel::new(coils.clone(), passives.clone());
 
     // Solver tolerances [dimensionless]
-    let rtol: f64 = 0.05; // Relative tolerance = 5% [dimensionless]
+    let rtol: f64 = 0.005; // Relative tolerance = 0.5% [dimensionless]
 
     // Absolute tolerance per state [multiple_units]
     // Different states have very different magnitudes:

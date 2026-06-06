@@ -88,10 +88,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 git clone git@github.com:tokamak-energy/gsfit.git
 cd gsfit
 
-# Load OpenBLAS (gsfit is statically linked so this is only required when compiling)
-module avail
-module load OpenBLAS
-
 # Install GSFit
 uv pip install --reinstall --editable .
 # or install with the "developer" packages, such as `pytest` and `mypy`
@@ -108,9 +104,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 git clone git@github.com:tokamak-energy/gsfit.git
 cd gsfit
 
-# Install OpenBLAS (gsfit is statically linked so this is only required when compiling)
-brew install openblas
-
 # Install GSFit
 uv pip install --reinstall --editable .
 # or install with the "developer" packages, such as `pytest` and `mypy`
@@ -119,33 +112,13 @@ uv pip install --reinstall --editable .[dev]
 
 ## 1.5 Compiling and installing from source code on Windows
 
-On Windows, OpenBLAS can be installed using [vcpkg](https://vcpkg.io/):
-
 ```powershell
-# Install `vcpkg` (Windows package manager)
-git clone https://github.com/Microsoft/vcpkg.git C:\Users\<user.name>\github\vcpkg
-cd C:\Users\<user.name>\github\vcpkg
-.\bootstrap-vcpkg.bat
-# Install `vcpkg` for all users, into "C:/vcpkg/...", and make `vcpkg` command available in `PATH`
-.\vcpkg\vcpkg integrate install
-
-# Install OpenBLAS/LAPACK with static linking
-vcpkg install openblas:x64-windows-static-md
-vcpkg install lapack-reference:x64-windows-static-md
-
 # Download and install Rust compiler
 # run rustup-init.exe from https://www.rust-lang.org/tools/install
 
 # Clone a copy of GSFit from GitHub
 git clone git@github.com:tokamak-energy/gsfit.git
 cd gsfit
-
-# Copy OpenBLAS and LAPACk *.dll library files
-# Since Python 3.8+, *.dll library files are not found using the `PATH` environment variable. Instead, they are only found from:
-#   1. The directory containing the .pyd file (what we will be doing)
-#   2. System directories
-#   3. Directories explicitly added with `os.add_dll_directory("path_to_dlls")`
-Copy-Item "C:/vcpkg/installed/x64-windows-static-md/bin/*.dll" -Destination "python/gsfit_rs/" -ErrorAction Stop
 
 # Install GSFit
 uv pip install --reinstall --editable .
