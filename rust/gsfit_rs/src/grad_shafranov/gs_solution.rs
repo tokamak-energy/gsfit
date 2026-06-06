@@ -1045,7 +1045,11 @@ impl<'a> GsSolution<'a> {
             let svd: FaerSvd<f64> = FaerSvd::new_thin(a_faer.as_ref()).expect("SVD decomposition failed");
             let x_faer: faer::Mat<f64> = svd.solve_lstsq(b_faer.as_ref());
 
-            let d_new: Array1<f64> = Array1::from_vec((0..n_dof).map(|i| x_faer[(i, 0)]).collect());
+            let mut d_new_vec: Vec<f64> = Vec::with_capacity(n_dof);
+            for i_dof in 0..n_dof {
+                d_new_vec.push(x_faer[(i_dof, 0)]);
+            }
+            let d_new: Array1<f64> = Array1::from_vec(d_new_vec);
 
             let mut dof_values: Array1<f64> = d.dot(&d_new); // `d` is the preconditioning matrix
 
