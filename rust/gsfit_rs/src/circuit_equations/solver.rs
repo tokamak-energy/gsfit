@@ -379,13 +379,12 @@ impl CircuitEquationModel {
         // In state space notation, `A` = "state matrix"
         // We could compute it directly by taking the inverse, but solving the linear system is more stable.
         //
-        // We use faer's partial pivoting LU decomposition with 3 steps of iterative refinement:
+        // We use faer's partial pivoting LU decomposition plus 3 iterations of iterative refinement:
         //   1. Solve M1 * X0 = RHS using LU
         //   2. Compute residual r = RHS - M1 * X0
-        //   3. Solve M1 * correction = r
+        //   3. Solve M1 * correction = r using the same LU factors
         //   4. X = X0 + correction
-        //   5. Repeat steps 2-4 twice more
-        // This recovers full precision for moderate condition numbers (~1e7).
+        // This typically recovers near-full precision for moderate condition numbers (~1e7).
         let n_rows: usize = circuit_equation_matrix_1.nrows();
         let n_cols_1: usize = circuit_equation_matrix_1.ncols();
         let n_cols_2: usize = circuit_equation_matrix_2.ncols();
