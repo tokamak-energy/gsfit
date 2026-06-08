@@ -199,11 +199,12 @@ def map_results_to_database(
     results["SOL"]["LFS"]["STRIKE_POINT"]["Z"] = plasma.get_array1(["sol", "lfs", "strike_point", "z"])  # shape = [n_time]
 
     if len(pressure_sensors.keys()) > 0:
-        results["CONSTRAINTS"]["PRESSURE"]["CVALUE"] = pressure_sensors.get_array2(["*", "pressure", "calculated", "value"])  # shape = [n_time, n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["MVALUE"] = pressure_sensors.get_array2(["*", "pressure", "measured", "value"])  # shape = [n_time, n_points]
+        results["CONSTRAINTS"]["PRESSURE"]["RECONSTRUCTED"] = pressure_sensors.get_array2(["*", "pressure", "calculated", "value"])  # shape = [n_time, n_points]
+        results["CONSTRAINTS"]["PRESSURE"]["MEASURED"] = pressure_sensors.get_array2(["*", "pressure", "measured", "value"])  # shape = [n_time, n_points]
         results["CONSTRAINTS"]["PRESSURE"]["WEIGHT"] = pressure_sensors.get_array1(["*", "fit_settings", "weight"])  # shape = [n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["R"] = pressure_sensors.get_array1(["*", "geometry", "r"])  # shape = [n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["Z"] = pressure_sensors.get_array1(["*", "geometry", "z"])  # shape = [n_points]
+        results["CONSTRAINTS"]["PRESSURE"]["POSITION"]["R"] = pressure_sensors.get_array1(["*", "geometry", "r"])  # shape = [n_points]
+        results["CONSTRAINTS"]["PRESSURE"]["POSITION"]["Z"] = pressure_sensors.get_array1(["*", "geometry", "z"])  # shape = [n_points]
+        results["CONSTRAINTS"]["PRESSURE"]["POSITION"]["PSI"] = pressure_sensors.get_array2(["*", "pressure", "calculated", "psi"])  # shape = [n_time, n_points]
  
     # Store "WORKFLOW"
     database_reader_method = settings["GSFIT_code_settings.json"]["database_reader"]["method"]

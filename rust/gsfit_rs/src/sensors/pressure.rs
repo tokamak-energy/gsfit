@@ -452,6 +452,7 @@ impl Pressure {
 
         for sensor_name in &sensor_names {
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+            let mut psi_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
 
             // Find the value of psi_n at the location of the pressure sensor
             let sensor_r: f64 = self.results.get(sensor_name).get("geometry").get("r").unwrap_f64();
@@ -531,6 +532,8 @@ impl Pressure {
 
                 let psi_n_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
 
+                psi_values[i_time] = psi_at_sensor;
+
                 // If sensor is outside the plasma boundary, leave sensor_values[i_time] as NaN
                 if !(0.0..=1.0).contains(&psi_n_at_sensor) {
                     continue;
@@ -551,6 +554,11 @@ impl Pressure {
                 .get_or_insert("pressure")
                 .get_or_insert("calculated")
                 .insert("value", sensor_values);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("pressure")
+                .get_or_insert("calculated")
+                .insert("psi", psi_values);
             self.results
                 .get_or_insert(sensor_name)
                 .get_or_insert("pressure")
