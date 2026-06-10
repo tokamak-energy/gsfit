@@ -16,6 +16,12 @@ mod circuit_equations;
 use circuit_equations::solve_circuit_equations;
 mod source_functions;
 pub use grad_shafranov::solve_grad_shafranov;
+use greens::d_psi_d_r_py;
+use greens::d_psi_d_z_py;
+use greens::d2_psi_d_r_d_z_py;
+use greens::d2_psi_d_r2_py;
+use greens::d2_psi_d_z2_py;
+use greens::d3_psi_d_r_d_z2_py;
 use greens::greens_py;
 use source_functions::{EfitPolynomial, LiuqePolynomial, TensionedCubicBSpline};
 // mod solovev_equilibrium;
@@ -30,6 +36,12 @@ pub mod python_pickling_methods;
 fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Expose functions
     m.add_function(wrap_pyfunction!(greens_py, m)?)?;
+    m.add_function(wrap_pyfunction!(d_psi_d_r_py, m)?)?;
+    m.add_function(wrap_pyfunction!(d_psi_d_z_py, m)?)?;
+    m.add_function(wrap_pyfunction!(d2_psi_d_r2_py, m)?)?;
+    m.add_function(wrap_pyfunction!(d2_psi_d_r_d_z_py, m)?)?;
+    m.add_function(wrap_pyfunction!(d2_psi_d_z2_py, m)?)?;
+    m.add_function(wrap_pyfunction!(d3_psi_d_r_d_z2_py, m)?)?;
     m.add_function(wrap_pyfunction!(solve_grad_shafranov, m)?)?;
     m.add_function(wrap_pyfunction!(solve_circuit_equations, m)?)?;
 
