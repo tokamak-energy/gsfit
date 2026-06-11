@@ -136,6 +136,135 @@ def greens_py(
     """
     ...
 
+def d_psi_d_r_py(
+    r: npt.NDArray[np.float64],
+    z: npt.NDArray[np.float64],
+    r_prime: npt.NDArray[np.float64],
+    z_prime: npt.NDArray[np.float64],
+    d_r: npt.NDArray[np.float64],
+    d_z: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """
+    First derivative of the Green's function with respect to `r`.
+
+    :param r: (by convention) Sensor radial positions [metre]
+    :param z: (by convention) Sensor vertical positions [metre]
+    :param r_prime: (by convention) Current source radial positions [metre]
+    :param z_prime: (by convention) Current source vertical positions [metre]
+    :param d_r: Radial widths [metre]
+    :param d_z: Vertical heights [metre]
+    """
+    ...
+
+def d_psi_d_z_py(
+    r: npt.NDArray[np.float64],
+    z: npt.NDArray[np.float64],
+    r_prime: npt.NDArray[np.float64],
+    z_prime: npt.NDArray[np.float64],
+    d_r: npt.NDArray[np.float64],
+    d_z: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """
+    First derivative of the Green's function with respect to `z`.
+
+    :param r: (by convention) Sensor radial positions [metre]
+    :param z: (by convention) Sensor vertical positions [metre]
+    :param r_prime: (by convention) Current source radial positions [metre]
+    :param z_prime: (by convention) Current source vertical positions [metre]
+    :param d_r: Radial widths [metre]
+    :param d_z: Vertical heights [metre]
+    """
+    ...
+
+def d2_psi_d_r2_py(
+    r: npt.NDArray[np.float64],
+    z: npt.NDArray[np.float64],
+    r_prime: npt.NDArray[np.float64],
+    z_prime: npt.NDArray[np.float64],
+    d_r: npt.NDArray[np.float64],
+    d_z: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """
+    Second derivative of the Green's function with respect to `r`.
+
+    When a sensor coincides with a current source, the source's `d_r` and `d_z`
+    are used to evaluate the analytic self-term
+    (see `documentation/jump_condition_dbr_dz.md`).
+
+    :param r: (by convention) Sensor radial positions [metre]
+    :param z: (by convention) Sensor vertical positions [metre]
+    :param r_prime: (by convention) Current source radial positions [metre]
+    :param z_prime: (by convention) Current source vertical positions [metre]
+    :param d_r: Radial widths [metre]
+    :param d_z: Vertical heights [metre]
+    """
+    ...
+
+def d2_psi_d_r_d_z_py(
+    r: npt.NDArray[np.float64],
+    z: npt.NDArray[np.float64],
+    r_prime: npt.NDArray[np.float64],
+    z_prime: npt.NDArray[np.float64],
+    d_r: npt.NDArray[np.float64],
+    d_z: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """
+    Mixed second derivative of the Green's function with respect to `r` and `z`.
+
+    :param r: (by convention) Sensor radial positions [metre]
+    :param z: (by convention) Sensor vertical positions [metre]
+    :param r_prime: (by convention) Current source radial positions [metre]
+    :param z_prime: (by convention) Current source vertical positions [metre]
+    :param d_r: Radial widths [metre]
+    :param d_z: Vertical heights [metre]
+    """
+    ...
+
+def d2_psi_d_z2_py(
+    r: npt.NDArray[np.float64],
+    z: npt.NDArray[np.float64],
+    r_prime: npt.NDArray[np.float64],
+    z_prime: npt.NDArray[np.float64],
+    d_r: npt.NDArray[np.float64] | None = None,
+    d_z: npt.NDArray[np.float64] | None = None,
+) -> npt.NDArray[np.float64]:
+    """
+    Second derivative of the Green's function with respect to `z`.
+
+    When a sensor coincides with a current source, the source's `d_r` and `d_z`
+    are used to evaluate the analytic self-term
+    (see `documentation/jump_condition_dbr_dz.md`); if they are omitted the
+    self-term is zero.
+
+    :param r: (by convention) Sensor radial positions [metre]
+    :param z: (by convention) Sensor vertical positions [metre]
+    :param r_prime: (by convention) Current source radial positions [metre]
+    :param z_prime: (by convention) Current source vertical positions [metre]
+    :param d_r: (optional) Radial widths [metre]
+    :param d_z: (optional) Vertical heights [metre]
+    """
+    ...
+
+def d3_psi_d_r_d_z2_py(
+    r: npt.NDArray[np.float64],
+    z: npt.NDArray[np.float64],
+    r_prime: npt.NDArray[np.float64],
+    z_prime: npt.NDArray[np.float64],
+    d_r: npt.NDArray[np.float64] | None = None,
+    d_z: npt.NDArray[np.float64] | None = None,
+) -> npt.NDArray[np.float64]:
+    """
+    Third derivative of the Green's function with respect to `r` and `z` twice.
+
+    :param r: (by convention) Sensor radial positions [metre]
+    :param z: (by convention) Sensor vertical positions [metre]
+    :param r_prime: (by convention) Current source radial positions [metre]
+    :param z_prime: (by convention) Current source vertical positions [metre]
+    :param d_r: (optional) Radial widths [metre]
+    :param d_z: (optional) Vertical heights [metre]
+    """
+    ...
+
 class Coils(DataTreeAccessor):
     """Coils class to hold PF and TF coils data"""
     def __new__(

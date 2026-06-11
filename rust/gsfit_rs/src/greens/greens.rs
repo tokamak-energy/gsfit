@@ -41,6 +41,44 @@ enum Mode {
     SelfField,
 }
 
+/// `F(lambda)`: the fraction of the Grad-Shafranov delta-function source,
+/// `delta_star(psi) = -2 * PI * MU_0 * r * j`, which is picked up by `d2(psi)/d(z2)`
+/// for a rectangular current-carrying cell of aspect ratio `lambda = d_r / d_z`
+/// which is embedded in a regular lattice of filaments (i.e. a discretised conductor
+/// or the computational grid).
+///
+/// The self-cell Greens entry (per unit current) is:
+/// `g_d2_psi_d_z2_self = -2 * PI * MU_0 * r * F(lambda) / (d_r * d_z)`
+/// and, by the splitting identity `F_r + F_z = 1`:
+/// `g_d2_psi_d_r2_self = -2 * PI * MU_0 * r * (1 - F(lambda)) / (d_r * d_z)`
+///
+/// Closed form (derived from row-wise summation of the 2d dipole lattice):
+/// `F(lambda) = 1 - PI / (6 * lambda) + (PI / lambda) * sum_{n>=1} csch^2(n * PI / lambda)`
+/// with the complement identity `F(lambda) = 1 - F(1 / lambda)` used for `lambda > 1`.
+///
+/// Note: `F` can lie outside `[0, 1]` for elongated cells (e.g. `F(2) = 1.047`); this is
+/// correct - the self entry also compensates the quadrature error which the point-filament
+/// approximation makes in the *neighbouring* lattice cells.
+///
+/// See `documentation/jump_condition_dbr_dz.md` for the full derivation.
+fn d2_psi_d_z2_self_fraction(lambda: f64) -> f64 {
+    if lambda > 1.0 {
+        return 1.0 - d2_psi_d_z2_self_fraction(1.0 / lambda);
+    }
+    // For lambda <= 1 the series argument is >= PI, so terms decay like exp(-2 * PI * n / lambda)
+    // and 3-4 terms suffice
+    let mut sum: f64 = 0.0;
+    for n in 1..=20 {
+        let sinh_term: f64 = (PI * (n as f64) / lambda).sinh();
+        let term: f64 = 1.0 / (sinh_term * sinh_term);
+        sum += term;
+        if term < 1e-17 {
+            break;
+        }
+    }
+    1.0 - PI / (6.0 * lambda) + PI / lambda * sum
+}
+
 impl Greens {
     /// Create a new Greens object, pre-computing the elliptic integrals.
     ///
@@ -391,6 +429,12 @@ impl Greens {
     ///
     /// Equation found using Python's SymPy package (see `greens_d2_psi_d_r2.rs`).
     ///
+    /// When the source and sensor coincide the self-term is computed from the source's
+    /// finite dimensions; it takes the complement `1 - F(lambda)` of the `d2(psi)/d(z2)`
+    /// fraction, so that the two self-terms together integrate the delta-function source:
+    /// `g_d2_psi_d_z2_self + g_d2_psi_d_r2_self = -2 * PI * MU_0 * r / (d_r * d_z)`.
+    /// See `d2_psi_d_z2_self_fraction` and `documentation/jump_condition_dbr_dz.md`.
+    ///
     /// # Arguments
     /// * None
     ///
@@ -404,6 +448,8 @@ impl Greens {
         let z: &Array1<f64> = &self.z;
         let r_prime: &Array1<f64> = &self.r_prime;
         let z_prime: &Array1<f64> = &self.z_prime;
+        let d_r_prime: &Array1<f64> = &self.d_r_prime;
+        let d_z_prime: &Array1<f64> = &self.d_z_prime;
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
@@ -443,11 +489,21 @@ impl Greens {
                     g_d2_psi_d_r2_local[i_rz] = MU_0 * (top_1 + top_2 + top_3 + top_4 + top_5 + top_6) / bottom;
                 }
 
-                // Set to zero when source and sensor are at the same location
+                // Self-term when source and sensor are at the same location:
+                // the complement of the `d2(psi)/d(z2)` fraction, so that together they
+                // integrate the delta-function source of `delta_star(psi)`
                 let epsilon: f64 = 1e-6;
+                let d_r: f64 = d_r_prime[i_rz_prime];
+                let d_z: f64 = d_z_prime[i_rz_prime];
                 for i_rz in 0..n_rz {
                     if (r[i_rz] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_rz] - z_prime[i_rz_prime]).abs() < epsilon {
-                        g_d2_psi_d_r2_local[i_rz] = 0.0;
+                        if d_r > 0.0 && d_z > 0.0 && d_r.is_finite() && d_z.is_finite() {
+                            let f_r: f64 = 1.0 - d2_psi_d_z2_self_fraction(d_r / d_z);
+                            g_d2_psi_d_r2_local[i_rz] = -2.0 * PI * MU_0 * r[i_rz] * f_r / (d_r * d_z);
+                        } else {
+                            // A zero-size filament has a genuinely infinite self value; keep zero
+                            g_d2_psi_d_r2_local[i_rz] = 0.0;
+                        }
                     }
                 }
 
@@ -507,7 +563,10 @@ impl Greens {
                             + w_sq[i_rz] * elliptic_integral_k_local[i_rz]);
                 }
 
-                // Set to zero when source and sensor are at the same location
+                // Set to zero when source and sensor are at the same location.
+                // Unlike `d2_psi_d_z2` and `d2_psi_d_r2`, zero is exact here: the mixed
+                // derivative's singular kernel is odd in both (r - r_prime) and (z - z_prime),
+                // so the self-cell contribution vanishes by symmetry
                 let epsilon: f64 = 1e-6;
                 for i_rz in 0..n_rz {
                     if (r[i_rz] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_rz] - z_prime[i_rz_prime]).abs() < epsilon {
@@ -532,15 +591,17 @@ impl Greens {
     ///
     /// Derived from: `d_psi_d_z = -2*PI*r * b_r`, so `d2_psi_d_z2 = -2*PI*r * d(b_r)/d(z)`
     ///
+    /// When the source and sensor coincide the filament expression is singular (the
+    /// delta-function source in `delta_star(psi) = -2 * PI * MU_0 * r * j` cannot be
+    /// obtained by differentiating the smooth Greens function). The self-term is instead
+    /// computed from the source's finite dimensions, see `d2_psi_d_z2_self_fraction`
+    /// and `documentation/jump_condition_dbr_dz.md`.
+    ///
     /// # Arguments
     /// * None
     ///
     /// # Returns
     /// * `g_d2_psi_d_z2[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
-    ///
-    /// TODO: there is a jump condition when the source and sensor are at the same location.
-    /// TODO: I need to derive and implement this jump condition
-    /// TODO: remember- we can use the Mode enum to detect when the "sensors" and "current sources" are at the same location
     pub fn d2_psi_d_z2(&self) -> Array2<f64> {
         let n_rz: usize = self.n_rz;
         let n_rz_prime: usize = self.n_rz_prime;
@@ -549,6 +610,8 @@ impl Greens {
         let z: &Array1<f64> = &self.z;
         let r_prime: &Array1<f64> = &self.r_prime;
         let z_prime: &Array1<f64> = &self.z_prime;
+        let d_r_prime: &Array1<f64> = &self.d_r_prime;
+        let d_z_prime: &Array1<f64> = &self.d_z_prime;
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
@@ -577,11 +640,21 @@ impl Greens {
                     g_d2_psi_d_z2_local[i_rz] = -MU_0 / (d_sq[i_rz] * u[i_rz] * u_sq[i_rz]) * (e_term + k_term);
                 }
 
-                // Set to zero when source and sensor are at the same location
+                // Self-term when source and sensor are at the same location:
+                // the delta-function part of `delta_star(psi)` split by the cell aspect ratio,
+                // plus the lattice quadrature correction (both inside `d2_psi_d_z2_self_fraction`)
                 let epsilon: f64 = 1e-6;
+                let d_r: f64 = d_r_prime[i_rz_prime];
+                let d_z: f64 = d_z_prime[i_rz_prime];
                 for i_rz in 0..n_rz {
                     if (r[i_rz] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_rz] - z_prime[i_rz_prime]).abs() < epsilon {
-                        g_d2_psi_d_z2_local[i_rz] = 0.0;
+                        if d_r > 0.0 && d_z > 0.0 && d_r.is_finite() && d_z.is_finite() {
+                            let f_z: f64 = d2_psi_d_z2_self_fraction(d_r / d_z);
+                            g_d2_psi_d_z2_local[i_rz] = -2.0 * PI * MU_0 * r[i_rz] * f_z / (d_r * d_z);
+                        } else {
+                            // A zero-size filament has a genuinely infinite self value; keep zero
+                            g_d2_psi_d_z2_local[i_rz] = 0.0;
+                        }
                     }
                 }
 
@@ -886,6 +959,162 @@ fn test_d2_psi_d_z2() {
     assert_abs_diff_eq!(d2_psi_d_z2_analytic, d2_psi_d_z2_numerical, epsilon = 1e-10);
 }
 
-// TODO: add tests for b_r and b_z
+/// Test the lattice self-fraction `F(lambda)` used for the `d2_psi_d_z2` / `d2_psi_d_r2` self-terms
+#[test]
+fn test_d2_psi_d_z2_self_fraction() {
+    use approx::assert_abs_diff_eq;
 
-// TODO: add tests for sensors and current sources at the same location
+    // Square cells: the delta-function source splits equally, F(1) = 1/2 exactly
+    // (numerically this checks the identity sum_{n>=1} csch^2(n * PI) = 1/6 - 1/(2*PI))
+    assert_abs_diff_eq!(d2_psi_d_z2_self_fraction(1.0), 0.5, epsilon = 1e-12);
+
+    // Values validated against direct summation of the 2d dipole lattice
+    // (midpoint quadrature error of the kernel K = (x^2 - y^2) / (x^2 + y^2)^2)
+    let lambda: f64 = 0.4 / 0.26913578; // cell aspect ratio used in examples/d2_psi_d_z2_investigation.ipynb
+    assert_abs_diff_eq!(d2_psi_d_z2_self_fraction(lambda), 0.77654899, epsilon = 1e-6);
+
+    // Note: F is not restricted to [0, 1] for elongated cells; the self entry also
+    // compensates the filament-approximation error of the neighbouring lattice cells
+    assert_abs_diff_eq!(d2_psi_d_z2_self_fraction(2.0), 1.04710990, epsilon = 1e-6);
+}
+
+/// The two second-derivative self-terms together must integrate the delta-function
+/// source of the Grad-Shafranov equation: `delta_star(psi) = -2 * PI * MU_0 * r * j`
+#[test]
+fn test_d2_psi_self_terms_integrate_delta_function() {
+    use approx::assert_abs_diff_eq;
+
+    let r0: f64 = 1.2345;
+    let z0: f64 = 0.54321;
+    let d_r: f64 = 0.01;
+    let d_z: f64 = 0.0037;
+
+    let r: Array1<f64> = Array1::from(vec![r0]);
+    let z: Array1<f64> = Array1::from(vec![z0]);
+    let greens_calculator: Greens = Greens::sensor_to_conductor(
+        r.clone(),
+        z.clone(),
+        r.clone(),
+        z.clone(),
+        Array1::from(vec![d_r]),
+        Array1::from(vec![d_z]),
+    );
+
+    let g_z2_self: f64 = greens_calculator.d2_psi_d_z2()[(0, 0)];
+    let g_r2_self: f64 = greens_calculator.d2_psi_d_r2()[(0, 0)];
+
+    let delta_integral: f64 = -2.0 * PI * MU_0 * r0 / (d_r * d_z);
+    assert_abs_diff_eq!(g_z2_self + g_r2_self, delta_integral, epsilon = delta_integral.abs() * 1e-12);
+}
+
+/// Construct the filament grid and sensor used by the self-term tests.
+/// The conductor geometry matches `examples/d2_psi_d_z2_investigation.ipynb`.
+/// `n` must be odd so that the sensor lands exactly on the central filament.
+#[cfg(test)]
+fn self_term_test_grid() -> (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, f64, f64, f64, f64) {
+    let r_left: f64 = 0.8345;
+    let r_right: f64 = 1.2345;
+    let z_bottom: f64 = -0.13456789;
+    let z_top: f64 = 0.13456789;
+
+    let n: usize = 101;
+    let d_r: f64 = (r_right - r_left) / (n as f64);
+    let d_z: f64 = (z_top - z_bottom) / (n as f64);
+
+    let mut r_prime: Array1<f64> = Array1::zeros(n * n);
+    let mut z_prime: Array1<f64> = Array1::zeros(n * n);
+    for i_z in 0..n {
+        for i_r in 0..n {
+            r_prime[i_z * n + i_r] = r_left + ((i_r as f64) + 0.5) * d_r;
+            z_prime[i_z * n + i_r] = z_bottom + ((i_z as f64) + 0.5) * d_z;
+        }
+    }
+    let d_r_prime: Array1<f64> = Array1::from_elem(n * n, d_r);
+    let d_z_prime: Array1<f64> = Array1::from_elem(n * n, d_z);
+
+    // Sensor at the conductor centre = the central filament of the (odd) grid
+    let r_sensor: f64 = r_prime[(n * n - 1) / 2];
+    let z_sensor: f64 = z_prime[(n * n - 1) / 2];
+
+    (r_prime, z_prime, d_r_prime, d_z_prime, d_r, d_z, r_sensor, z_sensor)
+}
+
+/// Sum `psi` over the discretised conductor (current density `j_phi = 1`) at given sensor locations
+#[cfg(test)]
+fn self_term_test_psi(r_sensors: &Array1<f64>, z_sensors: &Array1<f64>) -> Array1<f64> {
+    use ndarray::Axis;
+
+    let (r_prime, z_prime, d_r_prime, d_z_prime, d_r, d_z, _, _) = self_term_test_grid();
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r_sensors.clone(), z_sensors.clone(), r_prime, z_prime, d_r_prime, d_z_prime);
+    greens_calculator.psi().sum_axis(Axis(1)) * d_r * d_z // each filament carries `j_phi * d_r * d_z` ampere
+}
+
+/// Test the `d2_psi_d_z2` self-term: sum the Greens table over a discretised rectangular
+/// conductor with the sensor exactly on a filament, and compare against a Richardson-
+/// extrapolated second difference of `psi`
+#[test]
+fn test_d2_psi_d_z2_self_term() {
+    use approx::assert_abs_diff_eq;
+    use ndarray::Axis;
+
+    let (r_prime, z_prime, d_r_prime, d_z_prime, d_r, d_z, r_sensor, z_sensor) = self_term_test_grid();
+
+    // Greens-table value, including the new self-term
+    let r: Array1<f64> = Array1::from(vec![r_sensor]);
+    let z: Array1<f64> = Array1::from(vec![z_sensor]);
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r, z, r_prime, z_prime, d_r_prime, d_z_prime);
+    let d2_psi_d_z2_greens: f64 = (greens_calculator.d2_psi_d_z2().sum_axis(Axis(1)) * d_r * d_z)[0];
+
+    // Reference: second difference of psi in z.
+    // The offsets are exact multiples of `d_z`, so each evaluation point sits on a
+    // filament node where `psi` uses its (finite) self-inductance expression.
+    let delta: f64 = 8.0 * d_z;
+    let r_sensors: Array1<f64> = Array1::from_elem(5, r_sensor);
+    let z_sensors: Array1<f64> = Array1::from(vec![
+        z_sensor - 2.0 * delta,
+        z_sensor - delta,
+        z_sensor,
+        z_sensor + delta,
+        z_sensor + 2.0 * delta,
+    ]);
+    let psi: Array1<f64> = self_term_test_psi(&r_sensors, &z_sensors);
+    let fd_1: f64 = (psi[1] - 2.0 * psi[2] + psi[3]) / delta.powi(2);
+    let fd_2: f64 = (psi[0] - 2.0 * psi[2] + psi[4]) / (2.0 * delta).powi(2);
+    let d2_psi_d_z2_numerical: f64 = (4.0 * fd_1 - fd_2) / 3.0; // Richardson extrapolation, O(delta^4)
+
+    assert_abs_diff_eq!(d2_psi_d_z2_greens, d2_psi_d_z2_numerical, epsilon = d2_psi_d_z2_numerical.abs() * 0.01);
+}
+
+/// Test the `d2_psi_d_r2` self-term, analogously to `test_d2_psi_d_z2_self_term`
+#[test]
+fn test_d2_psi_d_r2_self_term() {
+    use approx::assert_abs_diff_eq;
+    use ndarray::Axis;
+
+    let (r_prime, z_prime, d_r_prime, d_z_prime, d_r, d_z, r_sensor, z_sensor) = self_term_test_grid();
+
+    // Greens-table value, including the new self-term
+    let r: Array1<f64> = Array1::from(vec![r_sensor]);
+    let z: Array1<f64> = Array1::from(vec![z_sensor]);
+    let greens_calculator: Greens = Greens::sensor_to_conductor(r, z, r_prime, z_prime, d_r_prime, d_z_prime);
+    let d2_psi_d_r2_greens: f64 = (greens_calculator.d2_psi_d_r2().sum_axis(Axis(1)) * d_r * d_z)[0];
+
+    // Reference: second difference of psi in r, offsets exact multiples of `d_r`
+    let delta: f64 = 8.0 * d_r;
+    let r_sensors: Array1<f64> = Array1::from(vec![
+        r_sensor - 2.0 * delta,
+        r_sensor - delta,
+        r_sensor,
+        r_sensor + delta,
+        r_sensor + 2.0 * delta,
+    ]);
+    let z_sensors: Array1<f64> = Array1::from_elem(5, z_sensor);
+    let psi: Array1<f64> = self_term_test_psi(&r_sensors, &z_sensors);
+    let fd_1: f64 = (psi[1] - 2.0 * psi[2] + psi[3]) / delta.powi(2);
+    let fd_2: f64 = (psi[0] - 2.0 * psi[2] + psi[4]) / (2.0 * delta).powi(2);
+    let d2_psi_d_r2_numerical: f64 = (4.0 * fd_1 - fd_2) / 3.0; // Richardson extrapolation, O(delta^4)
+
+    assert_abs_diff_eq!(d2_psi_d_r2_greens, d2_psi_d_r2_numerical, epsilon = d2_psi_d_r2_numerical.abs() * 0.01);
+}
+
+// TODO: add tests for b_r and b_z
