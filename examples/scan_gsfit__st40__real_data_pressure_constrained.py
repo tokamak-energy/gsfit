@@ -16,8 +16,8 @@ script_start_time = time.perf_counter()
 section_start_time = script_start_time
 
 # ── Pulse numbers ─────────────────────────────────────────────────────────────
-# pulse_num = 13_560
-pulse_num = 13_599
+pulse_num = 13_560
+# pulse_num = 13_599
 pulse_num_write = pulse_num + 52_000_000
 # psu2coil_run_name = "RUN06"
 psu2coil_run_name = "RUN05"
@@ -67,7 +67,7 @@ for i_ts_sensor in range(len(ts_r)):
     measured_pressure_full[measured_pressure_full <= 0.5e3] = np.nan
     if np.any(~np.isnan(measured_pressure_full)):
         pressure_sensors.add_sensor(
-            name=f"TS_{i_ts_sensor + 1}",
+            name=f"PRESSURE{i_ts_sensor + 1:02d}",
             geometry_r=ts_r[i_ts_sensor],
             geometry_z=ts_z[i_ts_sensor],
             fit_settings_comment="",
