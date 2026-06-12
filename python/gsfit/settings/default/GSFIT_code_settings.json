@@ -67,7 +67,7 @@
         }
     },
     "database_writer": {
-        "method": "tokamak_energy_mdsplus",
+        "method": "tokamak_energy_mdsplus_new",
         "tokamak_energy_mdsplus": {
         },
         "tokamak_energy_mdsplus_no_workflow": {
