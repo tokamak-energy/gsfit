@@ -221,8 +221,8 @@ def map_results_to_database(
     if len(pressure_sensors.keys()) > 0:
         sensor_names = list(pressure_sensors.keys())
 
-        # Per-sensor nodes (PRESSURE01, PRESSURE02, ...)
-        for i, sensor_name in enumerate(sensor_names):
+        # Per-sensor nodes (keyed by sensor name)
+        for sensor_name in sensor_names:
             results["CONSTRAINTS"]["PRESSURE"][sensor_name]["MEASURED"] = pressure_sensors.get_array1([sensor_name, "pressure", "measured", "value"])  # shape = [n_time]
             results["CONSTRAINTS"]["PRESSURE"][sensor_name]["RECONSTRUCT"] = pressure_sensors.get_array1([sensor_name, "pressure", "calculated", "value"])  # shape = [n_time]
             results["CONSTRAINTS"]["PRESSURE"][sensor_name]["WEIGHT"] = pressure_sensors.get_f64([sensor_name, "fit_settings", "weight"])  # scalar
