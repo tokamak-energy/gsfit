@@ -43,6 +43,7 @@ class Gsfit(DiagnosticAndSimulationBase):
     plasma: gsfit_rs.Plasma
     bp_probes: gsfit_rs.BpProbes
     flux_loops: gsfit_rs.FluxLoops
+    dialoop: gsfit_rs.Dialoop
     rogowski_coils: gsfit_rs.RogowskiCoils
     isoflux: gsfit_rs.Isoflux
     isoflux_boundary: gsfit_rs.IsofluxBoundary
@@ -187,6 +188,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         isoflux_boundary = self.isoflux_boundary
         pressure_sensors = self.pressure_sensors
         stationary_point = self.stationary_point
+        dialoop = self.dialoop
 
         times_to_reconstruct = self.results["TIME"]
 
@@ -204,6 +206,7 @@ class Gsfit(DiagnosticAndSimulationBase):
             isoflux_boundary,
             pressure_sensors,
             stationary_point,
+            dialoop,
             times_to_reconstruct,
             self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"],
             self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_min"],
@@ -301,6 +304,11 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.flux_loops = database_reader.setup_flux_loops(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`flux_loops` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
+        self.dialoop = database_reader.setup_dialoop(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`dialoop` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
         self.rogowski_coils = database_reader.setup_rogowski_coils(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
