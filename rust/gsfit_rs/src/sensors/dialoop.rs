@@ -36,8 +36,12 @@ impl Dialoop {
     /// # Examples
     ///
     /// ```ignore
-    /// [probe_name]["b"]["calculated"]                                 = Array1<f64>;  shape=[n_time]
-    /// [probe_name]["b"]["measured"]                                   = Array1<f64>;  shape=[n_time]
+    /// [probe_name]["b"]["calculated"]["value"]                        = Array1<f64>;  shape=[n_time]
+    /// [probe_name]["b"]["calculated"]["time"]                         = Array1<f64>;  shape=[n_time]
+    /// [probe_name]["b"]["experimental"]["value"]                      = Array1<f64>;  shape=[n_time_experimental]
+    /// [probe_name]["b"]["experimental"]["time"]                       = Array1<f64>;  shape=[n_time_experimental]
+    /// [probe_name]["b"]["measured"]["value"]                          = Array1<f64>;  shape=[n_time]
+    /// [probe_name]["b"]["measured"]["time"]                           = Array1<f64>;  shape=[n_time]
     /// [probe_name]["fit_settings"]["comment"]                         = str
     /// [probe_name]["fit_settings"]["expected_value"]                  = f64
     /// [probe_name]["fit_settings"]["include"]                         = bool
@@ -83,13 +87,17 @@ impl Dialoop {
             .get_or_insert("fit_settings")
             .insert("weight", fit_settings_weight);
 
-        // Measurements
-        self.results.get_or_insert(name).get_or_insert("b").insert("time_experimental", time_ndarray);
+        // Experimental measurements
         self.results
             .get_or_insert(name)
             .get_or_insert("b")
-            .insert("measured_experimental", measured_ndarray);
-        // I want to store both the full time and the down sampled...
+            .get_or_insert("experimental")
+            .insert("time", time_ndarray);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("b")
+            .get_or_insert("experimental")
+            .insert("value", measured_ndarray);
     }
 
     // ///
@@ -240,12 +248,41 @@ impl Dialoop {
     // }
 
     /// Calculate the sensor values
-    pub fn calculate_sensor_values(&mut self, plasma: PyRef<Plasma>) {
+    pub fn calculate_sensor_values(&mut self, coils: PyRef<Coils>, passives: PyRef<Passives>, plasma: PyRef<Plasma>) {
         // Convert Python types into Rust
+        let coils_rs: &Coils = &coils;
+        let passives_rs: &Passives = &passives;
         let plasma_rs: &Plasma = &plasma;
 
         // Run the Rust method
-        self.calculate_sensor_values_rust(plasma_rs);
+        self.calculate_sensor_values_rs(coils_rs, passives_rs, plasma_rs);
+    }
+
+    /// Calculate the vacuum sensor values.
+    ///
+    /// The diamagnetic flux is a plasma-only quantity (the vacuum toroidal field is subtracted),
+    /// so the vacuum contribution is always zero.
+    pub fn calculate_sensor_values_vacuum(&mut self, coils: PyRef<Coils>, _passives: PyRef<Passives>) {
+        // The time-base is taken from the simulated coil currents (matching `FluxLoops`)
+        let pf_names: Vec<String> = coils.results.get("pf").keys();
+        let simulated_time: Array1<f64> = coils.results.get("pf").get(&pf_names[0]).get("i").get("simulated").get("time").unwrap_array1();
+        let n_time: usize = simulated_time.len();
+
+        for sensor_name in self.results.keys() {
+            // Vacuum diamagnetic flux is zero
+            let sensor_values: Array1<f64> = Array1::zeros(n_time);
+
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("calculated")
+                .insert("value", sensor_values);
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("calculated")
+                .insert("time", simulated_time.clone());
+        }
     }
 
     /// Print to screen, to be used within Python
@@ -268,141 +305,73 @@ impl Dialoop {
 
 // Rust only methods
 impl Dialoop {
-    // /// This splits the Dialoop into:
-    // /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
-    // /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    // pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (SensorsStatic, Vec<SensorsDynamic>) {
-    //     // Vector of boolean's to say if we use the sensor or not
-    //     let include: Vec<bool> = self.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
+    /// This splits the Dialoop into:
+    /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
+    /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
+    ///
+    /// Note: `Dialoop` has no Green's functions computed (it is not yet used as a constraint in the
+    /// reconstruction), so there is no static object to return; only the Vec of time-dependent objects
+    /// is produced. This mirrors `Coils::split_into_static_and_dynamic`.
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> Vec<SensorsDynamic> {
+        let n_time: usize = times_to_reconstruct.len();
 
-    //     // Convert from boolean to indices
-    //     let include_indices: Vec<usize> = include
-    //         .iter()
-    //         .enumerate()
-    //         .filter(|(_, &include)| include) // Filter for `true` values
-    //         .map(|(i, _)| i) // Extract the indices
-    //         .collect(); // Collect into a Vec
+        // Sensor names
+        let sensor_names: Vec<String> = self.results.keys();
+        let n_sensors: usize = sensor_names.len();
 
-    //     // Sensor names
-    //     let sensor_names_all: Vec<String> = self.results.keys();
-    //     let n_sensors_all: usize = sensor_names_all.len();
-    //     // Down select sensor names
-    //     let sensor_names: Vec<String> = include_indices.iter().map(|&index| sensor_names_all[index].clone()).collect();
-    //     let n_sensors: usize = sensor_names.len();
+        // Time dependent
+        // Interpolate all sensors to `times_to_reconstruct`
+        let mut measured: Array2<f64> = Array2::from_elem((n_sensors, n_time), f64::NAN);
+        for i_sensor in 0..n_sensors {
+            // Sensor name
+            let sensor_name: &str = &sensor_names[i_sensor];
 
-    //     // Fit settings
-    //     // Weight
-    //     let fit_settings_weight: Array1<f64> = self.results.get("*").get("fit_settings").get("weight").unwrap_array1();
-    //     let fit_settings_weight: Array1<f64> = fit_settings_weight.select(Axis(0), &include_indices);
-    //     // Expected value
-    //     let fit_settings_expected_value: Array1<f64> = self.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
-    //     let fit_settings_expected_value: Array1<f64> = fit_settings_expected_value.select(Axis(0), &include_indices);
+            // Experimental measurements (stored on the experimental time-base by `add_sensor`)
+            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("b").get("experimental").get("time").unwrap_array1();
+            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("b").get("experimental").get("value").unwrap_array1();
 
-    //     // Greens
-    //     // With PF coils
-    //     let greens_with_pf: Array2<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array2(); // shape = [n_pf, n_sensors]
-    //     let greens_with_pf: Array2<f64> = greens_with_pf.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_pf, n_sensors]
-    //                                                                                         // With plasma
-    //     let greens_with_grid: Array2<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array2(); // shape = [n_z * n_r, n_sensors]
-    //     let greens_with_grid: Array2<f64> = greens_with_grid.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_pf, n_sensors]
-    //                                                                                             // With d_sensor_dz (for vertical stability)
-    //     let greens_d_sensor_dz: Array2<f64> = self.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array2(); // shape = [n_z * n_r, n_sensors]
-    //     let greens_d_sensor_dz: Array2<f64> = greens_d_sensor_dz.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_z * n_r, n_sensors]
+            // Create the interpolator
+            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone())
+                .expect("Dialoop.split_into_static_and_dynamic: Can't make interpolator");
 
-    //     // With passives
-    //     let passive_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").keys();
-    //     let n_passives: usize = passive_names.len();
+            // Do the interpolation
+            let measured_this_sensor: Array1<f64> = interpolator
+                .interpolate_array1(times_to_reconstruct)
+                .expect("Dialoop.split_into_static_and_dynamic: Can't do interpolation");
 
-    //     // Count the number of degrees of freedom
-    //     let mut n_dof_total: usize = 0;
-    //     for passive_name in &passive_names {
-    //         let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys();
-    //         n_dof_total += dof_names.len();
-    //     }
+            // Store for later
+            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_sensor);
 
-    //     let mut greens_with_passives: Array2<f64> = Array2::zeros((n_dof_total, n_sensors));
+            // Store in self
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("measured")
+                .insert("value", measured_this_sensor);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("measured")
+                .insert("time", times_to_reconstruct.clone());
+        }
 
-    //     // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
-    //     for i_sensor in 0..n_sensors {
-    //         let mut i_dof_total: usize = 0;
-    //         for i_passive in 0..n_passives {
-    //             let passive_name: &str = &passive_names[i_passive];
-    //             let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-    //             for dof_name in dof_names {
-    //                 greens_with_passives[(i_dof_total, i_sensor)] = self
-    //                     .results
-    //                     .get(&sensor_names[i_sensor])
-    //                     .get("greens")
-    //                     .get("passives")
-    //                     .get(&passive_name)
-    //                     .get(&dof_name)
-    //                     .unwrap_f64();
+        // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
+        let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);
+        for i_time in 0..n_time {
+            // Create new `SensorsDynamic` instance and store
+            let results_dynamic_this_time_slice: SensorsDynamic = SensorsDynamic {
+                measured: measured.slice(s![.., i_time]).to_owned(),
+            };
+            results_dynamic.push(results_dynamic_this_time_slice);
+        }
 
-    //                 // Store the name
-    //                 // dof_names_total[i_dof_total] = dof_name;
-
-    //                 // Keep count
-    //                 i_dof_total += 1;
-    //             }
-    //         }
-    //     }
-
-    //     // Create the `DialoopStatic` data
-    //     let results_static: SensorsStatic = SensorsStatic {
-    //         greens_with_grid,
-    //         greens_with_pf,
-    //         greens_with_passives,
-    //         greens_d_sensor_dz,
-    //         fit_settings_weight,
-    //         fit_settings_expected_value,
-    //     };
-
-    //     // Time dependent
-    //     // Interpolate all sensors to `times_to_reconstruct`
-    //     let n_time: usize = times_to_reconstruct.len();
-    //     let mut measured: Array2<f64> = Array2::zeros((n_sensors_all, n_time));
-    //     for i_sensor in 0..n_sensors_all {
-    //         // Coils
-    //         let sensor_name: &str = &sensor_names_all[i_sensor];
-    //         let time_experimental: Array1<f64> = self.results.get(sensor_name).get("b").get("time_experimental").unwrap_array1();
-    //         let measured_experimental: Array1<f64> = self.results.get(sensor_name).get("b").get("measured_experimental").unwrap_array1();
-
-    //         // Create the interpolator
-    //        let interpolator = interpolation::Dim1Linear::new(&time_experimental, &measured_experimental)
-    //            .expect("Coils.split_into_static_and_dynamic: Can't make interpolator");
-
-    //         // Do the interpolation
-    //        let measured_this_coil: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct)
-    //             .expect("Coils.split_into_static_and_dynamic: Can't do interpolation");
-
-    //         // Store for later
-    //         measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_coil);
-
-    //         // Store in self
-    //         self.results
-    //             .get_or_insert(sensor_name)
-    //             .get_or_insert("b")
-    //             .insert("measured", measured_this_coil);
-    //     }
-
-    //     // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
-    //     let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);
-    //     for i_time in 0..n_time {
-    //         // Select time-slide and the sensors we use in reconstruction
-    //         let measured_this_time_slice_and_sensors: Array1<f64> = measured.slice(s![.., i_time]).select(Axis(0), &include_indices).to_owned();
-    //         // Create new `SensorsDynamic` instance and store
-    //         let results_dynamic_this_time_slice: SensorsDynamic = SensorsDynamic {
-    //             measured: measured_this_time_slice_and_sensors,
-    //         };
-    //         results_dynamic.push(results_dynamic_this_time_slice);
-    //     }
-
-    //     // Return the static and dynamic results
-    //     return (results_static, results_dynamic);
-    // }
+        // Return the dynamic results
+        return results_dynamic;
+    }
 
     /// Calculate the sensor values
-    pub fn calculate_sensor_values_rust(&mut self, plasma: &Plasma) {
-        for sensor_name in self.results.keys() {}
+    pub fn calculate_sensor_values_rs(&mut self, _coils: &Coils, _passives: &Passives, _plasma: &Plasma) {
+        // TODO: implement the diamagnetic flux calculation from the reconstructed equilibrium
+        for _sensor_name in self.results.keys() {}
     }
 }
