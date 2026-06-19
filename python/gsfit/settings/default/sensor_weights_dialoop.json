@@ -1,3 +1,10 @@
 {
-    
+    "DIALOOP": {
+        "fit_settings": {
+            "expected_value": 0.005,
+            "weight": 1.0,
+            "include": true,
+            "comment": ""
+        }
+    }
 }
