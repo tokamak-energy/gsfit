@@ -3,7 +3,7 @@ use super::gs_solution::GsSolution;
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
-use crate::sensors::{BpProbes, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
+use crate::sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
 use crate::source_functions::SourceFunctionTraits;
 use log::info; // use log::{debug, error, info};
 use ndarray::{Array1, Array2, s};
@@ -26,6 +26,7 @@ pub fn solve_grad_shafranov(
     mut isoflux_boundary: PyRefMut<IsofluxBoundary>,
     mut pressure_sensors: PyRefMut<Pressure>,
     mut stationary_point: PyRefMut<StationaryPoint>,
+    mut dialoop: PyRefMut<Dialoop>,
     times_to_reconstruct: PyReadonlyArray1<f64>,
     n_iter_max: usize,
     n_iter_min: usize,
@@ -82,6 +83,8 @@ pub fn solve_grad_shafranov(
         pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (stationary_point_statics, stationary_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         stationary_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    // Note: `dialoop` is not yet used as a constraint, so (like `coils`) only the dynamic data is produced
+    let _dialoop_dynamic: Vec<SensorsDynamic> = dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
     // TODO: might be better to combine all sensors here, before passing to the solver
 
@@ -210,6 +213,9 @@ pub fn solve_grad_shafranov(
     if pressure_sensors.results.data.len() > 0 {
         pressure_sensors.calculate_sensor_values_rust(&plasma_owned);
     }
+    // Diamagnetic flux loop ("DIALOOP"): calculate the sensor values, consistent with the other
+    // sensors. It is not yet used as a constraint in the reconstruction.
+    dialoop.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
 
     // Calculate chi_sq_mag for each time slice
     let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, n_time);
