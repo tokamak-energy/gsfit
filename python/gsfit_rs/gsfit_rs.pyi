@@ -68,6 +68,7 @@ def solve_grad_shafranov(
     isoflux_boundary: IsofluxBoundary,
     pressure_sensors: Pressure,
     stationary_point: StationaryPoint,
+    dialoop: Dialoop,
     times_to_reconstruct: npt.NDArray[np.float64],
     n_iter_max: int,
     n_iter_min: int,
@@ -87,6 +88,7 @@ def solve_grad_shafranov(
     :param isoflux_boundary: IsofluxBoundary object, note this is mutated and contains the solution
     :param pressure_sensors: Pressure object, note this is mutated and contains the solution
     :param stationary_point: StationaryPoint object, note this is mutated and contains the solution
+    :param dialoop: Dialoop object, note this is mutated; the measured signal is interpolated onto `times_to_reconstruct` but is not yet used as a constraint
     :param times_to_reconstruct: Times to reconstruct [second]
     :param n_iter_max: Maximum number of iterations
     :param n_iter_min: Minimum number of iterations
@@ -611,8 +613,6 @@ class Dialoop(DataTreeAccessor):
     def add_sensor(
         cls,
         name: str,
-        geometry_r: float,
-        geometry_z: float,
         fit_settings_comment: str,
         fit_settings_expected_value: float,
         fit_settings_include: bool,
@@ -620,6 +620,27 @@ class Dialoop(DataTreeAccessor):
         time: npt.NDArray[np.float64],
         measured: npt.NDArray[np.float64],
     ) -> None: ...
+    def calculate_sensor_values(
+        cls,
+        coils: Coils,
+        passives: Passives,
+        plasma: Plasma,
+    ) -> None: ...
+    def calculate_sensor_values_vacuum(
+        cls,
+        coils: Coils,
+        passives: Passives,
+    ) -> None:
+        """
+        Calculate the vacuum sensor values from the coils and passives.
+        The diamagnetic flux is a plasma-only quantity (the vacuum toroidal field is
+        subtracted), so the vacuum contribution is always zero.
+        Mutates self
+
+        :param coils: Coils object
+        :param passives: Passives object
+        """
+        ...
     # def greens_with_coils(
     #     cls,
     #     coils: "Coils",
