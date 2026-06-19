@@ -2,6 +2,7 @@ import typing
 from typing import TYPE_CHECKING
 
 import numpy as np
+import numpy.typing as npt
 from gsfit_rs import Dialoop
 from st40_database import GetData
 
@@ -28,16 +29,37 @@ def setup_dialoop(
     # Initialise the Dialoop Rust class
     dialoop = Dialoop()
 
-    # TODO: implement the method
+    # read in the diamagnetic flux from MDSplus
+    dialoop_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus"]["workflow"]["dialoop"]["run_name"]
+    dialoop_data = GetData(pulseNo, f"DIALOOP#{dialoop_run_name}", is_fail_quiet=False)
 
-    # dialoop.add_sensor(
-    #     name="DIALOOP_001",
-    #     fit_settings_comment="",
-    #     fit_settings_expected_value=0.0,
-    #     fit_settings_include=True,
-    #     fit_settings_weight=1.0,
-    #     time=np.array([0.0]),
-    #     measured=np.array([0.0]),
-    # )
+    # We use a single diamagnetic flux loop
+    sensor_name = "DIALOOP"
+
+    if sensor_name in settings["sensor_weights_dialoop.json"]:
+        fit_settings_comment = settings["sensor_weights_dialoop.json"][sensor_name]["fit_settings"]["comment"]
+        fit_settings_expected_value = settings["sensor_weights_dialoop.json"][sensor_name]["fit_settings"]["expected_value"]
+        fit_settings_include = settings["sensor_weights_dialoop.json"][sensor_name]["fit_settings"]["include"]
+        fit_settings_weight = settings["sensor_weights_dialoop.json"][sensor_name]["fit_settings"]["weight"]
+    else:
+        fit_settings_comment = ""
+        fit_settings_expected_value = np.nan
+        fit_settings_include = False
+        fit_settings_weight = np.nan
+
+    # Measured signal: \DIALOOP::TOP.<run_name>.GLOBAL:PHI_DIA
+    time = typing.cast(npt.NDArray[np.float64], dialoop_data.get("TIME")).astype(np.float64)
+    measured = typing.cast(npt.NDArray[np.float64], dialoop_data.get("GLOBAL.PHI_DIA")).astype(np.float64)
+
+    # Add the sensor to the Rust class
+    dialoop.add_sensor(
+        name=sensor_name,
+        fit_settings_comment=fit_settings_comment,
+        fit_settings_expected_value=fit_settings_expected_value,
+        fit_settings_include=fit_settings_include,
+        fit_settings_weight=fit_settings_weight,
+        time=time,
+        measured=measured,
+    )
 
     return dialoop
