@@ -71,10 +71,14 @@ fn d2_psi_d_z2_self_fraction(lambda: f64) -> f64 {
     for n in 1..=20 {
         let sinh_term: f64 = (PI * (n as f64) / lambda).sinh();
         let term: f64 = 1.0 / (sinh_term * sinh_term);
-        sum += term;
-        if term < 1e-17 {
+        // The `next == sum` is a neat trick to see if we are at double precision accuracy.
+        // It avoids us having to add arbitrary tolerances, like 1e-17.
+        // Also, the way its constructed it will pass mutation testing, as the + term is used in the next iteration, so mutating the + to - would change the result.
+        let next: f64 = sum + term;
+        if next == sum {
             break;
         }
+        sum = next;
     }
     1.0 - PI / (6.0 * lambda) + PI / lambda * sum
 }
