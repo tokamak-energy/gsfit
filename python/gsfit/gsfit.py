@@ -183,6 +183,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         plasma = self.plasma
         bp_probes = self.bp_probes
         flux_loops = self.flux_loops
+        dialoop = self.dialoop
         rogowski_coils = self.rogowski_coils
         isoflux = self.isoflux
         isoflux_boundary = self.isoflux_boundary
@@ -229,6 +230,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         plasma = self.plasma
         bp_probes = self.bp_probes
         flux_loops = self.flux_loops
+        dialoop = self.dialoop
         rogowski_coils = self.rogowski_coils
         isoflux = self.isoflux
         isoflux_boundary = self.isoflux_boundary
@@ -240,6 +242,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         plasma.greens_with_coils(coils)
         bp_probes.greens_with_coils(coils)
         flux_loops.greens_with_coils(coils)
+        dialoop.greens_with_coils(coils)
         rogowski_coils.greens_with_coils(coils)
         isoflux.greens_with_coils(coils)
         isoflux_boundary.greens_with_coils(coils)
@@ -253,6 +256,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         plasma.greens_with_passives(passives)
         bp_probes.greens_with_passives(passives)
         flux_loops.greens_with_passives(passives)
+        dialoop.greens_with_passives(passives)
         rogowski_coils.greens_with_passives(passives)
         isoflux.greens_with_passives(passives)
         isoflux_boundary.greens_with_passives(passives)
@@ -265,6 +269,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         tic = time_py.time()
         bp_probes.greens_with_plasma(plasma)
         flux_loops.greens_with_plasma(plasma)
+        dialoop.greens_with_plasma(plasma)
         rogowski_coils.greens_with_plasma(plasma)
         isoflux.greens_with_plasma(plasma)
         isoflux_boundary.greens_with_plasma(plasma)

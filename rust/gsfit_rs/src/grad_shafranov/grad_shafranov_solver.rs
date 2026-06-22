@@ -83,8 +83,9 @@ pub fn solve_grad_shafranov(
         pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (stationary_point_statics, stationary_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         stationary_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    // Note: `dialoop` is not yet used as a constraint, so (like `coils`) only the dynamic data is produced
-    let _dialoop_dynamic: Vec<SensorsDynamic> = dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    // Note: `dialoop` is not yet used as a constraint; its static Green's functions are computed but not used in the solver
+    let (_dialoop_statics, _dialoop_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+        dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
     // TODO: might be better to combine all sensors here, before passing to the solver
 
