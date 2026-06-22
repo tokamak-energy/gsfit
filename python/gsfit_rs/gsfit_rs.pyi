@@ -613,6 +613,8 @@ class Dialoop(DataTreeAccessor):
     def add_sensor(
         cls,
         name: str,
+        r: npt.NDArray[np.float64],
+        z: npt.NDArray[np.float64],
         fit_settings_comment: str,
         fit_settings_expected_value: float,
         fit_settings_include: bool,

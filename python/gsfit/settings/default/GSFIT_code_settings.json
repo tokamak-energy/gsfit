@@ -18,6 +18,11 @@
                     "pulseNo": null,
                     "run_name": "RUN06",
                     "usage": "PF and TF coil currents"
+                },
+                "dialoop": {
+                    "pulseNo": null,
+                    "run_name": "BEST",
+                    "usage": "Diamagnetic flux measured value"
                 }
             },
             "isoflux_code_name": null
@@ -103,7 +108,7 @@
         "method": "arange",
         "arange": {
             "time_start": 10.0e-3,
-            "time_end": 250.0e-3,
+            "time_end": 249.0e-3,
             "dt": 0.5e-3
         },
         "linspace": {
