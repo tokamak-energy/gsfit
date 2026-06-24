@@ -140,6 +140,7 @@ def map_results_to_database(
     for sensor_name in dialoop.keys():
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["INCLUDE"] = np.int32(dialoop.get_bool([sensor_name, "fit_settings", "include"]))
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["MEASURED"] = dialoop.get_array1([sensor_name, "b", "measured", "value"])
+        results["CONSTRAINTS"]["DIAMAG_FLUX"]["RECONSTRUCT"] = dialoop.get_array1([sensor_name, "b", "calculated", "value"])
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["WEIGHT"] = dialoop.get_f64([sensor_name, "fit_settings", "weight"])
 
     for pf_name in coils.keys(["pf"]):
