@@ -83,8 +83,7 @@ pub fn solve_grad_shafranov(
         pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (stationary_point_statics, stationary_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         stationary_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    // Note: `dialoop` is not yet used as a constraint; its static Green's functions are computed but not used in the solver
-    let (_dialoop_statics, _dialoop_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+    let (dialoop_statics, dialoop_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
     // TODO: might be better to combine all sensors here, before passing to the solver
@@ -158,6 +157,8 @@ pub fn solve_grad_shafranov(
                 &bp_probes_dynamic[i_time],
                 &flux_loops_static[i_time],
                 &flux_loops_dynamic[i_time],
+                &dialoop_statics[i_time],
+                &dialoop_dynamic[i_time],
                 &rogowski_coils_static[i_time],
                 &rogowski_coils_dynamic[i_time],
                 &isoflux_statics[i_time],
@@ -219,6 +220,6 @@ pub fn solve_grad_shafranov(
     dialoop.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
 
     // Calculate chi_sq_mag for each time slice
-    let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, n_time);
+    let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &dialoop, &rogowski_coils, n_time);
     plasma.results.get_or_insert("global").insert("chi_mag", chi_mag);
 }
