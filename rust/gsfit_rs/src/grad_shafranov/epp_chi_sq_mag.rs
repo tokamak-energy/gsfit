@@ -1,7 +1,13 @@
-use crate::sensors::{BpProbes, FluxLoops, RogowskiCoils};
+use crate::sensors::{BpProbes, Dialoop, FluxLoops, RogowskiCoils};
 use ndarray::{Array1, Array2};
 
-pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coils: &RogowskiCoils, n_time: usize) -> Array1<f64> {
+pub fn epp_chi_sq_mag(
+    bp_probes: &BpProbes,
+    flux_loops: &FluxLoops,
+    dialoop: &Dialoop,
+    rogowski_coils: &RogowskiCoils,
+    n_time: usize,
+) -> Array1<f64> {
     // Loop over all time-slices and calculate `chi_sq_mag`
     let mut chi_sq_mag_result: Array1<f64> = Array1::zeros(n_time);
 
@@ -40,6 +46,25 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
                     let sigma: f64 = flux_loops_expected_value[i_flux_loop] / flux_loops_weight[i_flux_loop];
                     chi_sq_mag_result[i_time] +=
                         (flux_loops_measured[(i_time, i_flux_loop)] - flux_loops_calculated[(i_time, i_flux_loop)]).powi(2) / sigma.powi(2);
+                }
+            }
+        }
+    }
+
+    let dialoop_names: Vec<String> = dialoop.results.keys();
+    let n_dialoop: usize = dialoop_names.len();
+    if n_dialoop > 0 {
+        let dialoop_measured: Array2<f64> = dialoop.results.get("*").get("b").get("measured").get("value").unwrap_array2();
+        let dialoop_calculated: Array2<f64> = dialoop.results.get("*").get("b").get("calculated").get("value").unwrap_array2();
+        let dialoop_weight: Array1<f64> = dialoop.results.get("*").get("fit_settings").get("weight").unwrap_array1();
+        let dialoop_expected_value: Array1<f64> = dialoop.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
+        let dialoop_include: Vec<bool> = dialoop.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
+        for i_time in 0..n_time {
+            for i_dialoop in 0..n_dialoop {
+                if dialoop_include[i_dialoop] {
+                    let sigma: f64 = dialoop_expected_value[i_dialoop] / dialoop_weight[i_dialoop];
+                    chi_sq_mag_result[i_time] +=
+                        (dialoop_measured[(i_time, i_dialoop)] - dialoop_calculated[(i_time, i_dialoop)]).powi(2) / sigma.powi(2);
                 }
             }
         }
