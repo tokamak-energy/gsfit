@@ -29,6 +29,8 @@ pub struct GsSolution<'a> {
     bp_probes_dynamic: &'a SensorsDynamic,
     flux_loops_static: &'a SensorsStatic,
     flux_loops_dynamic: &'a SensorsDynamic,
+    dialoop_static: &'a SensorsStatic,
+    dialoop_dynamic: &'a SensorsDynamic,
     rogowski_coils_static: &'a SensorsStatic,
     rogowski_coils_dynamic: &'a SensorsDynamic,
     isoflux_static: &'a SensorsStatic,
@@ -86,6 +88,8 @@ impl<'a> GsSolution<'a> {
         bp_probes_dynamic: &'a SensorsDynamic,
         flux_loops_static: &'a SensorsStatic,
         flux_loops_dynamic: &'a SensorsDynamic,
+        dialoop_static: &'a SensorsStatic,
+        dialoop_dynamic: &'a SensorsDynamic,
         rogowski_coils_static: &'a SensorsStatic,
         rogowski_coils_dynamic: &'a SensorsDynamic,
         isoflux_static: &'a SensorsStatic,
@@ -113,6 +117,8 @@ impl<'a> GsSolution<'a> {
             bp_probes_dynamic,
             flux_loops_static,
             flux_loops_dynamic,
+            dialoop_static,
+            dialoop_dynamic,
             rogowski_coils_static,
             rogowski_coils_dynamic,
             isoflux_static,
@@ -207,6 +213,8 @@ impl<'a> GsSolution<'a> {
         let bp_probes_dynamic: &SensorsDynamic = self.bp_probes_dynamic;
         let flux_loops_static: &SensorsStatic = self.flux_loops_static;
         let flux_loops_dynamic: &SensorsDynamic = self.flux_loops_dynamic;
+        let dialoop_static: &SensorsStatic = self.dialoop_static;
+        let dialoop_dynamic: &SensorsDynamic = self.dialoop_dynamic;
         let rogowski_coils_static: &SensorsStatic = self.rogowski_coils_static;
         let rogowski_coils_dynamic: &SensorsDynamic = self.rogowski_coils_dynamic;
         let isoflux_static: &SensorsStatic = self.isoflux_static;
@@ -241,6 +249,7 @@ impl<'a> GsSolution<'a> {
         // Constraints
         let n_bp: usize = bp_probes_dynamic.measured.len();
         let n_fl: usize = flux_loops_dynamic.measured.len();
+        let n_dialoop: usize = dialoop_dynamic.measured.len();
         let n_rog: usize = rogowski_coils_dynamic.measured.len();
         let n_isoflux: usize = isoflux_dynamic.measured.len();
         let n_isoflux_boundary: usize = isoflux_boundary_dynamic.measured.len();
@@ -253,6 +262,7 @@ impl<'a> GsSolution<'a> {
         let n_delta_z_regularisation: usize = 0; // initially set to 0 because we don't have previous iteration
         let n_constraints: usize = n_bp
             + n_fl
+            + n_dialoop
             + n_rog
             + n_isoflux
             + n_isoflux_boundary
@@ -273,6 +283,8 @@ impl<'a> GsSolution<'a> {
         let greens_d_flux_loops_dz: Array2<f64> = flux_loops_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_flux_loops_pf: Array2<f64> = flux_loops_static.greens_with_pf.to_owned(); // shape = [n_pf, n_sensors]
         let greens_flux_loops_passives: Array2<f64> = flux_loops_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+
+        let greens_dialoop_grid: Array2<f64> = dialoop_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
 
         let greens_rogowski_coils_grid: Array2<f64> = rogowski_coils_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_d_rogowski_coils_dz: Array2<f64> = rogowski_coils_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
@@ -651,6 +663,34 @@ impl<'a> GsSolution<'a> {
                 // Store weights
                 constraint_weights[i_constraint] =
                     2.0 * PI * flux_loops_static.fit_settings_weight[i_sensor] / flux_loops_static.fit_settings_expected_value[i_sensor];
+
+                // Setup indexer for next sensor or constraint
+                i_constraint += 1;
+            }
+
+            // Add dialoop to fitting matrix
+            for i_sensor in 0..n_dialoop {
+                // p_prime degrees of freedom
+                for i_p_prime_dof in 0..n_p_prime_dof {
+                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
+                        * PI
+                        * d_area
+                        * (&greens_dialoop_grid.slice(s![.., i_sensor])
+                            * &mask_flat
+                            * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
+                            * &flat_r)
+                            .sum();
+                }
+
+
+                
+
+                // Store sensor values
+                s_measured[i_constraint] = dialoop_dynamic.measured[i_sensor];
+
+                // Store weights
+                constraint_weights[i_constraint] =
+                    dialoop_static.fit_settings_weight[i_sensor] / dialoop_static.fit_settings_expected_value[i_sensor];
 
                 // Setup indexer for next sensor or constraint
                 i_constraint += 1;
