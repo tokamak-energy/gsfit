@@ -670,32 +670,48 @@ impl<'a> GsSolution<'a> {
 
             // Add dialoop to fitting matrix
             for i_sensor in 0..n_dialoop {
-                // p_prime degrees of freedom
-                for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_dialoop_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
+
+                // --- FF' degrees of freedom ONLY ---
+                for i_ff_prime_dof in 0..n_ff_prime_dof {
+
+                    // Primitive of ff' basis: F_i(psi)
+                    let f_integral: Array1<f64> =
+                        ff_prime_source_function
+                            .source_function_integral_single_dof(&psi_n_flat, i_ff_prime_dof);
+                    // shape = [n_grid]
+
+                    // Build integrand: F_i(psi) / R * mask
+                    let integrand: Array1<f64> =
+                        &mask_flat * &f_integral / &flat_r;
+
+                    // Perform integral (sum over grid)
+                    let integral: f64 = integrand.sum() * d_area;
+
+                    // Prefactor
+                    let prefactor: f64 =
+                        MU_0 / (2.0 * PI * self.plasma.r0 * self.plasma.bphi0);
+
+                    // Fill fitting matrix
+                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] =
+                        prefactor * integral;
                 }
 
+                // --- NO contributions from:
+                // p_prime
+                // passives
+                // coils
+                // vertical stabilisation
 
-                
-
-                // Store sensor values
+                // Measurement
                 s_measured[i_constraint] = dialoop_dynamic.measured[i_sensor];
 
-                // Store weights
+                // Weight
                 constraint_weights[i_constraint] =
-                    dialoop_static.fit_settings_weight[i_sensor] / dialoop_static.fit_settings_expected_value[i_sensor];
+                    dialoop_static.fit_settings_weight[i_sensor]
+                    / dialoop_static.fit_settings_expected_value[i_sensor];
 
-                // Setup indexer for next sensor or constraint
                 i_constraint += 1;
-            }
-
+}
             // Add rogowski_coils to fitting matrix
             for i_sensor in 0..n_rog {
                 // p_prime degrees of freedom
