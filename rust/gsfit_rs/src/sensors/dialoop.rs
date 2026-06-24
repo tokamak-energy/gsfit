@@ -1,5 +1,6 @@
 use crate::Plasma;
 use crate::coils::Coils;
+use crate::greens::Greens;
 use crate::passives::Passives;
 use crate::sensors::static_and_dynamic_data_types::{create_empty_sensor_data, SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
@@ -120,11 +121,6 @@ impl Dialoop {
 
         for sensor_name in self.results.keys() {
             for pf_coil_name in coils_local.results.get("pf").keys() {
-                let coil_r: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
-                let coil_z: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
-
-                // TODO: Calculate the diamagnetic flux response to each PF coil
-                // For now, store zero (dialoop Green's with coils not yet implemented)
                 let g: f64 = 0.0;
 
                 // Store
@@ -149,8 +145,6 @@ impl Dialoop {
                 let dof_names: Vec<String> = dof_accumulator.keys();
 
                 for dof_name in dof_names {
-                    // TODO: Calculate the diamagnetic flux response to each passive DOF
-                    // For now, store zero (dialoop Green's with passives not yet implemented)
                     let g: f64 = 0.0;
 
                     // Store
@@ -166,6 +160,31 @@ impl Dialoop {
     }
 
     /// Compute the Green's functions with the plasma
+    ///
+    /// # Physics
+    ///
+    /// The diamagnetic flux loop measures the difference between actual toroidal flux and
+    /// vacuum toroidal field, integrated over the poloidal cross-section (Moret Eq. 41):
+    ///
+    /// Φ_t = ∫ (f - R₀B_φ₀) / R dR dZ
+    ///
+    /// where f = R B_φ is the toroidal flux function, B_φ₀ is the vacuum toroidal field at reference radius R₀,
+    /// and the integral is over the poloidal plane.
+    ///
+    /// Using the Grad-Shafranov solution with the small diamagnetism approximation, the plasma
+    /// contribution becomes linear in the source terms (Moret Eq. 43):
+    ///
+    /// Φ_t ≈ ∑_i ff'_dof[i] ( μ₀ / (2πR₀B_φ₀) ) ∫ ff'_source_fn_integral_i(ψ(R,Z)) / R dR dZ
+    ///
+    /// where ff'_source_fn_integral_i(ψ) is a primitive of the ff' source function g_i(ψ),
+    /// with ff'_source_fn_integral_i = 0 outside plasma.
+    /// ff'_dof[i] is the value of the i-th degree of freedom of the ff' source function.
+    ///
+    /// # Implementation
+    ///
+    /// We compute the psi Green's matrix G(R_sensor, Z_sensor; R_plasma, Z_plasma) via
+    /// `Greens::sensor_to_conductor()`, then sum across all plasma grid points (Axis(0))
+    /// to get the integrated Green's function vector for each sensor.
     fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
         // Change Python type into Rust
         let plasma_local: &Plasma = &plasma;
@@ -174,16 +193,25 @@ impl Dialoop {
         let plasma_z: Array1<f64> = plasma_local.results.get("grid").get("flat").get("z").unwrap_array1();
 
         for sensor_name in self.results.keys() {
-            // TODO: Calculate the diamagnetic flux Green's function over the plasma domain
-            // The diamagnetic flux is integrated as:
-            //   Φ_t = (μ₀ / 2π r₀ B_φ0) ∫_Ωp G_g(ψ(r,z)) r dr dz
-            // where G_g is a primitive of the source function base function
-            // For now, store zero array (dialoop Green's with plasma not yet implemented)
-            let g_with_plasma: Array1<f64> = Array1::zeros(plasma_r.len());
+            let sensor_r: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("r").unwrap_array1();
+            let sensor_z: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("z").unwrap_array1();
+
+            let greens_calculator: Greens = Greens::sensor_to_conductor(
+                sensor_r.clone(),
+                sensor_z.clone(),
+                plasma_r.clone(),
+                plasma_z.clone(),
+                plasma_r.clone() * 0.0, // TODO: should I set these to NaN?
+                plasma_z.clone() * 0.0,
+            );
+
+            let g_psi_matrix: Array2<f64> = greens_calculator.psi();
+            let g_with_plasma: Array1<f64> = g_psi_matrix.sum_axis(Axis(0));
             self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_with_plasma);
 
             // Vertical stability: derivative with respect to z
-            let g_d_plasma_d_z: Array1<f64> = Array1::zeros(plasma_r.len());
+            let d_psi_d_z: Array2<f64> = greens_calculator.d_psi_d_z();
+            let g_d_plasma_d_z: Array1<f64> = d_psi_d_z.sum_axis(Axis(0));
             self.results
                 .get_or_insert(&sensor_name)
                 .get_or_insert("greens")
@@ -268,7 +296,7 @@ impl Dialoop {
 
         // Sensor names
         let sensor_names_all: Vec<String> = self.results.keys();
-        let n_sensors_all: usize = sensor_names_all.len();
+        let _n_sensors_all: usize = sensor_names_all.len();
         // Down select sensor names
         let sensor_names: Vec<String> = include_indices.iter().map(|&index| sensor_names_all[index].clone()).collect();
         let n_sensors: usize = sensor_names.len();
@@ -290,53 +318,16 @@ impl Dialoop {
         let fit_settings_expected_value: Array1<f64> = fit_settings_expected_value.select(Axis(0), &include_indices);
 
         // Greens
-        // With PF coils
-        let greens_with_pf: Array2<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array2(); // shape = [n_pf, n_sensors]
-        let greens_with_pf: Array2<f64> = greens_with_pf.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_pf, n_sensors]
+        // With PF coils: dialoop is not constrained by PF coil currents, so this is zero.
+        let greens_with_pf: Array2<f64> = Array2::zeros((0, n_sensors));
         // With plasma
         let greens_with_grid: Array2<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array2(); // shape = [n_z * n_r, n_sensors]
         let greens_with_grid: Array2<f64> = greens_with_grid.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_z * n_r, n_sensors]
-        // With d_sensor_dz (for vertical stability)
-        let greens_d_sensor_dz: Array2<f64> = self.results.get("*").get("greens").get("d_plasma_d_z").unwrap_array2(); // shape = [n_z * n_r, n_sensors]
-        let greens_d_sensor_dz: Array2<f64> = greens_d_sensor_dz.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_z * n_r, n_sensors]
+        // With d_sensor_dz (for vertical stability): dialoop is not used for vertical feedback, so this is zero.
+        let greens_d_sensor_dz: Array2<f64> = Array2::zeros((0, n_sensors));
 
-        // With passives
-        let passive_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").keys();
-        let n_passives: usize = passive_names.len();
-
-        // Count the number of degrees of freedom
-        let mut n_dof_total: usize = 0;
-        for passive_name in &passive_names {
-            let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys();
-            n_dof_total += dof_names.len();
-        }
-
-        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_dof_total, n_sensors), f64::NAN);
-
-        // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
-        for i_sensor in 0..n_sensors {
-            let mut i_dof_total: usize = 0;
-            for i_passive in 0..n_passives {
-                let passive_name: &str = &passive_names[i_passive];
-                let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                for dof_name in &dof_names {
-                    greens_with_passives[(i_dof_total, i_sensor)] = self
-                        .results
-                        .get(&sensor_names[i_sensor])
-                        .get("greens")
-                        .get("passives")
-                        .get(passive_name)
-                        .get(dof_name)
-                        .unwrap_f64();
-
-                    // Store the name
-                    // dof_names_total[i_dof_total] = dof_name;
-
-                    // Keep count
-                    i_dof_total += 1;
-                }
-            }
-        }
+        // With passives: dialoop is not constrained by passive currents, so this is zero.
+        let greens_with_passives: Array2<f64> = Array2::zeros((0, n_sensors));
 
         // Create the `DialoopStatic` data
         let results_static: SensorsStatic = SensorsStatic {
@@ -403,8 +394,31 @@ impl Dialoop {
 
     /// Calculate the sensor values
     pub fn calculate_sensor_values_rs(&mut self, _coils: &Coils, _passives: &Passives, _plasma: &Plasma) {
-        // TODO: Implement the diamagnetic flux calculation from the reconstructed equilibrium
-        // using the Green's functions computed by greens_with_coils(), greens_with_passives(), and greens_with_plasma()
-        for _sensor_name in self.results.keys() {}
+        let plasma: &Plasma = _plasma;
+        let j_2d: Array3<f64> = plasma.results.get("two_d").get("j").unwrap_array3();
+        let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
+        let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
+        let n_time: usize = time.len();
+
+        for sensor_name in self.results.keys() {
+            let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1();
+
+            let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+            for i_time in 0..n_time {
+                let j_2d_flat: Array1<f64> = Array1::from_iter(j_2d.slice(s![i_time, .., ..]).iter().copied());
+                sensor_values[i_time] = (&g_with_plasma * j_2d_flat).sum() * d_area;
+            }
+
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("calculated")
+                .insert("value", sensor_values);
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("calculated")
+                .insert("time", time.clone());
+        }
     }
 }
