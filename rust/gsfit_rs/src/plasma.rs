@@ -6,7 +6,7 @@ use crate::plasma_geometry::MarchingContour;
 use crate::plasma_geometry::marching_squares::marching_squares;
 use crate::plasma_geometry::marching_squares_for_sol::marching_squares_for_sol;
 use crate::source_functions::SourceFunctionTraits;
-use crate::source_functions::{EfitPolynomial, LiuqePolynomial, TensionedCubicBSpline};
+use crate::source_functions::{EfitPolynomial, TensionedCubicBSpline};
 use contour::ContourBuilder;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::Area;
@@ -97,11 +97,6 @@ impl Plasma {
                             regularisations: efit.regularisations.clone(),
                             dof_values: efit.dof_values.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
-                    } else if let Ok(liuqe) = obj.extract::<PyRef<LiuqePolynomial>>(py) {
-                        Ok(Arc::new(LiuqePolynomial {
-                            n_dof: liuqe.n_dof,
-                            regularisations: liuqe.regularisations.clone(),
-                        }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else if let Ok(cubic_bspline) = obj.extract::<PyRef<TensionedCubicBSpline>>(py) {
                         Ok(Arc::new(TensionedCubicBSpline {
                             n_dof: cubic_bspline.n_dof,
@@ -138,11 +133,6 @@ impl Plasma {
                             n_dof: efit.n_dof,
                             regularisations: efit.regularisations.clone(),
                             dof_values: efit.dof_values.clone(),
-                        }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
-                    } else if let Ok(liuqe) = obj.extract::<PyRef<LiuqePolynomial>>(py) {
-                        Ok(Arc::new(LiuqePolynomial {
-                            n_dof: liuqe.n_dof,
-                            regularisations: liuqe.regularisations.clone(),
                         }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
                     } else if let Ok(cubic_bspline) = obj.extract::<PyRef<TensionedCubicBSpline>>(py) {
                         Ok(Arc::new(TensionedCubicBSpline {

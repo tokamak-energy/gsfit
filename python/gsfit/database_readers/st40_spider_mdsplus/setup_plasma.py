@@ -33,8 +33,8 @@ def setup_plasma(
     initial_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["z_cur"]
 
     # Set the source functions types
-    p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
-    ff_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
+    p_prime_source_function: gsfit_rs.EfitPolynomial
+    ff_prime_source_function: gsfit_rs.EfitPolynomial
 
     if settings["source_function_p_prime.json"]["method"] == "efit_polynomial":
         n_dof = settings["source_function_p_prime.json"]["efit_polynomial"]["n_dof"]
@@ -44,14 +44,6 @@ def setup_plasma(
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
         p_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
-    elif settings["source_function_p_prime.json"]["method"] == "liuqe_polynomial":
-        n_dof = settings["source_function_p_prime.json"]["efit_polynomial"]["n_dof"]
-        regularisations = np.array(settings["source_function_p_prime.json"]["efit_polynomial"]["regularizations"])
-        # If `regularisations` is [[]] in the json file, will be interpreted by numpy as having size (1, 0).
-        # Which would be interpreted as (n_regularisations, n_dof). So it would cause an error
-        if regularisations.shape == (1, 0):
-            regularisations = np.zeros((0, n_dof), dtype=np.float64)
-        p_prime_source_function = gsfit_rs.LiuqePolynomial(n_dof, regularisations)
     else:
         raise ValueError(f"Unknown method for p_prime source function: {settings['source_function_p_prime.json']['method']}")
 
@@ -63,15 +55,7 @@ def setup_plasma(
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
         ff_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
-    elif settings["source_function_ff_prime.json"]["method"] == "liuqe_polynomial":
-        n_dof = settings["source_function_ff_prime.json"]["efit_polynomial"]["n_dof"]
-        regularisations = np.array(settings["source_function_ff_prime.json"]["efit_polynomial"]["regularizations"])
-        # If `regularisations` is [[]] in the json file, will be interpreted by numpy as having size (1, 0).
-        # Which would be interpreted as (n_regularisations, n_dof). So it would cause an error
-        if regularisations.shape == (1, 0):
-            regularisations = np.zeros((0, n_dof), dtype=np.float64)
-        ff_prime_source_function = gsfit_rs.LiuqePolynomial(n_dof, regularisations)
-
+    
     # Grid size and shape
     n_r = settings["GSFIT_code_settings.json"]["grid"]["n_r"]
     n_z = settings["GSFIT_code_settings.json"]["grid"]["n_z"]
@@ -159,17 +143,17 @@ def setup_plasma(
 #     initial_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["z_cur"]
 
 #     # Set the source functions types
-#     p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
-#     ff_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.LiuqePolynomial
+#     p_prime_source_function: gsfit_rs.EfitPolynomial
+#     ff_prime_source_function: gsfit_rs.EfitPolynomial
 
 #     if settings["source_function_p_prime.json"]["method"] == "efit_polynomial":
 #         n_dof = settings["source_function_p_prime.json"]["efit_polynomial"]["n_dof"]
 #         regularisations = np.array(settings["source_function_p_prime.json"]["efit_polynomial"]["regularizations"])
 #         p_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
-#     elif settings["source_function_p_prime.json"]["method"] == "liuqe_polynomial":
+#     elif settings["source_function_p_prime.json"]["method"] == "efit_polynomial":
 #         n_dof = settings["source_function_p_prime.json"]["efit_polynomial"]["n_dof"]
 #         regularisations = np.array(settings["source_function_p_prime.json"]["efit_polynomial"]["regularizations"])
-#         p_prime_source_function = gsfit_rs.LiuqePolynomial(n_dof, regularisations)
+#         p_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
 #     else:
 #         raise ValueError(f"Unknown method for p_prime source function: {settings['source_function_p_prime.json']['method']}")
 
@@ -177,10 +161,10 @@ def setup_plasma(
 #         n_dof = settings["source_function_ff_prime.json"]["efit_polynomial"]["n_dof"]
 #         regularisations = np.array(settings["source_function_ff_prime.json"]["efit_polynomial"]["regularizations"])
 #         ff_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
-#     elif settings["source_function_ff_prime.json"]["method"] == "liuqe_polynomial":
+#     elif settings["source_function_ff_prime.json"]["method"] == "efit_polynomial":
 #         n_dof = settings["source_function_ff_prime.json"]["efit_polynomial"]["n_dof"]
 #         regularisations = np.array(settings["source_function_ff_prime.json"]["efit_polynomial"]["regularizations"])
-#         ff_prime_source_function = gsfit_rs.LiuqePolynomial(n_dof, regularisations)
+#         ff_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
 
 #     # Grid size and shape
 #     n_r = settings["GSFIT_code_settings.json"]["grid"]["n_r"]
