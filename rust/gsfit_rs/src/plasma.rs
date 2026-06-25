@@ -874,8 +874,8 @@ impl Plasma {
         // Magnetic axis
         let mut r_mag: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         let mut z_mag: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
-        // Total toroidal flux
-        let mut flux_tor: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+        // Diamagnetic toroidal flux
+        let mut flux_dia: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
 
         let mut xpt_diverted: Vec<bool> = Vec::with_capacity(n_time);
 
@@ -1109,7 +1109,7 @@ impl Plasma {
             let f_profile_vacuum: Array1<f64> = 0.0 * &f_profile_local + MU_0 * i_rod[i_time] / (2.0 * PI);
             let q_profile_vacuum: Array1<f64> = epp_q_profile(&gs_solutions[i_time], &flux_surfaces, &f_profile_vacuum, &r, &z);
             let flux_tor_profile_vacuum: Array1<f64> = epp_flux_toroidal_profile(&q_profile_vacuum, &psi_profile_this_time);
-            flux_tor[i_time] = flux_tor_profile_this_time_slice.last().unwrap().to_owned() - flux_tor_profile_vacuum.last().unwrap().to_owned();
+            flux_dia[i_time] = flux_tor_profile_this_time_slice.last().unwrap().to_owned() - flux_tor_profile_vacuum.last().unwrap().to_owned();
 
             let rho_tor_profile_this_time_slice: Array1<f64> = epp_rho_tor_profile(&flux_tor_profile_this_time_slice);
             rho_tor_profile.slice_mut(s![i_time, ..]).assign(&rho_tor_profile_this_time_slice);
@@ -1243,7 +1243,7 @@ impl Plasma {
         self.results.get_or_insert("global").insert("z_geo", z_geo);
         self.results.get_or_insert("global").insert("r_mag", r_mag);
         self.results.get_or_insert("global").insert("z_mag", z_mag);
-        self.results.get_or_insert("global").insert("phi_dia", flux_tor);
+        self.results.get_or_insert("global").insert("phi_dia", flux_dia);
         self.results.get_or_insert("global").insert("n_iter", n_iter);
         self.results.get_or_insert("global").insert("plasma_volume", plasma_volume);
         self.results.get_or_insert("global").insert("v_loop", v_loop);
