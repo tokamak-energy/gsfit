@@ -1462,28 +1462,43 @@ fn epp_bt_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_rod: 
         bt_vac_2d_now.slice_mut(s![i_z, ..]).assign(&bt_vac_vs_r);
     }
 
+    // ψ_N = (ψ_A − ψ) / (ψ_A − ψ_B), so:
+    //   ψ = ψ_A − (ψ_A − ψ_B)·ψ_N
+    //   dψ/dψ_N = ψ_B − ψ_A
+    //
     // Outside the plasma:
-    // BT(R) = i_rod * MU_0 / (2 * PI * R)
+    //   B_T(R) = μ₀·I_rod / (2π·R)
+    //
     // Inside the plasma:
-    // BT(R) = f/R
-    // where `f` comes from the integral of `ff_prime`
-    // f = 1/2*int(ff_prime) + constant_of_integration
-    // `constant_of_integration` set so that BT at plasma boundary = vacuum BT
-    let f_boundary: f64 = i_rod * MU_0 / (2.0 * PI);
+    //   B_T(R) = f(ψ) / R
+    // where f is defined by the identity:
+    //   f²/2 = ∫_{ψ_B}^{ψ} ff′(ψ′) dψ′ + f_vac²/2
+    // with f_vac = μ₀·I_rod / (2π), which ensures f = f_vac at the boundary (ψ_N = 1).
+    //
+    // Changing integration variable to ψ_N:
+    //   f²/2 = (ψ_B − ψ_A) · ∫_1^{ψ_N} ff′(ψ_N′) dψ_N′ + f_vac²/2
+    //
+    // Rearranging:
+    //   f² = f_vac² + 2·(ψ_B − ψ_A) · ∫_1^{ψ_N} ff′(ψ_N′) dψ_N′
+    //   f  = √( f_vac² + 2·(ψ_B − ψ_A) · ∫_1^{ψ_N} ff′(ψ_N′) dψ_N′ )
+    //
+    // Note: `source_function_integral` integrates from 1 to ψ_N, so it is zero at ψ_N = 1
+    // and we recover f = f_vac at the boundary as required.
+    let f_vac: f64 = i_rod * MU_0 / (2.0 * PI);
 
-    // d(psi)/d(psi_n)
-    let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
+    // dψ/dψ_N = ψ_B − ψ_A
+    let d_psi_d_psi_n: f64 = psi_b - psi_a;
 
     for i_z in 0..n_z {
         for i_r in 0..n_r {
             if mask[(i_z, i_r)] > 0.99 {
-                // Integrate the source function
-                let f_unnormalise: f64 = gs_solution
+                // ∫_1^{ψ_N} ff′(ψ_N′) dψ_N′
+                let ff_prime_integral: f64 = gs_solution
                     .ff_prime_source_function
                     .source_function_integral(&Array1::from_vec(vec![psi_n_2d[(i_z, i_r)]]), &ff_prime_dof_values)[0];
 
-                // Calculate the poloidal flux function, f
-                let f_at_this_rz: f64 = f_unnormalise / d_psi_d_psi_n + f_boundary;
+                // f = √( f_vac² + 2·(dψ/dψ_N)·∫_1^{ψ_N} ff′ dψ_N′ )
+                let f_at_this_rz: f64 = (f_vac * f_vac + 2.0 * d_psi_d_psi_n * ff_prime_integral).sqrt();
 
                 // Toroidal field
                 bt_2d_now[(i_z, i_r)] = f_at_this_rz / r[i_r];
@@ -1506,23 +1521,28 @@ fn epp_f_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_
 
     let ff_prime_dof_values: Array1<f64> = gs_solution.ff_prime_dof_values.to_owned();
 
-    // f(psi_n) = R * BT(R)
-    // BT(R) = i_rod * MU_0 / (2 * PI * R)
-    // f_boundary = i_rod * MU_0 / (2 * PI)
-    // Constant of integration set so that BT at plasma boundary = vacuum BT
-    let f_boundary: f64 = i_rod * MU_0 / (2.0 * PI);
+    // f(ψ) = R·B_T(R) is the poloidal-current function.
+    // It satisfies:
+    //   f²/2 = ∫_{ψ_B}^{ψ} ff′(ψ′) dψ′ + f_vac²/2
+    // where f_vac = μ₀·I_rod / (2π) ensures f = f_vac at the boundary (ψ_N = 1).
+    //
+    // ψ_N = (ψ_A − ψ) / (ψ_A − ψ_B), so dψ/dψ_N = ψ_B − ψ_A.
+    // Changing variable to ψ_N:
+    //   f² = f_vac² + 2·(ψ_B − ψ_A) · ∫_1^{ψ_N} ff′(ψ_N′) dψ_N′
+    //   f  = √( f_vac² + 2·(dψ/dψ_N) · ∫_1^{ψ_N} ff′(ψ_N′) dψ_N′ )
+    let f_vac: f64 = i_rod * MU_0 / (2.0 * PI);
 
-    // d(psi)/d(psi_n)
-    let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
+    // dψ/dψ_N = ψ_B − ψ_A
+    let d_psi_d_psi_n: f64 = psi_b - psi_a;
 
     for i_psi_n in 0..n_psi_n {
-        // Integrate the source function
-        let f_local: f64 = gs_solution
+        // ∫_1^{ψ_N} ff′(ψ_N′) dψ_N′
+        let ff_prime_integral: f64 = gs_solution
             .ff_prime_source_function
             .source_function_integral(&Array1::from_vec(vec![psi_n[i_psi_n]]), &ff_prime_dof_values)[0];
 
-        // Apply the mask, and store pressure
-        f_profile[i_psi_n] = f_local / d_psi_d_psi_n + f_boundary;
+        // f = √( f_vac² + 2·(dψ/dψ_N)·∫_1^{ψ_N} ff′ dψ_N′ )
+        f_profile[i_psi_n] = (f_vac * f_vac + 2.0 * d_psi_d_psi_n * ff_prime_integral).sqrt();
     }
 
     return f_profile;
@@ -1771,8 +1791,9 @@ fn epp_mid_plane_p_profile(
 
     let p_prime_dof_values: Array1<f64> = gs_solution.p_prime_dof_values.to_owned();
 
-    // d(psi)/d(psi_n)
-    let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
+    // p = (dψ/dψ_N) · ∫_1^{ψ_N} p′(ψ_N′) dψ_N′,  where  dψ/dψ_N = ψ_B − ψ_A
+    // See epp_p_profile for the full derivation.
+    let d_psi_d_psi_n: f64 = psi_b - psi_a;
 
     // TODO: change this to a slice
     for i_r in 0..n_r {
@@ -1783,7 +1804,7 @@ fn epp_mid_plane_p_profile(
             .source_function_integral(&Array1::from_vec(vec![psi_n_here]), &p_prime_dof_values)[0];
 
         // Apply the mask, and store pressure
-        p_profile[i_r] = pressure_local * mask_2d[(i_z_centre, i_r)] / d_psi_d_psi_n;
+        p_profile[i_r] = pressure_local * mask_2d[(i_z_centre, i_r)] * d_psi_d_psi_n;
     }
 
     return p_profile;
@@ -1802,8 +1823,9 @@ fn epp_p_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>) -> Array
     let psi_a: f64 = gs_solution.psi_a;
     let psi_b: f64 = gs_solution.psi_b;
 
-    // d(psi)/d(psi_n)
-    let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
+    // p = (dψ/dψ_N) · ∫_1^{ψ_N} p′(ψ_N′) dψ_N′,  where  dψ/dψ_N = ψ_B − ψ_A
+    // See epp_p_profile for the full derivation.
+    let d_psi_d_psi_n: f64 = psi_b - psi_a;
 
     let p_prime_dof_values: Array1<f64> = gs_solution.p_prime_dof_values.to_owned();
 
@@ -1817,7 +1839,7 @@ fn epp_p_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>) -> Array
             let pressure_local: f64 = pressure_local_ndarray[0];
 
             // Apply the mask, and store pressure
-            p_2d[(i_z, i_r)] = pressure_local * mask_2d[(i_z, i_r)] / d_psi_d_psi_n;
+            p_2d[(i_z, i_r)] = pressure_local * mask_2d[(i_z, i_r)] * d_psi_d_psi_n;
         }
     }
 
@@ -1851,11 +1873,21 @@ fn epp_hessian_matrix(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>
 fn epp_p_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_b: f64) -> Array1<f64> {
     let p_prime_dof_values: Array1<f64> = gs_solution.p_prime_dof_values.to_owned();
 
-    // d(psi)/d(psi_n)
-    let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
+    // ψ_N = (ψ_A − ψ) / (ψ_A − ψ_B), so:
+    //   ψ = ψ_A − (ψ_A − ψ_B)·ψ_N
+    //   dψ/dψ_N = ψ_B − ψ_A
+    //
+    // Pressure is zero at the boundary (ψ_N = 1) and satisfies:
+    //   p(ψ) = ∫_{ψ_B}^{ψ} p′(ψ′) dψ′
+    //        = ∫_1^{ψ_N} p′(ψ_N′) · (dψ/dψ_N) dψ_N′
+    //        = (ψ_B − ψ_A) · ∫_1^{ψ_N} p′(ψ_N′) dψ_N′
+    // Note: `source_function_integral` integrates from 1 to ψ_N and is zero at ψ_N = 1.
 
-    // Integrate the source function
-    let p_profile: Array1<f64> = gs_solution.p_prime_source_function.source_function_integral(psi_n, &p_prime_dof_values) / d_psi_d_psi_n;
+    // dψ/dψ_N = ψ_B − ψ_A
+    let d_psi_d_psi_n: f64 = psi_b - psi_a;
+
+    // p = (dψ/dψ_N) · ∫_1^{ψ_N} p′(ψ_N′) dψ_N′
+    let p_profile: Array1<f64> = gs_solution.p_prime_source_function.source_function_integral(psi_n, &p_prime_dof_values) * d_psi_d_psi_n;
 
     p_profile
 }
