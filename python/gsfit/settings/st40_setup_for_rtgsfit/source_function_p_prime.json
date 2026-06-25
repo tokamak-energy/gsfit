@@ -1,12 +1,12 @@
 {
-  "method": "efit_polynomial",
-  "efit_polynomial": {
-    "n_dof": 1,
-    "regularizations": [
-      []
-    ]
-  },
-  "spline": {
-    "n_dof": 2
-  }
+    "method": "efit_polynomial",
+    "efit_polynomial": {
+        "n_dof": 1,
+        "regularizations": [
+            []
+        ]
+    },
+    "spline": {
+        "n_dof": 2
+    }
 }
