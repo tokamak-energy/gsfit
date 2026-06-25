@@ -284,8 +284,6 @@ impl<'a> GsSolution<'a> {
         let greens_flux_loops_pf: Array2<f64> = flux_loops_static.greens_with_pf.to_owned(); // shape = [n_pf, n_sensors]
         let greens_flux_loops_passives: Array2<f64> = flux_loops_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
 
-        let greens_dialoop_grid: Array2<f64> = dialoop_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-
         let greens_rogowski_coils_grid: Array2<f64> = rogowski_coils_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_d_rogowski_coils_dz: Array2<f64> = rogowski_coils_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_rogowski_coils_pf: Array2<f64> = rogowski_coils_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
@@ -669,49 +667,48 @@ impl<'a> GsSolution<'a> {
             }
 
             // Add dialoop to fitting matrix
+            //
+            // The diamagnetic flux loop measures the difference between the actual toroidal flux
+            // and the vacuum toroidal flux, integrated over the poloidal cross-section (Moret Eq. 41):
+            //
+            //     Phi_t = integral( (f - f_boundary) / R ) dR dZ
+            //
+            // where:
+            //   f          = R * B_phi       is the toroidal flux function inside the plasma
+            //   f_boundary = R0 * B_phi0     is the vacuum value (constant on the boundary)
+            //
+            // In gsfit, `f` is reconstructed from the ff' source function exactly as in `epp_bt_2d`:
+            //
+            //     f - f_boundary = (psi_b - psi_a) * sum_i ff'_dof[i] * ff'_integral_i(psi_n)
+            //
+            // so the vacuum term `f_boundary` (and hence `i_rod` / `R0 * B_phi0`) cancels and the
+            // dialoop response is linear in the ff' degrees of freedom only (no p', no passives,
+            // no coils, no vertical stabilisation, no Green's functions):
+            //
+            //     T_tg[i] = (psi_b - psi_a) * dA * sum_grid [ mask * ff'_integral_i(psi_n) / R ]
+            //
+            // where `ff'_integral_i(psi_n)` is the primitive of the i-th ff' basis function
+            // (zero outside the plasma).
+            let d_psi: f64 = psi_b - psi_a;
             for i_sensor in 0..n_dialoop {
-
-                // --- FF' degrees of freedom ONLY ---
+                // ff_prime degrees of freedom only
                 for i_ff_prime_dof in 0..n_ff_prime_dof {
-
-                    // Primitive of ff' basis: F_i(psi)
-                    let f_integral: Array1<f64> =
-                        ff_prime_source_function
-                            .source_function_integral_single_dof(&psi_n_flat, i_ff_prime_dof);
-                    // shape = [n_grid]
-
-                    // Build integrand: F_i(psi) / R * mask
-                    let integrand: Array1<f64> =
-                        &mask_flat * &f_integral / &flat_r;
-
-                    // Perform integral (sum over grid)
-                    let integral: f64 = integrand.sum() * d_area;
-
-                    // Prefactor
-                    let prefactor: f64 =
-                        MU_0 / (2.0 * PI * self.plasma.r0 * self.plasma.bphi0);
-
-                    // Fill fitting matrix
-                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] =
-                        prefactor * integral;
+                    let ff_prime_integral: Array1<f64> = ff_prime_source_function.source_function_integral_single_dof(&psi_n_flat, i_ff_prime_dof);
+                    let integrand: Array1<f64> = &mask_flat * &ff_prime_integral / &flat_r;
+                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = d_psi * d_area * integrand.sum();
                 }
 
-                // --- NO contributions from:
-                // p_prime
-                // passives
-                // coils
-                // vertical stabilisation
-
-                // Measurement
+                // Store sensor value
                 s_measured[i_constraint] = dialoop_dynamic.measured[i_sensor];
 
-                // Weight
+                // Store weights
                 constraint_weights[i_constraint] =
-                    dialoop_static.fit_settings_weight[i_sensor]
-                    / dialoop_static.fit_settings_expected_value[i_sensor];
+                    dialoop_static.fit_settings_weight[i_sensor] / dialoop_static.fit_settings_expected_value[i_sensor];
 
+                // Setup indexer for next sensor or constraint
                 i_constraint += 1;
-}
+            }
+
             // Add rogowski_coils to fitting matrix
             for i_sensor in 0..n_rog {
                 // p_prime degrees of freedom
