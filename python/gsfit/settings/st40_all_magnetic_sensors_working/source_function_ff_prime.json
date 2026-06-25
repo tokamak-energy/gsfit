@@ -1,26 +1,67 @@
 {
-    "method": "efit_polynomial",
-    "efit_polynomial": {
-        "n_dof": 2,
-        "regularizations": [
-            [0.0, 177.734375009]
-        ]
-    },
-    "liuqe_polynomial": {
-        "n_dof": 2,
-        "regularizations": [
-            [0.0, 177.734375009]
-        ]
-    },
-    "tensioned_cubic_b_spline": {
-        "regularizations": [
-            [0.0, 177.734375009, 0.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 1e+10, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 1e+10, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 0.0, 1e+10, 0.0],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 1e+10]
-        ],
-        "interior_knots": [0.25, 0.5, 0.75],
-        "interval_tensions": [1.0, 1.0, 1.0, 1.0]
-    }
+  "method": "efit_polynomial",
+  "efit_polynomial": {
+    "n_dof": 2,
+    "regularizations": [
+      [
+        0.0,
+        177.734375009
+      ]
+    ]
+  },
+  "tensioned_cubic_b_spline": {
+    "regularizations": [
+      [
+        0.0,
+        177.734375009,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1E+10,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1E+10,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1E+10,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1E+10
+      ]
+    ],
+    "interior_knots": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "interval_tensions": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  }
 }

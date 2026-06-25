@@ -4,16 +4,7 @@
     "regularizations": [
       [
         0.0,
-        4.467344e-05
-      ]
-    ]
-  },
-  "liuqe_polynomial": {
-    "n_dof": 2,
-    "regularizations": [
-      [
-        0.0,
-        4.467344e-05
+        0.00004467344
       ]
     ]
   },
