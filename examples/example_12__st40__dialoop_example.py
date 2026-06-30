@@ -15,7 +15,7 @@ gsfit_controller = Gsfit(
 )
 gsfit_controller.settings["sensor_weights_dialoop.json"]["DIALOOP"]["fit_settings"]["weight"] = 1e2
 gsfit_controller.settings["sensor_weights_dialoop.json"]["DIALOOP"]["fit_settings"]["include"] = True
-# Need to lower 
+# Need to lower time_end from 250ms to 249ms since DIALOOP doesn't have data at 250ms
 gsfit_controller.settings["GSFIT_code_settings.json"]["timeslices"]["arange"]["time_end"] = 249.0e-3
 
 # Run
