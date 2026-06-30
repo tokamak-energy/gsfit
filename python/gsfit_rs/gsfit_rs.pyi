@@ -68,6 +68,7 @@ def solve_grad_shafranov(
     isoflux_boundary: IsofluxBoundary,
     pressure_sensors: Pressure,
     stationary_point: StationaryPoint,
+    dialoop: Dialoop,
     times_to_reconstruct: npt.NDArray[np.float64],
     n_iter_max: int,
     n_iter_min: int,
@@ -87,6 +88,7 @@ def solve_grad_shafranov(
     :param isoflux_boundary: IsofluxBoundary object, note this is mutated and contains the solution
     :param pressure_sensors: Pressure object, note this is mutated and contains the solution
     :param stationary_point: StationaryPoint object, note this is mutated and contains the solution
+    :param dialoop: Dialoop object, note this is mutated and contains the solution
     :param times_to_reconstruct: Times to reconstruct [second]
     :param n_iter_max: Maximum number of iterations
     :param n_iter_min: Minimum number of iterations
@@ -611,8 +613,8 @@ class Dialoop(DataTreeAccessor):
     def add_sensor(
         cls,
         name: str,
-        geometry_r: float,
-        geometry_z: float,
+        r: npt.NDArray[np.float64],
+        z: npt.NDArray[np.float64],
         fit_settings_comment: str,
         fit_settings_expected_value: float,
         fit_settings_include: bool,
@@ -620,24 +622,10 @@ class Dialoop(DataTreeAccessor):
         time: npt.NDArray[np.float64],
         measured: npt.NDArray[np.float64],
     ) -> None: ...
-    # def greens_with_coils(
-    #     cls,
-    #     coils: "Coils",
-    # ) -> None: ...
-    # def greens_with_passives(
-    #     cls,
-    #     coils: "Passives",
-    # ) -> None: ...
-    # def greens_with_plasma(
-    #     cls,
-    #     plasma: "Plasma",
-    # ) -> None: ...
-    # def calculate_sensor_values(
-    #     cls,
-    #     coils: "Coils",
-    #     passives: "Passives",
-    #     plasma: "Plasma",
-    # ) -> None: ...
+    def calculate_sensor_values(
+        cls,
+        plasma: "Plasma",
+    ) -> None: ...
 
 class EfitPolynomial(DataTreeAccessor):
     def __new__(
