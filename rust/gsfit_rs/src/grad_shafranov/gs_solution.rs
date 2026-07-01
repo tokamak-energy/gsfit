@@ -682,10 +682,16 @@ impl<'a> GsSolution<'a> {
             //     f = sqrt( f_vac^2 + 2*(psi_b - psi_a)*G ),   G = sum_i ff'_dof[i]*ff'_integral_i(psi_n)
             // and f_vac = R0*B_phi0 = MU_0*i_rod/(2*PI).
             //
-            // Linearising for small diamagnetism (|f - f_vac| << f_vac):
+            // Linearising for small diamagnetism (|f - f_vac| << |f_vac|):
             //     f - f_vac ~= (psi_b - psi_a) * G / f_vac
             // so the response is linear in the ff' degrees of freedom:
             //     T[i] = ((psi_b - psi_a) / f_vac) * dA * sum_grid [ mask * ff'_integral_i(psi_n) / R ]
+            //
+            // Note on sign: this linearisation divides by the *signed* f_vac, so it already
+            // preserves the correct sign for a negative TF rod current. Expanding the exact
+            // f = sign(f_vac)*sqrt(f_vac^2 + 2*(psi_b-psi_a)*G) for small G gives
+            // f - f_vac ~= (psi_b - psi_a)*G / f_vac, matching the term below without a separate
+            // sign() factor.
             let f_vac: f64 = MU_0 * self.i_rod / (2.0 * PI);
             let d_psi: f64 = self.psi_b - self.psi_a;
             for i_sensor in 0..n_dialoop {

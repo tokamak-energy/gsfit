@@ -264,10 +264,14 @@ impl Dialoop {
                 // G(psi_n) = sum_i ff'_dof[i] * ff'_integral_i(psi_n)
                 let g_integral: Array1<f64> = plasma.ff_prime_source_function.source_function_integral(&psi_n_flat, &ff_dof);
 
-                // f = sqrt( f_vac^2 + 2*(psi_b - psi_a)*G ), then (f - f_vac)
+                // f = sign(f_vac) * sqrt( f_vac^2 + 2*(psi_b - psi_a)*G ), then (f - f_vac)
+                // The sign of f_vac must be preserved so that a negative TF rod current
+                // (f_vac < 0) yields a negative f, matching the vacuum boundary condition
+                // f(psi_n = 1) = f_vac; otherwise the diamagnetic flux gets the wrong sign.
+                let f_sign: f64 = if f_vac >= 0.0 { 1.0 } else { -1.0 };
                 let d_psi: f64 = psi_b_vs_time[i_time] - psi_a_vs_time[i_time];
                 let f_squared: Array1<f64> = 2.0 * d_psi * &g_integral + f_vac * f_vac;
-                let f_minus_f_vac: Array1<f64> = f_squared.mapv(f64::sqrt) - f_vac;
+                let f_minus_f_vac: Array1<f64> = f_sign * f_squared.mapv(f64::sqrt) - f_vac;
 
                 // Phi_t = integral( mask * (f - f_vac) / R ) dA
                 let integrand: Array1<f64> = &mask_flat * &f_minus_f_vac / &flat_r;
