@@ -90,9 +90,8 @@ impl SourceFunctionTraits for EfitPolynomial {
         let i_dof_f64: f64 = i_dof as f64;
         // antideriv(1) = 1/(i_dof+1) - 1/(i_dof+2), subtracted to shift the integral so it is zero at psi_n = 1
         let integration_constant: f64 = -1.0 / (i_dof_f64 + 1.0) + 1.0 / (i_dof_f64 + 2.0);
-        let integral: Array1<f64> = psi_n.mapv(|x| x.powi(i_dof as i32 + 1)) / (i_dof_f64 + 1.0)
-            - psi_n.mapv(|x| x.powi(i_dof as i32 + 2)) / (i_dof_f64 + 2.0)
-            + integration_constant;
+        let integral: Array1<f64> =
+            psi_n.mapv(|x| x.powi(i_dof as i32 + 1)) / (i_dof_f64 + 1.0) - psi_n.mapv(|x| x.powi(i_dof as i32 + 2)) / (i_dof_f64 + 2.0) + integration_constant;
 
         integral
     }
