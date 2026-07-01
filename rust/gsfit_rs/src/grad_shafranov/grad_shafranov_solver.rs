@@ -86,8 +86,7 @@ pub fn solve_grad_shafranov(
         pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (stationary_point_statics, stationary_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         stationary_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (dialoop_statics, dialoop_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
-        dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (dialoop_statics, dialoop_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
     // TODO: might be better to combine all sensors here, before passing to the solver
 

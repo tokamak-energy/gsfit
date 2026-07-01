@@ -81,16 +81,29 @@ impl Dialoop {
         self.results.get_or_insert(name).get_or_insert("geometry").insert("z_path", z.to_owned_array());
 
         // Fit settings
-        self.results.get_or_insert(name).get_or_insert("fit_settings").insert("comment", fit_settings_comment);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("fit_settings")
+            .insert("comment", fit_settings_comment);
         self.results
             .get_or_insert(name)
             .get_or_insert("fit_settings")
             .insert("expected_value", fit_settings_expected_value);
-        self.results.get_or_insert(name).get_or_insert("fit_settings").insert("include", fit_settings_include);
-        self.results.get_or_insert(name).get_or_insert("fit_settings").insert("weight", fit_settings_weight);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("fit_settings")
+            .insert("include", fit_settings_include);
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("fit_settings")
+            .insert("weight", fit_settings_weight);
 
         // Measurements
-        self.results.get_or_insert(name).get_or_insert("b").get_or_insert("experimental").insert("time", time.to_owned_array());
+        self.results
+            .get_or_insert(name)
+            .get_or_insert("b")
+            .get_or_insert("experimental")
+            .insert("time", time.to_owned_array());
         self.results
             .get_or_insert(name)
             .get_or_insert("b")
@@ -137,12 +150,7 @@ impl Dialoop {
         let include: Vec<bool> = self.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
 
         // Convert from boolean to indices
-        let include_indices: Vec<usize> = include
-            .iter()
-            .enumerate()
-            .filter(|(_, include)| **include)
-            .map(|(i, _)| i)
-            .collect();
+        let include_indices: Vec<usize> = include.iter().enumerate().filter(|(_, include)| **include).map(|(i, _)| i).collect();
 
         // Sensor names
         let sensor_names_all: Vec<String> = self.results.keys();
@@ -278,8 +286,16 @@ impl Dialoop {
                 values[i_time] = integrand.sum() * d_area;
             }
 
-            self.results.get_or_insert(&sensor_name).get_or_insert("b").get_or_insert("calculated").insert("value", values.clone());
-            self.results.get_or_insert(&sensor_name).get_or_insert("b").get_or_insert("calculated").insert("time", time.clone());
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("calculated")
+                .insert("value", values.clone());
+            self.results
+                .get_or_insert(&sensor_name)
+                .get_or_insert("b")
+                .get_or_insert("calculated")
+                .insert("time", time.clone());
         }
     }
 }

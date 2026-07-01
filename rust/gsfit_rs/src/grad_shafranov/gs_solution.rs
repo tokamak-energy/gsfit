@@ -706,8 +706,7 @@ impl<'a> GsSolution<'a> {
                 s_measured[i_constraint] = dialoop_dynamic.measured[i_sensor];
 
                 // Store weights
-                constraint_weights[i_constraint] =
-                    dialoop_static.fit_settings_weight[i_sensor] / dialoop_static.fit_settings_expected_value[i_sensor];
+                constraint_weights[i_constraint] = dialoop_static.fit_settings_weight[i_sensor] / dialoop_static.fit_settings_expected_value[i_sensor];
 
                 // Setup indexer for next sensor or constraint
                 i_constraint += 1;

@@ -78,8 +78,7 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
             for i_dialoop in 0..n_dialoop {
                 if dialoop_include[i_dialoop] {
                     let sigma: f64 = dialoop_expected_value[i_dialoop] / dialoop_weight[i_dialoop];
-                    chi_sq_mag_result[i_time] +=
-                        (dialoop_measured[(i_time, i_dialoop)] - dialoop_calculated[(i_time, i_dialoop)]).powi(2) / sigma.powi(2);
+                    chi_sq_mag_result[i_time] += (dialoop_measured[(i_time, i_dialoop)] - dialoop_calculated[(i_time, i_dialoop)]).powi(2) / sigma.powi(2);
                 }
             }
         }
