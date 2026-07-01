@@ -48,6 +48,7 @@ class Gsfit(DiagnosticAndSimulationBase):
     isoflux_boundary: gsfit_rs.IsofluxBoundary
     pressure_sensors: gsfit_rs.Pressure
     stationary_point: gsfit_rs.StationaryPoint
+    dialoop: gsfit_rs.Dialoop
 
     # TODO: move to DiagnosticAndSimulationBase
     def __getitem__(self, key: str) -> typing.Any:
@@ -187,6 +188,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         isoflux_boundary = self.isoflux_boundary
         pressure_sensors = self.pressure_sensors
         stationary_point = self.stationary_point
+        dialoop = self.dialoop
 
         times_to_reconstruct = self.results["TIME"]
 
@@ -204,6 +206,7 @@ class Gsfit(DiagnosticAndSimulationBase):
             isoflux_boundary,
             pressure_sensors,
             stationary_point,
+            dialoop,
             times_to_reconstruct,
             self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"],
             self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_min"],
@@ -342,3 +345,8 @@ class Gsfit(DiagnosticAndSimulationBase):
         )
         toc = time_py.time()
         self.logger.info(msg=f"`stationary_point` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
+        self.dialoop = database_reader.setup_dialoop(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`dialoop` initialised;  {(toc - tic) * 1e3:,.2f}ms")

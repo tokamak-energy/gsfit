@@ -1497,8 +1497,12 @@ fn epp_bt_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_rod: 
                     .ff_prime_source_function
                     .source_function_integral(&Array1::from_vec(vec![psi_n_2d[(i_z, i_r)]]), &ff_prime_dof_values)[0];
 
-                // f = √( f_vac² + 2·(dψ/dψ_N)·∫_1^{ψ_N} ff′ dψ_N′ )
-                let f_at_this_rz: f64 = (f_vac * f_vac + 2.0 * d_psi_d_psi_n * ff_prime_integral).sqrt();
+                // f = sign(f_vac)·√( f_vac² + 2·(dψ/dψ_N)·∫_1^{ψ_N} ff′ dψ_N′ )
+                // The sign of f_vac must be preserved so that a negative TF rod current
+                // (f_vac < 0) yields a negative f inside the plasma, matching the vacuum
+                // boundary condition f(ψ_N = 1) = f_vac.
+                let f_sign: f64 = if f_vac >= 0.0 { 1.0 } else { -1.0 };
+                let f_at_this_rz: f64 = f_sign * (f_vac * f_vac + 2.0 * d_psi_d_psi_n * ff_prime_integral).sqrt();
 
                 // Toroidal field
                 bt_2d_now[(i_z, i_r)] = f_at_this_rz / r[i_r];
@@ -1541,8 +1545,12 @@ fn epp_f_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_
             .ff_prime_source_function
             .source_function_integral(&Array1::from_vec(vec![psi_n[i_psi_n]]), &ff_prime_dof_values)[0];
 
-        // f = √( f_vac² + 2·(dψ/dψ_N)·∫_1^{ψ_N} ff′ dψ_N′ )
-        f_profile[i_psi_n] = (f_vac * f_vac + 2.0 * d_psi_d_psi_n * ff_prime_integral).sqrt();
+        // f = sign(f_vac)·√( f_vac² + 2·(dψ/dψ_N)·∫_1^{ψ_N} ff′ dψ_N′ )
+        // The sign of f_vac must be preserved so that a negative TF rod current
+        // (f_vac < 0) yields a negative f, matching the vacuum boundary condition
+        // f(ψ_N = 1) = f_vac.
+        let f_sign: f64 = if f_vac >= 0.0 { 1.0 } else { -1.0 };
+        f_profile[i_psi_n] = f_sign * (f_vac * f_vac + 2.0 * d_psi_d_psi_n * ff_prime_integral).sqrt();
     }
 
     return f_profile;

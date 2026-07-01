@@ -2,6 +2,7 @@ import numpy as np
 
 from gsfit_rs import BpProbes
 from gsfit_rs import Coils
+from gsfit_rs import Dialoop
 from gsfit_rs import EfitPolynomial
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
@@ -80,6 +81,7 @@ def run() -> None:
     )
     isoflux = Isoflux()
     isoflux_boundary = IsofluxBoundary()
+    dialoop = Dialoop()
     stationary_point = StationaryPoint()
     stationary_point.add_sensor(
         name="magnetic_axis",
@@ -165,6 +167,7 @@ def run() -> None:
         isoflux_boundary=isoflux_boundary,
         pressure_sensors=pressure_sensors,
         stationary_point=stationary_point,
+        dialoop=dialoop,
         times_to_reconstruct=np.array([0.5]),
         n_iter_max=30,
         n_iter_min=1,
