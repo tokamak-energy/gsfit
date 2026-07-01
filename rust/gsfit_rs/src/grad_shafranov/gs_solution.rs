@@ -29,6 +29,8 @@ pub struct GsSolution<'a> {
     bp_probes_dynamic: &'a SensorsDynamic,
     flux_loops_static: &'a SensorsStatic,
     flux_loops_dynamic: &'a SensorsDynamic,
+    dialoop_static: &'a SensorsStatic,
+    dialoop_dynamic: &'a SensorsDynamic,
     rogowski_coils_static: &'a SensorsStatic,
     rogowski_coils_dynamic: &'a SensorsDynamic,
     isoflux_static: &'a SensorsStatic,
@@ -43,6 +45,7 @@ pub struct GsSolution<'a> {
     n_iter_min: usize,
     n_iter_no_vertical_feedback: usize,
     gs_error_tolerence: f64,
+    i_rod: f64,
     // Results
     pub gs_error_calculated: f64,
     pub ff_prime_dof_values: Array1<f64>,
@@ -86,6 +89,8 @@ impl<'a> GsSolution<'a> {
         bp_probes_dynamic: &'a SensorsDynamic,
         flux_loops_static: &'a SensorsStatic,
         flux_loops_dynamic: &'a SensorsDynamic,
+        dialoop_static: &'a SensorsStatic,
+        dialoop_dynamic: &'a SensorsDynamic,
         rogowski_coils_static: &'a SensorsStatic,
         rogowski_coils_dynamic: &'a SensorsDynamic,
         isoflux_static: &'a SensorsStatic,
@@ -100,6 +105,7 @@ impl<'a> GsSolution<'a> {
         n_iter_min: usize,
         n_iter_no_vertical_feedback: usize,
         gs_error_tolerence: f64,
+        i_rod: f64,
         p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
         ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
         passive_regularisations: Array2<f64>,
@@ -113,6 +119,8 @@ impl<'a> GsSolution<'a> {
             bp_probes_dynamic,
             flux_loops_static,
             flux_loops_dynamic,
+            dialoop_static,
+            dialoop_dynamic,
             rogowski_coils_static,
             rogowski_coils_dynamic,
             isoflux_static,
@@ -127,6 +135,7 @@ impl<'a> GsSolution<'a> {
             n_iter_min,
             n_iter_no_vertical_feedback,
             gs_error_tolerence,
+            i_rod,
             // Results
             gs_error_calculated: f64::NAN,
             ff_prime_dof_values: Array1::zeros(0),
@@ -207,6 +216,8 @@ impl<'a> GsSolution<'a> {
         let bp_probes_dynamic: &SensorsDynamic = self.bp_probes_dynamic;
         let flux_loops_static: &SensorsStatic = self.flux_loops_static;
         let flux_loops_dynamic: &SensorsDynamic = self.flux_loops_dynamic;
+        let dialoop_static: &SensorsStatic = self.dialoop_static;
+        let dialoop_dynamic: &SensorsDynamic = self.dialoop_dynamic;
         let rogowski_coils_static: &SensorsStatic = self.rogowski_coils_static;
         let rogowski_coils_dynamic: &SensorsDynamic = self.rogowski_coils_dynamic;
         let isoflux_static: &SensorsStatic = self.isoflux_static;
@@ -241,6 +252,7 @@ impl<'a> GsSolution<'a> {
         // Constraints
         let n_bp: usize = bp_probes_dynamic.measured.len();
         let n_fl: usize = flux_loops_dynamic.measured.len();
+        let n_dialoop: usize = dialoop_dynamic.measured.len();
         let n_rog: usize = rogowski_coils_dynamic.measured.len();
         let n_isoflux: usize = isoflux_dynamic.measured.len();
         let n_isoflux_boundary: usize = isoflux_boundary_dynamic.measured.len();
@@ -253,6 +265,7 @@ impl<'a> GsSolution<'a> {
         let n_delta_z_regularisation: usize = 0; // initially set to 0 because we don't have previous iteration
         let n_constraints: usize = n_bp
             + n_fl
+            + n_dialoop
             + n_rog
             + n_isoflux
             + n_isoflux_boundary
@@ -651,6 +664,49 @@ impl<'a> GsSolution<'a> {
                 // Store weights
                 constraint_weights[i_constraint] =
                     2.0 * PI * flux_loops_static.fit_settings_weight[i_sensor] / flux_loops_static.fit_settings_expected_value[i_sensor];
+
+                // Setup indexer for next sensor or constraint
+                i_constraint += 1;
+            }
+
+            // Add dialoop (diamagnetic flux loop) to the fitting matrix.
+            //
+            // The diamagnetic loop responds to the toroidal flux function `f` (the poloidal-current
+            // function), which depends only on the ff' source function — NOT on the toroidal
+            // currents. The Green's tables relate toroidal currents to psi/B_p, so the dialoop uses
+            // NO Green's functions, and no p', passive, coil or vertical-stabilisation terms.
+            //
+            // The diamagnetic flux is (Moret Eq. 41):
+            //     Phi_t = integral( (f - f_vac) / R ) dA          (over the plasma mask)
+            // where, as in `epp_bt_2d`, `f` is reconstructed from the ff' source function:
+            //     f = sqrt( f_vac^2 + 2*(psi_b - psi_a)*G ),   G = sum_i ff'_dof[i]*ff'_integral_i(psi_n)
+            // and f_vac = R0*B_phi0 = MU_0*i_rod/(2*PI).
+            //
+            // Linearising for small diamagnetism (|f - f_vac| << |f_vac|):
+            //     f - f_vac ~= (psi_b - psi_a) * G / f_vac
+            // so the response is linear in the ff' degrees of freedom:
+            //     T[i] = ((psi_b - psi_a) / f_vac) * dA * sum_grid [ mask * ff'_integral_i(psi_n) / R ]
+            //
+            // Note on sign: this linearisation divides by the *signed* f_vac, so it already
+            // preserves the correct sign for a negative TF rod current. Expanding the exact
+            // f = sign(f_vac)*sqrt(f_vac^2 + 2*(psi_b-psi_a)*G) for small G gives
+            // f - f_vac ~= (psi_b - psi_a)*G / f_vac, matching the term below without a separate
+            // sign() factor.
+            let f_vac: f64 = MU_0 * self.i_rod / (2.0 * PI);
+            let d_psi: f64 = self.psi_b - self.psi_a;
+            for i_sensor in 0..n_dialoop {
+                // ff_prime degrees of freedom only (no p', no passives, no coils, no Green's)
+                for i_ff_prime_dof in 0..n_ff_prime_dof {
+                    let ff_prime_integral: Array1<f64> = ff_prime_source_function.source_function_integral_single_dof(&psi_n_flat, i_ff_prime_dof);
+                    let integrand: Array1<f64> = &mask_flat * &ff_prime_integral / &flat_r;
+                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = (d_psi / f_vac) * d_area * integrand.sum();
+                }
+
+                // Store sensor value
+                s_measured[i_constraint] = dialoop_dynamic.measured[i_sensor];
+
+                // Store weights
+                constraint_weights[i_constraint] = dialoop_static.fit_settings_weight[i_sensor] / dialoop_static.fit_settings_expected_value[i_sensor];
 
                 // Setup indexer for next sensor or constraint
                 i_constraint += 1;

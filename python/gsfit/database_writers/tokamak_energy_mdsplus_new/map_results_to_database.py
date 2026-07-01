@@ -24,6 +24,7 @@ def map_results_to_database(
     plasma = gsfit_controller.plasma
     bp_probes = gsfit_controller.bp_probes
     flux_loops = gsfit_controller.flux_loops
+    dialoop = gsfit_controller.dialoop
     rogowski_coils = gsfit_controller.rogowski_coils
     passives = gsfit_controller.passives
     coils = gsfit_controller.coils
@@ -98,8 +99,8 @@ def map_results_to_database(
     results["PROFILES_1D"]["PSI_NORM"]["VOL_PRIME"] = plasma.get_array2(["profiles", "vol_prime"])
 
     # Mid-plane profiles
-    results["PROFILES_1D"]["MIDPLANE"]["PRESSURE"] = plasma.get_array2(["profiles", "mid_plane", "p"])
-    results["PROFILES_1D"]["MIDPLANE"]["R"] = plasma.get_array1(["profiles", "mid_plane", "r"])
+    results["PROFILES_1D"]["R_MIDPLANE"]["PRESSURE"] = plasma.get_array2(["profiles", "mid_plane", "p"])
+    results["PROFILES_1D"]["R_MIDPLANE"]["R"] = plasma.get_array1(["profiles", "mid_plane", "r"])
 
     # Profiles_2d
     results["PROFILES_2D"]["B_FIELD_PHI"] = plasma.get_array3(["two_d", "bt"])
@@ -134,6 +135,13 @@ def map_results_to_database(
         results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["MEASURED"] = rogowski_coils.get_array1([sensor_name, "i", "measured", "value"])
         results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["RECONSTRUCT"] = rogowski_coils.get_array1([sensor_name, "i", "calculated", "value"])
         results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["WEIGHT"] = rogowski_coils.get_f64([sensor_name, "fit_settings", "weight"])
+
+    # Diamagnetic flux (single diamagnetic flux loop "DIALOOP")
+    for sensor_name in dialoop.keys():
+        results["CONSTRAINTS"]["DIAMAG_FLUX"]["INCLUDE"] = np.int32(dialoop.get_bool([sensor_name, "fit_settings", "include"]))
+        results["CONSTRAINTS"]["DIAMAG_FLUX"]["MEASURED"] = dialoop.get_array1([sensor_name, "b", "measured", "value"])
+        results["CONSTRAINTS"]["DIAMAG_FLUX"]["RECONSTRUCT"] = dialoop.get_array1([sensor_name, "b", "calculated", "value"])
+        results["CONSTRAINTS"]["DIAMAG_FLUX"]["WEIGHT"] = dialoop.get_f64([sensor_name, "fit_settings", "weight"])
 
     for pf_name in coils.keys(["pf"]):
         # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["EXACT"]
