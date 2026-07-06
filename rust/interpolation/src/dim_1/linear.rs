@@ -55,8 +55,8 @@ impl Dim1Linear {
     pub fn interpolate_array1(&self, x_new: &Array1<f64>) -> Result<Array1<f64>, Error> {
         let n_x_new: usize = x_new.len();
 
-        // Special case for a single `x_new` at the exact same location as `x[0]`
-        if n_x_new == 1 && (x_new[0] - self.x[0]).abs() < f64::EPSILON {
+        // Special case when: there is only one element in `x`; there is only one element in `x_new`; and `x_new[0]` is exactly the same as `x[0]`
+        if self.x.len() == 1 && n_x_new == 1 && (x_new[0] - self.x[0]).abs() < f64::EPSILON {
             return Ok(self.f.clone());
         }
 
@@ -91,8 +91,8 @@ impl Dim1Linear {
     }
 
     pub fn interpolate_scalar(&self, x_new: f64) -> Result<f64, Error> {
-        // Special case for a single `x_new` at the exact same location as `x[0]`
-        if (x_new - self.x[0]).abs() < f64::EPSILON {
+        // Special case when: there is only one element in `x`; and `x_new` is exactly the same as `x[0]`
+        if self.x.len() == 1 && (x_new - self.x[0]).abs() < f64::EPSILON {
             return Ok(self.f[0]);
         }
 
