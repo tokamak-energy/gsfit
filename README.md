@@ -7,7 +7,7 @@
 [![Rust coverage: Rust + Python tests](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/rust_coverage_from_rust_and_python_tests/coverage-badge.json&label=Rust%20coverage:%20Rust%20%2B%20Python%20tests&logo=rust&logoColor=white)](https://tokamak-energy.github.io/gsfit/rust_coverage_from_rust_and_python_tests/html/)
 [![dependency status](https://deps.rs/repo/github/tokamak-energy/gsfit/status.svg?path=rust%2F)](https://deps.rs/repo/github/tokamak-energy/gsfit?path=rust%2F)
 
-[![Python 3.11|3.12|3.13|3.14](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue?logo=python&logoColor=white)](https://www.python.org/) 
+[![Python 3.11|3.12|3.13|3.14|3.15](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14%20%7C%203.15-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![Python coverage: Python tests](https://img.shields.io/endpoint?url=https://tokamak-energy.github.io/gsfit/python_coverage_from_python_tests/coverage-badge.json&label=Python%20coverage&logo=python&logoColor=white)](https://tokamak-energy.github.io/gsfit/python_coverage_from_python_tests/html/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) 
 [![ty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json)](https://github.com/astral-sh/ty)

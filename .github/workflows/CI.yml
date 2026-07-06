@@ -250,6 +250,7 @@ jobs:
             maturin build --release -i python3.12
             maturin build --release -i python3.13
             maturin build --release -i python3.14
+            maturin build --release -i python3.15
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -375,6 +376,11 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.14'
+      - name: Set up Python 3.15
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.15'
+          allow-prereleases: true
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies
@@ -383,6 +389,7 @@ jobs:
           python3.12 -m pip install --upgrade pip maturin
           python3.13 -m pip install --upgrade pip maturin
           python3.14 -m pip install --upgrade pip maturin
+          python3.15 -m pip install --upgrade pip maturin
       - name: Build Python wheels (compiling Rust)
         run: |
           # Update Rust and print version
@@ -394,6 +401,7 @@ jobs:
           maturin build --release -i python3.12
           maturin build --release -i python3.13
           maturin build --release -i python3.14
+          maturin build --release -i python3.15
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -478,6 +486,11 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.14'
+      - name: Set up Python 3.15
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.15'
+          allow-prereleases: true
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies
@@ -486,6 +499,7 @@ jobs:
           py -3.12 -m pip install --upgrade pip maturin
           py -3.13 -m pip install --upgrade pip maturin
           py -3.14 -m pip install --upgrade pip maturin
+          py -3.15 -m pip install --upgrade pip maturin
 
       - name: Build Python wheels (compiling Rust)
         run: |
@@ -498,6 +512,7 @@ jobs:
           maturin build --release -i python3.12
           maturin build --release -i python3.13
           maturin build --release -i python3.14
+          maturin build --release -i python3.15
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v7
         with:

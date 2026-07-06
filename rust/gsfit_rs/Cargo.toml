@@ -15,14 +15,14 @@ npy_reader_and_writer = { path = "../npy_reader_and_writer" }
 
 # External dependencies
 contour = "0.13.1"
-diffsol = "0.14.0"
+diffsol = "0.15.1"
 geo = "0.33.1"  # For centre of mass; polygon area
 geo-types = "0.7.19"  # For getting geo type out of `contour`
-pyo3 = { version = "0.28.3", features = ["extension-module", "multiple-pymethods"] }  # "extension-module" = this will be a Python package; "multiple-pymethods" = ??
+pyo3 = { version = "0.29.0", features = ["extension-module", "multiple-pymethods"] }  # "extension-module" = this will be a Python package; "multiple-pymethods" = ??
 physical_constants = "0.5.0"  # For MU_0
 rayon = "1.12.0"
 spec_math = "0.1.6"  # For elliptic integrals
-numpy = "0.28.0"
+numpy = "0.29.0"
 ndarray = { version = "0.17.2", features = ["approx"] }  # must be same version as numpy uses internally
 ndarray-interp = "0.6.0"  # TODO: I want to remove this dependency, because it has essentially been abandoned and it restricts `ndarray` version!
 env_logger = "0.11.10"
