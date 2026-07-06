@@ -1,30 +1,39 @@
+// Load for use in this file
 use pyo3::prelude::*;
-mod sensors;
-use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, StationaryPoint};
-// pub use sensors::{SensorsDynamic, SensorsStatic};
-mod grad_shafranov;
-pub mod plasma_geometry;
-pub use grad_shafranov::GsSolution;
-pub mod greens;
-mod plasma;
-use plasma::Plasma;
-mod passives;
-use passives::Passives;
-mod coils;
-use coils::Coils;
+
+// Load modules
 mod circuit_equations;
-use circuit_equations::solve_circuit_equations;
+mod coils;
+mod grad_shafranov;
+mod passives;
+mod plasma;
+mod sensors;
 mod source_functions;
+
+// Load structs and functions
+use circuit_equations::solve_circuit_equations;
+use coils::Coils;
 use grad_shafranov::solve_grad_shafranov;
-use greens::greens_py;
+use greens::{greens_d_psi_d_r, greens_d_psi_d_z, greens_d2_psi_d_r_d_z, greens_d2_psi_d_r2, greens_d2_psi_d_z2, greens_d3_psi_d_r_d_z2, greens_py};
+mod material_properties;
+use passives::Passives;
+use plasma::Plasma;
+mod python_pickling_methods;
+use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, StationaryPoint};
 use source_functions::{EfitPolynomial, TensionedCubicBSpline};
+
+// Load public modules
+pub mod greens;
+
+// Load public structs and functions
+pub use grad_shafranov::GsSolution;
+pub mod plasma_geometry;
+
+// Future modules
 // mod solovev_equilibrium;
 // pub use solovev_equilibrium::run_solovev;
 // mod analytic_grad_shafranov;
-mod material_properties;
 // mod equilibrium_post_processor;
-mod python_pickling_methods;
-use greens::{greens_d_psi_d_r, greens_d_psi_d_z, greens_d2_psi_d_r2, greens_d2_psi_d_r_d_z, greens_d2_psi_d_z2, greens_d3_psi_d_r_d_z2};
 
 /// A Python module implemented in Rust; bindings added here
 #[pymodule]
