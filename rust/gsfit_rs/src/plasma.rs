@@ -251,9 +251,6 @@ impl Plasma {
     /// * `coils` - The Coils object (a Rust implementation, initialised in Python)
     ///
     fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
-        // Change Python types into Rust types
-        let coils_local: &Coils = &coils;
-
         // Get variables out of self
         let flat_r: Array1<f64> = self.results.get("grid").get("flat").get("r").unwrap_array1();
         let flat_z: Array1<f64> = self.results.get("grid").get("flat").get("z").unwrap_array1();
