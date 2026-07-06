@@ -3,7 +3,7 @@ use super::gs_solution::GsSolution;
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
-use crate::sensors::{BpProbes, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
+use crate::sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
 use crate::source_functions::SourceFunctionTraits;
 use log::info; // use log::{debug, error, info};
 use ndarray::{Array1, Array2, s};
@@ -26,6 +26,7 @@ pub fn solve_grad_shafranov(
     mut isoflux_boundary: PyRefMut<IsofluxBoundary>,
     mut pressure_sensors: PyRefMut<Pressure>,
     mut stationary_point: PyRefMut<StationaryPoint>,
+    mut dialoop: PyRefMut<Dialoop>,
     times_to_reconstruct: PyReadonlyArray1<f64>,
     n_iter_max: usize,
     n_iter_min: usize,
@@ -69,6 +70,9 @@ pub fn solve_grad_shafranov(
 
     // Get static and dynamic data
     let coils_dynamic: Vec<SensorsDynamic> = coils.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    // TF rod current interpolated to `times_to_reconstruct`; used as f_vac = MU_0 * i_rod / (2 * PI)
+    // in the diamagnetic-loop constraint
+    let i_rod_vs_time: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").get("value").unwrap_array1();
     let (bp_probes_static, bp_probes_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         bp_probes.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (flux_loops_static, flux_loops_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
@@ -82,6 +86,7 @@ pub fn solve_grad_shafranov(
         pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (stationary_point_statics, stationary_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         stationary_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (dialoop_statics, dialoop_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
     // TODO: might be better to combine all sensors here, before passing to the solver
 
@@ -154,6 +159,8 @@ pub fn solve_grad_shafranov(
                 &bp_probes_dynamic[i_time],
                 &flux_loops_static[i_time],
                 &flux_loops_dynamic[i_time],
+                &dialoop_statics[i_time],
+                &dialoop_dynamic[i_time],
                 &rogowski_coils_static[i_time],
                 &rogowski_coils_dynamic[i_time],
                 &isoflux_statics[i_time],
@@ -168,6 +175,7 @@ pub fn solve_grad_shafranov(
                 n_iter_min,
                 n_iter_no_vertical_feedback,
                 gs_error,
+                i_rod_vs_time[i_time],
                 p_prime_source_function.clone(),
                 ff_prime_source_function.clone(),
                 passive_regularisations.clone(),
@@ -210,8 +218,10 @@ pub fn solve_grad_shafranov(
     if pressure_sensors.results.data.len() > 0 {
         pressure_sensors.calculate_sensor_values_rust(&plasma_owned);
     }
+    // The diamagnetic loop depends only on the toroidal flux function `f` (no Green's functions)
+    dialoop.calculate_sensor_values_rs(&plasma_owned);
 
     // Calculate chi_sq_mag for each time slice
-    let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, n_time);
+    let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, &dialoop, n_time);
     plasma.results.get_or_insert("global").insert("chi_mag", chi_mag);
 }
