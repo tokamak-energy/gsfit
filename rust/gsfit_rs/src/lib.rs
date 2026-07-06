@@ -1,9 +1,11 @@
 use pyo3::prelude::*;
 mod sensors;
 use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, StationaryPoint};
+// pub use sensors::{SensorsDynamic, SensorsStatic};
 mod grad_shafranov;
-mod plasma_geometry;
-mod greens;
+pub mod plasma_geometry;
+pub use grad_shafranov::GsSolution;
+pub mod greens;
 mod plasma;
 use plasma::Plasma;
 mod passives;
@@ -14,13 +16,7 @@ mod circuit_equations;
 use circuit_equations::solve_circuit_equations;
 mod source_functions;
 use grad_shafranov::solve_grad_shafranov;
-use greens::greens_d_psi_d_r;
-use greens::greens_d_psi_d_z;
-use greens::greens_d2_psi_d_r2;
-use greens::greens_d2_psi_d_r_d_z;
-use greens::greens_d2_psi_d_z2;
-use greens::greens_d3_psi_d_r_d_z2;
-use greens::greens_py; // TODO: rename to `greens_psi`, but will need to update Python code
+use greens::greens_py;
 use source_functions::{EfitPolynomial, TensionedCubicBSpline};
 // mod solovev_equilibrium;
 // pub use solovev_equilibrium::run_solovev;
@@ -28,6 +24,7 @@ use source_functions::{EfitPolynomial, TensionedCubicBSpline};
 mod material_properties;
 // mod equilibrium_post_processor;
 mod python_pickling_methods;
+use greens::{greens_d_psi_d_r, greens_d_psi_d_z, greens_d2_psi_d_r2, greens_d2_psi_d_r_d_z, greens_d2_psi_d_z2, greens_d3_psi_d_r_d_z2};
 
 /// A Python module implemented in Rust; bindings added here
 #[pymodule]
