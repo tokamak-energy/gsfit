@@ -55,9 +55,19 @@ impl Dim1Linear {
     pub fn interpolate_array1(&self, x_new: &Array1<f64>) -> Result<Array1<f64>, Error> {
         let n_x_new: usize = x_new.len();
 
-        // Special case when: there is only one element in `x`; there is only one element in `x_new`; and `x_new[0]` is exactly the same as `x[0]`
-        if self.x.len() == 1 && n_x_new == 1 && (x_new[0] - self.x[0]).abs() < f64::EPSILON {
-            return Ok(self.f.clone());
+        // Special case for interpolating a signal with only one entry
+        if self.x.len() == 1 {
+            for i_x_new in 0..n_x_new {
+                // Raise error if `x_new` is not exactly on the `x` grid point
+                if (x_new[i_x_new] - self.x[0]).abs() >= f64::EPSILON {
+                    return Err(Error::XOutOfBounds {
+                        x_desired: x_new[i_x_new],
+                        x_min: self.x[0],
+                        x_max: self.x[0],
+                    });
+                }
+            }
+            return Ok(Array1::from_elem(n_x_new, self.f[0]));
         }
 
         // Check bounds and exit if out of bounds
