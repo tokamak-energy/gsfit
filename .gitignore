@@ -6,6 +6,9 @@ rust/Cargo.lock
 # Rust profil data (used for line coverage in testing)
 *.profraw
 
+# Rust mutation testing output
+rust/mutants.out*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 .pytest_cache/

@@ -55,6 +55,26 @@ impl Dim1Linear {
     pub fn interpolate_array1(&self, x_new: &Array1<f64>) -> Result<Array1<f64>, Error> {
         let n_x_new: usize = x_new.len();
 
+        // Special case for interpolating a signal with only one entry
+        if self.x.len() == 1 {
+            for i_x_new in 0..n_x_new {
+                // Raise error if `x_new` is not finite, e.g. NaN or Inf, which could bypass the `>= f64::EPSILON` check below
+                if !x_new[i_x_new].is_finite() {
+                    return Err(Error::XNotFinite);
+                }
+                // Raise error if `x_new` is not exactly on the `x` grid point
+                if (x_new[i_x_new] - self.x[0]).abs() >= f64::EPSILON {
+                    return Err(Error::XOutOfBounds {
+                        x_desired: x_new[i_x_new],
+                        x_min: self.x[0],
+                        x_max: self.x[0],
+                    });
+                }
+                
+            }
+            return Ok(Array1::from_elem(n_x_new, self.f[0]));
+        }
+
         // Check bounds and exit if out of bounds
         for i_x_new in 0..n_x_new {
             if x_new[i_x_new] < self.x[0] || x_new[i_x_new] > self.x[self.x.len() - 1] {
@@ -86,6 +106,16 @@ impl Dim1Linear {
     }
 
     pub fn interpolate_scalar(&self, x_new: f64) -> Result<f64, Error> {
+        // Exit if `x_new` is not finite, e.g. NaN or Inf
+        if !x_new.is_finite() {
+            return Err(Error::XNotFinite);
+        }
+        
+        // Special case when: there is only one element in `x`; and `x_new` is exactly the same as `x[0]`
+        if self.x.len() == 1 && (x_new - self.x[0]).abs() < f64::EPSILON {
+            return Ok(self.f[0]);
+        }
+
         // Check bounds and exit if out of bounds
         if x_new < self.x[0] || x_new > self.x[self.x.len() - 1] {
             return Err(Error::XOutOfBounds {

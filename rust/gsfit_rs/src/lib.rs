@@ -1,35 +1,51 @@
+// Load for use in this file
 use pyo3::prelude::*;
-mod sensors;
-pub use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, StationaryPoint};
-pub use sensors::{SensorsDynamic, SensorsStatic};
-mod grad_shafranov;
-pub mod plasma_geometry;
-pub use grad_shafranov::GsSolution;
-pub mod greens;
-mod plasma;
-pub use plasma::Plasma;
-mod passives;
-pub use passives::Passives;
-mod coils;
-pub use coils::Coils;
+
+// Load modules
 mod circuit_equations;
-use circuit_equations::solve_circuit_equations;
+mod coils;
+mod grad_shafranov;
+mod passives;
+mod plasma;
+mod sensors;
 mod source_functions;
-pub use grad_shafranov::solve_grad_shafranov;
-use greens::greens_py;
+
+// Load structs and functions
+use circuit_equations::solve_circuit_equations;
+use coils::Coils;
+use grad_shafranov::solve_grad_shafranov;
+use greens::{greens_d_psi_d_r, greens_d_psi_d_z, greens_d2_psi_d_r_d_z, greens_d2_psi_d_r2, greens_d2_psi_d_z2, greens_d3_psi_d_r_d_z2, greens_py};
+mod material_properties;
+use passives::Passives;
+use plasma::Plasma;
+mod python_pickling_methods;
+use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, StationaryPoint};
 use source_functions::{EfitPolynomial, TensionedCubicBSpline};
+
+// Load public modules
+pub mod greens;
+
+// Load public structs and functions
+pub use grad_shafranov::GsSolution;
+pub mod plasma_geometry;
+
+// Future modules
 // mod solovev_equilibrium;
 // pub use solovev_equilibrium::run_solovev;
 // mod analytic_grad_shafranov;
-mod material_properties;
 // mod equilibrium_post_processor;
-pub mod python_pickling_methods;
 
 /// A Python module implemented in Rust; bindings added here
 #[pymodule]
 fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Expose functions
     m.add_function(wrap_pyfunction!(greens_py, m)?)?;
+    m.add_function(wrap_pyfunction!(greens_d_psi_d_r, m)?)?;
+    m.add_function(wrap_pyfunction!(greens_d_psi_d_z, m)?)?;
+    m.add_function(wrap_pyfunction!(greens_d2_psi_d_r2, m)?)?;
+    m.add_function(wrap_pyfunction!(greens_d2_psi_d_r_d_z, m)?)?;
+    m.add_function(wrap_pyfunction!(greens_d2_psi_d_z2, m)?)?;
+    m.add_function(wrap_pyfunction!(greens_d3_psi_d_r_d_z2, m)?)?;
     m.add_function(wrap_pyfunction!(solve_grad_shafranov, m)?)?;
     m.add_function(wrap_pyfunction!(solve_circuit_equations, m)?)?;
 
