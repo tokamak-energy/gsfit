@@ -58,6 +58,10 @@ impl Dim1Linear {
         // Special case for interpolating a signal with only one entry
         if self.x.len() == 1 {
             for i_x_new in 0..n_x_new {
+                // Raise error if `x_new` is not finite, e.g. NaN or Inf, which could bypass the `>= f64::EPSILON` check below
+                if !x_new[i_x_new].is_finite() {
+                    return Err(Error::XNotFinite);
+                }
                 // Raise error if `x_new` is not exactly on the `x` grid point
                 if (x_new[i_x_new] - self.x[0]).abs() >= f64::EPSILON {
                     return Err(Error::XOutOfBounds {
@@ -66,6 +70,7 @@ impl Dim1Linear {
                         x_max: self.x[0],
                     });
                 }
+                
             }
             return Ok(Array1::from_elem(n_x_new, self.f[0]));
         }

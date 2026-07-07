@@ -6,6 +6,7 @@ pub enum Error {
     XOutOfBounds { x_desired: f64, x_min: f64, x_max: f64 },
     DuplicateXValues { x_value: f64, index: usize },
     XNotIncreasing { x_value1: f64, x_value2: f64, index: usize },
+    XNotFinite,
 }
 
 // impl fmt::Display for Error {
