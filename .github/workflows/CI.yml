@@ -228,8 +228,12 @@ jobs:
         uses: actions/deploy-pages@v5
 
   linux_build_wheels:
-    name: "Linux: Build Python wheels"
+    name: "Linux: Build Python wheels (${{ matrix.python }})"
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13', '3.14', '3.15']
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
@@ -245,16 +249,12 @@ jobs:
             rustup update
             rustc --version
 
-            # Build wheels for different Python versions
-            maturin build --release -i python3.11
-            maturin build --release -i python3.12
-            maturin build --release -i python3.13
-            maturin build --release -i python3.14
-            maturin build --release -i python3.15
+            # Build the wheel for this matrix's Python version
+            maturin build --release -i python${{ matrix.python }}
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-linux
+          name: wheels-linux-${{ matrix.python }}
           path: rust/target/wheels/
 
   linux_python_tests:
@@ -271,7 +271,8 @@ jobs:
       - name: Download built wheels
         uses: actions/download-artifact@v8
         with:
-          name: wheels-linux
+          pattern: wheels-linux-*
+          merge-multiple: true
       - name: List files
         run: |
           ls -l
@@ -355,57 +356,36 @@ jobs:
         run: ty check python/
 
   macos_build_wheels:
-    name: "macOS: Build Python wheels"
+    name: "macOS: Build Python wheels (${{ matrix.python }})"
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13', '3.14', '3.15']
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
-      - name: Set up Python 3.11
+      - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
-      - name: Set up Python 3.15
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.15'
+          python-version: ${{ matrix.python }}
           allow-prereleases: true
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies
-        run: |
-          python3.11 -m pip install --upgrade pip maturin
-          python3.12 -m pip install --upgrade pip maturin
-          python3.13 -m pip install --upgrade pip maturin
-          python3.14 -m pip install --upgrade pip maturin
-          python3.15 -m pip install --upgrade pip maturin
+        run: python${{ matrix.python }} -m pip install --upgrade pip maturin
       - name: Build Python wheels (compiling Rust)
         run: |
           # Update Rust and print version
           rustup update
           rustc --version
 
-          # Build wheels for different Python versions
-          maturin build --release -i python3.11
-          maturin build --release -i python3.12
-          maturin build --release -i python3.13
-          maturin build --release -i python3.14
-          maturin build --release -i python3.15
+          # Build the wheel for this matrix's Python version
+          maturin build --release -i python${{ matrix.python }}
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-macos
+          name: wheels-macos-${{ matrix.python }}
           path: rust/target/wheels/
 
   macos_python_tests:
@@ -422,7 +402,8 @@ jobs:
       - name: Download built wheels
         uses: actions/download-artifact@v8
         with:
-          name: wheels-macos
+          pattern: wheels-macos-*
+          merge-multiple: true
       - name: List files
         run: |
           ls -l
@@ -465,58 +446,36 @@ jobs:
         run: ty check python/
 
   windows_build_wheels:
-    name: "Windows: Build Python wheels"
+    name: "Windows: Build Python wheels (${{ matrix.python }})"
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13', '3.14', '3.15']
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
-      - name: Set up Python 3.11
+      - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
-      - name: Set up Python 3.15
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.15'
+          python-version: ${{ matrix.python }}
           allow-prereleases: true
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies
-        run: |
-          py -3.11 -m pip install --upgrade pip maturin
-          py -3.12 -m pip install --upgrade pip maturin
-          py -3.13 -m pip install --upgrade pip maturin
-          py -3.14 -m pip install --upgrade pip maturin
-          py -3.15 -m pip install --upgrade pip maturin
-
+        run: py -${{ matrix.python }} -m pip install --upgrade pip maturin
       - name: Build Python wheels (compiling Rust)
         run: |
           # Update Rust and print version
           rustup update
           rustc --version
 
-          # Build wheels for different Python versions
-          maturin build --release -i python3.11
-          maturin build --release -i python3.12
-          maturin build --release -i python3.13
-          maturin build --release -i python3.14
-          maturin build --release -i python3.15
+          # Build the wheel for this matrix's Python version
+          maturin build --release -i python${{ matrix.python }}
       - name: Upload wheels to artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-windows
+          name: wheels-windows-${{ matrix.python }}
           path: rust/target/wheels/
 
   windows_python_tests:
@@ -533,7 +492,8 @@ jobs:
       - name: Download built wheels
         uses: actions/download-artifact@v8
         with:
-          name: wheels-windows
+          pattern: wheels-windows-*
+          merge-multiple: true
       - name: List files
         run: dir
       - name: Find absolute path to Python wheel
