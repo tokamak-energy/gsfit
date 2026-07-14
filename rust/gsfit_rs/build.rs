@@ -1,54 +1,36 @@
 use std::env;
-use std::process::Command;
 
 fn main() {
-    // // For tests, link against Python 3.13
-    // let profile: String = env::var("PROFILE").unwrap_or_default();
-    // if profile == "test" || profile == "debug" {
-    //     // NOTE: I also need to do:
-    //     // ```terminal
-    //     // export LD_LIBRARY_PATH="/home/peter.buxton/.local/share/uv/python/cpython-3.13.2-linux-x86_64-gnu/lib"
-    //     // ```
-    //     let lib_dir: &str = "/home/peter.buxton/.local/share/uv/python/cpython-3.13.2-linux-x86_64-gnu/lib";
-    //     println!("cargo:rustc-link-search=native={}", lib_dir);
-    //     println!("cargo:rustc-link-lib=dylib=python3.13");
-    // }
+    // Rebuild if the Python interpreter selection changes
+    println!("cargo:rerun-if-env-changed=PYO3_PYTHON");
+    println!("cargo:rerun-if-env-changed=VIRTUAL_ENV");
 
-    // When building for tests (debug profile), add Python library path for linking
-    // This allows tests to link against libpython without extension-module feature
+    // Test binaries (`cargo test`, `cargo test --doc`, `cargo llvm-cov`) embed a Python
+    // interpreter, so they must link against libpython. These always use the "debug" profile.
+    // Release builds are made by maturin for the Python extension module, which must NOT link
+    // libpython: the symbols are provided by the Python process which loads the module.
     let profile: String = env::var("PROFILE").unwrap_or_default();
-    if profile == "test" || profile == "debug" {
-        // Try Python from PYO3_PYTHON env var first, then VIRTUAL_ENV, then python3
-        let python_cmd = if let Ok(pyo3_python) = env::var("PYO3_PYTHON") {
-            pyo3_python
-        } else if let Ok(venv) = env::var("VIRTUAL_ENV") {
-            format!("{}/bin/python", venv)
-        } else {
-            "python3".to_string()
-        };
+    if profile != "debug" {
+        return;
+    }
 
-        // Try to get Python library directory
-        if let Ok(output) = Command::new(&python_cmd)
-            .args(&["-c", "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"])
-            .output()
-        {
-            if output.status.success() {
-                if let Ok(libdir) = String::from_utf8(output.stdout) {
-                    let libdir = libdir.trim();
-                    println!("cargo:rustc-link-search=native={}", libdir);
+    // Discover the Python interpreter using pyo3's own logic (checks `PYO3_PYTHON`, then
+    // `VIRTUAL_ENV`, then `python3`/`python` on PATH), which handles uv, venv, conda, and
+    // system Pythons on Linux, macOS, and Windows
+    let config: &pyo3_build_config::InterpreterConfig = pyo3_build_config::get();
 
-                    // Get the Python version for the library name
-                    if let Ok(version_output) = Command::new(&python_cmd)
-                        .args(&["-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"])
-                        .output()
-                    {
-                        if let Ok(version) = String::from_utf8(version_output.stdout) {
-                            let version = version.trim();
-                            println!("cargo:rustc-link-lib=dylib=python{}", version);
-                        }
-                    }
-                }
-            }
+    if let (Some(lib_dir), Some(lib_name)) = (config.lib_dir(), config.lib_name()) {
+        // Link-time: where libpython lives and what it is called
+        // (Linux "python3.14"; macOS "python3.14"; Windows "python314")
+        println!("cargo:rustc-link-search=native={lib_dir}");
+        println!("cargo:rustc-link-lib=dylib={lib_name}");
+
+        // Run-time: embed an rpath so test binaries can find libpython without needing
+        // `LD_LIBRARY_PATH` (Linux) or `DYLD_LIBRARY_PATH` (macOS) to be set.
+        // Windows has no rpath; the DLL is found via PATH instead.
+        let target_os: String = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+        if target_os == "linux" || target_os == "macos" {
+            println!("cargo:rustc-link-arg=-Wl,-rpath,{lib_dir}");
         }
     }
 }

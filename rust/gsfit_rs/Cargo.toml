@@ -33,6 +33,11 @@ ndarray-stats = "0.7.0"  # TODO: I want to remove this dependency, because it re
 rand = "0.10.1"
 special = "0.13.1" # "special" mathematical functions, used for `Lambert`
 
+[build-dependencies]
+# Used in `build.rs` to discover the Python interpreter (uv, venv, conda, or system Python)
+# with the same logic pyo3 itself uses; must be the same version as `pyo3`
+pyo3-build-config = { version = "0.29.0", features = ["resolve-config"] }
+
 [lints.clippy]
 needless_range_loop = "allow"
 needless_return = "allow"
