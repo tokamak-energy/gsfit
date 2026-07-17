@@ -34,15 +34,21 @@ Example:
 use ndarray::Array1;
 
 let n_x: usize = 100;
+let n_y: usize = 50;
 let x: Array1<f64> = Array1::linspace(0.0, 1.0, n_x);
+let y: Array1<f64> = Array1::linspace(2.0, 3.0, n_y);
 
 for i_x in 0..n_x {
     println!("x = {}", x[i_x]);
+    for i_y in 0..n_y {
+        println!("y = {}", y[i_y]);
+        unimplemented!("some logic");
+    }
 }
 ```
 You should always use `n_` followed by the quantity, **not** `for i_x in 0..x.len() {`
 
-For doubly nested for loops start with `i_`, then `j_`, then `k_`.
+For doubly nested for loops which loop over the same quantity, start with `i_`, then `j_`, then `k_`.
 ```rust
 for i_x in 0..n_x {
     for j_x in 0..n_x {
