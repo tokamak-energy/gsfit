@@ -16,5 +16,7 @@ pub use greens_python_interface::greens_d2_psi_d_r_d_z;
 pub use greens_python_interface::greens_d2_psi_d_r2;
 pub use greens_python_interface::greens_d2_psi_d_z2;
 pub use greens_python_interface::greens_d3_psi_d_r_d_z2;
+pub use greens_python_interface::greens_d3_psi_d_r2_d_z;
+pub use greens_python_interface::greens_d3_psi_d_z3;
 pub use greens_python_interface::greens_py;
 pub use mutual_inductance_finite_size_to_finite_size::mutual_inductance_finite_size_to_finite_size;

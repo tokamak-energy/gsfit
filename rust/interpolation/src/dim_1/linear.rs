@@ -70,7 +70,6 @@ impl Dim1Linear {
                         x_max: self.x[0],
                     });
                 }
-                
             }
             return Ok(Array1::from_elem(n_x_new, self.f[0]));
         }
@@ -110,7 +109,7 @@ impl Dim1Linear {
         if !x_new.is_finite() {
             return Err(Error::XNotFinite);
         }
-        
+
         // Special case when: there is only one element in `x`; and `x_new` is exactly the same as `x[0]`
         if self.x.len() == 1 && (x_new - self.x[0]).abs() < f64::EPSILON {
             return Ok(self.f[0]);

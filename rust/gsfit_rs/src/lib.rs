@@ -14,7 +14,10 @@ mod source_functions;
 use circuit_equations::solve_circuit_equations;
 use coils::Coils;
 use grad_shafranov::solve_grad_shafranov;
-use greens::{greens_d_psi_d_r, greens_d_psi_d_z, greens_d2_psi_d_r_d_z, greens_d2_psi_d_r2, greens_d2_psi_d_z2, greens_d3_psi_d_r_d_z2, greens_py};
+use greens::{
+    greens_d_psi_d_r, greens_d_psi_d_z, greens_d2_psi_d_r_d_z, greens_d2_psi_d_r2, greens_d2_psi_d_z2, greens_d3_psi_d_r_d_z2, greens_d3_psi_d_r2_d_z,
+    greens_d3_psi_d_z3, greens_py,
+};
 mod material_properties;
 use passives::Passives;
 use plasma::Plasma;
@@ -46,6 +49,8 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(greens_d2_psi_d_r_d_z, m)?)?;
     m.add_function(wrap_pyfunction!(greens_d2_psi_d_z2, m)?)?;
     m.add_function(wrap_pyfunction!(greens_d3_psi_d_r_d_z2, m)?)?;
+    m.add_function(wrap_pyfunction!(greens_d3_psi_d_r2_d_z, m)?)?;
+    m.add_function(wrap_pyfunction!(greens_d3_psi_d_z3, m)?)?;
     m.add_function(wrap_pyfunction!(solve_grad_shafranov, m)?)?;
     m.add_function(wrap_pyfunction!(solve_circuit_equations, m)?)?;
 

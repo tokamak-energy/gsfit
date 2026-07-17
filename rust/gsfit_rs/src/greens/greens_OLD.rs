@@ -6,12 +6,6 @@ use std::f64::consts::PI;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
-/// Ad hoc parameter which splits the self-point hoop-field correction `d_psi_d_r / r`
-/// between `d2_psi_d_r2` (weight `1/2 - XI`) and `d2_psi_d_z2` (weight `1/2 + XI`), so that
-/// Ampere's law, `Delta* psi = -2 * PI * MU_0 * r * j`, is satisfied at the self-point.
-/// Numerically matched at `(r, z) = (0.41, 0.0)` with `d_r = d_z = 0.0125`.
-const XI: f64 = 0.157;
-
 /// Greens-function table between "sensors" `(r, z)` and "current sources" `(r_prime, z_prime)`.
 ///
 /// Several methods (`greens_psi`, `greens_d_psi_d_r`, ...) share the same elliptic integrals.
@@ -27,12 +21,6 @@ const XI: f64 = 0.157;
 /// | `k = k_sq.sqrt()`                   | ~10–20 cycles       | one SIMD instruction                           |
 /// | `ellpe(k_sq)`, `ellpk(1 - k_sq)`    | ~50–200+ cycles     | polynomial approximations, harder to vectorize |
 /// | Read `f64` from L2 / L3 / RAM       | ~10 / ~40 / ~200+   | depends on cache state                         |
-///
-/// All tables are written in the "far-field basis":
-/// `g = coeff_a * (K - E) + coeff_s * E`
-/// where `coeff_s` carries the far-field decay factor `4 * r * r_prime` (as the sensor moves
-/// far from the source, `K - E -> 0` and the whole expression tends to `(PI / 2) * coeff_s`).
-/// Equations derived and verified with SymPy.
 pub struct Greens {
     r: Array1<f64>,
     z: Array1<f64>,
@@ -210,22 +198,6 @@ impl Greens {
         }
     }
 
-    /// Calculates `g_psi`, where:
-    /// `psi = g_psi * current`
-    ///
-    /// At the self-point the filament expression diverges; the flux at the centre of a
-    /// conductor with a rectangular cross-section `d_r_prime * d_z_prime` is used instead,
-    /// with relative error `O((delta/r)^2 * ln(r/delta))`.
-    ///
-    /// Note: the flux at the cell centre is NOT the same as the self-inductance: the
-    /// self-inductance is the flux linkage, averaged over the cross-section, whereas the
-    /// flux peaks inside the conductor, so the centre value is larger (~5% for typical cells).
-    ///
-    /// # Arguments
-    /// * None
-    ///
-    /// # Returns
-    /// * `g_psi[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"
     pub fn psi(&self) -> Array2<f64> {
         let n_rz: usize = self.n_rz;
         let n_rz_prime: usize = self.n_rz_prime;
@@ -247,22 +219,14 @@ impl Greens {
 
                 let rr: Array1<f64> = r * r_prime[i_rz_prime];
                 let k_sq: Array1<f64> = 4.0 * &rr / (&r_sq + &z_sq);
-                let u: Array1<f64> = (&r_sq + &z_sq).mapv(|x: f64| x.sqrt());
 
                 let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_rz_prime]);
                 let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_rz_prime]);
-
-                // g_psi = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * sqrt(r * r_prime) * (2 - k_sq) / k
-                // coeff_s = -2 * MU_0 * r * r_prime / u
                 let mut green_this_filament = Array1::<f64>::zeros(n_rz);
                 for i_rz in 0..n_rz {
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
-
-                    let coeff_a: f64 = MU_0 * rr[i_rz].sqrt() * (2.0 - k_sq[i_rz]) / k_sq[i_rz].sqrt();
-                    let coeff_s: f64 = -2.0 * MU_0 * rr[i_rz] / u[i_rz];
-
-                    green_this_filament[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                    green_this_filament[i_rz] =
+                        MU_0 * rr[i_rz].sqrt() * ((2.0 - k_sq[i_rz]) * elliptic_integral_k_local[i_rz] - 2.0 * elliptic_integral_e_local[i_rz])
+                            / k_sq[i_rz].sqrt();
                 }
 
                 // Test for checking if source and sensor are at same location
@@ -271,20 +235,17 @@ impl Greens {
                 // But this would be quite complicated as we do the elliptic integrals in initialisation.
                 // TODO: should this be smaller?
                 // TODO: we should consider how close the filaments are when we are doing mutual inductance between discretised passive filaments
-                //
-                // Self-point: the flux at the centre of the cell from its own uniform current
-                // psi = MU_0 * r * (ln(8 * r) - 2 - p_c)
-                // where `p_c` is the mean log distance from the cell centre to the cross-section:
-                // p_c = 0.5 * ln((d_r^2 + d_z^2) / 4) - 3/2 + (d_r / (2 * d_z)) * atan(d_z / d_r) + (d_z / (2 * d_r)) * atan(d_r / d_z)
                 let epsilon: f64 = 1e-6;
                 for i_grid in 0..n_rz {
                     if (r[i_grid] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_grid] - z_prime[i_rz_prime]).abs() < epsilon {
-                        let d_r: f64 = d_r_prime[i_rz_prime];
-                        let d_z: f64 = d_z_prime[i_rz_prime];
-                        let p_c: f64 = 0.5 * ((d_r.powi(2) + d_z.powi(2)) / 4.0).ln() - 1.5
-                            + d_r / (2.0 * d_z) * (d_z / d_r).atan()
-                            + d_z / (2.0 * d_r) * (d_r / d_z).atan();
-                        green_this_filament[i_grid] = MU_0 * r[i_grid] * ((8.0 * r[i_grid]).ln() - 2.0 - p_c);
+                        green_this_filament[i_grid] = MU_0
+                            * r[i_grid]
+                            * ((1.0
+                                + 2.0 * (d_z_prime[i_rz_prime] / (8.0 * r[i_grid])).powi(2)
+                                + 2.0 / 3.0 * (d_r_prime[i_rz_prime] / (8.0 * r[i_grid])).powi(2))
+                                * (8.0 * r[i_grid] / (d_r_prime[i_rz_prime] + d_z_prime[i_rz_prime])).ln()
+                                - 0.5
+                                + 0.5 * (d_z_prime[i_rz_prime] / (8.0 * r[i_grid])).powi(2))
                     }
                 }
 
@@ -305,21 +266,6 @@ impl Greens {
     ///
     /// Note: `b_z = d_psi_d_r / (2.0 * PI * r)`
     ///
-    /// Geometric variables:
-    /// * `h = z - z_prime` - height above the plane of the source ring
-    /// * `d_sq = (r - r_prime)^2 + h^2` - (distance to the nearest point of the ring)^2
-    /// * `u_sq = (r + r_prime)^2 + h^2` - (distance to the farthest point of the ring)^2
-    /// * `w_sq = r_prime^2 - r^2 - h^2` - minus the "power of the point" w.r.t. the ring circle;
-    ///   despite the name it is not a literal square: positive inside the ring circle, negative outside
-    ///
-    /// `g_d_psi_d_r = coeff_a * (K - E) + coeff_s * E` with:
-    /// * `coeff_a = MU_0 * r / u`
-    /// * `coeff_s = -2 * MU_0 * r * r_prime * (r - r_prime) / (u * d_sq)`
-    ///
-    /// At the self-point the filament expression diverges; the value for a conductor with a
-    /// rectangular cross-section `d_r_prime * d_z_prime` (the "hoop field") is used instead,
-    /// with relative error `O((delta/r)^2 * ln(r/delta))`.
-    ///
     /// # Arguments
     /// * None
     ///
@@ -333,8 +279,6 @@ impl Greens {
         let z: &Array1<f64> = &self.z;
         let r_prime: &Array1<f64> = &self.r_prime;
         let z_prime: &Array1<f64> = &self.z_prime;
-        let d_r_prime: &Array1<f64> = &self.d_r_prime;
-        let d_z_prime: &Array1<f64> = &self.d_z_prime;
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
@@ -345,31 +289,25 @@ impl Greens {
                 let u_sq: Array1<f64> = (r + r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
                 let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
                 let d_sq: Array1<f64> = (r - r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
+                let w_sq: Array1<f64> = r.mapv(|x: f64| r_prime[i_rz_prime].powi(2) - x.powi(2)) - &h_sq;
 
                 let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_rz_prime]);
                 let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_rz_prime]);
 
-                // g_d_psi_d_r = coeff_a * (K - E) + coeff_s * E
+                // g_d_psi_d_r = 2 * PI * r * g_bz
+                //             = 2 * PI * r * MU_0 / (2 * PI * u) * (w_sq * E / d_sq + K)
+                //             = MU_0 * r / u * (w_sq * E / d_sq + K)
                 let mut g_d_psi_d_r_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
                 for i_rz in 0..n_rz {
-                    let rp: f64 = r_prime[i_rz_prime];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
-
-                    let coeff_a: f64 = MU_0 * r[i_rz] / u[i_rz];
-                    let coeff_s: f64 = -2.0 * MU_0 * r[i_rz] * rp * (r[i_rz] - rp) / (u[i_rz] * d_sq[i_rz]);
-
-                    g_d_psi_d_r_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                    g_d_psi_d_r_local[i_rz] =
+                        MU_0 * r[i_rz] / u[i_rz] * (w_sq[i_rz] * elliptic_integral_e_local[i_rz] / d_sq[i_rz] + elliptic_integral_k_local[i_rz]);
                 }
 
-                // Self-point: the hoop field of the finite rectangular cross-section
-                // <d_psi_d_r> = (MU_0 / 2) * (ln(16 * r / sqrt(d_r^2 + d_z^2)) + 1 - (d_z / d_r) * atan(d_r / d_z))
+                // Set to zero when source and sensor are at the same location
                 let epsilon: f64 = 1e-6;
                 for i_rz in 0..n_rz {
                     if (r[i_rz] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_rz] - z_prime[i_rz_prime]).abs() < epsilon {
-                        let d_r: f64 = d_r_prime[i_rz_prime];
-                        let d_z: f64 = d_z_prime[i_rz_prime];
-                        g_d_psi_d_r_local[i_rz] =
-                            MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
+                        g_d_psi_d_r_local[i_rz] = 0.0;
                     }
                 }
 
@@ -414,26 +352,21 @@ impl Greens {
                 let u_sq: Array1<f64> = (r + r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
                 let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
                 let d_sq: Array1<f64> = (r - r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
+                let v_sq: Array1<f64> = r.mapv(|x: f64| r_prime[i_rz_prime].powi(2) + x.powi(2)) + &h_sq;
 
                 let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_rz_prime]);
                 let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_rz_prime]);
 
-                // g_d_psi_d_z = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * h / u
-                // coeff_s = -2 * MU_0 * r * r_prime * h / (u * d_sq)
+                // g_d_psi_d_z = -2 * PI * r * g_br
+                //             = -2 * PI * r * MU_0 * h / (2 * PI * r * u) * (v_sq * E / d_sq - K)
+                //             = -MU_0 * h / u * (v_sq * E / d_sq - K)
                 let mut g_d_psi_d_z_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
                 for i_rz in 0..n_rz {
-                    let rp: f64 = r_prime[i_rz_prime];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
-
-                    let coeff_a: f64 = MU_0 * h[i_rz] / u[i_rz];
-                    let coeff_s: f64 = -2.0 * MU_0 * r[i_rz] * rp * h[i_rz] / (u[i_rz] * d_sq[i_rz]);
-
-                    g_d_psi_d_z_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                    g_d_psi_d_z_local[i_rz] =
+                        -MU_0 * h[i_rz] / u[i_rz] * (v_sq[i_rz] * elliptic_integral_e_local[i_rz] / d_sq[i_rz] - elliptic_integral_k_local[i_rz]);
                 }
 
-                // Self-point: the kernel is odd in h, so the value is EXACTLY zero for any
-                // z-symmetric cross-section
+                // Set to zero when source and sensor are at the same location
                 let epsilon: f64 = 1e-6;
                 for i_rz in 0..n_rz {
                     if (r[i_rz] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_rz] - z_prime[i_rz_prime]).abs() < epsilon {
@@ -456,15 +389,7 @@ impl Greens {
     /// Calculates `g_d2_psi_d_r2`, where:
     /// `d2(psi)/d(r2) = g_d2_psi_d_r2 * current`
     ///
-    /// Equation derived and verified with SymPy.
-    ///
-    /// Away from the source, psi satisfies the homogeneous Grad-Shafranov equation, so this
-    /// closed form equals `d_psi_d_r / r - d2_psi_d_z2` (checked in `test_gs_identity`).
-    /// That identity does NOT hold at the self-point, where the sourced equation
-    /// `Delta* psi = -2 * PI * MU_0 * r * j` applies instead; the self-point uses its own
-    /// closed form, including a share (`1/2 - XI`) of the hoop-field correction
-    /// `d_psi_d_r / r` so that the sourced equation is satisfied (checked in
-    /// `test_self_point_ampere`).
+    /// Equation found using Python's SymPy package (see `greens_d2_psi_d_r2.rs`).
     ///
     /// # Arguments
     /// * None
@@ -479,8 +404,6 @@ impl Greens {
         let z: &Array1<f64> = &self.z;
         let r_prime: &Array1<f64> = &self.r_prime;
         let z_prime: &Array1<f64> = &self.z_prime;
-        let d_r_prime: &Array1<f64> = &self.d_r_prime;
-        let d_z_prime: &Array1<f64> = &self.d_z_prime;
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
@@ -489,40 +412,42 @@ impl Greens {
             .map(|i_rz_prime: usize| {
                 let h_sq: Array1<f64> = (z - z_prime[i_rz_prime]).mapv(|x: f64| x.powi(2));
                 let u_sq: Array1<f64> = (r + r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
+                let rr: Array1<f64> = r * r_prime[i_rz_prime];
                 let d_sq: Array1<f64> = (r - r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
+                let w_sq: Array1<f64> = r.mapv(|x: f64| r_prime[i_rz_prime].powi(2) - x.powi(2)) - &h_sq;
+                let y_sq: Array1<f64> = 4.0 * &rr - &u_sq;
 
                 let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_rz_prime]);
                 let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_rz_prime]);
 
-                // g_d2_psi_d_r2 = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * (u_sq + d_sq) * h_sq / (2 * u^3 * d_sq)
-                // coeff_s = 2 * MU_0 * r_prime * (r_prime * u_sq * d_sq - r * (2 * u_sq - d_sq) * h_sq) / (u^3 * d_sq^2)
                 let mut g_d2_psi_d_r2_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
                 for i_rz in 0..n_rz {
+                    let ri: f64 = r[i_rz];
                     let rp: f64 = r_prime[i_rz_prime];
-                    let us: f64 = u_sq[i_rz];
+                    let e: f64 = elliptic_integral_e_local[i_rz];
+                    let k: f64 = elliptic_integral_k_local[i_rz];
                     let ds: f64 = d_sq[i_rz];
-                    let hs: f64 = h_sq[i_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
+                    let us: f64 = u_sq[i_rz];
+                    let ws: f64 = w_sq[i_rz];
+                    let ys: f64 = y_sq[i_rz];
 
-                    let coeff_a: f64 = MU_0 * (us + ds) * hs / (2.0 * u[i_rz] * us * ds);
-                    let coeff_s: f64 = 2.0 * MU_0 * rp * (rp * us * ds - r[i_rz] * (2.0 * us - ds) * hs) / (u[i_rz] * us * ds * ds);
+                    let top_1: f64 = 2.0 * ri * ds.powi(2) * us * (ri + rp) * e;
+                    let top_2: f64 = 2.0 * ri * ds * ws * ys * ((-2.0 * ri - 2.0 * rp) * e + (ri + rp) * k);
+                    let top_3: f64 = 4.0 * ri * us * ws * ys * (-ri + rp) * e;
+                    let top_4: f64 = -1.0 * ds.powi(2) * us.powi(2) * e;
+                    let top_5: f64 = ds.powi(2) * us * ys * k;
+                    let top_6: f64 = ds * us * ys * (-4.0 * ri.powi(2) * e + 3.0 * ws * e - ws * k);
 
-                    g_d2_psi_d_r2_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                    let bottom: f64 = 2.0 * ds.powi(2) * us.powf(1.5) * ys;
+
+                    g_d2_psi_d_r2_local[i_rz] = MU_0 * (top_1 + top_2 + top_3 + top_4 + top_5 + top_6) / bottom;
                 }
 
-                // Self-point: dominated by the cell's own interior field, plus a share of the
-                // hoop-field correction `d_psi_d_r / r` (split by XI) so that Ampere's law is satisfied
-                // <d2_psi_d_r2> = -4 * MU_0 * r * atan(d_z / d_r) / (d_r * d_z) + (1/2 - XI) * <d_psi_d_r> / r
+                // Set to zero when source and sensor are at the same location
                 let epsilon: f64 = 1e-6;
                 for i_rz in 0..n_rz {
                     if (r[i_rz] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_rz] - z_prime[i_rz_prime]).abs() < epsilon {
-                        let d_r: f64 = d_r_prime[i_rz_prime];
-                        let d_z: f64 = d_z_prime[i_rz_prime];
-                        let d_psi_d_r_self: f64 =
-                            MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
-                        g_d2_psi_d_r2_local[i_rz] = -4.0 * MU_0 * r[i_rz] * (d_z / d_r).atan() / (d_r * d_z) + (0.5 - XI) * d_psi_d_r_self / r[i_rz];
+                        g_d2_psi_d_r2_local[i_rz] = 0.0;
                     }
                 }
 
@@ -541,7 +466,7 @@ impl Greens {
     /// Calculates `g_d2_psi_d_r_d_z`, where:
     /// `d2(psi)/d(r)d(z) = g_d2_psi_d_r_d_z * current`
     ///
-    /// Equation derived and verified with SymPy.
+    /// Derived from: `d_psi_d_r = 2*PI*r * b_z`, so `d2_psi_d_r_d_z = 2*PI*r * d(b_z)/d(z)`
     ///
     /// # Arguments
     /// * None
@@ -567,29 +492,22 @@ impl Greens {
                 let u_sq: Array1<f64> = (r + r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
                 let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
                 let d_sq: Array1<f64> = (r - r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
+                let v_sq: Array1<f64> = r.mapv(|x: f64| r_prime[i_rz_prime].powi(2) + x.powi(2)) + &h_sq;
                 let w_sq: Array1<f64> = r.mapv(|x: f64| r_prime[i_rz_prime].powi(2) - x.powi(2)) - &h_sq;
 
                 let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_rz_prime]);
                 let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_rz_prime]);
 
-                // g_d2_psi_d_r_d_z = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * r * h * w_sq / (u^3 * d_sq)
-                // coeff_s = 2 * MU_0 * r * r_prime * h * (2 * u_sq * (r - r_prime) - (r + r_prime) * d_sq) / (u^3 * d_sq^2)
+                // g_d2_psi_d_r_d_z = 2 * PI * r * g_d_bz_dz
+                //                  = MU_0 * r * h / (d_sq * u * u_sq) * (-(3 * u_sq + 4 * v_sq * w_sq / d_sq) * E + w_sq * K)
                 let mut g_d2_psi_d_r_d_z_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
                 for i_rz in 0..n_rz {
-                    let rp: f64 = r_prime[i_rz_prime];
-                    let us: f64 = u_sq[i_rz];
-                    let ds: f64 = d_sq[i_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
-
-                    let coeff_a: f64 = MU_0 * r[i_rz] * h[i_rz] * w_sq[i_rz] / (u[i_rz] * us * ds);
-                    let coeff_s: f64 = 2.0 * MU_0 * r[i_rz] * rp * h[i_rz] * (2.0 * us * (r[i_rz] - rp) - (r[i_rz] + rp) * ds) / (u[i_rz] * us * ds * ds);
-
-                    g_d2_psi_d_r_d_z_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                    g_d2_psi_d_r_d_z_local[i_rz] = MU_0 * r[i_rz] * h[i_rz] / (d_sq[i_rz] * u[i_rz] * u_sq[i_rz])
+                        * (-(3.0 * u_sq[i_rz] + 4.0 * v_sq[i_rz] * w_sq[i_rz] / d_sq[i_rz]) * elliptic_integral_e_local[i_rz]
+                            + w_sq[i_rz] * elliptic_integral_k_local[i_rz]);
                 }
 
-                // Self-point: the kernel is odd in h, so the value is EXACTLY zero for any
-                // z-symmetric cross-section
+                // Set to zero when source and sensor are at the same location
                 let epsilon: f64 = 1e-6;
                 for i_rz in 0..n_rz {
                     if (r[i_rz] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_rz] - z_prime[i_rz_prime]).abs() < epsilon {
@@ -612,18 +530,17 @@ impl Greens {
     /// Calculates `g_d2_psi_d_z2`, where:
     /// `d2(psi)/d(z2) = g_d2_psi_d_z2 * current`
     ///
-    /// Equation derived and verified with SymPy.
+    /// Derived from: `d_psi_d_z = -2*PI*r * b_r`, so `d2_psi_d_z2 = -2*PI*r * d(b_r)/d(z)`
     ///
     /// # Arguments
     /// * None
     ///
-    /// At the self-point the value is dominated by the cell's own interior field; the closed
-    /// form for a rectangular cross-section is used, including a share (`1/2 + XI`) of the
-    /// hoop-field correction `d_psi_d_r / r` so that the sourced Grad-Shafranov equation
-    /// `Delta* psi = -2 * PI * MU_0 * r * j` is satisfied (checked in `test_self_point_ampere`).
-    ///
     /// # Returns
     /// * `g_d2_psi_d_z2[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
+    ///
+    /// TODO: there is a jump condition when the source and sensor are at the same location.
+    /// TODO: I need to derive and implement this jump condition
+    /// TODO: remember- we can use the Mode enum to detect when the "sensors" and "current sources" are at the same location
     pub fn d2_psi_d_z2(&self) -> Array2<f64> {
         let n_rz: usize = self.n_rz;
         let n_rz_prime: usize = self.n_rz_prime;
@@ -632,8 +549,6 @@ impl Greens {
         let z: &Array1<f64> = &self.z;
         let r_prime: &Array1<f64> = &self.r_prime;
         let z_prime: &Array1<f64> = &self.z_prime;
-        let d_r_prime: &Array1<f64> = &self.d_r_prime;
-        let d_z_prime: &Array1<f64> = &self.d_z_prime;
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
@@ -643,39 +558,30 @@ impl Greens {
                 let h_sq: Array1<f64> = (z - z_prime[i_rz_prime]).mapv(|x: f64| x.powi(2));
                 let u_sq: Array1<f64> = (r + r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
                 let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
+                let rr: Array1<f64> = r * r_prime[i_rz_prime];
                 let d_sq: Array1<f64> = (r - r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
+                let k_sq: Array1<f64> = 4.0 * &rr / &u_sq;
+                let v_sq: Array1<f64> = r.mapv(|x: f64| r_prime[i_rz_prime].powi(2) + x.powi(2)) + &h_sq;
 
                 let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_rz_prime]);
                 let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_rz_prime]);
 
-                // g_d2_psi_d_z2 = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * (2 * u_sq * d_sq - (u_sq + d_sq) * h_sq) / (2 * u^3 * d_sq)
-                // coeff_s = -2 * MU_0 * r * r_prime * (u_sq * d_sq - (2 * u_sq - d_sq) * h_sq) / (u^3 * d_sq^2)
+                // g_d2_psi_d_z2 = -2 * PI * r * g_d_br_dz
+                //               = -MU_0 / (d_sq * u * u_sq) * ((v_sq * u_sq - h_sq * (d_sq + k_sq * u_sq^2 / d_sq)) * E + (h_sq * v_sq - u_sq * d_sq) * K)
                 let mut g_d2_psi_d_z2_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
                 for i_rz in 0..n_rz {
-                    let rp: f64 = r_prime[i_rz_prime];
-                    let us: f64 = u_sq[i_rz];
-                    let ds: f64 = d_sq[i_rz];
-                    let hs: f64 = h_sq[i_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
+                    let e_term: f64 =
+                        (v_sq[i_rz] * u_sq[i_rz] - h_sq[i_rz] * (d_sq[i_rz] + k_sq[i_rz] * u_sq[i_rz].powi(2) / d_sq[i_rz])) * elliptic_integral_e_local[i_rz];
+                    let k_term: f64 = (h_sq[i_rz] * v_sq[i_rz] - u_sq[i_rz] * d_sq[i_rz]) * elliptic_integral_k_local[i_rz];
 
-                    let coeff_a: f64 = MU_0 * (2.0 * us * ds - (us + ds) * hs) / (2.0 * u[i_rz] * us * ds);
-                    let coeff_s: f64 = -2.0 * MU_0 * r[i_rz] * rp * (us * ds - (2.0 * us - ds) * hs) / (u[i_rz] * us * ds * ds);
-
-                    g_d2_psi_d_z2_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                    g_d2_psi_d_z2_local[i_rz] = -MU_0 / (d_sq[i_rz] * u[i_rz] * u_sq[i_rz]) * (e_term + k_term);
                 }
 
-                // Self-point: dominated by the cell's own interior field, plus a share of the
-                // hoop-field correction `d_psi_d_r / r` (split by XI) so that Ampere's law is satisfied
-                // <d2_psi_d_z2> = -4 * MU_0 * r * atan(d_r / d_z) / (d_r * d_z) + (1/2 + XI) * <d_psi_d_r> / r
+                // Set to zero when source and sensor are at the same location
                 let epsilon: f64 = 1e-6;
                 for i_rz in 0..n_rz {
                     if (r[i_rz] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_rz] - z_prime[i_rz_prime]).abs() < epsilon {
-                        let d_r: f64 = d_r_prime[i_rz_prime];
-                        let d_z: f64 = d_z_prime[i_rz_prime];
-                        let d_psi_d_r_self: f64 =
-                            MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
-                        g_d2_psi_d_z2_local[i_rz] = -4.0 * MU_0 * r[i_rz] * (d_r / d_z).atan() / (d_r * d_z) + (0.5 + XI) * d_psi_d_r_self / r[i_rz];
+                        g_d2_psi_d_z2_local[i_rz] = 0.0;
                     }
                 }
 
@@ -691,118 +597,8 @@ impl Greens {
         g_d2_psi_d_z2
     }
 
-    /// Calculates `g_d3_psi_d_z3`, where:
-    /// `d3(psi)/d(z3) = g_d3_psi_d_z3 * current`
-    ///
-    /// Equation derived and verified with SymPy.
-    ///
-    /// # Arguments
-    /// * None
-    ///
-    /// # Returns
-    /// * `g_d3_psi_d_z3[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
-    pub fn d3_psi_d_z3(&self) -> Array2<f64> {
-        let n_rz: usize = self.n_rz;
-        let n_rz_prime: usize = self.n_rz_prime;
-
-        let r: &Array1<f64> = &self.r;
-        let z: &Array1<f64> = &self.z;
-        let r_prime: &Array1<f64> = &self.r_prime;
-        let z_prime: &Array1<f64> = &self.z_prime;
-        let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
-        let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
-
-        let g_d3_psi_d_z3_vec: Vec<Array1<f64>> = (0..n_rz_prime)
-            .into_par_iter()
-            .map(|i_rz_prime: usize| {
-                let h: Array1<f64> = z - z_prime[i_rz_prime];
-                let h_sq: Array1<f64> = h.mapv(|x: f64| x.powi(2));
-                let u_sq: Array1<f64> = (r + r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
-                let d_sq: Array1<f64> = (r - r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
-
-                let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_rz_prime]);
-                let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_rz_prime]);
-
-                // g_d3_psi_d_z3 = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = -MU_0 * h * (u_sq * d_sq * (3 * (u_sq + d_sq) + 10 * h_sq) - 4 * (u_sq + d_sq)^2 * h_sq) / (2 * u^5 * d_sq^2)
-                // coeff_s = 2 * MU_0 * r * r_prime * h * (3 * u_sq * d_sq * (2 * u_sq - d_sq) - (8 * u_sq^2 - u_sq * d_sq - 4 * d_sq^2) * h_sq) / (u^5 * d_sq^3)
-                let mut g_d3_psi_d_z3_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
-                for i_rz in 0..n_rz {
-                    let rp: f64 = r_prime[i_rz_prime];
-                    let us: f64 = u_sq[i_rz];
-                    let ds: f64 = d_sq[i_rz];
-                    let hs: f64 = h_sq[i_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
-
-                    let coeff_a: f64 =
-                        -MU_0 * h[i_rz] * (us * ds * (3.0 * (us + ds) + 10.0 * hs) - 4.0 * (us + ds) * (us + ds) * hs) / (2.0 * u[i_rz] * us * us * ds * ds);
-                    let coeff_s: f64 = 2.0 * MU_0 * r[i_rz] * rp * h[i_rz] * (3.0 * us * ds * (2.0 * us - ds) - (8.0 * us * us - us * ds - 4.0 * ds * ds) * hs)
-                        / (u[i_rz] * us * us * ds * ds * ds);
-
-                    g_d3_psi_d_z3_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
-                }
-
-                // Set to zero when source and sensor are at the same location
-                // (d3_psi_d_z3 is odd in h, so zero is the symmetric value at the self-point)
-                let epsilon: f64 = 1e-6;
-                for i_rz in 0..n_rz {
-                    if (r[i_rz] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_rz] - z_prime[i_rz_prime]).abs() < epsilon {
-                        g_d3_psi_d_z3_local[i_rz] = 0.0;
-                    }
-                }
-
-                g_d3_psi_d_z3_local
-            })
-            .collect();
-
-        let mut g_d3_psi_d_z3: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
-        for i_rz_prime in 0..n_rz_prime {
-            g_d3_psi_d_z3.slice_mut(s![.., i_rz_prime]).assign(&g_d3_psi_d_z3_vec[i_rz_prime]);
-        }
-
-        g_d3_psi_d_z3
-    }
-
-    /// Calculates `g_d3_psi_d_r2_d_z`, where:
-    /// `d3(psi)/d(r2)d(z) = g_d3_psi_d_r2_d_z * current`
-    ///
-    /// Away from the source, psi satisfies the homogeneous Grad-Shafranov equation; its
-    /// z-derivative gives `d3_psi_d_r2_d_z = d2_psi_d_r_d_z / r - d3_psi_d_z3`
-    /// (proven with SymPy).
-    ///
-    /// # Arguments
-    /// * None
-    ///
-    /// # Returns
-    /// * `g_d3_psi_d_r2_d_z[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
-    pub fn d3_psi_d_r2_d_z(&self) -> Array2<f64> {
-        let d2_psi_d_r_d_z: Array2<f64> = self.d2_psi_d_r_d_z();
-        let d3_psi_d_z3: Array2<f64> = self.d3_psi_d_z3();
-        let r: &Array1<f64> = &self.r;
-
-        // At the self-point both inputs are exactly zero (kernels odd in h), and zero is also
-        // the correct value for this table (its kernel is odd in h too). The
-        // identity itself remains valid on the diagonal: it is the z-derivative of the sourced
-        // Grad-Shafranov equation, and d(j)/d(z) = 0 for a uniform cell current density.
-        let mut g_d3_psi_d_r2_d_z: Array2<f64> = Array2::from_elem((self.n_rz, self.n_rz_prime), f64::NAN);
-        for i_rz in 0..self.n_rz {
-            for i_rz_prime in 0..self.n_rz_prime {
-                g_d3_psi_d_r2_d_z[(i_rz, i_rz_prime)] = d2_psi_d_r_d_z[(i_rz, i_rz_prime)] / r[i_rz] - d3_psi_d_z3[(i_rz, i_rz_prime)];
-            }
-        }
-
-        g_d3_psi_d_r2_d_z
-    }
-
     /// Calculates `g_d3_psi_d_r_d_z2`, where:
     /// `d3(psi)/d(r)d(z2) = g_d3_psi_d_r_d_z2 * current`
-    ///
-    /// Equation derived and verified with SymPy.
-    ///
-    /// This is the only third derivative whose self-point value is not zero by symmetry;
-    /// the closed form for a rectangular cross-section is a pure toroidal-curvature (hoop)
-    /// effect.
     ///
     /// # Arguments
     /// * None
@@ -810,79 +606,7 @@ impl Greens {
     /// # Returns
     /// * `g_d3_psi_d_r_d_z2[(i_rz, i_rz_prime)]` - The Greens table between "sensors" and "current sources"`
     pub fn d3_psi_d_r_d_z2(&self) -> Array2<f64> {
-        let n_rz: usize = self.n_rz;
-        let n_rz_prime: usize = self.n_rz_prime;
-
-        let r: &Array1<f64> = &self.r;
-        let z: &Array1<f64> = &self.z;
-        let r_prime: &Array1<f64> = &self.r_prime;
-        let z_prime: &Array1<f64> = &self.z_prime;
-        let d_r_prime: &Array1<f64> = &self.d_r_prime;
-        let d_z_prime: &Array1<f64> = &self.d_z_prime;
-        let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
-        let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
-
-        let g_d3_psi_d_r_d_z2_vec: Vec<Array1<f64>> = (0..n_rz_prime)
-            .into_par_iter()
-            .map(|i_rz_prime: usize| {
-                let h_sq: Array1<f64> = (z - z_prime[i_rz_prime]).mapv(|x: f64| x.powi(2));
-                let u_sq: Array1<f64> = (r + r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
-                let d_sq: Array1<f64> = (r - r_prime[i_rz_prime]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let w_sq: Array1<f64> = r.mapv(|x: f64| r_prime[i_rz_prime].powi(2) - x.powi(2)) - &h_sq;
-
-                let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_rz_prime]);
-                let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_rz_prime]);
-
-                // g_d3_psi_d_r_d_z2 = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * r * (u_sq * d_sq * w_sq - (5 * u_sq * d_sq + 4 * (u_sq + d_sq) * w_sq) * h_sq) / (u^5 * d_sq^2)
-                // coeff_s = MU_0 * r * r_prime * (r_prime * (8 * u_sq^3 - 3 * u_sq^2 * d_sq + 4 * d_sq^3)
-                //     - r * (8 * u_sq^3 - 3 * u_sq^2 * d_sq - 4 * d_sq^3)
-                //     - r * (8 * u_sq^2 - u_sq * d_sq - 4 * d_sq^2) * (w_sq + 2 * h_sq)
-                //     - r_prime * (8 * u_sq^2 + 3 * u_sq * d_sq + 4 * d_sq^2) * w_sq) / (u^5 * d_sq^3)
-                let mut g_d3_psi_d_r_d_z2_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
-                for i_rz in 0..n_rz {
-                    let rp: f64 = r_prime[i_rz_prime];
-                    let us: f64 = u_sq[i_rz];
-                    let ds: f64 = d_sq[i_rz];
-                    let hs: f64 = h_sq[i_rz];
-                    let ws: f64 = w_sq[i_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
-
-                    let coeff_a: f64 = MU_0 * r[i_rz] * (us * ds * ws - (5.0 * us * ds + 4.0 * (us + ds) * ws) * hs) / (u[i_rz] * us * us * ds * ds);
-                    let coeff_s: f64 = MU_0
-                        * r[i_rz]
-                        * rp
-                        * (rp * (8.0 * us * us * us - 3.0 * us * us * ds + 4.0 * ds * ds * ds)
-                            - r[i_rz] * (8.0 * us * us * us - 3.0 * us * us * ds - 4.0 * ds * ds * ds)
-                            - r[i_rz] * (8.0 * us * us - us * ds - 4.0 * ds * ds) * (ws + 2.0 * hs)
-                            - rp * (8.0 * us * us + 3.0 * us * ds + 4.0 * ds * ds) * ws)
-                        / (u[i_rz] * us * us * ds * ds * ds);
-
-                    g_d3_psi_d_r_d_z2_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
-                }
-
-                // Self-point: pure toroidal-curvature (hoop) effect
-                // <d3_psi_d_r_d_z2> = -MU_0 * (4 * atan(d_r / d_z) - 2 * d_r * d_z / (d_r^2 + d_z^2)) / (d_r * d_z)
-                let epsilon: f64 = 1e-6;
-                for i_rz in 0..n_rz {
-                    if (r[i_rz] - r_prime[i_rz_prime]).abs() < epsilon && (z[i_rz] - z_prime[i_rz_prime]).abs() < epsilon {
-                        let d_r: f64 = d_r_prime[i_rz_prime];
-                        let d_z: f64 = d_z_prime[i_rz_prime];
-                        g_d3_psi_d_r_d_z2_local[i_rz] = -MU_0 * (4.0 * (d_r / d_z).atan() - 2.0 * d_r * d_z / (d_r.powi(2) + d_z.powi(2))) / (d_r * d_z);
-                    }
-                }
-
-                g_d3_psi_d_r_d_z2_local
-            })
-            .collect();
-
-        let mut g_d3_psi_d_r_d_z2: Array2<f64> = Array2::from_elem((n_rz, n_rz_prime), f64::NAN);
-        for i_rz_prime in 0..n_rz_prime {
-            g_d3_psi_d_r_d_z2.slice_mut(s![.., i_rz_prime]).assign(&g_d3_psi_d_r_d_z2_vec[i_rz_prime]);
-        }
-
-        g_d3_psi_d_r_d_z2
+        unimplemented!("need to derive equation for d3_psi_d_r_d_z2");
     }
 
     /// Calculates `b_r`, where:
@@ -1162,248 +886,6 @@ fn test_d2_psi_d_z2() {
     assert_abs_diff_eq!(d2_psi_d_z2_analytic, d2_psi_d_z2_numerical, epsilon = 1e-10);
 }
 
-/// Test d3(psi)/d(z3) by numerically differentiating d2_psi_d_z2 w.r.t. z
-#[test]
-fn test_d3_psi_d_z3() {
-    use approx::assert_abs_diff_eq;
-
-    let delta_z: f64 = 1e-4;
-    let r_value: f64 = 1.852;
-    let z_value: f64 = 0.12345;
-    let r_prime: Array1<f64> = Array1::from(vec![1.52345]);
-    let z_prime: Array1<f64> = Array1::from(vec![0.8234]);
-    let d_r_prime: Array1<f64> = Array1::zeros(1);
-    let d_z_prime: Array1<f64> = Array1::zeros(1);
-
-    // Compute d3_psi_d_z3 analytically
-    let r: Array1<f64> = Array1::from(vec![r_value]);
-    let z: Array1<f64> = Array1::from(vec![z_value]);
-    let greens_calculator: Greens = Greens::sensor_to_conductor(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
-    let d3_psi_d_z3_analytic: f64 = greens_calculator.d3_psi_d_z3()[(0, 0)];
-
-    // Compute d3_psi_d_z3 numerically: d(d2_psi_d_z2)/d(z)
-    let r_vec: Array1<f64> = Array1::from(vec![r_value, r_value]);
-    let z_vec: Array1<f64> = Array1::from(vec![z_value - delta_z, z_value + delta_z]);
-    let greens_calculator: Greens = Greens::sensor_to_conductor(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
-    let d2_psi_d_z2: Array2<f64> = greens_calculator.d2_psi_d_z2();
-    let d3_psi_d_z3_numerical: f64 = (d2_psi_d_z2[(1, 0)] - d2_psi_d_z2[(0, 0)]) / (2.0 * delta_z);
-
-    assert_abs_diff_eq!(d3_psi_d_z3_analytic, d3_psi_d_z3_numerical, epsilon = 1e-10);
-}
-
-/// Test d3(psi)/d(r2)d(z) by numerically differentiating d2_psi_d_r2 w.r.t. z
-#[test]
-fn test_d3_psi_d_r2_d_z() {
-    use approx::assert_abs_diff_eq;
-
-    let delta_z: f64 = 1e-4;
-    let r_value: f64 = 1.852;
-    let z_value: f64 = 0.12345;
-    let r_prime: Array1<f64> = Array1::from(vec![1.52345]);
-    let z_prime: Array1<f64> = Array1::from(vec![0.8234]);
-    let d_r_prime: Array1<f64> = Array1::zeros(1);
-    let d_z_prime: Array1<f64> = Array1::zeros(1);
-
-    // Compute d3_psi_d_r2_d_z analytically
-    let r: Array1<f64> = Array1::from(vec![r_value]);
-    let z: Array1<f64> = Array1::from(vec![z_value]);
-    let greens_calculator: Greens = Greens::sensor_to_conductor(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
-    let d3_psi_d_r2_d_z_analytic: f64 = greens_calculator.d3_psi_d_r2_d_z()[(0, 0)];
-
-    // Compute d3_psi_d_r2_d_z numerically: d(d2_psi_d_r2)/d(z)
-    let r_vec: Array1<f64> = Array1::from(vec![r_value, r_value]);
-    let z_vec: Array1<f64> = Array1::from(vec![z_value - delta_z, z_value + delta_z]);
-    let greens_calculator: Greens = Greens::sensor_to_conductor(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
-    let d2_psi_d_r2: Array2<f64> = greens_calculator.d2_psi_d_r2();
-    let d3_psi_d_r2_d_z_numerical: f64 = (d2_psi_d_r2[(1, 0)] - d2_psi_d_r2[(0, 0)]) / (2.0 * delta_z);
-
-    assert_abs_diff_eq!(d3_psi_d_r2_d_z_analytic, d3_psi_d_r2_d_z_numerical, epsilon = 1e-10);
-}
-
-/// Test d3(psi)/d(r)d(z2) by numerically differentiating d2_psi_d_z2 w.r.t. r
-#[test]
-fn test_d3_psi_d_r_d_z2() {
-    use approx::assert_abs_diff_eq;
-
-    let delta_r: f64 = 1e-4;
-    let r_value: f64 = 1.852;
-    let z_value: f64 = 0.12345;
-    let r_prime: Array1<f64> = Array1::from(vec![1.52345]);
-    let z_prime: Array1<f64> = Array1::from(vec![0.8234]);
-    let d_r_prime: Array1<f64> = Array1::zeros(1);
-    let d_z_prime: Array1<f64> = Array1::zeros(1);
-
-    // Compute d3_psi_d_r_d_z2 analytically
-    let r: Array1<f64> = Array1::from(vec![r_value]);
-    let z: Array1<f64> = Array1::from(vec![z_value]);
-    let greens_calculator: Greens = Greens::sensor_to_conductor(r, z, r_prime.clone(), z_prime.clone(), d_r_prime.clone(), d_z_prime.clone());
-    let d3_psi_d_r_d_z2_analytic: f64 = greens_calculator.d3_psi_d_r_d_z2()[(0, 0)];
-
-    // Compute d3_psi_d_r_d_z2 numerically: d(d2_psi_d_z2)/d(r)
-    let r_vec: Array1<f64> = Array1::from(vec![r_value - delta_r, r_value + delta_r]);
-    let z_vec: Array1<f64> = Array1::from(vec![z_value, z_value]);
-    let greens_calculator: Greens = Greens::sensor_to_conductor(r_vec, z_vec, r_prime, z_prime, d_r_prime, d_z_prime);
-    let d2_psi_d_z2: Array2<f64> = greens_calculator.d2_psi_d_z2();
-    let d3_psi_d_r_d_z2_numerical: f64 = (d2_psi_d_z2[(1, 0)] - d2_psi_d_z2[(0, 0)]) / (2.0 * delta_r);
-
-    assert_abs_diff_eq!(d3_psi_d_r_d_z2_analytic, d3_psi_d_r_d_z2_numerical, epsilon = 1e-10);
-}
-
-/// Test the homogeneous Grad-Shafranov identity, which holds away from the source:
-/// d2_psi_d_r2 = d_psi_d_r / r - d2_psi_d_z2
-#[test]
-fn test_gs_identity() {
-    use approx::assert_abs_diff_eq;
-
-    let r: Array1<f64> = Array1::from(vec![1.852, 0.31, 2.5, 0.9]);
-    let z: Array1<f64> = Array1::from(vec![0.12345, 1.7, -0.9, 0.03]);
-    let n_rz: usize = r.len();
-    let r_prime: Array1<f64> = Array1::from(vec![1.52345]);
-    let z_prime: Array1<f64> = Array1::from(vec![0.8234]);
-    let d_r_prime: Array1<f64> = Array1::zeros(1);
-    let d_z_prime: Array1<f64> = Array1::zeros(1);
-
-    let greens_calculator: Greens = Greens::sensor_to_conductor(r.clone(), z, r_prime, z_prime, d_r_prime, d_z_prime);
-    let d_psi_d_r: Array2<f64> = greens_calculator.d_psi_d_r();
-    let d2_psi_d_r2: Array2<f64> = greens_calculator.d2_psi_d_r2();
-    let d2_psi_d_z2: Array2<f64> = greens_calculator.d2_psi_d_z2();
-
-    for i_rz in 0..n_rz {
-        let gs_identity: f64 = d_psi_d_r[(i_rz, 0)] / r[i_rz] - d2_psi_d_z2[(i_rz, 0)];
-        assert_abs_diff_eq!(d2_psi_d_r2[(i_rz, 0)], gs_identity, epsilon = 1e-12);
-    }
-}
-
 // TODO: add tests for b_r and b_z
 
-/// Test the self-point values against high-precision quadrature of the exact kernels.
-/// Ground-truth values computed with tanh-sinh quadrature of the exact filament kernels
-/// over the cell cross-section (with mu_0 = 1).
-/// The closed forms carry the thin-ring truncation error `O((delta/r)^2 * ln(r/delta))`,
-/// hence the loose relative tolerance for `d_psi_d_r` and `d3_psi_d_r_d_z2`.
-/// The second derivatives use a tighter tolerance: the hoop-field correction (split by `XI`)
-/// reduces their largest observed residual from 2.1e-3 to 6.1e-5, and the tighter tolerance
-/// would reject the uncorrected values.
-#[test]
-fn test_self_point_against_quadrature() {
-    use approx::assert_relative_eq;
-
-    // (r, d_r, d_z, then the quadrature values per unit current with mu_0 = 1 for:
-    //  d_psi_d_r, d2_psi_d_r2, d2_psi_d_z2, d3_psi_d_r_d_z2)
-    let test_cases: Vec<(f64, f64, f64, f64, f64, f64, f64)> = vec![
-        (1.8, 0.04, 0.04, 3.22362302, -3533.68531, -3533.10729, -1338.77596),
-        (1.8, 0.004, 0.004, 4.37493205, -353428.409, -353427.511, -133850.202),
-        (0.9, 0.03, 0.06, 2.72073873, -2213.2044, -925.365218, -586.731493),
-    ];
-
-    for (r_value, d_r_value, d_z_value, d_psi_d_r_quadrature, d2_psi_d_r2_quadrature, d2_psi_d_z2_quadrature, d3_psi_d_r_d_z2_quadrature) in test_cases {
-        let r: Array1<f64> = Array1::from(vec![r_value]);
-        let z: Array1<f64> = Array1::from(vec![0.3]); // the self-point values are independent of z
-        let d_r: Array1<f64> = Array1::from(vec![d_r_value]);
-        let d_z: Array1<f64> = Array1::from(vec![d_z_value]);
-        let greens_calculator: Greens = Greens::self_field(r, z, d_r, d_z);
-
-        assert_relative_eq!(greens_calculator.d_psi_d_r()[(0, 0)], MU_0 * d_psi_d_r_quadrature, max_relative = 1e-2);
-        assert_relative_eq!(greens_calculator.d2_psi_d_r2()[(0, 0)], MU_0 * d2_psi_d_r2_quadrature, max_relative = 1e-3);
-        assert_relative_eq!(greens_calculator.d2_psi_d_z2()[(0, 0)], MU_0 * d2_psi_d_z2_quadrature, max_relative = 1e-3);
-        assert_relative_eq!(
-            greens_calculator.d3_psi_d_r_d_z2()[(0, 0)],
-            MU_0 * d3_psi_d_r_d_z2_quadrature,
-            max_relative = 1e-2
-        );
-    }
-}
-
-/// Test the self-point flux against high-precision quadrature of the exact kernel.
-/// Ground-truth values computed with tanh-sinh quadrature of the exact filament kernel
-/// over the cell cross-section (with mu_0 = 1). The closed form carries the thin-ring
-/// truncation error `O((delta/r)^2 * ln(r/delta))` (largest observed residual is 1.1e-4);
-/// the tolerance is still tight enough to reject the self-INDUCTANCE (flux linkage)
-/// value, which is ~5% lower than the flux at the cell centre.
-#[test]
-fn test_self_point_psi_against_quadrature() {
-    use approx::assert_relative_eq;
-
-    // (r, d_r, d_z, quadrature value of psi per unit current with mu_0 = 1)
-    let test_cases: Vec<(f64, f64, f64, f64)> = vec![(1.8, 0.04, 0.04, 8.90523586), (0.9, 0.03, 0.06, 3.71615304), (0.41, 0.0125, 0.0125, 1.8987831)];
-
-    for (r_value, d_r_value, d_z_value, psi_quadrature) in test_cases {
-        let r: Array1<f64> = Array1::from(vec![r_value]);
-        let z: Array1<f64> = Array1::from(vec![0.3]); // the self-point values are independent of z
-        let d_r: Array1<f64> = Array1::from(vec![d_r_value]);
-        let d_z: Array1<f64> = Array1::from(vec![d_z_value]);
-        let greens_calculator: Greens = Greens::self_field(r, z, d_r, d_z);
-
-        assert_relative_eq!(greens_calculator.psi()[(0, 0)], MU_0 * psi_quadrature, max_relative = 1e-3);
-    }
-}
-
-/// The self-point values satisfy the sourced Grad-Shafranov (Ampere's law) equation
-/// identically:
-/// `d2_psi_d_r2 - d_psi_d_r / r + d2_psi_d_z2 = -2 * PI * MU_0 * r / (d_r * d_z)`
-/// because `atan(x) + atan(1/x) = PI / 2` and the hoop-field correction shares
-/// (`1/2 - XI` and `1/2 + XI`) sum to exactly cancel the `d_psi_d_r / r` term;
-/// this holds to machine precision, unlike the thin-ring approximation of the
-/// individual entries.
-#[test]
-fn test_self_point_ampere() {
-    use approx::assert_relative_eq;
-
-    let r: Array1<f64> = Array1::from(vec![0.41]);
-    let z: Array1<f64> = Array1::from(vec![0.0]);
-    let d_r: Array1<f64> = Array1::from(vec![0.0125]);
-    let d_z: Array1<f64> = Array1::from(vec![0.025]);
-    let greens_calculator: Greens = Greens::self_field(r.clone(), z, d_r.clone(), d_z.clone());
-
-    let delta_star_psi: f64 = greens_calculator.d2_psi_d_r2()[(0, 0)] - greens_calculator.d_psi_d_r()[(0, 0)] / r[0] + greens_calculator.d2_psi_d_z2()[(0, 0)];
-    let delta_star_psi_expected: f64 = -2.0 * PI * MU_0 * r[0] / (d_r[0] * d_z[0]);
-
-    assert_relative_eq!(delta_star_psi, delta_star_psi_expected, max_relative = 1e-13);
-}
-
-/// Tables whose kernels are odd in `h = z - z_prime` are exactly zero at the self-point
-#[test]
-fn test_self_point_odd_tables_are_zero() {
-    let r: Array1<f64> = Array1::from(vec![0.41]);
-    let z: Array1<f64> = Array1::from(vec![0.1]);
-    let d_r: Array1<f64> = Array1::from(vec![0.0125]);
-    let d_z: Array1<f64> = Array1::from(vec![0.0125]);
-    let greens_calculator: Greens = Greens::self_field(r, z, d_r, d_z);
-
-    assert_eq!(greens_calculator.d_psi_d_z()[(0, 0)], 0.0);
-    assert_eq!(greens_calculator.d2_psi_d_r_d_z()[(0, 0)], 0.0);
-    assert_eq!(greens_calculator.d3_psi_d_r2_d_z()[(0, 0)], 0.0);
-    assert_eq!(greens_calculator.d3_psi_d_z3()[(0, 0)], 0.0);
-}
-
-/// Only the diagonal is special: off-diagonal entries of a `self_field` table must equal
-/// the filament values from `sensor_to_conductor`
-#[test]
-fn test_self_field_off_diagonal_matches_sensor_to_conductor() {
-    use approx::assert_abs_diff_eq;
-
-    let grid_r: Array1<f64> = Array1::from(vec![0.4, 0.4125]);
-    let grid_z: Array1<f64> = Array1::from(vec![0.0, 0.0]);
-    let grid_d_r: Array1<f64> = Array1::from(vec![0.0125, 0.0125]);
-    let grid_d_z: Array1<f64> = Array1::from(vec![0.0125, 0.0125]);
-    let greens_self: Greens = Greens::self_field(grid_r, grid_z, grid_d_r, grid_d_z);
-
-    let sensor_r: Array1<f64> = Array1::from(vec![0.4]);
-    let sensor_z: Array1<f64> = Array1::from(vec![0.0]);
-    let conductor_r: Array1<f64> = Array1::from(vec![0.4125]);
-    let conductor_z: Array1<f64> = Array1::from(vec![0.0]);
-    let conductor_d_r: Array1<f64> = Array1::from(vec![0.0125]);
-    let conductor_d_z: Array1<f64> = Array1::from(vec![0.0125]);
-    let greens_filament: Greens = Greens::sensor_to_conductor(sensor_r, sensor_z, conductor_r, conductor_z, conductor_d_r, conductor_d_z);
-
-    assert_abs_diff_eq!(greens_self.d_psi_d_r()[(0, 1)], greens_filament.d_psi_d_r()[(0, 0)], epsilon = 1e-15);
-    assert_abs_diff_eq!(greens_self.d_psi_d_z()[(0, 1)], greens_filament.d_psi_d_z()[(0, 0)], epsilon = 1e-15);
-    assert_abs_diff_eq!(greens_self.d2_psi_d_r2()[(0, 1)], greens_filament.d2_psi_d_r2()[(0, 0)], epsilon = 1e-15);
-    assert_abs_diff_eq!(greens_self.d2_psi_d_r_d_z()[(0, 1)], greens_filament.d2_psi_d_r_d_z()[(0, 0)], epsilon = 1e-15);
-    assert_abs_diff_eq!(greens_self.d2_psi_d_z2()[(0, 1)], greens_filament.d2_psi_d_z2()[(0, 0)], epsilon = 1e-15);
-    assert_abs_diff_eq!(
-        greens_self.d3_psi_d_r_d_z2()[(0, 1)],
-        greens_filament.d3_psi_d_r_d_z2()[(0, 0)],
-        epsilon = 1e-15
-    );
-}
+// TODO: add tests for sensors and current sources at the same location
