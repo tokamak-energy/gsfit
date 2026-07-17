@@ -31,7 +31,7 @@ pub mod greens;
 // Load public structs and functions for Doctests
 // Doctests are compiled as their own tiny standalone crate linked against `gsfit_rs` exactly like an external user would.
 // We must therefore expose all structures and functions which have an example.
-// But we mark them as "hidden", as they are not the indented public API (note, they are still technically public).
+// But we mark them as "hidden", as they are not the intended public API (note, they are still technically public).
 #[doc(hidden)]
 pub mod plasma_geometry;
 
