@@ -247,6 +247,49 @@ def greens_d2_psi_d_z2(
     """
     ...
 
+def greens_d3_psi_d_z3(
+    r: npt.NDArray[np.float64],
+    z: npt.NDArray[np.float64],
+    r_prime: npt.NDArray[np.float64],
+    z_prime: npt.NDArray[np.float64],
+    d_r: npt.NDArray[np.float64] | None = None,
+    d_z: npt.NDArray[np.float64] | None = None,
+) -> npt.NDArray[np.float64]:
+    """
+    Third derivative of the Green's function with respect to `z` three times.
+
+    :param r: (by convention) Sensor radial positions [metre]
+    :param z: (by convention) Sensor vertical positions [metre]
+    :param r_prime: (by convention) Current source radial positions [metre]
+    :param z_prime: (by convention) Current source vertical positions [metre]
+    :param d_r: (optional) Radial widths [metre]
+    :param d_z: (optional) Vertical heights [metre]
+    """
+    ...
+
+def greens_d3_psi_d_r2_d_z(
+    r: npt.NDArray[np.float64],
+    z: npt.NDArray[np.float64],
+    r_prime: npt.NDArray[np.float64],
+    z_prime: npt.NDArray[np.float64],
+    d_r: npt.NDArray[np.float64] | None = None,
+    d_z: npt.NDArray[np.float64] | None = None,
+) -> npt.NDArray[np.float64]:
+    """
+    Third derivative of the Green's function with respect to `r` twice and `z`.
+
+    Computed from the homogeneous Grad-Shafranov equation:
+    `d3_psi_d_r2_d_z = d2_psi_d_r_d_z / r - d3_psi_d_z3`.
+
+    :param r: (by convention) Sensor radial positions [metre]
+    :param z: (by convention) Sensor vertical positions [metre]
+    :param r_prime: (by convention) Current source radial positions [metre]
+    :param z_prime: (by convention) Current source vertical positions [metre]
+    :param d_r: (optional) Radial widths [metre]
+    :param d_z: (optional) Vertical heights [metre]
+    """
+    ...
+
 def greens_d3_psi_d_r_d_z2(
     r: npt.NDArray[np.float64],
     z: npt.NDArray[np.float64],
