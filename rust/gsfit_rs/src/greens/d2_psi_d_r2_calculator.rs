@@ -137,7 +137,7 @@ impl D2PsiDR2Calculator {
             }
         }
 
-        // // Add the "self" field derivative
+        // Grid spacing
         let d_r: f64 = r[1] - r[0];
 
         // Add up all the components

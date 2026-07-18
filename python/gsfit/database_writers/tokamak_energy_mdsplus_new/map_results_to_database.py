@@ -87,7 +87,7 @@ def map_results_to_database(
     results["GLOBAL"]["V_LOOP"] = plasma.get_array1(["global", "v_loop"])
     results["GLOBAL"]["VOLUME"] = plasma.get_array1(["global", "volume"])
     results["GLOBAL"]["XPT_DIVERTED"] = np.array(plasma.get_vec_bool(["global", "xpt_diverted"])).astype(np.int32)
-    
+
     # Profiles_1d, psi_norm
     results["PROFILES_1D"]["PSI_NORM"]["AREA"] = plasma.get_array2(["profiles_1d", "psi_norm", "area"])
     results["PROFILES_1D"]["PSI_NORM"]["AREA_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "area_prime"])
@@ -237,20 +237,32 @@ def map_results_to_database(
 
         # Per-sensor nodes (keyed by sensor name)
         for sensor_name in sensor_names:
-            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["MEASURED"] = pressure_sensors.get_array1([sensor_name, "pressure", "measured", "value"])  # shape = [n_time]
-            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["RECONSTRUCT"] = pressure_sensors.get_array1([sensor_name, "pressure", "calculated", "value"])  # shape = [n_time]
+            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["MEASURED"] = pressure_sensors.get_array1(
+                [sensor_name, "pressure", "measured", "value"]
+            )  # shape = [n_time]
+            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["RECONSTRUCT"] = pressure_sensors.get_array1(
+                [sensor_name, "pressure", "calculated", "value"]
+            )  # shape = [n_time]
             results["CONSTRAINTS"]["PRESSURE"][sensor_name]["WEIGHT"] = pressure_sensors.get_f64([sensor_name, "fit_settings", "weight"])  # scalar
             results["CONSTRAINTS"]["PRESSURE"][sensor_name]["POSITION"]["R"] = pressure_sensors.get_f64([sensor_name, "geometry", "r"])  # scalar
             results["CONSTRAINTS"]["PRESSURE"][sensor_name]["POSITION"]["Z"] = pressure_sensors.get_f64([sensor_name, "geometry", "z"])  # scalar
-            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["POSITION"]["PSI"] = pressure_sensors.get_array1([sensor_name, "pressure", "calculated", "psi"])  # shape = [n_time]
+            results["CONSTRAINTS"]["PRESSURE"][sensor_name]["POSITION"]["PSI"] = pressure_sensors.get_array1(
+                [sensor_name, "pressure", "calculated", "psi"]
+            )  # shape = [n_time]
 
         # ALL aggregate node
-        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["MEASURED"] = pressure_sensors.get_array2(["*", "pressure", "measured", "value"])  # shape = [n_time, n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["RECONSTRUCT"] = pressure_sensors.get_array2(["*", "pressure", "calculated", "value"])  # shape = [n_time, n_points]
+        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["MEASURED"] = pressure_sensors.get_array2(
+            ["*", "pressure", "measured", "value"]
+        )  # shape = [n_time, n_points]
+        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["RECONSTRUCT"] = pressure_sensors.get_array2(
+            ["*", "pressure", "calculated", "value"]
+        )  # shape = [n_time, n_points]
         results["CONSTRAINTS"]["PRESSURE"]["ALL"]["WEIGHT"] = pressure_sensors.get_array1(["*", "fit_settings", "weight"])  # shape = [n_points]
         results["CONSTRAINTS"]["PRESSURE"]["ALL"]["POSITION"]["R"] = pressure_sensors.get_array1(["*", "geometry", "r"])  # shape = [n_points]
         results["CONSTRAINTS"]["PRESSURE"]["ALL"]["POSITION"]["Z"] = pressure_sensors.get_array1(["*", "geometry", "z"])  # shape = [n_points]
-        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["POSITION"]["PSI"] = pressure_sensors.get_array2(["*", "pressure", "calculated", "psi"])  # shape = [n_time, n_points]
+        results["CONSTRAINTS"]["PRESSURE"]["ALL"]["POSITION"]["PSI"] = pressure_sensors.get_array2(
+            ["*", "pressure", "calculated", "psi"]
+        )  # shape = [n_time, n_points]
         results["CONSTRAINTS"]["PRESSURE"]["ALL"]["NAMES"] = np.array(sensor_names)
 
     # Store "WORKFLOW"

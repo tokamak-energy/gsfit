@@ -1167,14 +1167,8 @@ impl Plasma {
             );
 
             // Plasma beta (must be after r_geo and plasma_volume are computed)
-            (beta_p_1[i_time], beta_p_2[i_time], beta_p_3[i_time]) = epp_beta_p(
-                w_mhd[i_time],
-                ip[i_time],
-                r_mag[i_time],
-                r_geo[i_time],
-                plasma_volume[i_time],
-                bp_sq_fs_avg,
-            );
+            (beta_p_1[i_time], beta_p_2[i_time], beta_p_3[i_time]) =
+                epp_beta_p(w_mhd[i_time], ip[i_time], r_mag[i_time], r_geo[i_time], plasma_volume[i_time], bp_sq_fs_avg);
 
             let bt_vac_at_r_geo_this_time: f64 = epp_bt_vac_at_r_geo(i_rod[i_time], r_geo[i_time]);
             bt_vac_at_r_geo[i_time] = bt_vac_at_r_geo_this_time;
@@ -1303,25 +1297,49 @@ impl Plasma {
         self.results.get_or_insert("boundary").insert("triangularity_lower", triang_l);
         self.results.get_or_insert("boundary").insert("triangularity_upper", triang_u);
         self.results.get_or_insert("boundary").insert("psi", psi_b);
-        self.results.get_or_insert("boundary").insert("squareness_lower_inner", square_l_i); 
+        self.results.get_or_insert("boundary").insert("squareness_lower_inner", square_l_i);
         self.results.get_or_insert("boundary").insert("squareness_lower_outer", square_l_o);
         self.results.get_or_insert("boundary").insert("squareness_upper_inner", square_u_i);
         self.results.get_or_insert("boundary").insert("squareness_upper_outer", square_u_o);
 
         // Profiles (psi_n is already inside "profiles_1d")
         self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("area", area_profile);
-        self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("area_prime", area_prime_profile);
+        self.results
+            .get_or_insert("profiles_1d")
+            .get_or_insert("psi_norm")
+            .insert("area_prime", area_prime_profile);
         self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("f", f_profile);
-        self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("ff_prime", ff_prime_profile);
-        self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("flux_tor", flux_tor_profile);
+        self.results
+            .get_or_insert("profiles_1d")
+            .get_or_insert("psi_norm")
+            .insert("ff_prime", ff_prime_profile);
+        self.results
+            .get_or_insert("profiles_1d")
+            .get_or_insert("psi_norm")
+            .insert("flux_tor", flux_tor_profile);
         self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("p", p_profile);
-        self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("p_prime", p_prime_profile);
+        self.results
+            .get_or_insert("profiles_1d")
+            .get_or_insert("psi_norm")
+            .insert("p_prime", p_prime_profile);
         self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("psi", psi_profile);
         self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("q", q_profile);
-        self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("rho_pol", rho_pol_profile);
-        self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("rho_tor", rho_tor_profile);
-        self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("vol", volume_profile);
-        self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("vol_prime", volume_prime_profile);
+        self.results
+            .get_or_insert("profiles_1d")
+            .get_or_insert("psi_norm")
+            .insert("rho_pol", rho_pol_profile);
+        self.results
+            .get_or_insert("profiles_1d")
+            .get_or_insert("psi_norm")
+            .insert("rho_tor", rho_tor_profile);
+        self.results
+            .get_or_insert("profiles_1d")
+            .get_or_insert("psi_norm")
+            .insert("vol", volume_profile);
+        self.results
+            .get_or_insert("profiles_1d")
+            .get_or_insert("psi_norm")
+            .insert("vol_prime", volume_prime_profile);
 
         // Mid-plane profiles
         self.results
@@ -1515,16 +1533,7 @@ fn epp_beta_p(w_mhd: f64, ip: f64, r_mag: f64, r_geo: f64, plasma_volume: f64, b
 /// * `square_u_i` - upper inner squareness [dimensionless]
 /// * `square_u_o` - upper outer squareness [dimensionless]
 fn epp_boundary_geometry(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
-    let nan_result: (f64, f64, f64, f64, f64, f64, f64, f64) = (
-        f64::NAN,
-        f64::NAN,
-        f64::NAN,
-        f64::NAN,
-        f64::NAN,
-        f64::NAN,
-        f64::NAN,
-        f64::NAN,
-    );
+    let nan_result: (f64, f64, f64, f64, f64, f64, f64, f64) = (f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN);
 
     // Defensive programming: when a time-slice has failed the boundary contour can be
     // empty, or contain NAN's or junk; return NAN's instead of panicking
@@ -1744,10 +1753,7 @@ fn epp_bp_sq_flux_surface_average(
     // Loop over all contours and find the one which is inside the plasma boundary
     let n_contour: usize = flux_surface_contours.iter().count();
     'contour_loop: for i_contour in 0..n_contour {
-        let fs_contour: &Polygon = flux_surface_contours
-            .iter()
-            .nth(i_contour)
-            .expect("epp_bp_sq_flux_surface_average: fs_contour");
+        let fs_contour: &Polygon = flux_surface_contours.iter().nth(i_contour).expect("epp_bp_sq_flux_surface_average: fs_contour");
 
         // Test if all the points are inside the plasma boundary and inside the grid
         for coord in fs_contour.exterior() {
@@ -2604,8 +2610,7 @@ fn test_epp_boundary_geometry_miller() {
     let boundary_r: Array1<f64> = r_geo + r_minor * theta.mapv(|theta_local| (theta_local + delta.asin() * theta_local.sin()).cos());
     let boundary_z: Array1<f64> = z_geo + kappa * r_minor * theta.mapv(f64::sin);
 
-    let (elongation, triang, triang_l, triang_u, _square_l_i, _square_l_o, _square_u_i, _square_u_o) =
-        epp_boundary_geometry(&boundary_r, &boundary_z);
+    let (elongation, triang, triang_l, triang_u, _square_l_i, _square_l_o, _square_u_i, _square_u_o) = epp_boundary_geometry(&boundary_r, &boundary_z);
 
     assert_abs_diff_eq!(elongation, kappa, epsilon = 1e-6);
     assert_abs_diff_eq!(triang, delta, epsilon = 1e-6);
@@ -2629,13 +2634,11 @@ fn test_epp_boundary_geometry_superellipse() {
 
     let n_theta: usize = 1000;
     let theta: Array1<f64> = Array1::linspace(0.0, 2.0 * PI * (1.0 - 1.0 / (n_theta as f64)), n_theta);
-    let boundary_r: Array1<f64> =
-        r_geo + r_minor * theta.mapv(|theta_local| theta_local.cos().signum() * theta_local.cos().abs().powf(2.0 / n_exponent));
+    let boundary_r: Array1<f64> = r_geo + r_minor * theta.mapv(|theta_local| theta_local.cos().signum() * theta_local.cos().abs().powf(2.0 / n_exponent));
     let boundary_z: Array1<f64> =
         z_geo + kappa * r_minor * theta.mapv(|theta_local| theta_local.sin().signum() * theta_local.sin().abs().powf(2.0 / n_exponent));
 
-    let (elongation, triang, _triang_l, _triang_u, square_l_i, square_l_o, square_u_i, square_u_o) =
-        epp_boundary_geometry(&boundary_r, &boundary_z);
+    let (elongation, triang, _triang_l, _triang_u, square_l_i, square_l_o, square_u_i, square_u_o) = epp_boundary_geometry(&boundary_r, &boundary_z);
 
     let t_expected: f64 = (0.5f64).powf(1.0 / n_exponent);
     let squareness_expected: f64 = (t_expected - std::f64::consts::FRAC_1_SQRT_2) / (1.0 - std::f64::consts::FRAC_1_SQRT_2);
