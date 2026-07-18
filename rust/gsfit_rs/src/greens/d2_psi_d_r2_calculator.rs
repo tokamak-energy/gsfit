@@ -98,7 +98,6 @@ impl D2PsiDR2Calculator {
         let r: &Array1<f64> = &self.r;
         // Plasma
         let g_d2_psi_d_r2_plasma_3d: &Array3<f64> = &self.g_d2_psi_d_r2_plasma_3d;
-        let g_bz_plasma_3d: &Array3<f64> = &self.g_bz_plasma_3d;
 
         // PF coils
         let d2_psi_d_r2_coils: f64 = g_d2_psi_d_r2_coils.slice(s![i_z, i_r, ..]).dot(pf_coil_currents);
@@ -121,8 +120,6 @@ impl D2PsiDR2Calculator {
 
         // Conceptually, we are looping over the current's and modifying the Green's table for the current
         let mut d2_psi_d_r2_plasma: f64 = 0.0;
-        let mut bz_plasma_left: f64 = 0.0;
-        let mut bz_plasma_right: f64 = 0.0;
         for i_cur_z in 0..n_z {
             // Cyclic indexing for the z-axis (a current filament "looks" the same in z, but not r)
             let z_indexer: Vec<usize> = (0..n_z).map(|i_z| i_cur_z.abs_diff(i_z)).collect();
@@ -130,35 +127,18 @@ impl D2PsiDR2Calculator {
             for i_cur_r in 0..n_r {
                 // Performance improvement: a lot of the grid doesn't have plasma current
                 if j_2d[(i_cur_z, i_cur_r)].abs() > 0.0 {
-                    // Jump condition for self effect
                     // Note: this will be zero unless the grid point we are calculating at is carrying plasma current
-                    if i_cur_r == i_r && i_cur_z == i_z {
-                        let g_bz_plasma_left: f64 = g_bz_plasma_3d[(z_indexer[i_z], i_r - 1, i_cur_r)];
-                        let g_bz_plasma_right: f64 = g_bz_plasma_3d[(z_indexer[i_z], i_r + 1, i_cur_r)];
-                        bz_plasma_left += g_bz_plasma_left * j_2d[(i_cur_z, i_cur_r)] * d_area;
-                        bz_plasma_right += g_bz_plasma_right * j_2d[(i_cur_z, i_cur_r)] * d_area;
-                    } else {
-                        // Select the Green's table for the radial current source location
-                        // selecting the r-axis and re-ordering in one operation, might be fastest
-                        let g_d2_psi_d_r2_plasma: f64 = g_d2_psi_d_r2_plasma_3d[(z_indexer[i_z], i_r, i_cur_r)];
-                        // Calculate the contribution to psi from this current source
-                        d2_psi_d_r2_plasma += g_d2_psi_d_r2_plasma * j_2d[(i_cur_z, i_cur_r)] * d_area;
-                    }
+                    // Select the Green's table for the radial current source location
+                    // selecting the r-axis and re-ordering in one operation, might be fastest
+                    let g_d2_psi_d_r2_plasma: f64 = g_d2_psi_d_r2_plasma_3d[(z_indexer[i_z], i_r, i_cur_r)];
+                    // Calculate the contribution to psi from this current source
+                    d2_psi_d_r2_plasma += g_d2_psi_d_r2_plasma * j_2d[(i_cur_z, i_cur_r)] * d_area;
                 }
             }
         }
 
-        // Add the "self" field derivative
+        // // Add the "self" field derivative
         let d_r: f64 = r[1] - r[0];
-        // Used chain rule:
-        // psi = 2.0 * PI * r * bz
-        // d2_psi_d_r2 = d(2.0 * PI * r * bz)/d(r)
-        // d2_psi_d_r2 = 2.0 * PI * bz + 2.0 * PI * r * d(bz)/d(r)
-        // bz at the self-point is zero. So:
-        // d2_psi_d_r2 = 2.0 * PI * r * d(bz)/d(r)
-        // bz = bz_original + delta_z * d_bz_d_z;  // Looks like I might be missing a term, but it should be small, because `delta_z` is small
-        let d2_psi_d_r2_plasma_self_grid: f64 = PI * r[i_r] * (bz_plasma_right - bz_plasma_left) / d_r;
-        d2_psi_d_r2_plasma += d2_psi_d_r2_plasma_self_grid;
 
         // Add up all the components
         let d2_psi_d_r2_unshifted: f64 = d2_psi_d_r2_coils + d2_psi_d_r2_passives + d2_psi_d_r2_plasma;

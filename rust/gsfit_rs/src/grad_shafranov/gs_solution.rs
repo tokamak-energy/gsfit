@@ -1445,23 +1445,6 @@ impl<'a> GsSolution<'a> {
             }
         }
 
-        // TODO: this is a numerical fudge. The reason is that there is a jump in the derivate of d(br)/d(z) at the filament location.
-        // if you imagine the field above and below the filament of interst you see that bz=0, so d(bz)/d(z)=0. However, br changes sign
-        // above and below the filament of interest. When you take the difference (derivative) you see d(br)/d(z) is not zero!
-        // Jump condition at the filament!!
-        // Numerically differentiate br_2d_plasma with respect to z
-        let mut d_br_d_z_2d_plasma: Array2<f64> = Array2::zeros((n_z, n_r));
-        let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
-        let d_z: f64 = z[1] - z[0];
-        for i_r in 0..n_r {
-            for i_z in 1..(n_z - 1) {
-                d_br_d_z_2d_plasma[(i_z, i_r)] = (br_2d_plasma[(i_z + 1, i_r)] - br_2d_plasma[(i_z - 1, i_r)]) / (2.0 * d_z);
-            }
-            // Handle grid edges with forward and backward differences
-            d_br_d_z_2d_plasma[(0, i_r)] = (br_2d_plasma[(1, i_r)] - br_2d_plasma[(0, i_r)]) / d_z;
-            d_br_d_z_2d_plasma[(n_z - 1, i_r)] = (br_2d_plasma[(n_z - 1, i_r)] - br_2d_plasma[(n_z - 2, i_r)]) / d_z;
-        }
-
         // Add up all the components
         let d_br_d_z_2d: Array2<f64> = d_br_d_z_2d_coils + d_br_d_z_2d_passives + d_br_d_z_2d_plasma;
         let d_bz_d_z_2d: Array2<f64> = d_bz_d_z_2d_coils + d_bz_d_z_2d_passives + d_bz_d_z_2d_plasma;

@@ -132,6 +132,9 @@ class Gsfit(DiagnosticAndSimulationBase):
         if self.write_to_mds:
             self.logger.info("Writing to MDSplus")
             self._write_to_mds()
+            if self.settings["GSFIT_code_settings.json"]["database_writer"]["method"] == "tokamak_energy_mdsplus_new":
+                from .database_writers.tokamak_energy_mdsplus_new.create_mdsplus_links import create_mdsplus_links
+                create_mdsplus_links(pulseNo_write=self.pulseNo_write, run_name=self.run_name)
 
     def setup_timeslices(self) -> None:
         """

@@ -179,17 +179,17 @@ def run() -> None:
 
     r = plasma.get_array1(["grid", "r"])
     z = plasma.get_array1(["grid", "z"])
-    psi_2d = plasma.get_array3(["two_d", "psi"])
+    psi_2d = plasma.get_array3(["profiles_2d", "r_z", "psi"])
     import matplotlib.pyplot as plt
 
     plt.figure()
     plt.contour(r, z, psi_2d[0, :, :], 100)
     plt.axis("equal")
     plt.plot(limit_pts_r, limit_pts_z, marker="x", color="black")
-    bounding_r = plasma.get_array1(["p_boundary", "bounding_r"])
-    bounding_z = plasma.get_array1(["p_boundary", "bounding_z"])
-    boundary_r = plasma.get_array2(["p_boundary", "rbnd"])[0, :]
-    boundary_z = plasma.get_array2(["p_boundary", "zbnd"])[0, :]
+    bounding_r = plasma.get_array1(["boundary", "bounding", "r"])
+    bounding_z = plasma.get_array1(["boundary", "bounding", "z"])
+    boundary_r = plasma.get_array2(["boundary", "outline", "r"])[0, :]
+    boundary_z = plasma.get_array2(["boundary", "outline", "z"])[0, :]
     plt.plot(bounding_r, bounding_z, marker="o", color="red")
     plt.plot(boundary_r, boundary_z, color="red")
     plt.plot()

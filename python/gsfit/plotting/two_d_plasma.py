@@ -20,11 +20,11 @@ def plot(
 
     gsfit_r = plasma.get_array1(["grid", "r"])
     gsfit_z = plasma.get_array1(["grid", "z"])
-    gsfit_psi = plasma.get_array3(["two_d", "psi"])[i_time, :, :]
+    gsfit_psi = plasma.get_array3(["profiles_2d", "r_z", "psi"])[i_time, :, :]
 
-    gsfit_nbnd = plasma.get_vec_usize(["p_boundary", "nbnd"])[i_time]
-    gsfit_boundary_r = plasma.get_array2(["p_boundary", "rbnd"])[i_time, :gsfit_nbnd]
-    gsfit_boundary_z = plasma.get_array2(["p_boundary", "zbnd"])[i_time, :gsfit_nbnd]
+    gsfit_nbnd = plasma.get_vec_usize(["boundary", "outline", "n"])[i_time]
+    gsfit_boundary_r = plasma.get_array2(["boundary", "outline", "r"])[i_time, :gsfit_nbnd]
+    gsfit_boundary_z = plasma.get_array2(["boundary", "outline", "z"])[i_time, :gsfit_nbnd]
 
     # Default to 35 levels if not provided
     if psi_n_levels is None:
