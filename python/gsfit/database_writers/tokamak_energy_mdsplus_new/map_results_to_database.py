@@ -104,9 +104,9 @@ def map_results_to_database(
     results["PROFILES_1D"]["PSI_NORM"]["VOL_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "vol_prime"])
 
     # Mid-plane profiles
-    results["PROFILES_1D"]["R_MIDPLANE"]["PRESSURE"] = plasma.get_array2(["profiles_1d", "mid_plane", "p"])
-    # results["PROFILES_1D"]["R_MIDPLANE"]["Q"] = plasma.get_array2(["profiles_1d", "mid_plane", "q"])
-    results["PROFILES_1D"]["R_MIDPLANE"]["R"] = plasma.get_array1(["profiles_1d", "mid_plane", "r"])
+    results["PROFILES_1D"]["R_MIDPLANE"]["PRESSURE"] = plasma.get_array2(["profiles_1d", "r_midplane", "p"])
+    # results["PROFILES_1D"]["R_MIDPLANE"]["Q"] = plasma.get_array2(["profiles_1d", "r_midplane", "q"])
+    results["PROFILES_1D"]["R_MIDPLANE"]["R"] = plasma.get_array1(["profiles_1d", "r_midplane", "r"])
 
     # Profiles_2d
     results["PROFILES_2D"]["R_Z"]["B_FIELD_PHI"] = plasma.get_array3(["profiles_2d", "r_z", "bt"])

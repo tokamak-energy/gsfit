@@ -130,8 +130,8 @@ def map_results_to_database(
     results["PROFILES"]["RHO"]["VOL_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "vol_prime"])
 
     # Mid-plane profiles
-    results["PROFILES"]["MID_PLANE"]["P"] = plasma.get_array2(["profiles_1d", "mid_plane", "p"])
-    results["PROFILES"]["MID_PLANE"]["R"] = plasma.get_array1(["profiles_1d", "mid_plane", "r"])
+    results["PROFILES"]["R_MIDPLANE"]["P"] = plasma.get_array2(["profiles_1d", "r_midplane", "p"])
+    results["PROFILES"]["R_MIDPLANE"]["R"] = plasma.get_array1(["profiles_1d", "r_midplane", "r"])
 
     # Passives
     for passive_name in passives.keys():

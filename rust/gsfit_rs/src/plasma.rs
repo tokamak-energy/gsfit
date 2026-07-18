@@ -907,7 +907,7 @@ impl Plasma {
         let mut p_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut p_prime_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut psi_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
-        let mut mid_plane_p_profile: Array2<f64> = Array2::from_elem((n_time, n_r), f64::NAN);
+        let mut midplane_p_profile: Array2<f64> = Array2::from_elem((n_time, n_r), f64::NAN);
         let mut area_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut area_prime_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut volume_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
@@ -1015,7 +1015,7 @@ impl Plasma {
 
             // Mid-plane profiles
             let i_z_centre: usize = (n_z as f64 / 2.0).floor() as usize;
-            let mid_plane_p_profile_this_time: Array1<f64> = epp_mid_plane_p_profile(
+            let midplane_p_profile_this_time: Array1<f64> = epp_midplane_p_profile(
                 &gs_solutions[i_time],
                 &r,
                 i_z_centre,
@@ -1024,7 +1024,7 @@ impl Plasma {
                 &psi_n_2d.slice(s![i_time, .., ..]).to_owned(),
                 &mask_2d.slice(s![i_time, .., ..]).to_owned(),
             );
-            mid_plane_p_profile.slice_mut(s![i_time, ..]).assign(&mid_plane_p_profile_this_time);
+            midplane_p_profile.slice_mut(s![i_time, ..]).assign(&midplane_p_profile_this_time);
 
             let (bt_2d_this_time, bt_vac_this_time): (Array2<f64>, Array2<f64>) = epp_bt_2d(&gs_solutions[i_time], &r, &z, i_rod[i_time]);
             bt_2d.slice_mut(s![i_time, .., ..]).assign(&bt_2d_this_time);
@@ -1326,9 +1326,9 @@ impl Plasma {
         // Mid-plane profiles
         self.results
             .get_or_insert("profiles_1d")
-            .get_or_insert("mid_plane")
-            .insert("p", mid_plane_p_profile);
-        self.results.get_or_insert("profiles_1d").get_or_insert("mid_plane").insert("r", r.clone());
+            .get_or_insert("r_midplane")
+            .insert("p", midplane_p_profile);
+        self.results.get_or_insert("profiles_1d").get_or_insert("r_midplane").insert("r", r.clone());
 
         // Source functions
         self.results
@@ -2172,7 +2172,7 @@ fn epp_li(
     return (li_1, li_2, li_3);
 }
 
-fn epp_mid_plane_p_profile(
+fn epp_midplane_p_profile(
     gs_solution: &GsSolution,
     r: &Array1<f64>,
     i_z_centre: usize,
