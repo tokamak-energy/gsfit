@@ -10,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.linalg import lu
 
+
 def poisson_matrix(
     r_vec: npt.NDArray[np.float64],
     z_vec: npt.NDArray[np.float64],

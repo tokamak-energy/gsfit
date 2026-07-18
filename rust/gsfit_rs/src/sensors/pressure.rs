@@ -435,14 +435,14 @@ impl Pressure {
         let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
         let d_r: f64 = r[1] - r[0];
         let d_z: f64 = z[1] - z[0];
-        let psi_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("psi").unwrap_array3();
-        let br_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("br").unwrap_array3();
-        let bz_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("bz").unwrap_array3();
-        let d_bz_d_z_2d_vs_time: Array3<f64> = plasma.results.get("two_d").get("d_bz_d_z").unwrap_array3();
+        let psi_2d_vs_time: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("psi").unwrap_array3();
+        let br_2d_vs_time: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("br").unwrap_array3();
+        let bz_2d_vs_time: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("bz").unwrap_array3();
+        let d_bz_d_z_2d_vs_time: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("d_bz_d_z").unwrap_array3();
         let p_prime_dof_values_vs_time: Array2<f64> = plasma.results.get("source_functions").get("p_prime").get("coefficients").unwrap_array2();
 
         let psi_a_vs_time: Array1<f64> = plasma.results.get("global").get("psi_a").unwrap_array1();
-        let psi_b_vs_time: Array1<f64> = plasma.results.get("global").get("psi_b").unwrap_array1();
+        let psi_b_vs_time: Array1<f64> = plasma.results.get("boundary").get("psi").unwrap_array1();
 
         let sensor_names: Vec<String> = self.results.keys();
         if sensor_names.is_empty() {

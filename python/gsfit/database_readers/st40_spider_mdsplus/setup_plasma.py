@@ -55,7 +55,7 @@ def setup_plasma(
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
         ff_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
-    
+
     # Grid size and shape
     n_r = settings["GSFIT_code_settings.json"]["grid"]["n_r"]
     n_z = settings["GSFIT_code_settings.json"]["grid"]["n_z"]

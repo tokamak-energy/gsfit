@@ -10,7 +10,7 @@ def plot(gsfit_controller: Gsfit, ax: matplotlib.axes.Axes, time_desired: float,
     time = plasma.get_array1(["time"])
     i_time = np.argmin(np.abs(time - time_desired))
 
-    psi_n = plasma.get_array1(["profiles", "psi_n"])
-    p_prime = plasma.get_array2(["profiles", "p_prime"])[i_time, :]
+    psi_n = plasma.get_array1(["profiles_1d", "psi_norm", "psi_norm"])
+    p_prime = plasma.get_array2(["profiles_1d", "psi_norm", "p_prime"])[i_time, :]
 
     ax.plot(psi_n, p_prime, color=color, linestyle=linestyle, label="GSFit", linewidth=1.0)

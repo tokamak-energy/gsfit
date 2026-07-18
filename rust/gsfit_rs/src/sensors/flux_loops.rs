@@ -592,7 +592,7 @@ impl FluxLoops {
 
             // Plasma
             let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1(); // shape = [n_z*n_r]
-            let j_2d: Array3<f64> = plasma.results.get("two_d").get("j").unwrap_array3(); // shape = [n_time, n_z, n_r]
+            let j_2d: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("j").unwrap_array3(); // shape = [n_time, n_z, n_r]
             let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
             let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
             let n_time: usize = time.len();

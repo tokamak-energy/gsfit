@@ -246,13 +246,13 @@ impl Dialoop {
     /// with `epp_bt_2d` in `plasma.rs`, and integrates `(f - f_vac) / R` over the plasma mask
     /// (Moret Eq. 41).
     pub fn calculate_sensor_values_rs(&mut self, plasma: &Plasma) {
-        let psi_n_2d: Array3<f64> = plasma.results.get("two_d").get("psi_n").unwrap_array3(); // shape = [n_time, n_z, n_r]
-        let mask_2d: Array3<f64> = plasma.results.get("two_d").get("mask").unwrap_array3(); // shape = [n_time, n_z, n_r]
+        let psi_n_2d: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("psi_norm").unwrap_array3(); // shape = [n_time, n_z, n_r]
+        let mask_2d: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("mask").unwrap_array3(); // shape = [n_time, n_z, n_r]
         let flat_r: Array1<f64> = plasma.results.get("grid").get("flat").get("r").unwrap_array1(); // shape = [n_z * n_r]
         let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
         let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
         let psi_a_vs_time: Array1<f64> = plasma.results.get("global").get("psi_a").unwrap_array1();
-        let psi_b_vs_time: Array1<f64> = plasma.results.get("global").get("psi_b").unwrap_array1();
+        let psi_b_vs_time: Array1<f64> = plasma.results.get("boundary").get("psi").unwrap_array1();
         let i_rod_vs_time: Array1<f64> = plasma.results.get("global").get("i_rod").unwrap_array1();
         let ff_coeffs: Array2<f64> = plasma.results.get("source_functions").get("ff_prime").get("coefficients").unwrap_array2(); // shape = [n_time, n_dof]
 
