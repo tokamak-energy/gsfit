@@ -5,8 +5,8 @@ use crate::passives::Passives;
 use crate::plasma_geometry::MarchingContour;
 use crate::plasma_geometry::marching_squares::marching_squares;
 use crate::plasma_geometry::marching_squares_for_sol::marching_squares_for_sol;
-use crate::source_functions::SourceFunctionTraits;
-use crate::source_functions::{EfitPolynomial, TensionedCubicBSpline};
+use crate::source_functions::SharedSourceFunction;
+use crate::source_functions::extract_source_function;
 use contour::ContourBuilder;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::Area;
@@ -22,7 +22,6 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 use std::f64::consts::PI;
-use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
@@ -30,8 +29,8 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 #[pyclass(skip_from_py_object)]
 pub struct Plasma {
     pub results: DataTree,
-    pub p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
-    pub ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
+    pub p_prime_source_function: SharedSourceFunction,
+    pub ff_prime_source_function: SharedSourceFunction,
     pub initial_ip: f64,
     pub initial_cur_r: f64,
     pub initial_cur_z: f64,
@@ -74,8 +73,8 @@ impl Plasma {
         limit_pts_z: PyReadonlyArray1<f64>,
         vessel_r: PyReadonlyArray1<f64>,
         vessel_z: PyReadonlyArray1<f64>,
-        p_prime_source_function: Py<PyAny>,  // TODO: This is a big ugly!
-        ff_prime_source_function: Py<PyAny>, // TODO: This is a big ugly!
+        p_prime_source_function: &Bound<'_, PyAny>,  // Any Python object, because Python doesn't know about types
+        ff_prime_source_function: &Bound<'_, PyAny>, // Any Python object, because Python doesn't know about types
         initial_ip: f64,
         initial_cur_r: f64,
         initial_cur_z: f64,
@@ -86,79 +85,12 @@ impl Plasma {
         let limit_pts_z_ndarray: Array1<f64> = limit_pts_z.to_owned_array();
         let vessel_r_ndarray: Array1<f64> = vessel_r.to_owned_array();
         let vessel_z_ndarray: Array1<f64> = vessel_z.to_owned_array();
-        // Extract an object from p_prime_source_function which contains the common traits
-        let p_prime_source_function_arc: Arc<dyn SourceFunctionTraits + Send + Sync> = Python::attach(|py| {
-            p_prime_source_function
-                .extract::<Py<PyAny>>(py)
-                .and_then(|obj| {
-                    if let Ok(efit) = obj.extract::<PyRef<EfitPolynomial>>(py) {
-                        Ok(Arc::new(EfitPolynomial {
-                            n_dof: efit.n_dof,
-                            regularisations: efit.regularisations.clone(),
-                            dof_values: efit.dof_values.clone(),
-                        }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
-                    } else if let Ok(cubic_bspline) = obj.extract::<PyRef<TensionedCubicBSpline>>(py) {
-                        Ok(Arc::new(TensionedCubicBSpline {
-                            n_dof: cubic_bspline.n_dof,
-                            regularisations: cubic_bspline.regularisations.clone(),
-                            interior_knots: cubic_bspline.interior_knots.clone(),
-                            knots: cubic_bspline.knots.clone(),
-                            interval_tensions: cubic_bspline.interval_tensions.clone(),
-                            hyperbolic_upper_cutoff: cubic_bspline.hyperbolic_upper_cutoff,
-                            hyperbolic_lower_cutoff: cubic_bspline.hyperbolic_lower_cutoff,
-                            delta_cutoff: cubic_bspline.delta_cutoff,
-                            tensions: cubic_bspline.tensions.clone(),
-                            delta_knots: cubic_bspline.delta_knots.clone(),
-                            gamma2_array: cubic_bspline.gamma2_array.clone(),
-                            gamma3_array: cubic_bspline.gamma3_array.clone(),
-                            gamma4_array: cubic_bspline.gamma4_array.clone(),
-                            sigma1_array: cubic_bspline.sigma1_array.clone(),
-                            sigma2_array: cubic_bspline.sigma2_array.clone(),
-                            tstar_array: cubic_bspline.tstar_array.clone(),
-                        }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
-                    } else {
-                        panic!("p_prime_source_function must implement SourceFunctionTraits");
-                    }
-                })
-                .expect("Failed to extract p_prime_source_function")
-        });
 
-        // Extract an object from ff_prime_source_function which contains the common traits
-        let ff_prime_source_function_arc: Arc<dyn SourceFunctionTraits + Send + Sync> = Python::attach(|py| {
-            ff_prime_source_function
-                .extract::<Py<PyAny>>(py)
-                .and_then(|obj| {
-                    if let Ok(efit) = obj.extract::<PyRef<EfitPolynomial>>(py) {
-                        Ok(Arc::new(EfitPolynomial {
-                            n_dof: efit.n_dof,
-                            regularisations: efit.regularisations.clone(),
-                            dof_values: efit.dof_values.clone(),
-                        }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
-                    } else if let Ok(cubic_bspline) = obj.extract::<PyRef<TensionedCubicBSpline>>(py) {
-                        Ok(Arc::new(TensionedCubicBSpline {
-                            n_dof: cubic_bspline.n_dof,
-                            regularisations: cubic_bspline.regularisations.clone(),
-                            interior_knots: cubic_bspline.interior_knots.clone(),
-                            knots: cubic_bspline.knots.clone(),
-                            interval_tensions: cubic_bspline.interval_tensions.clone(),
-                            hyperbolic_upper_cutoff: cubic_bspline.hyperbolic_upper_cutoff,
-                            hyperbolic_lower_cutoff: cubic_bspline.hyperbolic_lower_cutoff,
-                            delta_cutoff: cubic_bspline.delta_cutoff,
-                            tensions: cubic_bspline.tensions.clone(),
-                            delta_knots: cubic_bspline.delta_knots.clone(),
-                            gamma2_array: cubic_bspline.gamma2_array.clone(),
-                            gamma3_array: cubic_bspline.gamma3_array.clone(),
-                            gamma4_array: cubic_bspline.gamma4_array.clone(),
-                            sigma1_array: cubic_bspline.sigma1_array.clone(),
-                            sigma2_array: cubic_bspline.sigma2_array.clone(),
-                            tstar_array: cubic_bspline.tstar_array.clone(),
-                        }) as Arc<dyn SourceFunctionTraits + Send + Sync>)
-                    } else {
-                        panic!("ff_prime_source_function must implement SourceFunctionTraits");
-                    }
-                })
-                .expect("Failed to extract ff_prime_source_function")
-        });
+        // `p_prime_source_function` and `ff_prime_source_function` come into Rust as a Python PyAny type, so we have no idea what type they are.
+        // In `extract_source_function` we attempt to convert into a known Rust type and panic if we can't.
+        // This is a "bit ugly", but it is a known limitation of PyO3 because of how Python types work.
+        let p_prime_source_function_arc: SharedSourceFunction = extract_source_function(p_prime_source_function);
+        let ff_prime_source_function_arc: SharedSourceFunction = extract_source_function(ff_prime_source_function);
 
         // Create storage
         let mut results: DataTree = DataTree::new();
