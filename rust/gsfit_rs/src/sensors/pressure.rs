@@ -5,7 +5,6 @@ use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
-use crate::source_functions::SourceFunctionTraits;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use ndarray::{Array1, Array2, Array3, ArrayView2, Axis, s};
 use ndarray_stats::QuantileExt;
