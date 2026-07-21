@@ -30,20 +30,8 @@ def setup_dialoop(
     # Initialise the Dialoop Rust class
     dialoop = Dialoop()
 
-    # Read in the diamagnetic flux from MDSplus
-    dialoop_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus"]["workflow"]["dialoop"]["run_name"]
-    mag_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus"]["workflow"]["mag"]["run_name"]
-    dialoop_data = GetData(pulseNo, f"DIALOOP#{dialoop_run_name}", is_fail_quiet=False)
-
     # We use a single diamagnetic flux loop
     sensor_name = "DIALOOP"
-
-    # Get geometry (path of integration) directly via mdsthin from the MAG tree
-    # (the geometry is stored in MAG, not in the DIALOOP tree)
-    conn = mdsthin.Connection("smaug")
-    conn.openTree("MAG", pulseNo)
-    path_r = conn.get(f"\\MAG::TOP.{mag_run_name}.DIALOOP.L000:R_PATH").data().astype(np.float64)
-    path_z = conn.get(f"\\MAG::TOP.{mag_run_name}.DIALOOP.L000:Z_PATH").data().astype(np.float64)
 
     if sensor_name in settings["sensor_weights_dialoop.json"]:
         fit_settings_comment = settings["sensor_weights_dialoop.json"][sensor_name]["fit_settings"]["comment"]
@@ -55,6 +43,23 @@ def setup_dialoop(
         fit_settings_expected_value = np.nan
         fit_settings_include = False
         fit_settings_weight = np.nan
+
+    # If the diamagnetic flux loop is not being fitted, skip reading the DIALOOP (and MAG)
+    # trees entirely and return an empty `Dialoop` object.
+    if not fit_settings_include:
+        return dialoop
+
+    # Read in the diamagnetic flux from MDSplus
+    dialoop_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus"]["workflow"]["dialoop"]["run_name"]
+    mag_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus"]["workflow"]["mag"]["run_name"]
+    dialoop_data = GetData(pulseNo, f"DIALOOP#{dialoop_run_name}", is_fail_quiet=False)
+
+    # Get geometry (path of integration) directly via mdsthin from the MAG tree
+    # (the geometry is stored in MAG, not in the DIALOOP tree)
+    conn = mdsthin.Connection("smaug")
+    conn.openTree("MAG", pulseNo)
+    path_r = conn.get(f"\\MAG::TOP.{mag_run_name}.DIALOOP.L000:R_PATH").data().astype(np.float64)
+    path_z = conn.get(f"\\MAG::TOP.{mag_run_name}.DIALOOP.L000:Z_PATH").data().astype(np.float64)
 
     # Measured signal: \DIALOOP::TOP.<run_name>.GLOBAL:PHI_DIA
     time = typing.cast(npt.NDArray[np.float64], dialoop_data.get("TIME")).astype(np.float64)
