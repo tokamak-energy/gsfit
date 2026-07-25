@@ -315,16 +315,16 @@ impl Greens {
                 // psi = MU_0 * r * (ln(8 * r) - 2 - p_c)
                 // where `p_c` is the mean log distance from the cell centre to the cross-section:
                 // p_c = 0.5 * ln((d_r^2 + d_z^2) / 4) - 3/2 + (d_r / (2 * d_z)) * atan(d_z / d_r) + (d_z / (2 * d_r)) * atan(d_r / d_z)
-                for i_grid in 0..n_rz {
-                    if (r[i_grid] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_grid] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                for i_rz in 0..n_rz {
+                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
                     {
                         let d_r: f64 = conductor_d_r[i_conductor_rz];
                         let d_z: f64 = conductor_d_z[i_conductor_rz];
                         let p_c: f64 = 0.5 * ((d_r.powi(2) + d_z.powi(2)) / 4.0).ln() - 1.5
                             + d_r / (2.0 * d_z) * (d_z / d_r).atan()
                             + d_z / (2.0 * d_r) * (d_r / d_z).atan();
-                        green_this_filament[i_grid] = MU_0 * r[i_grid] * ((8.0 * r[i_grid]).ln() - 2.0 - p_c);
+                        green_this_filament[i_rz] = MU_0 * r[i_rz] * ((8.0 * r[i_rz]).ln() - 2.0 - p_c);
                     }
                 }
 
@@ -1555,65 +1555,6 @@ fn test_self_field_off_diagonal_matches_sensor_to_conductor() {
     );
 }
 
-/// Helper for `test_self_point_detection`: the `[(0, 0)]` value of every Greens table which has
-/// its own self-point branch. `b_r`, `b_z`, `d_b_r_d_z`, `d_b_z_d_z` and `d3_psi_d_r2_d_z` are
-/// derived from these tables, so they have no branch of their own.
-#[cfg(test)]
-fn self_point_table_values(greens_calculator: &Greens) -> [(&'static str, f64); 8] {
-    [
-        ("psi", greens_calculator.psi()[(0, 0)]),
-        ("d_psi_d_r", greens_calculator.d_psi_d_r()[(0, 0)]),
-        ("d_psi_d_z", greens_calculator.d_psi_d_z()[(0, 0)]),
-        ("d2_psi_d_r2", greens_calculator.d2_psi_d_r2()[(0, 0)]),
-        ("d2_psi_d_r_d_z", greens_calculator.d2_psi_d_r_d_z()[(0, 0)]),
-        ("d2_psi_d_z2", greens_calculator.d2_psi_d_z2()[(0, 0)]),
-        ("d3_psi_d_z3", greens_calculator.d3_psi_d_z3()[(0, 0)]),
-        ("d3_psi_d_r_d_z2", greens_calculator.d3_psi_d_r_d_z2()[(0, 0)]),
-    ]
-}
-
-/// Helper for `test_self_point_detection`: asserts that no Greens table applied the self-term in
-/// the `greens_sensor_to_conductor` geometry (sensor just outside the self-region), by comparing
-/// against `greens_sensor_at_conductor` (sensor placed at the conductor, whose `[(0, 0)]` is
-/// exactly the self-term).
-///
-/// The finiteness assertions additionally catch mutations such as `<` -> `>`, under which the
-/// *coincident* table falls through to the (divergent) filament expression.
-///
-/// When the sensor and conductor share the same `z` (`z_coincident = true`), the tables that are
-/// odd in `h = z - conductor_z` (`d_psi_d_z`, `d2_psi_d_r_d_z`, `d3_psi_d_z3`) are exactly zero
-/// in both geometries, so they cannot discriminate and are skipped; case (4) covers them instead.
-#[cfg(test)]
-fn assert_self_term_not_applied(greens_sensor_to_conductor: &Greens, greens_sensor_at_conductor: &Greens, z_coincident: bool, case_description: &str) {
-    let odd_in_h_table_names: [&'static str; 3] = ["d_psi_d_z", "d2_psi_d_r_d_z", "d3_psi_d_z3"];
-
-    let table_values_sensor_to_conductor: [(&'static str, f64); 8] = self_point_table_values(greens_sensor_to_conductor);
-    let table_values_sensor_at_conductor: [(&'static str, f64); 8] = self_point_table_values(greens_sensor_at_conductor);
-
-    let n_table: usize = table_values_sensor_to_conductor.len();
-    for i_table in 0..n_table {
-        let (table_name, value_sensor_to_conductor): (&'static str, f64) = table_values_sensor_to_conductor[i_table];
-        let (_, value_sensor_at_conductor): (&'static str, f64) = table_values_sensor_at_conductor[i_table];
-
-        if z_coincident && odd_in_h_table_names.contains(&table_name) {
-            continue;
-        }
-
-        assert!(
-            value_sensor_to_conductor.is_finite(),
-            "{table_name} sensor-to-conductor value is not finite ({case_description})"
-        );
-        assert!(
-            value_sensor_at_conductor.is_finite(),
-            "{table_name} self-term value is not finite ({case_description})"
-        );
-        assert_ne!(
-            value_sensor_to_conductor, value_sensor_at_conductor,
-            "{table_name} used the self-term ({case_description})"
-        );
-    }
-}
-
 /// The self-point branch in each Greens table (`psi`, `d_psi_d_r`, `d_psi_d_z`, `d2_psi_d_r2`,
 /// `d2_psi_d_r_d_z`, `d2_psi_d_z2`, `d3_psi_d_z3`, `d3_psi_d_r_d_z2`) fires only when the sensor
 /// coincides with the conductor in *both* `r` and `z`, and it uses a strict `<` on
@@ -1625,6 +1566,64 @@ fn assert_self_term_not_applied(greens_sensor_to_conductor: &Greens, greens_sens
 /// being relaxed to `||` / `<=`.
 #[test]
 fn test_self_point_detection() {
+    // The `[(0, 0)]` value of every Greens table which has its own self-point branch. `b_r`,
+    // `b_z`, `d_b_r_d_z`, `d_b_z_d_z` and `d3_psi_d_r2_d_z` are derived from these tables, so
+    // they have no branch of their own.
+    fn self_point_table_values(greens_calculator: &Greens) -> [(&'static str, f64); 8] {
+        [
+            ("psi", greens_calculator.psi()[(0, 0)]),
+            ("d_psi_d_r", greens_calculator.d_psi_d_r()[(0, 0)]),
+            ("d_psi_d_z", greens_calculator.d_psi_d_z()[(0, 0)]),
+            ("d2_psi_d_r2", greens_calculator.d2_psi_d_r2()[(0, 0)]),
+            ("d2_psi_d_r_d_z", greens_calculator.d2_psi_d_r_d_z()[(0, 0)]),
+            ("d2_psi_d_z2", greens_calculator.d2_psi_d_z2()[(0, 0)]),
+            ("d3_psi_d_z3", greens_calculator.d3_psi_d_z3()[(0, 0)]),
+            ("d3_psi_d_r_d_z2", greens_calculator.d3_psi_d_r_d_z2()[(0, 0)]),
+        ]
+    }
+
+    // Asserts that no Greens table applied the self-term in the `greens_sensor_to_conductor`
+    // geometry (sensor just outside the self-region), by comparing against
+    // `greens_sensor_at_conductor` (sensor placed at the conductor, whose `[(0, 0)]` is exactly
+    // the self-term).
+    //
+    // The finiteness assertions additionally catch mutations such as `<` -> `>`, under which the
+    // *coincident* table falls through to the (divergent) filament expression.
+    //
+    // When the sensor and conductor share the same `z` (`z_coincident = true`), the tables that
+    // are odd in `h = z - conductor_z` (`d_psi_d_z`, `d2_psi_d_r_d_z`, `d3_psi_d_z3`) are exactly
+    // zero in both geometries, so they cannot discriminate and are skipped; case (4) covers them
+    // instead.
+    fn assert_self_term_not_applied(greens_sensor_to_conductor: &Greens, greens_sensor_at_conductor: &Greens, z_coincident: bool, case_description: &str) {
+        let odd_in_h_table_names: [&'static str; 3] = ["d_psi_d_z", "d2_psi_d_r_d_z", "d3_psi_d_z3"];
+
+        let table_values_sensor_to_conductor: [(&'static str, f64); 8] = self_point_table_values(greens_sensor_to_conductor);
+        let table_values_sensor_at_conductor: [(&'static str, f64); 8] = self_point_table_values(greens_sensor_at_conductor);
+
+        let n_table: usize = table_values_sensor_to_conductor.len();
+        for i_table in 0..n_table {
+            let (table_name, value_sensor_to_conductor): (&'static str, f64) = table_values_sensor_to_conductor[i_table];
+            let (_, value_sensor_at_conductor): (&'static str, f64) = table_values_sensor_at_conductor[i_table];
+
+            if z_coincident && odd_in_h_table_names.contains(&table_name) {
+                continue;
+            }
+
+            assert!(
+                value_sensor_to_conductor.is_finite(),
+                "{table_name} sensor-to-conductor value is not finite ({case_description})"
+            );
+            assert!(
+                value_sensor_at_conductor.is_finite(),
+                "{table_name} self-term value is not finite ({case_description})"
+            );
+            assert_ne!(
+                value_sensor_to_conductor, value_sensor_at_conductor,
+                "{table_name} used the self-term ({case_description})"
+            );
+        }
+    }
+
     // (1) `&&`, not `||`: same z but different r -> only one coordinate coincides -> filament.
     // Under `||` the shared z alone would (wrongly) trigger the self-term at the sensor radius.
     {
