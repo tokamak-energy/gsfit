@@ -119,7 +119,7 @@ impl Greens {
         );
         assert!(
             conductor_r.iter().all(|&x| x > 0.0),
-            "`conductor_r > 0` is required; this is not physically valid if `conductor_d_r` is finite"
+            "`conductor_r > 0` is required; this is not physically valid because a finite `conductor_d_r` will cause the cell to enter negative `r`"
         );
 
         // Sensors
