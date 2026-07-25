@@ -1066,6 +1066,40 @@ fn test_psi() {
     assert_abs_diff_eq!(psi_numerical, psi_analytic, epsilon = precision);
 }
 
+/// `sensor_r > 0` is required. Passing `[0.0, 0.5]` must panic:
+/// * `0.0` fails the strict `> 0.0` (catches `>` -> `>=`),
+/// * the valid `0.5` means a `.all` -> `.any` mutation would (wrongly) pass,
+/// * deleting the assertion would let the divergent equations run without panicking.
+#[test]
+#[should_panic(expected = "`sensor_r > 0` is required")]
+fn test_sensor_r_not_positive_panics() {
+    let sensor_r: Array1<f64> = Array1::from(vec![0.0, 0.5]);
+    let sensor_z: Array1<f64> = Array1::from(vec![0.0, 0.0]);
+    let conductor_r: Array1<f64> = Array1::from(vec![0.5]);
+    let conductor_z: Array1<f64> = Array1::from(vec![0.0]);
+    let conductor_d_r: Array1<f64> = Array1::zeros(1);
+    let conductor_d_z: Array1<f64> = Array1::zeros(1);
+
+    let _greens_calculator: Greens = Greens::sensor_to_conductor(sensor_r, sensor_z, conductor_r, conductor_z, conductor_d_r, conductor_d_z);
+}
+
+/// `conductor_r > 0` is required. Passing `[0.0, 0.5]` must panic:
+/// * `0.0` fails the strict `> 0.0` (catches `>` -> `>=`),
+/// * the valid `0.5` means a `.all` -> `.any` mutation would (wrongly) pass,
+/// * deleting the assertion would let a finite `conductor_d_r` push the cell into negative `r`.
+#[test]
+#[should_panic(expected = "`conductor_r > 0` is required")]
+fn test_conductor_r_not_positive_panics() {
+    let sensor_r: Array1<f64> = Array1::from(vec![0.5]);
+    let sensor_z: Array1<f64> = Array1::from(vec![0.0]);
+    let conductor_r: Array1<f64> = Array1::from(vec![0.0, 0.5]);
+    let conductor_z: Array1<f64> = Array1::from(vec![0.0, 0.0]);
+    let conductor_d_r: Array1<f64> = Array1::zeros(2);
+    let conductor_d_z: Array1<f64> = Array1::zeros(2);
+
+    let _greens_calculator: Greens = Greens::sensor_to_conductor(sensor_r, sensor_z, conductor_r, conductor_z, conductor_d_r, conductor_d_z);
+}
+
 /// Test d(psi)/d(r) by numerically differentiating psi
 #[test]
 fn test_d_psi_d_r() {
@@ -1521,15 +1555,76 @@ fn test_self_field_off_diagonal_matches_sensor_to_conductor() {
     );
 }
 
-/// The self-point branch in `psi` fires only when the sensor coincides with the conductor in
-/// *both* `r` and `z`, and it uses a strict `<` on `SELF_POINT_DISTANCE_TOLERANCE` (a point
-/// exactly at the tolerance is NOT a self-point). Each case below builds a `sensor_to_conductor`
-/// geometry that is just outside the self-region, and obtains the value the branch *would*
-/// produce from a coincident 1x1 table (sensor placed at the conductor, whose diagonal is the self-term).
-/// The assertion fails iff the self-term is wrongly applied, which pins down the `&&` and the
-/// two `<` comparisons against being relaxed to `||` / `<=`.
+/// Helper for `test_self_point_detection`: the `[(0, 0)]` value of every Greens table which has
+/// its own self-point branch. `b_r`, `b_z`, `d_b_r_d_z`, `d_b_z_d_z` and `d3_psi_d_r2_d_z` are
+/// derived from these tables, so they have no branch of their own.
+#[cfg(test)]
+fn self_point_table_values(greens_calculator: &Greens) -> [(&'static str, f64); 8] {
+    [
+        ("psi", greens_calculator.psi()[(0, 0)]),
+        ("d_psi_d_r", greens_calculator.d_psi_d_r()[(0, 0)]),
+        ("d_psi_d_z", greens_calculator.d_psi_d_z()[(0, 0)]),
+        ("d2_psi_d_r2", greens_calculator.d2_psi_d_r2()[(0, 0)]),
+        ("d2_psi_d_r_d_z", greens_calculator.d2_psi_d_r_d_z()[(0, 0)]),
+        ("d2_psi_d_z2", greens_calculator.d2_psi_d_z2()[(0, 0)]),
+        ("d3_psi_d_z3", greens_calculator.d3_psi_d_z3()[(0, 0)]),
+        ("d3_psi_d_r_d_z2", greens_calculator.d3_psi_d_r_d_z2()[(0, 0)]),
+    ]
+}
+
+/// Helper for `test_self_point_detection`: asserts that no Greens table applied the self-term in
+/// the `greens_sensor_to_conductor` geometry (sensor just outside the self-region), by comparing
+/// against `greens_sensor_at_conductor` (sensor placed at the conductor, whose `[(0, 0)]` is
+/// exactly the self-term).
+///
+/// The finiteness assertions additionally catch mutations such as `<` -> `>`, under which the
+/// *coincident* table falls through to the (divergent) filament expression.
+///
+/// When the sensor and conductor share the same `z` (`z_coincident = true`), the tables that are
+/// odd in `h = z - conductor_z` (`d_psi_d_z`, `d2_psi_d_r_d_z`, `d3_psi_d_z3`) are exactly zero
+/// in both geometries, so they cannot discriminate and are skipped; case (4) covers them instead.
+#[cfg(test)]
+fn assert_self_term_not_applied(greens_sensor_to_conductor: &Greens, greens_sensor_at_conductor: &Greens, z_coincident: bool, case_description: &str) {
+    let odd_in_h_table_names: [&'static str; 3] = ["d_psi_d_z", "d2_psi_d_r_d_z", "d3_psi_d_z3"];
+
+    let table_values_sensor_to_conductor: [(&'static str, f64); 8] = self_point_table_values(greens_sensor_to_conductor);
+    let table_values_sensor_at_conductor: [(&'static str, f64); 8] = self_point_table_values(greens_sensor_at_conductor);
+
+    let n_table: usize = table_values_sensor_to_conductor.len();
+    for i_table in 0..n_table {
+        let (table_name, value_sensor_to_conductor): (&'static str, f64) = table_values_sensor_to_conductor[i_table];
+        let (_, value_sensor_at_conductor): (&'static str, f64) = table_values_sensor_at_conductor[i_table];
+
+        if z_coincident && odd_in_h_table_names.contains(&table_name) {
+            continue;
+        }
+
+        assert!(
+            value_sensor_to_conductor.is_finite(),
+            "{table_name} sensor-to-conductor value is not finite ({case_description})"
+        );
+        assert!(
+            value_sensor_at_conductor.is_finite(),
+            "{table_name} self-term value is not finite ({case_description})"
+        );
+        assert_ne!(
+            value_sensor_to_conductor, value_sensor_at_conductor,
+            "{table_name} used the self-term ({case_description})"
+        );
+    }
+}
+
+/// The self-point branch in each Greens table (`psi`, `d_psi_d_r`, `d_psi_d_z`, `d2_psi_d_r2`,
+/// `d2_psi_d_r_d_z`, `d2_psi_d_z2`, `d3_psi_d_z3`, `d3_psi_d_r_d_z2`) fires only when the sensor
+/// coincides with the conductor in *both* `r` and `z`, and it uses a strict `<` on
+/// `SELF_POINT_DISTANCE_TOLERANCE` (a point exactly at the tolerance is NOT a self-point).
+/// Each case below builds a `sensor_to_conductor` geometry that is just outside the self-region,
+/// and obtains the value the branch *would* produce from a coincident 1x1 table (sensor placed at
+/// the conductor, whose diagonal is the self-term). The assertions fail iff the self-term is
+/// wrongly applied, which pins down the `&&` and the two `<` comparisons of every table against
+/// being relaxed to `||` / `<=`.
 #[test]
-fn test_psi_self_point_detection() {
+fn test_self_point_detection() {
     // (1) `&&`, not `||`: same z but different r -> only one coordinate coincides -> filament.
     // Under `||` the shared z alone would (wrongly) trigger the self-term at the sensor radius.
     {
@@ -1538,7 +1633,9 @@ fn test_psi_self_point_detection() {
         let z: f64 = 0.0;
         let d_r: Array1<f64> = Array1::from(vec![0.0125]);
         let d_z: Array1<f64> = Array1::from(vec![0.0125]);
-        let g: Greens = Greens::sensor_to_conductor(
+
+        // Calculate sensor-to-conductor, when the sensor is slightly offset from the conductor in `r`
+        let greens_sensor_to_conductor: Greens = Greens::sensor_to_conductor(
             Array1::from(vec![sensor_r]),
             Array1::from(vec![z]),
             Array1::from(vec![conductor_r]),
@@ -1546,16 +1643,18 @@ fn test_psi_self_point_detection() {
             d_r.clone(),
             d_z.clone(),
         );
-        let self_term: f64 = Greens::sensor_to_conductor(
+
+        // Calculate the self-term, when the sensor is placed at the centre of the conductor
+        let greens_sensor_at_conductor: Greens = Greens::sensor_to_conductor(
             Array1::from(vec![sensor_r]),
             Array1::from(vec![z]),
             Array1::from(vec![sensor_r]),
             Array1::from(vec![z]),
             d_r,
             d_z,
-        )
-        .psi()[(0, 0)];
-        assert_ne!(g.psi()[(0, 0)], self_term, "psi used the self-term when only z coincided");
+        );
+
+        assert_self_term_not_applied(&greens_sensor_to_conductor, &greens_sensor_at_conductor, true, "same z, different r");
     }
 
     // (2) strict `<` on the z comparison: same r, z exactly `SELF_POINT_DISTANCE_TOLERANCE` apart -> filament.
@@ -1571,7 +1670,9 @@ fn test_psi_self_point_detection() {
         );
         let d_r: Array1<f64> = Array1::from(vec![0.0125]);
         let d_z: Array1<f64> = Array1::from(vec![0.0125]);
-        let g: Greens = Greens::sensor_to_conductor(
+
+        // Calculate sensor-to-conductor, when the sensor is offset from the conductor in `z` by exactly the tolerance
+        let greens_sensor_to_conductor: Greens = Greens::sensor_to_conductor(
             Array1::from(vec![r]),
             Array1::from(vec![sensor_z]),
             Array1::from(vec![r]),
@@ -1579,16 +1680,23 @@ fn test_psi_self_point_detection() {
             d_r.clone(),
             d_z.clone(),
         );
-        let self_term: f64 = Greens::sensor_to_conductor(
+
+        // Calculate the self-term, when the sensor is placed at the centre of the conductor
+        let greens_sensor_at_conductor: Greens = Greens::sensor_to_conductor(
             Array1::from(vec![r]),
             Array1::from(vec![conductor_z]),
             Array1::from(vec![r]),
             Array1::from(vec![conductor_z]),
             d_r,
             d_z,
-        )
-        .psi()[(0, 0)];
-        assert_ne!(g.psi()[(0, 0)], self_term, "psi used the self-term at z-distance == tolerance");
+        );
+
+        assert_self_term_not_applied(
+            &greens_sensor_to_conductor,
+            &greens_sensor_at_conductor,
+            false,
+            "same r, z-distance == tolerance",
+        );
     }
 
     // (3) strict `<` on the r comparison: same z, r exactly `SELF_POINT_DISTANCE_TOLERANCE` apart -> filament.
@@ -1606,7 +1714,9 @@ fn test_psi_self_point_detection() {
         );
         let d_r: Array1<f64> = Array1::from(vec![SELF_POINT_DISTANCE_TOLERANCE / 10.0]);
         let d_z: Array1<f64> = Array1::from(vec![SELF_POINT_DISTANCE_TOLERANCE / 10.0]);
-        let g: Greens = Greens::sensor_to_conductor(
+
+        // Calculate sensor-to-conductor, when the sensor is offset from the conductor in `r` by exactly the tolerance
+        let greens_sensor_to_conductor: Greens = Greens::sensor_to_conductor(
             Array1::from(vec![sensor_r]),
             Array1::from(vec![z]),
             Array1::from(vec![conductor_r]),
@@ -1614,15 +1724,72 @@ fn test_psi_self_point_detection() {
             d_r.clone(),
             d_z.clone(),
         );
-        let self_term: f64 = Greens::sensor_to_conductor(
+
+        // Calculate the self-term, when the sensor is placed at the centre of the conductor
+        let greens_sensor_at_conductor: Greens = Greens::sensor_to_conductor(
             Array1::from(vec![sensor_r]),
             Array1::from(vec![z]),
             Array1::from(vec![sensor_r]),
             Array1::from(vec![z]),
             d_r,
             d_z,
-        )
-        .psi()[(0, 0)];
-        assert_ne!(g.psi()[(0, 0)], self_term, "psi used the self-term at r-distance == tolerance");
+        );
+
+        assert_self_term_not_applied(
+            &greens_sensor_to_conductor,
+            &greens_sensor_at_conductor,
+            true,
+            "same z, r-distance == tolerance",
+        );
+    }
+
+    // (4) strict `<` on the r comparison for the odd-in-h tables: r exactly the tolerance apart,
+    // z offset by half the tolerance (strictly inside the z-tolerance, so only the r comparison
+    // decides). The odd-in-h tables are exactly zero at the self-point but non-zero at
+    // `h = tolerance / 2`, which cases (1) and (3) cannot see because their geometries share the
+    // conductor's z. Both offsets are exact in f64 (`2x - x == x`; `x / 2` is a power-of-two scaling).
+    {
+        let conductor_r: f64 = SELF_POINT_DISTANCE_TOLERANCE;
+        let sensor_r: f64 = 2.0 * SELF_POINT_DISTANCE_TOLERANCE;
+        let conductor_z: f64 = 0.0;
+        let sensor_z: f64 = SELF_POINT_DISTANCE_TOLERANCE / 2.0;
+        assert_eq!(
+            (sensor_r - conductor_r).abs(),
+            SELF_POINT_DISTANCE_TOLERANCE,
+            "r offset must equal the tolerance exactly"
+        );
+        assert!(
+            (sensor_z - conductor_z).abs() < SELF_POINT_DISTANCE_TOLERANCE,
+            "z offset must be strictly inside the tolerance"
+        );
+        let d_r: Array1<f64> = Array1::from(vec![SELF_POINT_DISTANCE_TOLERANCE / 10.0]);
+        let d_z: Array1<f64> = Array1::from(vec![SELF_POINT_DISTANCE_TOLERANCE / 10.0]);
+
+        // Calculate sensor-to-conductor, when the sensor is offset from the conductor in `r` by exactly the tolerance
+        let greens_sensor_to_conductor: Greens = Greens::sensor_to_conductor(
+            Array1::from(vec![sensor_r]),
+            Array1::from(vec![sensor_z]),
+            Array1::from(vec![conductor_r]),
+            Array1::from(vec![conductor_z]),
+            d_r.clone(),
+            d_z.clone(),
+        );
+
+        // Calculate the self-term, when the sensor is placed at the centre of the conductor
+        let greens_sensor_at_conductor: Greens = Greens::sensor_to_conductor(
+            Array1::from(vec![sensor_r]),
+            Array1::from(vec![sensor_z]),
+            Array1::from(vec![sensor_r]),
+            Array1::from(vec![sensor_z]),
+            d_r,
+            d_z,
+        );
+
+        assert_self_term_not_applied(
+            &greens_sensor_to_conductor,
+            &greens_sensor_at_conductor,
+            false,
+            "r-distance == tolerance, z inside tolerance",
+        );
     }
 }

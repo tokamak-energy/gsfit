@@ -61,6 +61,7 @@ fn link_python_dll_next_to_binaries(lib_dir: &str, lib_name: &str) {
     };
     let dll_source: std::path::PathBuf = install_root.join(format!("{lib_name}.dll"));
     if !dll_source.exists() {
+        println!("cargo:warning={} not found; test executables may fail to load libpython", dll_source.display());
         return;
     }
 
