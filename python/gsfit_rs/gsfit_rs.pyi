@@ -127,9 +127,9 @@ def greens_py(
     d_z: npt.NDArray[np.float64] | None = None,
 ) -> npt.NDArray[np.float64]:
     """
-    :param r: (by convention) Sensor radial positions [metre]
+    :param r: (by convention) Sensor radial positions, must be `> 0.0` [metre]
     :param z: (by convention) Sensor vertical positions [metre]
-    :param r_prime: (by convention) Current source radial positions [metre]
+    :param r_prime: (by convention) Current source radial positions, must be `> 0.0` [metre]
     :param z_prime: (by convention) Current source vertical positions [metre]
     :param d_r: (optional) Radial widths [metre]
     :param d_z: (optional) Vertical heights [metre]

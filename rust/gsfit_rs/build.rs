@@ -93,7 +93,13 @@ fn link_python_dll_next_to_binaries(lib_dir: &str, lib_name: &str) {
             let _ = fs::remove_file(&dll_dest);
             // Prefer a hard-link (no data duplication); fall back to a copy across volumes.
             if fs::hard_link(&dll_source, &dll_dest).is_err() {
-                let _ = fs::copy(&dll_source, &dll_dest);
+                if let Err(copy_error) = fs::copy(&dll_source, &dll_dest) {
+                    println!(
+                        "cargo:warning=failed to place {} next to the test binaries at {}: {copy_error}; test executables may fail to load libpython",
+                        dll_source.display(),
+                        dll_dest.display()
+                    );
+                }
             }
         }
     }
