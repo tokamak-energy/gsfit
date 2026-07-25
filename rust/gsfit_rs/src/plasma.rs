@@ -104,6 +104,13 @@ impl Plasma {
         let d_z: f64 = z[1] - z[0];
         let d_area: f64 = d_r * d_z;
 
+        // Check that the R grid doesn't go negative
+        // Note, we allow cells to touch the axis (R=0), which would be excluded by `r_min - d_r / 2.0 <= 0.0`
+        // but we do not allow cells to go negative.
+        if r_min - d_r / 2.0 < 0.0 {
+            panic!("plasma.new: r_min - d_r / 2.0 < 0.0; the radial grid must not go negative");
+        }
+
         // 2d (r, z) mesh
         let (mesh_z_view, mesh_r_view): (ArrayView2<f64>, ArrayView2<f64>) = meshgrid((&z, &r), MeshIndex::IJ);
         let mesh_z: Array2<f64> = mesh_z_view.to_owned(); // shape = (n_z, n_r)
