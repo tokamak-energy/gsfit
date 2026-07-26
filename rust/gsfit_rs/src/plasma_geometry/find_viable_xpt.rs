@@ -46,8 +46,8 @@ pub fn find_viable_xpt(
     stationary_points: &[StationaryPoint],
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
-    mag_r_previous: f64,
-    mag_z_previous: f64,
+    mag_r: f64,
+    mag_z: f64,
 ) -> Result<BoundaryContour, String> {
     // TODO: add logic for negative plasma current
 
@@ -109,8 +109,8 @@ pub fn find_viable_xpt(
     });
 
     // Find the closest grid point to the magnetic axis
-    let index_mag_r: usize = (r - mag_r_previous).abs().argmin().expect("find_viable_xpt: unwrapping index_mag_r");
-    let index_mag_z: usize = (z - mag_z_previous).abs().argmin().expect("find_viable_xpt: unwrapping index_mag_z");
+    let index_mag_r: usize = (r - mag_r).abs().argmin().expect("find_viable_xpt: unwrapping index_mag_r");
+    let index_mag_z: usize = (z - mag_z).abs().argmin().expect("find_viable_xpt: unwrapping index_mag_z");
 
     'loop_over_potential_xpts: for potential_xpt in &mut potential_xpts {
         // Test if saddle point is within vessel
