@@ -19,8 +19,8 @@ use ndarray_stats::QuantileExt;
 /// * `psi_2d` - 2D array of poloidal flux values, [weber]
 /// * `vessel_r` - 1D array of R coordinates defining the vessel boundary polygon, [metre]
 /// * `vessel_z` - 1D array of Z coordinates defining the vessel boundary polygon, [metre]
-/// * `mag_r` - R coordinate of the magnetic axis, [metre]. Note, this is from the previous time-step.
-/// * `mag_z` - Z coordinate of the magnetic axis, [metre]. Note, this is from the previous time-step.
+/// * `mag_r` - R coordinate of the magnetic axis, [metre]
+/// * `mag_z` - Z coordinate of the magnetic axis, [metre]
 ///
 /// # Returns
 /// * `Ok(BoundaryContour)` - The boundary contour and X-point information for the most viable candidate.
@@ -34,11 +34,6 @@ use ndarray_stats::QuantileExt;
 /// 5. Draw a vector from (mag_r, mag_z) to (r.max(), mag_z)
 /// 6. Find intersection with boundary ==> we now know the x-point flux and x-point location (if there are multiple intersections, use the one )
 /// 7. Collect all contours for x-point flux
-///
-/// # Example
-/// ```ignore
-/// let result = find_viable_xpt(&r, &z, &br_2d, &bz_2d, &psi_2d, &vessel_r, &vessel_z, mag_r, mag_z, d2_psi_d_r2_calculator);
-/// ```
 pub fn find_viable_xpt(
     r: &Array1<f64>,
     z: &Array1<f64>,
