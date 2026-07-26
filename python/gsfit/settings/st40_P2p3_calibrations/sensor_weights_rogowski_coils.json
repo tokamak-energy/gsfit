@@ -1,0 +1,106 @@
+{
+    "INIVC000": {
+        "fit_settings": {
+            "expected_value": 306917.4849,
+            "weight": 1000.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "MCT": {
+        "fit_settings": {
+            "expected_value": -5616.681085,
+            "weight": 1.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "MCB": {
+        "fit_settings": {
+            "expected_value": -5616.681085,
+            "weight": 1.0,
+            "include": false,
+            "comment": ""
+        }
+    },
+    "BVLT": {
+        "fit_settings": {
+            "expected_value": -148704.9999,
+            "weight": 1000.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "BVLB": {
+        "fit_settings": {
+            "expected_value": -148704.9999,
+            "weight": 1000.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "GASBFLT": {
+        "fit_settings": {
+            "expected_value": 4281.590177,
+            "weight": 100.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "GASBFLB": {
+        "fit_settings": {
+            "expected_value": 4281.590177,
+            "weight": 100.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "DIVT": {
+        "fit_settings": {
+            "expected_value": -927749.4327,
+            "weight": 1000.0,
+            "include": false,
+            "comment": "presently, I am not reconstructing the DIV cases, so makes no sense to include case Rogowski"
+        }
+    },
+    "DIVB": {
+        "fit_settings": {
+            "expected_value": -927749.4327,
+            "weight": 1000.0,
+            "include": false,
+            "comment": "presently, I am not reconstructing the DIV cases, so makes no sense to include case Rogowski"
+        }
+    },
+    "HFSPSRT": {
+        "fit_settings": {
+            "expected_value": 1000.0,
+            "weight": 1000000.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "HFSPSRB": {
+        "fit_settings": {
+            "expected_value": 1000.0,
+            "weight": 1000000.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "DIVPSRT": {
+        "fit_settings": {
+            "expected_value": 1000.0,
+            "weight": 1000.0,
+            "include": true,
+            "comment": ""
+        }
+    },
+    "DIVPSRB": {
+        "fit_settings": {
+            "expected_value": 1000.0,
+            "weight": 1000.0,
+            "include": true,
+            "comment": ""
+        }
+    }
+}

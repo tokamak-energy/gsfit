@@ -186,7 +186,7 @@ pub fn solve_grad_shafranov(
             gs_object.solve();
             let solution_found: bool = gs_object.ip.is_finite();
             println!(
-                "time={:6.1}ms;  solution_found={};  gs_error={};  n_iter={}",
+                "time={:6.1}ms;  solution_found={};  gs_error={:.18};  n_iter={}",
                 times_to_reconstruct_ndarray[i_time] * 1e3,
                 solution_found,
                 gs_object.gs_error_calculated,
