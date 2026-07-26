@@ -1,0 +1,562 @@
+{
+    "P101": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P102": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal, and started with very little tf pickup"
+        }
+    },
+    "P103": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "non-physical wiggles in TF vacuum shot"
+        }
+    },
+    "P104": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "ok tf removal"
+        }
+    },
+    "P105": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P106": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "good tf removal"
+        }
+    },
+    "P107": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal; under HFSPSRT divertor, bad match"
+        }
+    },
+    "P108": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "ok tf removal"
+        }
+    },
+    "P109": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "ok tf removal, but a bit non-physical"
+        }
+    },
+    "P110": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "good tf removal"
+        }
+    },
+    "P111": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal, but poor dynamic range"
+        }
+    },
+    "P112": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 0.5,
+            "include": true,
+            "comment": "very poor tf removal, non-physical"
+        }
+    },
+    "P113": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "good tf removal, started with very low tf pickup; doesnt match other sensors in reconstruction"
+        }
+    },
+    "P114": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "ok tf removal"
+        }
+    },
+    "P115": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "ok tf removal, started with very low tf pickup"
+        }
+    },
+    "P116": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "ok tf removal, but a little non-physical"
+        }
+    },
+    "P117": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "ok tf removal, but a little non-physical"
+        }
+    },
+    "P118": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "good tf removal"
+        }
+    },
+    "P119": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal; doesn't match other sensors in reconstruction"
+        }
+    },
+    "P120": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "ok tf removal"
+        }
+    },
+    "P121": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P122": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P123": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal"
+        }
+    },
+    "P124": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal"
+        }
+    },
+    "P125": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal"
+        }
+    },
+    "P126": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P127": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P128": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P129": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal; under HFSPSRB divertor, bad match"
+        }
+    },
+    "P130": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal"
+        }
+    },
+    "P131": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P132": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P133": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P134": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal, and started with very little tf pickup"
+        }
+    },
+    "P318": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P501": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P502": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "ok tf removal, but a little non-physical"
+        }
+    },
+    "P503": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "ok tf removal, but a bit non-physical"
+        }
+    },
+    "P504": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "ok tf removal, but a bit non-physical"
+        }
+    },
+    "P505": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "good tf removal, a little non-physical, but started with low tf pickup"
+        }
+    },
+    "P506": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "ok tf removal; seems to be broken!"
+        }
+    },
+    "P507": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "ok tf removal"
+        }
+    },
+    "P508": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 0.5,
+            "include": true,
+            "comment": "good tf removal"
+        }
+    },
+    "P509": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "good tf removal"
+        }
+    },
+    "P510": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "good tf removal; seems to be broken!"
+        }
+    },
+    "P511": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 0.5,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P512": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "good tf removal, but poor dynamic range; bad match to other sensors in reconstruction"
+        }
+    },
+    "P513": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "good tf removal"
+        }
+    },
+    "P514": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "good tf removal"
+        }
+    },
+    "P515": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P516": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P517": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal"
+        }
+    },
+    "P518": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal"
+        }
+    },
+    "P519": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal"
+        }
+    },
+    "P520": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal"
+        }
+    },
+    "P521": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "NO SIGNAL"
+        }
+    },
+    "P522": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P523": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P524": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "non-physical wiggles in TF vacuum removal"
+        }
+    },
+    "P525": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal, but large pickup"
+        }
+    },
+    "P526": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal"
+        }
+    },
+    "P527": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P528": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P529": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal"
+        }
+    },
+    "P530": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": false,
+            "comment": "very good tf removal, but poor dynamic range"
+        }
+    },
+    "P531": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P532": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "ok pickup, but poor dynamic range"
+        }
+    },
+    "P533": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "ok pickup, but poor dynamic range"
+        }
+    },
+    "P534": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    },
+    "P718": {
+        "fit_settings": {
+            "expected_value": 0.01,
+            "weight": 1.0,
+            "include": true,
+            "comment": "very good tf removal"
+        }
+    }
+}
