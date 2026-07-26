@@ -3,10 +3,8 @@ use ndarray::Array1;
 
 // Private modules
 mod boundary_contour;
-mod calculate_winding_number;
 mod find_boundary;
 mod find_magnetic_axis;
-mod find_stationary_points_using_sign_differences;
 mod find_stationary_points_using_winding_number;
 mod find_viable_limit_point;
 mod find_viable_xpt;
@@ -24,7 +22,6 @@ pub use boundary_contour::BoundaryContour;
 pub use find_boundary::find_boundary;
 pub use find_magnetic_axis::MagneticAxis;
 pub use find_magnetic_axis::find_magnetic_axis;
-pub use find_stationary_points_using_sign_differences::find_stationary_points_using_sign_differences;
 pub use find_stationary_points_using_winding_number::find_stationary_points_using_winding_number;
 pub use find_viable_xpt::find_viable_xpt;
 pub use flood_fill_mask::flood_fill_mask;
