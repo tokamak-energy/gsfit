@@ -131,12 +131,12 @@ jobs:
           # Run the MAST-U FreeGSNKE notebook; the instrumented .so writes .profraw data
           pip uninstall -y pytest-xdist
           jupyter nbconvert --to script examples/example_02__mastu__freegsnke_data.ipynb
-          python -m pytest -s tests/test_wrapper.py --script examples/example_02__mastu__freegsnke_data.py \
+          python -m pytest --capture=no tests/test_wrapper.py --script examples/example_02__mastu__freegsnke_data.py \
             --cov=gsfit --cov=diagnostic_and_simulation_base \
             --cov-report=html:pages/python_coverage_from_python_tests/html \
             --cov-report=json:python_coverage_from_python_tests.json
-          # `-s` enables printing to stdout
-          # python -m pytest -s tests/test_01_test_run.py
+          # `--capture=no` enables printing to stdout, instead of "capturing" output
+          python -m pytest --capture=no tests/
 
           cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/rust_coverage_from_python_tests
           cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json
