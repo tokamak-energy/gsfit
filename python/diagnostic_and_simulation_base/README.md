@@ -23,11 +23,7 @@ Below we show some examples of how to run codes which use the `DiagnosticAndSimu
 ```python
 from gsfit import Gsfit
 
-gsfit_controller = Gsfit(
-    pulseNo=12050,
-    run_name="RUN01",
-    rn_description="Default settings"
-)
+gsfit_controller = Gsfit(pulseNo=12050, run_name="RUN01", rn_description="Default settings")
 
 gsfit_controller.run()
 ```
@@ -40,11 +36,7 @@ gsfit_controller.run()
 ```python
 from bolometry import BlomXY1
 
-blom_xy1_controller = BlomXY1(
-    pulseNo=12050,
-    run_name="RUN01",
-    run_description="Default settings"
-)
+blom_xy1_controller = BlomXY1(pulseNo=12050, run_name="RUN01", run_description="Default settings")
 
 blom_xy1_controller.run()
 ```
@@ -59,11 +51,7 @@ blom_xy1_controller.run()
 ```python
 from xrcs import Xrcs
 
-xrcs_controller = Xrcs(
-    pulseNo=12050,
-    run_name="RUN01",
-    run_description="Default settings"
-)
+xrcs_controller = Xrcs(pulseNo=12050, run_name="RUN01", run_description="Default settings")
 
 xrcs_controller.run()
 ```
@@ -76,11 +64,7 @@ xrcs_controller.run()
 ```python
 from dialoop import Dialoop
 
-dialoop_controller = Dialoop(
-    pulseNo=12050,
-    run_name="RUN01",
-    run_description="Default settings"
-)
+dialoop_controller = Dialoop(pulseNo=12050, run_name="RUN01", run_description="Default settings")
 
 dialoop_controller.run()
 ```
@@ -93,6 +77,7 @@ dialoop_controller.run()
 Below is the code needed at a minimum to create a **new code** using `DiagnosticAndSimulationBase` child:
 ```python
 from diagnostic_and_simulation_base import DiagnosticAndSimulationBase
+
 
 class NewCodeName(DiagnosticAndSimulationBase):
     # Note: the `__init__()` method is inherited from `DiagnosticAndSimulationBase`

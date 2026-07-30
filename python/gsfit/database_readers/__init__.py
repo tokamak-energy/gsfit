@@ -35,9 +35,9 @@ def get_database_reader(method: str) -> DatabaseReaderProtocol:
             from .freegsnke import DatabaseReader as FreegsNkeDatabaseReader
 
             return FreegsNkeDatabaseReader()
-        case "npy_snapshot":
-            from .npy_snapshot import DatabaseReader as NpySnapshotDatabaseReader
+        case "mock_st40_mdsplus":
+            from .mock_st40_mdsplus import DatabaseReader as MockSt40MdsplusDatabaseReader
 
-            return NpySnapshotDatabaseReader()
+            return MockSt40MdsplusDatabaseReader()
         case _:
             raise ValueError(f"Unknown database reader method: {method}")
