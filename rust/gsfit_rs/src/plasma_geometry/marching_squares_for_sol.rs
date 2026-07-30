@@ -58,8 +58,8 @@ pub fn marching_squares_for_sol(
     r: &Array1<f64>,
     z: &Array1<f64>,
     psi_2d: &Array2<f64>,
-    br_2d: &Array2<f64>,
-    bz_2d: &Array2<f64>,
+    d_psi_d_r_2d: &Array2<f64>,
+    d_psi_d_z_2d: &Array2<f64>,
     psi_b: f64,
     mask_2d: &Array2<f64>,
     xpt_r_or_none: Option<f64>,
@@ -83,10 +83,10 @@ pub fn marching_squares_for_sol(
             if abs_diff_eq!(mask_2d[(i_z, i_r)] + mask_2d[(i_z, i_r + 1)], 1.0) {
                 let left_r: f64 = r[i_r];
                 let left_psi: f64 = psi_2d[(i_z, i_r)];
-                let left_d_psi_d_r: f64 = bz_2d[(i_z, i_r)] * (2.0 * PI * r[i_r]);
+                let left_d_psi_d_r: f64 = d_psi_d_r_2d[(i_z, i_r)];
                 let right_r: f64 = r[i_r + 1];
                 let right_psi: f64 = psi_2d[(i_z, i_r + 1)];
-                let right_d_psi_d_r: f64 = bz_2d[(i_z, i_r + 1)] * (2.0 * PI * r[i_r + 1]);
+                let right_d_psi_d_r: f64 = d_psi_d_r_2d[(i_z, i_r + 1)];
 
                 let cubic_interpolation_or_error: Result<Array1<f64>, String> =
                     cubic_interpolation(left_r, left_psi, left_d_psi_d_r, right_r, right_psi, right_d_psi_d_r, psi_b);
@@ -122,10 +122,10 @@ pub fn marching_squares_for_sol(
             if abs_diff_eq!(mask_2d[(i_z, i_r)] + mask_2d[(i_z + 1, i_r)], 1.0) {
                 let bottom_z: f64 = z[i_z];
                 let bottom_psi: f64 = psi_2d[(i_z, i_r)];
-                let bottom_d_psi_d_z: f64 = -br_2d[(i_z, i_r)] * (2.0 * PI * r[i_r]);
+                let bottom_d_psi_d_z: f64 = d_psi_d_z_2d[(i_z, i_r)];
                 let top_z: f64 = z[i_z + 1];
                 let top_psi: f64 = psi_2d[(i_z + 1, i_r)];
-                let top_d_psi_d_z: f64 = -br_2d[(i_z + 1, i_r)] * (2.0 * PI * r[i_r]);
+                let top_d_psi_d_z: f64 = d_psi_d_z_2d[(i_z + 1, i_r)];
 
                 let cubic_interpolation_or_error: Result<Array1<f64>, String> =
                     cubic_interpolation(bottom_z, bottom_psi, bottom_d_psi_d_z, top_z, top_psi, top_d_psi_d_z, psi_b);
@@ -223,10 +223,10 @@ pub fn marching_squares_for_sol(
             // marching left to right
             let left_r: f64 = r[i_r_from];
             let left_psi: f64 = psi_2d[(i_z_from, i_r_from)];
-            let left_d_psi_d_r: f64 = bz_2d[(i_z_from, i_r_from)] * (2.0 * PI * r[i_r_from]);
+            let left_d_psi_d_r: f64 = d_psi_d_r_2d[(i_z_from, i_r_from)];
             let right_r: f64 = r[i_r_to];
             let right_psi: f64 = psi_2d[(i_z_from, i_r_to)];
-            let right_d_psi_d_r: f64 = bz_2d[(i_z_from, i_r_to)] * (2.0 * PI * r[i_r_to]);
+            let right_d_psi_d_r: f64 = d_psi_d_r_2d[(i_z_from, i_r_to)];
             let cubic_interpolation_or_error: Result<Array1<f64>, String> =
                 cubic_interpolation(left_r, left_psi, left_d_psi_d_r, right_r, right_psi, right_d_psi_d_r, psi_b);
             if cubic_interpolation_or_error.is_ok() {
@@ -242,10 +242,10 @@ pub fn marching_squares_for_sol(
             // marching bottom to top
             let bottom_z: f64 = z[i_z_from];
             let bottom_psi: f64 = psi_2d[(i_z_from, i_r_from)];
-            let bottom_d_psi_d_z: f64 = -br_2d[(i_z_from, i_r_from)] * (2.0 * PI * r[i_r_from]);
+            let bottom_d_psi_d_z: f64 = d_psi_d_z_2d[(i_z_from, i_r_from)];
             let top_z: f64 = z[i_z_to];
             let top_psi: f64 = psi_2d[(i_z_to, i_r_from)];
-            let top_d_psi_d_z: f64 = -br_2d[(i_z_to, i_r_from)] * (2.0 * PI * r[i_r_from]);
+            let top_d_psi_d_z: f64 = d_psi_d_z_2d[(i_z_to, i_r_from)];
             let cubic_interpolation_or_error: Result<Array1<f64>, String> =
                 cubic_interpolation(bottom_z, bottom_psi, bottom_d_psi_d_z, top_z, top_psi, top_d_psi_d_z, psi_b);
             if cubic_interpolation_or_error.is_ok() {
