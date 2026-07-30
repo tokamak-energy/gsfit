@@ -1294,9 +1294,9 @@ impl<'a> GsSolution<'a> {
     ///     * `d2_psi_d_r2_unshifted`
     ///     * `d2_psi_d_r_d_z_unshifted`
     ///     * `d2_psi_d_z2_unshifted`
-    ///     * `d3_psi_d_r2_d_z_unshifted`  // TODO: should these be "calculators"?
-    ///     * `d3_psi_d_r_d_z2_unshifted`  // TODO: should these be "calculators"?
-    ///     * `d3_psi_d_z3_unshifted`  // TODO: should these be "calculators"?
+    ///     * `d3_psi_d_r2_d_z_unshifted`
+    ///     * `d3_psi_d_r_d_z2_unshifted`
+    ///     * `d3_psi_d_z3_unshifted`
     /// 2. Apply the vertical stability correction (resulting in 6 fields):
     ///     * `psi = psi_unshifted + delta_z * d_psi_d_z_unshifted`
     ///     * `d_psi_d_r = d_psi_d_r_unshifted + delta_z * d2_psi_d_r_d_z_unshifted`
