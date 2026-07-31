@@ -662,49 +662,6 @@ impl Plasma {
         return greens_with_passives;
     }
 
-    pub fn get_d_psi_d_z_passive(&self) -> Array2<f64> {
-        // Get grid sizes
-        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
-
-        // Passives
-        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
-        let n_passives: usize = passive_names.len();
-
-        // Count the number of degrees of freedom
-        let mut n_dof_total: usize = 0;
-        for passive_name in &passive_names {
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
-            n_dof_total += dof_names.len();
-        }
-
-        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
-
-        // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
-        let mut i_dof_total: usize = 0;
-        for i_passive in 0..n_passives {
-            let passive_name: &str = &passive_names[i_passive];
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in &dof_names {
-                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
-                    &self
-                        .results
-                        .get("greens")
-                        .get("passives")
-                        .get(passive_name)
-                        .get(dof_name)
-                        .get("d_psi_d_z")
-                        .unwrap_array1(),
-                );
-
-                // Keep count
-                i_dof_total += 1;
-            }
-        }
-
-        return greens_with_passives;
-    }
-
     pub fn get_greens_passive_grid_d2_psi_d_r2(&self) -> Array2<f64> {
         // Get grid sizes
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
@@ -1278,14 +1235,12 @@ impl Plasma {
             );
             midplane_p_profile.slice_mut(s![i_time, ..]).assign(&midplane_p_profile_this_time);
 
-            let (bt_2d_this_time, bt_vac_this_time): (Array2<f64>, Array2<f64>) = epp_bt_2d(&gs_solutions[i_time], &r, &z, i_rod[i_time]);
+            let (bt_2d_this_time, _bt_vac_this_time): (Array2<f64>, Array2<f64>) = epp_bt_2d(&gs_solutions[i_time], &r, &z, i_rod[i_time]);
             bt_2d.slice_mut(s![i_time, .., ..]).assign(&bt_2d_this_time);
 
             // Find plasma boundary
             let psi_2d_local: Array2<f64> = psi_2d.slice(s![i_time, .., ..]).to_owned();
             let mask_2d_local: Array2<f64> = mask_2d.slice(s![i_time, .., ..]).to_owned();
-            let br_2d_local: Array2<f64> = br_2d.slice(s![i_time, .., ..]).to_owned();
-            let bz_2d_local: Array2<f64> = bz_2d.slice(s![i_time, .., ..]).to_owned();
             let psi_b_local: f64 = gs_solutions[i_time].psi_b;
 
             let r_xpt_local: Option<f64>;

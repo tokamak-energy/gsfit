@@ -6,7 +6,6 @@ use super::flood_fill_mask::flood_fill_mask;
 use super::marching_squares::marching_squares;
 use ndarray::{Array1, Array2, ArrayView2, s};
 use ndarray_stats::QuantileExt;
-use std::f64::consts::PI;
 
 /// Find a viable limit point which can be used to define the plasma boundary
 ///

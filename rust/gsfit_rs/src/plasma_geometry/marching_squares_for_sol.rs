@@ -6,7 +6,6 @@ use geo::{Contains, Coord, Line, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
-use std::f64::consts::PI;
 
 /// Given a cell with lower-left corner at (cell_i_r, cell_i_z), return its 4 edge keys.
 /// Edges are: bottom, top, left, right.

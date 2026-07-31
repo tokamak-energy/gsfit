@@ -407,8 +407,6 @@ impl<'a> GsSolution<'a> {
 
         // Plasma grid
         let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
-        let n_r: usize = plasma.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = plasma.results.get("grid").get("n_z").unwrap_usize();
         let flat_r: Array1<f64> = plasma.results.get("grid").get("flat").get("r").unwrap_array1();
         let mesh_r: Array2<f64> = plasma.results.get("grid").get("mesh").get("r").unwrap_array2();
         let r: Array1<f64> = plasma.results.get("grid").get("r").unwrap_array1();

@@ -4,7 +4,6 @@ use approx::abs_diff_eq;
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
-use std::f64::consts::PI;
 
 pub fn marching_squares(
     r: &Array1<f64>,
