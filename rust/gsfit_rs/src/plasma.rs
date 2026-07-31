@@ -1300,15 +1300,12 @@ impl Plasma {
             let mag_r_local: f64 = r_mag[i_time];
             let mag_z_local: f64 = z_mag[i_time];
 
-            // // Get stationary points from the GS solution
-            // let stationary_points_local: &Vec<crate::plasma_geometry::StationaryPoint> = &gs_solutions[i_time].stationary_points;
-
             let boundary_contour_local: MarchingContour = marching_squares(
                 &r,
                 &z,
                 &psi_2d_local,
-                &br_2d_local,
-                &bz_2d_local,
+                &gs_solutions[i_time].d_psi_d_r_2d,
+                &gs_solutions[i_time].d_psi_d_z_2d,
                 psi_b_local,
                 &mask_2d_local,
                 r_xpt_local,
