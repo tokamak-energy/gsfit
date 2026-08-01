@@ -14,11 +14,11 @@ use std::collections::HashMap;
 /// * `z` - the vertical coordinate, [meters]
 /// * `psi_2d` - the 2D array of poloidal flux values, [weber]. Only used to report the flux
 ///   **value** at a stationary point; it never influences **where** a stationary point is.
-/// * `d_psi_d_r_2d` - d(psi)/d(r), [tesla]
-/// * `d_psi_d_z_2d` - d(psi)/d(z), [tesla]
-/// * `d2_psi_d_r2_2d` - d^2(psi)/d(r)^2, [weber/meter^2]
-/// * `d2_psi_d_rz_2d` - d^2(psi)/d(r)d(z), [weber/meter^2]
-/// * `d2_psi_d_z2_2d` - d^2(psi)/d(z)^2, [weber/meter^2]
+/// * `d_psi_d_r_2d` - d(psi)/d(r), [weber / meter]
+/// * `d_psi_d_z_2d` - d(psi)/d(z), [weber / meter]
+/// * `d2_psi_d_r2_2d` - d^2(psi)/d(r)^2, [weber / meter**2]
+/// * `d2_psi_d_rz_2d` - d^2(psi)/d(r)d(z), [weber / meter**2]
+/// * `d2_psi_d_z2_2d` - d^2(psi)/d(z)^2, [weber / meter**2]
 ///
 /// # Returns
 /// * `Vec<StationaryPoint>` - a vector of stationary points, which may be empty if no stationary points are found
