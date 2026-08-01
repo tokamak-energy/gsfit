@@ -481,7 +481,6 @@ impl<'a> GsSolution<'a> {
         let greens_magnetic_axis_pf: Array2<f64> = magnetic_axis_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
         let greens_magnetic_axis_passives: Array2<f64> = magnetic_axis_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
 
-
         // pf_coil_currents
         let pf_coil_currents: Array1<f64> = coils_dynamic.measured.to_owned();
 
@@ -1284,7 +1283,7 @@ impl<'a> GsSolution<'a> {
     }
 
     /// Calculate the poloidal flux, psi, in the 2d (r, z) grid.
-    /// 
+    ///
     /// 1. Calculate the "unshifted" flux and the required derivatives (9 fields):
     ///     * `psi_unshifted`
     ///     * `d_psi_d_r_unshifted`
@@ -1450,16 +1449,14 @@ impl<'a> GsSolution<'a> {
         for i_z in 0..n_z {
             for i_r in 0..n_r {
                 psi_2d_unshifted[(i_z, i_r)] = psi_2d_coils[(i_z, i_r)] + psi_2d_passives[(i_z, i_r)] + plasma_even[(i_z, i_r)];
-                d_psi_d_r_2d_unshifted[(i_z, i_r)] =
-                    d_psi_d_r_2d_coils[(i_z, i_r)] + d_psi_d_r_2d_passives[(i_z, i_r)] + plasma_even[(i_z, n_r + i_r)];
+                d_psi_d_r_2d_unshifted[(i_z, i_r)] = d_psi_d_r_2d_coils[(i_z, i_r)] + d_psi_d_r_2d_passives[(i_z, i_r)] + plasma_even[(i_z, n_r + i_r)];
                 d2_psi_d_r2_2d_unshifted[(i_z, i_r)] =
                     d2_psi_d_r2_2d_coils[(i_z, i_r)] + d2_psi_d_r2_2d_passives[(i_z, i_r)] + plasma_even[(i_z, 2 * n_r + i_r)];
                 d2_psi_d_z2_2d_unshifted[(i_z, i_r)] =
                     d2_psi_d_z2_2d_coils[(i_z, i_r)] + d2_psi_d_z2_2d_passives[(i_z, i_r)] + plasma_even[(i_z, 3 * n_r + i_r)];
                 d3_psi_d_r_d_z2_2d_unshifted[(i_z, i_r)] =
                     d3_psi_d_r_d_z2_2d_coils[(i_z, i_r)] + d3_psi_d_r_d_z2_2d_passives[(i_z, i_r)] + plasma_even[(i_z, 4 * n_r + i_r)];
-                d_psi_d_z_2d_unshifted[(i_z, i_r)] =
-                    d_psi_d_z_2d_coils[(i_z, i_r)] + d_psi_d_z_2d_passives[(i_z, i_r)] + plasma_odd[(i_z, i_r)];
+                d_psi_d_z_2d_unshifted[(i_z, i_r)] = d_psi_d_z_2d_coils[(i_z, i_r)] + d_psi_d_z_2d_passives[(i_z, i_r)] + plasma_odd[(i_z, i_r)];
                 d2_psi_d_r_d_z_2d_unshifted[(i_z, i_r)] =
                     d2_psi_d_r_d_z_2d_coils[(i_z, i_r)] + d2_psi_d_r_d_z_2d_passives[(i_z, i_r)] + plasma_odd[(i_z, n_r + i_r)];
                 d3_psi_d_r2_d_z_2d_unshifted[(i_z, i_r)] =
@@ -1609,7 +1606,6 @@ impl<'a> GsSolution<'a> {
         self.psi_2d_coils = psi_2d_coils;
         self.r_mag = r[i_r_centre]; // `r_mag` is not really correct; but as good as we can do for the initial guess
         self.z_mag = 0.0;
-
     }
 
     /// Calculate the Grad-Shafranov "error"

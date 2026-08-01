@@ -184,7 +184,6 @@ impl BicubicInterpolator {
             d2_f_d_y2,
         }
     }
-
 }
 
 /// Find the `(x, y)` at which **two** bicubic fields are simultaneously zero.
@@ -251,7 +250,7 @@ pub fn find_stationary_point(
             starting_points.push((x_linear, y_linear));
         }
     }
-    
+
     // We might have cases where the Newton iteration fails, e.g. when there is a stationary point in an adjacent cell, the Newton iteration can
     // follow that root and miss the true root in this cell. We therefore add several fallback starting points to try to find the root in this cell.
     // Fallback to the centre of the cell
@@ -459,8 +458,7 @@ fn test_bicubic_find_stationary_point_on_boundary() {
     let y_peak: f64 = 0.78;
     let (u_interpolator, v_interpolator): (BicubicInterpolator, BicubicInterpolator) = quadratic_gradient_interpolators(x_peak, y_peak);
 
-    let result: BicubicStationaryPoint =
-        find_stationary_point(&u_interpolator, &v_interpolator, 1e-12, 100).expect("Should find a root on the cell boundary");
+    let result: BicubicStationaryPoint = find_stationary_point(&u_interpolator, &v_interpolator, 1e-12, 100).expect("Should find a root on the cell boundary");
 
     assert_abs_diff_eq!(result.x, x_peak, epsilon = 1e-10);
     assert_abs_diff_eq!(result.y, y_peak, epsilon = 1e-10);
