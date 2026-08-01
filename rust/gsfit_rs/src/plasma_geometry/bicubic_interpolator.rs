@@ -243,7 +243,7 @@ pub fn find_stationary_point(
     let b_2: f64 = v_01 - v_00;
     let det_linear: f64 = a_1 * b_2 - a_2 * b_1;
 
-    let mut starting_points: Vec<(f64, f64)> = Vec::with_capacity(9);
+    let mut starting_points: Vec<(f64, f64)> = Vec::with_capacity(10);
     if det_linear.abs() > f64::EPSILON {
         let x_linear: f64 = (-u_00 * b_2 + v_00 * a_2) / det_linear;
         let y_linear: f64 = (-v_00 * a_1 + u_00 * b_1) / det_linear;
