@@ -14,6 +14,7 @@ use faer::linalg::matmul::matmul;
 use faer::linalg::solvers::{SolveLstsq, Svd as FaerSvd};
 use faer::mat::MatRef;
 use faer::{Accum, Par};
+use geo::{Contains, Coord, LineString, Point, Polygon};
 use ndarray::Axis;
 use ndarray::{Array1, Array2, Array3, ArrayView2, concatenate, s};
 use ndarray_stats::QuantileExt;
@@ -21,6 +22,179 @@ use std::f64::consts::PI;
 use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
+
+/// Create a smooth, axis-aligned quadratic current-density seed.
+///
+/// The ellipse is centred on the supplied initial magnetic-axis guess. Its
+/// aspect ratio comes from the available radial and vertical extents of the
+/// vessel and computational grid. Both semi-axes are then reduced by the same
+/// factor until every grid point with nonzero current lies inside the vessel.
+/// The discrete current is normalised to `initial_ip` within floating-point
+/// precision.
+fn quadratic_current_density_seed(
+    r: &Array1<f64>,
+    z: &Array1<f64>,
+    vessel_r: &Array1<f64>,
+    vessel_z: &Array1<f64>,
+    d_area: f64,
+    initial_ip: f64,
+    initial_cur_r: f64,
+    initial_cur_z: f64,
+) -> Result<Array2<f64>, String> {
+    if r.len() < 2 || z.len() < 2 {
+        return Err("quadratic current initialisation requires at least two radial and vertical grid points".to_string());
+    }
+    if vessel_r.len() != vessel_z.len() || vessel_r.len() < 3 {
+        return Err("quadratic current initialisation requires matching vessel R/Z arrays with at least three points".to_string());
+    }
+    if r.iter()
+        .chain(z.iter())
+        .chain(vessel_r.iter())
+        .chain(vessel_z.iter())
+        .any(|value| !value.is_finite())
+        || !d_area.is_finite()
+        || d_area <= 0.0
+        || !initial_ip.is_finite()
+        || initial_ip == 0.0
+        || !initial_cur_r.is_finite()
+        || !initial_cur_z.is_finite()
+    {
+        return Err("quadratic current initialisation requires finite geometry, positive cell area, and finite nonzero initial current".to_string());
+    }
+
+    let vessel_coordinates: Vec<Coord<f64>> = vessel_r
+        .iter()
+        .zip(vessel_z.iter())
+        .map(|(&r_value, &z_value)| Coord { x: r_value, y: z_value })
+        .collect();
+    let vessel_polygon = Polygon::new(LineString::new(vessel_coordinates), vec![]);
+    if !vessel_polygon.contains(&Point::new(initial_cur_r, initial_cur_z)) {
+        return Err(format!(
+            "initial current centre ({initial_cur_r}, {initial_cur_z}) must lie strictly inside the vessel"
+        ));
+    }
+
+    let min_max = |values: &Array1<f64>| -> (f64, f64) {
+        values.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(minimum, maximum), &value| {
+            (minimum.min(value), maximum.max(value))
+        })
+    };
+    let (grid_r_min, grid_r_max) = min_max(r);
+    let (grid_z_min, grid_z_max) = min_max(z);
+    let (vessel_r_min, vessel_r_max) = min_max(vessel_r);
+    let (vessel_z_min, vessel_z_max) = min_max(vessel_z);
+    let a_r_base = (initial_cur_r - grid_r_min)
+        .min(grid_r_max - initial_cur_r)
+        .min(initial_cur_r - vessel_r_min)
+        .min(vessel_r_max - initial_cur_r);
+    let b_z_base = (initial_cur_z - grid_z_min)
+        .min(grid_z_max - initial_cur_z)
+        .min(initial_cur_z - vessel_z_min)
+        .min(vessel_z_max - initial_cur_z);
+    if !a_r_base.is_finite() || !b_z_base.is_finite() || a_r_base <= 0.0 || b_z_base <= 0.0 {
+        return Err("initial current centre must have positive radial and vertical clearance inside the grid and vessel".to_string());
+    }
+
+    // For an ellipse scaled by lambda, a grid point is in its support when
+    // s_base < lambda^2. Limit lambda using the nearest point outside the
+    // vessel, so no outside grid point receives nonzero current.
+    let mut scale_squared: f64 = 1.0;
+    for &z_value in z {
+        for &r_value in r {
+            if !vessel_polygon.contains(&Point::new(r_value, z_value)) {
+                let s_base = ((r_value - initial_cur_r) / a_r_base).powi(2) + ((z_value - initial_cur_z) / b_z_base).powi(2);
+                scale_squared = scale_squared.min(s_base);
+            }
+        }
+    }
+    if !scale_squared.is_finite() || scale_squared <= f64::EPSILON {
+        return Err("vessel geometry leaves no finite quadratic-current support around the initial centre".to_string());
+    }
+
+    let scale = scale_squared.sqrt();
+    let a_r = a_r_base * scale;
+    let b_z = b_z_base * scale;
+    let mut shape = Array2::zeros((z.len(), r.len()));
+    for (i_z, &z_value) in z.iter().enumerate() {
+        for (i_r, &r_value) in r.iter().enumerate() {
+            if vessel_polygon.contains(&Point::new(r_value, z_value)) {
+                let s = ((r_value - initial_cur_r) / a_r).powi(2) + ((z_value - initial_cur_z) / b_z).powi(2);
+                shape[(i_z, i_r)] = (1.0 - s).max(0.0);
+            }
+        }
+    }
+
+    let shape_integral = shape.sum() * d_area;
+    if !shape_integral.is_finite() || shape_integral <= 0.0 {
+        return Err("quadratic current initialisation has empty support on the plasma grid".to_string());
+    }
+    return Ok(shape * (initial_ip / shape_integral));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::quadratic_current_density_seed;
+    use geo::{Contains, Coord, LineString, Point, Polygon};
+    use ndarray::{Array1, array};
+
+    #[test]
+    fn quadratic_current_seed_is_normalised_smooth_and_inside_vessel() {
+        let r = Array1::linspace(1.0, 3.0, 9);
+        let z = Array1::linspace(-1.0, 1.0, 9);
+        let vessel_r = array![2.0, 3.0, 2.0, 1.0, 2.0];
+        let vessel_z = array![1.0, 0.0, -1.0, 0.0, 1.0];
+        let d_area = (r[1] - r[0]) * (z[1] - z[0]);
+        let initial_ip = 120_000.0;
+
+        let j_2d = quadratic_current_density_seed(&r, &z, &vessel_r, &vessel_z, d_area, initial_ip, 2.0, 0.0).unwrap();
+
+        assert!((j_2d.sum() * d_area - initial_ip).abs() < 1.0e-10 * initial_ip);
+        assert!(j_2d[(4, 4)] > j_2d[(4, 5)]);
+        assert!(j_2d[(4, 5)] > j_2d[(4, 6)]);
+        assert!((j_2d[(4, 5)] / j_2d[(4, 4)] - 0.875).abs() < 1.0e-12);
+        assert!((j_2d[(4, 6)] / j_2d[(4, 4)] - 0.5).abs() < 1.0e-12);
+
+        let vessel_coordinates: Vec<Coord<f64>> = vessel_r
+            .iter()
+            .zip(vessel_z.iter())
+            .map(|(&r_value, &z_value)| Coord { x: r_value, y: z_value })
+            .collect();
+        let vessel_polygon = Polygon::new(LineString::new(vessel_coordinates), vec![]);
+        for (i_z, &z_value) in z.iter().enumerate() {
+            for (i_r, &r_value) in r.iter().enumerate() {
+                if j_2d[(i_z, i_r)] != 0.0 {
+                    assert!(vessel_polygon.contains(&Point::new(r_value, z_value)));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn quadratic_current_seed_preserves_negative_current_sign() {
+        let r = Array1::linspace(1.0, 3.0, 9);
+        let z = Array1::linspace(-1.0, 1.0, 9);
+        let vessel_r = array![0.9, 3.1, 3.1, 0.9, 0.9];
+        let vessel_z = array![-1.1, -1.1, 1.1, 1.1, -1.1];
+        let d_area = (r[1] - r[0]) * (z[1] - z[0]);
+
+        let j_2d = quadratic_current_density_seed(&r, &z, &vessel_r, &vessel_z, d_area, -80_000.0, 2.0, 0.0).unwrap();
+
+        assert!((j_2d.sum() * d_area + 80_000.0).abs() < 1.0e-8);
+        assert!(j_2d.iter().all(|value| *value <= 0.0));
+    }
+
+    #[test]
+    fn quadratic_current_seed_rejects_centre_outside_vessel() {
+        let r = Array1::linspace(1.0, 3.0, 9);
+        let z = Array1::linspace(-1.0, 1.0, 9);
+        let vessel_r = array![1.5, 2.5, 2.5, 1.5, 1.5];
+        let vessel_z = array![-0.5, -0.5, 0.5, 0.5, -0.5];
+
+        let error = quadratic_current_density_seed(&r, &z, &vessel_r, &vessel_z, 0.0625, 10_000.0, 1.25, 0.0).unwrap_err();
+
+        assert!(error.contains("strictly inside the vessel"));
+    }
+}
 
 /// Greens tables reorganised for `calculate_psi_and_derivatives`.
 ///
@@ -487,8 +661,13 @@ impl<'a> GsSolution<'a> {
         // TODO: IDEA- change the normalisation so that it does represent current. But this won't work for the IVC eigenvalues
         self.passive_dof_values = Array1::zeros(n_passive_dof);
 
-        // Initialise plasma with point source current
-        self.initialise_plasma_with_point_source_current(plasma.initial_ip, plasma.initial_cur_r, plasma.initial_cur_z);
+        // Initialise plasma with a smooth quadratic current-density distribution.
+        if let Err(reason) = self.initialise_plasma_with_quadratic_current_density(plasma.initial_ip, plasma.initial_cur_r, plasma.initial_cur_z) {
+            self.set_to_failed_time_slice();
+            self.error_state = Some(Error::InvalidInitialCurrent(reason));
+            println!("{:?}", self.error_state.as_ref().unwrap());
+            return;
+        }
 
         // Some variables we want to track between iterations
         let mut dof_values_previous: Array1<f64> = Array1::zeros(n_p_prime_dof + n_ff_prime_dof + n_passive_dof + 1);
@@ -1535,7 +1714,7 @@ impl<'a> GsSolution<'a> {
         self.j_2d = j_2d.clone();
     }
 
-    pub fn initialise_plasma_with_point_source_current(&mut self, initial_ip: f64, initial_cur_r: f64, initial_cur_z: f64) {
+    pub fn initialise_plasma_with_quadratic_current_density(&mut self, initial_ip: f64, initial_cur_r: f64, initial_cur_z: f64) -> Result<(), String> {
         // Unpack objects
         let plasma: &Plasma = self.plasma;
         let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
@@ -1554,58 +1733,18 @@ impl<'a> GsSolution<'a> {
             psi_2d_coils = psi_2d_coils + &greens_pf_grid.slice(s![.., .., i_pf]) * pf_currents[i_pf];
         }
 
-        // Initial plasma (single filament)
-        let mut j_2d: Array2<f64> = Array2::zeros((n_z, n_r));
-
-        // Find where to initialise the plasma
         let r: Array1<f64> = plasma.results.get("grid").get("r").unwrap_array1();
-        let r_target: f64 = initial_cur_r;
-        let mut i_r_centre: usize = 0;
-        let mut smallest_diff: f64 = f64::MAX;
-        for (i_r, &value) in r.iter().enumerate() {
-            let diff: f64 = (value - r_target).abs();
-            if diff < smallest_diff {
-                smallest_diff = diff;
-                i_r_centre = i_r;
-            }
-        }
         let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
-        let z_target: f64 = initial_cur_z;
-        let mut i_z_centre: usize = 0;
-        let mut smallest_diff: f64 = f64::MAX;
-        for (i_z, &value) in z.iter().enumerate() {
-            let diff: f64 = (value - z_target).abs();
-            if diff < smallest_diff {
-                smallest_diff = diff;
-                i_z_centre = i_z;
-            }
-        }
-
-        // Create a "hill" of current
-        // TODO: this can be improved --> like RT-GSFit initial guess
-        j_2d[(i_z_centre, i_r_centre)] = 3.0;
-
-        j_2d[(i_z_centre - 1, i_r_centre)] = 2.0;
-        j_2d[(i_z_centre + 1, i_r_centre)] = 2.0;
-        j_2d[(i_z_centre, i_r_centre - 1)] = 2.0;
-        j_2d[(i_z_centre, i_r_centre + 1)] = 2.0;
-
-        j_2d[(i_z_centre + 2, i_r_centre)] = 1.0;
-        j_2d[(i_z_centre - 2, i_r_centre)] = 1.0;
-        j_2d[(i_z_centre + 1, i_r_centre + 1)] = 1.0;
-        j_2d[(i_z_centre - 1, i_r_centre + 1)] = 1.0;
-        j_2d[(i_z_centre, i_r_centre + 2)] = 1.0;
-        j_2d[(i_z_centre + 1, i_r_centre - 1)] = 1.0;
-        j_2d[(i_z_centre - 1, i_r_centre - 1)] = 1.0;
-        j_2d[(i_z_centre, i_r_centre - 2)] = 1.0;
-
-        j_2d = j_2d * initial_ip / d_area / 19.0;
+        let vessel_r: Array1<f64> = plasma.results.get("vessel").get("r").unwrap_array1();
+        let vessel_z: Array1<f64> = plasma.results.get("vessel").get("z").unwrap_array1();
+        let j_2d = quadratic_current_density_seed(&r, &z, &vessel_r, &vessel_z, d_area, initial_ip, initial_cur_r, initial_cur_z)?;
 
         // Store in self
         self.j_2d = j_2d;
         self.psi_2d_coils = psi_2d_coils;
-        self.r_mag = r[i_r_centre]; // `r_mag` is not really correct; but as good as we can do for the initial guess
-        self.z_mag = 0.0;
+        self.r_mag = initial_cur_r;
+        self.z_mag = initial_cur_z;
+        Ok(())
     }
 
     /// Calculate the Grad-Shafranov "error"
