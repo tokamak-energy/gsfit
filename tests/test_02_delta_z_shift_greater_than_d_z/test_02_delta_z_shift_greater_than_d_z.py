@@ -88,6 +88,8 @@ def test_02_delta_z_shift_greater_than_d_z() -> None:
     # Run the reconstruction, which should converge
     # Note: The only way we know that the first iteration's vertical shift exceeds the cell height is by adding print statements
     # into the Rust code.
+    # TODO: This test checks that the reconstruction works when `delta_z > d_z`, but we don't check this!
+    # To fix this we need to add more instrumentation into the Rust code "observability".
     gsfit_controller.run()
 
     plasma = gsfit_controller.plasma
