@@ -178,7 +178,7 @@ gsfit_controller = Gsfit(
     run_name="TEST01",
     run_description="Test run",
     write_to_mds=True,
-    settings_path="default"
+    settings_path="default",
 )
 
 # Run (solve the inverse Grad-Shafranov equation, and if requested write to database)

@@ -1,5 +1,5 @@
 use super::StationaryPoint;
-use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint, BicubicValueAndDerivatives};
+use super::bicubic_interpolator::{BicubicInterpolator, BicubicStationaryPoint, BicubicValueAndDerivatives, ErrorType, find_stationary_point};
 use super::cubic_interpolation::cubic_interpolation_v2;
 use crate::plasma_geometry::hessian;
 use ndarray::{Array2, ArrayView1, ArrayView2, s};
@@ -12,12 +12,13 @@ use std::collections::HashMap;
 /// # Arguments
 /// * `r` - the radial coordinate, [meters]
 /// * `z` - the vertical coordinate, [meters]
-/// * `psi_2d` - the 2D array of poloidal flux values, [weber]
-/// * `d_psi_d_r_2d` - d(psi)/d(r), [tesla]
-/// * `d_psi_d_z_2d` - d(psi)/d(z), [tesla]
-/// * `d2_psi_d_r2_2d` - d^2(psi)/d(r)^2, [weber/meter^2]
-/// * `d2_psi_d_rz_2d` - d^2(psi)/d(r)d(z), [weber/meter^2]
-/// * `d2_psi_d_z2_2d` - d^2(psi)/d(z)^2, [weber/meter^2]
+/// * `psi_2d` - the 2D array of poloidal flux values, [weber]. Only used to report the flux
+///   **value** at a stationary point; it never influences **where** a stationary point is.
+/// * `d_psi_d_r_2d` - d(psi)/d(r), [weber / meter]
+/// * `d_psi_d_z_2d` - d(psi)/d(z), [weber / meter]
+/// * `d2_psi_d_r2_2d` - d^2(psi)/d(r)^2, [weber / meter**2]
+/// * `d2_psi_d_rz_2d` - d^2(psi)/d(r)d(z), [weber / meter**2]
+/// * `d2_psi_d_z2_2d` - d^2(psi)/d(z)^2, [weber / meter**2]
 ///
 /// # Returns
 /// * `Vec<StationaryPoint>` - a vector of stationary points, which may be empty if no stationary points are found
@@ -68,6 +69,26 @@ use std::collections::HashMap;
 ///
 /// A subtle failure mode is when there is both an o-point and an x-point in the same cell,
 /// `winding_number = (+1) + (-1) = 0`, which would incorrectly indicate no stationary points.
+///
+/// # Why the stationary point is refined on the first derivatives, not on `psi`
+/// Once a cell has a non-zero winding number, the stationary point inside it is located by solving
+/// `d(psi)/d(r) = 0` and `d(psi)/d(z) = 0` directly, using a bicubic model of each of those two
+/// fields. It is **not** found by looking for a stationary point of a bicubic fitted to `psi`.
+///
+/// This matters because `psi` sampled at grid points is not a smooth function at cell scale inside
+/// a discretised current region: it is C1 but not C2, since `d^2(psi)/d(z)^2` jumps by the local
+/// Grad-Shafranov source `Delta* psi = -2 * PI * MU_0 * r * j` across every current-cell boundary.
+/// A bicubic fitted to `psi` therefore infers a `d(psi)/d(z)` nullcline which can sit more than
+/// half a cell away from where the (exact) corner values of `d(psi)/d(z)` put it. Refining on that
+/// surface could walk away from the root the winding number had just proved was there, hit a cell
+/// boundary, and return a boundary point whose Hessian reads as a saddle — so a perfectly good
+/// magnetic axis was discarded, which is what caused `NoMagneticAxisFound` when the vertical
+/// stabilisation shift `delta_z` exceeded the cell height `d_z`.
+///
+/// Driving the refinement from `d(psi)/d(r)` and `d(psi)/d(z)` uses the same data the winding
+/// number was computed from, so "winding number is non-zero" and "an interior root exists" are
+/// consistent by construction. `psi` is used only to report the flux **value** once the location is
+/// known.
 pub fn find_stationary_points_using_winding_number(
     r: ArrayView1<f64>,
     z: ArrayView1<f64>,
@@ -101,6 +122,25 @@ pub fn find_stationary_points_using_winding_number(
                 // Sign preserving perturbation
                 d_psi_d_r_2d[(i_z, i_r)] = if d_psi_d_r_2d[(i_z, i_r)] < 0.0 { -1e-10 } else { 1e-10 };
             }
+        }
+    }
+
+    // The sub-cell refinement models `d(psi)/d(r)` and `d(psi)/d(z)` bicubically over a cell. That
+    // needs the mixed second derivative of each of those fields, which is a third derivative of
+    // `psi` and is not supplied here, so those two terms alone are obtained by central differences.
+    let mut d2_d_psi_d_r_d_r_d_z: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    let mut d2_d_psi_d_z_d_r_d_z: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            let (i_z_lo, i_z_hi, d_z_span): (usize, usize, f64) = if i_z == 0 {
+                (0, 1, d_z)
+            } else if i_z == n_z - 1 {
+                (n_z - 2, n_z - 1, d_z)
+            } else {
+                (i_z - 1, i_z + 1, 2.0 * d_z)
+            };
+            d2_d_psi_d_r_d_r_d_z[(i_z, i_r)] = (d2_psi_d_r2_2d[(i_z_hi, i_r)] - d2_psi_d_r2_2d[(i_z_lo, i_r)]) / d_z_span;
+            d2_d_psi_d_z_d_r_d_z[(i_z, i_r)] = (d2_psi_d_rz_2d[(i_z_hi, i_r)] - d2_psi_d_rz_2d[(i_z_lo, i_r)]) / d_z_span;
         }
     }
 
@@ -318,85 +358,90 @@ pub fn find_stationary_points_using_winding_number(
             let winding_number: i8 = total_quarter_turns / 4;
 
             if winding_number != 0 {
-                // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis.
-                let f: ArrayView2<f64> = psi_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]);
-                let d_f_d_r: ArrayView2<f64> = d_psi_d_r_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]);
-                let d_f_d_z: ArrayView2<f64> = d_psi_d_z_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]);
-                let d2_f_d_r_d_z: ArrayView2<f64> = d2_psi_d_rz_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]);
+                // Refine the stationary point to sub-cell accuracy.
+                //
+                // The location is found from `d(psi)/d(r)` and `d(psi)/d(z)` only. Each is modelled
+                // bicubically over the cell, and their common root is found by `find_stationary_point`.
+                // This is the same data the winding number was computed from, so a non-zero winding
+                // number and the existence of an interior root are consistent by construction.
+                // `psi` is not used to locate the point (see the doc comment).
+                let cell_of = |a: &ArrayView2<f64>| -> Array2<f64> { a.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]).to_owned() };
+                let cell_of_owned = |a: &Array2<f64>| -> Array2<f64> { a.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]).to_owned() };
 
-                // Create a bicubic interpolator
-                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f, d_f_d_r, d_f_d_z, d2_f_d_r_d_z);
+                // Bicubic model of `d(psi)/d(r)` over the cell, built from its own corner values
+                let d_psi_d_r_cell: Array2<f64> = d_psi_d_r_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]).to_owned();
+                let d_psi_d_r_interpolator: BicubicInterpolator = BicubicInterpolator::new(
+                    d_r,
+                    d_z,
+                    d_psi_d_r_cell.view(),
+                    cell_of(&d2_psi_d_r2_2d).view(),
+                    cell_of(&d2_psi_d_rz_2d).view(),
+                    cell_of_owned(&d2_d_psi_d_r_d_r_d_z).view(),
+                );
+                // Bicubic model of `d(psi)/d(z)`
+                let d_psi_d_z_cell: Array2<f64> = d_psi_d_z_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]).to_owned();
+                let d_psi_d_z_interpolator: BicubicInterpolator = BicubicInterpolator::new(
+                    d_r,
+                    d_z,
+                    d_psi_d_z_cell.view(),
+                    cell_of(&d2_psi_d_rz_2d).view(),
+                    cell_of(&d2_psi_d_z2_2d).view(),
+                    cell_of_owned(&d2_d_psi_d_z_d_r_d_z).view(),
+                );
 
-                // Find the stationary point using the bicubic interpolation
-                let stationary_point_or_error: Result<BicubicStationaryPoint, String> = bicubic_interpolator.find_stationary_point(1e-6, 100);
+                // Solve `d(psi)/d(r) = 0` and `d(psi)/d(z) = 0` inside the cell.
+                // If no interior root is found the cell is a false positive from the winding
+                // number, so it is skipped.
+                let stationary_point_or_error: Result<BicubicStationaryPoint, ErrorType> =
+                    find_stationary_point(&d_psi_d_r_interpolator, &d_psi_d_z_interpolator, 1e-12, 100);
 
-                // Extract the stationary point values
-                // If the bicubic solver failed to converge, this cell is a false positive, so skip it.
-                match stationary_point_or_error {
-                    Ok(stationary_point) => {
-                        // Extract and store results
-                        let stationary_r: f64 = r[i_r_left] + stationary_point.x * d_r;
-                        let stationary_z: f64 = z[i_z_lower] + stationary_point.y * d_z;
-                        let stationary_psi: f64 = stationary_point.f;
+                if let Ok(stationary_point) = stationary_point_or_error {
+                    let x: f64 = stationary_point.x;
+                    let y: f64 = stationary_point.y;
+                    let stationary_r: f64 = r[i_r_left] + x * d_r;
+                    let stationary_z: f64 = z[i_z_lower] + y * d_z;
 
-                        // Compute nearest grid indices from the refined stationary point position
-                        let i_r_nearest: usize = (r.to_owned() - stationary_r).abs().argmin().unwrap();
-                        let i_z_nearest: usize = (z.to_owned() - stationary_z).abs().argmin().unwrap();
+                    // Compute nearest grid indices from the refined stationary point position
+                    let i_r_nearest: usize = (r.to_owned() - stationary_r).abs().argmin().unwrap();
+                    let i_z_nearest: usize = (z.to_owned() - stationary_z).abs().argmin().unwrap();
 
-                        // Calculate the function and gradients at the stationary point
-                        let function_and_derivatives: BicubicValueAndDerivatives =
-                            bicubic_interpolator.value_and_derivatives(stationary_point.x, stationary_point.y);
-                        let d2_psi_d_r2: f64 = function_and_derivatives.d2_f_d_x2 / (d_r * d_r);
-                        let d2_psi_d_r_d_z: f64 = function_and_derivatives.d2_f_d_x_d_y / (d_r * d_z);
-                        let d2_psi_d_z2: f64 = function_and_derivatives.d2_f_d_y2 / (d_z * d_z);
+                    // The flux **value** at the stationary point. This does not affect where the point is.
+                    let psi_cell: Array2<f64> = psi_2d.slice(s![i_z_lower..=i_z_upper, i_r_left..=i_r_right]).to_owned();
+                    let psi_interpolator: BicubicInterpolator = BicubicInterpolator::new(
+                        d_r,
+                        d_z,
+                        psi_cell.view(),
+                        d_psi_d_r_cell.view(),
+                        d_psi_d_z_cell.view(),
+                        cell_of(&d2_psi_d_rz_2d).view(),
+                    );
+                    let stationary_psi: f64 = psi_interpolator.interpolate(x, y);
 
-                        // Calculate the Hessian at the stationary point
-                        let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_r_d_z, d2_psi_d_z2);
+                    // The Hessian comes from the same interpolants which located the point, so the
+                    // curvature classification is consistent with the winding number
+                    let value_d_psi_d_r: BicubicValueAndDerivatives = d_psi_d_r_interpolator.value_and_derivatives(x, y);
+                    let value_d_psi_d_z: BicubicValueAndDerivatives = d_psi_d_z_interpolator.value_and_derivatives(x, y);
+                    let d2_psi_d_r2: f64 = value_d_psi_d_r.d_f_d_x / d_r;
+                    let d2_psi_d_z2: f64 = value_d_psi_d_z.d_f_d_y / d_z;
+                    // `d2(psi)/d(r)d(z)` is available two ways; average them so the Hessian stays symmetric
+                    let d2_psi_d_r_d_z: f64 = 0.5 * (value_d_psi_d_r.d_f_d_y / d_z + value_d_psi_d_z.d_f_d_x / d_r);
 
-                        stationary_points.push(StationaryPoint {
-                            r: stationary_r,
-                            z: stationary_z,
-                            psi: stationary_psi,
-                            hessian_determinant,
-                            hessian_trace,
-                            i_r_nearest,
-                            i_z_nearest,
-                            i_r_left,
-                            i_r_right,
-                            i_z_lower,
-                            i_z_upper,
-                        });
-                        // println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'gx')")
-                    }
-                    Err(_error_string) => {
-                        // Do nothing
+                    // Calculate the Hessian at the stationary point
+                    let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_r_d_z, d2_psi_d_z2);
 
-                        // println!("Warning: bicubic solver failed to converge for cell with corners at (i_r, i_z) = ({}, {}), ({}, {}), ({}, {}), ({}, {}). This cell is a false positive from the sign-change detection, likely due to near-parallel nullclines passing through the cell without actually crossing.", i_r_left, i_z_lower, i_r_right, i_z_lower, i_r_left, i_z_upper, i_r_right, i_z_upper);
-                        // println!("winding_number = {winding_number}");
-                        // println!("ax.plot(r[{i_r_left}], z[{i_z_lower}], 'ro')");
-
-                        // println!("perimeter_events = {:?}", perimeter_events);
-
-                        // // Sample the bicubic interpolation at various points in 2d
-                        // let n_r_sample: usize = 70;
-                        // let n_z_sample: usize = 65;
-                        // use ndarray::Array1;
-                        // let r_sample: Array1<f64> = Array1::linspace(r[i_r_left], r[i_r_right], n_r_sample);
-                        // let z_sample: Array1<f64> = Array1::linspace(z[i_z_lower], z[i_z_upper], n_z_sample);
-                        // let mut psi_2d: Array2<f64> = Array2::from_elem([n_z_sample, n_r_sample], f64::NAN);
-                        // for i_z_sample in 0..n_z_sample {
-                        //     for i_r_sample in 0..n_r_sample {
-                        //         let r_s: f64 = (r_sample[i_r_sample] - r[i_r_left]) / d_r; // to be between 0.0 and 1.0
-                        //         let z_s: f64 = (z_sample[i_z_sample] - z[i_z_lower]) / d_z; // to be between 0.0 and 1.0
-                        //         psi_2d[(i_z_sample, i_r_sample)] = bicubic_interpolator.interpolate(r_s, z_s);
-                        //     }
-                        // }
-                        // println!("psi_2d = {:#?}", psi_2d);
-
-                        // use std::path::Path;
-                        // npy_reader_and_writer::write_npy_2d(Path::new("/home/peter.buxton/github/gsfit_github/examples/psi_2d.npy"), &psi_2d.to_owned());
-                        // panic!("stopping for debugging");
-                    }
+                    stationary_points.push(StationaryPoint {
+                        r: stationary_r,
+                        z: stationary_z,
+                        psi: stationary_psi,
+                        hessian_determinant,
+                        hessian_trace,
+                        i_r_nearest,
+                        i_z_nearest,
+                        i_r_left,
+                        i_r_right,
+                        i_z_lower,
+                        i_z_upper,
+                    });
                 }
             }
         }

@@ -131,12 +131,11 @@ jobs:
           # Run the MAST-U FreeGSNKE notebook; the instrumented .so writes .profraw data
           pip uninstall -y pytest-xdist
           jupyter nbconvert --to script examples/example_02__mastu__freegsnke_data.ipynb
-          python -m pytest -s tests/test_wrapper.py --script examples/example_02__mastu__freegsnke_data.py \
+          python -m pytest --capture=no tests/test_wrapper.py --script examples/example_02__mastu__freegsnke_data.py \
             --cov=gsfit --cov=diagnostic_and_simulation_base \
             --cov-report=html:pages/python_coverage_from_python_tests/html \
             --cov-report=json:python_coverage_from_python_tests.json
-          # `-s` enables printing to stdout
-          # python -m pytest -s tests/test_01_test_run.py
+          # `--capture=no` enables printing to stdout, instead of "capturing" output
 
           cargo llvm-cov report --manifest-path rust/Cargo.toml --html --output-dir pages/rust_coverage_from_python_tests
           cargo llvm-cov report --manifest-path rust/Cargo.toml --json --output-path coverage_python.json
@@ -320,7 +319,7 @@ jobs:
 
           # Run the MAST-U FreeGSNKE notebook as a test
           # Note: --nbval-lax ignores minor output differences such as floating point precision; but there is still some comparison with stored outputs
-          python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+          python -m pytest --capture=no --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
 
           # Make an artifacts directory inside `examples/`
           mkdir -p examples/artifacts
@@ -345,6 +344,8 @@ jobs:
           with dst.open("w", encoding="utf-8") as f:
               write(nb, f)
           PY
+      - name: Run Python tests
+        run: python -m pytest --capture=no tests/
       - name: Upload executed notebook artifact
         uses: actions/upload-artifact@v7
         with:
@@ -439,7 +440,7 @@ jobs:
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
           jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
-          python -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+          python -m pytest --capture=no --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
       - name: Run mypy Python tests
         run: mypy python/
       - name: Run ty Python tests
@@ -520,7 +521,7 @@ jobs:
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
           jupyter nbconvert --clear-output --inplace examples/example_02__mastu__freegsnke_data.ipynb
-          py -3.11 -m pytest -s --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
+          py -3.11 -m pytest --capture=no --nbval-lax examples/example_02__mastu__freegsnke_data.ipynb
       - name: Run mypy Python tests
         run: mypy python/
       - name: Run ty Python tests

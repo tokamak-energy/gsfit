@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Passives
-from st40_database import GetData
+
+from .mock_get_data import MockGetData
 
 if TYPE_CHECKING:
     from . import DatabaseReader
@@ -18,10 +19,10 @@ def setup_passives(
     """
     This method initialises the Rust `Passives` class.
 
-    :param pulseNo: Pulse number, used to read from the database
+    :param pulseNo: Pulse number, used to select which mocked MDSplus tree to read
     :param settings: Dictionary containing the JSON settings read from the `settings` directory
 
-    **This method is specific to ST40's experimental MDSplus database.**
+    **This method is specific to a mock of ST40's experimental MDSplus database.**
 
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """
@@ -29,9 +30,7 @@ def setup_passives(
     # Initialise the Passives Rust class
     passives = Passives()
 
-    elmag_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus"]["workflow"]["elmag"]["run_name"]
-    elmag = GetData(pulseNo, f"ELMAG#{elmag_run_name}", is_fail_quiet=False)
-
+    elmag = MockGetData.from_workflow(settings, pulseNo, "elmag")
     vessel_r = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.R"))
     vessel_z = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.Z"))
     vessel_d_r = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.DR"))
@@ -52,60 +51,31 @@ def setup_passives(
             n_dof = settings["passive_dof_regularisation.json"]["IVC"]["n_dof"]
             regularisations = np.array(settings["passive_dof_regularisation.json"]["IVC"]["regularisations"])
             regularisations_weight = np.array(settings["passive_dof_regularisation.json"]["IVC"]["regularisations_weight"])
-
-            passives.add_passive(
-                name=passive_name,
-                r=vessel_r[i_filaments],
-                z=vessel_z[i_filaments],
-                d_r=vessel_d_r[i_filaments],
-                d_z=vessel_d_z[i_filaments],
-                angle_1=vessel_angle_1[i_filaments],
-                angle_2=vessel_angle_2[i_filaments],
-                resistivity=vessel_resistivity[i_passive],
-                current_distribution_type=current_distribution_type,
-                n_dof=n_dof,
-                regularisations=regularisations,
-                regularisations_weight=regularisations_weight,
-            )
         elif passive_name == "OVC":
             current_distribution_type = "constant_current_density"
             n_dof = 1
             regularisations = np.array([[1.0]])
             regularisations_weight = np.array([0.1])
-
-            passives.add_passive(
-                name=passive_name,
-                r=vessel_r[i_filaments],
-                z=vessel_z[i_filaments],
-                d_r=vessel_d_r[i_filaments],
-                d_z=vessel_d_z[i_filaments],
-                angle_1=vessel_angle_1[i_filaments],
-                angle_2=vessel_angle_2[i_filaments],
-                resistivity=vessel_resistivity[i_passive],
-                current_distribution_type=current_distribution_type,
-                n_dof=n_dof,
-                regularisations=regularisations,
-                regularisations_weight=regularisations_weight,
-            )
         else:
             current_distribution_type = "constant_current_density"
             n_dof = 1
             regularisations = np.empty((0, 0))
             regularisations_weight = np.empty(0)
 
-            passives.add_passive(
-                name=passive_name,
-                r=vessel_r[i_filaments],
-                z=vessel_z[i_filaments],
-                d_r=vessel_d_r[i_filaments],
-                d_z=vessel_d_z[i_filaments],
-                angle_1=vessel_angle_1[i_filaments],
-                angle_2=vessel_angle_2[i_filaments],
-                resistivity=vessel_resistivity[i_passive],
-                current_distribution_type=current_distribution_type,
-                n_dof=n_dof,
-                regularisations=regularisations,
-                regularisations_weight=regularisations_weight,
-            )
+        # Add the passive to the Rust class
+        passives.add_passive(
+            name=passive_name,
+            r=vessel_r[i_filaments],
+            z=vessel_z[i_filaments],
+            d_r=vessel_d_r[i_filaments],
+            d_z=vessel_d_z[i_filaments],
+            angle_1=vessel_angle_1[i_filaments],
+            angle_2=vessel_angle_2[i_filaments],
+            resistivity=vessel_resistivity[i_passive],
+            current_distribution_type=current_distribution_type,
+            n_dof=n_dof,
+            regularisations=regularisations,
+            regularisations_weight=regularisations_weight,
+        )
 
     return passives

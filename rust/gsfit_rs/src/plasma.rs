@@ -150,6 +150,52 @@ impl Plasma {
             }
         }
 
+        // d2_g_d_r_d_z
+        let mut g_d2_psi_d_r_d_z: Array2<f64> = greens_calculator.d2_psi_d_r_d_z();
+        for i_r in 0..n_r {
+            for i_rz in 0..n_r * n_z {
+                if g_d2_psi_d_r_d_z[(i_rz, i_r)].is_nan() {
+                    g_d2_psi_d_r_d_z[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
+                }
+            }
+        }
+
+        // d_g_d_r and d_g_d_z
+        let mut g_d_psi_d_r: Array2<f64> = greens_calculator.d_psi_d_r();
+        let mut g_d_psi_d_z: Array2<f64> = greens_calculator.d_psi_d_z();
+        for i_r in 0..n_r {
+            for i_rz in 0..n_r * n_z {
+                if g_d_psi_d_r[(i_rz, i_r)].is_nan() {
+                    g_d_psi_d_r[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
+                }
+                if g_d_psi_d_z[(i_rz, i_r)].is_nan() {
+                    g_d_psi_d_z[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
+                }
+            }
+        }
+
+        // Second and third z-derivatives (needed by `calculate_psi_and_derivatives` and its `delta_z` shifts)
+        let mut g_d2_psi_d_z2: Array2<f64> = greens_calculator.d2_psi_d_z2();
+        let mut g_d3_psi_d_r2_d_z: Array2<f64> = greens_calculator.d3_psi_d_r2_d_z();
+        let mut g_d3_psi_d_r_d_z2: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2();
+        let mut g_d3_psi_d_z3: Array2<f64> = greens_calculator.d3_psi_d_z3();
+        for i_r in 0..n_r {
+            for i_rz in 0..n_r * n_z {
+                if g_d2_psi_d_z2[(i_rz, i_r)].is_nan() {
+                    g_d2_psi_d_z2[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
+                }
+                if g_d3_psi_d_r2_d_z[(i_rz, i_r)].is_nan() {
+                    g_d3_psi_d_r2_d_z[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
+                }
+                if g_d3_psi_d_r_d_z2[(i_rz, i_r)].is_nan() {
+                    g_d3_psi_d_r_d_z2[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
+                }
+                if g_d3_psi_d_z3[(i_rz, i_r)].is_nan() {
+                    g_d3_psi_d_z3[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
+                }
+            }
+        }
+
         // Store values
         results.get_or_insert("greens").get_or_insert("grid_grid").insert("psi", g_psi); // Array2<f64>; shape = (n_z * n_r, n_r)
         results.get_or_insert("greens").get_or_insert("grid_grid").insert("br", g_br); // Array2<f64>; shape = (n_z * n_r, n_r)
@@ -157,6 +203,22 @@ impl Plasma {
         results.get_or_insert("greens").get_or_insert("grid_grid").insert("d_br_d_z", g_d_br_d_z); // Array2<f64>; shape = (n_z * n_r, n_r)
         results.get_or_insert("greens").get_or_insert("grid_grid").insert("d_bz_d_z", g_d_bz_d_z); // Array2<f64>; shape = (n_z * n_r, n_r)
         results.get_or_insert("greens").get_or_insert("grid_grid").insert("d2_psi_d_r2", g_d2_psi_d_r2); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results
+            .get_or_insert("greens")
+            .get_or_insert("grid_grid")
+            .insert("d2_psi_d_r_d_z", g_d2_psi_d_r_d_z); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results.get_or_insert("greens").get_or_insert("grid_grid").insert("d_psi_d_r", g_d_psi_d_r); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results.get_or_insert("greens").get_or_insert("grid_grid").insert("d_psi_d_z", g_d_psi_d_z); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results.get_or_insert("greens").get_or_insert("grid_grid").insert("d2_psi_d_z2", g_d2_psi_d_z2); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results
+            .get_or_insert("greens")
+            .get_or_insert("grid_grid")
+            .insert("d3_psi_d_r2_d_z", g_d3_psi_d_r2_d_z); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results
+            .get_or_insert("greens")
+            .get_or_insert("grid_grid")
+            .insert("d3_psi_d_r_d_z2", g_d3_psi_d_r_d_z2); // Array2<f64>; shape = (n_z * n_r, n_r)
+        results.get_or_insert("greens").get_or_insert("grid_grid").insert("d3_psi_d_z3", g_d3_psi_d_z3); // Array2<f64>; shape = (n_z * n_r, n_r)
         results.get_or_insert("grid").insert("d_area", d_area); // f64
         results.get_or_insert("grid").get_or_insert("flat").insert("r", flat_r); // Array1<f64>; shape = (n_z * n_r)
         results.get_or_insert("grid").get_or_insert("flat").insert("z", flat_z); // Array1<f64>; shape = (n_z * n_r)
@@ -214,18 +276,29 @@ impl Plasma {
 
             // Greens function for psi, br, bz, and derivatives
             let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = (n_z * n_r, n_coil_filaments)
+            let g_d_psi_d_r_filaments: Array2<f64> = greens_calculator.d_psi_d_r(); // shape = (n_z * n_r, n_coil_filaments)
             let g_d_psi_d_z_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = (n_z * n_r, n_coil_filaments)
             let g_br_all_filaments: Array2<f64> = greens_calculator.b_r(); // shape = (n_z * n_r, n_coil_filaments)
             let g_bz_all_filaments: Array2<f64> = greens_calculator.b_z(); // shape = (n_z * n_r, n_coil_filaments)
             let g_d_br_d_z_all_filaments: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = (n_z * n_r, n_coil_filaments)
             let g_d_bz_d_z_all_filaments: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = (n_z * n_r, n_coil_filaments)
             let d2_g_d_r2_all_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = (n_z * n_r, n_coil_filaments)
+            let d2_g_d_r_d_z_all_filaments: Array2<f64> = greens_calculator.d2_psi_d_r_d_z(); // shape = (n_z * n_r, n_coil_filaments)
+            let d2_g_d_z2_all_filaments: Array2<f64> = greens_calculator.d2_psi_d_z2(); // shape = (n_z * n_r, n_coil_filaments)
+            let d3_g_d_r2_d_z_all_filaments: Array2<f64> = greens_calculator.d3_psi_d_r2_d_z(); // shape = (n_z * n_r, n_coil_filaments)
+            let d3_g_d_r_d_z2_all_filaments: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2(); // shape = (n_z * n_r, n_coil_filaments)
+            let d3_g_d_z3_all_filaments: Array2<f64> = greens_calculator.d3_psi_d_z3(); // shape = (n_z * n_r, n_coil_filaments)
 
             // sum over all filaments and convert into shape = (n_z, n_r)
             let g_psi: Array2<f64> = g_psi_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
                 .expect("plasma.greens_with_coils: Failed to reshape `g_psi_filaments` into (n_z, n_r)")
+                .to_owned();
+            let g_d_psi_d_r: Array2<f64> = g_d_psi_d_r_filaments
+                .sum_axis(Axis(1))
+                .to_shape((n_z, n_r))
+                .expect("plasma.greens_with_coils: Failed to reshape `g_d_psi_d_r_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d_psi_d_z: Array2<f64> = g_d_psi_d_z_filaments
                 .sum_axis(Axis(1))
@@ -256,6 +329,31 @@ impl Plasma {
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
                 .expect("plasma.greens_with_coils: Failed to reshape `d2_g_d_r2_all_filaments` into (n_z, n_r)")
+                .to_owned();
+            let g_d2_psi_d_r_d_z: Array2<f64> = d2_g_d_r_d_z_all_filaments
+                .sum_axis(Axis(1))
+                .to_shape((n_z, n_r))
+                .expect("plasma.greens_with_coils: Failed to reshape `d2_g_d_r_d_z_all_filaments` into (n_z, n_r)")
+                .to_owned();
+            let g_d2_psi_d_z2: Array2<f64> = d2_g_d_z2_all_filaments
+                .sum_axis(Axis(1))
+                .to_shape((n_z, n_r))
+                .expect("plasma.greens_with_coils: Failed to reshape `d2_g_d_z2_all_filaments` into (n_z, n_r)")
+                .to_owned();
+            let g_d3_psi_d_r2_d_z: Array2<f64> = d3_g_d_r2_d_z_all_filaments
+                .sum_axis(Axis(1))
+                .to_shape((n_z, n_r))
+                .expect("plasma.greens_with_coils: Failed to reshape `d3_g_d_r2_d_z_all_filaments` into (n_z, n_r)")
+                .to_owned();
+            let g_d3_psi_d_r_d_z2: Array2<f64> = d3_g_d_r_d_z2_all_filaments
+                .sum_axis(Axis(1))
+                .to_shape((n_z, n_r))
+                .expect("plasma.greens_with_coils: Failed to reshape `d3_g_d_r_d_z2_all_filaments` into (n_z, n_r)")
+                .to_owned();
+            let g_d3_psi_d_z3: Array2<f64> = d3_g_d_z3_all_filaments
+                .sum_axis(Axis(1))
+                .to_shape((n_z, n_r))
+                .expect("plasma.greens_with_coils: Failed to reshape `d3_g_d_z3_all_filaments` into (n_z, n_r)")
                 .to_owned();
 
             // Store results
@@ -289,6 +387,36 @@ impl Plasma {
                 .get_or_insert("pf")
                 .get_or_insert(coil_name)
                 .insert("d2_psi_d_r2", g_d2_psi_d_r2); // Array2<f64>; shape = (n_z, n_r)
+            self.results
+                .get_or_insert("greens")
+                .get_or_insert("pf")
+                .get_or_insert(coil_name)
+                .insert("d2_psi_d_r_d_z", g_d2_psi_d_r_d_z); // Array2<f64>; shape = (n_z, n_r)
+            self.results
+                .get_or_insert("greens")
+                .get_or_insert("pf")
+                .get_or_insert(coil_name)
+                .insert("d2_psi_d_z2", g_d2_psi_d_z2); // Array2<f64>; shape = (n_z, n_r)
+            self.results
+                .get_or_insert("greens")
+                .get_or_insert("pf")
+                .get_or_insert(coil_name)
+                .insert("d3_psi_d_r2_d_z", g_d3_psi_d_r2_d_z); // Array2<f64>; shape = (n_z, n_r)
+            self.results
+                .get_or_insert("greens")
+                .get_or_insert("pf")
+                .get_or_insert(coil_name)
+                .insert("d3_psi_d_r_d_z2", g_d3_psi_d_r_d_z2); // Array2<f64>; shape = (n_z, n_r)
+            self.results
+                .get_or_insert("greens")
+                .get_or_insert("pf")
+                .get_or_insert(coil_name)
+                .insert("d3_psi_d_z3", g_d3_psi_d_z3); // Array2<f64>; shape = (n_z, n_r)
+            self.results
+                .get_or_insert("greens")
+                .get_or_insert("pf")
+                .get_or_insert(coil_name)
+                .insert("d_psi_d_r", g_d_psi_d_r); // Array2<f64>; shape = (n_z, n_r)
             self.results
                 .get_or_insert("greens")
                 .get_or_insert("pf")
@@ -348,8 +476,14 @@ impl Plasma {
                 let g_bz_filaments: Array2<f64> = greens_calculator.b_z(); // shape = [n_r * n_z, n_filament]
                 let d_g_br_filaments_d_z: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [n_r * n_z, n_filament]
                 let d_g_bz_filaments_d_z: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = [n_r * n_z, n_filament]
+                let g_d_psi_d_r_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_r(); // shape = [n_r * n_z, n_filament]
                 let g_d_psi_d_z_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = [n_r * n_z, n_filament]
                 let g_d2_psi_d_r2_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = [n_r * n_z, n_filament]
+                let g_d2_psi_d_r_d_z_filaments: Array2<f64> = greens_calculator.d2_psi_d_r_d_z(); // shape = [n_r * n_z, n_filament]
+                let g_d2_psi_d_z2_filaments: Array2<f64> = greens_calculator.d2_psi_d_z2(); // shape = [n_r * n_z, n_filament]
+                let g_d3_psi_d_r2_d_z_filaments: Array2<f64> = greens_calculator.d3_psi_d_r2_d_z(); // shape = [n_r * n_z, n_filament]
+                let g_d3_psi_d_r_d_z2_filaments: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2(); // shape = [n_r * n_z, n_filament]
+                let g_d3_psi_d_z3_filaments: Array2<f64> = greens_calculator.d3_psi_d_z3(); // shape = [n_r * n_z, n_filament]
 
                 // Apply the current_distribution
                 let g_psi_filaments_with_dof: Array2<f64> = g_psi_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
@@ -357,8 +491,14 @@ impl Plasma {
                 let g_bz_filaments_with_dof: Array2<f64> = g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
                 let d_g_br_filaments_with_dof_d_z: Array2<f64> = d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
                 let d_g_bz_filaments_with_dof_d_z: Array2<f64> = d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
+                let g_d_psi_d_r_coil_filaments_with_dof: Array2<f64> = g_d_psi_d_r_coil_filaments * &current_distribution; // shape = [n_r * n_z]
                 let g_d_psi_d_z_coil_filaments_with_dof: Array2<f64> = g_d_psi_d_z_coil_filaments * &current_distribution; // shape = [n_r * n_z]
                 let g_d2_psi_d_r2_filaments_with_dof: Array2<f64> = g_d2_psi_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_r_d_z_filaments_with_dof: Array2<f64> = g_d2_psi_d_r_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_z2_filaments_with_dof: Array2<f64> = g_d2_psi_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_r2_d_z_filaments_with_dof: Array2<f64> = g_d3_psi_d_r2_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_r_d_z2_filaments_with_dof: Array2<f64> = g_d3_psi_d_r_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_z3_filaments_with_dof: Array2<f64> = g_d3_psi_d_z3_filaments * &current_distribution; // shape = [n_r * n_z]
 
                 // Sum over all filaments
                 let g_psi: Array1<f64> = g_psi_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
@@ -366,8 +506,14 @@ impl Plasma {
                 let g_bz: Array1<f64> = g_bz_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
                 let g_d_br_d_z: Array1<f64> = d_g_br_filaments_with_dof_d_z.sum_axis(Axis(1)); // shape = [n_r * n_z]
                 let g_d_bz_d_z: Array1<f64> = d_g_bz_filaments_with_dof_d_z.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_d_psi_d_r: Array1<f64> = g_d_psi_d_r_coil_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
                 let g_d_psi_d_z: Array1<f64> = g_d_psi_d_z_coil_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
                 let g_d2_psi_d_r2: Array1<f64> = g_d2_psi_d_r2_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_d2_psi_d_r_d_z: Array1<f64> = g_d2_psi_d_r_d_z_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_d2_psi_d_z2: Array1<f64> = g_d2_psi_d_z2_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_d3_psi_d_r2_d_z: Array1<f64> = g_d3_psi_d_r2_d_z_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_d3_psi_d_r_d_z2: Array1<f64> = g_d3_psi_d_r_d_z2_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
+                let g_d3_psi_d_z3: Array1<f64> = g_d3_psi_d_z3_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
 
                 // Store
                 self.results
@@ -405,6 +551,12 @@ impl Plasma {
                     .get_or_insert("passives")
                     .get_or_insert(&passive_name)
                     .get_or_insert(&dof_name)
+                    .insert("d_psi_d_r", g_d_psi_d_r);
+                self.results
+                    .get_or_insert("greens")
+                    .get_or_insert("passives")
+                    .get_or_insert(&passive_name)
+                    .get_or_insert(&dof_name)
                     .insert("d_psi_d_z", g_d_psi_d_z);
                 self.results
                     .get_or_insert("greens")
@@ -412,6 +564,36 @@ impl Plasma {
                     .get_or_insert(&passive_name)
                     .get_or_insert(&dof_name)
                     .insert("d2_psi_d_r2", g_d2_psi_d_r2);
+                self.results
+                    .get_or_insert("greens")
+                    .get_or_insert("passives")
+                    .get_or_insert(&passive_name)
+                    .get_or_insert(&dof_name)
+                    .insert("d2_psi_d_r_d_z", g_d2_psi_d_r_d_z);
+                self.results
+                    .get_or_insert("greens")
+                    .get_or_insert("passives")
+                    .get_or_insert(&passive_name)
+                    .get_or_insert(&dof_name)
+                    .insert("d2_psi_d_z2", g_d2_psi_d_z2);
+                self.results
+                    .get_or_insert("greens")
+                    .get_or_insert("passives")
+                    .get_or_insert(&passive_name)
+                    .get_or_insert(&dof_name)
+                    .insert("d3_psi_d_r2_d_z", g_d3_psi_d_r2_d_z);
+                self.results
+                    .get_or_insert("greens")
+                    .get_or_insert("passives")
+                    .get_or_insert(&passive_name)
+                    .get_or_insert(&dof_name)
+                    .insert("d3_psi_d_r_d_z2", g_d3_psi_d_r_d_z2);
+                self.results
+                    .get_or_insert("greens")
+                    .get_or_insert("passives")
+                    .get_or_insert(&passive_name)
+                    .get_or_insert(&dof_name)
+                    .insert("d3_psi_d_z3", g_d3_psi_d_z3);
             }
         }
     }
@@ -480,221 +662,6 @@ impl Plasma {
         return greens_with_passives;
     }
 
-    pub fn get_d_psi_d_z_passive(&self) -> Array2<f64> {
-        // Get grid sizes
-        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
-
-        // Passives
-        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
-        let n_passives: usize = passive_names.len();
-
-        // Count the number of degrees of freedom
-        let mut n_dof_total: usize = 0;
-        for passive_name in &passive_names {
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
-            n_dof_total += dof_names.len();
-        }
-
-        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
-
-        // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
-        let mut i_dof_total: usize = 0;
-        for i_passive in 0..n_passives {
-            let passive_name: &str = &passive_names[i_passive];
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in &dof_names {
-                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
-                    &self
-                        .results
-                        .get("greens")
-                        .get("passives")
-                        .get(passive_name)
-                        .get(dof_name)
-                        .get("d_psi_d_z")
-                        .unwrap_array1(),
-                );
-
-                // Keep count
-                i_dof_total += 1;
-            }
-        }
-
-        return greens_with_passives;
-    }
-
-    pub fn get_greens_passive_grid_br(&self) -> Array2<f64> {
-        // Get grid sizes
-        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
-
-        // Passives
-        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
-        let n_passives: usize = passive_names.len();
-
-        // Count the number of degrees of freedom
-        let mut n_dof_total: usize = 0;
-        for passive_name in &passive_names {
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
-            n_dof_total += dof_names.len();
-        }
-
-        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
-
-        // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
-        let mut i_dof_total: usize = 0;
-        for i_passive in 0..n_passives {
-            let passive_name: &str = &passive_names[i_passive];
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in &dof_names {
-                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
-                    &self
-                        .results
-                        .get("greens")
-                        .get("passives")
-                        .get(passive_name)
-                        .get(dof_name)
-                        .get("br")
-                        .unwrap_array1(),
-                );
-
-                // Keep count
-                i_dof_total += 1;
-            }
-        }
-
-        return greens_with_passives;
-    }
-
-    pub fn get_greens_passive_grid_bz(&self) -> Array2<f64> {
-        // Get grid sizes
-        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
-
-        // Passives
-        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
-        let n_passives: usize = passive_names.len();
-
-        // Count the number of degrees of freedom
-        let mut n_dof_total: usize = 0;
-        for passive_name in &passive_names {
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
-            n_dof_total += dof_names.len();
-        }
-
-        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
-
-        // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
-        let mut i_dof_total: usize = 0;
-        for i_passive in 0..n_passives {
-            let passive_name: &str = &passive_names[i_passive];
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in &dof_names {
-                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
-                    &self
-                        .results
-                        .get("greens")
-                        .get("passives")
-                        .get(passive_name)
-                        .get(dof_name)
-                        .get("bz")
-                        .unwrap_array1(),
-                );
-
-                // Keep count
-                i_dof_total += 1;
-            }
-        }
-
-        return greens_with_passives;
-    }
-
-    pub fn get_greens_passive_grid_d_br_d_z(&self) -> Array2<f64> {
-        // Get grid sizes
-        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
-
-        // Passives
-        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
-        let n_passives: usize = passive_names.len();
-
-        // Count the number of degrees of freedom
-        let mut n_dof_total: usize = 0;
-        for passive_name in &passive_names {
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
-            n_dof_total += dof_names.len();
-        }
-
-        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
-
-        // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
-        let mut i_dof_total: usize = 0;
-        for i_passive in 0..n_passives {
-            let passive_name: &str = &passive_names[i_passive];
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in &dof_names {
-                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
-                    &self
-                        .results
-                        .get("greens")
-                        .get("passives")
-                        .get(passive_name)
-                        .get(dof_name)
-                        .get("d_br_d_z")
-                        .unwrap_array1(),
-                );
-
-                // Keep count
-                i_dof_total += 1;
-            }
-        }
-
-        return greens_with_passives;
-    }
-
-    pub fn get_greens_passive_grid_d_bz_d_z(&self) -> Array2<f64> {
-        // Get grid sizes
-        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
-
-        // Passives
-        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
-        let n_passives: usize = passive_names.len();
-
-        // Count the number of degrees of freedom
-        let mut n_dof_total: usize = 0;
-        for passive_name in &passive_names {
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
-            n_dof_total += dof_names.len();
-        }
-
-        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
-
-        // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
-        let mut i_dof_total: usize = 0;
-        for i_passive in 0..n_passives {
-            let passive_name: &str = &passive_names[i_passive];
-            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-            for dof_name in &dof_names {
-                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
-                    &self
-                        .results
-                        .get("greens")
-                        .get("passives")
-                        .get(passive_name)
-                        .get(dof_name)
-                        .get("d_bz_d_z")
-                        .unwrap_array1(),
-                );
-
-                // Keep count
-                i_dof_total += 1;
-            }
-        }
-
-        return greens_with_passives;
-    }
-
     pub fn get_greens_passive_grid_d2_psi_d_r2(&self) -> Array2<f64> {
         // Get grid sizes
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
@@ -727,6 +694,300 @@ impl Plasma {
                         .get(passive_name)
                         .get(dof_name)
                         .get("d2_psi_d_r2")
+                        .unwrap_array1(),
+                );
+
+                // Keep count
+                i_dof_total += 1;
+            }
+        }
+
+        return greens_with_passives;
+    }
+
+    pub fn get_greens_passive_grid_d2_psi_d_z2(&self) -> Array2<f64> {
+        // Get grid sizes
+        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
+        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+
+        // Passives
+        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
+        let n_passives: usize = passive_names.len();
+
+        // Count the number of degrees of freedom
+        let mut n_dof_total: usize = 0;
+        for passive_name in &passive_names {
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
+            n_dof_total += dof_names.len();
+        }
+
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
+
+        let mut i_dof_total: usize = 0;
+        for i_passive in 0..n_passives {
+            let passive_name: &str = &passive_names[i_passive];
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
+            for dof_name in &dof_names {
+                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
+                    &self
+                        .results
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .get("d2_psi_d_z2")
+                        .unwrap_array1(),
+                );
+
+                // Keep count
+                i_dof_total += 1;
+            }
+        }
+
+        return greens_with_passives;
+    }
+
+    pub fn get_greens_passive_grid_d3_psi_d_r2_d_z(&self) -> Array2<f64> {
+        // Get grid sizes
+        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
+        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+
+        // Passives
+        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
+        let n_passives: usize = passive_names.len();
+
+        // Count the number of degrees of freedom
+        let mut n_dof_total: usize = 0;
+        for passive_name in &passive_names {
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
+            n_dof_total += dof_names.len();
+        }
+
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
+
+        let mut i_dof_total: usize = 0;
+        for i_passive in 0..n_passives {
+            let passive_name: &str = &passive_names[i_passive];
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
+            for dof_name in &dof_names {
+                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
+                    &self
+                        .results
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .get("d3_psi_d_r2_d_z")
+                        .unwrap_array1(),
+                );
+
+                // Keep count
+                i_dof_total += 1;
+            }
+        }
+
+        return greens_with_passives;
+    }
+
+    pub fn get_greens_passive_grid_d3_psi_d_r_d_z2(&self) -> Array2<f64> {
+        // Get grid sizes
+        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
+        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+
+        // Passives
+        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
+        let n_passives: usize = passive_names.len();
+
+        // Count the number of degrees of freedom
+        let mut n_dof_total: usize = 0;
+        for passive_name in &passive_names {
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
+            n_dof_total += dof_names.len();
+        }
+
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
+
+        let mut i_dof_total: usize = 0;
+        for i_passive in 0..n_passives {
+            let passive_name: &str = &passive_names[i_passive];
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
+            for dof_name in &dof_names {
+                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
+                    &self
+                        .results
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .get("d3_psi_d_r_d_z2")
+                        .unwrap_array1(),
+                );
+
+                // Keep count
+                i_dof_total += 1;
+            }
+        }
+
+        return greens_with_passives;
+    }
+
+    pub fn get_greens_passive_grid_d3_psi_d_z3(&self) -> Array2<f64> {
+        // Get grid sizes
+        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
+        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+
+        // Passives
+        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
+        let n_passives: usize = passive_names.len();
+
+        // Count the number of degrees of freedom
+        let mut n_dof_total: usize = 0;
+        for passive_name in &passive_names {
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
+            n_dof_total += dof_names.len();
+        }
+
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
+
+        let mut i_dof_total: usize = 0;
+        for i_passive in 0..n_passives {
+            let passive_name: &str = &passive_names[i_passive];
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
+            for dof_name in &dof_names {
+                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
+                    &self
+                        .results
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .get("d3_psi_d_z3")
+                        .unwrap_array1(),
+                );
+
+                // Keep count
+                i_dof_total += 1;
+            }
+        }
+
+        return greens_with_passives;
+    }
+
+    pub fn get_greens_passive_grid_d_psi_d_r(&self) -> Array2<f64> {
+        // Get grid sizes
+        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
+        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+
+        // Passives
+        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
+        let n_passives: usize = passive_names.len();
+
+        // Count the number of degrees of freedom
+        let mut n_dof_total: usize = 0;
+        for passive_name in &passive_names {
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
+            n_dof_total += dof_names.len();
+        }
+
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
+
+        let mut i_dof_total: usize = 0;
+        for i_passive in 0..n_passives {
+            let passive_name: &str = &passive_names[i_passive];
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
+            for dof_name in &dof_names {
+                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
+                    &self
+                        .results
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .get("d_psi_d_r")
+                        .unwrap_array1(),
+                );
+
+                // Keep count
+                i_dof_total += 1;
+            }
+        }
+
+        return greens_with_passives;
+    }
+
+    pub fn get_greens_passive_grid_d_psi_d_z(&self) -> Array2<f64> {
+        // Get grid sizes
+        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
+        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+
+        // Passives
+        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
+        let n_passives: usize = passive_names.len();
+
+        // Count the number of degrees of freedom
+        let mut n_dof_total: usize = 0;
+        for passive_name in &passive_names {
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
+            n_dof_total += dof_names.len();
+        }
+
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
+
+        let mut i_dof_total: usize = 0;
+        for i_passive in 0..n_passives {
+            let passive_name: &str = &passive_names[i_passive];
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
+            for dof_name in &dof_names {
+                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
+                    &self
+                        .results
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .get("d_psi_d_z")
+                        .unwrap_array1(),
+                );
+
+                // Keep count
+                i_dof_total += 1;
+            }
+        }
+
+        return greens_with_passives;
+    }
+
+    pub fn get_greens_passive_grid_d2_psi_d_r_d_z(&self) -> Array2<f64> {
+        // Get grid sizes
+        let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
+        let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+
+        // Passives
+        let passive_names: Vec<String> = self.results.get("greens").get("passives").keys();
+        let n_passives: usize = passive_names.len();
+
+        // Count the number of degrees of freedom
+        let mut n_dof_total: usize = 0;
+        for passive_name in &passive_names {
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys();
+            n_dof_total += dof_names.len();
+        }
+
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
+
+        let mut i_dof_total: usize = 0;
+        for i_passive in 0..n_passives {
+            let passive_name: &str = &passive_names[i_passive];
+            let dof_names: Vec<String> = self.results.get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
+            for dof_name in &dof_names {
+                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(
+                    &self
+                        .results
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .get("d2_psi_d_r_d_z")
                         .unwrap_array1(),
                 );
 
@@ -885,9 +1146,18 @@ impl Plasma {
             }
 
             // Two-d
-            br_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].br_2d);
-            bz_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].bz_2d);
-            d_bz_d_z_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].d_bz_d_z_2d);
+            // `gs_solution` only tracks `psi` and its derivatives; convert to the magnetic field
+            // here, at the output boundary:
+            //     `br = -1 / (2 * PI * r) * d(psi)/d(z)`
+            //     `bz =  1 / (2 * PI * r) * d(psi)/d(r)`
+            //     `d(bz)/d(z) = 1 / (2 * PI * r) * d2(psi)/d(r)d(z)`
+            let mesh_r_local: Array2<f64> = plasma.results.get("grid").get("mesh").get("r").unwrap_array2();
+            let br_2d_this_time: Array2<f64> = -&gs_solutions[i_time].d_psi_d_z_2d / (2.0 * PI * &mesh_r_local);
+            let bz_2d_this_time: Array2<f64> = &gs_solutions[i_time].d_psi_d_r_2d / (2.0 * PI * &mesh_r_local);
+            let d_bz_d_z_2d_this_time: Array2<f64> = &gs_solutions[i_time].d2_psi_d_r_d_z_2d / (2.0 * PI * &mesh_r_local);
+            br_2d.slice_mut(s![i_time, .., ..]).assign(&br_2d_this_time);
+            bz_2d.slice_mut(s![i_time, .., ..]).assign(&bz_2d_this_time);
+            d_bz_d_z_2d.slice_mut(s![i_time, .., ..]).assign(&d_bz_d_z_2d_this_time);
             j_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].j_2d);
             mask_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].mask);
             psi_2d.slice_mut(s![i_time, .., ..]).assign(&gs_solutions[i_time].psi_2d);
@@ -965,14 +1235,12 @@ impl Plasma {
             );
             midplane_p_profile.slice_mut(s![i_time, ..]).assign(&midplane_p_profile_this_time);
 
-            let (bt_2d_this_time, bt_vac_this_time): (Array2<f64>, Array2<f64>) = epp_bt_2d(&gs_solutions[i_time], &r, &z, i_rod[i_time]);
+            let (bt_2d_this_time, _bt_vac_this_time): (Array2<f64>, Array2<f64>) = epp_bt_2d(&gs_solutions[i_time], &r, &z, i_rod[i_time]);
             bt_2d.slice_mut(s![i_time, .., ..]).assign(&bt_2d_this_time);
 
             // Find plasma boundary
             let psi_2d_local: Array2<f64> = psi_2d.slice(s![i_time, .., ..]).to_owned();
             let mask_2d_local: Array2<f64> = mask_2d.slice(s![i_time, .., ..]).to_owned();
-            let br_2d_local: Array2<f64> = br_2d.slice(s![i_time, .., ..]).to_owned();
-            let bz_2d_local: Array2<f64> = bz_2d.slice(s![i_time, .., ..]).to_owned();
             let psi_b_local: f64 = gs_solutions[i_time].psi_b;
 
             let r_xpt_local: Option<f64>;
@@ -987,15 +1255,12 @@ impl Plasma {
             let mag_r_local: f64 = r_mag[i_time];
             let mag_z_local: f64 = z_mag[i_time];
 
-            // // Get stationary points from the GS solution
-            // let stationary_points_local: &Vec<crate::plasma_geometry::StationaryPoint> = &gs_solutions[i_time].stationary_points;
-
             let boundary_contour_local: MarchingContour = marching_squares(
                 &r,
                 &z,
                 &psi_2d_local,
-                &br_2d_local,
-                &bz_2d_local,
+                &gs_solutions[i_time].d_psi_d_r_2d,
+                &gs_solutions[i_time].d_psi_d_z_2d,
                 psi_b_local,
                 &mask_2d_local,
                 r_xpt_local,
@@ -1679,9 +1944,11 @@ fn epp_bp_sq_flux_surface_average(
         .expect("epp_bp_sq_flux_surface_average: flux_surface_contours_tmp");
     let flux_surface_contours: &geo_types::MultiPolygon = flux_surface_contours_tmp[0].geometry(); // The [0] is because I have only supplied one threshold
 
-    // Interpolator for b_p on the (R, Z) grid
-    let br_2d: Array2<f64> = gs_solution.br_2d.to_owned();
-    let bz_2d: Array2<f64> = gs_solution.bz_2d.to_owned();
+    // Interpolator for b_p on the (R, Z) grid; `gs_solution` stores `psi` derivatives, so
+    // `b_p = |grad(psi)| / (2 * PI * r)`
+    let mesh_r_local: Array2<f64> = Array2::from_shape_fn(gs_solution.psi_2d.dim(), |(_i_z, i_r)| r[i_r]);
+    let br_2d: Array2<f64> = -&gs_solution.d_psi_d_z_2d / (2.0 * PI * &mesh_r_local);
+    let bz_2d: Array2<f64> = &gs_solution.d_psi_d_r_2d / (2.0 * PI * &mesh_r_local);
     let bp_2d: Array2<f64> = (br_2d.mapv(|x| x.powi(2)) + bz_2d.mapv(|x| x.powi(2))).mapv(f64::sqrt);
     let bp_interpolator = Interp2D::builder(bp_2d)
         .x(z.clone())
@@ -1991,8 +2258,8 @@ fn epp_scrape_off_layer(gs_solution: &GsSolution, plasma: &Plasma) -> (Array1<f6
     let r: Array1<f64> = plasma.results.get("grid").get("r").unwrap_array1();
     let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
     let psi_2d: Array2<f64> = gs_solution.psi_2d.to_owned();
-    let br_2d: Array2<f64> = gs_solution.br_2d.to_owned();
-    let bz_2d: Array2<f64> = gs_solution.bz_2d.to_owned();
+    let d_psi_d_r_2d: Array2<f64> = gs_solution.d_psi_d_r_2d.to_owned();
+    let d_psi_d_z_2d: Array2<f64> = gs_solution.d_psi_d_z_2d.to_owned();
     let vessel_r: Array1<f64> = plasma.results.get("vessel").get("r").unwrap_array1();
     let vessel_z: Array1<f64> = plasma.results.get("vessel").get("z").unwrap_array1();
     let n_r: usize = r.len();
@@ -2021,8 +2288,8 @@ fn epp_scrape_off_layer(gs_solution: &GsSolution, plasma: &Plasma) -> (Array1<f6
         &r,
         &z,
         &psi_2d,
-        &br_2d,
-        &bz_2d,
+        &d_psi_d_r_2d,
+        &d_psi_d_z_2d,
         psi_b,
         &mask,
         Some(xpt.r),
@@ -2245,8 +2512,10 @@ fn epp_q_profile(gs_solution: &GsSolution, flux_surfaces: &[FluxSurface], f_prof
     // where: <1/R**2> is notation for the flux surface average
 
     let n_psi_n: usize = flux_surfaces.len();
-    let br: Array2<f64> = gs_solution.br_2d.to_owned();
-    let bz: Array2<f64> = gs_solution.bz_2d.to_owned();
+    // `b_p = |grad(psi)| / (2 * PI * r)`
+    let mesh_r_local: Array2<f64> = Array2::from_shape_fn(gs_solution.psi_2d.dim(), |(_i_z, i_r)| r[i_r]);
+    let br: Array2<f64> = -&gs_solution.d_psi_d_z_2d / (2.0 * PI * &mesh_r_local);
+    let bz: Array2<f64> = &gs_solution.d_psi_d_r_2d / (2.0 * PI * &mesh_r_local);
     let bp: Array2<f64> = (br.mapv(|x| x.powi(2)) + bz.mapv(|x| x.powi(2))).mapv(f64::sqrt);
 
     let bp_interpolator = Interp2D::builder(bp)

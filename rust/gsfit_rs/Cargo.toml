@@ -31,7 +31,7 @@ approx = "0.5.1"
 faer = "0.24.4"
 ndarray-stats = "0.7.0"  # TODO: I want to remove this dependency, because it restricts `ndarray` version!
 rand = "0.10.2"
-special = "0.13.1" # "special" mathematical functions, used for `Lambert`
+special = "0.14.0" # "special" mathematical functions, used for `Lambert`
 
 [build-dependencies]
 # Used in `build.rs` to discover the Python interpreter (uv, venv, conda, or system Python)

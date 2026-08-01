@@ -39,13 +39,13 @@ def setup_passives(
     vessel_angle_1 = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.ANGLE1"))
     vessel_angle_2 = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.ANGLE2"))
     vessel_resistivity = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.RESISTIVITY"))
-    vessel_fillaments_to_passives = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.FILS2PASSIVE"))
-    [n_filaments, n_passives] = vessel_fillaments_to_passives.shape
+    vessel_filaments_to_passives = typing.cast(npt.NDArray[np.float64], elmag.get("VESSEL.FILS2PASSIVE"))
+    [n_filaments, n_passives] = vessel_filaments_to_passives.shape
     passive_names = typing.cast(list[str], elmag.get("VESSEL.PASSIVE_NAME"))
 
     for i_passive in range(0, n_passives):
         passive_name = passive_names[i_passive]
-        i_filaments = vessel_fillaments_to_passives[:, i_passive].astype(int) == True
+        i_filaments = vessel_filaments_to_passives[:, i_passive].astype(int) == True
 
         if passive_name == "IVC":
             current_distribution_type = "eig"

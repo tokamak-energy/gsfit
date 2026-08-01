@@ -6,7 +6,6 @@ use super::flood_fill_mask::flood_fill_mask;
 use super::marching_squares::marching_squares;
 use ndarray::{Array1, Array2, ArrayView2, s};
 use ndarray_stats::QuantileExt;
-use std::f64::consts::PI;
 
 /// Find a viable limit point which can be used to define the plasma boundary
 ///
@@ -28,9 +27,9 @@ pub fn find_viable_limit_point(
     r: &Array1<f64>,
     z: &Array1<f64>,
     psi_2d: &Array2<f64>,
-    br_2d: &Array2<f64>,
-    bz_2d: &Array2<f64>,
-    d_bz_d_z_2d: &Array2<f64>,
+    d_psi_d_r_2d: &Array2<f64>,
+    d_psi_d_z_2d: &Array2<f64>,
+    d2_psi_d_r_d_z_2d: &Array2<f64>,
     limit_pts_r: &Array1<f64>, // TODO: might be better to have limit_pts_r and limit_pts_z as a "struct"
     limit_pts_z: &Array1<f64>,
     mag_r: f64,
@@ -105,24 +104,24 @@ pub fn find_viable_limit_point(
 
         // d(psi)/d(r)
         // bz = 1 / (2.0 * PI * r) * d_psi_d_r
-        d_f_d_r[(0, 0)] = bz_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-        d_f_d_r[(1, 0)] = bz_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-        d_f_d_r[(0, 1)] = bz_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-        d_f_d_r[(1, 1)] = bz_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+        d_f_d_r[(0, 0)] = d_psi_d_r_2d[(i_z_nearest_lower, i_r_nearest_left)];
+        d_f_d_r[(1, 0)] = d_psi_d_r_2d[(i_z_nearest_upper, i_r_nearest_left)];
+        d_f_d_r[(0, 1)] = d_psi_d_r_2d[(i_z_nearest_lower, i_r_nearest_right)];
+        d_f_d_r[(1, 1)] = d_psi_d_r_2d[(i_z_nearest_upper, i_r_nearest_right)];
 
         // d(psi)/d(z)
         // br = - 1 / (2.0 * PI * r) * d_psi_d_z
-        d_f_d_z[(0, 0)] = -br_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-        d_f_d_z[(1, 0)] = -br_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-        d_f_d_z[(0, 1)] = -br_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-        d_f_d_z[(1, 1)] = -br_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+        d_f_d_z[(0, 0)] = d_psi_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)];
+        d_f_d_z[(1, 0)] = d_psi_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)];
+        d_f_d_z[(0, 1)] = d_psi_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)];
+        d_f_d_z[(1, 1)] = d_psi_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)];
 
         // d^2(psi)/(d(r)*d(z))
         // d_bz_d_z = 1 / (2 * PI * r) * d2_psi_dr_dz
-        d2_f_d_r_d_z[(0, 0)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-        d2_f_d_r_d_z[(1, 0)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)] * (2.0 * PI * r[i_r_nearest_left]);
-        d2_f_d_r_d_z[(0, 1)] = d_bz_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
-        d2_f_d_r_d_z[(1, 1)] = d_bz_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)] * (2.0 * PI * r[i_r_nearest_right]);
+        d2_f_d_r_d_z[(0, 0)] = d2_psi_d_r_d_z_2d[(i_z_nearest_lower, i_r_nearest_left)];
+        d2_f_d_r_d_z[(1, 0)] = d2_psi_d_r_d_z_2d[(i_z_nearest_upper, i_r_nearest_left)];
+        d2_f_d_r_d_z[(0, 1)] = d2_psi_d_r_d_z_2d[(i_z_nearest_lower, i_r_nearest_right)];
+        d2_f_d_r_d_z[(1, 1)] = d2_psi_d_r_d_z_2d[(i_z_nearest_upper, i_r_nearest_right)];
 
         // Create a bicubic interpolator
         let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f, d_f_d_r.view(), d_f_d_z.view(), d2_f_d_r_d_z.view());
@@ -208,7 +207,7 @@ pub fn find_viable_limit_point(
         // Calculate the plasma boundary
         // TODO: update `marching_squares` to only do points near limit_point
         let psi_b: f64 = potential_limit_point.bounding_psi;
-        let plasma_boundary: MarchingContour = marching_squares(r, z, psi_2d, br_2d, bz_2d, psi_b, &mask_2d, None, None, mag_r, mag_z);
+        let plasma_boundary: MarchingContour = marching_squares(r, z, psi_2d, d_psi_d_r_2d, d_psi_d_z_2d, psi_b, &mask_2d, None, None, mag_r, mag_z);
         if plasma_boundary.r.is_empty() {
             continue 'loop_over_potential_limit_points;
         }

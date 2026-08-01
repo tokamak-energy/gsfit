@@ -122,6 +122,7 @@ Units should be specified for type hints into / out of functions, e.g.
 import numpy as np
 import numpy.typing as npt
 
+
 def greens_py(
     r: npt.NDArray[np.float64],
     z: npt.NDArray[np.float64],
