@@ -97,7 +97,11 @@ fn quadratic_current_density_seed(
 
     // For an ellipse scaled by lambda, a grid point is in its support when
     // s_base < lambda^2. Limit lambda using the nearest point outside the
-    // vessel, so no outside grid point receives nonzero current.
+    // vessel, so no outside grid-point centre receives nonzero current. A
+    // finite source cell next to the wall can still extend partly outside the
+    // vessel polygon. The edge of this initial J_phi support is not an LCFS;
+    // the first-iteration plasma boundary is found separately from the total
+    // poloidal flux, including the PF-coil contribution.
     let mut scale_squared: f64 = 1.0;
     for &z_value in z {
         for &r_value in r {
@@ -111,6 +115,10 @@ fn quadratic_current_density_seed(
         return Err("vessel geometry leaves no finite quadratic-current support around the initial centre".to_string());
     }
 
+    // If operational experience shows that user control is needed, an optional
+    // `initial_current_scale` in (0, 1] can multiply this automatic scale. Such
+    // a factor would preserve the centre and aspect ratio, only shrink the
+    // support, and leave the total current unchanged after normalisation.
     let scale = scale_squared.sqrt();
     let a_r = a_r_base * scale;
     let b_z = b_z_base * scale;
