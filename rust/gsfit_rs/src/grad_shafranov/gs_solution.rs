@@ -14,6 +14,7 @@ use faer::linalg::matmul::matmul;
 use faer::linalg::solvers::{SolveLstsq, Svd as FaerSvd};
 use faer::mat::MatRef;
 use faer::{Accum, Par};
+use geo::{Contains, Coord, LineString, Point, Polygon};
 use ndarray::Axis;
 use ndarray::{Array1, Array2, Array3, ArrayView2, concatenate, s};
 use ndarray_stats::QuantileExt;
@@ -21,6 +22,261 @@ use std::f64::consts::PI;
 use std::sync::Arc;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
+const INITIAL_ELLIPSE_BOUNDARY_POINTS: usize = 4096;
+
+/// Create a smooth, axis-aligned quadratic current-density seed.
+///
+/// The ellipse is centred on the supplied initial magnetic-axis guess. Its
+/// radial semi-axis is `initial_minor_radius`, and its vertical semi-axis is
+/// `initial_minor_radius * initial_kappa`. These plasma parameters are
+/// independent of the vacuum-vessel shape. The complete sampled ellipse must
+/// lie inside the vessel and computational grid, and no limiter point may lie
+/// inside its support. The discrete current is normalised to `initial_ip`
+/// within floating-point precision.
+fn quadratic_current_density_seed(
+    r: &Array1<f64>,
+    z: &Array1<f64>,
+    limiter_r: &Array1<f64>,
+    limiter_z: &Array1<f64>,
+    vessel_r: &Array1<f64>,
+    vessel_z: &Array1<f64>,
+    d_area: f64,
+    initial_ip: f64,
+    initial_cur_r: f64,
+    initial_cur_z: f64,
+    initial_minor_radius: f64,
+    initial_kappa: f64,
+) -> Result<Array2<f64>, String> {
+    if r.len() < 2 || z.len() < 2 {
+        return Err("quadratic current initialisation requires at least two radial and vertical grid points".to_string());
+    }
+    if limiter_r.len() != limiter_z.len() || limiter_r.is_empty() {
+        return Err("quadratic current initialisation requires matching, nonempty limiter R/Z arrays".to_string());
+    }
+    if vessel_r.len() != vessel_z.len() || vessel_r.len() < 3 {
+        return Err("quadratic current initialisation requires matching vessel R/Z arrays with at least three points".to_string());
+    }
+    if r.iter()
+        .chain(z.iter())
+        .chain(limiter_r.iter())
+        .chain(limiter_z.iter())
+        .chain(vessel_r.iter())
+        .chain(vessel_z.iter())
+        .any(|value| !value.is_finite())
+        || !d_area.is_finite()
+        || d_area <= 0.0
+        || !initial_ip.is_finite()
+        || initial_ip == 0.0
+        || !initial_cur_r.is_finite()
+        || !initial_cur_z.is_finite()
+        || !initial_minor_radius.is_finite()
+        || initial_minor_radius <= 0.0
+        || !initial_kappa.is_finite()
+        || initial_kappa <= 0.0
+    {
+        return Err(
+            "quadratic current initialisation requires finite geometry, positive cell area, finite nonzero initial current, positive minor radius, and positive kappa"
+                .to_string(),
+        );
+    }
+
+    let a_r = initial_minor_radius;
+    let b_z = initial_minor_radius * initial_kappa;
+    if !b_z.is_finite() {
+        return Err("quadratic current initialisation requires a finite vertical semi-axis".to_string());
+    }
+
+    let min_max = |values: &Array1<f64>| -> (f64, f64) {
+        values.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(minimum, maximum), &value| {
+            (minimum.min(value), maximum.max(value))
+        })
+    };
+    let (grid_r_min, grid_r_max) = min_max(r);
+    let (grid_z_min, grid_z_max) = min_max(z);
+    if initial_cur_r - a_r < grid_r_min || initial_cur_r + a_r > grid_r_max || initial_cur_z - b_z < grid_z_min || initial_cur_z + b_z > grid_z_max {
+        return Err("initial current ellipse must lie inside the plasma grid".to_string());
+    }
+
+    // Some readers append discrete tile points to a closed limiter outline, so
+    // the limiter is deliberately treated as a point set rather than a polygon.
+    for (&r_value, &z_value) in limiter_r.iter().zip(limiter_z.iter()) {
+        let s = ((r_value - initial_cur_r) / a_r).powi(2) + ((z_value - initial_cur_z) / b_z).powi(2);
+        if s < 1.0 {
+            return Err("initial current ellipse contains a limiter point".to_string());
+        }
+    }
+
+    let vessel_coordinates: Vec<Coord<f64>> = vessel_r
+        .iter()
+        .zip(vessel_z.iter())
+        .map(|(&r_value, &z_value)| Coord { x: r_value, y: z_value })
+        .collect();
+    let vessel_polygon = Polygon::new(LineString::new(vessel_coordinates), vec![]);
+    let ellipse_coordinates: Vec<Coord<f64>> = (0..=INITIAL_ELLIPSE_BOUNDARY_POINTS)
+        .map(|i_point| {
+            let theta = 2.0 * PI * i_point as f64 / INITIAL_ELLIPSE_BOUNDARY_POINTS as f64;
+            Coord {
+                x: initial_cur_r + a_r * theta.cos(),
+                y: initial_cur_z + b_z * theta.sin(),
+            }
+        })
+        .collect();
+    let ellipse_polygon = Polygon::new(LineString::new(ellipse_coordinates), vec![]);
+    if !vessel_polygon.contains(&ellipse_polygon) {
+        return Err("initial current ellipse must lie strictly inside the vessel".to_string());
+    }
+
+    // This edge is the support of the initial J_phi guess, not an LCFS; the
+    // first-iteration plasma boundary is found separately from the total
+    // poloidal flux, including PF-coil flux.
+    let mut shape = Array2::zeros((z.len(), r.len()));
+    for (i_z, &z_value) in z.iter().enumerate() {
+        for (i_r, &r_value) in r.iter().enumerate() {
+            let s = ((r_value - initial_cur_r) / a_r).powi(2) + ((z_value - initial_cur_z) / b_z).powi(2);
+            let shape_value = (1.0 - s).max(0.0);
+            if shape_value > 0.0 && !vessel_polygon.contains(&Point::new(r_value, z_value)) {
+                return Err("quadratic current support contains a grid point outside the vessel".to_string());
+            }
+            shape[(i_z, i_r)] = shape_value;
+        }
+    }
+
+    let shape_integral = shape.sum() * d_area;
+    if !shape_integral.is_finite() || shape_integral <= 0.0 {
+        return Err("quadratic current initialisation has empty support on the plasma grid".to_string());
+    }
+    let normalisation = initial_ip / shape_integral;
+    if !normalisation.is_finite() {
+        return Err("quadratic current initialisation requires a finite current-density normalisation".to_string());
+    }
+    let j_2d = shape * normalisation;
+    let achieved_current = j_2d.sum() * d_area;
+    let relative_error = (achieved_current - initial_ip).abs() / initial_ip.abs();
+    if j_2d.iter().any(|value| !value.is_finite()) || !relative_error.is_finite() || relative_error > 1.0e-10 {
+        return Err("quadratic current initialisation could not produce a finite, normalised current density".to_string());
+    }
+    return Ok(j_2d);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::quadratic_current_density_seed;
+    use ndarray::{Array1, array};
+
+    #[test]
+    fn quadratic_current_seed_is_normalised_and_uses_explicit_shape() {
+        let r = Array1::linspace(1.0, 3.0, 9);
+        let z = Array1::linspace(-1.5, 1.5, 13);
+        let limiter_r = array![0.8, 3.2, 3.2, 0.8, 0.8];
+        let limiter_z = array![-1.7, -1.7, 1.7, 1.7, -1.7];
+        let vessel_r = array![0.75, 3.25, 3.25, 0.75, 0.75];
+        let vessel_z = array![-1.75, -1.75, 1.75, 1.75, -1.75];
+        let d_area = (r[1] - r[0]) * (z[1] - z[0]);
+        let initial_ip = 120_000.0;
+
+        let j_2d = quadratic_current_density_seed(&r, &z, &limiter_r, &limiter_z, &vessel_r, &vessel_z, d_area, initial_ip, 2.0, 0.0, 0.5, 2.0).unwrap();
+
+        assert!((j_2d.sum() * d_area - initial_ip).abs() < 1.0e-10 * initial_ip);
+        assert!((j_2d[(6, 5)] / j_2d[(6, 4)] - 0.75).abs() < 1.0e-12);
+        assert!((j_2d[(7, 4)] / j_2d[(6, 4)] - 0.9375).abs() < 1.0e-12);
+        assert_eq!(j_2d[(6, 6)], 0.0);
+        assert_eq!(j_2d[(10, 4)], 0.0);
+    }
+
+    #[test]
+    fn quadratic_current_seed_is_independent_of_vessel_shape() {
+        let r = Array1::linspace(1.0, 3.0, 17);
+        let z = Array1::linspace(-1.5, 1.5, 25);
+        let limiter_r = array![0.8, 3.2, 3.2, 0.8, 0.8];
+        let limiter_z = array![-1.7, -1.7, 1.7, 1.7, -1.7];
+        let vessel_r_1 = array![0.75, 3.25, 3.25, 0.75, 0.75];
+        let vessel_z_1 = array![-1.75, -1.75, 1.75, 1.75, -1.75];
+        let vessel_r_2 = array![0.7, 3.3, 3.3, 2.6, 0.7, 0.7];
+        let vessel_z_2 = array![-1.8, -1.8, 1.8, 1.65, 1.8, -1.8];
+        let d_area = (r[1] - r[0]) * (z[1] - z[0]);
+
+        let seed_1 = quadratic_current_density_seed(&r, &z, &limiter_r, &limiter_z, &vessel_r_1, &vessel_z_1, d_area, 100_000.0, 2.0, 0.0, 0.5, 2.0).unwrap();
+        let seed_2 = quadratic_current_density_seed(&r, &z, &limiter_r, &limiter_z, &vessel_r_2, &vessel_z_2, d_area, 100_000.0, 2.0, 0.0, 0.5, 2.0).unwrap();
+
+        assert_eq!(seed_1, seed_2);
+    }
+
+    #[test]
+    fn quadratic_current_seed_preserves_negative_current_sign() {
+        let r = Array1::linspace(1.0, 3.0, 9);
+        let z = Array1::linspace(-1.5, 1.5, 13);
+        let limiter_r = array![0.8, 3.2, 3.2, 0.8, 0.8];
+        let limiter_z = array![-1.7, -1.7, 1.7, 1.7, -1.7];
+        let vessel_r = array![0.75, 3.25, 3.25, 0.75, 0.75];
+        let vessel_z = array![-1.75, -1.75, 1.75, 1.75, -1.75];
+        let d_area = (r[1] - r[0]) * (z[1] - z[0]);
+
+        let j_2d = quadratic_current_density_seed(&r, &z, &limiter_r, &limiter_z, &vessel_r, &vessel_z, d_area, -80_000.0, 2.0, 0.0, 0.5, 2.0).unwrap();
+
+        assert!((j_2d.sum() * d_area + 80_000.0).abs() < 1.0e-8);
+        assert!(j_2d.iter().all(|value| *value <= 0.0));
+    }
+
+    #[test]
+    fn quadratic_current_seed_rejects_limiter_point_inside_support() {
+        let r = Array1::linspace(1.0, 3.0, 9);
+        let z = Array1::linspace(-1.5, 1.5, 13);
+        let limiter_r = array![0.8, 3.2, 3.2, 0.8, 0.8, 2.25];
+        let limiter_z = array![-1.7, -1.7, 1.7, 1.7, -1.7, 0.0];
+        let vessel_r = array![0.75, 3.25, 3.25, 0.75, 0.75];
+        let vessel_z = array![-1.75, -1.75, 1.75, 1.75, -1.75];
+
+        let error = quadratic_current_density_seed(&r, &z, &limiter_r, &limiter_z, &vessel_r, &vessel_z, 0.0625, 10_000.0, 2.0, 0.0, 0.5, 2.0).unwrap_err();
+
+        assert!(error.contains("contains a limiter point"));
+    }
+
+    #[test]
+    fn quadratic_current_seed_rejects_ellipse_outside_vessel() {
+        let r = Array1::linspace(1.0, 3.0, 9);
+        let z = Array1::linspace(-1.5, 1.5, 13);
+        let limiter_r = array![0.8, 3.2, 3.2, 0.8, 0.8];
+        let limiter_z = array![-1.7, -1.7, 1.7, 1.7, -1.7];
+        let vessel_r = array![1.75, 3.25, 3.25, 1.75, 1.75];
+        let vessel_z = array![-1.75, -1.75, 1.75, 1.75, -1.75];
+
+        let error = quadratic_current_density_seed(&r, &z, &limiter_r, &limiter_z, &vessel_r, &vessel_z, 0.0625, 10_000.0, 2.0, 0.0, 0.5, 2.0).unwrap_err();
+
+        assert!(error.contains("strictly inside the vessel"));
+    }
+
+    #[test]
+    fn quadratic_current_seed_rejects_nonfinite_normalisation() {
+        let r = Array1::linspace(1.0, 3.0, 9);
+        let z = Array1::linspace(-1.5, 1.5, 13);
+        let limiter_r = array![0.8, 3.2, 3.2, 0.8, 0.8];
+        let limiter_z = array![-1.7, -1.7, 1.7, 1.7, -1.7];
+        let vessel_r = array![0.75, 3.25, 3.25, 0.75, 0.75];
+        let vessel_z = array![-1.75, -1.75, 1.75, 1.75, -1.75];
+
+        let error = quadratic_current_density_seed(&r, &z, &limiter_r, &limiter_z, &vessel_r, &vessel_z, 0.0625, f64::MAX, 2.0, 0.0, 0.5, 2.0).unwrap_err();
+
+        assert!(error.contains("finite current-density normalisation"));
+    }
+
+    #[test]
+    fn quadratic_current_seed_rejects_nonpositive_shape_parameters() {
+        let r = Array1::linspace(1.0, 3.0, 9);
+        let z = Array1::linspace(-1.5, 1.5, 13);
+        let limiter_r = array![0.8, 3.2, 3.2, 0.8, 0.8];
+        let limiter_z = array![-1.7, -1.7, 1.7, 1.7, -1.7];
+        let vessel_r = array![0.75, 3.25, 3.25, 0.75, 0.75];
+        let vessel_z = array![-1.75, -1.75, 1.75, 1.75, -1.75];
+
+        let minor_radius_error =
+            quadratic_current_density_seed(&r, &z, &limiter_r, &limiter_z, &vessel_r, &vessel_z, 0.0625, 10_000.0, 2.0, 0.0, 0.0, 2.0).unwrap_err();
+        let kappa_error =
+            quadratic_current_density_seed(&r, &z, &limiter_r, &limiter_z, &vessel_r, &vessel_z, 0.0625, 10_000.0, 2.0, 0.0, 0.5, 0.0).unwrap_err();
+
+        assert!(minor_radius_error.contains("positive minor radius"));
+        assert!(kappa_error.contains("positive kappa"));
+    }
+}
 
 /// Greens tables reorganised for `calculate_psi_and_derivatives`.
 ///
@@ -487,8 +743,19 @@ impl<'a> GsSolution<'a> {
         // TODO: IDEA- change the normalisation so that it does represent current. But this won't work for the IVC eigenvalues
         self.passive_dof_values = Array1::zeros(n_passive_dof);
 
-        // Initialise plasma with point source current
-        self.initialise_plasma_with_point_source_current(plasma.initial_ip, plasma.initial_cur_r, plasma.initial_cur_z);
+        // Initialise plasma with a smooth quadratic current-density distribution.
+        if let Err(reason) = self.initialise_plasma_with_quadratic_current_density(
+            plasma.initial_ip,
+            plasma.initial_cur_r,
+            plasma.initial_cur_z,
+            plasma.initial_minor_radius,
+            plasma.initial_kappa,
+        ) {
+            self.set_to_failed_time_slice();
+            self.error_state = Some(Error::InvalidInitialCurrent(reason));
+            println!("{:?}", self.error_state.as_ref().unwrap());
+            return;
+        }
 
         // Some variables we want to track between iterations
         let mut dof_values_previous: Array1<f64> = Array1::zeros(n_p_prime_dof + n_ff_prime_dof + n_passive_dof + 1);
@@ -1535,7 +1802,14 @@ impl<'a> GsSolution<'a> {
         self.j_2d = j_2d.clone();
     }
 
-    pub fn initialise_plasma_with_point_source_current(&mut self, initial_ip: f64, initial_cur_r: f64, initial_cur_z: f64) {
+    pub fn initialise_plasma_with_quadratic_current_density(
+        &mut self,
+        initial_ip: f64,
+        initial_cur_r: f64,
+        initial_cur_z: f64,
+        initial_minor_radius: f64,
+        initial_kappa: f64,
+    ) -> Result<(), String> {
         // Unpack objects
         let plasma: &Plasma = self.plasma;
         let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
@@ -1554,58 +1828,33 @@ impl<'a> GsSolution<'a> {
             psi_2d_coils = psi_2d_coils + &greens_pf_grid.slice(s![.., .., i_pf]) * pf_currents[i_pf];
         }
 
-        // Initial plasma (single filament)
-        let mut j_2d: Array2<f64> = Array2::zeros((n_z, n_r));
-
-        // Find where to initialise the plasma
         let r: Array1<f64> = plasma.results.get("grid").get("r").unwrap_array1();
-        let r_target: f64 = initial_cur_r;
-        let mut i_r_centre: usize = 0;
-        let mut smallest_diff: f64 = f64::MAX;
-        for (i_r, &value) in r.iter().enumerate() {
-            let diff: f64 = (value - r_target).abs();
-            if diff < smallest_diff {
-                smallest_diff = diff;
-                i_r_centre = i_r;
-            }
-        }
         let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
-        let z_target: f64 = initial_cur_z;
-        let mut i_z_centre: usize = 0;
-        let mut smallest_diff: f64 = f64::MAX;
-        for (i_z, &value) in z.iter().enumerate() {
-            let diff: f64 = (value - z_target).abs();
-            if diff < smallest_diff {
-                smallest_diff = diff;
-                i_z_centre = i_z;
-            }
-        }
-
-        // Create a "hill" of current
-        // TODO: this can be improved --> like RT-GSFit initial guess
-        j_2d[(i_z_centre, i_r_centre)] = 3.0;
-
-        j_2d[(i_z_centre - 1, i_r_centre)] = 2.0;
-        j_2d[(i_z_centre + 1, i_r_centre)] = 2.0;
-        j_2d[(i_z_centre, i_r_centre - 1)] = 2.0;
-        j_2d[(i_z_centre, i_r_centre + 1)] = 2.0;
-
-        j_2d[(i_z_centre + 2, i_r_centre)] = 1.0;
-        j_2d[(i_z_centre - 2, i_r_centre)] = 1.0;
-        j_2d[(i_z_centre + 1, i_r_centre + 1)] = 1.0;
-        j_2d[(i_z_centre - 1, i_r_centre + 1)] = 1.0;
-        j_2d[(i_z_centre, i_r_centre + 2)] = 1.0;
-        j_2d[(i_z_centre + 1, i_r_centre - 1)] = 1.0;
-        j_2d[(i_z_centre - 1, i_r_centre - 1)] = 1.0;
-        j_2d[(i_z_centre, i_r_centre - 2)] = 1.0;
-
-        j_2d = j_2d * initial_ip / d_area / 19.0;
+        let limiter_r: Array1<f64> = plasma.results.get("limiter").get("limit_pts").get("r").unwrap_array1();
+        let limiter_z: Array1<f64> = plasma.results.get("limiter").get("limit_pts").get("z").unwrap_array1();
+        let vessel_r: Array1<f64> = plasma.results.get("vessel").get("r").unwrap_array1();
+        let vessel_z: Array1<f64> = plasma.results.get("vessel").get("z").unwrap_array1();
+        let j_2d = quadratic_current_density_seed(
+            &r,
+            &z,
+            &limiter_r,
+            &limiter_z,
+            &vessel_r,
+            &vessel_z,
+            d_area,
+            initial_ip,
+            initial_cur_r,
+            initial_cur_z,
+            initial_minor_radius,
+            initial_kappa,
+        )?;
 
         // Store in self
         self.j_2d = j_2d;
         self.psi_2d_coils = psi_2d_coils;
-        self.r_mag = r[i_r_centre]; // `r_mag` is not really correct; but as good as we can do for the initial guess
-        self.z_mag = 0.0;
+        self.r_mag = initial_cur_r;
+        self.z_mag = initial_cur_z;
+        Ok(())
     }
 
     /// Calculate the Grad-Shafranov "error"

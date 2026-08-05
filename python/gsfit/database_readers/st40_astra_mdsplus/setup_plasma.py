@@ -31,6 +31,8 @@ def setup_plasma(
     initial_ip = settings["GSFIT_code_settings.json"]["initial_guess"]["ip"]
     initial_cur_r = settings["GSFIT_code_settings.json"]["initial_guess"]["r_cur"]
     initial_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["z_cur"]
+    initial_minor_radius = settings["GSFIT_code_settings.json"]["initial_guess"]["minor_radius"]
+    initial_kappa = settings["GSFIT_code_settings.json"]["initial_guess"]["kappa"]
 
     # Set the source functions types
     p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.TensionedCubicBSpline
@@ -125,6 +127,8 @@ def setup_plasma(
         initial_ip,
         initial_cur_r,
         initial_cur_z,
+        initial_minor_radius,
+        initial_kappa,
     )
 
     return plasma
