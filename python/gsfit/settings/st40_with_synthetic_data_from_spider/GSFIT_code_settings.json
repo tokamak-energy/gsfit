@@ -79,7 +79,9 @@
   "initial_guess": {
     "ip": 425000.0,
     "r_cur": 0.45,
-    "z_cur": 0.0
+    "z_cur": 0.0,
+    "minor_radius": 0.275,
+    "kappa": 1.7
   },
   "n_psi_n": 100,
   "numerics": {

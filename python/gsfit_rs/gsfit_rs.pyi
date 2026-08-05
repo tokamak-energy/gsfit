@@ -431,6 +431,8 @@ class Plasma(DataTreeAccessor):
         initial_ip: float,
         initial_cur_r: float,
         initial_cur_z: float,
+        initial_minor_radius: float,
+        initial_kappa: float,
     ) -> Plasma:
         """
         :param n_r: Number of radial poitns [dimensionless]
@@ -447,8 +449,10 @@ class Plasma(DataTreeAccessor):
         :param p_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
         :param ff_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
         :param initial_ip: Initial plasma current [ampere]
-        :param initial_r: Initial major radius of the magnetic axis [metre]
-        :param initial_z: Initial vertical position of the magnetic axis [metre]
+        :param initial_cur_r: Radial centre of the initial current distribution [metre]
+        :param initial_cur_z: Vertical centre of the initial current distribution [metre]
+        :param initial_minor_radius: Radial semi-axis of the initial current distribution [metre]
+        :param initial_kappa: Elongation of the initial current distribution [dimensionless]
         """
         ...
     def greens_with_coils(

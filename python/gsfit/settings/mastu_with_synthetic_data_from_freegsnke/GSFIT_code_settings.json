@@ -100,6 +100,8 @@
     "initial_guess": {
         "ip": 500.0e3,
         "r_cur": 0.8,
-        "z_cur": 0.0
+        "z_cur": 0.0,
+        "minor_radius": 0.5,
+        "kappa": 2.0
     }
 }

@@ -189,6 +189,19 @@ To improve reliability and traceability, the number of arguments needed to initi
 The `settings_path="default"` argument tells GSFit to use the settings (JSON files) from this directory [`python/gsfit/settings/default/`](python/gsfit/settings/default/).
 By storing all the settings needed to run GSFit in JSON files allows changes to be tracked through Git.
 
+### Initial plasma-current guess
+
+The initial toroidal current density is a smooth quadratic distribution centred at `r_cur`, `z_cur`:
+
+```text
+j_phi(R, Z) = C * max(1 - ((R - r_cur) / minor_radius)^2
+                          - ((Z - z_cur) / (minor_radius * kappa))^2, 0)
+```
+
+`C` is calculated on the discrete plasma grid so that the integrated current equals the configured initial `ip`. The edge of this current-density support is an initial numerical guess, not an LCFS or an inverse-problem constraint. The configured ellipse must lie inside the plasma grid and vessel and must not contain a limiter point.
+
+Custom settings directories must add `minor_radius` in metres and dimensionless `kappa` to the `initial_guess` section of `GSFIT_code_settings.json`. Direct callers of `gsfit_rs.Plasma(...)` must likewise pass `initial_minor_radius` and `initial_kappa`; these are required constructor arguments.
+
 ## 2.2 Adding a new experimental device or coupling to a new forward Grad-Shafranov code
 The information needed to run GSFit comes from two sources:
 

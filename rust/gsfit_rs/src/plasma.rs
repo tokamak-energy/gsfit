@@ -34,6 +34,8 @@ pub struct Plasma {
     pub initial_ip: f64,
     pub initial_cur_r: f64,
     pub initial_cur_z: f64,
+    pub initial_minor_radius: f64,
+    pub initial_kappa: f64,
 }
 
 // Python accessible methods
@@ -55,6 +57,11 @@ impl Plasma {
     /// * `vessel_z` - vessel vertical points (1d array), [metre]
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
     /// * `ff_prime_source_function` - ff_prime source function (a Rust implementation, initialised in Python)
+    /// * `initial_ip` - initial total plasma current, [ampere]
+    /// * `initial_cur_r` - radial centre of the initial current distribution, [metre]
+    /// * `initial_cur_z` - vertical centre of the initial current distribution, [metre]
+    /// * `initial_minor_radius` - radial semi-axis of the initial current distribution, [metre]
+    /// * `initial_kappa` - elongation of the initial current distribution, [dimensionless]
     ///
     /// # Returns
     /// * `self` - a new instance of the Plasma struct
@@ -78,6 +85,8 @@ impl Plasma {
         initial_ip: f64,
         initial_cur_r: f64,
         initial_cur_z: f64,
+        initial_minor_radius: f64,
+        initial_kappa: f64,
     ) -> Self {
         // Change Python types into Rust types
         let psi_n_ndarray: Array1<f64> = psi_n.to_owned_array();
@@ -241,6 +250,8 @@ impl Plasma {
             initial_ip,
             initial_cur_r,
             initial_cur_z,
+            initial_minor_radius,
+            initial_kappa,
         }
     }
 

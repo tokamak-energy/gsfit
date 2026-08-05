@@ -403,6 +403,11 @@ class DatabaseReaderProtocol(Protocol):
             vessel_z=...,                                       # read from `GSFIT_code_settings.json` file
             p_prime_source_function=p_prime_source_function,    # built above
             ff_prime_source_function=ff_prime_source_function,  # built above
+            initial_ip=...,                                     # read from `GSFIT_code_settings.json` file
+            initial_cur_r=...,                                  # read from `GSFIT_code_settings.json` file
+            initial_cur_z=...,                                  # read from `GSFIT_code_settings.json` file
+            initial_minor_radius=...,                            # read from `GSFIT_code_settings.json` file
+            initial_kappa=...,                                  # read from `GSFIT_code_settings.json` file
         )
 
         return plasma
