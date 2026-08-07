@@ -73,11 +73,10 @@ def greens_with_boundary_points(plasma: gsfit_rs.Plasma) -> npt.NDArray[np.float
         d_z_vec,  # Needed for self-inductance
     )
 
-    # Check diagonal values for self-inductance are g_ltrb[i, i] = self_inductance_rectangle_cross_section(r_ltrb[i], d_r, d_z)
-    for i in range(n_ltrb):
-        expected_self_inductance = self_inductance_rectangle_cross_section(r_ltrb[i], d_r_vec[i], d_z_vec[i])
-        if not np.isclose(g_ltrb[i, i], expected_self_inductance):
-            raise ValueError(f"Diagonal value at index {i} does not match expected self-inductance: {g_ltrb[i, i]} != {expected_self_inductance}")
+    # The diagonal self-inductance values returned by greens_py are evaluated at the centre of the
+    # rectangular cross-section. Here we instead need the average over the cross-section, since g_ltrb
+    # is used to compute a line integral for which the cross-section average is more accurate. We
+    # therefore overwrite the diagonals below rather than validating them against greens_py.
 
     # Need to overwrite the diagonals of the matrix with the self-inductance for a surface current on
     # the computational boundary. Excluding the corners, which are not used by RTGSFIT
