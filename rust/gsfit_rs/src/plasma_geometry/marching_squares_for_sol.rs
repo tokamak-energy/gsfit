@@ -5,7 +5,7 @@ use geo::line_intersection::{LineIntersection, line_intersection};
 use geo::{Contains, Coord, Line, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Given a cell with lower-left corner at (cell_i_r, cell_i_z), return its 4 edge keys.
 /// Edges are: bottom, top, left, right.
@@ -419,8 +419,19 @@ pub fn sort_boundary_points_version_4(
     let mut current_r: f64 = start_r;
     let mut current_z: f64 = start_z;
 
+    // Cycle guard: a valid leg visits each cell edge at most once. Without this a degenerate
+    // equilibrium can trace a closed loop of cells forever, growing the contour without bound.
+    let mut visited_edges: HashSet<(usize, usize, usize, usize)> = HashSet::new();
+    visited_edges.insert(start_edge);
+
+    // The absolute upper limit on the number of steps is the total number of distinct cell edges in an
+    // (n_r x n_z) grid. Horizontal edges `= (n_r - 1) * n_z`; vertical edges `= n_r * (n_z - 1)`;
+    // `Total = 2 * n_r * n_z - n_r - n_z`.
+    // It is unlikely that we will ever reach this limit, but we should not allow unbounded loops.
+    let n_step_max: usize = 2 * n_r * n_z - n_r - n_z;
+
     // Trace the contour by following cell-edge adjacency
-    'cell_adjacency_loop: loop {
+    'cell_adjacency_loop: for _i_step in 0..n_step_max {
         // Find the cells that share the current edge
         let adjacent_cells: Vec<(usize, usize)> = cells_sharing_edge(current_edge, n_r, n_z);
 
@@ -486,6 +497,12 @@ pub fn sort_boundary_points_version_4(
             }
             candidates[best_idx]
         };
+
+        // Stop if the trace revisits an edge (closed cycle)
+        if visited_edges.contains(&best_edge) {
+            break 'cell_adjacency_loop;
+        }
+        visited_edges.insert(best_edge);
 
         let next_r: f64 = best_r;
         let next_z: f64 = best_z;
