@@ -20,6 +20,15 @@
             [ 0.00000e+00,  0.00000e+00,  0.00000e+00,  0.00000e+00,  0.00000e+00,  0.00000e+00,  0.00000e+00,  0.00000e+00,  0.00000e+00,  0.00000e+00,  1.00000e+10]
         ],
         "interior_knots": [0.20, 0.40, 0.60, 0.80, 0.90, 0.95, 0.98],
-        "interval_tensions": [1e+00, 1e+00, 1e+00, 1e+00, 1e+00, 1e+00, 1e+00, 1e+00]
+        "interval_tensions": [1e+00, 1e+00, 1e+00, 1e+00, 1e+00, 1e+00, 1e+00, 1e+00],
+        "make_cubic_spline_regularisations": true,
+        "regularisation_builder": {
+            "regularisation_scale": 1e-6,
+            "regularisation_mode": "second_derivative_zero",
+            "left_boundary_condition": "free",
+            "left_boundary_weight": 1e10,
+            "right_boundary_condition": "free",
+            "right_boundary_weight": 1e10
+        }
     }
 }

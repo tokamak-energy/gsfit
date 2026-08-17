@@ -15,6 +15,15 @@
             [0.0, 0.0, 0.0, 0.0, 0.0, 1e+10]
         ],
         "interior_knots": [0.25, 0.5, 0.75],
-        "interval_tensions": [1.0, 1.0, 1.0, 1.0]
+        "interval_tensions": [1.0, 1.0, 1.0, 1.0],
+        "make_cubic_spline_regularisations": true,
+        "regularisation_builder": {
+            "regularisation_scale": 1e-6,
+            "regularisation_mode": "second_derivative_zero",
+            "left_boundary_condition": "free",
+            "left_boundary_weight": 1e10,
+            "right_boundary_condition": "free",
+            "right_boundary_weight": 1e10
+        }
     }
 }

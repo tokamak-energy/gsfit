@@ -1,18 +1,20 @@
 {
-    "BDA_PRESSURE_001": {
-        "fit_settings": {
-            "expected_value": 80.0e3,
-            "weight": 10.0,
-            "include": false,
-            "comment": "inbord measurement"
-        }
+    "include": false,
+    "sensor_name_prefix": "PRESSURE",
+    "fit_settings": {
+        "expected_value": 2000.0,
+        "weight": 10.0,
+        "comment": "Thomson scattering electron pressure, scaled to total pressure"
     },
-    "BDA_PRESSURE_002": {
-        "fit_settings": {
-            "expected_value": 80.0e3,
-            "weight": 10.0,
-            "include": false,
-            "comment": ""
-        }
+    "thomson_scattering": {
+        "pressure_multiplier": 2.0,
+        "minimum_pressure": 500.0,
+        "geometry_r_path": "\\TS::TOP.BEST:R",
+        "geometry_z_path": "\\TS::TOP.BEST:Z",
+        "electron_pressure_path": "\\TS::TOP.BEST.PROFILES:PE"
+    },
+    "good_time_slices": {
+        "time_path": "\\PPTS::TOP.BEST:TIME",
+        "bad_ma_path": "\\PPTS::TOP.BEST.GLOBAL:BAD_MA"
     }
 }

@@ -141,7 +141,10 @@
             "time_end": 250.0e-3,
             "n_time": 20
         },
-        "user_defined": [0.20450000000000018]
+        "user_defined": [0.20450000000000018],
+        "good_pressure_sensors": {
+            "comment": "Reconstruct only the time-slices where the pressure sensors are good (BAD_MA is false in the PPTS tree). The MDSplus source is set in sensor_weights_pressure.json[\"good_time_slices\"]."
+        }
     },
     "initial_guess": {
         "ip": 425.0e3,
