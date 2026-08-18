@@ -11,7 +11,7 @@ from ..st40_mdsplus_with_digital_filter.setup_pressure_sensors import get_good_p
 from ..st40_mdsplus_with_digital_filter.setup_pressure_sensors import setup_pressure_sensors as _setup_pressure_sensors
 
 if TYPE_CHECKING:
-    from . import DatabaseReader
+    from ..st40_mdsplus_with_digital_filter import DatabaseReader
 
 
 def setup_pressure_sensors(
