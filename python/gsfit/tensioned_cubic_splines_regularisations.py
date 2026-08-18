@@ -53,8 +53,8 @@ def make_tensioned_cubic_b_spline_regularisations(
     # which are needed to evaluate the analytic derivative formulae below.
     regularisations_dummy: npt.NDArray[np.float64] = np.zeros((1, n_dof), dtype=np.float64)
     source_function_dummy = gsfit_rs.TensionedCubicBSpline(regularisations_dummy, interior_knots, interval_tensions)
-    sigma1_array: npt.NDArray[np.float64] = source_function_dummy.get_array1("sigma1_array")
-    sigma2_array: npt.NDArray[np.float64] = source_function_dummy.get_array1("sigma2_array")
+    sigma1_array: npt.NDArray[np.float64] = source_function_dummy.get_array1(["sigma1_array"])
+    sigma2_array: npt.NDArray[np.float64] = source_function_dummy.get_array1(["sigma2_array"])
 
     # All knots, including the boundary knots at psi_n = 0 and psi_n = 1
     knots: npt.NDArray[np.float64] = np.concatenate(([0.0], interior_knots, [1.0]))
