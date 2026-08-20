@@ -27,10 +27,12 @@ gsfit_controller = Gsfit(
     run_description="Pressure constrained GSFit using the simplified settings-driven workflow.",
     write_to_mds=True,
     pulseNo_write=pulse_num_write,
+    analysis_name="GSFIT_TS",
 )
 
 # 1. Only reconstruct the time-slices where the pressure (Thomson scattering) sensors are "good".
-#    This reads the `BAD_MA` flag from the PPTS tree (see sensor_weights_pressure.json["good_time_slices"]).
+#    This reads the `BAD_MA` flag from the PPTS tree (the PPTS run_name is set in the active method's
+#    "workflow" section in GSFIT_code_settings.json).
 gsfit_controller.settings["GSFIT_code_settings.json"]["timeslices"]["method"] = "good_pressure_sensors"
 
 # 2. Turn on the pressure sensors (Thomson scattering).
