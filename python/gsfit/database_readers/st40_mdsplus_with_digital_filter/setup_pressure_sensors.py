@@ -10,6 +10,26 @@ if TYPE_CHECKING:
     from . import DatabaseReader
 
 
+def _get_workflow_settings(
+    settings: dict[str, typing.Any],
+) -> dict[str, typing.Any]:
+    """
+    Return the `workflow` section for the active `database_reader` method.
+
+    The pressure sensor set-up is shared between the `st40_mdsplus` and `st40_mdsplus_with_digital_filter`
+    readers, so the method-specific `workflow` section (which holds the PPTS and TS `run_name`s) is looked
+    up from the active `method` rather than being hard-coded.
+
+    :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    """
+
+    database_reader_settings: dict[str, typing.Any] = settings["GSFIT_code_settings.json"]["database_reader"]
+    method: str = database_reader_settings["method"]
+    workflow: dict[str, typing.Any] = database_reader_settings[method]["workflow"]
+
+    return workflow
+
+
 def _read_good_time_slices(
     pulseNo: int,
     settings: dict[str, typing.Any],
@@ -24,17 +44,17 @@ def _read_good_time_slices(
         time vector where the magnetics are considered "good" (i.e. `BAD_MA` is `False`), and `good_times`
         are the corresponding times [second].
 
+    The PPTS `run_name` is read from the active method's `workflow` section in `GSFIT_code_settings.json`.
+
     **This method is specific to ST40's experimental MDSplus database.**
     """
 
-    good_time_slices_settings = settings["sensor_weights_pressure.json"]["good_time_slices"]
-    # The tree name is the part between "\\" and "::" in the path, e.g. "\\PPTS::TOP..." -> "PPTS"
-    ppts_tree = good_time_slices_settings["time_path"].split("::")[0].lstrip("\\")
+    ppts_run_name: str = _get_workflow_settings(settings)["ppts"]["run_name"]
 
     with mdsthin.Connection("smaug") as conn:
-        conn.openTree(ppts_tree, pulseNo)
-        time_vector = np.asarray(conn.get(good_time_slices_settings["time_path"]).data(), dtype=np.float64)
-        bad_ma = np.asarray(conn.get(good_time_slices_settings["bad_ma_path"]).data(), dtype=bool)
+        conn.openTree("PPTS", pulseNo)
+        time_vector = np.asarray(conn.get(f"\\PPTS::TOP.{ppts_run_name}:TIME").data(), dtype=np.float64)
+        bad_ma = np.asarray(conn.get(f"\\PPTS::TOP.{ppts_run_name}.GLOBAL:BAD_MA").data(), dtype=bool)
 
     good_indices = np.where(~bad_ma)[0].astype(np.int64)
     good_times = time_vector[good_indices]
@@ -81,6 +101,9 @@ def setup_pressure_sensors(
     `pressure_multiplier` (typically 2.0, to convert electron pressure into total pressure).
     Measurements below `minimum_pressure` are set to NaN so that GSFit ignores them.
 
+    The PPTS and TS `run_name`s are read from the active method's `workflow` section in
+    `GSFIT_code_settings.json` (the MDSplus node paths are built from these run names).
+
     The sensors are added on the "good" time-base (where the `BAD_MA` flag in the PPTS tree is `False`).
     To reconstruct only these time-slices, set `timeslices.method == "good_pressure_sensors"` in
     `GSFIT_code_settings.json`.
@@ -107,15 +130,15 @@ def setup_pressure_sensors(
     pressure_multiplier = thomson_scattering_settings["pressure_multiplier"]
     minimum_pressure = thomson_scattering_settings["minimum_pressure"]
 
-    # The tree name is the part between "\\" and "::" in the path, e.g. "\\TS::TOP..." -> "TS"
-    ts_tree = thomson_scattering_settings["geometry_r_path"].split("::")[0].lstrip("\\")
+    # The TS `run_name` is read from the active method's workflow (e.g. "BEST")
+    ts_run_name: str = _get_workflow_settings(settings)["ts"]["run_name"]
 
     with mdsthin.Connection("smaug") as conn:
-        conn.openTree(ts_tree, pulseNo)
-        sensors_geometry_r = np.asarray(conn.get(thomson_scattering_settings["geometry_r_path"]).data(), dtype=np.float64)
-        sensors_geometry_z = np.asarray(conn.get(thomson_scattering_settings["geometry_z_path"]).data(), dtype=np.float64)
+        conn.openTree("TS", pulseNo)
+        sensors_geometry_r = np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}:R").data(), dtype=np.float64)
+        sensors_geometry_z = np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}:Z").data(), dtype=np.float64)
         # electron_pressure has shape = [n_time, n_sensors]
-        electron_pressure = np.asarray(conn.get(thomson_scattering_settings["electron_pressure_path"]).data(), dtype=np.float64)
+        electron_pressure = np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}.PROFILES:PE").data(), dtype=np.float64)
 
     # Fit settings, shared by all Thomson scattering channels
     sensor_name_prefix = pressure_settings["sensor_name_prefix"]

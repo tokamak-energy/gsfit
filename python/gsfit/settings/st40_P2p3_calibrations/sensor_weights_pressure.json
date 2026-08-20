@@ -8,13 +8,6 @@
     },
     "thomson_scattering": {
         "pressure_multiplier": 2.0,
-        "minimum_pressure": 500.0,
-        "geometry_r_path": "\\TS::TOP.BEST:R",
-        "geometry_z_path": "\\TS::TOP.BEST:Z",
-        "electron_pressure_path": "\\TS::TOP.BEST.PROFILES:PE"
-    },
-    "good_time_slices": {
-        "time_path": "\\PPTS::TOP.BEST:TIME",
-        "bad_ma_path": "\\PPTS::TOP.BEST.GLOBAL:BAD_MA"
+        "minimum_pressure": 500.0
     }
 }
