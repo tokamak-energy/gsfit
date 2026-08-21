@@ -4,6 +4,7 @@ get_version("gsfit")  # needs to be run before importing version_storage
 from diagnostic_and_simulation_base import version_storage
 
 from .gsfit import Gsfit
+from .gsfit_ts import Gsfit_Ts, Gsfit_Ts_1, Gsfit_Ts_2, Gsfit_Ts_3, Gsfit_Ts_4
 from .tensioned_cubic_splines_regularisations import make_tensioned_cubic_b_spline_regularisations
 
 __datetime__ = version_storage.__datetime__
@@ -24,5 +25,10 @@ __all__ = [
     "__user__",
     "__version__",
     "Gsfit",
+    "Gsfit_Ts",
+    "Gsfit_Ts_1",
+    "Gsfit_Ts_2",
+    "Gsfit_Ts_3",
+    "Gsfit_Ts_4",
     "make_tensioned_cubic_b_spline_regularisations",
 ]
