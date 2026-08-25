@@ -174,7 +174,17 @@ pub fn flood_fill_mask(
     queue.push_back((i_z_nearest_mag, i_r_nearest_mag));
     mask_2d[(i_z_nearest_mag, i_r_nearest_mag)] = 1.0;
 
-    while let Some((i_z, i_r)) = queue.pop_front() {
+    // Absolute upper bound: each grid cell is marked before being enqueued and never re-enqueued,
+    // so the queue can be popped at most `n_r * n_z` times.
+    // It is unlikely that we will ever reach this limit, but we should not allow unbounded loops.
+    let n_iteration_max: usize = n_r * n_z;
+
+    'flood_fill_loop: for _i_iteration in 0..n_iteration_max {
+        // Stop once the queue is exhausted (the normal, expected exit)
+        let Some((i_z, i_r)) = queue.pop_front() else {
+            break 'flood_fill_loop;
+        };
+
         'loop_over_directions: for &(dz, dr) in &directions {
             let new_i_z: isize = i_z as isize + dz;
             let new_i_r: isize = i_r as isize + dr;

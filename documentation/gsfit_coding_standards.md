@@ -214,6 +214,12 @@ An example is the Hessian function, which correctly takes:
 let (hessian_determinant, hessian_trace): (f64, f64) = hessian(d2_psi_d_r2, d2_psi_d_r_d_z, d2_psi_d_z2);
 ```
 
+## Safety with loops
+I do not want any unbounded loops, we should always set a maximum limit.
+This means we typically will not use `while` loops at all.
+
+We should name the maximum limit `n_variable_max`, where the "`_max`" hints that we will most likely exit the loop before reaching the limit.
+
 # Python
 When using strings I prefer a double backslash `\\` instead of raw, e.g.
 ```python
