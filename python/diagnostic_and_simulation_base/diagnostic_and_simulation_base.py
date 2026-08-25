@@ -78,6 +78,9 @@ class DiagnosticAndSimulationBase:
             handler_to_list = util_logging.EmitLogToListHandler(self.log_records)
             self.logger.addHandler(handler_to_list)
 
+        # `log_records` is a class-level list we "clear" it when a new instance is created
+        self.log_records.clear()
+
         # Store inputs
         self.pulseNo = pulseNo
         self.code_name = code_name

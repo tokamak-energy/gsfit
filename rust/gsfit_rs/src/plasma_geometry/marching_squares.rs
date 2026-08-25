@@ -363,8 +363,11 @@ fn sort_boundary_points(sorted_r: Vec<f64>, sorted_z: Vec<f64>, unsorted_boundar
     let mut current_r: f64 = sorted_r.last().copied().unwrap();
     let mut current_z: f64 = sorted_z.last().copied().unwrap();
 
+    // Each iteration removes exactly one point, so the loop runs for the initial number of points.
+    let n_point: usize = unsorted_boundary_r.len();
+
     // Iteratively find nearest unvisited point
-    while !unsorted_boundary_r.is_empty() {
+    for _i_point in 0..n_point {
         let mut min_dist: f64 = f64::INFINITY;
         let mut nearest_idx: usize = 0;
 
@@ -474,7 +477,6 @@ pub fn sort_boundary_points_version_2(
     let mut z_sorted: Vec<f64> = vec![xpt_z, start.1];
 
     let mut used = vec![false; interior.len()];
-    let mut n_used = 0usize;
     let mut cur = start;
 
     // Precompute sides of interior points
@@ -485,7 +487,9 @@ pub fn sort_boundary_points_version_2(
     const SIDE_LOCK_STEPS: usize = 3;
     let mut locked_steps_done: usize = 0;
 
-    while n_used < interior.len() {
+    // Each iteration marks one interior point used (or breaks), so the loop runs at most `n_point_max` times.
+    let n_point_max: usize = interior.len();
+    for _i_point in 0..n_point_max {
         // Candidates by distance
         let mut cand: Vec<(usize, f64)> = interior
             .iter()
@@ -547,7 +551,6 @@ pub fn sort_boundary_points_version_2(
             r_sorted.push(p.0);
             z_sorted.push(p.1);
             used[i] = true;
-            n_used += 1;
             cur = p;
             if locked_steps_done < SIDE_LOCK_STEPS {
                 locked_steps_done += 1;
