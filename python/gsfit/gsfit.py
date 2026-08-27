@@ -135,7 +135,7 @@ class Gsfit(DiagnosticAndSimulationBase):
             if self.settings["GSFIT_code_settings.json"]["database_writer"]["method"] == "tokamak_energy_mdsplus_new":
                 from .database_writers.tokamak_energy_mdsplus_new.create_mdsplus_links import create_mdsplus_links
 
-                create_mdsplus_links(pulseNo_write=self.pulseNo_write, run_name=self.run_name)
+                create_mdsplus_links(pulseNo_write=self.pulseNo_write, run_name=self.run_name, tree_name=self.analysis_name)
 
     def setup_timeslices(self) -> None:
         """
