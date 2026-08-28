@@ -103,5 +103,6 @@
         "z_cur": 0.0,
         "minor_radius": 0.5,
         "kappa": 2.0
-    }
+    },
+    "vacuum_toroidal_field_reference_radius": 0.85
 }

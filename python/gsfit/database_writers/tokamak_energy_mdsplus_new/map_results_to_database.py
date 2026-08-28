@@ -56,12 +56,12 @@ def map_results_to_database(
     results["CONVERGENCE"]["ITERATIONS_N"] = np.array(plasma.get_vec_usize(["global", "n_iter"])).astype(np.int32)
 
     # Global
-    results["GLOBAL"]["CURRENT_CENT"]["R"] = plasma.get_array1(["global", "r_cur"])
+    results["GLOBAL"]["CURRENT_CENT"]["R"] = plasma.get_array1(["global", "current_centre", "r"])
     # results["GLOBAL"]["CURRENT_CENT"]["VELOCITY_Z"] = plasma.get_array1(["global", "current_cent", "velocity_z"])
-    results["GLOBAL"]["CURRENT_CENT"]["Z"] = plasma.get_array1(["global", "z_cur"])
+    results["GLOBAL"]["CURRENT_CENT"]["Z"] = plasma.get_array1(["global", "current_centre", "z"])
     # results["GLOBAL"]["MAG_AXIS"]["B_FIELD_PHI"] = plasma.get_array1(["global", "bt_at_r_mag"])
-    results["GLOBAL"]["MAG_AXIS"]["R"] = plasma.get_array1(["global", "r_mag"])
-    results["GLOBAL"]["MAG_AXIS"]["Z"] = plasma.get_array1(["global", "z_mag"])
+    results["GLOBAL"]["MAG_AXIS"]["R"] = plasma.get_array1(["global", "magnetic_axis", "r"])
+    results["GLOBAL"]["MAG_AXIS"]["Z"] = plasma.get_array1(["global", "magnetic_axis", "z"])
     results["GLOBAL"]["AREA"] = plasma.get_array1(["global", "area"])
     results["GLOBAL"]["BETA_N"] = plasma.get_array1(["global", "beta_n"])
     results["GLOBAL"]["BETA_P_1"] = plasma.get_array1(["global", "beta_p_1"])

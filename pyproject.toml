@@ -57,6 +57,11 @@ with_freegs_and_freegsnke = [
     "freegsnke",
     "freegs4e"
 ]
+with_imas = [
+    "imas-core",
+    "imas-data-dictionaries",
+    "imas-python"
+]
 
 [project.urls]
 Repository = "https://github.com/tokamak-energy/gsfit"
@@ -93,6 +98,7 @@ module = [
     "freegs.*",
     "freegsnke.*",
     "freegs4e.*",
+    "imas.*",
     "st40_database.*",
     "standard_utility.*",
     "mdsthin.*",

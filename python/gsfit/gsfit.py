@@ -111,11 +111,11 @@ class Gsfit(DiagnosticAndSimulationBase):
         else:
             raise ValueError(f"Unknown type_of_run={self.settings['GSFIT_code_settings.json']['type_of_run']}")
 
-        self.write_results_to_mdsplus()
+        self.write_results_to_database()
 
-    def write_results_to_mdsplus(self) -> None:
+    def write_results_to_database(self) -> None:
         """
-        Write the results to MDSplus:
+        Write the results to the database:
         1. Results are collected from the Rust objects and stored in `self.results`,which is similar
            to a nested dictionary, and has a 1:1 mapping to the MDSplus database structure.
         2. The results are then written to MDSplus.
@@ -125,12 +125,16 @@ class Gsfit(DiagnosticAndSimulationBase):
         # `self.results` is a 1:1 mapping to MDSplus
         database_writer_method = self.settings["GSFIT_code_settings.json"]["database_writer"]["method"]
         database_writer = get_database_writer(database_writer_method)
-        database_writer.map_results_to_database(self)
+        if database_writer_method != "imas":
+            database_writer.map_results_to_database(self)
+            self.logger.info("IMAS database written; to access use `self.equilibrium_ids`")
+        else:
+            self.equilibrium_ids = database_writer.map_results_to_database(self)
 
         # Do the writing to MDSplus
         self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
         if self.write_to_mds:
-            self.logger.info("Writing to MDSplus")
+            self.logger.info("Writing to database")
             self._write_to_mds()
             if self.settings["GSFIT_code_settings.json"]["database_writer"]["method"] == "tokamak_energy_mdsplus_new":
                 from .database_writers.tokamak_energy_mdsplus_new.create_mdsplus_links import create_mdsplus_links

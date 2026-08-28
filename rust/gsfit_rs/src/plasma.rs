@@ -1042,6 +1042,7 @@ impl Plasma {
         let mut bz_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         let mut d_bz_d_z_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         let mut mask_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
+        let mut theta_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         // Fit values
         let n_p_prime: usize = plasma.p_prime_source_function.source_function_n_dof();
         let n_ff_prime: usize = plasma.ff_prime_source_function.source_function_n_dof();
@@ -1056,14 +1057,16 @@ impl Plasma {
         // Boundary poloidal flux
         let mut psi_b: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         // Radial current centroid
-        let mut r_cur: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+        let mut current_centre_r: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         // Vertical current centroid
-        let mut z_cur: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+        let mut current_centre_z: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         // Plasma current
         let mut ip: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         // Vertical displacement
         let mut delta_z: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         // Minor radius
+        let mut length_pol: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+        let mut surface: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         let mut r_minor: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         // Geometric radius
         let mut r_geo: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -1127,6 +1130,7 @@ impl Plasma {
         let mut q_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut rho_tor_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut rho_pol_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
+        let mut magnetic_axis_b_field_phi: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
 
         let mut hfs_legs_r: Vec<Array1<f64>> = Vec::with_capacity(n_time);
         let mut hfs_legs_z: Vec<Array1<f64>> = Vec::with_capacity(n_time);
@@ -1185,8 +1189,8 @@ impl Plasma {
             psi_b[i_time] = gs_solutions[i_time].psi_b;
             ip[i_time] = gs_solutions[i_time].ip;
             delta_z[i_time] = gs_solutions[i_time].delta_z;
-            r_cur[i_time] = d_area * (&r_mesh * &gs_solutions[i_time].j_2d).sum() / ip[i_time];
-            z_cur[i_time] = d_area * (&z_mesh * &gs_solutions[i_time].j_2d).sum() / ip[i_time];
+            current_centre_r[i_time] = d_area * (&r_mesh * &gs_solutions[i_time].j_2d).sum() / ip[i_time];
+            current_centre_z[i_time] = d_area * (&z_mesh * &gs_solutions[i_time].j_2d).sum() / ip[i_time];
 
             // diverted
             xpt_diverted.push(gs_solutions[i_time].xpt_diverted);
@@ -1204,6 +1208,10 @@ impl Plasma {
             // Magnetic axis
             r_mag[i_time] = gs_solutions[i_time].r_mag;
             z_mag[i_time] = gs_solutions[i_time].z_mag;
+
+            // Poloidal angle on the 2D grid, centred on the magnetic axis
+            let theta_2d_this_time_slice: Array2<f64> = epp_theta_2d(&r, &z, r_mag[i_time], z_mag[i_time]);
+            theta_2d.slice_mut(s![i_time, .., ..]).assign(&theta_2d_this_time_slice);
 
             // Pressure on 2D grid
             let p_2d_this_time_slice: Array2<f64> = epp_p_2d(&gs_solutions[i_time], &r, &z);
@@ -1246,8 +1254,9 @@ impl Plasma {
             );
             midplane_p_profile.slice_mut(s![i_time, ..]).assign(&midplane_p_profile_this_time);
 
-            let (bt_2d_this_time, _bt_vac_this_time): (Array2<f64>, Array2<f64>) = epp_bt_2d(&gs_solutions[i_time], &r, &z, i_rod[i_time]);
+            let (bt_2d_this_time, _bt_vac_this_time, magnetic_axis_b_field_phi_this_time): (Array2<f64>, Array2<f64>, f64) = epp_bt_2d(&gs_solutions[i_time], &r, &z, i_rod[i_time]);
             bt_2d.slice_mut(s![i_time, .., ..]).assign(&bt_2d_this_time);
+            magnetic_axis_b_field_phi[i_time] = magnetic_axis_b_field_phi_this_time;
 
             // Find plasma boundary
             let psi_2d_local: Array2<f64> = psi_2d.slice(s![i_time, .., ..]).to_owned();
@@ -1348,6 +1357,9 @@ impl Plasma {
             q0[i_time] = q_profile_this_time[0];
 
             rho_pol_profile.slice_mut(s![i_time, ..]).assign(&psi_n.clone().mapv(|x| x.sqrt()));
+
+            // Poloidal circumference of the boundary, and the area of the toroidal surface it sweeps out
+            (length_pol[i_time], surface[i_time]) = epp_boundary_length_pol_and_surface(&boundary_contour_local.r, &boundary_contour_local.z);
 
             // Minor radius
             r_minor[i_time] = (boundary_contour_local.r.max().unwrap().to_owned() - boundary_contour_local.r.min().unwrap().to_owned()) / 2.0;
@@ -1467,8 +1479,12 @@ impl Plasma {
 
         let area: Array1<f64> = area_profile.slice(s![.., -1]).to_owned(); // last column of area_profile
 
+        
+
         // Do the assignments
         // Global
+        self.results.get_or_insert("global").get_or_insert("current_centre").insert("r", current_centre_r);
+        self.results.get_or_insert("global").get_or_insert("current_centre").insert("z", current_centre_z);
         self.results.get_or_insert("global").insert("area", area);
         self.results.get_or_insert("global").insert("beta_n", beta_n);
         self.results.get_or_insert("global").insert("beta_p_1", beta_p_1);
@@ -1481,16 +1497,17 @@ impl Plasma {
         self.results.get_or_insert("global").insert("ip", ip);
         self.results.get_or_insert("global").insert("psi_a", psi_a);
         self.results.get_or_insert("global").insert("delta_z", delta_z);
+        self.results.get_or_insert("global").insert("length_pol", length_pol);
+        self.results.get_or_insert("global").insert("surface", surface);
         self.results.get_or_insert("global").insert("li_1", li_1);
         self.results.get_or_insert("global").insert("li_2", li_2);
         self.results.get_or_insert("global").insert("li_3", li_3);
         self.results.get_or_insert("global").insert("p", p_1d);
         self.results.get_or_insert("global").insert("q_axis", q0);
         self.results.get_or_insert("global").insert("q_95", q95);
-        self.results.get_or_insert("global").insert("r_cur", r_cur);
-        self.results.get_or_insert("global").insert("z_cur", z_cur);
-        self.results.get_or_insert("global").insert("r_mag", r_mag);
-        self.results.get_or_insert("global").insert("z_mag", z_mag);
+        self.results.get_or_insert("global").get_or_insert("magnetic_axis").insert("r", r_mag);
+        self.results.get_or_insert("global").get_or_insert("magnetic_axis").insert("z", z_mag);
+        self.results.get_or_insert("global").get_or_insert("magnetic_axis").insert("b_field_phi", magnetic_axis_b_field_phi);
         self.results.get_or_insert("global").insert("phi_dia", flux_dia);
         self.results.get_or_insert("global").insert("n_iter", n_iter);
         self.results.get_or_insert("global").insert("volume", plasma_volume);
@@ -1516,6 +1533,9 @@ impl Plasma {
         self.results.get_or_insert("boundary").insert("squareness_lower_outer", square_l_o);
         self.results.get_or_insert("boundary").insert("squareness_upper_inner", square_u_i);
         self.results.get_or_insert("boundary").insert("squareness_upper_outer", square_u_o);
+        let boundary_psi_norm: Array1<f64> = Array1::from_elem(n_time, 1.0);
+        self.results.get_or_insert("boundary").insert("psi_norm", boundary_psi_norm);
+
 
         // Profiles (psi_n is already inside "profiles_1d")
         self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("area", area_profile);
@@ -1583,6 +1603,7 @@ impl Plasma {
         self.results.get_or_insert("profiles_2d").get_or_insert("r_z").insert("p", p_2d.clone());
         self.results.get_or_insert("profiles_2d").get_or_insert("r_z").insert("psi", psi_2d);
         self.results.get_or_insert("profiles_2d").get_or_insert("r_z").insert("psi_norm", psi_n_2d);
+        self.results.get_or_insert("profiles_2d").get_or_insert("r_z").insert("theta", theta_2d);
 
         // x-points
         self.results.get_or_insert("xpoints").get_or_insert("upper").insert("r", xpt_upper_r);
@@ -2018,7 +2039,103 @@ fn epp_bp_sq_flux_surface_average(
     return f64::NAN;
 }
 
-fn epp_bt_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_rod: f64) -> (Array2<f64>, Array2<f64>) {
+/// Poloidal circumference of the plasma boundary, and the area of the toroidal surface it sweeps out.
+///
+/// These map onto the IMAS nodes:
+/// * `equilibrium/time_slice/global_quantities/length_pol`
+///   "Poloidal length of the magnetic surface"
+/// * `equilibrium/time_slice/global_quantities/surface`
+///   "Surface area of the toroidal flux surface"
+///
+/// The boundary is a closed polygon, so the poloidal length is the sum of the straight-line
+/// segment lengths around it:
+///
+/// `length_pol = sum(sqrt(delta_r ** 2 + delta_z ** 2))`
+///
+/// Revolving that contour about the vertical axis sweeps out a surface of revolution. Each
+/// segment contributes a conical band of area `2 * PI * r_mid * segment_length`, where `r_mid`
+/// is the mid-point radius of the segment, so:
+///
+/// `surface = sum(2 * PI * r_mid * segment_length)`
+///
+/// This is Pappus's theorem applied segment by segment, and is exact for a polygon.
+///
+/// The segments are taken modulo `n_boundary` so that the contour is closed either way:
+/// `marching_squares` already repeats the x-point as the final point, which makes the
+/// wrap-around segment zero length and therefore harmless, but an unclosed contour would
+/// still be summed correctly.
+///
+/// :param boundary_r: Boundary radial positions [metre]
+/// :param boundary_z: Boundary vertical positions [metre]
+/// :return: `(length_pol, surface)` [metre] and [metre ** 2]
+fn epp_boundary_length_pol_and_surface(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>) -> (f64, f64) {
+    let n_boundary: usize = boundary_r.len();
+
+    let mut length_pol: f64 = 0.0;
+    let mut surface: f64 = 0.0;
+
+    for i_boundary_point in 0..n_boundary {
+        let i_boundary_point_next: usize = (i_boundary_point + 1) % n_boundary;
+
+        let delta_r: f64 = boundary_r[i_boundary_point_next] - boundary_r[i_boundary_point];
+        let delta_z: f64 = boundary_z[i_boundary_point_next] - boundary_z[i_boundary_point];
+        let segment_length: f64 = (delta_r * delta_r + delta_z * delta_z).sqrt();
+
+        let r_mid: f64 = (boundary_r[i_boundary_point] + boundary_r[i_boundary_point_next]) / 2.0;
+
+        length_pol += segment_length;
+        surface += 2.0 * PI * r_mid * segment_length;
+    }
+
+    return (length_pol, surface);
+}
+
+/// Poloidal angle on the `(r, z)` grid, centred on the magnetic axis.
+///
+/// The IMAS data dictionary defines `equilibrium/time_slice/profiles_2d/theta` as:
+/// "Values of poloidal angle on the grid. The poloidal angle is centered on the magnetic axis
+/// and oriented such that (grad rho_tor_norm, grad theta, grad phi) form a right-handed set
+/// where grad rho_tor_norm points away from the magnetic axis."
+///
+/// Writing `rho_hat` for the unit vector pointing away from the magnetic axis in the poloidal
+/// plane, a right-handed set means `rho_hat x theta_hat = phi_hat`, and therefore
+/// `theta_hat = phi_hat x rho_hat`.
+/// The cylindrical basis is right-handed (`r_hat x phi_hat = z_hat`), so at a point directly
+/// outboard of the magnetic axis (where `rho_hat = r_hat`) this gives `theta_hat = -z_hat`.
+/// In other words `theta` increases towards decreasing `z` on the outboard side, i.e. it runs
+/// clockwise when the poloidal plane is drawn with `r` to the right and `z` upwards:
+///
+/// `theta = -atan2(z - z_mag, r - r_mag)`
+///
+/// This is the same expression the data dictionary gives for its `inverse` grid type, see
+/// `schemas/utilities/poloidal_plane_coordinates_identifier.xml`.
+///
+/// :param r: Grid radial positions [metre]
+/// :param z: Grid vertical positions [metre]
+/// :param r_mag: Magnetic axis radial position [metre]
+/// :param z_mag: Magnetic axis vertical position [metre]
+/// :return: Poloidal angle in the range `[-PI, PI]`; shape = (n_z, n_r) [radian]
+fn epp_theta_2d(r: &Array1<f64>, z: &Array1<f64>, r_mag: f64, z_mag: f64) -> Array2<f64> {
+    let n_r: usize = r.len();
+    let n_z: usize = z.len();
+
+    let mut theta_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+
+    for i_z in 0..n_z {
+        let delta_z: f64 = z[i_z] - z_mag;
+        for i_r in 0..n_r {
+            let delta_r: f64 = r[i_r] - r_mag;
+            // Negated so that `theta` runs clockwise, see the derivation above.
+            // If a grid point coincides exactly with the magnetic axis the angle is undefined;
+            // `atan2(0.0, 0.0)` returns `0.0`, which is the value stored in that case.
+            theta_2d[(i_z, i_r)] = -delta_z.atan2(delta_r);
+        }
+    }
+
+    return theta_2d;
+}
+
+fn epp_bt_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_rod: f64) -> (Array2<f64>, Array2<f64>, f64) {
     let n_r: usize = r.len();
     let n_z: usize = z.len();
 
@@ -2065,6 +2182,11 @@ fn epp_bt_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_rod: 
     // dψ/dψ_N = ψ_B − ψ_A
     let d_psi_d_psi_n: f64 = psi_b - psi_a;
 
+    // The sign of f_vac must be preserved so that a negative TF rod current
+    // (f_vac < 0) yields a negative f inside the plasma, matching the vacuum
+    // boundary condition f(ψ_N = 1) = f_vac.
+    let f_sign: f64 = if f_vac >= 0.0 { 1.0 } else { -1.0 };
+
     for i_z in 0..n_z {
         for i_r in 0..n_r {
             if mask[(i_z, i_r)] > 0.99 {
@@ -2074,10 +2196,6 @@ fn epp_bt_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_rod: 
                     .source_function_integral(&Array1::from_vec(vec![psi_n_2d[(i_z, i_r)]]), &ff_prime_dof_values)[0];
 
                 // f = sign(f_vac)·√( f_vac² + 2·(dψ/dψ_N)·∫_1^{ψ_N} ff′ dψ_N′ )
-                // The sign of f_vac must be preserved so that a negative TF rod current
-                // (f_vac < 0) yields a negative f inside the plasma, matching the vacuum
-                // boundary condition f(ψ_N = 1) = f_vac.
-                let f_sign: f64 = if f_vac >= 0.0 { 1.0 } else { -1.0 };
                 let f_at_this_rz: f64 = f_sign * (f_vac * f_vac + 2.0 * d_psi_d_psi_n * ff_prime_integral).sqrt();
 
                 // Toroidal field
@@ -2086,7 +2204,31 @@ fn epp_bt_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_rod: 
         }
     }
 
-    return (bt_2d_now, bt_vac_2d_now);
+    // Toroidal magnetic field at the magnetic axis.
+    //
+    // This is evaluated analytically rather than by looking up, or interpolating between,
+    // the `bt_2d_now` grid points.
+    // By definition the magnetic axis sits at ψ = ψ_A, which is ψ_N = 0 exactly, so `f` can be
+    // evaluated there directly from the same identity used inside the loop above:
+    //   f(ψ_N = 0) = sign(f_vac)·√( f_vac² + 2·(dψ/dψ_N)·∫_1^0 ff′(ψ_N′) dψ_N′ )
+    //   B_T(magnetic axis) = f(ψ_N = 0) / R_mag
+    //
+    // Note: only `mag_r` is needed. `mag_z` does not enter, because ψ_N = 0 at the magnetic axis
+    // wherever it happens to lie, and B_T depends on the vertical position only through ψ_N.
+    // `p_prime` does not enter either; it shapes the poloidal field, whereas B_T is set entirely
+    // by `f`, which follows from `ff_prime` and the vacuum boundary condition `f_vac`.
+    let mag_r: f64 = gs_solution.r_mag;
+
+    // ∫_1^0 ff′(ψ_N′) dψ_N′
+    let ff_prime_integral_at_magnetic_axis: f64 = gs_solution
+        .ff_prime_source_function
+        .source_function_integral(&Array1::from_vec(vec![0.0]), &ff_prime_dof_values)[0];
+
+    let f_at_magnetic_axis: f64 = f_sign * (f_vac * f_vac + 2.0 * d_psi_d_psi_n * ff_prime_integral_at_magnetic_axis).sqrt();
+
+    let magnetic_axis_b_field_phi: f64 = f_at_magnetic_axis / mag_r;
+
+    return (bt_2d_now, bt_vac_2d_now, magnetic_axis_b_field_phi);
 }
 
 fn epp_bt_vac_at_r_geo(i_rod: f64, r_geo: f64) -> f64 {
@@ -2211,7 +2353,7 @@ fn epp_flux_surfaces(
 
         let flux_surface_contours: &geo_types::MultiPolygon = flux_surface_contours_tmp[0].geometry(); // The [0] is because I have only supplied one threshold
 
-        // Loop over all contours and find the one which is inside (r_cur, z_cur)
+        // Loop over all contours and find the one which is inside vacuum vessel
         let n_contour: usize = flux_surface_contours.iter().count();
 
         'contour_loop: for i_contour in 0..n_contour {
@@ -2711,7 +2853,7 @@ fn epp_vol_profile(
 
         let flux_surface_contours: &geo_types::MultiPolygon = flux_surface_contours_tmp[0].geometry(); // The [0] is because I have only supplied one threshold
 
-        // Loop over all contours and find the one which is inside (r_cur, z_cur)
+        // Loop over all contours and find the one which is inside vacuum vessel
         let n_contour: usize = flux_surface_contours.iter().count();
 
         'contour_loop: for i_contour in 0..n_contour {
@@ -2754,11 +2896,11 @@ fn epp_vol_profile(
     volume_prime_profile[n_psi_n - 1] = (volume_profile[n_psi_n - 2] - volume_profile[n_psi_n - 1]) / d_psi;
 
     let mut area_prime_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-    area_prime_profile[0] = (volume_profile[0] - volume_profile[1]) / d_psi;
+    area_prime_profile[0] = (area_profile[0] - area_profile[1]) / d_psi;
     for i_psi_n in 1..n_psi_n - 1 {
-        area_prime_profile[i_psi_n] = (volume_profile[i_psi_n - 1] - volume_profile[i_psi_n + 1]) / (2.0 * d_psi);
+        area_prime_profile[i_psi_n] = (area_profile[i_psi_n - 1] - area_profile[i_psi_n + 1]) / (2.0 * d_psi);
     }
-    area_prime_profile[n_psi_n - 1] = (volume_profile[n_psi_n - 2] - volume_profile[n_psi_n - 1]) / d_psi;
+    area_prime_profile[n_psi_n - 1] = (area_profile[n_psi_n - 2] - area_profile[n_psi_n - 1]) / d_psi;
 
     return (volume_profile, volume_prime_profile, area_profile, area_prime_profile);
 }
