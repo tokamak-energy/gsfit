@@ -1254,7 +1254,8 @@ impl Plasma {
             );
             midplane_p_profile.slice_mut(s![i_time, ..]).assign(&midplane_p_profile_this_time);
 
-            let (bt_2d_this_time, _bt_vac_this_time, magnetic_axis_b_field_phi_this_time): (Array2<f64>, Array2<f64>, f64) = epp_bt_2d(&gs_solutions[i_time], &r, &z, i_rod[i_time]);
+            let (bt_2d_this_time, _bt_vac_this_time, magnetic_axis_b_field_phi_this_time): (Array2<f64>, Array2<f64>, f64) =
+                epp_bt_2d(&gs_solutions[i_time], &r, &z, i_rod[i_time]);
             bt_2d.slice_mut(s![i_time, .., ..]).assign(&bt_2d_this_time);
             magnetic_axis_b_field_phi[i_time] = magnetic_axis_b_field_phi_this_time;
 
@@ -1479,12 +1480,16 @@ impl Plasma {
 
         let area: Array1<f64> = area_profile.slice(s![.., -1]).to_owned(); // last column of area_profile
 
-        
-
         // Do the assignments
         // Global
-        self.results.get_or_insert("global").get_or_insert("current_centre").insert("r", current_centre_r);
-        self.results.get_or_insert("global").get_or_insert("current_centre").insert("z", current_centre_z);
+        self.results
+            .get_or_insert("global")
+            .get_or_insert("current_centre")
+            .insert("r", current_centre_r);
+        self.results
+            .get_or_insert("global")
+            .get_or_insert("current_centre")
+            .insert("z", current_centre_z);
         self.results.get_or_insert("global").insert("area", area);
         self.results.get_or_insert("global").insert("beta_n", beta_n);
         self.results.get_or_insert("global").insert("beta_p_1", beta_p_1);
@@ -1507,7 +1512,10 @@ impl Plasma {
         self.results.get_or_insert("global").insert("q_95", q95);
         self.results.get_or_insert("global").get_or_insert("magnetic_axis").insert("r", r_mag);
         self.results.get_or_insert("global").get_or_insert("magnetic_axis").insert("z", z_mag);
-        self.results.get_or_insert("global").get_or_insert("magnetic_axis").insert("b_field_phi", magnetic_axis_b_field_phi);
+        self.results
+            .get_or_insert("global")
+            .get_or_insert("magnetic_axis")
+            .insert("b_field_phi", magnetic_axis_b_field_phi);
         self.results.get_or_insert("global").insert("phi_dia", flux_dia);
         self.results.get_or_insert("global").insert("n_iter", n_iter);
         self.results.get_or_insert("global").insert("volume", plasma_volume);
@@ -1535,7 +1543,6 @@ impl Plasma {
         self.results.get_or_insert("boundary").insert("squareness_upper_outer", square_u_o);
         let boundary_psi_norm: Array1<f64> = Array1::from_elem(n_time, 1.0);
         self.results.get_or_insert("boundary").insert("psi_norm", boundary_psi_norm);
-
 
         // Profiles (psi_n is already inside "profiles_1d")
         self.results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("area", area_profile);

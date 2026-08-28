@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 class DatabaseWriterProtocol(Protocol):
-    def map_results_to_database(self, gsfit_controller: "Gsfit") -> None | "IDSToplevel":
+    def map_results_to_database(self, gsfit_controller: "Gsfit") -> "None | IDSToplevel":
         """
         Map the results to MDSplus structure.
         self.results is a NestedDict type which has a 1:1 mapping to the MDSplus tree.
