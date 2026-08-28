@@ -97,8 +97,8 @@ def test_02_delta_z_shift_greater_than_d_z() -> None:
     d_z = grid_z[1] - grid_z[0]
     print(f"test_02_delta_z_shift_greater_than_d_z:  d_z = {d_z} m")
     gs_error = plasma.get_array1(["global", "gs_error"])[0]
-    r_mag = plasma.get_array1(["global", "r_mag"])[0]
-    z_mag = plasma.get_array1(["global", "z_mag"])[0]
+    r_mag = plasma.get_array1(["global", "magnetic_axis", "r"])[0]
+    z_mag = plasma.get_array1(["global", "magnetic_axis", "z"])[0]
 
     assert np.isfinite(gs_error), "GS reconstruction failed, should have converged"
     assert np.isfinite(r_mag) and np.isfinite(z_mag), "magnetic axis position is not finite"
