@@ -343,6 +343,7 @@ def map_results_to_database(
     equilibrium_ids.time_slice.resize(n_time)
     for i_time in range(n_time):
         time_slice = equilibrium_ids.time_slice[i_time]
+        time_slice.time = time[i_time]
 
         # Global quantities
         time_slice.global_quantities.area = global_area[i_time]
