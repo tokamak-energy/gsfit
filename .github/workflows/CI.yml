@@ -126,7 +126,7 @@ jobs:
           python3.12 -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip maturin
-          maturin develop -E dev,with_freegs_and_freegsnke
+          maturin develop -E dev,with_freegs_and_freegsnke,with_imas
 
           # Run the MAST-U FreeGSNKE notebook; the instrumented .so writes .profraw data
           pip uninstall -y pytest-xdist
