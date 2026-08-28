@@ -126,7 +126,7 @@ jobs:
           python3.12 -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip maturin
-          maturin develop -E dev,with_freegs_and_freegsnke
+          maturin develop -E dev,with_freegs_and_freegsnke,with_imas
 
           # Run the MAST-U FreeGSNKE notebook; the instrumented .so writes .profraw data
           pip uninstall -y pytest-xdist
@@ -298,12 +298,12 @@ jobs:
         run: |
           mkdir -p ~/github
           git clone https://github.com/FusionComputingLab/freegsnke.git ~/github/freegsnke
-      - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
+      - name: Install wheel and [dev,with_freegs_and_freegsnke,with_imas] dependencies
         run: |
           python -m pip install --upgrade pip
 
           # Install the locally built wheel with extras using a PEP 508 direct reference
-          python -m pip install "gsfit[dev,with_freegs_and_freegsnke] @ ${WHEEL_URI}"
+          python -m pip install "gsfit[dev,with_freegs_and_freegsnke,with_imas] @ ${WHEEL_URI}"
 
           # List installed packages
           python -m pip list
@@ -431,11 +431,11 @@ jobs:
         run: |
           mkdir -p ~/github
           git clone https://github.com/FusionComputingLab/freegsnke.git ~/github/freegsnke
-      - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
+      - name: Install wheel and [dev,with_freegs_and_freegsnke,with_imas] dependencies
         run: |
           python -m pip install --upgrade pip
           # Install the locally built wheel with extras using a PEP 508 direct reference
-          python -m pip install "gsfit[dev,with_freegs_and_freegsnke] @ ${WHEEL_URI}"
+          python -m pip install "gsfit[dev,with_freegs_and_freegsnke,with_imas] @ ${WHEEL_URI}"
       - name: Run Jupyter notebook Python tests
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences
@@ -512,11 +512,11 @@ jobs:
         run: |
           mkdir $env:USERPROFILE\github
           git clone https://github.com/FusionComputingLab/freegsnke.git $env:USERPROFILE\github\freegsnke
-      - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
+      - name: Install wheel and [dev,with_freegs_and_freegsnke,with_imas] dependencies
         run: |
           py -3.11 -m pip install --upgrade pip
           # Install the locally built wheel with extras using a PEP 508 direct reference
-          py -3.11 -m pip install "gsfit[dev,with_freegs_and_freegsnke] @ $env:WHEEL_URI"
+          py -3.11 -m pip install "gsfit[dev,with_freegs_and_freegsnke,with_imas] @ $env:WHEEL_URI"
       - name: Run Jupyter notebook Python tests
         run: |
           # Clear all outputs from the notebook, to prevent tests failing due to output differences

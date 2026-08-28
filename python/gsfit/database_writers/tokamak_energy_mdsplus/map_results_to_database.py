@@ -62,12 +62,12 @@ def map_results_to_database(
     results["GLOBAL"]["PSI_B"] = plasma.get_array1(["boundary", "psi"])
     results["GLOBAL"]["Q0"] = plasma.get_array1(["global", "q_axis"])
     results["GLOBAL"]["Q95"] = plasma.get_array1(["global", "q_95"])
-    results["GLOBAL"]["R_CUR"] = plasma.get_array1(["global", "r_cur"])
-    results["GLOBAL"]["Z_CUR"] = plasma.get_array1(["global", "z_cur"])
+    results["GLOBAL"]["R_CUR"] = plasma.get_array1(["global", "current_centre", "r"])
+    results["GLOBAL"]["Z_CUR"] = plasma.get_array1(["global", "current_centre", "z"])
     results["GLOBAL"]["R_GEO"] = plasma.get_array1(["boundary", "geometric_axis", "r"])
     results["GLOBAL"]["Z_GEO"] = plasma.get_array1(["boundary", "geometric_axis", "z"])
-    results["GLOBAL"]["R_MAG"] = plasma.get_array1(["global", "r_mag"])
-    results["GLOBAL"]["Z_MAG"] = plasma.get_array1(["global", "z_mag"])
+    results["GLOBAL"]["R_MAG"] = plasma.get_array1(["global", "magnetic_axis", "r"])
+    results["GLOBAL"]["Z_MAG"] = plasma.get_array1(["global", "magnetic_axis", "z"])
     results["GLOBAL"]["R_MINOR"] = plasma.get_array1(["boundary", "minor_radius"])
     results["GLOBAL"]["V_LOOP"] = plasma.get_array1(["global", "v_loop"])
     results["GLOBAL"]["VPLASMA"] = plasma.get_array1(["global", "volume"])
@@ -124,7 +124,10 @@ def map_results_to_database(
     results["PROFILES"]["RHO"]["P_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "p_prime"])
     results["PROFILES"]["RHO"]["Q"] = plasma.get_array2(["profiles_1d", "psi_norm", "q"])
     results["PROFILES"]["RHO"]["RHO_POL"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_pol"])
-    results["PROFILES"]["RHO"]["RHO_TOR"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_tor"])
+    # Note: this node has always held the *normalised* toroidal flux coordinate, so it is kept
+    # pointing at `rho_tor_norm`. The un-normalised `rho_tor` [metre] is written by the
+    # `tokamak_energy_mdsplus_new` database_writer.
+    results["PROFILES"]["RHO"]["RHO_TOR"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_tor_norm"])
     results["PROFILES"]["RHO"]["PSI_N"] = plasma.get_array1(["profiles_1d", "psi_norm", "psi_norm"])
     results["PROFILES"]["RHO"]["VOL"] = plasma.get_array2(["profiles_1d", "psi_norm", "vol"])
     results["PROFILES"]["RHO"]["VOL_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "vol_prime"])

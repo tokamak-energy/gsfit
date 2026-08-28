@@ -408,6 +408,7 @@ class DatabaseReaderProtocol(Protocol):
             initial_cur_z=...,                                  # read from `GSFIT_code_settings.json` file
             initial_minor_radius=...,                            # read from `GSFIT_code_settings.json` file
             initial_kappa=...,                                  # read from `GSFIT_code_settings.json` file
+            vacuum_toroidal_field_reference_radius=...,         # read from `GSFIT_code_settings.json` file
         )
 
         return plasma

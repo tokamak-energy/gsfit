@@ -124,6 +124,7 @@ def run() -> None:
         initial_cur_z=0.0,
         initial_minor_radius=0.5,
         initial_kappa=2.0,
+        vacuum_toroidal_field_reference_radius=10.5,
     )
 
     passives = Passives()

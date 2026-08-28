@@ -115,5 +115,6 @@
   "type_of_run": {
     "forward": false,
     "inverse": true
-  }
+  },
+  "vacuum_toroidal_field_reference_radius": 0.4
 }

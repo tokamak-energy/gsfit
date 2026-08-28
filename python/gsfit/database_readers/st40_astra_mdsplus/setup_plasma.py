@@ -109,6 +109,9 @@ def setup_plasma(
     limit_pts_r = np.append(limit_pts_r, 0.7103)
     limit_pts_z = np.append(limit_pts_z, 0.3031)
 
+    # Reference radius at which the vacuum toroidal field, `b0`, is evaluated, [metre]
+    vacuum_toroidal_field_reference_radius = settings["GSFIT_code_settings.json"]["vacuum_toroidal_field_reference_radius"]
+
     # Initialise the Plasma Rust class
     plasma = Plasma(
         n_r,
@@ -129,6 +132,7 @@ def setup_plasma(
         initial_cur_z,
         initial_minor_radius,
         initial_kappa,
+        vacuum_toroidal_field_reference_radius,
     )
 
     return plasma

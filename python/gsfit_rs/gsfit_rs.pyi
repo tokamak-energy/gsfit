@@ -433,6 +433,7 @@ class Plasma(DataTreeAccessor):
         initial_cur_z: float,
         initial_minor_radius: float,
         initial_kappa: float,
+        vacuum_toroidal_field_reference_radius: float,
     ) -> Plasma:
         """
         :param n_r: Number of radial poitns [dimensionless]
@@ -453,6 +454,7 @@ class Plasma(DataTreeAccessor):
         :param initial_cur_z: Vertical centre of the initial current distribution [metre]
         :param initial_minor_radius: Radial semi-axis of the initial current distribution [metre]
         :param initial_kappa: Elongation of the initial current distribution [dimensionless]
+        :param vacuum_toroidal_field_reference_radius: Fixed reference radius, `r0`, at which the vacuum toroidal field, `b0`, is evaluated [metre]
         """
         ...
     def greens_with_coils(

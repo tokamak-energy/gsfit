@@ -103,6 +103,8 @@
         "tokamak_energy_mdsplus_no_workflow": {
         },
         "rtgsfit_mdsplus": {
+        },
+        "imas": {
         }
     },
     "numerics": {
@@ -149,5 +151,6 @@
         "z_cur": 0.0,
         "minor_radius": 0.2,
         "kappa": 1.2
-    }
+    },
+    "vacuum_toroidal_field_reference_radius": 0.4
 }

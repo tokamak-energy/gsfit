@@ -54,8 +54,13 @@ with_st40_mdsplus = [
 ]
 with_freegs_and_freegsnke = [
     "freegs",
-    "freegsnke",
-    "freegs4e"
+    "freegsnke==3.0.1",
+    "freegs4e==0.13.1"
+]
+with_imas = [
+    "imas-core",
+    "imas-data-dictionaries",
+    "imas-python"
 ]
 
 [project.urls]
@@ -93,6 +98,7 @@ module = [
     "freegs.*",
     "freegsnke.*",
     "freegs4e.*",
+    "imas.*",
     "st40_database.*",
     "standard_utility.*",
     "mdsthin.*",
