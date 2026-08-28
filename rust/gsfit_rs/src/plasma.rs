@@ -2360,7 +2360,7 @@ fn epp_flux_surfaces(
 
         let flux_surface_contours: &geo_types::MultiPolygon = flux_surface_contours_tmp[0].geometry(); // The [0] is because I have only supplied one threshold
 
-        // Loop over all contours and find the one which is inside vacuum vessel
+        // Loop over all contours and find the one which is inside plasma boundary
         let n_contour: usize = flux_surface_contours.iter().count();
 
         'contour_loop: for i_contour in 0..n_contour {
