@@ -98,6 +98,7 @@ def map_results_to_database(
     results["PROFILES_1D"]["PSI_NORM"]["PRESSURE"] = plasma.get_array2(["profiles_1d", "psi_norm", "p"])
     results["PROFILES_1D"]["PSI_NORM"]["Q"] = plasma.get_array2(["profiles_1d", "psi_norm", "q"])
     results["PROFILES_1D"]["PSI_NORM"]["RHO_POL"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_pol"])
+    results["PROFILES_1D"]["PSI_NORM"]["RHO_TOR_NORM"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_tor_norm"])
     results["PROFILES_1D"]["PSI_NORM"]["RHO_TOR"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_tor"])
     results["PROFILES_1D"]["PSI_NORM"]["PSI_NORM"] = plasma.get_array1(["profiles_1d", "psi_norm", "psi_norm"])
     results["PROFILES_1D"]["PSI_NORM"]["VOL"] = plasma.get_array2(["profiles_1d", "psi_norm", "vol"])

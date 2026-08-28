@@ -20,11 +20,9 @@ store the quantity; they need to be added on the Rust side first
 
 | IMAS node                                                             | what is missing in GSFit                                     |
 | -----------------------------------------------------                 | ------------------------------------------------------------ |
-| `vacuum_toroidal_field.r0` / `.b0`                                    | a *fixed* vacuum reference radius; `global/bt_vac_at_r_geo` is at the (time varying) `r_geo` |
 | `time_slice/global_quantities/psi_external_average`, `v_external`     | `global/v_loop` is `-d(psi_boundary)/dt`, which is a different quantity |
 | `time_slice/global_quantities/plasma_inductance`, `plasma_resistance` | not calculated                                |
-| `time_slice/global_quantities/rho_tor_boundary`                       | `profiles_1d/psi_norm/rho_tor` is normalised, so the boundary value is `1` by construction |
-| `time_slice/profiles_1d/rho_tor`, `dpsi_drho_tor`                     | un-normalised toroidal flux radius [metre]                   |
+| `time_slice/profiles_1d/dpsi_drho_tor`                                | not calculated                                               |
 | `time_slice/profiles_1d/j_phi`, `j_parallel`, `gm1..gm9`, `b_field_*`, `trapped_fraction`, `magnetic_shear`, `r_inboard`, `r_outboard`, `surface`, `rho_volume_norm` | not calculated |
 | `time_slice/profiles_2d/j_parallel`, `phi`                            | not calculated                                               |
 | `time_slice/constraints/*/chi_squared`                                | only the *total* `global/chi_mag` is stored, IMAS has no slot for it |
@@ -108,6 +106,7 @@ import json
 from typing import TYPE_CHECKING
 
 import imas
+import imas.ids_defs
 import numpy as np
 import numpy.typing as npt
 from diagnostic_and_simulation_base import version_storage
@@ -205,11 +204,14 @@ def map_results_to_database(
     profiles_1d_p_prime: npt.NDArray[np.float64] = plasma.get_array2(["profiles_1d", "psi_norm", "p_prime"])  # [pascal / weber]
     profiles_1d_psi: npt.NDArray[np.float64] = plasma.get_array2(["profiles_1d", "psi_norm", "psi"])  # [weber]
     profiles_1d_q: npt.NDArray[np.float64] = plasma.get_array2(["profiles_1d", "psi_norm", "q"])  # [dimensionless]
-    # Note: GSFit's `rho_tor` is `sqrt(flux_tor / max(flux_tor))`, i.e. it is already normalised,
-    # so it maps onto IMAS' `rho_tor_norm` and **not** onto `rho_tor` (which is in [metre])
-    profiles_1d_rho_tor_norm: npt.NDArray[np.float64] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_tor"])  # [dimensionless]
+    profiles_1d_rho_tor: npt.NDArray[np.float64] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_tor"])  # [metre]
+    profiles_1d_rho_tor_norm: npt.NDArray[np.float64] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_tor_norm"])  # [dimensionless]
     profiles_1d_vol: npt.NDArray[np.float64] = plasma.get_array2(["profiles_1d", "psi_norm", "vol"])  # [metre ** 3]
     profiles_1d_vol_prime: npt.NDArray[np.float64] = plasma.get_array2(["profiles_1d", "psi_norm", "vol_prime"])  # [metre ** 3 / weber]
+
+    # Reference vacuum toroidal field; `r0` is a fixed scalar, `b0` has shape = [n_time]
+    vacuum_toroidal_field_r0: float = plasma.get_f64(["vacuum_toroidal_field", "r0"])  # [metre]
+    vacuum_toroidal_field_b0: npt.NDArray[np.float64] = plasma.get_array1(["vacuum_toroidal_field", "b0"])  # [tesla]
 
     # Grid; shape = [n_r] and [n_z]
     grid_r: npt.NDArray[np.float64] = plasma.get_array1(["grid", "r"])  # [metre]
@@ -334,9 +336,11 @@ def map_results_to_database(
         equilibrium_ids.code.commit = version_storage.__git_short_hash__
     equilibrium_ids.code.parameters = json.dumps(settings, default=str)
 
-    # TODO (rust): `vacuum_toroidal_field.r0` needs a *fixed* reference major radius, and
-    # `vacuum_toroidal_field.b0` the vacuum toroidal field at that radius.
-    # GSFit stores `global/bt_vac_at_r_geo`, which is evaluated at the time varying `r_geo`.
+    # `r0` is the fixed reference radius set by `vacuum_toroidal_field_reference_radius` in
+    # `GSFIT_code_settings.json`, and `b0` the vacuum toroidal field at that radius.
+    # Note, `global/bt_vac_at_r_geo` is a different quantity: it is evaluated at the time varying `r_geo`.
+    equilibrium_ids.vacuum_toroidal_field.r0 = vacuum_toroidal_field_r0
+    equilibrium_ids.vacuum_toroidal_field.b0 = vacuum_toroidal_field_b0
 
     equilibrium_ids.time = time
 
@@ -361,6 +365,7 @@ def map_results_to_database(
         time_slice.global_quantities.psi_boundary = boundary_psi[i_time]
         time_slice.global_quantities.psi_magnetic_axis = global_psi_a[i_time]
         time_slice.global_quantities.q_95 = global_q_95[i_time]
+        time_slice.global_quantities.rho_tor_boundary = profiles_1d_rho_tor[i_time, -1]
         time_slice.global_quantities.q_axis = global_q_axis[i_time]
         time_slice.global_quantities.volume = global_volume[i_time]
         time_slice.global_quantities.current_centre.r = global_current_centre_r[i_time]
@@ -422,6 +427,7 @@ def map_results_to_database(
         time_slice.profiles_1d.psi = profiles_1d_psi[i_time, :]
         time_slice.profiles_1d.psi_norm = profiles_1d_psi_norm
         time_slice.profiles_1d.q = profiles_1d_q[i_time, :]
+        time_slice.profiles_1d.rho_tor = profiles_1d_rho_tor[i_time, :]
         time_slice.profiles_1d.rho_tor_norm = profiles_1d_rho_tor_norm[i_time, :]
         time_slice.profiles_1d.volume = profiles_1d_vol[i_time, :]
 

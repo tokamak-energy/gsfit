@@ -124,7 +124,10 @@ def map_results_to_database(
     results["PROFILES"]["RHO"]["P_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "p_prime"])
     results["PROFILES"]["RHO"]["Q"] = plasma.get_array2(["profiles_1d", "psi_norm", "q"])
     results["PROFILES"]["RHO"]["RHO_POL"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_pol"])
-    results["PROFILES"]["RHO"]["RHO_TOR"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_tor"])
+    # Note: this node has always held the *normalised* toroidal flux coordinate, so it is kept
+    # pointing at `rho_tor_norm`. The un-normalised `rho_tor` [metre] is written by the
+    # `tokamak_energy_mdsplus_new` database_writer.
+    results["PROFILES"]["RHO"]["RHO_TOR"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_tor_norm"])
     results["PROFILES"]["RHO"]["PSI_N"] = plasma.get_array1(["profiles_1d", "psi_norm", "psi_norm"])
     results["PROFILES"]["RHO"]["VOL"] = plasma.get_array2(["profiles_1d", "psi_norm", "vol"])
     results["PROFILES"]["RHO"]["VOL_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "vol_prime"])

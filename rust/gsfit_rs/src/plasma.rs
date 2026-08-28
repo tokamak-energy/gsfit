@@ -62,6 +62,7 @@ impl Plasma {
     /// * `initial_cur_z` - vertical centre of the initial current distribution, [metre]
     /// * `initial_minor_radius` - radial semi-axis of the initial current distribution, [metre]
     /// * `initial_kappa` - elongation of the initial current distribution, [dimensionless]
+    /// * `vacuum_toroidal_field_reference_radius` - reference radius for the vacuum toroidal field, [metre]
     ///
     /// # Returns
     /// * `self` - a new instance of the Plasma struct
@@ -87,6 +88,7 @@ impl Plasma {
         initial_cur_z: f64,
         initial_minor_radius: f64,
         initial_kappa: f64,
+        vacuum_toroidal_field_reference_radius: f64,
     ) -> Self {
         // Change Python types into Rust types
         let psi_n_ndarray: Array1<f64> = psi_n.to_owned_array();
@@ -242,6 +244,9 @@ impl Plasma {
         results.get_or_insert("vessel").insert("r", vessel_r_ndarray); // Array1<f64>; shape = (n_vessel_pts)
         results.get_or_insert("vessel").insert("z", vessel_z_ndarray); // Array1<f64>; shape = (n_vessel_pts)
         results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("psi_norm", psi_n_ndarray); // Array1<f64>; shape = (n_psi_n)
+        results
+            .get_or_insert("vacuum_toroidal_field")
+            .insert("r0", vacuum_toroidal_field_reference_radius); // f64; [metre]
 
         Self {
             results,
@@ -1024,6 +1029,9 @@ impl Plasma {
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
 
+        // The *fixed* reference radius at which the IMAS reference vacuum toroidal field, `b0`, is evaluated, [metre]
+        let vacuum_toroidal_field_reference_radius: f64 = self.results.get("vacuum_toroidal_field").get("r0").unwrap_f64();
+
         // Get the mesh (note, the [0] is because the mesh is the same for all time slices)
         let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
         let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
@@ -1110,6 +1118,7 @@ impl Plasma {
         let mut beta_p_3: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         let mut beta_t: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         let mut bt_vac_at_r_geo: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+        let mut vacuum_toroidal_field_b0: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         let mut li_1: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         let mut li_2: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
         let mut li_3: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -1128,6 +1137,7 @@ impl Plasma {
         let mut volume_prime_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut flux_tor_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut q_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
+        let mut rho_tor_norm_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut rho_tor_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut rho_pol_profile: Array2<f64> = Array2::from_elem((n_time, n_psi_n), f64::NAN);
         let mut magnetic_axis_b_field_phi: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -1349,7 +1359,14 @@ impl Plasma {
             let flux_tor_profile_vacuum: Array1<f64> = epp_flux_toroidal_profile(&q_profile_vacuum, &psi_profile_this_time);
             flux_dia[i_time] = flux_tor_profile_this_time_slice.last().unwrap().to_owned() - flux_tor_profile_vacuum.last().unwrap().to_owned();
 
-            let rho_tor_profile_this_time_slice: Array1<f64> = epp_rho_tor_profile(&flux_tor_profile_this_time_slice);
+            // The IMAS reference vacuum toroidal field, `b0`, is evaluated at the *fixed* reference radius, `r0`,
+            // unlike `bt_vac_at_r_geo` which is evaluated at the (time varying) geometric axis
+            let vacuum_toroidal_field_b0_this_time: f64 = epp_bt_vac_at_r(i_rod[i_time], vacuum_toroidal_field_reference_radius);
+            vacuum_toroidal_field_b0[i_time] = vacuum_toroidal_field_b0_this_time;
+
+            let (rho_tor_norm_profile_this_time_slice, rho_tor_profile_this_time_slice): (Array1<f64>, Array1<f64>) =
+                epp_rho_tor_profiles(&flux_tor_profile_this_time_slice, vacuum_toroidal_field_b0_this_time);
+            rho_tor_norm_profile.slice_mut(s![i_time, ..]).assign(&rho_tor_norm_profile_this_time_slice);
             rho_tor_profile.slice_mut(s![i_time, ..]).assign(&rho_tor_profile_this_time_slice);
 
             let q95_this_time: f64 = epp_q95(&q_profile_this_time, &psi_n);
@@ -1398,7 +1415,7 @@ impl Plasma {
             (beta_p_1[i_time], beta_p_2[i_time], beta_p_3[i_time]) =
                 epp_beta_p(w_mhd[i_time], ip[i_time], r_mag[i_time], r_geo[i_time], plasma_volume[i_time], bp_sq_fs_avg);
 
-            let bt_vac_at_r_geo_this_time: f64 = epp_bt_vac_at_r_geo(i_rod[i_time], r_geo[i_time]);
+            let bt_vac_at_r_geo_this_time: f64 = epp_bt_vac_at_r(i_rod[i_time], r_geo[i_time]);
             bt_vac_at_r_geo[i_time] = bt_vac_at_r_geo_this_time;
 
             // Internal inductance
@@ -1497,6 +1514,7 @@ impl Plasma {
         self.results.get_or_insert("global").insert("beta_p_3", beta_p_3);
         self.results.get_or_insert("global").insert("beta_t", beta_t);
         self.results.get_or_insert("global").insert("bt_vac_at_r_geo", bt_vac_at_r_geo);
+        self.results.get_or_insert("vacuum_toroidal_field").insert("b0", vacuum_toroidal_field_b0);
         self.results.get_or_insert("global").insert("gs_error", gs_error);
         self.results.get_or_insert("global").insert("i_rod", i_rod);
         self.results.get_or_insert("global").insert("ip", ip);
@@ -1573,7 +1591,11 @@ impl Plasma {
         self.results
             .get_or_insert("profiles_1d")
             .get_or_insert("psi_norm")
-            .insert("rho_tor", rho_tor_profile);
+            .insert("rho_tor", rho_tor_profile); // Array2<f64>; [metre]
+        self.results
+            .get_or_insert("profiles_1d")
+            .get_or_insert("psi_norm")
+            .insert("rho_tor_norm", rho_tor_norm_profile); // Array2<f64>; [dimensionless]
         self.results
             .get_or_insert("profiles_1d")
             .get_or_insert("psi_norm")
@@ -2238,9 +2260,18 @@ fn epp_bt_2d(gs_solution: &GsSolution, r: &Array1<f64>, z: &Array1<f64>, i_rod: 
     return (bt_2d_now, bt_vac_2d_now, magnetic_axis_b_field_phi);
 }
 
-fn epp_bt_vac_at_r_geo(i_rod: f64, r_geo: f64) -> f64 {
-    let bt_vac_at_r_geo: f64 = MU_0 * i_rod / (2.0 * PI * r_geo);
-    return bt_vac_at_r_geo;
+/// Vacuum toroidal magnetic field at an arbitrary radius, `b_phi_vac = MU_0 * i_rod / (2 * PI * r)`
+///
+/// # Arguments
+/// * `i_rod` - total toroidal field rod current, [ampere]
+/// * `r` - radius at which to evaluate the vacuum toroidal field, [metre]
+///
+/// # Returns
+/// * `bt_vac_at_r` - vacuum toroidal magnetic field at `r`, [tesla]
+///
+fn epp_bt_vac_at_r(i_rod: f64, r: f64) -> f64 {
+    let bt_vac_at_r: f64 = MU_0 * i_rod / (2.0 * PI * r);
+    return bt_vac_at_r;
 }
 
 fn epp_f_profile(gs_solution: &GsSolution, psi_n: &Array1<f64>, psi_a: f64, psi_b: f64, i_rod: f64) -> Array1<f64> {
@@ -2779,16 +2810,36 @@ fn epp_q95(q_profile: &Array1<f64>, psi_n: &Array1<f64>) -> f64 {
     return q95;
 }
 
-fn epp_rho_tor_profile(flux_tor_profile: &Array1<f64>) -> Array1<f64> {
+/// Toroidal flux coordinate profiles, using the IMAS definitions:
+/// `rho_tor = sqrt(flux_tor / (PI * b0))` and `rho_tor_norm = rho_tor / rho_tor[LCFS]`
+///
+/// Note, `b0` and `PI` cancel in `rho_tor_norm`, but the sign of `b0` does not:
+/// `flux_tor` and `b0` have the same sign, so `flux_tor / b0` is always positive.
+///
+/// # Arguments
+/// * `flux_tor_profile` - toroidal magnetic flux profile (1d array), [weber]
+/// * `vacuum_toroidal_field_b0` - vacuum toroidal field at the reference radius, `r0`, [tesla]
+///
+/// # Returns
+/// * `rho_tor_norm` - normalised toroidal flux coordinate (1d array), [dimensionless]
+/// * `rho_tor` - toroidal flux coordinate (1d array), [metre]
+///
+fn epp_rho_tor_profiles(flux_tor_profile: &Array1<f64>, vacuum_toroidal_field_b0: f64) -> (Array1<f64>, Array1<f64>) {
     let n_psi_n: usize = flux_tor_profile.len();
 
-    let flux_tor_max: Result<&f64, ndarray_stats::errors::MinMaxError> = flux_tor_profile.max();
-    if flux_tor_max.is_err() {
+    if n_psi_n == 0 {
+        let rho_tor_norm: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
         let rho_tor: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-        return rho_tor;
+        return (rho_tor_norm, rho_tor);
     }
-    let rho_tor: Array1<f64> = (flux_tor_profile / flux_tor_max.unwrap().to_owned()).mapv(|x| x.sqrt());
-    return rho_tor;
+
+    let rho_tor: Array1<f64> = (flux_tor_profile / (PI * vacuum_toroidal_field_b0)).mapv(|x| x.sqrt());
+
+    // Normalise to the value at the last closed flux surface (the last element of the profile)
+    let rho_tor_lcfs: f64 = rho_tor[n_psi_n - 1];
+    let rho_tor_norm: Array1<f64> = &rho_tor / rho_tor_lcfs;
+
+    return (rho_tor_norm, rho_tor);
 }
 
 fn epp_vol_profile(
