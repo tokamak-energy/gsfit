@@ -133,7 +133,7 @@ class Gsfit(DiagnosticAndSimulationBase):
 
         # Do the writing to MDSplus
         self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
-        if self.write_to_mds:
+        if self.write_to_mds and database_writer_method != "imas":
             self.logger.info("Writing to database")
             self._write_to_mds()
             if self.settings["GSFIT_code_settings.json"]["database_writer"]["method"] == "tokamak_energy_mdsplus_new":
