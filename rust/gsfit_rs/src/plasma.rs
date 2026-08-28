@@ -2894,20 +2894,23 @@ fn epp_vol_profile(
         }
     }
 
-    // Take derivatives
+    // Take derivatives.
+    // `d_psi = psi_profile[1] - psi_profile[0]`, so the numerators must also run in increasing
+    // index order: a forward difference at the first point, central differences in the interior,
+    // and a backward difference at the last point.
     let mut volume_prime_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-    volume_prime_profile[0] = (volume_profile[0] - volume_profile[1]) / d_psi;
+    volume_prime_profile[0] = (volume_profile[1] - volume_profile[0]) / d_psi;
     for i_psi_n in 1..n_psi_n - 1 {
-        volume_prime_profile[i_psi_n] = (volume_profile[i_psi_n - 1] - volume_profile[i_psi_n + 1]) / (2.0 * d_psi);
+        volume_prime_profile[i_psi_n] = (volume_profile[i_psi_n + 1] - volume_profile[i_psi_n - 1]) / (2.0 * d_psi);
     }
-    volume_prime_profile[n_psi_n - 1] = (volume_profile[n_psi_n - 2] - volume_profile[n_psi_n - 1]) / d_psi;
+    volume_prime_profile[n_psi_n - 1] = (volume_profile[n_psi_n - 1] - volume_profile[n_psi_n - 2]) / d_psi;
 
     let mut area_prime_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-    area_prime_profile[0] = (area_profile[0] - area_profile[1]) / d_psi;
+    area_prime_profile[0] = (area_profile[1] - area_profile[0]) / d_psi;
     for i_psi_n in 1..n_psi_n - 1 {
-        area_prime_profile[i_psi_n] = (area_profile[i_psi_n - 1] - area_profile[i_psi_n + 1]) / (2.0 * d_psi);
+        area_prime_profile[i_psi_n] = (area_profile[i_psi_n + 1] - area_profile[i_psi_n - 1]) / (2.0 * d_psi);
     }
-    area_prime_profile[n_psi_n - 1] = (area_profile[n_psi_n - 2] - area_profile[n_psi_n - 1]) / d_psi;
+    area_prime_profile[n_psi_n - 1] = (area_profile[n_psi_n - 1] - area_profile[n_psi_n - 2]) / d_psi;
 
     return (volume_profile, volume_prime_profile, area_profile, area_prime_profile);
 }
