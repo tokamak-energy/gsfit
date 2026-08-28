@@ -127,9 +127,9 @@ class Gsfit(DiagnosticAndSimulationBase):
         database_writer = get_database_writer(database_writer_method)
         if database_writer_method != "imas":
             database_writer.map_results_to_database(self)
-            self.logger.info("IMAS database written; to access use `self.equilibrium_ids`")
         else:
             self.equilibrium_ids = database_writer.map_results_to_database(self)
+            self.logger.info("IMAS database written; to access use `self.equilibrium_ids`")
 
         # Do the writing to MDSplus
         self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
