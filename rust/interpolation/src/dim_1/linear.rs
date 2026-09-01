@@ -91,10 +91,9 @@ impl Dim1Linear {
         // Loop over the new x values
         'x_new_loop: for i_x_new in 0..n_x_new {
             // Special case: `x_new` is exactly on an `x` grid point, so return the associated `f` value.
-            // The comparison is bitwise (`.to_bits()`), so only an identical floating point representation
-            // is accepted; this guarantees that no rounding error is introduced by the interpolation.
+            // The exact `==` is deliberate; no tolerance is wanted here.
             for i_x in 0..n_x {
-                if x_new[i_x_new].to_bits() == self.x[i_x].to_bits() {
+                if x_new[i_x_new] == self.x[i_x] {
                     f_new[i_x_new] = self.f[i_x];
                     continue 'x_new_loop;
                 }
@@ -138,10 +137,9 @@ impl Dim1Linear {
         let mut f_new: f64 = f64::NAN;
 
         // Special case: `x_new` is exactly on an `x` grid point, so return the associated `f` value.
-        // The comparison is bitwise (`.to_bits()`), so only an identical floating point representation
-        // is accepted; this guarantees that no rounding error is introduced by the interpolation.
+        // The exact `==` is deliberate; no tolerance is wanted here.
         for i_x in 0..n_x {
-            if x_new.to_bits() == self.x[i_x].to_bits() {
+            if x_new == self.x[i_x] {
                 return Ok(self.f[i_x]);
             }
         }
@@ -159,6 +157,8 @@ impl Dim1Linear {
     }
 }
 
+/// Test that `interpolate_scalar` returns `f` exactly when `x_new` lands on an `x` grid point,
+/// even when the neighbouring `f` values are NaN.
 #[test]
 fn test_interpolation_with_nans_either_side() {
     use ndarray::array;
@@ -174,6 +174,8 @@ fn test_interpolation_with_nans_either_side() {
     assert_eq!(result, 5.0);
 }
 
+/// Test that `interpolate_array1` returns `f` exactly when `x_new` lands on an `x` grid point,
+/// even when the neighbouring `f` values are NaN.
 #[test]
 fn test_interpolate_array1_with_nans_either_side() {
     use crate::dim_1::linear::Dim1Linear;
