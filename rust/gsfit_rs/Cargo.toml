@@ -10,6 +10,7 @@ name = "gsfit_rs"
 [dependencies]
 # Local dependency
 data_tree = { path = "../data_tree" }
+imas_rs = { path = "../imas_rs" }
 interpolation = { path = "../interpolation" }
 npy_reader_and_writer = { path = "../npy_reader_and_writer" }
 

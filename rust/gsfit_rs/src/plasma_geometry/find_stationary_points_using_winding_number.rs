@@ -17,7 +17,7 @@ use std::collections::HashMap;
 /// * `d_psi_d_r_2d` - d(psi)/d(r), [weber / meter]
 /// * `d_psi_d_z_2d` - d(psi)/d(z), [weber / meter]
 /// * `d2_psi_d_r2_2d` - d^2(psi)/d(r)^2, [weber / meter**2]
-/// * `d2_psi_d_rz_2d` - d^2(psi)/d(r)d(z), [weber / meter**2]
+/// * `d2_psi_d_r_d_z_2d` - d^2(psi)/d(r)d(z), [weber / meter**2]
 /// * `d2_psi_d_z2_2d` - d^2(psi)/d(z)^2, [weber / meter**2]
 ///
 /// # Returns
@@ -96,7 +96,7 @@ pub fn find_stationary_points_using_winding_number(
     d_psi_d_r_2d: ArrayView2<f64>,
     d_psi_d_z_2d: ArrayView2<f64>,
     d2_psi_d_r2_2d: ArrayView2<f64>,
-    d2_psi_d_rz_2d: ArrayView2<f64>,
+    d2_psi_d_r_d_z_2d: ArrayView2<f64>,
     d2_psi_d_z2_2d: ArrayView2<f64>,
 ) -> Vec<StationaryPoint> {
     // Empty stationary_points, ready to return if no stationary points found
@@ -140,7 +140,7 @@ pub fn find_stationary_points_using_winding_number(
                 (i_z - 1, i_z + 1, 2.0 * d_z)
             };
             d2_d_psi_d_r_d_r_d_z[(i_z, i_r)] = (d2_psi_d_r2_2d[(i_z_hi, i_r)] - d2_psi_d_r2_2d[(i_z_lo, i_r)]) / d_z_span;
-            d2_d_psi_d_z_d_r_d_z[(i_z, i_r)] = (d2_psi_d_rz_2d[(i_z_hi, i_r)] - d2_psi_d_rz_2d[(i_z_lo, i_r)]) / d_z_span;
+            d2_d_psi_d_z_d_r_d_z[(i_z, i_r)] = (d2_psi_d_r_d_z_2d[(i_z_hi, i_r)] - d2_psi_d_r_d_z_2d[(i_z_lo, i_r)]) / d_z_span;
         }
     }
 
@@ -161,10 +161,10 @@ pub fn find_stationary_points_using_winding_number(
             let d_psi_d_z_zero_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 r[i_r_left],
                 d_psi_d_z_2d[(i_z, i_r_left)],
-                d2_psi_d_rz_2d[(i_z, i_r_left)],
+                d2_psi_d_r_d_z_2d[(i_z, i_r_left)],
                 r[i_r_right],
                 d_psi_d_z_2d[(i_z, i_r_right)],
-                d2_psi_d_rz_2d[(i_z, i_r_right)],
+                d2_psi_d_r_d_z_2d[(i_z, i_r_right)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(d_psi_d_z_zero_crossings_this_edge.len());
@@ -226,10 +226,10 @@ pub fn find_stationary_points_using_winding_number(
             let bz_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 z_start,
                 d_psi_d_r_2d[(i_z_lower, i_r)],
-                d2_psi_d_rz_2d[(i_z_lower, i_r)],
+                d2_psi_d_r_d_z_2d[(i_z_lower, i_r)],
                 z_end,
                 d_psi_d_r_2d[(i_z_upper, i_r)],
-                d2_psi_d_rz_2d[(i_z_upper, i_r)],
+                d2_psi_d_r_d_z_2d[(i_z_upper, i_r)],
                 0.0,
             );
             let mut crossing_coordinates_this_edge: Vec<Coordinate> = Vec::with_capacity(bz_crossings_this_edge.len());
@@ -375,7 +375,7 @@ pub fn find_stationary_points_using_winding_number(
                     d_z,
                     d_psi_d_r_cell.view(),
                     cell_of(&d2_psi_d_r2_2d).view(),
-                    cell_of(&d2_psi_d_rz_2d).view(),
+                    cell_of(&d2_psi_d_r_d_z_2d).view(),
                     cell_of_owned(&d2_d_psi_d_r_d_r_d_z).view(),
                 );
                 // Bicubic model of `d(psi)/d(z)`
@@ -384,7 +384,7 @@ pub fn find_stationary_points_using_winding_number(
                     d_r,
                     d_z,
                     d_psi_d_z_cell.view(),
-                    cell_of(&d2_psi_d_rz_2d).view(),
+                    cell_of(&d2_psi_d_r_d_z_2d).view(),
                     cell_of(&d2_psi_d_z2_2d).view(),
                     cell_of_owned(&d2_d_psi_d_z_d_r_d_z).view(),
                 );
@@ -413,7 +413,7 @@ pub fn find_stationary_points_using_winding_number(
                         psi_cell.view(),
                         d_psi_d_r_cell.view(),
                         d_psi_d_z_cell.view(),
-                        cell_of(&d2_psi_d_rz_2d).view(),
+                        cell_of(&d2_psi_d_r_d_z_2d).view(),
                     );
                     let stationary_psi: f64 = psi_interpolator.interpolate(x, y);
 
@@ -567,7 +567,7 @@ fn test_1_find_stationary_points_using_winding_number_with_contour_entering_and_
     let mut d_psi_d_r_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
     let mut d_psi_d_z_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
     let mut d2_psi_d_r2_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
-    let mut d2_psi_d_rz_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d2_psi_d_r_d_z_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
     let mut d2_psi_d_z2_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
 
     let vertical_curvature: f64 = 0.35;
@@ -582,7 +582,7 @@ fn test_1_find_stationary_points_using_winding_number_with_contour_entering_and_
             d_psi_d_r_2d[(i_z, i_r)] = -2.0 * delta_r;
             d_psi_d_z_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z] * delta_r - 2.0 * delta_z;
             d2_psi_d_r2_2d[(i_z, i_r)] = -2.0;
-            d2_psi_d_rz_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z];
+            d2_psi_d_r_d_z_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z];
             d2_psi_d_z2_2d[(i_z, i_r)] = -4.0 * vertical_curvature * delta_r - 8.0 * vertical_curvature.powi(2) * z[i_z].powi(2) - 2.0;
         }
     }
@@ -594,7 +594,7 @@ fn test_1_find_stationary_points_using_winding_number_with_contour_entering_and_
         d_psi_d_r_2d.view(),
         d_psi_d_z_2d.view(),
         d2_psi_d_r2_2d.view(),
-        d2_psi_d_rz_2d.view(),
+        d2_psi_d_r_d_z_2d.view(),
         d2_psi_d_z2_2d.view(),
     );
 
@@ -662,7 +662,7 @@ fn test_2_find_stationary_points_using_winding_number_with_stationary_point_at_c
     let mut d_psi_d_r_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
     let mut d_psi_d_z_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
     let mut d2_psi_d_r2_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
-    let mut d2_psi_d_rz_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
+    let mut d2_psi_d_r_d_z_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
     let mut d2_psi_d_z2_2d: Array2<f64> = Array2::from_elem([n_z, n_r], f64::NAN);
 
     for i_z in 0..n_z {
@@ -675,7 +675,7 @@ fn test_2_find_stationary_points_using_winding_number_with_stationary_point_at_c
             d_psi_d_r_2d[(i_z, i_r)] = -2.0 * delta_r;
             d_psi_d_z_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z] * delta_r - 2.0 * delta_z;
             d2_psi_d_r2_2d[(i_z, i_r)] = -2.0;
-            d2_psi_d_rz_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z];
+            d2_psi_d_r_d_z_2d[(i_z, i_r)] = -4.0 * vertical_curvature * z[i_z];
             d2_psi_d_z2_2d[(i_z, i_r)] = -4.0 * vertical_curvature * delta_r - 8.0 * vertical_curvature.powi(2) * z[i_z].powi(2) - 2.0;
         }
     }
@@ -687,7 +687,7 @@ fn test_2_find_stationary_points_using_winding_number_with_stationary_point_at_c
         d_psi_d_r_2d.view(),
         d_psi_d_z_2d.view(),
         d2_psi_d_r2_2d.view(),
-        d2_psi_d_rz_2d.view(),
+        d2_psi_d_r_d_z_2d.view(),
         d2_psi_d_z2_2d.view(),
     );
 
@@ -739,9 +739,9 @@ fn test_3_find_stationary_points_using_winding_number_with_up_down_symmetry() {
 
     let test_data_path: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d2_psi_d_rz_2d.npy"
+        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/mast_u_iter_0/d2_psi_d_r_d_z_2d.npy"
     );
-    let d2_psi_d_rz_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(std::path::Path::new(test_data_path));
+    let d2_psi_d_r_d_z_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(std::path::Path::new(test_data_path));
 
     let test_data_path: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -756,7 +756,7 @@ fn test_3_find_stationary_points_using_winding_number_with_up_down_symmetry() {
         d_psi_d_r_2d.view(),
         d_psi_d_z_2d.view(),
         d2_psi_d_r2_2d.view(),
-        d2_psi_d_rz_2d.view(),
+        d2_psi_d_r_d_z_2d.view(),
         d2_psi_d_z2_2d.view(),
     );
 

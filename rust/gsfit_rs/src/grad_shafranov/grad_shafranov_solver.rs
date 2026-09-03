@@ -1,10 +1,13 @@
+use super::GradShafranovSolve;
 use super::epp_chi_sq_mag::epp_chi_sq_mag;
+use super::equilibrium_solve::GradShafranovInputs;
 use super::gs_solution::GsSolution;
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
 use crate::sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
 use crate::source_functions::SourceFunctionTraits;
+use imas_rs::{Code, Equilibrium, EquilibriumTimeSlice};
 use log::info; // use log::{debug, error, info};
 use ndarray::{Array1, Array2, s};
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
@@ -144,7 +147,62 @@ pub fn solve_grad_shafranov(
         i_reg += n_passive_regularisation_this_passive;
     }
 
-    // loop over time in parallel and store in "results"
+    // Loop over time in parallel and store in "results"
+
+    // Create a new Equilibrium IDS object with the pre-allocated time slices,
+    // data will be Null initially
+    let mut equilibrium_ids: Equilibrium = Equilibrium::with_time(&times_to_reconstruct_ndarray);
+
+    // Settings the solver is run with. These apply to every time-slice, so they live on the IDS
+    // itself rather than inside `time_slice`
+    equilibrium_ids.code.iterations_n_max = Some(n_iter_max as i32);
+    equilibrium_ids.code.iterations_n_min = Some(n_iter_min as i32);
+    equilibrium_ids.code.iterations_n_no_vertical_feedback = Some(n_iter_no_vertical_feedback as i32);
+    equilibrium_ids.code.grad_shafranov_deviation_value_tolerance = Some(gs_error);
+    let equilibrium_code: &Code = &equilibrium_ids.code;
+
+    // Solve the GS equation for all time-slices, in parallel
+    let timing_start_ids: Instant = Instant::now();
+    equilibrium_ids
+        .time_slice
+        .par_iter_mut()
+        .enumerate()
+        .for_each(|(i_time, time_slice): (usize, &mut EquilibriumTimeSlice)| {
+            // Select the data for this time-slice
+            // Note: the GS solver is designed to consider a single time-slice
+            // and deliberately does not know what time-slice it is solving
+            let grad_shafranov_inputs: GradShafranovInputs = GradShafranovInputs {
+                plasma: &plasma_owned,
+                coils_dynamic: &coils_dynamic[i_time],
+                bp_probes_static: &bp_probes_static[i_time],
+                bp_probes_dynamic: &bp_probes_dynamic[i_time],
+                flux_loops_static: &flux_loops_static[i_time],
+                flux_loops_dynamic: &flux_loops_dynamic[i_time],
+                dialoop_static: &dialoop_statics[i_time],
+                dialoop_dynamic: &dialoop_dynamic[i_time],
+                rogowski_coils_static: &rogowski_coils_static[i_time],
+                rogowski_coils_dynamic: &rogowski_coils_dynamic[i_time],
+                isoflux_static: &isoflux_statics[i_time],
+                isoflux_dynamic: &isoflux_dynamic[i_time],
+                isoflux_boundary_static: &isoflux_boundary_statics[i_time],
+                isoflux_boundary_dynamic: &isoflux_boundary_dynamic[i_time],
+                pressure_sensors_static: &pressure_statics[i_time],
+                pressure_sensors_dynamic: &pressure_dynamic[i_time],
+                magnetic_axis_static: &stationary_point_statics[i_time],
+                magnetic_axis_dynamic: &stationary_point_dynamic[i_time],
+                i_rod: i_rod_vs_time[i_time],
+                p_prime_source_function: &p_prime_source_function,
+                ff_prime_source_function: &ff_prime_source_function,
+                passive_regularisations: &passive_regularisations,
+                passive_regularisations_weight: &passive_regularisations_weight,
+            };
+
+            // Solve
+            time_slice.solve(&grad_shafranov_inputs, equilibrium_code);
+        });
+    let duration_ids: Duration = timing_start_ids.elapsed();
+    info!("GSFit time elapsed (equilibrium IDS solver): {:?}", duration_ids);
+
     let timing_start: Instant = Instant::now();
     let mut gs_solutions: Vec<GsSolution> = (0..n_time)
         .into_par_iter() // Use Rayon to create a parallel iterator
@@ -199,6 +257,63 @@ pub fn solve_grad_shafranov(
         .collect();
     let duration: Duration = timing_start.elapsed();
     info!("GSFit time elapsed: {:?}", duration);
+
+    // TEMPORARY: compare the new IDS solver against `GsSolution`, time-slice by time-slice
+    {
+        let max_abs_diff = |a: &Option<Array2<f64>>, b: &Array2<f64>| -> f64 {
+            let Some(a) = a else { return f64::INFINITY };
+            if a.shape() != b.shape() {
+                return f64::INFINITY;
+            }
+            let mut worst: f64 = 0.0;
+            for (value_a, value_b) in a.iter().zip(b.iter()) {
+                if value_a.is_nan() && value_b.is_nan() {
+                    continue;
+                }
+                let difference: f64 = (value_a - value_b).abs();
+                if difference > worst {
+                    worst = difference;
+                }
+            }
+            return worst;
+        };
+        let diff_0d = |a: Option<f64>, b: f64| -> f64 {
+            let Some(a) = a else { return f64::INFINITY };
+            if a.is_nan() && b.is_nan() { 0.0 } else { (a - b).abs() }
+        };
+        for i_time in 0..n_time {
+            let time_slice = &equilibrium_ids.time_slice[i_time];
+            let gs = &gs_solutions[i_time];
+            let profiles_2d = &time_slice.profiles_2d[0];
+            println!(
+                "CHECK i_time={i_time}  psi={:.3e} d_psi_d_r={:.3e} d_psi_d_z={:.3e} d2r2={:.3e} d2rz={:.3e} d2z2={:.3e} psi_n={:.3e} j={:.3e} mask={:.3e} psi_coils={:.3e} | ip={:.3e} psi_a={:.3e} psi_b={:.3e} r_mag={:.3e} z_mag={:.3e} n_iter={}/{} gs_err={:.3e} n_nodes={} | delta_z={:.3e} bounding_r={:.3e} bounding_z={:.3e} boundary_type={}/{}",
+                max_abs_diff(&profiles_2d.psi, &gs.psi_2d),
+                max_abs_diff(&profiles_2d.d_psi_d_r, &gs.d_psi_d_r_2d),
+                max_abs_diff(&profiles_2d.d_psi_d_z, &gs.d_psi_d_z_2d),
+                max_abs_diff(&profiles_2d.d2_psi_d_r2, &gs.d2_psi_d_r2_2d),
+                max_abs_diff(&profiles_2d.d2_psi_d_r_d_z, &gs.d2_psi_d_r_d_z_2d),
+                max_abs_diff(&profiles_2d.d2_psi_d_z2, &gs.d2_psi_d_z2_2d),
+                max_abs_diff(&profiles_2d.psi_norm, &gs.psi_n_2d),
+                max_abs_diff(&profiles_2d.j_phi, &gs.j_2d),
+                max_abs_diff(&profiles_2d.mask, &gs.mask),
+                max_abs_diff(&profiles_2d.psi_coils, &gs.psi_2d_coils),
+                diff_0d(time_slice.global_quantities.ip, gs.ip),
+                diff_0d(time_slice.global_quantities.psi_magnetic_axis, gs.psi_a),
+                diff_0d(time_slice.boundary.psi, gs.psi_b),
+                diff_0d(time_slice.global_quantities.magnetic_axis.r, gs.r_mag),
+                diff_0d(time_slice.global_quantities.magnetic_axis.z, gs.z_mag),
+                time_slice.convergence.iterations_n.map(|n| n.to_string()).unwrap_or("unset".to_string()),
+                gs.n_iter,
+                diff_0d(time_slice.convergence.grad_shafranov_deviation_value, gs.gs_error_calculated),
+                time_slice.contour_tree.node.len(),
+                diff_0d(time_slice.convergence.delta_z, gs.delta_z),
+                diff_0d(time_slice.boundary.bounding.r, gs.bounding_r),
+                diff_0d(time_slice.boundary.bounding.z, gs.bounding_z),
+                time_slice.boundary.r#type.map(|t| t.to_string()).unwrap_or("unset".to_string()),
+                gs.xpt_diverted,
+            );
+        }
+    }
 
     // Post-process
     plasma.equilibrium_post_processor(&mut gs_solutions, &coils_owned, &plasma_owned);
