@@ -89,14 +89,23 @@ impl Dim1Linear {
         let mut f_new: Array1<f64> = Array1::<f64>::zeros(n_x_new);
 
         // Loop over the new x values
-        for i_x_new in 0..n_x_new {
+        'x_new_loop: for i_x_new in 0..n_x_new {
+            // Special case: `x_new` is exactly on an `x` grid point, so return the associated `f` value.
+            // The exact `==` is deliberate; no tolerance is wanted here.
+            for i_x in 0..n_x {
+                if x_new[i_x_new] == self.x[i_x] {
+                    f_new[i_x_new] = self.f[i_x];
+                    continue 'x_new_loop;
+                }
+            }
+
             // Loop over `x` to find the interval over which to interpolate
-            for i_x in 0..n_x - 1 {
+            'interval_loop: for i_x in 0..n_x - 1 {
                 if x_new[i_x_new] >= self.x[i_x] && x_new[i_x_new] <= self.x[i_x + 1] {
                     // TODO: I think this can be simplified?
                     let segment_fraction: f64 = (x_new[i_x_new] - self.x[i_x]) / (self.x[i_x + 1] - self.x[i_x]);
                     f_new[i_x_new] = self.f[i_x] * (1.0 - segment_fraction) + self.f[i_x + 1] * segment_fraction;
-                    break;
+                    break 'interval_loop;
                 }
             }
         }
@@ -127,15 +136,56 @@ impl Dim1Linear {
         let n_x: usize = self.x.len();
         let mut f_new: f64 = f64::NAN;
 
+        // Special case: `x_new` is exactly on an `x` grid point, so return the associated `f` value.
+        // The exact `==` is deliberate; no tolerance is wanted here.
+        for i_x in 0..n_x {
+            if x_new == self.x[i_x] {
+                return Ok(self.f[i_x]);
+            }
+        }
+
         // Loop over `x` to find the interval over which to interpolate
-        for i_x in 0..n_x - 1 {
+        'interval_loop: for i_x in 0..n_x - 1 {
             if x_new >= self.x[i_x] && x_new <= self.x[i_x + 1] {
                 let segment_fraction: f64 = (x_new - self.x[i_x]) / (self.x[i_x + 1] - self.x[i_x]);
                 f_new = self.f[i_x] * (1.0 - segment_fraction) + self.f[i_x + 1] * segment_fraction;
-                break;
+                break 'interval_loop;
             }
         }
 
         Ok(f_new)
     }
+}
+
+/// Test that `interpolate_scalar` returns `f` exactly when `x_new` lands on an `x` grid point,
+/// even when the neighbouring `f` values are NaN.
+#[test]
+fn test_interpolation_with_nans_either_side() {
+    use ndarray::array;
+    use crate::dim_1::linear::Dim1Linear;
+
+    let x: Array1<f64> = array![0.0, 1.0, 2.0];
+    let f: Array1<f64> = array![f64::NAN, 5.0, f64::NAN];
+    let interpolator_or_error: Result<Dim1Linear, Error> = Dim1Linear::new(x, f);
+    let interpolator: Dim1Linear = interpolator_or_error.unwrap();
+
+    let result: f64 = interpolator.interpolate_scalar(1.0).unwrap();
+    println!("result = {}", result);
+    assert_eq!(result, 5.0);
+}
+
+/// Test that `interpolate_array1` returns `f` exactly when `x_new` lands on an `x` grid point,
+/// even when the neighbouring `f` values are NaN.
+#[test]
+fn test_interpolate_array1_with_nans_either_side() {
+    use crate::dim_1::linear::Dim1Linear;
+    use ndarray::array;
+
+    let x: Array1<f64> = array![0.0, 1.0, 2.0];
+    let f: Array1<f64> = array![f64::NAN, 5.0, f64::NAN];
+    let interpolator: Dim1Linear = Dim1Linear::new(x, f).unwrap();
+
+    let x_new: Array1<f64> = array![1.0];
+    let f_new: Array1<f64> = interpolator.interpolate_array1(&x_new).unwrap();
+    assert_eq!(f_new[0], 5.0);
 }

@@ -25,6 +25,9 @@ from .setup_pressure_sensors import setup_pressure_sensors
 from .setup_rogowski_coils import setup_rogowski_coils
 from .setup_stationary_point_sensors import setup_stationary_point_sensors
 
+if typing.TYPE_CHECKING:
+    from ..st40_mdsplus_with_digital_filter import DatabaseReader as DigitalFilterDatabaseReader
+
 
 class DatabaseReader(DatabaseReaderProtocol):
     """
@@ -63,7 +66,7 @@ class DatabaseReader(DatabaseReaderProtocol):
         return setup_plasma(self, *args, **kwargs)
 
     def setup_pressure_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Pressure:
-        return setup_pressure_sensors(self, *args, **kwargs)
+        return setup_pressure_sensors(typing.cast("DigitalFilterDatabaseReader", self), *args, **kwargs)
 
     def setup_rogowski_coils(self, *args: typing.Any, **kwargs: typing.Any) -> RogowskiCoils:
         return setup_rogowski_coils(self, *args, **kwargs)

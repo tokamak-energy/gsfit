@@ -18,6 +18,16 @@
                     "pulseNo": null,
                     "run_name": "RUN02",
                     "usage": "PF and TF coil currents"
+                },
+                "ppts": {
+                    "pulseNo": null,
+                    "run_name": "BEST",
+                    "usage": "Pressure sensor good time-slices (BAD_MA flag)"
+                },
+                "ts": {
+                    "pulseNo": null,
+                    "run_name": "BEST",
+                    "usage": "Thomson scattering geometry and electron pressure"
                 }
             },
             "isoflux_code_name": null
@@ -91,7 +101,10 @@
             "time_end": 250.0e-3,
             "n_time": 20
         },
-        "user_defined": [0.20450000000000018]
+        "user_defined": [0.20450000000000018],
+        "good_pressure_sensors": {
+            "comment": "Reconstruct only the time-slices where the pressure sensors are good (BAD_MA is false in the PPTS tree). The PPTS run_name is set in the active method's \"workflow\" section in GSFIT_code_settings.json."
+        }
     },
     "initial_guess": {
         "ip": 425.0e3,

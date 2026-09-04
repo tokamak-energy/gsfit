@@ -135,7 +135,7 @@ class Gsfit(DiagnosticAndSimulationBase):
             if self.settings["GSFIT_code_settings.json"]["database_writer"]["method"] == "tokamak_energy_mdsplus_new":
                 from .database_writers.tokamak_energy_mdsplus_new.create_mdsplus_links import create_mdsplus_links
 
-                create_mdsplus_links(pulseNo_write=self.pulseNo_write, run_name=self.run_name)
+                create_mdsplus_links(pulseNo_write=self.pulseNo_write, run_name=self.run_name, tree_name=self.analysis_name)
 
     def setup_timeslices(self) -> None:
         """
@@ -161,6 +161,12 @@ class Gsfit(DiagnosticAndSimulationBase):
                 )
             case "user_defined":
                 time = np.array(timeslices_settings["user_defined"])
+            case "good_pressure_sensors":
+                # Reconstruct only the time-slices where the pressure sensors are "good".
+                # The `BAD_MA` reading lives in the `st40_mdsplus_with_digital_filter` reader.
+                from .database_readers.st40_mdsplus_with_digital_filter.setup_pressure_sensors import get_good_pressure_sensor_times
+
+                time = get_good_pressure_sensor_times(pulseNo=self.pulseNo, settings=self.settings)
             case _:
                 raise ValueError(f"Unknown timeslices method: {timeslices_settings['method']}")
 

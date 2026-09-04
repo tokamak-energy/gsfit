@@ -102,6 +102,6 @@
         "r_cur": 0.8,
         "z_cur": 0.0,
         "minor_radius": 0.5,
-        "kappa": 2.0
+        "kappa": 1.5
     }
 }

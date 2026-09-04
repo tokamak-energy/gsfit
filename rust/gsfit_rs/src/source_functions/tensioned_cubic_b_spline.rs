@@ -90,7 +90,12 @@ impl TensionedCubicBSpline {
         self.source_function_integral_single_dof(&psi_n_array, i_dof)[0]
     }
 
-    pub fn get_array1<'py>(&self, py: Python<'py>, name: &str) -> PyResult<Bound<'py, PyArray1<f64>>> {
+    pub fn get_array1<'py>(&self, py: Python<'py>, keys: Vec<String>) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        // This class stores a flat set of named arrays (there is no nested data-tree), so we
+        // resolve the leaf name from the final key. Accepting `Vec<String>` keeps the signature
+        // consistent with the derive-macro `get_array1` used by the other `gsfit_rs` classes
+        // (and with the `gsfit_rs.pyi` stub), so Python callers pass e.g. `["sigma1_array"]`.
+        let name: &str = keys.last().map(String::as_str).unwrap_or("");
         match name {
             "interior_knots" => Ok(PyArray1::from_array(py, &self.interior_knots)),
             "knots" => Ok(PyArray1::from_array(py, &self.knots)),
@@ -103,7 +108,7 @@ impl TensionedCubicBSpline {
             "sigma1_array" => Ok(PyArray1::from_array(py, &self.sigma1_array)),
             "sigma2_array" => Ok(PyArray1::from_array(py, &self.sigma2_array)),
             "tstar_array" => Ok(PyArray1::from_array(py, &self.tstar_array)),
-            _ => Err(PyValueError::new_err(format!("Unknown Array1 attribute: {}", name))),
+            _ => Err(PyValueError::new_err(format!("Unknown Array1 attribute: {:?}", keys))),
         }
     }
 }
