@@ -26,6 +26,7 @@ use faer::linalg::solvers::{SolveLstsq, Svd as FaerSvd};
 use faer::mat::MatRef;
 use faer::{Accum, Par};
 use geo::{Contains, Coord, LineString, Point, Polygon};
+use imas_rs::EMPTY_INT;
 use imas_rs::ids::wall::Wall as WallIds;
 use imas_rs::{
     Code, EquilibriumContourTreeNode, EquilibriumGreens, EquilibriumGreensPfActive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d,
@@ -765,10 +766,13 @@ impl<'a> EquilibriumSolver<'a> {
         self.time_slice.boundary.bounding.r = Some(f64::NAN);
         self.time_slice.boundary.bounding.z = Some(f64::NAN);
         self.time_slice.convergence.delta_z = Some(f64::NAN);
-        self.time_slice.convergence.iterations_n = None;
+        self.time_slice.convergence.iterations_n = Some(EMPTY_INT);
         self.time_slice.global_quantities.magnetic_axis.r = Some(f64::NAN);
         self.time_slice.global_quantities.magnetic_axis.z = Some(f64::NAN);
-        self.time_slice.boundary.r#type = None;
+        // `EMPTY_INT` rather than `None`: a boundary which does not exist is neither limited nor
+        // diverted, and IMAS spells that out with a reserved value, the integer counterpart of the
+        // `NaN` every float above is set to
+        self.time_slice.boundary.r#type = Some(EMPTY_INT);
     }
 
     /// Solve the inverse Grad-Shafranov problem

@@ -1,5 +1,6 @@
 import gsfit_rs
 import numpy as np
+from gsfit_rs.imas import equilibrium_paths as ep
 import numpy.typing as npt
 
 
@@ -19,8 +20,10 @@ def greens_with_boundary_points(plasma: gsfit_rs.Plasma) -> npt.NDArray[np.float
     Note: need to be careful not to double count the corner points
     """
 
-    r = plasma.get_array1(["grid", "r"])
-    z = plasma.get_array1(["grid", "z"])
+    # `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
+    equilibrium_ids = plasma.equilibrium_ids
+    r = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim1)
+    z = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
     r_min = np.min(r)
     r_max = np.max(r)
     z_min = np.min(z)

@@ -1,12 +1,116 @@
+import typing
 from typing import TYPE_CHECKING
 
 import numpy as np
+from gsfit_rs.imas import equilibrium_paths as ep
 
 # from st40_database import GetData
 
 if TYPE_CHECKING:
     from ...gsfit import Gsfit
     from . import DatabaseWriterTokamakEnergyMDSplus
+
+
+# Pairs of (MDSplus node path, IMAS path) for everything which comes out of the `equilibrium` IDS
+# one value per time-slice. See the same tables in `tokamak_energy_mdsplus_new`; this writer maps
+# the same quantities onto the older MDSplus node layout.
+_TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
+    # Two-d. `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
+    (("TWO_D", "BR"), ep.time_slice[:].profiles_2d[0].b_field_r),
+    (("TWO_D", "BT"), ep.time_slice[:].profiles_2d[0].b_field_phi),
+    (("TWO_D", "BZ"), ep.time_slice[:].profiles_2d[0].b_field_z),
+    (("TWO_D", "MASK"), ep.time_slice[:].profiles_2d[0].mask),
+    (("TWO_D", "P"), ep.time_slice[:].profiles_2d[0].pressure),
+    (("TWO_D", "PSI"), ep.time_slice[:].profiles_2d[0].psi),
+    # Global
+    (("GLOBAL", "BETA_N"), ep.time_slice[:].global_quantities.beta_tor_norm),
+    (("GLOBAL", "BETA_P_1"), ep.time_slice[:].global_quantities.beta_pol_1),
+    (("GLOBAL", "BETA_P_2"), ep.time_slice[:].global_quantities.beta_pol_2),
+    (("GLOBAL", "BETA_P_3"), ep.time_slice[:].global_quantities.beta_pol_3),
+    (("GLOBAL", "BT_VAC_RGEO"), ep.time_slice[:].global_quantities.bt_vac_at_r_geo),
+    (("GLOBAL", "CHI_MAG"), ep.time_slice[:].constraints.chi_squared_reduced),
+    (("GLOBAL", "LI_1"), ep.time_slice[:].global_quantities.li_1),
+    (("GLOBAL", "LI_2"), ep.time_slice[:].global_quantities.li_2),
+    (("GLOBAL", "LI_3"), ep.time_slice[:].global_quantities.li_3),
+    (("GLOBAL", "DELTA_Z"), ep.time_slice[:].convergence.delta_z),
+    (("GLOBAL", "ELON"), ep.time_slice[:].boundary.elongation),
+    (("GLOBAL", "PHI_DIA"), ep.time_slice[:].constraints.diamagnetic_flux.reconstructed),
+    (("GLOBAL", "GS_ERROR"), ep.time_slice[:].convergence.grad_shafranov_deviation_value),
+    (("GLOBAL", "I_ROD"), ep.time_slice[:].global_quantities.i_rod),
+    (("GLOBAL", "IP"), ep.time_slice[:].global_quantities.ip),
+    (("GLOBAL", "N_ITER"), ep.time_slice[:].convergence.iterations_n),
+    (("GLOBAL", "P"), ep.time_slice[:].global_quantities.pressure_2d_sum),
+    (("GLOBAL", "PSI_A"), ep.time_slice[:].global_quantities.psi_magnetic_axis),
+    (("GLOBAL", "PSI_B"), ep.time_slice[:].boundary.psi),
+    (("GLOBAL", "Q0"), ep.time_slice[:].global_quantities.q_axis),
+    (("GLOBAL", "Q95"), ep.time_slice[:].global_quantities.q_95),
+    (("GLOBAL", "R_CUR"), ep.time_slice[:].global_quantities.current_centre.r),
+    (("GLOBAL", "Z_CUR"), ep.time_slice[:].global_quantities.current_centre.z),
+    (("GLOBAL", "R_GEO"), ep.time_slice[:].boundary.geometric_axis.r),
+    (("GLOBAL", "Z_GEO"), ep.time_slice[:].boundary.geometric_axis.z),
+    (("GLOBAL", "R_MAG"), ep.time_slice[:].global_quantities.magnetic_axis.r),
+    (("GLOBAL", "Z_MAG"), ep.time_slice[:].global_quantities.magnetic_axis.z),
+    (("GLOBAL", "R_MINOR"), ep.time_slice[:].boundary.minor_radius),
+    (("GLOBAL", "V_LOOP"), ep.time_slice[:].global_quantities.v_loop),
+    (("GLOBAL", "VPLASMA"), ep.time_slice[:].global_quantities.volume),
+    (("GLOBAL", "W_MHD"), ep.time_slice[:].global_quantities.energy_mhd),
+    (("GLOBAL", "XPT_DIVERTED"), ep.time_slice[:].boundary.type),
+    # Plasma boundary
+    (("P_BOUNDARY", "RBND"), ep.time_slice[:].boundary.outline.r),
+    (("P_BOUNDARY", "ZBND"), ep.time_slice[:].boundary.outline.z),
+    (("P_BOUNDARY", "BOUNDING_R"), ep.time_slice[:].boundary.bounding.r),
+    (("P_BOUNDARY", "BOUNDING_Z"), ep.time_slice[:].boundary.bounding.z),
+    # Profiles, on the psi_norm grid
+    (("PROFILES", "RHO", "AREA"), ep.time_slice[:].profiles_1d.area),
+    (("PROFILES", "RHO", "AREA_PRIME"), ep.time_slice[:].profiles_1d.darea_dpsi),
+    (("PROFILES", "RHO", "F"), ep.time_slice[:].profiles_1d.f),
+    (("PROFILES", "RHO", "FF_PRIME"), ep.time_slice[:].profiles_1d.f_df_dpsi),
+    (("PROFILES", "RHO", "FLUX_TOR"), ep.time_slice[:].profiles_1d.phi),
+    (("PROFILES", "RHO", "P"), ep.time_slice[:].profiles_1d.pressure),
+    (("PROFILES", "RHO", "P_PRIME"), ep.time_slice[:].profiles_1d.dpressure_dpsi),
+    (("PROFILES", "RHO", "Q"), ep.time_slice[:].profiles_1d.q),
+    (("PROFILES", "RHO", "RHO_POL"), ep.time_slice[:].profiles_1d.rho_pol),
+    (("PROFILES", "RHO", "RHO_TOR"), ep.time_slice[:].profiles_1d.rho_tor),
+    (("PROFILES", "RHO", "VOL"), ep.time_slice[:].profiles_1d.volume),
+    (("PROFILES", "RHO", "VOL_PRIME"), ep.time_slice[:].profiles_1d.dvolume_dpsi),
+    (("PROFILES", "R_MIDPLANE", "P"), ep.time_slice[:].profiles_r_midplane.pressure),
+    # Scrape off layer (SOL)
+    (("SOL", "HFS", "CONTOUR", "R"), ep.time_slice[:].sol.hfs.contour.r),
+    (("SOL", "HFS", "CONTOUR", "Z"), ep.time_slice[:].sol.hfs.contour.z),
+    (("SOL", "HFS", "STRIKE_POINT", "R"), ep.time_slice[:].sol.hfs.strike_point.r),
+    (("SOL", "HFS", "STRIKE_POINT", "Z"), ep.time_slice[:].sol.hfs.strike_point.z),
+    (("SOL", "LFS", "CONTOUR", "R"), ep.time_slice[:].sol.lfs.contour.r),
+    (("SOL", "LFS", "CONTOUR", "Z"), ep.time_slice[:].sol.lfs.contour.z),
+    (("SOL", "LFS", "STRIKE_POINT", "R"), ep.time_slice[:].sol.lfs.strike_point.r),
+    (("SOL", "LFS", "STRIKE_POINT", "Z"), ep.time_slice[:].sol.lfs.strike_point.z),
+]
+
+# The same, for quantities which are the same on every time-slice
+_TIME_INDEPENDENT_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
+    (("TWO_D", "RGRID"), ep.time_slice[:].profiles_2d[0].grid.dim1),
+    (("TWO_D", "ZGRID"), ep.time_slice[:].profiles_2d[0].grid.dim2),
+    (("PROFILES", "RHO", "PSI_N"), ep.time_slice[:].profiles_1d.psi_norm),
+    (("PROFILES", "R_MIDPLANE", "R"), ep.time_slice[:].profiles_r_midplane.r),
+]
+
+
+def _assign(results: typing.Any, mdsplus_path: tuple[str, ...], value: typing.Any) -> None:
+    """Assign `value` into the nested `results` object at `mdsplus_path`."""
+    node = results
+    for key in mdsplus_path[:-1]:
+        node = node[key]
+    node[mdsplus_path[-1]] = value
+
+
+def _n_points_per_time(padded: "np.ndarray") -> "np.ndarray":
+    """Number of real points in each row of a NaN-padded `[n_time, n_points]` array.
+
+    The IDS stores one contour per time-slice, each its own length; gathering over time pads the
+    short rows with NaN to make a rectangle. MDSplus needs that rectangle plus a separate count of
+    how much of each row is real. Contour coordinates are always finite, so a NaN can only be
+    padding.
+    """
+    return np.isfinite(padded).sum(axis=1).astype(np.int32)
 
 
 def map_results_to_database(
@@ -29,50 +133,26 @@ def map_results_to_database(
     results = gsfit_controller.results
     pressure_sensors = gsfit_controller.pressure_sensors
 
-    # Two-d
-    results["TWO_D"]["BR"] = plasma.get_array3(["profiles_2d", "r_z", "br"])
-    results["TWO_D"]["BT"] = plasma.get_array3(["profiles_2d", "r_z", "bt"])
-    results["TWO_D"]["BZ"] = plasma.get_array3(["profiles_2d", "r_z", "bz"])
-    results["TWO_D"]["MASK"] = plasma.get_array3(["profiles_2d", "r_z", "mask"])
-    results["TWO_D"]["P"] = plasma.get_array3(["profiles_2d", "r_z", "p"])
-    results["TWO_D"]["PSI"] = plasma.get_array3(["profiles_2d", "r_z", "psi"])
-    results["TWO_D"]["RGRID"] = plasma.get_array1(["grid", "r"])
-    results["TWO_D"]["ZGRID"] = plasma.get_array1(["grid", "z"])
+    # Everything below comes out of the `equilibrium` IDS through the (MDSplus path, IMAS path)
+    # tables at the top of this file.
+    #
+    # Read once and reused: the `equilibrium_ids` getter copies the whole IDS out of Rust, so
+    # calling it per quantity would copy every 2D profile on every time-slice, once each
+    equilibrium_ids = plasma.equilibrium_ids
 
-    # Global
-    results["GLOBAL"]["BETA_N"] = plasma.get_array1(["global", "beta_n"])
-    results["GLOBAL"]["BETA_P_1"] = plasma.get_array1(["global", "beta_p_1"])
-    results["GLOBAL"]["BETA_P_2"] = plasma.get_array1(["global", "beta_p_2"])
-    results["GLOBAL"]["BETA_P_3"] = plasma.get_array1(["global", "beta_p_3"])
-    results["GLOBAL"]["BETA_T"] = plasma.get_array1(["global", "beta_t"])
-    results["GLOBAL"]["BT_VAC_RGEO"] = plasma.get_array1(["global", "bt_vac_at_r_geo"])
-    results["GLOBAL"]["CHI_MAG"] = plasma.get_array1(["global", "chi_mag"])
-    results["GLOBAL"]["LI_1"] = plasma.get_array1(["global", "li_1"])
-    results["GLOBAL"]["LI_2"] = plasma.get_array1(["global", "li_2"])
-    results["GLOBAL"]["LI_3"] = plasma.get_array1(["global", "li_3"])
-    results["GLOBAL"]["DELTA_Z"] = plasma.get_array1(["global", "delta_z"])
-    results["GLOBAL"]["ELON"] = plasma.get_array1(["boundary", "elongation"])
-    results["GLOBAL"]["PHI_DIA"] = plasma.get_array1(["global", "phi_dia"])
-    results["GLOBAL"]["GS_ERROR"] = plasma.get_array1(["global", "gs_error"])
-    results["GLOBAL"]["I_ROD"] = plasma.get_array1(["global", "i_rod"])
-    results["GLOBAL"]["IP"] = plasma.get_array1(["global", "ip"])
-    results["GLOBAL"]["N_ITER"] = np.array(plasma.get_vec_usize(["global", "n_iter"])).astype(np.int32)
-    results["GLOBAL"]["P"] = plasma.get_array1(["global", "p"])
-    results["GLOBAL"]["PSI_A"] = plasma.get_array1(["global", "psi_a"])
-    results["GLOBAL"]["PSI_B"] = plasma.get_array1(["boundary", "psi"])
-    results["GLOBAL"]["Q0"] = plasma.get_array1(["global", "q_axis"])
-    results["GLOBAL"]["Q95"] = plasma.get_array1(["global", "q_95"])
-    results["GLOBAL"]["R_CUR"] = plasma.get_array1(["global", "r_cur"])
-    results["GLOBAL"]["Z_CUR"] = plasma.get_array1(["global", "z_cur"])
-    results["GLOBAL"]["R_GEO"] = plasma.get_array1(["boundary", "geometric_axis", "r"])
-    results["GLOBAL"]["Z_GEO"] = plasma.get_array1(["boundary", "geometric_axis", "z"])
-    results["GLOBAL"]["R_MAG"] = plasma.get_array1(["global", "r_mag"])
-    results["GLOBAL"]["Z_MAG"] = plasma.get_array1(["global", "z_mag"])
-    results["GLOBAL"]["R_MINOR"] = plasma.get_array1(["boundary", "minor_radius"])
-    results["GLOBAL"]["V_LOOP"] = plasma.get_array1(["global", "v_loop"])
-    results["GLOBAL"]["VPLASMA"] = plasma.get_array1(["global", "volume"])
-    results["GLOBAL"]["W_MHD"] = plasma.get_array1(["global", "w_mhd"])
-    results["GLOBAL"]["XPT_DIVERTED"] = np.array(plasma.get_vec_bool(["global", "xpt_diverted"])).astype(np.int32)
+    for mdsplus_path, imas_path in _TIME_SERIES_PATH_PAIRS:
+        _assign(results, mdsplus_path, equilibrium_ids.get(imas_path))
+
+    for mdsplus_path, imas_path in _TIME_INDEPENDENT_PATH_PAIRS:
+        _assign(results, mdsplus_path, np.asarray(equilibrium_ids.get(imas_path))[0])
+
+    results["SOL"]["HFS"]["CONTOUR"]["N"] = _n_points_per_time(results["SOL"]["HFS"]["CONTOUR"]["R"])
+    results["SOL"]["LFS"]["CONTOUR"]["N"] = _n_points_per_time(results["SOL"]["LFS"]["CONTOUR"]["R"])
+
+    # The data dictionary defines `beta_tor` as a fraction, but this MDSplus node has always held a
+    # percentage, so the factor of 100 is put back here rather than changing what consumers read
+    results["GLOBAL"]["BETA_T"] = 100.0 * np.asarray(equilibrium_ids.get(ep.time_slice[:].global_quantities.beta_tor))
+
 
     # Bp probes (note, this is all the sensors, both the ones we fit and the ones we don't)
     bp_names = bp_probes.keys()  # list of strings; len(bp_names) = n_sensors
@@ -102,36 +182,19 @@ def map_results_to_database(
     results["CONSTRAINTS"]["ROG"]["WEIGHT"] = rogowski_coils.get_array1(["*", "fit_settings", "weight"])  # shape = [n_sensors]
 
     # Plasma boundary
-    results["P_BOUNDARY"]["NBND"] = np.array(plasma.get_vec_usize(["boundary", "outline", "n"]))
-    results["P_BOUNDARY"]["RBND"] = plasma.get_array2(["boundary", "outline", "r"])
-    results["P_BOUNDARY"]["ZBND"] = plasma.get_array2(["boundary", "outline", "z"])
-    results["P_BOUNDARY"]["BOUNDING_R"] = plasma.get_array1(["boundary", "bounding", "r"])
-    results["P_BOUNDARY"]["BOUNDING_Z"] = plasma.get_array1(["boundary", "bounding", "z"])
+    # The IDS stores each contour at its own length and the gather pads them into a rectangle;
+    # MDSplus wants the rectangle plus the count of real points in each row
+    results["P_BOUNDARY"]["NBND"] = _n_points_per_time(results["P_BOUNDARY"]["RBND"])
 
     # X-points
-    results["XPOINTS"]["UPPER"]["R"] = plasma.get_array1(["xpoints", "upper", "r"])
-    results["XPOINTS"]["UPPER"]["Z"] = plasma.get_array1(["xpoints", "upper", "z"])
-    results["XPOINTS"]["LOWER"]["R"] = plasma.get_array1(["xpoints", "lower", "r"])
-    results["XPOINTS"]["LOWER"]["Z"] = plasma.get_array1(["xpoints", "lower", "z"])
+    # TODO: the upper and lower x-points came from `gs_solution.rs`, which has been removed. The
+    # solver does not put them on the IDS, so there is nowhere to read them from; these nodes are
+    # left unwritten until the solver stores them
+    # results["XPOINTS"]["UPPER"]["R"] = ...
+    # results["XPOINTS"]["UPPER"]["Z"] = ...
+    # results["XPOINTS"]["LOWER"]["R"] = ...
+    # results["XPOINTS"]["LOWER"]["Z"] = ...
 
-    # Profiles
-    results["PROFILES"]["RHO"]["AREA"] = plasma.get_array2(["profiles_1d", "psi_norm", "area"])
-    results["PROFILES"]["RHO"]["AREA_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "area_prime"])
-    results["PROFILES"]["RHO"]["F"] = plasma.get_array2(["profiles_1d", "psi_norm", "f"])
-    results["PROFILES"]["RHO"]["FF_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "ff_prime"])
-    results["PROFILES"]["RHO"]["FLUX_TOR"] = plasma.get_array2(["profiles_1d", "psi_norm", "flux_tor"])
-    results["PROFILES"]["RHO"]["P"] = plasma.get_array2(["profiles_1d", "psi_norm", "p"])
-    results["PROFILES"]["RHO"]["P_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "p_prime"])
-    results["PROFILES"]["RHO"]["Q"] = plasma.get_array2(["profiles_1d", "psi_norm", "q"])
-    results["PROFILES"]["RHO"]["RHO_POL"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_pol"])
-    results["PROFILES"]["RHO"]["RHO_TOR"] = plasma.get_array2(["profiles_1d", "psi_norm", "rho_tor"])
-    results["PROFILES"]["RHO"]["PSI_N"] = plasma.get_array1(["profiles_1d", "psi_norm", "psi_norm"])
-    results["PROFILES"]["RHO"]["VOL"] = plasma.get_array2(["profiles_1d", "psi_norm", "vol"])
-    results["PROFILES"]["RHO"]["VOL_PRIME"] = plasma.get_array2(["profiles_1d", "psi_norm", "vol_prime"])
-
-    # Mid-plane profiles
-    results["PROFILES"]["R_MIDPLANE"]["P"] = plasma.get_array2(["profiles_1d", "r_midplane", "p"])
-    results["PROFILES"]["R_MIDPLANE"]["R"] = plasma.get_array1(["profiles_1d", "r_midplane", "r"])
 
     # Passives
     for passive_name in passives.keys():
@@ -187,16 +250,6 @@ def map_results_to_database(
             results["PASSIVES"][passive_name]["GEOMETRY"]["Z"] = passives.get_array1([passive_name, "geometry", "z"])
 
     # Scrape off layer (SOL)
-    results["SOL"]["HFS"]["CONTOUR"]["R"] = plasma.get_array2(["sol", "hfs", "contour", "r"])  # shape = [n_time, n_points]
-    results["SOL"]["HFS"]["CONTOUR"]["Z"] = plasma.get_array2(["sol", "hfs", "contour", "z"])  # shape = [n_time, n_points]
-    results["SOL"]["HFS"]["CONTOUR"]["N"] = np.array(plasma.get_vec_usize(["sol", "hfs", "contour", "n"])).astype(np.int32)  # shape = [n_time]
-    results["SOL"]["HFS"]["STRIKE_POINT"]["R"] = plasma.get_array1(["sol", "hfs", "strike_point", "r"])  # shape = [n_time]
-    results["SOL"]["HFS"]["STRIKE_POINT"]["Z"] = plasma.get_array1(["sol", "hfs", "strike_point", "z"])  # shape = [n_time]
-    results["SOL"]["LFS"]["CONTOUR"]["R"] = plasma.get_array2(["sol", "lfs", "contour", "r"])  # shape = [n_time, n_points]
-    results["SOL"]["LFS"]["CONTOUR"]["Z"] = plasma.get_array2(["sol", "lfs", "contour", "z"])  # shape = [n_time, n_points]
-    results["SOL"]["LFS"]["CONTOUR"]["N"] = np.array(plasma.get_vec_usize(["sol", "lfs", "contour", "n"])).astype(np.int32)  # shape = [n_time]
-    results["SOL"]["LFS"]["STRIKE_POINT"]["R"] = plasma.get_array1(["sol", "lfs", "strike_point", "r"])  # shape = [n_time]
-    results["SOL"]["LFS"]["STRIKE_POINT"]["Z"] = plasma.get_array1(["sol", "lfs", "strike_point", "z"])  # shape = [n_time]
 
     if len(pressure_sensors.keys()) > 0:
         results["CONSTRAINTS"]["PRESSURE"]["RECONSTRUCTED"] = pressure_sensors.get_array2(

@@ -256,7 +256,8 @@ impl Value {
             Value::FltNd(values) => return Ok(values.into_pyarray(py).into_any()),
 
             // Integers have no NaN, so an unset integer is an error rather than a silent
-            // promotion to float.
+            // promotion to float. A leaf which is legitimately empty is set to `EMPTY_INT` by
+            // whoever writes it, so reaching here means the leaf was never filled in at all.
             Value::Int0d(Some(value)) => return value.into_bound_py_any(py),
             Value::Int0d(None) => {
                 return Err(PyValueError::new_err(format!("`{path}` is unset (None) and has no integer representation")));
@@ -311,7 +312,8 @@ impl Gatherable for i32 {
 
     fn stack(values: Vec<Option<Self>>) -> Result<Value, String> {
         // There is no integer NaN, so an unset element cannot be represented and is
-        // reported rather than filled with a sentinel.
+        // reported rather than filled with a sentinel. A leaf which is legitimately empty is set
+        // to `EMPTY_INT` by whoever writes it.
         let mut stacked: Array1<i32> = Array1::zeros(values.len());
         for i_value in 0..values.len() {
             match values[i_value] {

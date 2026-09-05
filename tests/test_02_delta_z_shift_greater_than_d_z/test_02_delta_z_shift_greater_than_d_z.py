@@ -24,6 +24,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from gsfit import Gsfit
+from gsfit_rs.imas import equilibrium_paths as ep
 
 
 def test_02_delta_z_shift_greater_than_d_z() -> None:
@@ -92,13 +93,15 @@ def test_02_delta_z_shift_greater_than_d_z() -> None:
     # To fix this we need to add more instrumentation into the Rust code "observability".
     gsfit_controller.run()
 
-    plasma = gsfit_controller.plasma
-    grid_z = plasma.get_array1(["grid", "z"])
+    # `plasma.equilibrium_ids` copies the whole IDS out of Rust, so read it once and reuse it
+    equilibrium_ids = gsfit_controller.plasma.equilibrium_ids
+
+    grid_z = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
     d_z = grid_z[1] - grid_z[0]
     print(f"test_02_delta_z_shift_greater_than_d_z:  d_z = {d_z} m")
-    gs_error = plasma.get_array1(["global", "gs_error"])[0]
-    r_mag = plasma.get_array1(["global", "r_mag"])[0]
-    z_mag = plasma.get_array1(["global", "z_mag"])[0]
+    gs_error = equilibrium_ids.get(ep.time_slice[0].convergence.grad_shafranov_deviation_value)
+    r_mag = equilibrium_ids.get(ep.time_slice[0].global_quantities.magnetic_axis.r)
+    z_mag = equilibrium_ids.get(ep.time_slice[0].global_quantities.magnetic_axis.z)
 
     assert np.isfinite(gs_error), "GS reconstruction failed, should have converged"
     assert np.isfinite(r_mag) and np.isfinite(z_mag), "magnetic axis position is not finite"

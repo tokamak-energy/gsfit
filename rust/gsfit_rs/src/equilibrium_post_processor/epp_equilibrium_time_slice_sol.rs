@@ -17,14 +17,12 @@ use ndarray::{Array1, Array2};
 /// * `time_slice` - the solved time-slice; the `sol` contours and strike points are written into it
 /// * `wall_ids` - the wall IDS, which supplies the vacuum vessel the legs are traced up to
 pub fn epp_equilibrium_time_slice_sol(time_slice: &mut EquilibriumTimeSlice, wall_ids: &WallIds) {
-    // A slice which did not converge has no boundary at all, and so no `boundary/type`: the solver
-    // leaves that one unset rather than NaN, because a boundary which does not exist is neither
-    // limited nor diverted. So this has to be tested before `boundary/type` is read
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
-
     // `boundary/type` is 0 for a limited plasma and 1 for a diverted one. Only a diverted plasma
-    // has an X-point, and so only a diverted plasma has scrape-off layer legs
-    let xpt_diverted: bool = !psi_a.is_nan() && time_slice.boundary.r#type.unwrap() == 1;
+    // has an X-point, and so only a diverted plasma has scrape-off layer legs.
+    //
+    // A slice which did not converge has no boundary at all, so the solver sets this to
+    // `EMPTY_INT`, which is neither, and the test below rejects it along with a limited plasma
+    let xpt_diverted: bool = time_slice.boundary.r#type.unwrap() == 1;
     if !xpt_diverted {
         store_legs(
             time_slice,

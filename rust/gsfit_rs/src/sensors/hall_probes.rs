@@ -287,8 +287,9 @@ impl HallProbes {
 
             // Plasma
             let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1(); // shape = [n_z*n_r]
-            let j_2d: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("j").unwrap_array3(); // shape = [n_time, n_z, n_r]
-            let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
+            // `time_slice[0]` because the grid is the same on every time-slice, and `profiles_2d[0]`
+            // because GSFit solves on a single rectangular (R, Z) grid
+            let d_area: f64 = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).grid.d_area.unwrap();
 
             // Loop over time
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -317,7 +318,9 @@ impl HallProbes {
                 }
 
                 // Plasma
-                let j_2d_flat: Array1<f64> = Array1::from_iter(j_2d.slice(s![i_time, .., ..]).iter().copied());
+                // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid
+                let j_2d: &Array2<f64> = plasma.equilibrium_ids.time_slice(i_time).profiles_2d(0).j_phi.as_ref().unwrap();
+                let j_2d_flat: Array1<f64> = Array1::from_iter(j_2d.iter().copied());
                 let sensor_values_from_plasma: f64 = (&g_with_plasma * j_2d_flat).sum() * d_area;
 
                 // Total
@@ -409,8 +412,14 @@ impl HallProbes {
     }
 
     pub fn greens_with_plasma_rs(&mut self, plasma: Plasma) {
-        let plasma_r: Array1<f64> = plasma.results.get("grid").get("flat").get("r").unwrap_array1();
-        let plasma_z: Array1<f64> = plasma.results.get("grid").get("flat").get("z").unwrap_array1();
+        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
+        // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the
+        // (R, Z) mesh, so iterating them row-major gives the flattened grid the Green's tables are
+        // indexed by
+        let mesh_r: &Array2<f64> = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).r.as_ref().unwrap();
+        let mesh_z: &Array2<f64> = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).z.as_ref().unwrap();
+        let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
+        let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
         for sensor_name in self.results.keys() {
             // Get variables out of self

@@ -407,11 +407,17 @@ impl Isoflux {
         // Change Python type into Rust
         let plasma_local: &Plasma = &plasma;
 
-        let n_r: usize = plasma_local.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = plasma_local.results.get("grid").get("n_z").unwrap_usize();
+        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
+        // because GSFit solves on a single rectangular (R, Z) grid
+        let n_r: usize = plasma_local.equilibrium_ids.time_slice(0).profiles_2d(0).grid.dim1.as_ref().unwrap().len();
+        let n_z: usize = plasma_local.equilibrium_ids.time_slice(0).profiles_2d(0).grid.dim2.as_ref().unwrap().len();
 
-        let plasma_r: Array1<f64> = plasma_local.results.get("grid").get("flat").get("r").unwrap_array1(); // shape = n_z * n_r
-        let plasma_z: Array1<f64> = plasma_local.results.get("grid").get("flat").get("z").unwrap_array1();
+        // `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives the
+        // flattened grid the Green's tables are indexed by
+        let mesh_r: &Array2<f64> = plasma_local.equilibrium_ids.time_slice(0).profiles_2d(0).r.as_ref().unwrap();
+        let mesh_z: &Array2<f64> = plasma_local.equilibrium_ids.time_slice(0).profiles_2d(0).z.as_ref().unwrap();
+        let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied()); // shape = n_z * n_r
+        let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
         for sensor_name in self.results.keys() {
             // Get the isoflux locations

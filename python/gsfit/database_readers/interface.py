@@ -360,7 +360,9 @@ class DatabaseReaderProtocol(Protocol):
         """
         ...
 
-    def setup_plasma(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> Plasma:
+    def setup_plasma(
+        self, pulseNo: int, settings: dict[str, typing.Any], times_to_reconstruct: npt.NDArray[np.float64], **kwargs: dict[str, typing.Any]
+    ) -> Plasma:
         """
         This method initialises the Rust `Plasma` class.
 
@@ -398,10 +400,6 @@ class DatabaseReaderProtocol(Protocol):
             z_min=...,                                          # read from `GSFIT_code_settings.json` file
             z_max=...,                                          # read from `GSFIT_code_settings.json` file
             psi_n=...,                                          # read from `GSFIT_code_settings.json` file
-            limit_pts_r=...,                                    # read from `GSFIT_code_settings.json` file
-            limit_pts_z=...,                                    # read from `GSFIT_code_settings.json` file
-            vessel_r=...,                                       # read from `GSFIT_code_settings.json` file
-            vessel_z=...,                                       # read from `GSFIT_code_settings.json` file
             p_prime_source_function=p_prime_source_function,    # built above
             ff_prime_source_function=ff_prime_source_function,  # built above
             initial_guess_ip=...,                              # read from `GSFIT_code_settings.json` file
@@ -410,6 +408,7 @@ class DatabaseReaderProtocol(Protocol):
             initial_guess_minor_radius=...,                    # read from `GSFIT_code_settings.json` file
             initial_guess_elongation=...,                      # read from `GSFIT_code_settings.json` file
             vacuum_toroidal_field_reference_radius=...,        # read from `GSFIT_code_settings.json` file
+            times_to_reconstruct=times_to_reconstruct,         # passed in, from `setup_timeslices`
         )
 
         return plasma

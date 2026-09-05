@@ -36,6 +36,10 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("BOUNDARY", "BOUNDING", "Z"), ep.time_slice[:].boundary.bounding.z),
     # Convergence
     (("CONVERGENCE", "GS_ERROR"), ep.time_slice[:].convergence.grad_shafranov_deviation_value),
+    # A time-slice which did not converge has no iteration count and no boundary type. Those are
+    # the only two integer nodes here, and they read back as IMAS's `EMPTY_INT` (-999999999),
+    # which is the integer counterpart of the `NaN` every unset float reads back as
+    (("CONVERGENCE", "ITERATIONS_N"), ep.time_slice[:].convergence.iterations_n),
     # Global
     (("GLOBAL", "CURRENT_CENT", "R"), ep.time_slice[:].global_quantities.current_centre.r),
     (("GLOBAL", "CURRENT_CENT", "Z"), ep.time_slice[:].global_quantities.current_centre.z),
@@ -60,6 +64,7 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("GLOBAL", "Q_95"), ep.time_slice[:].global_quantities.q_95),
     (("GLOBAL", "V_LOOP"), ep.time_slice[:].global_quantities.v_loop),
     (("GLOBAL", "VOLUME"), ep.time_slice[:].global_quantities.volume),
+    (("GLOBAL", "XPT_DIVERTED"), ep.time_slice[:].boundary.type),
     # Profiles_1d, on the psi_norm grid
     (("PROFILES_1D", "PSI_NORM", "AREA"), ep.time_slice[:].profiles_1d.area),
     (("PROFILES_1D", "PSI_NORM", "AREA_PRIME"), ep.time_slice[:].profiles_1d.darea_dpsi),
@@ -111,27 +116,6 @@ def _assign(results: typing.Any, mdsplus_path: tuple[str, ...], value: typing.An
     for key in mdsplus_path[:-1]:
         node = node[key]
     node[mdsplus_path[-1]] = value
-
-
-def _gather_int(
-    equilibrium_ids: typing.Any,
-    node_for_slice: typing.Callable[[int], typing.Any],
-    n_time: int,
-    unset: int,
-) -> "np.ndarray":
-    """Gather an integer node over time, substituting `unset` where the IDS holds no value.
-
-    Integers have no NaN, so gathering with `time_slice[:]` refuses a node which is unset on any
-    time-slice rather than inventing a sentinel. A time-slice which did not converge has neither an
-    iteration count nor a boundary type, so those are read one slice at a time and the sentinel is
-    chosen here, where it is visible.
-    """
-    values: "np.ndarray" = np.full(n_time, unset, dtype=np.int32)
-    for i_time in range(n_time):
-        value = equilibrium_ids.get(node_for_slice(i_time))
-        if value is not None:
-            values[i_time] = value
-    return values
 
 
 def _n_points_per_time(padded: "np.ndarray") -> "np.ndarray":
@@ -190,15 +174,6 @@ def map_results_to_database(
     results["BOUNDARY"]["OUTLINE"]["N"] = _n_points_per_time(results["BOUNDARY"]["OUTLINE"]["R"])
     results["SOL"]["HFS"]["CONTOUR"]["N"] = _n_points_per_time(results["SOL"]["HFS"]["CONTOUR"]["R"])
     results["SOL"]["LFS"]["CONTOUR"]["N"] = _n_points_per_time(results["SOL"]["LFS"]["CONTOUR"]["R"])
-
-    # Integer nodes. A time-slice which did not converge has no iteration count and no boundary
-    # type. `-1` is what the old `DataTree` path wrote for the iteration count, because its
-    # `usize::MAX` wraps to `-1` on the cast to `int32`; `0` matches its `xpt_diverted = false`
-    n_time: int = len(equilibrium_ids)
-    results["CONVERGENCE"]["ITERATIONS_N"] = _gather_int(
-        equilibrium_ids, lambda i_time: ep.time_slice[i_time].convergence.iterations_n, n_time, unset=-1
-    )
-    results["GLOBAL"]["XPT_DIVERTED"] = _gather_int(equilibrium_ids, lambda i_time: ep.time_slice[i_time].boundary.type, n_time, unset=0)
 
     # The data dictionary defines `beta_tor` as a fraction, but this MDSplus node has always held a
     # percentage, so the factor of 100 is put back here rather than changing what consumers read

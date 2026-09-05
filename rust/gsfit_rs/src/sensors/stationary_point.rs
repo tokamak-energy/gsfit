@@ -415,10 +415,16 @@ impl StationaryPoint {
     }
 
     pub fn greens_with_plasma_rs(&mut self, plasma: Plasma) {
-        let plasma_r: Array1<f64> = plasma.results.get("grid").get("flat").get("r").unwrap_array1();
-        let plasma_z: Array1<f64> = plasma.results.get("grid").get("flat").get("z").unwrap_array1();
-        let n_r: usize = plasma.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = plasma.results.get("grid").get("n_z").unwrap_usize();
+        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
+        // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the
+        // (R, Z) mesh, so iterating them row-major gives the flattened grid the Green's tables are
+        // indexed by
+        let mesh_r: &Array2<f64> = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).r.as_ref().unwrap();
+        let mesh_z: &Array2<f64> = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).z.as_ref().unwrap();
+        let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
+        let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
+        let n_r: usize = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).grid.dim1.as_ref().unwrap().len();
+        let n_z: usize = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).grid.dim2.as_ref().unwrap().len();
 
         for sensor_name in self.results.keys() {
             // Get time

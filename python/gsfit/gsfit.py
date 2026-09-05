@@ -322,11 +322,14 @@ class Gsfit(DiagnosticAndSimulationBase):
         toc = time_py.time()
         self.logger.info(msg=f"`passives` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
+        times_to_reconstruct = self.results["TIME"]
+
         tic = time_py.time()
-        self.plasma = database_reader.setup_plasma(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        self.plasma = database_reader.setup_plasma(
+            pulseNo=self.pulseNo, settings=self.settings, times_to_reconstruct=times_to_reconstruct, **kwargs
+        )
         toc = time_py.time()
         self.logger.info(msg=f"`plasma` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-        times_to_reconstruct = self.results["TIME"]
 
         tic = time_py.time()
         self.wall = database_reader.setup_wall(pulseNo=self.pulseNo, settings=self.settings, **kwargs)

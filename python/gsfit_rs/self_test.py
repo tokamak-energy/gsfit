@@ -1,4 +1,5 @@
 import numpy as np
+from gsfit_rs.imas import equilibrium_paths as ep
 
 from gsfit_rs import BpProbes
 from gsfit_rs import Coils
@@ -114,10 +115,6 @@ def run() -> None:
         z_min=-1.5,
         z_max=1.5,
         psi_n=np.linspace(0.0, 1.0, 100),
-        limit_pts_r=limit_pts_r,
-        limit_pts_z=limit_pts_z,
-        vessel_r=limit_pts_r,
-        vessel_z=limit_pts_z,
         p_prime_source_function=p_prime_source_function,
         ff_prime_source_function=ff_prime_source_function,
         initial_guess_ip=ip_guess,
@@ -126,6 +123,7 @@ def run() -> None:
         initial_guess_minor_radius=0.5,
         initial_guess_elongation=2.0,
         vacuum_toroidal_field_reference_radius=10.5,
+        times_to_reconstruct=np.array([0.5]),
     )
 
     # Wall. `unit(0)` is the vacuum vessel contour; here it is the only limiter unit
@@ -186,19 +184,22 @@ def run() -> None:
         anderson_mixing_from_previous_iter=0.0,
     )
 
-    r = plasma.get_array1(["grid", "r"])
-    z = plasma.get_array1(["grid", "z"])
-    psi_2d = plasma.get_array3(["profiles_2d", "r_z", "psi"])
+    equilibrium_ids = plasma.equilibrium_ids
+
+    # `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
+    r = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim1)
+    z = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
+    psi_2d = equilibrium_ids.get(ep.time_slice[:].profiles_2d[0].psi)
     import matplotlib.pyplot as plt
 
     plt.figure()
     plt.contour(r, z, psi_2d[0, :, :], 100)
     plt.axis("equal")
     plt.plot(limit_pts_r, limit_pts_z, marker="x", color="black")
-    bounding_r = plasma.get_array1(["boundary", "bounding", "r"])
-    bounding_z = plasma.get_array1(["boundary", "bounding", "z"])
-    boundary_r = plasma.get_array2(["boundary", "outline", "r"])[0, :]
-    boundary_z = plasma.get_array2(["boundary", "outline", "z"])[0, :]
+    bounding_r = equilibrium_ids.get(ep.time_slice[:].boundary.bounding.r)
+    bounding_z = equilibrium_ids.get(ep.time_slice[:].boundary.bounding.z)
+    boundary_r = equilibrium_ids.get(ep.time_slice[0].boundary.outline.r)
+    boundary_z = equilibrium_ids.get(ep.time_slice[0].boundary.outline.z)
     plt.plot(bounding_r, bounding_z, marker="o", color="red")
     plt.plot(boundary_r, boundary_z, color="red")
     plt.plot()

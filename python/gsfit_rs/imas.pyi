@@ -46,7 +46,8 @@ class Equilibrium:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. Unset floats read back as NaN.
+        gives one value, a slice gathers. An unset float reads back as NaN, and
+        an unset integer as IMAS's EMPTY_INT (-999999999).
         """
     def __len__(self) -> int:
         """The number of time slices held by this IDS."""
@@ -5402,7 +5403,8 @@ class Wall:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. Unset floats read back as NaN.
+        gives one value, a slice gathers. An unset float reads back as NaN, and
+        an unset integer as IMAS's EMPTY_INT (-999999999).
         """
     def __len__(self) -> int:
         """The number of time slices held by this IDS."""

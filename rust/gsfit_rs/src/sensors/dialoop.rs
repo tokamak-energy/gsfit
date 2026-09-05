@@ -1,6 +1,7 @@
 use crate::Plasma;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic, create_empty_sensor_data};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use imas_rs::EquilibriumTimeSlice;
 use ndarray::{Array1, Array2, Array3, Axis, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
@@ -246,15 +247,13 @@ impl Dialoop {
     /// with `epp_bt_2d` in `plasma.rs`, and integrates `(f - f_vac) / R` over the plasma mask
     /// (Moret Eq. 41).
     pub fn calculate_sensor_values_rs(&mut self, plasma: &Plasma) {
-        let psi_n_2d: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("psi_norm").unwrap_array3(); // shape = [n_time, n_z, n_r]
-        let mask_2d: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("mask").unwrap_array3(); // shape = [n_time, n_z, n_r]
-        let flat_r: Array1<f64> = plasma.results.get("grid").get("flat").get("r").unwrap_array1(); // shape = [n_z * n_r]
-        let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
-        let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
-        let psi_a_vs_time: Array1<f64> = plasma.results.get("global").get("psi_a").unwrap_array1();
-        let psi_b_vs_time: Array1<f64> = plasma.results.get("boundary").get("psi").unwrap_array1();
-        let i_rod_vs_time: Array1<f64> = plasma.results.get("global").get("i_rod").unwrap_array1();
-        let ff_coeffs: Array2<f64> = plasma.results.get("source_functions").get("ff_prime").get("coefficients").unwrap_array2(); // shape = [n_time, n_dof]
+        // `time_slice[0]` because the grid is the same on every time-slice, and `profiles_2d[0]`
+        // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` is the (R, Z)
+        // mesh, so iterating it row-major gives the flattened grid the Green's tables are indexed by
+        let mesh_r: &Array2<f64> = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).r.as_ref().unwrap();
+        let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied()); // shape = [n_z * n_r]
+        let d_area: f64 = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).grid.d_area.unwrap();
+        let time: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.unwrap();
 
         let n_time: usize = time.len();
 
@@ -262,12 +261,17 @@ impl Dialoop {
             let mut values: Array1<f64> = Array1::zeros(n_time);
 
             for i_time in 0..n_time {
-                let psi_n_flat: Array1<f64> = Array1::from_iter(psi_n_2d.slice(s![i_time, .., ..]).iter().copied());
-                let mask_flat: Array1<f64> = Array1::from_iter(mask_2d.slice(s![i_time, .., ..]).iter().copied());
-                let ff_dof: Array1<f64> = ff_coeffs.slice(s![i_time, ..]).to_owned();
+                let time_slice: &EquilibriumTimeSlice = plasma.equilibrium_ids.time_slice(i_time);
+
+                // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid
+                let psi_n_2d: &Array2<f64> = time_slice.profiles_2d(0).psi_norm.as_ref().unwrap();
+                let mask_2d: &Array2<f64> = time_slice.profiles_2d(0).mask.as_ref().unwrap();
+                let psi_n_flat: Array1<f64> = Array1::from_iter(psi_n_2d.iter().copied());
+                let mask_flat: Array1<f64> = Array1::from_iter(mask_2d.iter().copied());
+                let ff_dof: Array1<f64> = time_slice.source_functions.ff_prime.coefficients.as_ref().unwrap().to_owned();
 
                 // Vacuum toroidal flux function: f_vac = R0 * B_phi0 = MU_0 * i_rod / (2 * PI)
-                let f_vac: f64 = MU_0 * i_rod_vs_time[i_time] / (2.0 * PI);
+                let f_vac: f64 = MU_0 * time_slice.global_quantities.i_rod.unwrap() / (2.0 * PI);
 
                 // G(psi_n) = sum_i ff'_dof[i] * ff'_integral_i(psi_n)
                 let g_integral: Array1<f64> = plasma.ff_prime_source_function.source_function_integral(&psi_n_flat, &ff_dof);
@@ -277,7 +281,7 @@ impl Dialoop {
                 // (f_vac < 0) yields a negative f, matching the vacuum boundary condition
                 // f(psi_n = 1) = f_vac; otherwise the diamagnetic flux gets the wrong sign.
                 let f_sign: f64 = if f_vac >= 0.0 { 1.0 } else { -1.0 };
-                let d_psi: f64 = psi_b_vs_time[i_time] - psi_a_vs_time[i_time];
+                let d_psi: f64 = time_slice.boundary.psi.unwrap() - time_slice.global_quantities.psi_magnetic_axis.unwrap();
                 let f_squared: Array1<f64> = 2.0 * d_psi * &g_integral + f_vac * f_vac;
                 let f_minus_f_vac: Array1<f64> = f_sign * f_squared.mapv(f64::sqrt) - f_vac;
 

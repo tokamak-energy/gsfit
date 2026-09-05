@@ -15,12 +15,14 @@ def setup_plasma(
     self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
+    times_to_reconstruct: npt.NDArray[np.float64],
 ) -> Plasma:
     """
     This method initialises the Rust `Plasma` class.
 
     :param pulseNo: Pulse number, used to read from the database
     :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    :param times_to_reconstruct: Times the equilibrium will be solved at [second]
 
     **This method is specific to ST40's experimental MDSplus database.**
 
@@ -99,10 +101,6 @@ def setup_plasma(
         z_min,
         z_max,
         psi_n,  # BUXTON: perhaps better to send in `n_psi_n`
-        limit_pts_r,
-        limit_pts_z,
-        vessel_r,
-        vessel_z,
         p_prime_source_function,
         ff_prime_source_function,
         initial_guess_ip,
@@ -111,6 +109,7 @@ def setup_plasma(
         initial_guess_minor_radius,
         initial_guess_elongation,
         vacuum_toroidal_field_reference_radius,
+        times_to_reconstruct,
     )
 
     return plasma

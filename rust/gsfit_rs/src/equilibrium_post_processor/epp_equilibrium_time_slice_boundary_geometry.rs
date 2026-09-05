@@ -6,6 +6,8 @@
 use imas_rs::EquilibriumTimeSlice;
 use ndarray::Array1;
 use ndarray_stats::QuantileExt;
+#[cfg(test)]
+use std::f64::consts::PI;
 
 /// Calculate the scalar geometry of the plasma boundary, and store it in the time-slice.
 ///
@@ -210,4 +212,92 @@ fn epp_squareness(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>, centre_r: 
     let t_ellipse: f64 = std::f64::consts::FRAC_1_SQRT_2;
     let squareness: f64 = (t_boundary - t_ellipse) / (1.0 - t_ellipse);
     return squareness;
+}
+
+#[test]
+fn test_epp_boundary_geometry_ellipse() {
+    use approx::assert_abs_diff_eq;
+
+    // An ellipse has zero triangularity and zero squareness
+    let r_geo: f64 = 2.5;
+    let z_geo: f64 = 0.1;
+    let r_minor: f64 = 1.0;
+    let kappa: f64 = 1.8;
+
+    // `n_theta` divisible by 4, so that the extremal points are exactly on the contour
+    let n_theta: usize = 1000;
+    let theta: Array1<f64> = Array1::linspace(0.0, 2.0 * PI * (1.0 - 1.0 / (n_theta as f64)), n_theta);
+    let boundary_r: Array1<f64> = r_geo + r_minor * theta.mapv(f64::cos);
+    let boundary_z: Array1<f64> = z_geo + kappa * r_minor * theta.mapv(f64::sin);
+
+    let (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o) = epp_boundary_geometry(&boundary_r, &boundary_z);
+
+    assert_abs_diff_eq!(elongation, kappa, epsilon = 1e-6);
+    assert_abs_diff_eq!(triang, 0.0, epsilon = 1e-6);
+    assert_abs_diff_eq!(triang_l, 0.0, epsilon = 1e-6);
+    assert_abs_diff_eq!(triang_u, 0.0, epsilon = 1e-6);
+    assert_abs_diff_eq!(square_l_i, 0.0, epsilon = 1e-3);
+    assert_abs_diff_eq!(square_l_o, 0.0, epsilon = 1e-3);
+    assert_abs_diff_eq!(square_u_i, 0.0, epsilon = 1e-3);
+    assert_abs_diff_eq!(square_u_o, 0.0, epsilon = 1e-3);
+}
+
+#[test]
+fn test_epp_boundary_geometry_miller() {
+    use approx::assert_abs_diff_eq;
+
+    // Miller parameterisation: `r = r_geo + r_minor * cos(theta + arcsin(delta) * sin(theta))`
+    // The top point is at `theta = pi / 2`, where `r = r_geo - r_minor * delta`, so `triang = delta` exactly
+    let r_geo: f64 = 0.9;
+    let z_geo: f64 = 0.0;
+    let r_minor: f64 = 0.6;
+    let kappa: f64 = 2.2;
+    let delta: f64 = 0.4;
+
+    let n_theta: usize = 1000;
+    let theta: Array1<f64> = Array1::linspace(0.0, 2.0 * PI * (1.0 - 1.0 / (n_theta as f64)), n_theta);
+    let boundary_r: Array1<f64> = r_geo + r_minor * theta.mapv(|theta_local| (theta_local + delta.asin() * theta_local.sin()).cos());
+    let boundary_z: Array1<f64> = z_geo + kappa * r_minor * theta.mapv(f64::sin);
+
+    let (elongation, triang, triang_l, triang_u, _square_l_i, _square_l_o, _square_u_i, _square_u_o) = epp_boundary_geometry(&boundary_r, &boundary_z);
+
+    assert_abs_diff_eq!(elongation, kappa, epsilon = 1e-6);
+    assert_abs_diff_eq!(triang, delta, epsilon = 1e-6);
+    assert_abs_diff_eq!(triang_l, delta, epsilon = 1e-6);
+    assert_abs_diff_eq!(triang_u, delta, epsilon = 1e-6);
+}
+
+#[test]
+fn test_epp_boundary_geometry_superellipse() {
+    use approx::assert_abs_diff_eq;
+
+    // Superellipse: `|(r - r_geo) / r_minor| ** n_exponent + |(z - z_geo) / (kappa * r_minor)| ** n_exponent = 1`
+    // The boundary crosses the quadrant diagonal at `t = (1 / 2) ** (1 / n_exponent)` of its length,
+    // giving an analytic squareness: `(t - 1 / sqrt(2)) / (1 - 1 / sqrt(2))`
+    // Note: `n_exponent = 2` is an ellipse (squareness = 0); `n_exponent = infinity` is a rectangle (squareness = 1)
+    let r_geo: f64 = 2.0;
+    let z_geo: f64 = -0.2;
+    let r_minor: f64 = 0.8;
+    let kappa: f64 = 1.5;
+    let n_exponent: f64 = 10.0;
+
+    let n_theta: usize = 1000;
+    let theta: Array1<f64> = Array1::linspace(0.0, 2.0 * PI * (1.0 - 1.0 / (n_theta as f64)), n_theta);
+    let boundary_r: Array1<f64> = r_geo + r_minor * theta.mapv(|theta_local| theta_local.cos().signum() * theta_local.cos().abs().powf(2.0 / n_exponent));
+    let boundary_z: Array1<f64> =
+        z_geo + kappa * r_minor * theta.mapv(|theta_local| theta_local.sin().signum() * theta_local.sin().abs().powf(2.0 / n_exponent));
+
+    let (elongation, triang, _triang_l, _triang_u, square_l_i, square_l_o, square_u_i, square_u_o) = epp_boundary_geometry(&boundary_r, &boundary_z);
+
+    let t_expected: f64 = (0.5f64).powf(1.0 / n_exponent);
+    let squareness_expected: f64 = (t_expected - std::f64::consts::FRAC_1_SQRT_2) / (1.0 - std::f64::consts::FRAC_1_SQRT_2);
+
+    // Note: the tolerances are looser than the other tests because the `powf(2.0 / n_exponent)`
+    // amplifies the floating point error in `cos(pi / 2)` near the extremal points
+    assert_abs_diff_eq!(elongation, kappa, epsilon = 1e-3);
+    assert_abs_diff_eq!(triang, 0.0, epsilon = 1e-3);
+    assert_abs_diff_eq!(square_l_i, squareness_expected, epsilon = 1e-3);
+    assert_abs_diff_eq!(square_l_o, squareness_expected, epsilon = 1e-3);
+    assert_abs_diff_eq!(square_u_i, squareness_expected, epsilon = 1e-3);
+    assert_abs_diff_eq!(square_u_o, squareness_expected, epsilon = 1e-3);
 }

@@ -1,9 +1,9 @@
-use crate::grad_shafranov::GsSolution;
 use crate::greens::FilamentGeometry;
 use crate::greens::mutual_inductance_finite_size_to_finite_size;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use faer::Side;
+use imas_rs::{Equilibrium, EquilibriumTimeSlice};
 use ndarray::{Array1, Array2, Array3, Axis, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
@@ -305,8 +305,8 @@ impl Passives {
 /// Rust only methods (either because we want to keep the methods private
 /// or more likely because we the methods are incompatible with Python)
 impl Passives {
-    pub fn equilibrium_post_processor(&mut self, gs_solutions: &[GsSolution]) {
-        let n_time: usize = gs_solutions.len();
+    pub fn equilibrium_post_processor(&mut self, equilibrium_ids: &Equilibrium) {
+        let n_time: usize = equilibrium_ids.time_slice.len();
         if n_time == 0 {
             println!("Passives.equilibrium_post_processor: no time slices to process, returning");
             return;
@@ -314,17 +314,19 @@ impl Passives {
 
         // Get sizes
         // TODO: BUG: this assumes that time-slice 0 has converged!!
-        let passive_dof_values_single_time_slice: Array1<f64> = gs_solutions[0].passive_dof_values.to_owned(); // shape = [n_passive_dof]
-        let n_dofs: usize = passive_dof_values_single_time_slice.len();
+        let n_dofs: usize = equilibrium_ids.time_slice(0).passive_dof_values.as_ref().unwrap().len();
 
         // Allocate arrays for results
         let mut passive_dof_values: Array2<f64> = Array2::from_elem((n_time, n_dofs), f64::NAN);
 
         // Loop over time, collecting results
         for i_time in 0..n_time {
-            if !gs_solutions[i_time].psi_b.is_nan() {
+            let time_slice: &EquilibriumTimeSlice = equilibrium_ids.time_slice(i_time);
+            if !time_slice.boundary.psi.unwrap().is_nan() {
                 // skip non-converged solutions
-                passive_dof_values.slice_mut(s![i_time, ..]).assign(&gs_solutions[i_time].passive_dof_values);
+                passive_dof_values
+                    .slice_mut(s![i_time, ..])
+                    .assign(time_slice.passive_dof_values.as_ref().unwrap());
             }
         }
 

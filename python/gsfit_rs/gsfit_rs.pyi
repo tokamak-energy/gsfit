@@ -426,10 +426,6 @@ class Plasma(DataTreeAccessor):
         z_min: float,
         z_max: float,
         psi_n: npt.NDArray[np.float64],
-        limit_pts_r: npt.NDArray[np.float64],
-        limit_pts_z: npt.NDArray[np.float64],
-        vessel_r: npt.NDArray[np.float64],
-        vessel_z: npt.NDArray[np.float64],
         p_prime_source_function: "EfitPolynomial" | "TensionedCubicBSpline",
         ff_prime_source_function: "EfitPolynomial" | "TensionedCubicBSpline",
         initial_guess_ip: float,
@@ -438,6 +434,7 @@ class Plasma(DataTreeAccessor):
         initial_guess_minor_radius: float,
         initial_guess_elongation: float,
         vacuum_toroidal_field_reference_radius: float,
+        times_to_reconstruct: npt.NDArray[np.float64],
     ) -> Plasma:
         """
         :param n_r: Number of radial poitns [dimensionless]
@@ -447,10 +444,6 @@ class Plasma(DataTreeAccessor):
         :param z_min: Minimum vertical position [metre]
         :param z_max: Maximum vertical position [metre]
         :param psi_n: 1D array for `psi_n`, which should go from [0.0, 1.0] [dimensionless]
-        :param limit_pts_r: the limiter surfaces [metre]
-        :param limit_pts_z: the limiter surfaces [metre]
-        :param vessel_r: the vacuum vessel chamber, where the plasma can exist [metre]
-        :param vessel_z: the vacuum vessel chamber, where the plasma can exist [metre]
         :param p_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
         :param ff_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
         :param initial_guess_ip: Initial plasma current [ampere]
@@ -459,6 +452,7 @@ class Plasma(DataTreeAccessor):
         :param initial_guess_minor_radius: Radial semi-axis of the initial current distribution [metre]
         :param initial_guess_elongation: Elongation of the initial current distribution [dimensionless]
         :param vacuum_toroidal_field_reference_radius: Reference major radius the vacuum toroidal field is quoted at, `vacuum_toroidal_field/r0` [metre]
+        :param times_to_reconstruct: Times the equilibrium will be solved at; one equilibrium time-slice is allocated per time [second]
         """
         ...
     def greens_with_coils(

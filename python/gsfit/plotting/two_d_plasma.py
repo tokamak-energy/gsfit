@@ -2,6 +2,8 @@ import matplotlib.axes
 import numpy as np
 import numpy.typing as npt
 
+from gsfit_rs.imas import equilibrium_paths as ep
+
 from ..gsfit import Gsfit
 
 
@@ -13,18 +15,19 @@ def plot(
     linestyle: str = "dashed",
     psi_n_levels: npt.NDArray[np.float64] | None = None,
 ) -> None:
-    plasma = gsfit_controller.plasma
+    equilibrium_ids = gsfit_controller.plasma.equilibrium_ids
 
-    time = plasma.get_array1(["time"])
-    i_time = np.argmin(np.abs(time - time_desired))
+    time = equilibrium_ids.get(ep.time_slice[:].time)
+    i_time = int(np.argmin(np.abs(time - time_desired)))
 
-    gsfit_r = plasma.get_array1(["grid", "r"])
-    gsfit_z = plasma.get_array1(["grid", "z"])
-    gsfit_psi = plasma.get_array3(["profiles_2d", "r_z", "psi"])[i_time, :, :]
+    # `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
+    gsfit_r = equilibrium_ids.get(ep.time_slice[i_time].profiles_2d[0].grid.dim1)
+    gsfit_z = equilibrium_ids.get(ep.time_slice[i_time].profiles_2d[0].grid.dim2)
+    gsfit_psi = equilibrium_ids.get(ep.time_slice[i_time].profiles_2d[0].psi)
 
-    gsfit_nbnd = plasma.get_vec_usize(["boundary", "outline", "n"])[i_time]
-    gsfit_boundary_r = plasma.get_array2(["boundary", "outline", "r"])[i_time, :gsfit_nbnd]
-    gsfit_boundary_z = plasma.get_array2(["boundary", "outline", "z"])[i_time, :gsfit_nbnd]
+    # The boundary is stored at its own length for each time-slice, so there is no padding to trim
+    gsfit_boundary_r = equilibrium_ids.get(ep.time_slice[i_time].boundary.outline.r)
+    gsfit_boundary_z = equilibrium_ids.get(ep.time_slice[i_time].boundary.outline.z)
 
     # Default to 35 levels if not provided
     if psi_n_levels is None:

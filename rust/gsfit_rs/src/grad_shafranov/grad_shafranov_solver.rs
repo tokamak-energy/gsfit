@@ -1,6 +1,5 @@
 use super::epp_chi_sq_mag::epp_chi_sq_mag;
 use super::equilibrium_solve::GradShafranovInputs;
-use super::gs_solution::GsSolution;
 use super::{GradShafranovSolve, output_flag};
 use crate::coils::Coils;
 use crate::passives::Passives;
@@ -48,28 +47,9 @@ pub fn solve_grad_shafranov(
     let n_time: usize = times_to_reconstruct_ndarray.len();
 
     if n_time == 0 {
-        // Store empty `p_prime` and `ff_prime` profiles
-        // TODO: all keys should be like this with zero size arrays
-        let n_p_prime_dof: usize = plasma.p_prime_source_function.source_function_n_dof();
-        let n_ff_prime_dof: usize = plasma.ff_prime_source_function.source_function_n_dof();
-        let p_prime_coefs: Array2<f64> = Array2::zeros((n_time, n_p_prime_dof));
-        let ff_prime_coefs: Array2<f64> = Array2::zeros((n_time, n_ff_prime_dof));
-        plasma
-            .results
-            .get_or_insert("source_functions")
-            .get_or_insert("p_prime")
-            .insert("coefficients", p_prime_coefs);
-        plasma
-            .results
-            .get_or_insert("source_functions")
-            .get_or_insert("ff_prime")
-            .insert("coefficients", ff_prime_coefs);
-
         println!("solve_grad_shafranov: no times to reconstruct, returning");
         return;
     }
-
-    plasma.results.insert("time", times_to_reconstruct_ndarray.clone());
 
     // Import rust implementation
     // let plasma_owned: Plasma = plasma.clone(); // .clone() is a bit expensive
@@ -103,12 +83,17 @@ pub fn solve_grad_shafranov(
     //
     // Taken *before* `plasma` is cloned below, so that the clone does not duplicate the Greens
     // tables, which are by far the largest thing on the IDS
-    plasma.initialise_equilibrium_ids(&times_to_reconstruct_ndarray);
+    // The IDS was allocated by `Plasma::new`, so the time-slices already exist. Check that they are
+    // the times we have been asked to solve at, rather than silently solving a different grid
+    let ids_times: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.unwrap();
+    assert_eq!(
+        ids_times, times_to_reconstruct_ndarray,
+        "the equilibrium IDS was built for different times than `solve_inverse_problem` was asked to solve"
+    );
     let mut equilibrium_ids: Equilibrium = std::mem::take(&mut plasma.equilibrium_ids);
 
     // Create a local copy
     let coils_owned: Coils = coils.to_owned();
-    let plasma_owned: Plasma = plasma.to_owned();
     // Copied out of the `PyRef`, because the per-time-slice solves run on Rayon's threads and
     // a `PyRef` is neither `Send` nor `Sync`
     let wall_owned: WallIds = wall.wall_ids.clone();
@@ -226,134 +211,21 @@ pub fn solve_grad_shafranov(
     let output_flags: Array1<i32> = Array1::from_iter(equilibrium_ids.time_slice.iter().map(output_flag));
     equilibrium_ids.code.output_flag = Some(output_flags);
 
+    for (i_time, time_slice) in equilibrium_ids.time_slice.iter().enumerate() {
+        let solution_found: bool = time_slice.global_quantities.ip.unwrap().is_finite();
+        println!(
+            "time={:6.1}ms;  solution_found={};  gs_error={:.18};  n_iter={}",
+            times_to_reconstruct_ndarray[i_time] * 1e3,
+            solution_found,
+            time_slice.convergence.grad_shafranov_deviation_value.unwrap(),
+            time_slice.convergence.iterations_n.unwrap(),
+        );
+    }
+
     let duration_ids: Duration = timing_start_ids.elapsed();
-    info!("GSFit time elapsed (equilibrium IDS solver): {:?}", duration_ids);
+    info!("GSFit time elapsed: {:?}", duration_ids);
 
-    let timing_start: Instant = Instant::now();
-    let mut gs_solutions: Vec<GsSolution> = (0..n_time)
-        .into_par_iter() // Use Rayon to create a parallel iterator
-        .map(|i_time: usize| {
-            // Construct GS-Solution object
-            // Note: the GS solver is designed to consider a single time-slice
-            // and deliberately does not know what time-slice it is solving
-            let mut gs_object: GsSolution = GsSolution::new(
-                &plasma_owned,
-                &coils_dynamic[i_time],
-                &bp_probes_static[i_time],
-                &bp_probes_dynamic[i_time],
-                &flux_loops_static[i_time],
-                &flux_loops_dynamic[i_time],
-                &dialoop_statics[i_time],
-                &dialoop_dynamic[i_time],
-                &rogowski_coils_static[i_time],
-                &rogowski_coils_dynamic[i_time],
-                &isoflux_statics[i_time],
-                &isoflux_dynamic[i_time],
-                &isoflux_boundary_statics[i_time],
-                &isoflux_boundary_dynamic[i_time],
-                &pressure_statics[i_time],
-                &pressure_dynamic[i_time],
-                &stationary_point_statics[i_time],
-                &stationary_point_dynamic[i_time],
-                n_iter_max,
-                n_iter_min,
-                n_iter_no_vertical_feedback,
-                gs_error,
-                i_rod_vs_time[i_time],
-                p_prime_source_function.clone(),
-                ff_prime_source_function.clone(),
-                passive_regularisations.clone(),
-                passive_regularisations_weight.clone(),
-            );
-
-            // Solve
-            gs_object.solve();
-            let solution_found: bool = gs_object.ip.is_finite();
-            println!(
-                "time={:6.1}ms;  solution_found={};  gs_error={:.18};  n_iter={}",
-                times_to_reconstruct_ndarray[i_time] * 1e3,
-                solution_found,
-                gs_object.gs_error_calculated,
-                gs_object.n_iter,
-            );
-
-            // Return into the Vec
-            return gs_object;
-        })
-        .collect();
-    let duration: Duration = timing_start.elapsed();
-    info!("GSFit time elapsed: {:?}", duration);
-
-    // // TEMPORARY: compare the new IDS solver against `GsSolution`, time-slice by time-slice
-    // {
-    //     let max_abs_diff = |a: &Option<Array2<f64>>, b: &Array2<f64>| -> f64 {
-    //         let Some(a) = a else { return f64::INFINITY };
-    //         if a.shape() != b.shape() {
-    //             return f64::INFINITY;
-    //         }
-    //         let mut worst: f64 = 0.0;
-    //         for (value_a, value_b) in a.iter().zip(b.iter()) {
-    //             if value_a.is_nan() && value_b.is_nan() {
-    //                 continue;
-    //             }
-    //             let difference: f64 = (value_a - value_b).abs();
-    //             if difference > worst {
-    //                 worst = difference;
-    //             }
-    //         }
-    //         return worst;
-    //     };
-    //     let diff_0d = |a: Option<f64>, b: f64| -> f64 {
-    //         let Some(a) = a else { return f64::INFINITY };
-    //         if a.is_nan() && b.is_nan() { 0.0 } else { (a - b).abs() }
-    //     };
-    //     for i_time in 0..n_time {
-    //         let time_slice = &equilibrium_ids.time_slice[i_time];
-    //         let gs = &gs_solutions[i_time];
-    //         let profiles_2d = &time_slice.profiles_2d[0];
-    //         println!(
-    //             "CHECK i_time={i_time}  psi={:.3e} d_psi_d_r={:.3e} d_psi_d_z={:.3e} d2r2={:.3e} d2rz={:.3e} d2z2={:.3e} psi_n={:.3e} j={:.3e} mask={:.3e} psi_coils={:.3e} | ip={:.3e} psi_a={:.3e} psi_b={:.3e} r_mag={:.3e} z_mag={:.3e} n_iter={}/{} gs_err={:.3e} n_nodes={} | delta_z={:.3e} bounding_r={:.3e} bounding_z={:.3e} boundary_type={}/{} | result={} output_flag={}",
-    //             max_abs_diff(&profiles_2d.psi, &gs.psi_2d),
-    //             max_abs_diff(&profiles_2d.d_psi_d_r, &gs.d_psi_d_r_2d),
-    //             max_abs_diff(&profiles_2d.d_psi_d_z, &gs.d_psi_d_z_2d),
-    //             max_abs_diff(&profiles_2d.d2_psi_d_r2, &gs.d2_psi_d_r2_2d),
-    //             max_abs_diff(&profiles_2d.d2_psi_d_r_d_z, &gs.d2_psi_d_r_d_z_2d),
-    //             max_abs_diff(&profiles_2d.d2_psi_d_z2, &gs.d2_psi_d_z2_2d),
-    //             max_abs_diff(&profiles_2d.psi_norm, &gs.psi_n_2d),
-    //             max_abs_diff(&profiles_2d.j_phi, &gs.j_2d),
-    //             max_abs_diff(&profiles_2d.mask, &gs.mask),
-    //             max_abs_diff(&profiles_2d.psi_coils, &gs.psi_2d_coils),
-    //             diff_0d(time_slice.global_quantities.ip, gs.ip),
-    //             diff_0d(time_slice.global_quantities.psi_magnetic_axis, gs.psi_a),
-    //             diff_0d(time_slice.boundary.psi, gs.psi_b),
-    //             diff_0d(time_slice.global_quantities.magnetic_axis.r, gs.r_mag),
-    //             diff_0d(time_slice.global_quantities.magnetic_axis.z, gs.z_mag),
-    //             time_slice.convergence.iterations_n.map(|n| n.to_string()).unwrap_or("unset".to_string()),
-    //             gs.n_iter,
-    //             diff_0d(time_slice.convergence.grad_shafranov_deviation_value, gs.gs_error_calculated),
-    //             time_slice.contour_tree.node.len(),
-    //             diff_0d(time_slice.convergence.delta_z, gs.delta_z),
-    //             diff_0d(time_slice.boundary.bounding.r, gs.bounding_r),
-    //             diff_0d(time_slice.boundary.bounding.z, gs.bounding_z),
-    //             time_slice.boundary.r#type.map(|t| t.to_string()).unwrap_or("unset".to_string()),
-    //             gs.xpt_diverted,
-    //             time_slice.convergence.result.name.clone().unwrap_or("unset".to_string()),
-    //             equilibrium_ids
-    //                 .code
-    //                 .output_flag
-    //                 .as_ref()
-    //                 .map(|f| f[i_time].to_string())
-    //                 .unwrap_or("unset".to_string()),
-    //         );
-    //     }
-    // }
-
-    // Post-process.
-    //
-    // Two post-processors run side by side while the post-processing is moved off `GsSolution` and
-    // onto the IDS, exactly as the solver itself was moved. `equilibrium_post_processor_new` is
-    // the destination and is currently empty; `equilibrium_post_processor` still writes everything
-    plasma.equilibrium_post_processor(&mut gs_solutions, &coils_owned, &plasma_owned);
+    // Post-process
     plasma.equilibrium_post_processor_new(
         &mut equilibrium_ids,
         &coils_owned,
@@ -361,7 +233,7 @@ pub fn solve_grad_shafranov(
         &p_prime_source_function,
         &ff_prime_source_function,
     );
-    passives.equilibrium_post_processor(&gs_solutions);
+    passives.equilibrium_post_processor(&equilibrium_ids);
 
     // Hand the solved IDS back to `plasma`, which owns it. Done after the post-processing, so that
     // `equilibrium_post_processor_new` can borrow the IDS while `plasma` is borrowed mutably
@@ -386,8 +258,6 @@ pub fn solve_grad_shafranov(
 
     // Calculate chi_sq_mag for each time slice
     let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, &dialoop, n_time);
-    plasma.results.get_or_insert("global").insert("chi_mag", chi_mag.to_owned());
-
     // The same quantity on the IDS. It is calculated here rather than in the post-processor
     // because it needs the sensors, which the post-processor does not see
     for (i_time, time_slice) in plasma.equilibrium_ids.time_slice.iter_mut().enumerate() {

@@ -24,6 +24,13 @@ use num_complex::Complex64;
 /// Integer scalar
 pub type INT_0D = i32;
 
+/// The IMAS marker for an unset integer.
+///
+/// A float has `NaN` to say "no value", but an integer has no such value, so IMAS reserves one:
+/// every unset `INT` reads back as this. It is what an unset integer becomes on the way out to
+/// Python; inside Rust an unset leaf stays `None`, which is the truthful representation.
+pub const EMPTY_INT: INT_0D = -999999999;
+
 /// Floating-point scalar (double precision)
 pub type FLT_0D = f64;
 
