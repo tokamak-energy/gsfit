@@ -14,6 +14,7 @@ from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
 from gsfit_rs import StationaryPoint
+from gsfit_rs import Wall
 
 
 class DatabaseReaderProtocol(Protocol):
@@ -403,14 +404,63 @@ class DatabaseReaderProtocol(Protocol):
             vessel_z=...,                                       # read from `GSFIT_code_settings.json` file
             p_prime_source_function=p_prime_source_function,    # built above
             ff_prime_source_function=ff_prime_source_function,  # built above
-            initial_ip=...,                                     # read from `GSFIT_code_settings.json` file
-            initial_cur_r=...,                                  # read from `GSFIT_code_settings.json` file
-            initial_cur_z=...,                                  # read from `GSFIT_code_settings.json` file
-            initial_minor_radius=...,                            # read from `GSFIT_code_settings.json` file
-            initial_kappa=...,                                  # read from `GSFIT_code_settings.json` file
+            initial_guess_ip=...,                              # read from `GSFIT_code_settings.json` file
+            initial_guess_cur_r=...,                           # read from `GSFIT_code_settings.json` file
+            initial_guess_cur_z=...,                           # read from `GSFIT_code_settings.json` file
+            initial_guess_minor_radius=...,                    # read from `GSFIT_code_settings.json` file
+            initial_guess_elongation=...,                      # read from `GSFIT_code_settings.json` file
+            vacuum_toroidal_field_reference_radius=...,        # read from `GSFIT_code_settings.json` file
         )
 
         return plasma
+        ```
+        """
+        ...
+
+    def setup_wall(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> Wall:
+        """
+        This method initialises the Rust `Wall` class, which holds an IMAS `wall` IDS.
+
+        :param pulseNo: Pulse number, used to read from the database
+        :param settings: Dictionary containing the JSON settings read from the `settings` directory
+        :param kwargs: Additional objects, such as FreeGNSKE object
+
+        Initialising requires reading data from:
+        1. Database reading (e.g. MDSplus, or FreeGSNKE object): Which contains the limiter geometry
+
+        Only `wall/description_2d(0)/limiter` is filled. Each limiter unit is a plasma facing
+        component, and every point of every unit is a candidate limit point.
+
+        **The order the units are added in is part of the contract**: `unit(0)` is the vacuum
+        vessel contour, and the solver uses that one, and only that one, as the region the
+        plasma is allowed to occupy. Later units are components which protrude inside it, such
+        as tiles.
+
+        Different machines will use different data stores for the limiter geometry.
+        This Protocol allows different database readers to be selected.
+        The output of this method must always be a `Wall` object.
+
+        At a minimum this method should look like this:
+        ```python
+        # Initialise the Wall Rust class
+        wall = Wall()
+
+        # The vacuum vessel contour must be added first
+        wall.add_limiter_unit(
+            name="vacuum_vessel",  # a short identifier for the unit
+            r=...,                 # read from a database
+            z=...,                 # read from a database
+        )
+
+        # Any other plasma facing components follow
+        for i_unit in range(n_units):
+            wall.add_limiter_unit(
+                name=...,  # a short identifier for the unit
+                r=...,     # read from a database
+                z=...,     # read from a database
+            )
+
+        return wall
         ```
         """
         ...

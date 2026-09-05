@@ -1,0 +1,39 @@
+//! Post-processing of the Grad-Shafranov reconstruction, reading the `equilibrium` IDS.
+//!
+//! See `equilibrium_post_processor.rs` for why this sits apart from the older, `GsSolution`-based
+//! post-processor which is still in `plasma.rs`.
+//!
+//! One `epp_*` file per quantity, named after the data dictionary path it fills.
+
+mod epp_bp_sq_flux_surface_average;
+mod epp_equilibrium_global_quantities_v_loop;
+mod epp_equilibrium_time_slice_boundary_geometry;
+mod epp_equilibrium_time_slice_boundary_outline;
+mod epp_equilibrium_time_slice_constraints_diamagnetic_flux_reconstructed;
+mod epp_equilibrium_time_slice_global_quantities_area_and_volume;
+mod epp_equilibrium_time_slice_global_quantities_beta_pol;
+mod epp_equilibrium_time_slice_global_quantities_beta_tor;
+mod epp_equilibrium_time_slice_global_quantities_bt_vac_at_r_geo;
+mod epp_equilibrium_time_slice_global_quantities_energy_mhd;
+mod epp_equilibrium_time_slice_global_quantities_li;
+mod epp_equilibrium_time_slice_global_quantities_pressure_2d_sum;
+mod epp_equilibrium_time_slice_global_quantities_q_95;
+mod epp_equilibrium_time_slice_global_quantities_q_axis;
+mod epp_equilibrium_time_slice_profiles_1d_area_and_volume;
+mod epp_equilibrium_time_slice_profiles_1d_dpressure_dpsi;
+mod epp_equilibrium_time_slice_profiles_1d_f;
+mod epp_equilibrium_time_slice_profiles_1d_f_df_dpsi;
+mod epp_equilibrium_time_slice_profiles_1d_phi;
+mod epp_equilibrium_time_slice_profiles_1d_pressure;
+mod epp_equilibrium_time_slice_profiles_1d_psi;
+mod epp_equilibrium_time_slice_profiles_1d_q;
+mod epp_equilibrium_time_slice_profiles_1d_rho_pol;
+mod epp_equilibrium_time_slice_profiles_1d_rho_tor;
+mod epp_equilibrium_time_slice_profiles_2d_b_field_phi;
+mod epp_equilibrium_time_slice_profiles_2d_b_field_r_and_z;
+mod epp_equilibrium_time_slice_profiles_2d_d_b_field_z_d_z;
+mod epp_equilibrium_time_slice_profiles_2d_pressure;
+mod epp_equilibrium_time_slice_profiles_r_midplane;
+mod epp_equilibrium_time_slice_sol;
+mod epp_flux_surfaces;
+mod equilibrium_post_processor;

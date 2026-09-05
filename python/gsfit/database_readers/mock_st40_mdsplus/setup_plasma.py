@@ -30,11 +30,14 @@ def setup_plasma(
     """
 
     # Initial plasma conditions
-    initial_ip = settings["GSFIT_code_settings.json"]["initial_guess"]["ip"]
-    initial_cur_r = settings["GSFIT_code_settings.json"]["initial_guess"]["r_cur"]
-    initial_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["z_cur"]
-    initial_minor_radius = settings["GSFIT_code_settings.json"]["initial_guess"]["minor_radius"]
-    initial_kappa = settings["GSFIT_code_settings.json"]["initial_guess"]["kappa"]
+    initial_guess_ip = settings["GSFIT_code_settings.json"]["initial_guess"]["ip"]
+    initial_guess_cur_r = settings["GSFIT_code_settings.json"]["initial_guess"]["cur_r"]
+    initial_guess_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["cur_z"]
+    initial_guess_minor_radius = settings["GSFIT_code_settings.json"]["initial_guess"]["minor_radius"]
+    initial_guess_elongation = settings["GSFIT_code_settings.json"]["initial_guess"]["elongation"]
+
+    # Reference major radius the vacuum toroidal field is quoted at
+    vacuum_toroidal_field_reference_radius = settings["GSFIT_code_settings.json"]["vacuum_toroidal_field_reference_radius"]
 
     # Set the source functions types
     p_prime_source_function = build_source_function(settings["source_function_p_prime.json"])
@@ -83,11 +86,12 @@ def setup_plasma(
         vessel_z,
         p_prime_source_function,
         ff_prime_source_function,
-        initial_ip,
-        initial_cur_r,
-        initial_cur_z,
-        initial_minor_radius,
-        initial_kappa,
+        initial_guess_ip,
+        initial_guess_cur_r,
+        initial_guess_cur_z,
+        initial_guess_minor_radius,
+        initial_guess_elongation,
+        vacuum_toroidal_field_reference_radius,
     )
 
     return plasma

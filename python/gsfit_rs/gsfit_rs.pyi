@@ -1,6 +1,8 @@
 import numpy as np
 import numpy.typing as npt
 
+from .imas import Equilibrium, Wall as WallIds
+
 class DataTreeAccessor:
     """Base class providing common data tree access methods for all gsfit_rs classes."""
     def get_f64(self, keys: list[str]) -> float:
@@ -59,6 +61,7 @@ class DataTreeAccessor:
 
 def solve_grad_shafranov(
     plasma: Plasma,
+    wall: Wall,
     coils: Coils,
     passives: Passives,
     bp_probes: BpProbes,
@@ -79,6 +82,7 @@ def solve_grad_shafranov(
 ) -> None:
     """
     :param plasma: Plasma object, note this is mutated and contains the solution
+    :param wall: Wall object, supplying the limiter points and the vacuum vessel contour
     :param coils: Coils object
     :param passives: Passives object, note this is mutated and contains the solution
     :param bp_probes: BpProbes object, note this is mutated and contains the solution
@@ -428,11 +432,12 @@ class Plasma(DataTreeAccessor):
         vessel_z: npt.NDArray[np.float64],
         p_prime_source_function: "EfitPolynomial" | "TensionedCubicBSpline",
         ff_prime_source_function: "EfitPolynomial" | "TensionedCubicBSpline",
-        initial_ip: float,
-        initial_cur_r: float,
-        initial_cur_z: float,
-        initial_minor_radius: float,
-        initial_kappa: float,
+        initial_guess_ip: float,
+        initial_guess_cur_r: float,
+        initial_guess_cur_z: float,
+        initial_guess_minor_radius: float,
+        initial_guess_elongation: float,
+        vacuum_toroidal_field_reference_radius: float,
     ) -> Plasma:
         """
         :param n_r: Number of radial poitns [dimensionless]
@@ -448,11 +453,12 @@ class Plasma(DataTreeAccessor):
         :param vessel_z: the vacuum vessel chamber, where the plasma can exist [metre]
         :param p_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
         :param ff_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
-        :param initial_ip: Initial plasma current [ampere]
-        :param initial_cur_r: Radial centre of the initial current distribution [metre]
-        :param initial_cur_z: Vertical centre of the initial current distribution [metre]
-        :param initial_minor_radius: Radial semi-axis of the initial current distribution [metre]
-        :param initial_kappa: Elongation of the initial current distribution [dimensionless]
+        :param initial_guess_ip: Initial plasma current [ampere]
+        :param initial_guess_cur_r: Radial centre of the initial current distribution [metre]
+        :param initial_guess_cur_z: Vertical centre of the initial current distribution [metre]
+        :param initial_guess_minor_radius: Radial semi-axis of the initial current distribution [metre]
+        :param initial_guess_elongation: Elongation of the initial current distribution [dimensionless]
+        :param vacuum_toroidal_field_reference_radius: Reference major radius the vacuum toroidal field is quoted at, `vacuum_toroidal_field/r0` [metre]
         """
         ...
     def greens_with_coils(
@@ -463,6 +469,60 @@ class Plasma(DataTreeAccessor):
         cls,
         passives: Passives,
     ) -> None: ...
+    @property
+    def equilibrium_ids(self) -> Equilibrium:
+        """The equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`.
+
+        Empty until the Grad-Shafranov solver has run.
+
+        The IDS is copied into the returned object, so it is a snapshot: changes made on
+        the Rust side afterwards are not seen by it.
+        """
+        ...
+
+class Wall:
+    """The machine's wall, stored as an IMAS `wall` IDS.
+
+    Only the limiter is filled so far:
+    `wall/description_2d(0)/limiter/unit(i)/outline/r` and `.../z`.
+
+    The order units are added in is part of the contract: `unit(0)` is the vacuum vessel
+    contour, and the solver uses that one, and only that one, as the region the plasma is
+    allowed to occupy. Every unit contributes candidate limit points.
+
+    Read it back through `wall_ids` and a path from `gsfit_rs.imas.wall_paths`.
+    """
+
+    def __new__(cls) -> Wall:
+        """Construct an empty wall, ready for `add_limiter_unit` to be called."""
+        ...
+    def add_limiter_unit(
+        self,
+        name: str,
+        r: npt.NDArray[np.float64],
+        z: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        Append a limiter unit to `wall/description_2d(0)/limiter/unit`.
+
+        :param name: short identifier for the unit, e.g. `"vacuum_vessel"`
+        :param r: outline radial points [metre]
+        :param z: outline vertical points [metre]
+
+        The **first** unit added is the vacuum vessel contour.
+        """
+        ...
+    @property
+    def wall_ids(self) -> WallIds:
+        """The wall IDS, read with `gsfit_rs.imas.wall_paths`.
+
+        This is the only way to read the data back out: there are no bespoke accessors, so
+        every quantity is reached by its data dictionary path.
+
+        The IDS is copied into the returned object, so it is a snapshot: changes made on
+        the Rust side afterwards are not seen by it.
+        """
+        ...
 
 class BpProbes(DataTreeAccessor):
     def __new__(

@@ -26,6 +26,11 @@ RUST_EDITION: str = "2024"
 # Hand-written, non-IMAS keys spliced into the generated structs; see
 # `add_custom_keys_to_equilibrium_ids`
 CUSTOM_KEYS_DIR: Path = CRATE_DIR / "src" / "ids"
+# The repository root: `rust/` sits directly inside it
+REPO_ROOT: Path = WORKSPACE_DIR.parent
+# Where the generated Python type stub goes. This is the `gsfit_rs` Python package, which
+# mounts the `imas_rs` classes as the `gsfit_rs.imas` submodule.
+PYTHON_STUB_FILE: Path = REPO_ROOT / "python" / "gsfit_rs" / "imas.pyi"
 
 
 # XML Schema namespace
@@ -241,9 +246,14 @@ def parse_element(element: ET.Element, known_types: set[str]) -> Optional[Field]
         else:
             return None
 
-    # Check if it's an array (unbounded)
+    # Check if it's an array of structures.
+    #
+    # The data dictionary marks these either as `unbounded` or with an explicit upper
+    # bound: `wall/description_2d` is `maxOccurs="3"` and `wall/.../limiter/unit` is
+    # `maxOccurs="33"`, and both are arrays. Only the default `maxOccurs="1"` means a
+    # single occurrence.
     max_occurs = element.get("maxOccurs", "1")
-    is_array = max_occurs == "unbounded"
+    is_array = max_occurs == "unbounded" or (max_occurs.isdigit() and int(max_occurs) > 1)
 
     # Get documentation and units
     documentation = extract_documentation(element)
@@ -1028,10 +1038,21 @@ def generate_root_constructors(
                 f"    /// setting each slice's `time` field. All other leaf fields are unset (`None`).",
                 f"    pub fn with_time(time: &FLT_1D) -> Self {{",
                 f"        let mut ids = Self::with_size(time.len());",
-                f"        for (slice, &t) in ids.time_slice.iter_mut().zip(time.iter()) {{",
+                f"        ids.allocate_time_slices(time);",
+                f"        ids",
+                f"    }}",
+                f"",
+                f"    /// Allocate one default (empty) time slice per entry in `time`, setting each slice's",
+                f"    /// `time` field.",
+                f"    ///",
+                f"    /// Unlike `with_time`, this works in place and leaves the rest of the IDS alone, so an",
+                f"    /// IDS which already carries data - `code`, `vacuum_toroidal_field`, ... - keeps it.",
+                f"    /// Any time slices already present are replaced.",
+                f"    pub fn allocate_time_slices(&mut self, time: &FLT_1D) {{",
+                f"        self.time_slice = (0..time.len()).map(|_| {inner_type}::default()).collect();",
+                f"        for (slice, &t) in self.time_slice.iter_mut().zip(time.iter()) {{",
                 f"            slice.time = Some(t);",
                 f"        }}",
-                f"        ids",
                 f"    }}",
             ]
         )
@@ -1245,6 +1266,558 @@ def add_custom_keys_to_equilibrium_ids(
             )
 
 
+# ============================================================================
+# Python Path Bindings
+#
+# Two files are generated from the same walk of the schema, so they cannot drift
+# apart:
+#   * `src/python/<ids>_paths.rs` - the static description the Rust navigator walks,
+#     with a reader function per leaf.
+#   * `python/gsfit_rs/imas.pyi` - the type stub, which is what gives editors their
+#     completions and lets `mypy` check both attribute names and the type `get`
+#     returns.
+# ============================================================================
+
+
+# The Rust type each data dictionary base type projects to, and the Python type it
+# reads back as. The Python column has two entries: the first is used when every
+# array-of-structures level on the path was indexed with an integer (so one value
+# comes back), the second when one level was sliced (so values are gathered).
+#
+# A base type missing from here is rejected rather than emitted, because the Rust
+# side needs a matching `Gatherable` implementation and a silent omission would
+# only show up as a compile error in generated code.
+PYTHON_LEAF_TYPES: dict[str, tuple[str, str]] = {
+    "FLT_0D": ("float", "npt.NDArray[np.float64]"),
+    "FLT_1D": ("npt.NDArray[np.float64]", "npt.NDArray[np.float64]"),
+    "FLT_2D": ("npt.NDArray[np.float64]", "npt.NDArray[np.float64]"),
+    "FLT_3D": ("npt.NDArray[np.float64]", "npt.NDArray[np.float64]"),
+    "FLT_4D": ("npt.NDArray[np.float64]", "npt.NDArray[np.float64]"),
+    "INT_0D": ("int", "npt.NDArray[np.int32]"),
+    "INT_1D": ("npt.NDArray[np.int32]", "npt.NDArray[np.int32]"),
+    "INT_2D": ("npt.NDArray[np.int32]", "npt.NDArray[np.int32]"),
+    "STR_0D": ("str | None", "list[str | None]"),
+    "STR_1D": ("list[str]", "list[list[str] | None]"),
+}
+
+# Names that cannot be written as an attribute in a `.pyi`, which would produce a
+# stub that does not parse.
+PYTHON_KEYWORDS: set[str] = {
+    "False", "None", "True", "and", "as", "assert", "async", "await", "break",
+    "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",
+    "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not", "or",
+    "pass", "raise", "return", "try", "while", "with", "yield",
+}
+
+
+@dataclass
+class PathNode:
+    """One node in the data dictionary, as reached by a Python path."""
+
+    name: str  # the data dictionary name, e.g. "global_quantities"
+    documentation: str
+    units: str
+    kind: str  # "structure" | "array_of_structures" | "leaf"
+    dd_type: str  # PascalCase DD type for structures and arrays of structures
+    data_type: str  # base type for leaves, e.g. "FLT_0D"
+    dd_path: str  # full path from the root, e.g. "time_slice/global_quantities/ip"
+    children: list["PathNode"] = field(default_factory=list)
+    # Leaves only:
+    projection: str = ""  # Rust expression reading the leaf, given `equilibrium` and `at`
+    lengths_function: str = ""  # name of the generated lengths function
+    n_levels: int = 0  # number of array-of-structures levels above this leaf
+
+
+def rust_string_literal(text: str) -> str:
+    """Quote a string for Rust source."""
+    escaped = text.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def python_docstring(documentation: str, units: str, indent: str) -> list[str]:
+    """Render a docstring for the type stub, keeping it valid whatever the DD says."""
+    body = documentation.replace('"""', "'''").replace("\\", "\\\\").strip()
+    if units:
+        body = f"{body}\n\n{indent}Units: {units}" if body else f"{indent}Units: {units}"
+    if not body:
+        return []
+    return [f'{indent}"""{body}', f'{indent}"""']
+
+
+def build_path_tree(
+    ct: ComplexType,
+    type_map: dict[str, ComplexType],
+    *,
+    dd_path: str,
+    rust_expression: str,
+    vec_expressions: list[str],
+    vec_dd_paths: list[str],
+    ancestry: tuple[str, ...],
+    lengths_registry: dict[tuple[str, ...], str],
+) -> list[PathNode]:
+    """
+    Walk one structure and return its children as `PathNode`s.
+
+    `rust_expression` is the Rust expression that reaches this structure given the
+    index list `at`; `vec_expressions` is the expression for each array-of-structures
+    level above it, which is what the generated lengths function needs.
+
+    `ancestry` stops a self-referential schema from recursing forever, matching the
+    guard in `generate_view_for_struct`.
+    """
+    nodes: list[PathNode] = []
+
+    for f in ct.fields:
+        if f.name in PYTHON_KEYWORDS:
+            raise ValueError(
+                f"data dictionary field `{dd_path}/{f.name}` is a Python keyword and "
+                "cannot be written as an attribute in the type stub"
+            )
+
+        child_dd_path = f"{dd_path}/{f.name}" if dd_path else f.name
+        rust_name = sanitize_rust_identifier(f.name)
+
+        if f.is_array and f.inner_type in type_map:
+            # An array of structures: a new index level.
+            vec_expression = f"{rust_expression}.{rust_name}"
+            child_vec_expressions = vec_expressions + [vec_expression]
+            child_vec_dd_paths = vec_dd_paths + [child_dd_path]
+            element_expression = f"{vec_expression}.get(at[{len(vec_expressions)}])?"
+
+            if f.inner_type in ancestry:
+                continue  # self-referential schema; stop rather than recurse forever
+
+            nodes.append(
+                PathNode(
+                    name=f.name,
+                    documentation=f.documentation,
+                    units=f.units,
+                    kind="array_of_structures",
+                    dd_type=f.inner_type,
+                    data_type="",
+                    dd_path=child_dd_path,
+                    children=build_path_tree(
+                        type_map[f.inner_type],
+                        type_map,
+                        dd_path=child_dd_path,
+                        rust_expression=element_expression,
+                        vec_expressions=child_vec_expressions,
+                        vec_dd_paths=child_vec_dd_paths,
+                        ancestry=ancestry + (f.inner_type,),
+                        lengths_registry=lengths_registry,
+                    ),
+                )
+            )
+
+        elif f.is_base_type:
+            if f.rust_type not in PYTHON_LEAF_TYPES:
+                raise ValueError(
+                    f"`{child_dd_path}` has base type {f.rust_type}, which has no Python "
+                    "mapping. Add it to PYTHON_LEAF_TYPES and give it a `Gatherable` "
+                    "implementation in src/python/mod.rs."
+                )
+
+            lengths_function = register_lengths_function(vec_expressions, vec_dd_paths, lengths_registry)
+            nodes.append(
+                PathNode(
+                    name=f.name,
+                    documentation=f.documentation,
+                    units=f.units,
+                    kind="leaf",
+                    dd_type="",
+                    data_type=f.rust_type,
+                    dd_path=child_dd_path,
+                    projection=f"{rust_expression}.{rust_name}.clone()",
+                    lengths_function=lengths_function,
+                    n_levels=len(vec_expressions),
+                )
+            )
+
+        elif f.is_struct and f.rust_type in type_map:
+            if f.rust_type in ancestry:
+                continue  # self-referential schema
+            nodes.append(
+                PathNode(
+                    name=f.name,
+                    documentation=f.documentation,
+                    units=f.units,
+                    kind="structure",
+                    dd_type=f.rust_type,
+                    data_type="",
+                    dd_path=child_dd_path,
+                    children=build_path_tree(
+                        type_map[f.rust_type],
+                        type_map,
+                        dd_path=child_dd_path,
+                        rust_expression=f"{rust_expression}.{rust_name}",
+                        vec_expressions=vec_expressions,
+                        vec_dd_paths=vec_dd_paths,
+                        ancestry=ancestry + (f.rust_type,),
+                        lengths_registry=lengths_registry,
+                    ),
+                )
+            )
+
+        # Anything else is a reference to a type that could not be resolved; it is
+        # emitted as an empty struct by `generate_stub_types`, so there is nothing to
+        # navigate into and it is left out of the path tree.
+
+    return nodes
+
+
+def register_lengths_function(
+    vec_expressions: list[str],
+    vec_dd_paths: list[str],
+    lengths_registry: dict[tuple[str, ...], str],
+) -> str:
+    """
+    Name the function giving the length of each array-of-structures level on a path.
+
+    Chains are shared between every leaf below them, so the same chain is only ever
+    emitted once.
+
+    The name comes from the full data dictionary path of the deepest level, not from the
+    trailing segments: `description_2d/limiter/unit` and `description_2d/mobile/unit` both
+    end in `unit` and would otherwise collide.
+    """
+    if not vec_expressions:
+        return "no_levels"
+
+    key = tuple(vec_expressions)
+    if key in lengths_registry:
+        return lengths_registry[key]
+
+    name = "lengths_" + vec_dd_paths[-1].replace("/", "_")
+    if name in lengths_registry.values():
+        raise ValueError(f"two array-of-structures chains both want the name `{name}`")
+
+    lengths_registry[key] = name
+    return name
+
+
+def generate_lengths_functions(
+    lengths_registry: dict[tuple[str, ...], str], root_variable: str, ids_pascal: str
+) -> list[str]:
+    """Emit one function per array-of-structures chain."""
+    lines: list[str] = []
+    for vec_expressions, name in sorted(lengths_registry.items(), key=lambda item: item[1]):
+        # `at` is only read when there is more than one level.
+        at_parameter = "at" if len(vec_expressions) > 1 else "_at"
+        lines.append(f"/// Length of each array-of-structures level along `{name[len('lengths_'):]}`.")
+        lines.append(
+            f"fn {name}({root_variable}: &{ids_pascal}, level: usize, {at_parameter}: &[usize]) -> Option<usize> {{"
+        )
+        lines.append("    match level {")
+        for i_level, expression in enumerate(vec_expressions):
+            lines.append(f"        {i_level} => return Some({expression}.len()),")
+        lines.append("        _ => return None,")
+        lines.append("    }")
+        lines.append("}")
+        lines.append("")
+    return lines
+
+
+def collect_types_from_path_tree(
+    nodes: list[PathNode], collected: dict[str, list[PathNode]], seen_paths: dict[str, str]
+) -> None:
+    """
+    Gather the children of every structure type reached by the path tree.
+
+    A data dictionary type has the same children wherever it appears, so the stub needs
+    one class per type rather than one per path. That is checked here rather than
+    assumed: if the same type ever turned up with different children the stub would be
+    silently wrong.
+    """
+    for node in nodes:
+        if node.kind == "leaf":
+            continue
+        child_names = [child.name for child in node.children]
+        if node.dd_type in collected:
+            existing = [child.name for child in collected[node.dd_type]]
+            if existing != child_names:
+                raise ValueError(
+                    f"type {node.dd_type} has different children at `{node.dd_path}` than at "
+                    f"`{seen_paths[node.dd_type]}`; the stub cannot use one class per type"
+                )
+        else:
+            collected[node.dd_type] = node.children
+            seen_paths[node.dd_type] = node.dd_path
+        collect_types_from_path_tree(node.children, collected, seen_paths)
+
+
+def generate_python_paths_rust(
+    root_nodes: list[PathNode],
+    lengths_registry: dict[tuple[str, ...], str],
+    root_ct: ComplexType,
+    ids_name: str,
+) -> str:
+    """Generate the static data dictionary description the Rust navigator walks."""
+    ids_pascal = snake_to_pascal_case(ids_name)
+
+    statics: list[str] = []
+
+    def emit_children(nodes: list[PathNode], dd_path: str) -> str:
+        """Emit the static array holding `nodes`, and return its name."""
+        # Emit children first, so that every name a node refers to already exists.
+        entries: list[str] = []
+        for node in nodes:
+            if node.kind == "leaf":
+                at_parameter = "at" if node.n_levels > 0 else "_at"
+                kind = (
+                    "NodeKind::Leaf(Leaf {\n"
+                    f"                data_type: {rust_string_literal(node.data_type)},\n"
+                    "                read: |ids: &dyn Any, indices: &[IndexSpec]| {\n"
+                    f'                    let {ids_name}: &{ids_pascal} = ids.downcast_ref().ok_or_else(|| "not a {ids_name} IDS".to_string())?;\n'
+                    "                    gather(\n"
+                    f"                    {ids_name},\n"
+                    "                        indices,\n"
+                    f"                        {node.n_levels},\n"
+                    f"                        {node.lengths_function},\n"
+                    f"                    |{ids_name}: &{ids_pascal}, {at_parameter}: &[usize]| -> Option<{node.data_type}> {{\n"
+                    f"                            {node.projection}\n"
+                    "                        },\n"
+                    "                    )\n"
+                    "                },\n"
+                    "            })"
+                )
+            else:
+                child_name = emit_children(node.children, node.dd_path)
+                variant = "Structure" if node.kind == "structure" else "ArrayOfStructures"
+                kind = f"NodeKind::{variant}({child_name})"
+
+            entries.append(
+                "    Node {\n"
+                f"        name: {rust_string_literal(node.name)},\n"
+                f"        documentation: {rust_string_literal(node.documentation)},\n"
+                f"        units: {rust_string_literal(node.units)},\n"
+                f"        kind: {kind},\n"
+                "    },"
+            )
+
+        static_name = "NODES_" + (dd_path.replace("/", "_").upper() if dd_path else "ROOT")
+        statics.append(f"static {static_name}: &[Node] = &[\n" + "\n".join(entries) + "\n];\n")
+        return static_name
+
+    root_children_name = emit_children(root_nodes, "")
+
+    lines: list[str] = []
+    lines.append(f"//! Static description of the {ids_name} data dictionary, used to build and resolve paths.")
+    lines.append("//!")
+    lines.append("//! **WARNING** This file is autogenerated by `imas_updater/build_ids.py`.")
+    lines.append("//! Any changes will be overwritten.")
+    lines.append("//!")
+    lines.append("//! Each leaf carries the function that reads it out of the IDS, so the path a")
+    lines.append("//! reader follows is written once and checked by the compiler. The `read` closures")
+    lines.append("//! capture nothing, so they coerce to plain `fn` pointers and the whole description")
+    lines.append("//! stays a `static`.")
+    lines.append("")
+    lines.append("#![allow(clippy::all)]")
+    lines.append("")
+    imports = ["IndexSpec", "Leaf", "Node", "NodeKind", "gather"]
+    if any(node.kind == "leaf" and node.n_levels == 0 for node in iterate_path_tree(root_nodes)):
+        imports.append("no_levels")
+    lines.append(f"use super::{{{', '.join(imports)}}};")
+
+    used_base_types = sorted({node.data_type for node in iterate_path_tree(root_nodes) if node.kind == "leaf"})
+    lines.append(f"use crate::dd_base_types::{{{', '.join(used_base_types)}}};")
+    lines.append(f"use crate::ids::{ids_name}::{ids_pascal};")
+    lines.append("use std::any::Any;")
+    lines.append("")
+    lines.append("// " + "=" * 76)
+    lines.append("// Array-of-structures lengths")
+    lines.append("// " + "=" * 76)
+    lines.append("")
+    lines.extend(generate_lengths_functions(lengths_registry, ids_name, ids_pascal))
+    lines.append("// " + "=" * 76)
+    lines.append("// Nodes")
+    lines.append("// " + "=" * 76)
+    lines.append("")
+    lines.extend(statics)
+    lines.append(f"/// The root of the {ids_name} data dictionary.")
+    lines.append(f"pub static {ids_name.upper()}_ROOT: Node = Node {{")
+    lines.append(f"    name: {rust_string_literal(ids_name)},")
+    lines.append(f"    documentation: {rust_string_literal(root_ct.documentation)},")
+    lines.append('    units: "",')
+    lines.append(f"    kind: NodeKind::Structure({root_children_name}),")
+    lines.append("};")
+
+    return "\n".join(lines)
+
+
+def iterate_path_tree(nodes: list[PathNode]):
+    """Yield every node in the tree, depth first."""
+    for node in nodes:
+        yield node
+        yield from iterate_path_tree(node.children)
+
+
+def generate_python_stub_preamble() -> str:
+    """The part of the type stub shared by every IDS: the module docstring and `Path`."""
+    lines: list[str] = []
+    lines.append('"""Type stubs for the `gsfit_rs.imas` submodule.')
+    lines.append("")
+    lines.append("**WARNING** This file is autogenerated by `rust/imas_rs/imas_updater/build_ids.py`.")
+    lines.append("Any changes will be overwritten.")
+    lines.append("")
+    lines.append("At runtime there is a single `Path` class reached through `__getattr__`, walking a")
+    lines.append("static description of the data dictionary held in Rust. This stub declares one class")
+    lines.append("per node so that editors offer completions and `mypy` checks both the attribute")
+    lines.append("names and the type that `get` returns.")
+    lines.append("")
+    lines.append("Classes ending `Item` are reached when every array-of-structures level was indexed")
+    lines.append("with an integer, so one value comes back. Classes ending `Many` are reached once a")
+    lines.append("level has been sliced, so values are gathered into an array. Only one level may be")
+    lines.append("sliced, which is why an array reached from a `Many` class only accepts an integer.")
+    lines.append('"""')
+    lines.append("")
+    lines.append("from typing import Generic, TypeVar, overload")
+    lines.append("")
+    lines.append("import numpy as np")
+    lines.append("import numpy.typing as npt")
+    lines.append("")
+    lines.append('_T = TypeVar("_T")')
+    lines.append("")
+    lines.append("class Path(Generic[_T]):")
+    lines.append('    """A data dictionary path. Holds no data; pass it to `get`.')
+    lines.append("")
+    lines.append("    A path is a value: it can be stored in a list, printed, and reused against")
+    lines.append("    several IDSs.")
+    lines.append('    """')
+    lines.append("")
+    lines.append("    @property")
+    lines.append("    def units(self) -> str:")
+    lines.append('        """The units of this node. Empty when the data dictionary gives none."""')
+    lines.append("    @property")
+    lines.append("    def documentation(self) -> str:")
+    lines.append('        """The data dictionary description of this node."""')
+    lines.append("    @property")
+    lines.append("    def data_type(self) -> str:")
+    lines.append('        """The data dictionary type, e.g. `FLT_0D`. Empty for a structure."""')
+    lines.append("    def __repr__(self) -> str: ...")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def generate_python_stub_section(
+    root_nodes: list[PathNode],
+    root_ct: ComplexType,
+    type_map: dict[str, ComplexType],
+    ids_name: str,
+) -> str:
+    """Generate one IDS's section of the type stub.
+
+    Every IDS shares the one `gsfit_rs.imas` module, so the sections are concatenated
+    after `generate_python_stub_preamble`.
+    """
+    ids_pascal = snake_to_pascal_case(ids_name)
+
+    type_children: dict[str, list[PathNode]] = {}
+    collect_types_from_path_tree(root_nodes, type_children, {})
+
+    # Class names are namespaced by IDS: every IDS declares its own `Code`, `Library`,
+    # `IdentifierStatic`, ... and they all share the one `imas.pyi`. A type whose name
+    # already starts with the IDS name is left alone, so `EquilibriumTimeSlice` does not
+    # become `EquilibriumEquilibriumTimeSlice`.
+    def namespaced(dd_type: str) -> str:
+        if dd_type.startswith(ids_pascal):
+            return dd_type
+        return f"{ids_pascal}{dd_type}"
+
+    def class_name(dd_type: str, many: bool) -> str:
+        suffix = "Many" if many else "Item"
+        return f"_{namespaced(dd_type)}{suffix}"
+
+    def array_class_name(dd_type: str, many: bool) -> str:
+        suffix = "ArrayFromMany" if many else "ArrayFromItem"
+        return f"_{namespaced(dd_type)}{suffix}"
+
+    def emit_members(nodes: list[PathNode], many: bool) -> list[str]:
+        lines: list[str] = []
+        for node in nodes:
+            if node.kind == "leaf":
+                item_type, many_type = PYTHON_LEAF_TYPES[node.data_type]
+                return_type = f"Path[{many_type if many else item_type}]"
+            elif node.kind == "structure":
+                return_type = class_name(node.dd_type, many)
+            else:
+                return_type = array_class_name(node.dd_type, many)
+            lines.append("    @property")
+            lines.append(f"    def {node.name}(self) -> {return_type}:")
+            docstring = python_docstring(node.documentation, node.units, "        ")
+            if docstring:
+                lines.extend(docstring)
+            else:
+                lines[-1] = lines[-1] + " ..."
+        if not lines:
+            lines.append("    pass")
+        return lines
+
+    lines: list[str] = []
+    lines.append(f"class {ids_pascal}:")
+    lines.append(f'    """{root_ct.documentation}"""')
+    lines.append("")
+    lines.append("    def get(self, path: Path[_T]) -> _T:")
+    lines.append('        """Read the data at `path` out of this IDS.')
+    lines.append("")
+    lines.append("        The shape of the result follows the shape of the index: an integer index")
+    lines.append("        gives one value, a slice gathers. Unset floats read back as NaN.")
+    lines.append('        """')
+    lines.append("    def __len__(self) -> int:")
+    lines.append('        """The number of time slices held by this IDS."""')
+    lines.append("    def __repr__(self) -> str: ...")
+    lines.append("")
+    lines.append("# " + "=" * 74)
+    lines.append(f"# {ids_name} path nodes")
+    lines.append("# " + "=" * 74)
+    lines.append("")
+
+    root_type = snake_to_pascal_case(root_ct.name)
+    for dd_type in sorted(type_children):
+        if dd_type == root_type:
+            continue
+        documentation = type_map[dd_type].documentation if dd_type in type_map else ""
+        for many in (False, True):
+            lines.append(f"class {class_name(dd_type, many)}:")
+            if documentation:
+                lines.extend(python_docstring(documentation, "", "    "))
+                lines.append("")
+            lines.extend(emit_members(type_children[dd_type], many))
+            lines.append("")
+
+    lines.append("# " + "-" * 74)
+    lines.append(f"# {ids_name} arrays of structures")
+    lines.append("# " + "-" * 74)
+    lines.append("")
+
+    array_types = sorted({node.dd_type for node in iterate_path_tree(root_nodes) if node.kind == "array_of_structures"})
+    for dd_type in array_types:
+        lines.append(f"class {array_class_name(dd_type, False)}:")
+        lines.append("    @overload")
+        lines.append(f"    def __getitem__(self, index: int) -> {class_name(dd_type, False)}: ...")
+        lines.append("    @overload")
+        lines.append(f"    def __getitem__(self, index: slice | list[int]) -> {class_name(dd_type, True)}: ...")
+        lines.append("")
+        lines.append(f"class {array_class_name(dd_type, True)}:")
+        lines.append("    # Only one array-of-structures level may be sliced, so once a level above")
+        lines.append("    # has been sliced this one takes an integer only.")
+        lines.append(f"    def __getitem__(self, index: int) -> {class_name(dd_type, True)}: ...")
+        lines.append("")
+
+    lines.append("# " + "-" * 74)
+    lines.append(f"# {ids_name} root")
+    lines.append("# " + "-" * 74)
+    lines.append("")
+    lines.append(f"class _{ids_pascal}Paths:")
+    lines.extend(python_docstring(root_ct.documentation, "", "    "))
+    lines.append("")
+    lines.extend(emit_members(root_nodes, False))
+    lines.append("")
+    lines.append(f"{ids_name}_paths: _{ids_pascal}Paths")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
 def generate_rust_file(
     complex_types: list[ComplexType], root_element: Optional[ComplexType], ids_name: str
 ) -> str:
@@ -1315,7 +1888,12 @@ def generate_rust_file(
     return "\n".join(lines)
 
 
-def build_ids(path_to_ids_schema: Path, path_to_rust_ids_file: Path):
+def build_ids(
+    path_to_ids_schema: Path,
+    path_to_rust_ids_file: Path,
+    path_to_rust_paths_file: Optional[Path] = None,
+    generate_python_stub_for_this_ids: bool = False,
+) -> Optional[str]:
     """
     Build Rust IDS code from IMAS XSD schema.
 
@@ -1333,6 +1911,14 @@ def build_ids(path_to_ids_schema: Path, path_to_rust_ids_file: Path):
     Args:
         path_to_ids_schema: Path to the schema directory containing dd_<name>.xsd
         path_to_rust_ids_file: Path where the generated Rust file will be written
+        path_to_rust_paths_file: (optional) Path for the static data dictionary description
+            used by the Python bindings
+        generate_python_stub_for_this_ids: whether to return this IDS's section of the
+            `.pyi` type stub. Every IDS shares the one `gsfit_rs.imas` module, so the
+            caller concatenates the sections rather than each writing its own file.
+
+    Returns:
+        This IDS's section of the type stub, or `None` when it was not asked for.
     """
     # Find the main XSD file (dd_<name>.xsd)
     schema_dir = Path(path_to_ids_schema)
@@ -1392,6 +1978,58 @@ def build_ids(path_to_ids_schema: Path, path_to_rust_ids_file: Path):
     )
     print(f"Formatted: {output_path}")
 
+    # The Python bindings: a static description of the same schema, plus the type stub
+    # that gives editors their completions. Both come from one walk of the tree, so they
+    # cannot drift apart from each other or from the structs above.
+    if path_to_rust_paths_file is None and not generate_python_stub_for_this_ids:
+        return None
+
+    if root_element is None:
+        raise ValueError("cannot generate the Python bindings without a root element")
+
+    all_types = complex_types + [root_element]
+    type_map = {snake_to_pascal_case(ct.name): ct for ct in all_types}
+
+    lengths_registry: dict[tuple[str, ...], str] = {}
+    root_nodes = build_path_tree(
+        root_element,
+        type_map,
+        dd_path="",
+        rust_expression=ids_name,
+        vec_expressions=[],
+        vec_dd_paths=[],
+        ancestry=(snake_to_pascal_case(root_element.name),),
+        lengths_registry=lengths_registry,
+    )
+    n_nodes = sum(1 for _ in iterate_path_tree(root_nodes))
+    n_leaves = sum(1 for node in iterate_path_tree(root_nodes) if node.kind == "leaf")
+    print(f"Path tree: {n_nodes} nodes, {n_leaves} leaves, {len(lengths_registry)} array-of-structures chains")
+
+    if path_to_rust_paths_file is not None:
+        paths_path = Path(path_to_rust_paths_file)
+        paths_path.parent.mkdir(parents=True, exist_ok=True)
+        paths_path.write_text(
+            generate_python_paths_rust(root_nodes, lengths_registry, root_element, ids_name)
+        )
+        print(f"Generated: {paths_path}")
+        subprocess.run(
+            [
+                "rustfmt",
+                "--edition",
+                RUST_EDITION,
+                "--config-path",
+                str(WORKSPACE_DIR),
+                str(paths_path),
+            ],
+            check=True,
+        )
+        print(f"Formatted: {paths_path}")
+
+    if generate_python_stub_for_this_ids:
+        return generate_python_stub_section(root_nodes, root_element, type_map, ids_name)
+
+    return None
+
 
 if __name__ == "__main__":
     if not DATA_DICTIONARY_DIR.is_dir():
@@ -1400,10 +2038,25 @@ if __name__ == "__main__":
             "See rust/imas_rs/imas_updater/README.md for how to clone it."
         )
 
-    ids_names: list[str] = ["equilibrium"]
+    ids_names: list[str] = ["equilibrium", "wall"]
+
+    # Which IDSs get Python path bindings (`<ids>_paths` and a `get`). Adding one here also
+    # needs a matching `#[pyclass]` wrapper and `mod <ids>_paths;` in `src/python/mod.rs`.
+    ids_names_with_python_paths: set[str] = {"equilibrium", "wall"}
+
+    stub_sections: list[str] = [generate_python_stub_preamble()]
 
     for ids_name in ids_names:
-        build_ids(
+        with_paths = ids_name in ids_names_with_python_paths
+        section = build_ids(
             path_to_ids_schema=DATA_DICTIONARY_DIR / "schemas" / ids_name,
             path_to_rust_ids_file=CRATE_DIR / "src" / "ids" / f"{ids_name}.rs",
+            path_to_rust_paths_file=(CRATE_DIR / "src" / "python" / f"{ids_name}_paths.rs") if with_paths else None,
+            generate_python_stub_for_this_ids=with_paths,
         )
+        if section is not None:
+            stub_sections.append(section)
+
+    PYTHON_STUB_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PYTHON_STUB_FILE.write_text("\n".join(stub_sections))
+    print(f"Generated: {PYTHON_STUB_FILE}")

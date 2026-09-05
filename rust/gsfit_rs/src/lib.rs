@@ -4,11 +4,13 @@ use pyo3::prelude::*;
 // Load modules
 mod circuit_equations;
 mod coils;
+mod equilibrium_post_processor;
 mod grad_shafranov;
 mod passives;
 mod plasma;
 mod sensors;
 mod source_functions;
+mod wall;
 
 // Load structs and functions
 use circuit_equations::solve_circuit_equations;
@@ -24,6 +26,7 @@ use plasma::Plasma;
 mod python_pickling_methods;
 use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, StationaryPoint};
 use source_functions::{EfitPolynomial, TensionedCubicBSpline};
+use wall::Wall;
 
 // Load public modules
 pub mod greens;
@@ -43,7 +46,7 @@ pub mod plasma_geometry;
 
 /// A Python module implemented in Rust; bindings added here
 #[pymodule]
-fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Expose functions
     m.add_function(wrap_pyfunction!(greens_py, m)?)?;
     m.add_function(wrap_pyfunction!(greens_d_psi_d_r, m)?)?;
@@ -61,6 +64,7 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Coils>()?;
     m.add_class::<Passives>()?;
     m.add_class::<Plasma>()?;
+    m.add_class::<Wall>()?;
 
     // Expose sensor classes
     m.add_class::<BpProbes>()?;
@@ -78,6 +82,16 @@ fn gsfit_rs(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Expose solovev equilibrium function
     // m.add_function(wrap_pyfunction!(run_solovev, m)?)?;
+
+    // Expose the IMAS data dictionary as the `gsfit_rs.imas` submodule.
+    // The classes themselves live in the `imas_rs` crate (behind its `python` feature);
+    // `gsfit_rs` only mounts them, because it is the crate that builds the `cdylib`.
+    let imas: Bound<'_, PyModule> = PyModule::new(py, "imas")?;
+    imas_rs::python::register(&imas)?;
+    m.add_submodule(&imas)?;
+    // `add_submodule` only sets the attribute; registering in `sys.modules` is what makes
+    // `from gsfit_rs.imas import equilibrium_paths` work.
+    py.import("sys")?.getattr("modules")?.set_item("gsfit_rs.imas", &imas)?;
 
     Ok(())
 }

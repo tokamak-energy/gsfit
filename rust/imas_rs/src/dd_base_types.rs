@@ -179,10 +179,12 @@ impl<'a, T, U> Accumulator<'a, T, U> {
     /// Panics if any element is unset (`None`), naming the offending path and
     /// index, rather than silently substituting a placeholder value.
     pub fn unwrap(&self) -> Array1<U> {
-        Array1::from_iter(self.data.iter().enumerate().map(|(index, item)| {
-            (self.project)(item)
-                .unwrap_or_else(|| panic!("{} is unset (None) at element {}", self.path, index))
-        }))
+        Array1::from_iter(
+            self.data
+                .iter()
+                .enumerate()
+                .map(|(index, item)| (self.project)(item).unwrap_or_else(|| panic!("{} is unset (None) at element {}", self.path, index))),
+        )
     }
 
     /// Gather every value, keeping unset elements as `None`.
@@ -229,10 +231,7 @@ impl<'a, T> StringAccumulator<'a, T> {
         self.data
             .iter()
             .enumerate()
-            .map(|(index, item)| {
-                (self.project)(item)
-                    .unwrap_or_else(|| panic!("{} is unset (None) at element {}", self.path, index))
-            })
+            .map(|(index, item)| (self.project)(item).unwrap_or_else(|| panic!("{} is unset (None) at element {}", self.path, index)))
             .collect()
     }
 

@@ -5,7 +5,7 @@ mod grad_shafranov_solver;
 mod gs_solution;
 
 // Expose functions to public
-pub use equilibrium_solve::{GradShafranovInputs, GradShafranovSolve};
+pub use equilibrium_solve::{GradShafranovInputs, GradShafranovSolve, output_flag};
 pub use grad_shafranov_solver::solve_grad_shafranov;
 pub use gs_solution::GsSolution;
 

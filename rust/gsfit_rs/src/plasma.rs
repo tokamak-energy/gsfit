@@ -12,6 +12,10 @@ use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
 use geo::Area;
 use geo::Centroid;
 use geo::{Contains, Coord, LineString, Point, Polygon};
+use imas_rs::python::PyEquilibrium;
+use imas_rs::{
+    Equilibrium, EquilibriumGreensGridGrid, EquilibriumGreensPfActive, EquilibriumGreensPfPassive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d,
+};
 use ndarray::{Array1, Array2, Array3, ArrayView2, Axis, MeshIndex, meshgrid, s};
 use ndarray_interp::interp2d::Interp2D;
 use ndarray_stats::QuantileExt;
@@ -29,13 +33,16 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 #[pyclass(skip_from_py_object)]
 pub struct Plasma {
     pub results: DataTree,
+    /// The equilibrium IDS. Empty until `initialise_equilibrium_ids` is called, which happens once
+    /// the reconstruction times are known
+    pub equilibrium_ids: Equilibrium,
     pub p_prime_source_function: SharedSourceFunction,
     pub ff_prime_source_function: SharedSourceFunction,
-    pub initial_ip: f64,
-    pub initial_cur_r: f64,
-    pub initial_cur_z: f64,
-    pub initial_minor_radius: f64,
-    pub initial_kappa: f64,
+    pub initial_guess_ip: f64,
+    pub initial_guess_cur_r: f64,
+    pub initial_guess_cur_z: f64,
+    pub initial_guess_minor_radius: f64,
+    pub initial_guess_elongation: f64,
 }
 
 // Python accessible methods
@@ -57,11 +64,13 @@ impl Plasma {
     /// * `vessel_z` - vessel vertical points (1d array), [metre]
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
     /// * `ff_prime_source_function` - ff_prime source function (a Rust implementation, initialised in Python)
-    /// * `initial_ip` - initial total plasma current, [ampere]
-    /// * `initial_cur_r` - radial centre of the initial current distribution, [metre]
-    /// * `initial_cur_z` - vertical centre of the initial current distribution, [metre]
-    /// * `initial_minor_radius` - radial semi-axis of the initial current distribution, [metre]
-    /// * `initial_kappa` - elongation of the initial current distribution, [dimensionless]
+    /// * `initial_guess_ip` - initial total plasma current, [ampere]
+    /// * `initial_guess_cur_r` - radial centre of the initial current distribution, [metre]
+    /// * `initial_guess_cur_z` - vertical centre of the initial current distribution, [metre]
+    /// * `initial_guess_minor_radius` - radial semi-axis of the initial current distribution, [metre]
+    /// * `initial_guess_elongation` - elongation of the initial current distribution, [dimensionless]
+    /// * `vacuum_toroidal_field_reference_radius` - reference major radius the vacuum toroidal
+    ///   field is quoted at, `vacuum_toroidal_field/r0`, [metre]
     ///
     /// # Returns
     /// * `self` - a new instance of the Plasma struct
@@ -82,11 +91,12 @@ impl Plasma {
         vessel_z: PyReadonlyArray1<f64>,
         p_prime_source_function: &Bound<'_, PyAny>,  // Any Python object, because Python doesn't know about types
         ff_prime_source_function: &Bound<'_, PyAny>, // Any Python object, because Python doesn't know about types
-        initial_ip: f64,
-        initial_cur_r: f64,
-        initial_cur_z: f64,
-        initial_minor_radius: f64,
-        initial_kappa: f64,
+        initial_guess_ip: f64,
+        initial_guess_cur_r: f64,
+        initial_guess_cur_z: f64,
+        initial_guess_minor_radius: f64,
+        initial_guess_elongation: f64,
+        vacuum_toroidal_field_reference_radius: f64,
     ) -> Self {
         // Change Python types into Rust types
         let psi_n_ndarray: Array1<f64> = psi_n.to_owned_array();
@@ -205,6 +215,26 @@ impl Plasma {
             }
         }
 
+        // Store the plasma grid-to-grid Greens tables in the equilibrium IDS. They are geometry, so
+        // they are the same for every time-slice and hang off the IDS root rather than off
+        // `time_slice`. Cloned because the same tables also go into the DataTree below, which
+        // `gs_solution.rs` still reads
+        let greens_grid_grid: EquilibriumGreensGridGrid = EquilibriumGreensGridGrid {
+            psi: Some(g_psi.clone()),
+            br: Some(g_br.clone()),
+            bz: Some(g_bz.clone()),
+            d_br_d_z: Some(g_d_br_d_z.clone()),
+            d_bz_d_z: Some(g_d_bz_d_z.clone()),
+            d_psi_d_r: Some(g_d_psi_d_r.clone()),
+            d_psi_d_z: Some(g_d_psi_d_z.clone()),
+            d2_psi_d_r2: Some(g_d2_psi_d_r2.clone()),
+            d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z.clone()),
+            d2_psi_d_z2: Some(g_d2_psi_d_z2.clone()),
+            d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z.clone()),
+            d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2.clone()),
+            d3_psi_d_z3: Some(g_d3_psi_d_z3.clone()),
+        };
+
         // Store values
         results.get_or_insert("greens").get_or_insert("grid_grid").insert("psi", g_psi); // Array2<f64>; shape = (n_z * n_r, n_r)
         results.get_or_insert("greens").get_or_insert("grid_grid").insert("br", g_br); // Array2<f64>; shape = (n_z * n_r, n_r)
@@ -243,15 +273,33 @@ impl Plasma {
         results.get_or_insert("vessel").insert("z", vessel_z_ndarray); // Array1<f64>; shape = (n_vessel_pts)
         results.get_or_insert("profiles_1d").get_or_insert("psi_norm").insert("psi_norm", psi_n_ndarray); // Array1<f64>; shape = (n_psi_n)
 
+        // The equilibrium IDS describes its grid inside each time-slice, and the reconstruction
+        // times are not known yet, so the grid is stored by `initialise_equilibrium_ids` instead.
+        //
+        // The initial guess does not depend on the times, so it is stored here. It survives
+        // `initialise_equilibrium_ids`, which only replaces the time slices.
+        let mut equilibrium_ids: Equilibrium = Equilibrium::default();
+        equilibrium_ids.code.initial_guess.ip = Some(initial_guess_ip);
+        equilibrium_ids.code.initial_guess.cur_r = Some(initial_guess_cur_r);
+        equilibrium_ids.code.initial_guess.cur_z = Some(initial_guess_cur_z);
+        equilibrium_ids.code.initial_guess.minor_radius = Some(initial_guess_minor_radius);
+        equilibrium_ids.code.initial_guess.elongation = Some(initial_guess_elongation);
+
+        // The reference major radius the vacuum toroidal field is quoted at. A property of the
+        // machine rather than of a time-slice, so it is stored once, here
+        equilibrium_ids.vacuum_toroidal_field.r0 = Some(vacuum_toroidal_field_reference_radius);
+        equilibrium_ids.greens.grid_grid = greens_grid_grid;
+
         Self {
             results,
+            equilibrium_ids,
             p_prime_source_function: p_prime_source_function_arc,
             ff_prime_source_function: ff_prime_source_function_arc,
-            initial_ip,
-            initial_cur_r,
-            initial_cur_z,
-            initial_minor_radius,
-            initial_kappa,
+            initial_guess_ip,
+            initial_guess_cur_r,
+            initial_guess_cur_z,
+            initial_guess_minor_radius,
+            initial_guess_elongation,
         }
     }
 
@@ -268,6 +316,11 @@ impl Plasma {
         let flat_z: Array1<f64> = self.results.get("grid").get("flat").get("z").unwrap_array1();
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = self.results.get("grid").get("n_z").unwrap_usize();
+
+        // Greens tables for the equilibrium IDS. Built in the same loop, and therefore the same
+        // order, as the DataTree ones: both iterate `coils.results.get("pf").keys()`, which is
+        // sorted, and the solver's `pf` wildcard read sorts too, so the two agree column for column
+        let mut greens_pf_active: Vec<EquilibriumGreensPfActive> = Vec::with_capacity(coils.results.get("pf").keys().len());
 
         for coil_name in &coils.results.get("pf").keys() {
             // Coils
@@ -367,6 +420,25 @@ impl Plasma {
                 .expect("plasma.greens_with_coils: Failed to reshape `d3_g_d_z3_all_filaments` into (n_z, n_r)")
                 .to_owned();
 
+            // Store in the equilibrium IDS. Cloned because the same tables also go into the
+            // DataTree below, which `gs_solution.rs` still reads
+            greens_pf_active.push(EquilibriumGreensPfActive {
+                name: Some(coil_name.clone()),
+                psi: Some(g_psi.clone()),
+                br: Some(g_br.clone()),
+                bz: Some(g_bz.clone()),
+                d_br_d_z: Some(g_d_br_d_z.clone()),
+                d_bz_d_z: Some(g_d_bz_d_z.clone()),
+                d_psi_d_r: Some(g_d_psi_d_r.clone()),
+                d_psi_d_z: Some(g_d_psi_d_z.clone()),
+                d2_psi_d_r2: Some(g_d2_psi_d_r2.clone()),
+                d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z.clone()),
+                d2_psi_d_z2: Some(g_d2_psi_d_z2.clone()),
+                d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z.clone()),
+                d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2.clone()),
+                d3_psi_d_z3: Some(g_d3_psi_d_z3.clone()),
+            });
+
             // Store results
             self.results
                 .get_or_insert("greens")
@@ -434,6 +506,10 @@ impl Plasma {
                 .get_or_insert(coil_name)
                 .insert("d_psi_d_z", g_d_psi_d_z); // Array2<f64>; shape = (n_z, n_r)
         }
+
+        // Assigned rather than appended, so that calling this twice replaces the tables instead of
+        // silently doubling them up
+        self.equilibrium_ids.greens.pf_active = greens_pf_active;
     }
 
     /// Calculate the Greens function with passives
@@ -453,6 +529,11 @@ impl Plasma {
         let flat_r: Array1<f64> = self.results.get("grid").get("flat").get("r").unwrap_array1();
         let flat_z: Array1<f64> = self.results.get("grid").get("flat").get("z").unwrap_array1();
 
+        // Greens tables for the equilibrium IDS. Built in the same nested loop, and therefore the
+        // same order, as the DataTree ones. Both walk sorted key lists, and so does
+        // `get_greens_passive_grid`, so the degree-of-freedom columns agree one for one
+        let mut greens_pf_passive: Vec<EquilibriumGreensPfPassive> = Vec::with_capacity(passives_local.results.keys().len());
+
         // Calculate Greens with each passive degree of freedom
         // let passive_names: Vec<String> = ;
         for passive_name in passives_local.results.keys() {
@@ -460,6 +541,8 @@ impl Plasma {
             let dof_names: Vec<String> = _tmp.keys();
             let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
             let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
+
+            let mut greens_dof: Vec<EquilibriumGreensPfPassiveDof> = Vec::with_capacity(dof_names.len());
 
             for dof_name in dof_names {
                 // Current distribution
@@ -525,6 +608,25 @@ impl Plasma {
                 let g_d3_psi_d_r2_d_z: Array1<f64> = g_d3_psi_d_r2_d_z_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
                 let g_d3_psi_d_r_d_z2: Array1<f64> = g_d3_psi_d_r_d_z2_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
                 let g_d3_psi_d_z3: Array1<f64> = g_d3_psi_d_z3_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
+
+                // Store in the equilibrium IDS. Cloned because the same tables also go into the
+                // DataTree below, which `gs_solution.rs` still reads
+                greens_dof.push(EquilibriumGreensPfPassiveDof {
+                    name: Some(dof_name.clone()),
+                    psi: Some(g_psi.clone()),
+                    br: Some(g_br.clone()),
+                    bz: Some(g_bz.clone()),
+                    d_br_d_z: Some(g_d_br_d_z.clone()),
+                    d_bz_d_z: Some(g_d_bz_d_z.clone()),
+                    d_psi_d_r: Some(g_d_psi_d_r.clone()),
+                    d_psi_d_z: Some(g_d_psi_d_z.clone()),
+                    d2_psi_d_r2: Some(g_d2_psi_d_r2.clone()),
+                    d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z.clone()),
+                    d2_psi_d_z2: Some(g_d2_psi_d_z2.clone()),
+                    d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z.clone()),
+                    d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2.clone()),
+                    d3_psi_d_z3: Some(g_d3_psi_d_z3.clone()),
+                });
 
                 // Store
                 self.results
@@ -606,7 +708,16 @@ impl Plasma {
                     .get_or_insert(&dof_name)
                     .insert("d3_psi_d_z3", g_d3_psi_d_z3);
             }
+
+            greens_pf_passive.push(EquilibriumGreensPfPassive {
+                name: Some(passive_name.clone()),
+                dof: greens_dof,
+            });
         }
+
+        // Assigned rather than appended, so that calling this twice replaces the tables instead of
+        // silently doubling them up
+        self.equilibrium_ids.greens.pf_passive = greens_pf_passive;
     }
 
     /// Print to screen, to be used within Python
@@ -625,11 +736,65 @@ impl Plasma {
 
         return string_output;
     }
+
+    /// The equilibrium IDS, for reading with `gsfit_rs.imas.equilibrium_paths`.
+    ///
+    /// The IDS is copied into the returned object, so it is a snapshot: changes made on the
+    /// Rust side afterwards are not seen by it. A borrow is not possible here, because
+    /// `imas_rs` cannot name `Plasma` without the two crates depending on each other.
+    #[getter]
+    fn equilibrium_ids(&self) -> PyEquilibrium {
+        return PyEquilibrium::new(self.equilibrium_ids.clone());
+    }
 }
 
 // Rust only methods - either because we want to keep the methods private
 // or more likely because the methods are incompatible with Python
 impl Plasma {
+    /// Pre-allocate the equilibrium IDS with one empty time-slice per reconstruction time.
+    ///
+    /// Every leaf is unset (`None`); the Grad-Shafranov solver fills them in. Called once the
+    /// reconstruction times are known, which is later than `Plasma::new`.
+    ///
+    /// Only the time slices are (re)allocated. Anything already on the IDS - `code`,
+    /// `vacuum_toroidal_field`, ... - is left alone, so this does not discard data set before the
+    /// reconstruction runs.
+    pub fn initialise_equilibrium_ids(&mut self, times_to_reconstruct: &Array1<f64>) {
+        self.equilibrium_ids.allocate_time_slices(times_to_reconstruct);
+
+        // The equilibrium IDS has no IDS-level grid: `grid`, `grid_type` and the (R, Z) positions
+        // all live inside `time_slice/profiles_2d`, so the grid can only be stored once the
+        // time-slices exist
+        let r: Array1<f64> = self.results.get("grid").get("r").unwrap_array1();
+        let z: Array1<f64> = self.results.get("grid").get("z").unwrap_array1();
+        let mesh_r: Array2<f64> = self.results.get("grid").get("mesh").get("r").unwrap_array2();
+        let mesh_z: Array2<f64> = self.results.get("grid").get("mesh").get("z").unwrap_array2();
+        let psi_norm: Array1<f64> = self.results.get("profiles_1d").get("psi_norm").get("psi_norm").unwrap_array1();
+        let d_area: f64 = self.results.get("grid").get("d_area").unwrap_f64();
+
+        for time_slice in self.equilibrium_ids.time_slice.iter_mut() {
+            // GSFit solves on a single rectangular (R, Z) grid, so there is exactly one entry in
+            // this array of structures
+            let mut profiles_2d: EquilibriumProfiles2d = EquilibriumProfiles2d::default();
+
+            // `rectangular` is index 1 of the data dictionary's poloidal plane coordinates
+            // enumeration: "Cylindrical R,Z ala eqdsk (R=dim1, Z=dim2)"
+            profiles_2d.grid_type.name = Some("rectangular".to_string());
+            profiles_2d.grid_type.index = Some(1);
+            profiles_2d.grid_type.description = Some("Cylindrical R,Z ala eqdsk (R=dim1, Z=dim2)".to_string());
+
+            profiles_2d.grid.dim1 = Some(r.to_owned());
+            profiles_2d.grid.dim2 = Some(z.to_owned());
+            profiles_2d.grid.d_area = Some(d_area);
+            profiles_2d.r = Some(mesh_r.to_owned());
+            profiles_2d.z = Some(mesh_z.to_owned());
+            time_slice.profiles_2d = vec![profiles_2d];
+
+            // The psi_norm grid the source functions are defined on
+            time_slice.profiles_1d.psi_norm = Some(psi_norm.to_owned());
+        }
+    }
+
     pub fn get_greens_passive_grid(&self) -> Array2<f64> {
         // Get grid sizes
         let n_r: usize = self.results.get("grid").get("n_r").unwrap_usize();
@@ -1009,7 +1174,6 @@ impl Plasma {
 
         return greens_with_passives;
     }
-
     pub fn equilibrium_post_processor(&mut self, gs_solutions: &mut [GsSolution], coils: &Coils, plasma: &Plasma) {
         println!("equilibrium_post_processor: starting");
 

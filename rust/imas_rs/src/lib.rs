@@ -7,6 +7,9 @@
 pub mod dd_base_types;
 pub mod ids;
 
+#[cfg(feature = "python")]
+pub mod python;
+
 // Re-export commonly used types at crate root
 pub use dd_base_types::*;
 pub use ids::*;

@@ -202,7 +202,7 @@ pub struct EquilibriumGlobalQuantitiesQmin {
 
 /// 0D parameters of the equilibrium
 #[derive(Debug, Clone, Default)]
-pub struct EqulibriumGlobalQuantities {
+pub struct EquilibriumGlobalQuantities {
     /// Poloidal beta. Defined as betap = 4 int(p dV) / [R_0 * mu_0 * Ip^2]
     pub beta_pol: Option<FLT_0D>,
     /// Toroidal beta, defined as the volume-averaged total perpendicular pressure divided by (B0^2/(2*mu0)), i.e. beta_toroidal = 2 mu0 int(p dV) / V / B0^2
@@ -254,18 +254,48 @@ pub struct EqulibriumGlobalQuantities {
     /// Plasma resistance = int(e_field.j.dV) / Ip^2
     /// Units: ohm
     pub plasma_resistance: Option<FLT_0D>,
-    /// Major radius of the upper X-point
-    /// Units: m
-    pub xpt_upper_r: Option<FLT_0D>,
-    /// Height of the upper X-point
-    /// Units: m
-    pub xpt_upper_z: Option<FLT_0D>,
-    /// Major radius of the lower X-point
-    /// Units: m
-    pub xpt_lower_r: Option<FLT_0D>,
-    /// Height of the lower X-point
-    /// Units: m
-    pub xpt_lower_z: Option<FLT_0D>,
+    /// Current flowing in the central rod of the toroidal field coil. It sets the vacuum
+    /// toroidal field function `f_vac = mu_0 * i_rod / (2 * pi)`, which the diamagnetic loop
+    /// constraint is written against. Signed: a negative value is a reversed toroidal field
+    /// Units: A
+    pub i_rod: Option<FLT_0D>,
+    /// Poloidal beta normalised to the flux-surface-averaged poloidal field:
+    /// `2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
+    /// flux-surface average
+    pub beta_pol_1: Option<FLT_0D>,
+    /// Poloidal beta normalised to the magnetic axis major radius:
+    /// `4 * int(p dV) / (mu_0 * ip ** 2 * magnetic_axis/r)`
+    pub beta_pol_2: Option<FLT_0D>,
+    /// Poloidal beta normalised to the geometric major radius:
+    /// `4 * int(p dV) / (mu_0 * ip ** 2 * boundary/geometric_axis/r)`
+    /// This is the closest of the three to the data dictionary's own `beta_pol`, which uses the
+    /// vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
+    pub beta_pol_3: Option<FLT_0D>,
+    /// Vacuum toroidal magnetic field at the plasma geometric axis,
+    /// `mu_0 * i_rod / (2 * pi * boundary/geometric_axis/r)`. Distinct from
+    /// `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
+    /// `vacuum_toroidal_field/r0` rather than following the plasma
+    /// Units: T
+    pub bt_vac_at_r_geo: Option<FLT_0D>,
+    /// Internal inductance normalised to the flux-surface-averaged poloidal field:
+    /// `<b_p ** 2> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
+    /// flux-surface average
+    pub li_1: Option<FLT_0D>,
+    /// Internal inductance normalised to the magnetic axis major radius:
+    /// `2 * int(b_p ** 2 dV) / (mu_0 ** 2 * ip ** 2 * magnetic_axis/r)`
+    /// The data dictionary's own `li_3` is the same quantity normalised to
+    /// `boundary/geometric_axis/r` instead
+    pub li_2: Option<FLT_0D>,
+    /// Plain sum of `profiles_2d/pressure` over every grid cell. Not an integral: the cells are
+    /// not weighted by their volume, so this is a diagnostic of the 2D pressure rather than a
+    /// physical quantity. Kept because GSFit has always reported it as `global/p`
+    /// Units: Pa
+    pub pressure_2d_sum: Option<FLT_0D>,
+    /// Loop voltage at the plasma boundary, `-d(boundary/psi)/d(time)`, by finite differences over
+    /// the reconstruction times. Distinct from the data dictionary's `v_external`, which
+    /// differentiates `psi_external_average` instead
+    /// Units: V
+    pub v_loop: Option<FLT_0D>,
 }
 
 /// R,Z position constraint
@@ -628,6 +658,10 @@ pub struct EquilibriumProfiles1d {
     /// Mass density
     /// Units: kg.m^-3
     pub mass_density: Option<FLT_1D>,
+    /// Normalised poloidal flux radius, `sqrt(psi_norm)`. This is the poloidal counterpart of the
+    /// data dictionary's `rho_tor_norm`, which the data dictionary itself does not define
+    /// Units: dimensionless
+    pub rho_pol: Option<FLT_1D>,
 }
 
 /// Equilibrium 2D profiles in the poloidal plane
@@ -692,6 +726,13 @@ pub struct EquilibriumProfiles2d {
     /// Contribution to the poloidal flux from the PF coils alone
     /// Units: Wb
     pub psi_coils: Option<FLT_2D>,
+    /// Plasma pressure on the grid in the poloidal plane. Zero outside the plasma boundary
+    /// Units: Pa
+    pub pressure: Option<FLT_2D>,
+    /// Vertical derivative of the vertical magnetic field on the grid in the poloidal plane. Used
+    /// by the vertical stability control
+    /// Units: T.m^-1
+    pub d_b_field_z_d_z: Option<FLT_2D>,
 }
 
 /// Equilibrium ggd representation
@@ -749,7 +790,7 @@ pub struct EquilibriumTimeSlice {
     /// In case of equilibrium reconstruction under constraints, measurements used to constrain the equilibrium, reconstructed values and accuracy of the fit. The names of the child nodes correspond to the following definition: the solver aims at minimizing a cost function defined as : J=1/2*sum_i [ weight_i^2 (reconstructed_i - measured_i)^2 / sigma_i^2 ]. in which sigma_i is the standard deviation of the measurement error (to be found in the IDS of the measurement)
     pub constraints: EquilibriumConstraints,
     /// 0D parameters of the equilibrium
-    pub global_quantities: EqulibriumGlobalQuantities,
+    pub global_quantities: EquilibriumGlobalQuantities,
     /// Equilibrium profiles (1D radial grid) as a function of the poloidal flux
     pub profiles_1d: EquilibriumProfiles1d,
     /// Equilibrium 2D profiles in the poloidal plane. Multiple 2D representations of the equilibrium can be stored here.
@@ -763,10 +804,12 @@ pub struct EquilibriumTimeSlice {
     /// Time
     /// Units: s
     pub time: Option<FLT_0D>,
-    /// Fitted degrees of freedom of the p' source function
-    pub p_prime_dof_values: Option<FLT_1D>,
-    /// Fitted degrees of freedom of the FF' source function
-    pub ff_prime_dof_values: Option<FLT_1D>,
+    /// Source functions which parameterise the plasma current profile
+    pub source_functions: EquilibriumSourceFunctions,
+    /// Profiles along the horizontal line through the middle of the grid
+    pub profiles_r_midplane: EquilibriumProfilesRMidplane,
+    /// Scrape-off layer: the open field lines outside the last closed flux surface
+    pub sol: EquilibriumSol,
     /// Fitted degrees of freedom of the passive structure currents
     /// Units: A
     pub passive_dof_values: Option<FLT_1D>,
@@ -836,6 +879,10 @@ pub struct EquilibriumProfiles2dGrid {
     /// Elementary plasma volume of plasma enclosed in the cell formed by the nodes [dim1(i) dim2(j)], [dim1(i+1) dim2(j)], [dim1(i) dim2(j+1)] and [dim1(i+1) dim2(j+1)]
     /// Units: m^3
     pub volume_element: Option<FLT_2D>,
+    /// Area of one grid cell in the poloidal plane, `d_dim1 * d_dim2`. A single value, because
+    /// the grid is rectangular and uniformly spaced in both directions
+    /// Units: m^2
+    pub d_area: Option<FLT_0D>,
 }
 
 /// Scalar real values on a generic grid (dynamic within a type 3 AoS)
@@ -919,7 +966,7 @@ pub struct Code {
     /// Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
     pub output_flag: Option<INT_1D>,
     /// List of external libraries used by the code that has produced this IDS
-    pub library: Library,
+    pub library: Vec<Library>,
     /// Maximum number of iterations the convergence loop is allowed to run for
     pub iterations_n_max: Option<INT_0D>,
     /// Minimum number of iterations before the convergence test is allowed to pass
@@ -930,6 +977,8 @@ pub struct Code {
     /// converged
     /// Units: mixed
     pub grad_shafranov_deviation_value_tolerance: Option<FLT_0D>,
+    /// Initial guess for the plasma, used to seed the first iteration
+    pub initial_guess: EquilibriumCodeInitialGuess,
 }
 
 /// Generic grid space (dynamic within a type 3 AoS)
@@ -1047,6 +1096,17 @@ pub struct GenericGridDynamicSpaceDimensionObjectBoundary {
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
 #[derive(Debug, Clone, Default)]
+pub struct EquilibriumProfilesRMidplane {
+    /// Major radius of each point along the mid-plane, which is the grid's own radial axis
+    /// Units: m
+    pub r: Option<FLT_1D>,
+    /// Plasma pressure along the mid-plane. Zero outside the plasma boundary
+    /// Units: Pa
+    pub pressure: Option<FLT_1D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
 pub struct EquilibriumBoundaryBounding {
     /// Major radius of the point which defines the plasma boundary
     /// Units: m
@@ -1054,6 +1114,281 @@ pub struct EquilibriumBoundaryBounding {
     /// Height of the point which defines the plasma boundary
     /// Units: m
     pub z: Option<FLT_0D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeInitialGuess {
+    /// Initial total plasma current
+    /// Units: A
+    pub ip: Option<FLT_0D>,
+    /// Radial centre of the initial current distribution
+    /// Units: m
+    pub cur_r: Option<FLT_0D>,
+    /// Vertical centre of the initial current distribution
+    /// Units: m
+    pub cur_z: Option<FLT_0D>,
+    /// Radial semi-axis of the initial current distribution
+    /// Units: m
+    pub minor_radius: Option<FLT_0D>,
+    /// Elongation of the initial current distribution
+    pub elongation: Option<FLT_0D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumSol {
+    /// High field side leg, on the inboard side of the machine
+    pub hfs: EquilibriumSolLeg,
+    /// Low field side leg, on the outboard side of the machine
+    pub lfs: EquilibriumSolLeg,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumSolLeg {
+    /// The field line itself, traced from the X-point to where it meets the wall
+    pub contour: EquilibriumSolContour,
+    /// Where the leg meets the wall, which is the last point of the contour
+    pub strike_point: EquilibriumSolStrikePoint,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumSolContour {
+    /// Major radius of each point along the leg
+    /// Units: m
+    pub r: Option<FLT_1D>,
+    /// Height of each point along the leg
+    /// Units: m
+    pub z: Option<FLT_1D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumSolStrikePoint {
+    /// Major radius of the strike point
+    /// Units: m
+    pub r: Option<FLT_0D>,
+    /// Height of the strike point
+    /// Units: m
+    pub z: Option<FLT_0D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumSourceFunctions {
+    /// The p' source function, dp/dpsi
+    pub p_prime: EquilibriumSourceFunction,
+    /// The FF' source function, F dF/dpsi
+    pub ff_prime: EquilibriumSourceFunction,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumSourceFunction {
+    /// Fitted degrees of freedom of the source function, in the basis the source function defines
+    pub coefficients: Option<FLT_1D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumGreens {
+    /// Active poloidal field coils, one entry per coil
+    pub pf_active: Vec<EquilibriumGreensPfActive>,
+    /// Passive conductors, one entry per conductor. Each carries its own degrees of freedom,
+    /// because a passive is represented by a set of current distributions (e.g. eigenmodes)
+    /// rather than by a single current
+    pub pf_passive: Vec<EquilibriumGreensPfPassive>,
+    /// The plasma grid onto itself: the flux at each grid point due to a unit current at each
+    /// other grid point. Toroidal symmetry makes this a function of the vertical *offset* between
+    /// the two points, not of their absolute heights, which is why only one vertical index is
+    /// stored
+    pub grid_grid: EquilibriumGreensGridGrid,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumGreensPfActive {
+    /// Name of the coil, e.g. `"BVL"`
+    pub name: Option<STR_0D>,
+    /// Poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1
+    pub psi: Option<FLT_2D>,
+    /// Radial magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: T.A^-1
+    pub br: Option<FLT_2D>,
+    /// Vertical magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: T.A^-1
+    pub bz: Option<FLT_2D>,
+    /// Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: T.A^-1.m^-1
+    pub d_br_d_z: Option<FLT_2D>,
+    /// Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: T.A^-1.m^-1
+    pub d_bz_d_z: Option<FLT_2D>,
+    /// Radial derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_psi_d_r: Option<FLT_2D>,
+    /// Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_psi_d_z: Option<FLT_2D>,
+    /// Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_r2: Option<FLT_2D>,
+    /// Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_r_d_z: Option<FLT_2D>,
+    /// Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_z2: Option<FLT_2D>,
+    /// Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_r2_d_z: Option<FLT_2D>,
+    /// Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_r_d_z2: Option<FLT_2D>,
+    /// Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_z3: Option<FLT_2D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumGreensPfPassive {
+    /// Name of the passive conductor, e.g. `"IVC"`
+    pub name: Option<STR_0D>,
+    /// Degrees of freedom of this conductor, one entry per current distribution
+    pub dof: Vec<EquilibriumGreensPfPassiveDof>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumGreensPfPassiveDof {
+    /// Name of the degree of freedom, e.g. `"EIG_01"`
+    pub name: Option<STR_0D>,
+    /// Poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: Wb.A^-1
+    pub psi: Option<FLT_1D>,
+    /// Radial magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: T.A^-1
+    pub br: Option<FLT_1D>,
+    /// Vertical magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: T.A^-1
+    pub bz: Option<FLT_1D>,
+    /// Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: T.A^-1.m^-1
+    pub d_br_d_z: Option<FLT_1D>,
+    /// Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: T.A^-1.m^-1
+    pub d_bz_d_z: Option<FLT_1D>,
+    /// Radial derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_psi_d_r: Option<FLT_1D>,
+    /// Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_psi_d_z: Option<FLT_1D>,
+    /// Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_r2: Option<FLT_1D>,
+    /// Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_r_d_z: Option<FLT_1D>,
+    /// Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_z2: Option<FLT_1D>,
+    /// Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_r2_d_z: Option<FLT_1D>,
+    /// Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_r_d_z2: Option<FLT_1D>,
+    /// Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_z3: Option<FLT_1D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumGreensGridGrid {
+    /// Poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: Wb.A^-1
+    pub psi: Option<FLT_2D>,
+    /// Radial magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: T.A^-1
+    pub br: Option<FLT_2D>,
+    /// Vertical magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: T.A^-1
+    pub bz: Option<FLT_2D>,
+    /// Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: T.A^-1.m^-1
+    pub d_br_d_z: Option<FLT_2D>,
+    /// Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: T.A^-1.m^-1
+    pub d_bz_d_z: Option<FLT_2D>,
+    /// Radial derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_psi_d_r: Option<FLT_2D>,
+    /// Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_psi_d_z: Option<FLT_2D>,
+    /// Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_r2: Option<FLT_2D>,
+    /// Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_r_d_z: Option<FLT_2D>,
+    /// Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_z2: Option<FLT_2D>,
+    /// Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_r2_d_z: Option<FLT_2D>,
+    /// Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_r_d_z2: Option<FLT_2D>,
+    /// Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_z3: Option<FLT_2D>,
 }
 
 // ============================================================================
@@ -1070,6 +1405,8 @@ pub struct Equilibrium {
     /// Set of equilibria at various time slices
     pub time_slice: Vec<EquilibriumTimeSlice>,
     pub code: Code,
+    /// Greens tables: the poloidal flux and its derivatives per ampere in each current source
+    pub greens: EquilibriumGreens,
 }
 
 // ============================================================================
@@ -1091,10 +1428,21 @@ impl Equilibrium {
     /// setting each slice's `time` field. All other leaf fields are unset (`None`).
     pub fn with_time(time: &FLT_1D) -> Self {
         let mut ids = Self::with_size(time.len());
-        for (slice, &t) in ids.time_slice.iter_mut().zip(time.iter()) {
+        ids.allocate_time_slices(time);
+        ids
+    }
+
+    /// Allocate one default (empty) time slice per entry in `time`, setting each slice's
+    /// `time` field.
+    ///
+    /// Unlike `with_time`, this works in place and leaves the rest of the IDS alone, so an
+    /// IDS which already carries data - `code`, `vacuum_toroidal_field`, ... - keeps it.
+    /// Any time slices already present are replaced.
+    pub fn allocate_time_slices(&mut self, time: &FLT_1D) {
+        self.time_slice = (0..time.len()).map(|_| EquilibriumTimeSlice::default()).collect();
+        for (slice, &t) in self.time_slice.iter_mut().zip(time.iter()) {
             slice.time = Some(t);
         }
-        ids
     }
 }
 
@@ -3243,13 +3591,13 @@ impl<'a> EquilibriumProfiles2dGridTypeView<'a> {
 
 /// View over `grid` (EquilibriumProfiles2dGrid) across multiple EquilibriumProfiles2d
 pub struct EquilibriumProfiles2dGridView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumProfiles2d>,
+    pub d_area: Accumulator<'a, EquilibriumProfiles2d, FLT_0D>,
 }
 
 impl<'a> EquilibriumProfiles2dGridView<'a> {
-    pub fn new(_data: &'a [EquilibriumProfiles2d]) -> Self {
+    pub fn new(data: &'a [EquilibriumProfiles2d]) -> Self {
         Self {
-            _phantom: std::marker::PhantomData,
+            d_area: Accumulator::new(data, |item: &EquilibriumProfiles2d| item.grid.d_area, "grid.d_area"),
         }
     }
 }
@@ -3979,6 +4327,178 @@ impl<'a> GenericGridDynamicGridSubsetMutIndex<'a> for std::ops::RangeFull {
     type Output = GenericGridDynamicGridSubsetSliceViewMut<'a>;
     fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubset]) -> Self::Output {
         GenericGridDynamicGridSubsetSliceViewMut::new(data)
+    }
+}
+
+// --- Library View Types ---
+
+/// View over multiple Library with field accumulation
+pub struct LibrarySliceView<'a> {
+    data: &'a [Library],
+    pub name: StringAccumulator<'a, Library>,
+    pub description: StringAccumulator<'a, Library>,
+    pub commit: StringAccumulator<'a, Library>,
+    pub version: StringAccumulator<'a, Library>,
+    pub repository: StringAccumulator<'a, Library>,
+    pub parameters: StringAccumulator<'a, Library>,
+}
+
+impl<'a> LibrarySliceView<'a> {
+    pub fn new(data: &'a [Library]) -> Self {
+        Self {
+            data,
+            name: StringAccumulator::new(data, |item: &Library| item.name.clone(), "name"),
+            description: StringAccumulator::new(data, |item: &Library| item.description.clone(), "description"),
+            commit: StringAccumulator::new(data, |item: &Library| item.commit.clone(), "commit"),
+            version: StringAccumulator::new(data, |item: &Library| item.version.clone(), "version"),
+            repository: StringAccumulator::new(data, |item: &Library| item.repository.clone(), "repository"),
+            parameters: StringAccumulator::new(data, |item: &Library| item.parameters.clone(), "parameters"),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Library> {
+        self.data.iter()
+    }
+}
+
+/// Mutable view over multiple Library
+pub struct LibrarySliceViewMut<'a> {
+    data: &'a mut [Library],
+}
+
+impl<'a> LibrarySliceViewMut<'a> {
+    pub fn new(data: &'a mut [Library]) -> Self {
+        Self { data }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Library> {
+        self.data.iter_mut()
+    }
+}
+
+/// Index trait for Library - enables .field(0) and .field(0..2) syntax
+pub trait LibraryIndex<'a> {
+    type Output;
+    fn get(self, data: &'a [Library]) -> Self::Output;
+}
+
+impl<'a> LibraryIndex<'a> for usize {
+    type Output = &'a Library;
+    fn get(self, data: &'a [Library]) -> Self::Output {
+        &data[self]
+    }
+}
+
+impl<'a> LibraryIndex<'a> for std::ops::Range<usize> {
+    type Output = LibrarySliceView<'a>;
+    fn get(self, data: &'a [Library]) -> Self::Output {
+        LibrarySliceView::new(&data[self])
+    }
+}
+
+impl<'a> LibraryIndex<'a> for std::ops::RangeFrom<usize> {
+    type Output = LibrarySliceView<'a>;
+    fn get(self, data: &'a [Library]) -> Self::Output {
+        LibrarySliceView::new(&data[self])
+    }
+}
+
+impl<'a> LibraryIndex<'a> for std::ops::RangeTo<usize> {
+    type Output = LibrarySliceView<'a>;
+    fn get(self, data: &'a [Library]) -> Self::Output {
+        LibrarySliceView::new(&data[self])
+    }
+}
+
+impl<'a> LibraryIndex<'a> for std::ops::RangeInclusive<usize> {
+    type Output = LibrarySliceView<'a>;
+    fn get(self, data: &'a [Library]) -> Self::Output {
+        LibrarySliceView::new(&data[self])
+    }
+}
+
+impl<'a> LibraryIndex<'a> for std::ops::RangeToInclusive<usize> {
+    type Output = LibrarySliceView<'a>;
+    fn get(self, data: &'a [Library]) -> Self::Output {
+        LibrarySliceView::new(&data[self])
+    }
+}
+
+impl<'a> LibraryIndex<'a> for std::ops::RangeFull {
+    type Output = LibrarySliceView<'a>;
+    fn get(self, data: &'a [Library]) -> Self::Output {
+        LibrarySliceView::new(data)
+    }
+}
+
+/// Mutable index trait for Library - enables .field_mut(0) and .field_mut(0..2) syntax
+pub trait LibraryMutIndex<'a> {
+    type Output;
+    fn get_mut(self, data: &'a mut [Library]) -> Self::Output;
+}
+
+impl<'a> LibraryMutIndex<'a> for usize {
+    type Output = &'a mut Library;
+    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
+        &mut data[self]
+    }
+}
+
+impl<'a> LibraryMutIndex<'a> for std::ops::Range<usize> {
+    type Output = LibrarySliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
+        LibrarySliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> LibraryMutIndex<'a> for std::ops::RangeFrom<usize> {
+    type Output = LibrarySliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
+        LibrarySliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> LibraryMutIndex<'a> for std::ops::RangeTo<usize> {
+    type Output = LibrarySliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
+        LibrarySliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> LibraryMutIndex<'a> for std::ops::RangeInclusive<usize> {
+    type Output = LibrarySliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
+        LibrarySliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> LibraryMutIndex<'a> for std::ops::RangeToInclusive<usize> {
+    type Output = LibrarySliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
+        LibrarySliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> LibraryMutIndex<'a> for std::ops::RangeFull {
+    type Output = LibrarySliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
+        LibrarySliceViewMut::new(data)
     }
 }
 
@@ -5145,6 +5665,492 @@ impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryMutIndex<'a> for std::ops
     }
 }
 
+// --- EquilibriumGreensPfActive View Types ---
+
+/// View over multiple EquilibriumGreensPfActive with field accumulation
+pub struct EquilibriumGreensPfActiveSliceView<'a> {
+    data: &'a [EquilibriumGreensPfActive],
+    pub name: StringAccumulator<'a, EquilibriumGreensPfActive>,
+}
+
+impl<'a> EquilibriumGreensPfActiveSliceView<'a> {
+    pub fn new(data: &'a [EquilibriumGreensPfActive]) -> Self {
+        Self {
+            data,
+            name: StringAccumulator::new(data, |item: &EquilibriumGreensPfActive| item.name.clone(), "name"),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumGreensPfActive> {
+        self.data.iter()
+    }
+}
+
+/// Mutable view over multiple EquilibriumGreensPfActive
+pub struct EquilibriumGreensPfActiveSliceViewMut<'a> {
+    data: &'a mut [EquilibriumGreensPfActive],
+}
+
+impl<'a> EquilibriumGreensPfActiveSliceViewMut<'a> {
+    pub fn new(data: &'a mut [EquilibriumGreensPfActive]) -> Self {
+        Self { data }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut EquilibriumGreensPfActive> {
+        self.data.iter_mut()
+    }
+}
+
+/// Index trait for EquilibriumGreensPfActive - enables .field(0) and .field(0..2) syntax
+pub trait EquilibriumGreensPfActiveIndex<'a> {
+    type Output;
+    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output;
+}
+
+impl<'a> EquilibriumGreensPfActiveIndex<'a> for usize {
+    type Output = &'a EquilibriumGreensPfActive;
+    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
+        &data[self]
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::Range<usize> {
+    type Output = EquilibriumGreensPfActiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::RangeFrom<usize> {
+    type Output = EquilibriumGreensPfActiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::RangeTo<usize> {
+    type Output = EquilibriumGreensPfActiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::RangeInclusive<usize> {
+    type Output = EquilibriumGreensPfActiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::RangeToInclusive<usize> {
+    type Output = EquilibriumGreensPfActiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::RangeFull {
+    type Output = EquilibriumGreensPfActiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceView::new(data)
+    }
+}
+
+/// Mutable index trait for EquilibriumGreensPfActive - enables .field_mut(0) and .field_mut(0..2) syntax
+pub trait EquilibriumGreensPfActiveMutIndex<'a> {
+    type Output;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfActive]) -> Self::Output;
+}
+
+impl<'a> EquilibriumGreensPfActiveMutIndex<'a> for usize {
+    type Output = &'a mut EquilibriumGreensPfActive;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfActive]) -> Self::Output {
+        &mut data[self]
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveMutIndex<'a> for std::ops::Range<usize> {
+    type Output = EquilibriumGreensPfActiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveMutIndex<'a> for std::ops::RangeFrom<usize> {
+    type Output = EquilibriumGreensPfActiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveMutIndex<'a> for std::ops::RangeTo<usize> {
+    type Output = EquilibriumGreensPfActiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveMutIndex<'a> for std::ops::RangeInclusive<usize> {
+    type Output = EquilibriumGreensPfActiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveMutIndex<'a> for std::ops::RangeToInclusive<usize> {
+    type Output = EquilibriumGreensPfActiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfActiveMutIndex<'a> for std::ops::RangeFull {
+    type Output = EquilibriumGreensPfActiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfActive]) -> Self::Output {
+        EquilibriumGreensPfActiveSliceViewMut::new(data)
+    }
+}
+
+// --- EquilibriumGreensPfPassive View Types ---
+
+/// View over multiple EquilibriumGreensPfPassive with field accumulation
+pub struct EquilibriumGreensPfPassiveSliceView<'a> {
+    data: &'a [EquilibriumGreensPfPassive],
+    pub name: StringAccumulator<'a, EquilibriumGreensPfPassive>,
+}
+
+impl<'a> EquilibriumGreensPfPassiveSliceView<'a> {
+    pub fn new(data: &'a [EquilibriumGreensPfPassive]) -> Self {
+        Self {
+            data,
+            name: StringAccumulator::new(data, |item: &EquilibriumGreensPfPassive| item.name.clone(), "name"),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumGreensPfPassive> {
+        self.data.iter()
+    }
+}
+
+/// Mutable view over multiple EquilibriumGreensPfPassive
+pub struct EquilibriumGreensPfPassiveSliceViewMut<'a> {
+    data: &'a mut [EquilibriumGreensPfPassive],
+}
+
+impl<'a> EquilibriumGreensPfPassiveSliceViewMut<'a> {
+    pub fn new(data: &'a mut [EquilibriumGreensPfPassive]) -> Self {
+        Self { data }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut EquilibriumGreensPfPassive> {
+        self.data.iter_mut()
+    }
+}
+
+/// Index trait for EquilibriumGreensPfPassive - enables .field(0) and .field(0..2) syntax
+pub trait EquilibriumGreensPfPassiveIndex<'a> {
+    type Output;
+    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output;
+}
+
+impl<'a> EquilibriumGreensPfPassiveIndex<'a> for usize {
+    type Output = &'a EquilibriumGreensPfPassive;
+    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
+        &data[self]
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::Range<usize> {
+    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::RangeFrom<usize> {
+    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::RangeTo<usize> {
+    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::RangeInclusive<usize> {
+    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::RangeToInclusive<usize> {
+    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::RangeFull {
+    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceView::new(data)
+    }
+}
+
+/// Mutable index trait for EquilibriumGreensPfPassive - enables .field_mut(0) and .field_mut(0..2) syntax
+pub trait EquilibriumGreensPfPassiveMutIndex<'a> {
+    type Output;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassive]) -> Self::Output;
+}
+
+impl<'a> EquilibriumGreensPfPassiveMutIndex<'a> for usize {
+    type Output = &'a mut EquilibriumGreensPfPassive;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassive]) -> Self::Output {
+        &mut data[self]
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveMutIndex<'a> for std::ops::Range<usize> {
+    type Output = EquilibriumGreensPfPassiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveMutIndex<'a> for std::ops::RangeFrom<usize> {
+    type Output = EquilibriumGreensPfPassiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveMutIndex<'a> for std::ops::RangeTo<usize> {
+    type Output = EquilibriumGreensPfPassiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveMutIndex<'a> for std::ops::RangeInclusive<usize> {
+    type Output = EquilibriumGreensPfPassiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveMutIndex<'a> for std::ops::RangeToInclusive<usize> {
+    type Output = EquilibriumGreensPfPassiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveMutIndex<'a> for std::ops::RangeFull {
+    type Output = EquilibriumGreensPfPassiveSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassive]) -> Self::Output {
+        EquilibriumGreensPfPassiveSliceViewMut::new(data)
+    }
+}
+
+// --- EquilibriumGreensPfPassiveDof View Types ---
+
+/// View over multiple EquilibriumGreensPfPassiveDof with field accumulation
+pub struct EquilibriumGreensPfPassiveDofSliceView<'a> {
+    data: &'a [EquilibriumGreensPfPassiveDof],
+    pub name: StringAccumulator<'a, EquilibriumGreensPfPassiveDof>,
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofSliceView<'a> {
+    pub fn new(data: &'a [EquilibriumGreensPfPassiveDof]) -> Self {
+        Self {
+            data,
+            name: StringAccumulator::new(data, |item: &EquilibriumGreensPfPassiveDof| item.name.clone(), "name"),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumGreensPfPassiveDof> {
+        self.data.iter()
+    }
+}
+
+/// Mutable view over multiple EquilibriumGreensPfPassiveDof
+pub struct EquilibriumGreensPfPassiveDofSliceViewMut<'a> {
+    data: &'a mut [EquilibriumGreensPfPassiveDof],
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofSliceViewMut<'a> {
+    pub fn new(data: &'a mut [EquilibriumGreensPfPassiveDof]) -> Self {
+        Self { data }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut EquilibriumGreensPfPassiveDof> {
+        self.data.iter_mut()
+    }
+}
+
+/// Index trait for EquilibriumGreensPfPassiveDof - enables .field(0) and .field(0..2) syntax
+pub trait EquilibriumGreensPfPassiveDofIndex<'a> {
+    type Output;
+    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output;
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for usize {
+    type Output = &'a EquilibriumGreensPfPassiveDof;
+    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        &data[self]
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::Range<usize> {
+    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::RangeFrom<usize> {
+    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::RangeTo<usize> {
+    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::RangeInclusive<usize> {
+    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::RangeToInclusive<usize> {
+    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceView::new(&data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::RangeFull {
+    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
+    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceView::new(data)
+    }
+}
+
+/// Mutable index trait for EquilibriumGreensPfPassiveDof - enables .field_mut(0) and .field_mut(0..2) syntax
+pub trait EquilibriumGreensPfPassiveDofMutIndex<'a> {
+    type Output;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassiveDof]) -> Self::Output;
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofMutIndex<'a> for usize {
+    type Output = &'a mut EquilibriumGreensPfPassiveDof;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        &mut data[self]
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofMutIndex<'a> for std::ops::Range<usize> {
+    type Output = EquilibriumGreensPfPassiveDofSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofMutIndex<'a> for std::ops::RangeFrom<usize> {
+    type Output = EquilibriumGreensPfPassiveDofSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofMutIndex<'a> for std::ops::RangeTo<usize> {
+    type Output = EquilibriumGreensPfPassiveDofSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofMutIndex<'a> for std::ops::RangeInclusive<usize> {
+    type Output = EquilibriumGreensPfPassiveDofSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofMutIndex<'a> for std::ops::RangeToInclusive<usize> {
+    type Output = EquilibriumGreensPfPassiveDofSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceViewMut::new(&mut data[self])
+    }
+}
+
+impl<'a> EquilibriumGreensPfPassiveDofMutIndex<'a> for std::ops::RangeFull {
+    type Output = EquilibriumGreensPfPassiveDofSliceViewMut<'a>;
+    fn get_mut(self, data: &'a mut [EquilibriumGreensPfPassiveDof]) -> Self::Output {
+        EquilibriumGreensPfPassiveDofSliceViewMut::new(data)
+    }
+}
+
 // --- EquilibriumGgdArray View Types ---
 
 /// View over multiple EquilibriumGgdArray with field accumulation
@@ -5777,7 +6783,7 @@ impl<'a> EquilibriumTimeSliceGlobalQuantitiesQMinView<'a> {
     }
 }
 
-/// View over `global_quantities` (EqulibriumGlobalQuantities) across multiple EquilibriumTimeSlice
+/// View over `global_quantities` (EquilibriumGlobalQuantities) across multiple EquilibriumTimeSlice
 pub struct EquilibriumTimeSliceGlobalQuantitiesView<'a> {
     pub beta_pol: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
     pub beta_tor: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
@@ -5799,10 +6805,15 @@ pub struct EquilibriumTimeSliceGlobalQuantitiesView<'a> {
     pub v_external: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
     pub plasma_inductance: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
     pub plasma_resistance: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub xpt_upper_r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub xpt_upper_z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub xpt_lower_r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub xpt_lower_z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub i_rod: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub beta_pol_1: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub beta_pol_2: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub beta_pol_3: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub bt_vac_at_r_geo: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub li_1: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub li_2: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub pressure_2d_sum: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub v_loop: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
 }
 
 impl<'a> EquilibriumTimeSliceGlobalQuantitiesView<'a> {
@@ -5868,26 +6879,35 @@ impl<'a> EquilibriumTimeSliceGlobalQuantitiesView<'a> {
                 |item: &EquilibriumTimeSlice| item.global_quantities.plasma_resistance,
                 "global_quantities.plasma_resistance",
             ),
-            xpt_upper_r: Accumulator::new(
+            i_rod: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.i_rod, "global_quantities.i_rod"),
+            beta_pol_1: Accumulator::new(
                 data,
-                |item: &EquilibriumTimeSlice| item.global_quantities.xpt_upper_r,
-                "global_quantities.xpt_upper_r",
+                |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_1,
+                "global_quantities.beta_pol_1",
             ),
-            xpt_upper_z: Accumulator::new(
+            beta_pol_2: Accumulator::new(
                 data,
-                |item: &EquilibriumTimeSlice| item.global_quantities.xpt_upper_z,
-                "global_quantities.xpt_upper_z",
+                |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_2,
+                "global_quantities.beta_pol_2",
             ),
-            xpt_lower_r: Accumulator::new(
+            beta_pol_3: Accumulator::new(
                 data,
-                |item: &EquilibriumTimeSlice| item.global_quantities.xpt_lower_r,
-                "global_quantities.xpt_lower_r",
+                |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_3,
+                "global_quantities.beta_pol_3",
             ),
-            xpt_lower_z: Accumulator::new(
+            bt_vac_at_r_geo: Accumulator::new(
                 data,
-                |item: &EquilibriumTimeSlice| item.global_quantities.xpt_lower_z,
-                "global_quantities.xpt_lower_z",
+                |item: &EquilibriumTimeSlice| item.global_quantities.bt_vac_at_r_geo,
+                "global_quantities.bt_vac_at_r_geo",
             ),
+            li_1: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.li_1, "global_quantities.li_1"),
+            li_2: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.li_2, "global_quantities.li_2"),
+            pressure_2d_sum: Accumulator::new(
+                data,
+                |item: &EquilibriumTimeSlice| item.global_quantities.pressure_2d_sum,
+                "global_quantities.pressure_2d_sum",
+            ),
+            v_loop: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.v_loop, "global_quantities.v_loop"),
         }
     }
 }
@@ -5949,13 +6969,17 @@ impl<'a> EquilibriumTimeSliceCoordinateSystemGridTypeView<'a> {
 
 /// View over `coordinate_system.grid` (EquilibriumProfiles2dGrid) across multiple EquilibriumTimeSlice
 pub struct EquilibriumTimeSliceCoordinateSystemGridView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+    pub d_area: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
 }
 
 impl<'a> EquilibriumTimeSliceCoordinateSystemGridView<'a> {
-    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
+    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
         Self {
-            _phantom: std::marker::PhantomData,
+            d_area: Accumulator::new(
+                data,
+                |item: &EquilibriumTimeSlice| item.coordinate_system.grid.d_area,
+                "coordinate_system.grid.d_area",
+            ),
         }
     }
 }
@@ -6054,6 +7078,161 @@ impl<'a> EquilibriumTimeSliceConvergenceView<'a> {
     }
 }
 
+/// View over `source_functions.p_prime` (EquilibriumSourceFunction) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceSourceFunctionsPPrimeView<'a> {
+    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+}
+
+impl<'a> EquilibriumTimeSliceSourceFunctionsPPrimeView<'a> {
+    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+/// View over `source_functions.ff_prime` (EquilibriumSourceFunction) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a> {
+    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+}
+
+impl<'a> EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a> {
+    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+/// View over `source_functions` (EquilibriumSourceFunctions) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceSourceFunctionsView<'a> {
+    pub p_prime: EquilibriumTimeSliceSourceFunctionsPPrimeView<'a>,
+    pub ff_prime: EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a>,
+}
+
+impl<'a> EquilibriumTimeSliceSourceFunctionsView<'a> {
+    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            p_prime: EquilibriumTimeSliceSourceFunctionsPPrimeView::new(data),
+            ff_prime: EquilibriumTimeSliceSourceFunctionsFfPrimeView::new(data),
+        }
+    }
+}
+
+/// View over `profiles_r_midplane` (EquilibriumProfilesRMidplane) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceProfilesRMidplaneView<'a> {
+    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+}
+
+impl<'a> EquilibriumTimeSliceProfilesRMidplaneView<'a> {
+    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+/// View over `sol.hfs.contour` (EquilibriumSolContour) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceSolHfsContourView<'a> {
+    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+}
+
+impl<'a> EquilibriumTimeSliceSolHfsContourView<'a> {
+    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+/// View over `sol.hfs.strike_point` (EquilibriumSolStrikePoint) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceSolHfsStrikePointView<'a> {
+    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+}
+
+impl<'a> EquilibriumTimeSliceSolHfsStrikePointView<'a> {
+    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            r: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.sol.hfs.strike_point.r, "sol.hfs.strike_point.r"),
+            z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.sol.hfs.strike_point.z, "sol.hfs.strike_point.z"),
+        }
+    }
+}
+
+/// View over `sol.hfs` (EquilibriumSolLeg) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceSolHfsView<'a> {
+    pub contour: EquilibriumTimeSliceSolHfsContourView<'a>,
+    pub strike_point: EquilibriumTimeSliceSolHfsStrikePointView<'a>,
+}
+
+impl<'a> EquilibriumTimeSliceSolHfsView<'a> {
+    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            contour: EquilibriumTimeSliceSolHfsContourView::new(data),
+            strike_point: EquilibriumTimeSliceSolHfsStrikePointView::new(data),
+        }
+    }
+}
+
+/// View over `sol.lfs.contour` (EquilibriumSolContour) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceSolLfsContourView<'a> {
+    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+}
+
+impl<'a> EquilibriumTimeSliceSolLfsContourView<'a> {
+    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+/// View over `sol.lfs.strike_point` (EquilibriumSolStrikePoint) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceSolLfsStrikePointView<'a> {
+    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+}
+
+impl<'a> EquilibriumTimeSliceSolLfsStrikePointView<'a> {
+    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            r: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.sol.lfs.strike_point.r, "sol.lfs.strike_point.r"),
+            z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.sol.lfs.strike_point.z, "sol.lfs.strike_point.z"),
+        }
+    }
+}
+
+/// View over `sol.lfs` (EquilibriumSolLeg) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceSolLfsView<'a> {
+    pub contour: EquilibriumTimeSliceSolLfsContourView<'a>,
+    pub strike_point: EquilibriumTimeSliceSolLfsStrikePointView<'a>,
+}
+
+impl<'a> EquilibriumTimeSliceSolLfsView<'a> {
+    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            contour: EquilibriumTimeSliceSolLfsContourView::new(data),
+            strike_point: EquilibriumTimeSliceSolLfsStrikePointView::new(data),
+        }
+    }
+}
+
+/// View over `sol` (EquilibriumSol) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceSolView<'a> {
+    pub hfs: EquilibriumTimeSliceSolHfsView<'a>,
+    pub lfs: EquilibriumTimeSliceSolLfsView<'a>,
+}
+
+impl<'a> EquilibriumTimeSliceSolView<'a> {
+    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            hfs: EquilibriumTimeSliceSolHfsView::new(data),
+            lfs: EquilibriumTimeSliceSolLfsView::new(data),
+        }
+    }
+}
+
 /// View over multiple EquilibriumTimeSlice with field accumulation
 pub struct EquilibriumTimeSliceSliceView<'a> {
     data: &'a [EquilibriumTimeSlice],
@@ -6065,6 +7244,9 @@ pub struct EquilibriumTimeSliceSliceView<'a> {
     pub coordinate_system: EquilibriumTimeSliceCoordinateSystemView<'a>,
     pub convergence: EquilibriumTimeSliceConvergenceView<'a>,
     pub time: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+    pub source_functions: EquilibriumTimeSliceSourceFunctionsView<'a>,
+    pub profiles_r_midplane: EquilibriumTimeSliceProfilesRMidplaneView<'a>,
+    pub sol: EquilibriumTimeSliceSolView<'a>,
 }
 
 impl<'a> EquilibriumTimeSliceSliceView<'a> {
@@ -6079,6 +7261,9 @@ impl<'a> EquilibriumTimeSliceSliceView<'a> {
             coordinate_system: EquilibriumTimeSliceCoordinateSystemView::new(data),
             convergence: EquilibriumTimeSliceConvergenceView::new(data),
             time: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.time, "time"),
+            source_functions: EquilibriumTimeSliceSourceFunctionsView::new(data),
+            profiles_r_midplane: EquilibriumTimeSliceProfilesRMidplaneView::new(data),
+            sol: EquilibriumTimeSliceSolView::new(data),
         }
     }
 
@@ -6878,6 +8063,25 @@ impl GenericGridDynamic {
     }
 }
 
+impl Code {
+    /// Access library - use index for single element or range for slice view
+    /// e.g. `.library(0)` returns `&Library`, `.library(0..2)` returns `LibrarySliceView`
+    pub fn library<'a, I: LibraryIndex<'a>>(&'a self, index: I) -> I::Output {
+        index.get(&self.library)
+    }
+
+    /// Access library mutably - use index for single element or range for slice view
+    /// e.g. `.library_mut(0)` returns `&mut Library`, `.library_mut(0..2)` returns `LibrarySliceViewMut`
+    pub fn library_mut<'a, I: LibraryMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
+        index.get_mut(&mut self.library)
+    }
+
+    /// Get the number of library elements
+    pub fn library_len(&self) -> usize {
+        self.library.len()
+    }
+}
+
 impl GenericGridDynamicSpace {
     /// Access coordinates_type - use index for single element or range for slice view
     /// e.g. `.coordinates_type(0)` returns `&IdentifierDynamicAos3`, `.coordinates_type(0..2)` returns `IdentifierDynamicAos3SliceView`
@@ -7008,6 +8212,63 @@ impl GenericGridDynamicSpaceDimensionObject {
     /// Get the number of boundary elements
     pub fn boundary_len(&self) -> usize {
         self.boundary.len()
+    }
+}
+
+impl EquilibriumGreens {
+    /// Access pf_active - use index for single element or range for slice view
+    /// e.g. `.pf_active(0)` returns `&EquilibriumGreensPfActive`, `.pf_active(0..2)` returns `EquilibriumGreensPfActiveSliceView`
+    pub fn pf_active<'a, I: EquilibriumGreensPfActiveIndex<'a>>(&'a self, index: I) -> I::Output {
+        index.get(&self.pf_active)
+    }
+
+    /// Access pf_active mutably - use index for single element or range for slice view
+    /// e.g. `.pf_active_mut(0)` returns `&mut EquilibriumGreensPfActive`, `.pf_active_mut(0..2)` returns `EquilibriumGreensPfActiveSliceViewMut`
+    pub fn pf_active_mut<'a, I: EquilibriumGreensPfActiveMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
+        index.get_mut(&mut self.pf_active)
+    }
+
+    /// Get the number of pf_active elements
+    pub fn pf_active_len(&self) -> usize {
+        self.pf_active.len()
+    }
+}
+
+impl EquilibriumGreens {
+    /// Access pf_passive - use index for single element or range for slice view
+    /// e.g. `.pf_passive(0)` returns `&EquilibriumGreensPfPassive`, `.pf_passive(0..2)` returns `EquilibriumGreensPfPassiveSliceView`
+    pub fn pf_passive<'a, I: EquilibriumGreensPfPassiveIndex<'a>>(&'a self, index: I) -> I::Output {
+        index.get(&self.pf_passive)
+    }
+
+    /// Access pf_passive mutably - use index for single element or range for slice view
+    /// e.g. `.pf_passive_mut(0)` returns `&mut EquilibriumGreensPfPassive`, `.pf_passive_mut(0..2)` returns `EquilibriumGreensPfPassiveSliceViewMut`
+    pub fn pf_passive_mut<'a, I: EquilibriumGreensPfPassiveMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
+        index.get_mut(&mut self.pf_passive)
+    }
+
+    /// Get the number of pf_passive elements
+    pub fn pf_passive_len(&self) -> usize {
+        self.pf_passive.len()
+    }
+}
+
+impl EquilibriumGreensPfPassive {
+    /// Access dof - use index for single element or range for slice view
+    /// e.g. `.dof(0)` returns `&EquilibriumGreensPfPassiveDof`, `.dof(0..2)` returns `EquilibriumGreensPfPassiveDofSliceView`
+    pub fn dof<'a, I: EquilibriumGreensPfPassiveDofIndex<'a>>(&'a self, index: I) -> I::Output {
+        index.get(&self.dof)
+    }
+
+    /// Access dof mutably - use index for single element or range for slice view
+    /// e.g. `.dof_mut(0)` returns `&mut EquilibriumGreensPfPassiveDof`, `.dof_mut(0..2)` returns `EquilibriumGreensPfPassiveDofSliceViewMut`
+    pub fn dof_mut<'a, I: EquilibriumGreensPfPassiveDofMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
+        index.get_mut(&mut self.dof)
+    }
+
+    /// Get the number of dof elements
+    pub fn dof_len(&self) -> usize {
+        self.dof.len()
     }
 }
 

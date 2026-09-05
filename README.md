@@ -200,7 +200,7 @@ j_phi(R, Z) = C * max(1 - ((R - r_cur) / minor_radius)^2
 
 `C` is calculated on the discrete plasma grid so that the integrated current equals the configured initial `ip`. The edge of this current-density support is an initial numerical guess, not an LCFS or an inverse-problem constraint. The configured ellipse must lie inside the plasma grid and vessel and must not contain a limiter point.
 
-Custom settings directories must add `minor_radius` in metres and dimensionless `kappa` to the `initial_guess` section of `GSFIT_code_settings.json`. Direct callers of `gsfit_rs.Plasma(...)` must likewise pass `initial_minor_radius` and `initial_kappa`; these are required constructor arguments.
+Custom settings directories must add `minor_radius` in metres and dimensionless `kappa` to the `initial_guess` section of `GSFIT_code_settings.json`. Direct callers of `gsfit_rs.Plasma(...)` must likewise pass `initial_guess_minor_radius` and `initial_guess_elongation`; these are required constructor arguments.
 
 ## 2.2 Adding a new experimental device or coupling to a new forward Grad-Shafranov code
 The information needed to run GSFit comes from two sources:

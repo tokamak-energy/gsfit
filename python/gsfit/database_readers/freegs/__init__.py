@@ -11,6 +11,7 @@ from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
 from gsfit_rs import StationaryPoint
+from gsfit_rs import Wall
 
 from ..interface import DatabaseReaderProtocol
 from .setup_bp_probes import setup_bp_probes
@@ -24,6 +25,7 @@ from .setup_plasma import setup_plasma
 from .setup_pressure_sensors import setup_pressure_sensors
 from .setup_rogowski_coils import setup_rogowski_coils
 from .setup_stationary_point_sensors import setup_stationary_point_sensors
+from .setup_wall import setup_wall
 
 
 class DatabaseReader(DatabaseReaderProtocol):
@@ -55,6 +57,9 @@ class DatabaseReader(DatabaseReaderProtocol):
 
     def setup_stationary_point_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> StationaryPoint:
         return setup_stationary_point_sensors(self, *args, **kwargs)
+
+    def setup_wall(self, *args: typing.Any, **kwargs: typing.Any) -> Wall:
+        return setup_wall(self, *args, **kwargs)
 
     def setup_passives(self, *args: typing.Any, **kwargs: typing.Any) -> Passives:
         return setup_passives(self, *args, **kwargs)

@@ -10,7 +10,7 @@ name = "gsfit_rs"
 [dependencies]
 # Local dependency
 data_tree = { path = "../data_tree" }
-imas_rs = { path = "../imas_rs" }
+imas_rs = { path = "../imas_rs", features = ["python"] }  # "python" = expose the data dictionary as the `gsfit_rs.imas` submodule
 interpolation = { path = "../interpolation" }
 npy_reader_and_writer = { path = "../npy_reader_and_writer" }
 

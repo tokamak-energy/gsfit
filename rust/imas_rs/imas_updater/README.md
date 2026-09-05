@@ -13,8 +13,8 @@ The committed `../src/ids/*.rs` files were generated from:
 | | |
 | --- | --- |
 | Repository | `git@github.com:iterorganization/IMAS-Data-Dictionary.git` |
-| Version | `4.1.1-58-g4542d30` |
-| Commit | `4542d30` |
+| Version | `4.1.1-60-gf5d44e8` |
+| Commit | `f5d44e8` |
 
 ## Updating the IDS structs
 

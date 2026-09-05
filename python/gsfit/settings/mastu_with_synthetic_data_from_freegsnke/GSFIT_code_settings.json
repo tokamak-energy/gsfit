@@ -83,6 +83,7 @@
         "z_max": 2.2
     },
     "n_psi_n": 100,
+    "vacuum_toroidal_field_reference_radius": 0.85,
     "timeslices": {
         "method": "user_defined",
         "arange": {
@@ -99,9 +100,9 @@
     },
     "initial_guess": {
         "ip": 500.0e3,
-        "r_cur": 0.8,
-        "z_cur": 0.0,
+        "cur_r": 0.8,
+        "cur_z": 0.0,
         "minor_radius": 0.5,
-        "kappa": 2.0
+        "elongation": 2.0
     }
 }

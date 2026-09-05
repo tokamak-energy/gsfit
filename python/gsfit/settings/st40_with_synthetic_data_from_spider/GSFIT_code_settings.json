@@ -78,12 +78,13 @@
   },
   "initial_guess": {
     "ip": 425000.0,
-    "r_cur": 0.45,
-    "z_cur": 0.0,
+    "cur_r": 0.45,
+    "cur_z": 0.0,
     "minor_radius": 0.2,
-    "kappa": 1.2
+    "elongation": 1.2
   },
   "n_psi_n": 100,
+  "vacuum_toroidal_field_reference_radius": 0.4,
   "numerics": {
     "anderson_mixing": {
       "mixing_from_previous_iter": 0.1,

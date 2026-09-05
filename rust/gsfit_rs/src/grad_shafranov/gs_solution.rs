@@ -745,11 +745,11 @@ impl<'a> GsSolution<'a> {
 
         // Initialise plasma with a smooth quadratic current-density distribution.
         if let Err(reason) = self.initialise_plasma_with_quadratic_current_density(
-            plasma.initial_ip,
-            plasma.initial_cur_r,
-            plasma.initial_cur_z,
-            plasma.initial_minor_radius,
-            plasma.initial_kappa,
+            plasma.initial_guess_ip,
+            plasma.initial_guess_cur_r,
+            plasma.initial_guess_cur_z,
+            plasma.initial_guess_minor_radius,
+            plasma.initial_guess_elongation,
         ) {
             self.set_to_failed_time_slice();
             self.error_state = Some(Error::InvalidInitialCurrent(reason));

@@ -12,6 +12,7 @@ from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
 from gsfit_rs import StationaryPoint
+from gsfit_rs import Wall
 from gsfit_rs import solve_grad_shafranov
 
 # DOF: 3 dof's
@@ -119,12 +120,17 @@ def run() -> None:
         vessel_z=limit_pts_z,
         p_prime_source_function=p_prime_source_function,
         ff_prime_source_function=ff_prime_source_function,
-        initial_ip=ip_guess,
-        initial_cur_r=10.5,
-        initial_cur_z=0.0,
-        initial_minor_radius=0.5,
-        initial_kappa=2.0,
+        initial_guess_ip=ip_guess,
+        initial_guess_cur_r=10.5,
+        initial_guess_cur_z=0.0,
+        initial_guess_minor_radius=0.5,
+        initial_guess_elongation=2.0,
+        vacuum_toroidal_field_reference_radius=10.5,
     )
+
+    # Wall. `unit(0)` is the vacuum vessel contour; here it is the only limiter unit
+    wall = Wall()
+    wall.add_limiter_unit(name="vacuum_vessel", r=limit_pts_r, z=limit_pts_z)
 
     passives = Passives()
     pressure_sensors = Pressure()
@@ -160,6 +166,7 @@ def run() -> None:
 
     solve_grad_shafranov(
         plasma=plasma,
+        wall=wall,
         coils=coils,
         passives=passives,
         bp_probes=bp_probes,
