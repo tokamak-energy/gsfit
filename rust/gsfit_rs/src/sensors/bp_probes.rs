@@ -664,19 +664,21 @@ impl BpProbes {
                 let passive_r: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
+                // These Green's tables depend on the sensor and this passive's filament geometry,
+                // not on the degree of freedom, so they are built once and re-used for every one
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
+                    array![sensor_r],
+                    array![sensor_z],
+                    passive_r.clone(),
+                    passive_z.clone(),
+                    passive_r.clone() * 0.0, // TODO: should this be NaN instead?
+                    passive_z.clone() * 0.0,
+                );
+
+                let g_br_matrix: Array2<f64> = greens_calculator.b_r(); // shape() = (1, n_z*n_r)
+                let g_bz_matrix: Array2<f64> = greens_calculator.b_z(); // shape() = (1, n_z*n_r)
+
                 for dof_name in dof_names {
-                    let greens_calculator: Greens = Greens::sensor_to_conductor(
-                        array![sensor_r],
-                        array![sensor_z],
-                        passive_r.clone(),
-                        passive_z.clone(),
-                        passive_r.clone() * 0.0, // TODO: should this be NaN instead?
-                        passive_z.clone() * 0.0,
-                    );
-
-                    let g_br_matrix: Array2<f64> = greens_calculator.b_r(); // shape() = (1, n_z*n_r)
-                    let g_bz_matrix: Array2<f64> = greens_calculator.b_z(); // shape() = (1, n_z*n_r)
-
                     // Current distribution
                     let current_distribution: Array1<f64> = passives
                         .results
@@ -686,8 +688,8 @@ impl BpProbes {
                         .get("current_distribution")
                         .unwrap_array1();
 
-                    let g_br_with_dof_full: Array2<f64> = g_br_matrix * &current_distribution; // shape = [n_passive_dof, n_filament]
-                    let g_bz_with_dof_full: Array2<f64> = g_bz_matrix * current_distribution; // shape = [n_passive_dof, n_filament]
+                    let g_br_with_dof_full: Array2<f64> = &g_br_matrix * &current_distribution; // shape = [n_passive_dof, n_filament]
+                    let g_bz_with_dof_full: Array2<f64> = &g_bz_matrix * &current_distribution; // shape = [n_passive_dof, n_filament]
 
                     // Sum over all filaments
                     let g_br: f64 = g_br_with_dof_full.sum(); // shape = [n_passive_dof]

@@ -48,6 +48,13 @@ Add its name to `ids_names` at the bottom of `build_ids.py`, add a `pub mod` lin
 `../src/ids/mod.rs`, then regenerate. The schema directory must exist as
 `IMAS-Data-Dictionary/schemas/<ids_name>/dd_<ids_name>.xsd`.
 
+To reach it from Python as well, add the name to `ids_names_with_python_paths` too, and in
+`../src/python/mod.rs` add: `mod <ids_name>_paths;`, a `pub use <ids_name>_paths::<IDS_NAME>_ROOT;`,
+a `Py<IdsName>` `#[pyclass]` wrapper modelled on `PyEquilibrium`, and two lines in `register`
+(`add_class` and `add("<ids_name>_paths", ...)`).
+
+The IDSs currently generated are `equilibrium`, `pf_active`, `pf_passive`, `tf` and `wall`.
+
 ## Hand-written code
 
 Only `../src/ids/*.rs` is generated. Everything else in the crate is hand-written and is

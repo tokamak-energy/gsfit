@@ -15,6 +15,7 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::collections::HashMap;
 use std::f64::consts::PI;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -295,6 +296,59 @@ impl RogowskiCoils {
                 vec![], // No holes
             );
 
+            // The virtual bp-probes which span each gap, and their Green's tables, depend only on the
+            // Rogowski coil and the gap - not on which passive or which degree of freedom we are
+            // working on. They used to be rebuilt inside the degree-of-freedom loop, which for ST40's
+            // 8 passives and 22 degrees of freedom meant building the same tables 176 times over.
+            // They are now built once per gap and looked up below.
+            //
+            // For any one (passive, degree of freedom) the contributions are still added in the same
+            // order - gap by gap, and within a gap probe by probe - so `g_gap` is unchanged bit for bit.
+            let mut g_gap_all: HashMap<(String, String), f64> = HashMap::new();
+            for gap_name in &gap_names {
+                // Construct virtual bp probes
+                let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
+                    self.construct_virtual_bp_probes(&sensor_name, gap_name);
+
+                // Calculate Greens between the virtual bp-probes and the passives
+                virtual_b_r_probes.greens_with_passives_rs(passives_local);
+                virtual_b_z_probes.greens_with_passives_rs(passives_local);
+
+                let n_virtual_bp_probes: usize = virtual_b_z_probes.results.keys().len();
+
+                for passive_name in passives_local.results.keys() {
+                    let dof_accumulator: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
+                    let dof_names: Vec<String> = dof_accumulator.keys();
+
+                    for dof_name in dof_names {
+                        let g_gaps_b_r: Array1<f64> = virtual_b_r_probes
+                            .results
+                            .get("*")
+                            .get("greens")
+                            .get("passives")
+                            .get(&passive_name)
+                            .get(&dof_name)
+                            .unwrap_array1(); // shape = [n_virtual_bp_probes]
+                        let g_gaps_b_z: Array1<f64> = virtual_b_z_probes
+                            .results
+                            .get("*")
+                            .get("greens")
+                            .get("passives")
+                            .get(&passive_name)
+                            .get(&dof_name)
+                            .unwrap_array1(); // shape = [n_virtual_bp_probes]
+
+                        let g_gap: &mut f64 = g_gap_all.entry((passive_name.clone(), dof_name.clone())).or_insert(0.0);
+
+                        *g_gap += g_gaps_b_r[0] * 0.5 * gap_virtual_d_r + g_gaps_b_z[0] * 0.5 * gap_virtual_d_z;
+                        for i_virtual_bp_probe in 1..n_virtual_bp_probes - 1 {
+                            *g_gap += g_gaps_b_r[i_virtual_bp_probe] * gap_virtual_d_r + g_gaps_b_z[i_virtual_bp_probe] * gap_virtual_d_z;
+                        }
+                        *g_gap += g_gaps_b_r[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_r + g_gaps_b_z[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_z;
+                    }
+                }
+            }
+
             // Calculate Greens with each passive degree of freedom
             for passive_name in passives_local.results.keys() {
                 let _tmp: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
@@ -325,44 +379,9 @@ impl RogowskiCoils {
 
                     let g_all: Array1<f64> = &inside_vec * current_distribution;
 
-                    // Calculate the greens for the gaps (needed for later)
-                    // TODO: this is wasteful as we are re-calculating the same thing
-                    // (at least there are not many PF coils. but still not good...)
-                    let mut g_gap: f64 = 0.0;
-                    for gap_name in &gap_names {
-                        // Construct virtual bp probes
-                        let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
-                            self.construct_virtual_bp_probes(&sensor_name, gap_name);
-
-                        // Calculate Greens betwen the virtual bp-probes and the coils
-                        virtual_b_r_probes.greens_with_passives_rs(passives_local);
-                        virtual_b_z_probes.greens_with_passives_rs(passives_local);
-
-                        let g_gaps_b_r: Array1<f64> = virtual_b_r_probes
-                            .results
-                            .get("*")
-                            .get("greens")
-                            .get("passives")
-                            .get(&passive_name)
-                            .get(&dof_name)
-                            .unwrap_array1(); // shape = [n_virtual_bp_probes]
-                        let g_gaps_b_z: Array1<f64> = virtual_b_z_probes
-                            .results
-                            .get("*")
-                            .get("greens")
-                            .get("passives")
-                            .get(&passive_name)
-                            .get(&dof_name)
-                            .unwrap_array1(); // shape = [n_virtual_bp_probes]
-
-                        let n_virtual_bp_probes: usize = virtual_b_z_probes.results.keys().len();
-
-                        g_gap += g_gaps_b_r[0] * 0.5 * gap_virtual_d_r + g_gaps_b_z[0] * 0.5 * gap_virtual_d_z;
-                        for i_virtual_bp_probe in 1..n_virtual_bp_probes - 1 {
-                            g_gap += g_gaps_b_r[i_virtual_bp_probe] * gap_virtual_d_r + g_gaps_b_z[i_virtual_bp_probe] * gap_virtual_d_z;
-                        }
-                        g_gap += g_gaps_b_r[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_r + g_gaps_b_z[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_z;
-                    }
+                    // The gap correction, summed over all of this Rogowski coil's gaps above.
+                    // A Rogowski coil with no gaps has no correction
+                    let g_gap: f64 = *g_gap_all.get(&(passive_name.clone(), dof_name.clone())).unwrap_or(&0.0);
 
                     // Sum over all pasive filaments
                     let g_with_passives: f64 = g_all.sum() - g_gap / MU_0;

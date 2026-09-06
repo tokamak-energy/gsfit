@@ -139,17 +139,19 @@ impl FluxLoops {
                 let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
-                for dof_name in dof_names {
-                    let greens_calculator: Greens = Greens::sensor_to_conductor(
-                        array![sensor_r],
-                        array![sensor_z],
-                        passive_r.clone(),
-                        passive_z.clone(),
-                        passive_r.clone() * 0.0, // TODO: should I set these to NaN?
-                        passive_z.clone() * 0.0,
-                    );
-                    let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, passive_r.len())
+                // This Green's table depends on the sensor and this passive's filament geometry,
+                // not on the degree of freedom, so it is built once and re-used for every one
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
+                    array![sensor_r],
+                    array![sensor_z],
+                    passive_r.clone(),
+                    passive_z.clone(),
+                    passive_r.clone() * 0.0, // TODO: should I set these to NaN?
+                    passive_z.clone() * 0.0,
+                );
+                let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, passive_r.len())
 
+                for dof_name in dof_names {
                     // Current distribution
                     let current_distribution: Array1<f64> = passives_local
                         .results
@@ -159,7 +161,7 @@ impl FluxLoops {
                         .get("current_distribution")
                         .unwrap_array1();
 
-                    let g_with_dof_full: Array2<f64> = g_psi_matrix * &current_distribution; // shape = [n_r * n_z, n_filament]
+                    let g_with_dof_full: Array2<f64> = &g_psi_matrix * &current_distribution; // shape = [n_r * n_z, n_filament]
 
                     // Sum over all filaments
                     let g: f64 = g_with_dof_full.sum(); // shape = [n_r * n_z]

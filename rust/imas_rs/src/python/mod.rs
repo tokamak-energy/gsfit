@@ -27,9 +27,15 @@
 //! `imas_updater/build_ids.py`; see `equilibrium_paths.rs`.
 
 mod equilibrium_paths;
+mod pf_active_paths;
+mod pf_passive_paths;
+mod tf_paths;
 mod wall_paths;
 
 use crate::ids::equilibrium::Equilibrium;
+use crate::ids::pf_active::PfActive;
+use crate::ids::pf_passive::PfPassive;
+use crate::ids::tf::Tf;
 use crate::ids::wall::Wall;
 use ndarray::{Array1, Array2, Array3, Array4, ArrayD, ArrayViewMutD, Axis, IxDyn, Slice};
 use numpy::IntoPyArray;
@@ -40,6 +46,9 @@ use pyo3::types::{PyFloat, PySlice};
 use std::any::Any;
 
 pub use equilibrium_paths::EQUILIBRIUM_ROOT;
+pub use pf_active_paths::PF_ACTIVE_ROOT;
+pub use pf_passive_paths::PF_PASSIVE_ROOT;
+pub use tf_paths::TF_ROOT;
 pub use wall_paths::WALL_ROOT;
 
 // ============================================================================
@@ -844,6 +853,93 @@ impl PyEquilibrium {
     }
 }
 
+/// A pf_active IDS, readable from Python through paths.
+#[pyclass(module = "gsfit_rs.imas", name = "PfActive")]
+pub struct PyPfActive {
+    pub inner: PfActive,
+}
+
+impl PyPfActive {
+    pub fn new(inner: PfActive) -> Self {
+        return Self { inner };
+    }
+}
+
+#[pymethods]
+impl PyPfActive {
+    /// Read the data at `path` out of this IDS.
+    fn get<'py>(&self, py: Python<'py>, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
+        return read_path(py, &self.inner, "pf_active", path);
+    }
+
+    /// The number of coils held by this IDS.
+    fn __len__(&self) -> usize {
+        return self.inner.coil.len();
+    }
+
+    fn __repr__(&self) -> String {
+        return format!("PfActive(coil={} coil(s))", self.inner.coil.len());
+    }
+}
+
+/// A pf_passive IDS, readable from Python through paths.
+#[pyclass(module = "gsfit_rs.imas", name = "PfPassive")]
+pub struct PyPfPassive {
+    pub inner: PfPassive,
+}
+
+impl PyPfPassive {
+    pub fn new(inner: PfPassive) -> Self {
+        return Self { inner };
+    }
+}
+
+#[pymethods]
+impl PyPfPassive {
+    /// Read the data at `path` out of this IDS.
+    fn get<'py>(&self, py: Python<'py>, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
+        return read_path(py, &self.inner, "pf_passive", path);
+    }
+
+    /// The number of passive loops held by this IDS.
+    fn __len__(&self) -> usize {
+        return self.inner.r#loop.len();
+    }
+
+    fn __repr__(&self) -> String {
+        return format!("PfPassive(loop={} loop(s))", self.inner.r#loop.len());
+    }
+}
+
+/// A tf IDS, readable from Python through paths.
+#[pyclass(module = "gsfit_rs.imas", name = "Tf")]
+pub struct PyTf {
+    pub inner: Tf,
+}
+
+impl PyTf {
+    pub fn new(inner: Tf) -> Self {
+        return Self { inner };
+    }
+}
+
+#[pymethods]
+impl PyTf {
+    /// Read the data at `path` out of this IDS.
+    fn get<'py>(&self, py: Python<'py>, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
+        return read_path(py, &self.inner, "tf", path);
+    }
+
+    /// The number of coils held by this IDS.
+    fn __len__(&self) -> usize {
+        return self.inner.coil.len();
+    }
+
+    fn __repr__(&self) -> String {
+        return format!("Tf(coil={} coil(s))", self.inner.coil.len());
+    }
+}
+
 /// A wall IDS, readable from Python through paths.
 #[pyclass(module = "gsfit_rs.imas", name = "Wall")]
 pub struct PyWall {
@@ -876,8 +972,14 @@ impl PyWall {
 pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PyPath>()?;
     module.add_class::<PyEquilibrium>()?;
+    module.add_class::<PyPfActive>()?;
+    module.add_class::<PyPfPassive>()?;
+    module.add_class::<PyTf>()?;
     module.add_class::<PyWall>()?;
     module.add("equilibrium_paths", PyPath::at_root(&EQUILIBRIUM_ROOT).into_pyobject(module.py())?)?;
+    module.add("pf_active_paths", PyPath::at_root(&PF_ACTIVE_ROOT).into_pyobject(module.py())?)?;
+    module.add("pf_passive_paths", PyPath::at_root(&PF_PASSIVE_ROOT).into_pyobject(module.py())?)?;
+    module.add("tf_paths", PyPath::at_root(&TF_ROOT).into_pyobject(module.py())?)?;
     module.add("wall_paths", PyPath::at_root(&WALL_ROOT).into_pyobject(module.py())?)?;
     return Ok(());
 }

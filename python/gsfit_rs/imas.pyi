@@ -46,8 +46,7 @@ class Equilibrium:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. An unset float reads back as NaN, and
-        an unset integer as IMAS's EMPTY_INT (-999999999).
+        gives one value, a slice gathers. Unset floats read back as NaN.
         """
     def __len__(self) -> int:
         """The number of time slices held by this IDS."""
@@ -5396,6 +5395,3462 @@ class _EquilibriumPaths:
 
 equilibrium_paths: _EquilibriumPaths
 
+class PfActive:
+    """Description of the axisymmetric active poloidal field (PF) coils and supplies; includes the limits of these systems; includes the forces on them; does not include non-axisymmetric coil systems"""
+
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path` out of this IDS.
+
+        The shape of the result follows the shape of the index: an integer index
+        gives one value, a slice gathers. Unset floats read back as NaN.
+        """
+    def __len__(self) -> int:
+        """The number of time slices held by this IDS."""
+    def __repr__(self) -> str: ...
+
+# ==========================================================================
+# pf_active path nodes
+# ==========================================================================
+
+class _PfActiveAnnulusStaticItem:
+    """Annulus description (2D object)
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Centre major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Centre height
+
+        Units: m
+        """
+    @property
+    def radius_inner(self) -> Path[float]:
+        """Inner radius
+
+        Units: m
+        """
+    @property
+    def radius_outer(self) -> Path[float]:
+        """Outer radius
+
+        Units: m
+        """
+
+class _PfActiveAnnulusStaticMany:
+    """Annulus description (2D object)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Centre major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Centre height
+
+        Units: m
+        """
+    @property
+    def radius_inner(self) -> Path[npt.NDArray[np.float64]]:
+        """Inner radius
+
+        Units: m
+        """
+    @property
+    def radius_outer(self) -> Path[npt.NDArray[np.float64]]:
+        """Outer radius
+
+        Units: m
+        """
+
+class _PfActiveArcsOfCircleStaticItem:
+    """Arcs of circle description of a 2D contour
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radii of the start point of each arc of circle
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the start point of each arc of circle
+
+        Units: m
+        """
+    @property
+    def curvature_radii(self) -> Path[npt.NDArray[np.float64]]:
+        """Curvature radius of each arc of circle
+
+        Units: m
+        """
+
+class _PfActiveArcsOfCircleStaticMany:
+    """Arcs of circle description of a 2D contour
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radii of the start point of each arc of circle
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the start point of each arc of circle
+
+        Units: m
+        """
+    @property
+    def curvature_radii(self) -> Path[npt.NDArray[np.float64]]:
+        """Curvature radius of each arc of circle
+
+        Units: m
+        """
+
+class _PfActiveCodeItem:
+    """Generic decription of the code-specific parameters for the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Name of software generating IDS
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[str | None]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[str | None]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[str | None]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[str | None]:
+        """List of the code specific parameters in XML format
+        """
+    @property
+    def output_flag(self) -> Path[npt.NDArray[np.int32]]:
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
+        """
+    @property
+    def library(self) -> _PfActiveLibraryArrayFromItem:
+        """List of external libraries used by the code that has produced this IDS
+        """
+
+class _PfActiveCodeMany:
+    """Generic decription of the code-specific parameters for the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Name of software generating IDS
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[list[str | None]]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[list[str | None]]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[list[str | None]]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[list[str | None]]:
+        """List of the code specific parameters in XML format
+        """
+    @property
+    def output_flag(self) -> Path[npt.NDArray[np.int32]]:
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
+        """
+    @property
+    def library(self) -> _PfActiveLibraryArrayFromMany:
+        """List of external libraries used by the code that has produced this IDS
+        """
+
+class _PfActiveIdentifierStaticItem:
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[int]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Verbose description
+        """
+
+class _PfActiveIdentifierStaticMany:
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[npt.NDArray[np.int32]]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Verbose description
+        """
+
+class _PfActiveLibraryItem:
+    """Library used by the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Name of software
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[str | None]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[str | None]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[str | None]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[str | None]:
+        """List of the code specific parameters in XML format
+        """
+
+class _PfActiveLibraryMany:
+    """Library used by the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Name of software
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[list[str | None]]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[list[str | None]]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[list[str | None]]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[list[str | None]]:
+        """List of the code specific parameters in XML format
+        """
+
+class _PfActiveObliqueStaticItem:
+    """Description of a 2D parallelogram
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Major radius of the reference point (from which the alpha and beta angles are defined, marked by a + on the diagram)
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Height of the reference point (from which the alpha and beta angles are defined, marked by a + on the diagram)
+
+        Units: m
+        """
+    @property
+    def length_alpha(self) -> Path[float]:
+        """Length of the parallelogram side inclined with angle alpha with respect to the major radius axis
+
+        Units: m
+        """
+    @property
+    def length_beta(self) -> Path[float]:
+        """Length of the parallelogram side inclined with angle beta with respect to the height axis
+
+        Units: m
+        """
+    @property
+    def alpha(self) -> Path[float]:
+        """Inclination of first angle measured counter-clockwise from horizontal outwardly directed radial vector (grad R).
+
+        Units: rad
+        """
+    @property
+    def beta(self) -> Path[float]:
+        """Inclination of second angle measured counter-clockwise from vertically upwards directed vector (grad Z). If both alpha and beta are zero (rectangle) then the simpler rectangular elements description should be used.
+
+        Units: rad
+        """
+
+class _PfActiveObliqueStaticMany:
+    """Description of a 2D parallelogram
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of the reference point (from which the alpha and beta angles are defined, marked by a + on the diagram)
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the reference point (from which the alpha and beta angles are defined, marked by a + on the diagram)
+
+        Units: m
+        """
+    @property
+    def length_alpha(self) -> Path[npt.NDArray[np.float64]]:
+        """Length of the parallelogram side inclined with angle alpha with respect to the major radius axis
+
+        Units: m
+        """
+    @property
+    def length_beta(self) -> Path[npt.NDArray[np.float64]]:
+        """Length of the parallelogram side inclined with angle beta with respect to the height axis
+
+        Units: m
+        """
+    @property
+    def alpha(self) -> Path[npt.NDArray[np.float64]]:
+        """Inclination of first angle measured counter-clockwise from horizontal outwardly directed radial vector (grad R).
+
+        Units: rad
+        """
+    @property
+    def beta(self) -> Path[npt.NDArray[np.float64]]:
+        """Inclination of second angle measured counter-clockwise from vertically upwards directed vector (grad Z). If both alpha and beta are zero (rectangle) then the simpler rectangular elements description should be used.
+
+        Units: rad
+        """
+
+class _PfActiveOutline2dGeometryStaticItem:
+    """Description of 2D geometry
+    """
+
+    @property
+    def geometry_type(self) -> Path[int]:
+        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')
+        """
+    @property
+    def outline(self) -> _PfActiveRz1dStaticItem:
+        """Irregular outline of the element. Repeat the first point since this is a closed contour
+        """
+    @property
+    def rectangle(self) -> _PfActiveRectangleStaticItem:
+        """Rectangular description of the element
+        """
+    @property
+    def oblique(self) -> _PfActiveObliqueStaticItem:
+        """Parallelogram description of the element
+        """
+    @property
+    def arcs_of_circle(self) -> _PfActiveArcsOfCircleStaticItem:
+        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle.
+        """
+    @property
+    def annulus(self) -> _PfActiveAnnulusStaticItem:
+        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer
+        """
+    @property
+    def thick_line(self) -> _PfActiveThickLineStaticItem:
+        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment
+        """
+
+class _PfActiveOutline2dGeometryStaticMany:
+    """Description of 2D geometry
+    """
+
+    @property
+    def geometry_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')
+        """
+    @property
+    def outline(self) -> _PfActiveRz1dStaticMany:
+        """Irregular outline of the element. Repeat the first point since this is a closed contour
+        """
+    @property
+    def rectangle(self) -> _PfActiveRectangleStaticMany:
+        """Rectangular description of the element
+        """
+    @property
+    def oblique(self) -> _PfActiveObliqueStaticMany:
+        """Parallelogram description of the element
+        """
+    @property
+    def arcs_of_circle(self) -> _PfActiveArcsOfCircleStaticMany:
+        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle.
+        """
+    @property
+    def annulus(self) -> _PfActiveAnnulusStaticMany:
+        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer
+        """
+    @property
+    def thick_line(self) -> _PfActiveThickLineStaticMany:
+        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment
+        """
+
+class _PfActivePfCircuitsItem:
+    """Circuits, connecting multiple PF coils to multiple supplies, defining the current and voltage relationships in the system
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def type(self) -> Path[str | None]:
+        """Type of the circuit
+        """
+    @property
+    def connections(self) -> Path[npt.NDArray[np.int32]]:
+        """Description of the supplies and coils connections (nodes) across the circuit. Nodes of the circuit are listed as the first dimension of the matrix. Supplies (listed first) and coils (listed second) are listed as the second dimension. Thus the second dimension has a size equal to (N_supplies+N_coils). N_supplies (resp. N_coils) is the total number of supplies (resp. coils) listed in the supply (resp.coil) array of structure, i.e. including also supplies/coils that are not part of the actual circuit. The (i,j) matrix elements are 1 if the j-th supply or coil side is connected to the i-th node by its positive side, -1 if connected by its negative side, or 0 if not connected.
+        """
+    @property
+    def voltage(self) -> _PfActiveSignalFlt1dItem:
+        """Voltage on the circuit between the sides of the group of supplies (only for circuits with a single supply or in which supplies are grouped)
+
+        Units: V
+        """
+    @property
+    def current(self) -> _PfActiveSignalFlt1dItem:
+        """Current in the circuit between the sides of the group of supplies (only for circuits with a single supply or in which supplies are grouped). Positive sign means current flows from first connection to second connection.
+
+        Units: A
+        """
+
+class _PfActivePfCircuitsMany:
+    """Circuits, connecting multiple PF coils to multiple supplies, defining the current and voltage relationships in the system
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def type(self) -> Path[list[str | None]]:
+        """Type of the circuit
+        """
+    @property
+    def connections(self) -> Path[npt.NDArray[np.int32]]:
+        """Description of the supplies and coils connections (nodes) across the circuit. Nodes of the circuit are listed as the first dimension of the matrix. Supplies (listed first) and coils (listed second) are listed as the second dimension. Thus the second dimension has a size equal to (N_supplies+N_coils). N_supplies (resp. N_coils) is the total number of supplies (resp. coils) listed in the supply (resp.coil) array of structure, i.e. including also supplies/coils that are not part of the actual circuit. The (i,j) matrix elements are 1 if the j-th supply or coil side is connected to the i-th node by its positive side, -1 if connected by its negative side, or 0 if not connected.
+        """
+    @property
+    def voltage(self) -> _PfActiveSignalFlt1dMany:
+        """Voltage on the circuit between the sides of the group of supplies (only for circuits with a single supply or in which supplies are grouped)
+
+        Units: V
+        """
+    @property
+    def current(self) -> _PfActiveSignalFlt1dMany:
+        """Current in the circuit between the sides of the group of supplies (only for circuits with a single supply or in which supplies are grouped). Positive sign means current flows from first connection to second connection.
+
+        Units: A
+        """
+
+class _PfActivePfCoilsItem:
+    """Active PF coils
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def function(self) -> _PfActiveIdentifierStaticArrayFromItem:
+        """Set of functions for which this coil may be used
+        """
+    @property
+    def resistance(self) -> Path[float]:
+        """Coil resistance at the temperature_reference indicated at the top of the IDS
+
+        Units: ohm
+        """
+    @property
+    def resistance_additional(self) -> _PfActiveSignalFlt1dItem:
+        """Additional resistance due to e.g. dynamically switchable resistors or variations of coil temperature. The coil effective resistance is obtained by adding this dynamic quantity to the static resistance of the coil.
+
+        Units: ohm
+        """
+    @property
+    def temperature_timed(self) -> _PfActiveSignalFlt1dItem:
+        """Dynamic temperature of the coil
+
+        Units: K
+        """
+    @property
+    def inductance(self) -> Path[float]:
+        """Coil self-inductance
+
+        Units: H
+        """
+    @property
+    def energy_limit_max(self) -> Path[float]:
+        """Maximum Energy to be dissipated in the coil
+
+        Units: J
+        """
+    @property
+    def current_limit_max(self) -> Path[npt.NDArray[np.float64]]:
+        """Maximum tolerable current in the conductor
+
+        Units: A
+        """
+    @property
+    def resistance_tabulated(self) -> Path[npt.NDArray[np.float64]]:
+        """Tabulated coil resistance as a function of the coil temperature
+
+        Units: ohm
+        """
+    @property
+    def b_field_max(self) -> Path[npt.NDArray[np.float64]]:
+        """List of values of the maximum magnetic field on the conductor surface (coordinate for current_limit_max)
+
+        Units: T
+        """
+    @property
+    def temperature(self) -> Path[npt.NDArray[np.float64]]:
+        """List of values of the conductor temperature (coordinate for current_limit_max and resistance_tabulated)
+
+        Units: K
+        """
+    @property
+    def b_field_max_timed(self) -> _PfActiveSignalFlt1dItem:
+        """Maximum absolute value of the magnetic field on the conductor surface
+
+        Units: T
+        """
+    @property
+    def element(self) -> _PfActivePfCoilsElementsArrayFromItem:
+        """Each PF coil is comprised of a number of cross-section elements described  individually and connected serially
+        """
+    @property
+    def geometry(self) -> _PfActiveOutline2dGeometryStaticItem:
+        """Cross-sectional shape of the coil
+        """
+    @property
+    def current(self) -> _PfActiveSignalFlt1dItem:
+        """Current fed into the coil (for 1 turn, to be multiplied by the number of turns to obtain the generated magnetic field).  Positive when the current flows counter-clockwise in the coil when viewed from above.
+
+        Units: A
+        """
+    @property
+    def voltage(self) -> _PfActiveSignalFlt1dItem:
+        """Voltage on the coil terminals (Vside1-Vside2) - including additional resistors if any
+
+        Units: V
+        """
+    @property
+    def force_radial(self) -> _PfActiveSignalFlt1dItem:
+        """Radial force applied on this coil (positive when outwards)
+
+        Units: N
+        """
+    @property
+    def force_vertical(self) -> _PfActiveSignalFlt1dItem:
+        """Vertical force applied on this coil (positive when upwards)
+
+        Units: N
+        """
+    @property
+    def force_radial_crushing(self) -> _PfActiveSignalFlt1dItem:
+        """Radial crushing force applied on this coil (positive when compressive)
+
+        Units: N
+        """
+    @property
+    def force_vertical_crushing(self) -> _PfActiveSignalFlt1dItem:
+        """Vertical crushing force applied on this coil (positive when compressive)
+
+        Units: N
+        """
+
+class _PfActivePfCoilsMany:
+    """Active PF coils
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def function(self) -> _PfActiveIdentifierStaticArrayFromMany:
+        """Set of functions for which this coil may be used
+        """
+    @property
+    def resistance(self) -> Path[npt.NDArray[np.float64]]:
+        """Coil resistance at the temperature_reference indicated at the top of the IDS
+
+        Units: ohm
+        """
+    @property
+    def resistance_additional(self) -> _PfActiveSignalFlt1dMany:
+        """Additional resistance due to e.g. dynamically switchable resistors or variations of coil temperature. The coil effective resistance is obtained by adding this dynamic quantity to the static resistance of the coil.
+
+        Units: ohm
+        """
+    @property
+    def temperature_timed(self) -> _PfActiveSignalFlt1dMany:
+        """Dynamic temperature of the coil
+
+        Units: K
+        """
+    @property
+    def inductance(self) -> Path[npt.NDArray[np.float64]]:
+        """Coil self-inductance
+
+        Units: H
+        """
+    @property
+    def energy_limit_max(self) -> Path[npt.NDArray[np.float64]]:
+        """Maximum Energy to be dissipated in the coil
+
+        Units: J
+        """
+    @property
+    def current_limit_max(self) -> Path[npt.NDArray[np.float64]]:
+        """Maximum tolerable current in the conductor
+
+        Units: A
+        """
+    @property
+    def resistance_tabulated(self) -> Path[npt.NDArray[np.float64]]:
+        """Tabulated coil resistance as a function of the coil temperature
+
+        Units: ohm
+        """
+    @property
+    def b_field_max(self) -> Path[npt.NDArray[np.float64]]:
+        """List of values of the maximum magnetic field on the conductor surface (coordinate for current_limit_max)
+
+        Units: T
+        """
+    @property
+    def temperature(self) -> Path[npt.NDArray[np.float64]]:
+        """List of values of the conductor temperature (coordinate for current_limit_max and resistance_tabulated)
+
+        Units: K
+        """
+    @property
+    def b_field_max_timed(self) -> _PfActiveSignalFlt1dMany:
+        """Maximum absolute value of the magnetic field on the conductor surface
+
+        Units: T
+        """
+    @property
+    def element(self) -> _PfActivePfCoilsElementsArrayFromMany:
+        """Each PF coil is comprised of a number of cross-section elements described  individually and connected serially
+        """
+    @property
+    def geometry(self) -> _PfActiveOutline2dGeometryStaticMany:
+        """Cross-sectional shape of the coil
+        """
+    @property
+    def current(self) -> _PfActiveSignalFlt1dMany:
+        """Current fed into the coil (for 1 turn, to be multiplied by the number of turns to obtain the generated magnetic field).  Positive when the current flows counter-clockwise in the coil when viewed from above.
+
+        Units: A
+        """
+    @property
+    def voltage(self) -> _PfActiveSignalFlt1dMany:
+        """Voltage on the coil terminals (Vside1-Vside2) - including additional resistors if any
+
+        Units: V
+        """
+    @property
+    def force_radial(self) -> _PfActiveSignalFlt1dMany:
+        """Radial force applied on this coil (positive when outwards)
+
+        Units: N
+        """
+    @property
+    def force_vertical(self) -> _PfActiveSignalFlt1dMany:
+        """Vertical force applied on this coil (positive when upwards)
+
+        Units: N
+        """
+    @property
+    def force_radial_crushing(self) -> _PfActiveSignalFlt1dMany:
+        """Radial crushing force applied on this coil (positive when compressive)
+
+        Units: N
+        """
+    @property
+    def force_vertical_crushing(self) -> _PfActiveSignalFlt1dMany:
+        """Vertical crushing force applied on this coil (positive when compressive)
+
+        Units: N
+        """
+
+class _PfActivePfCoilsElementsItem:
+    """Each PF coil is comprised of a number of cross-section elements described  individually
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def turns_with_sign(self) -> Path[float]:
+        """Number of effective turns in the element for calculating the magnetic field from the coil/loop. Should be positive, unless the coil has elements going in opposite directions.
+
+        Units: 1
+        """
+    @property
+    def area(self) -> Path[float]:
+        """Cross-sectional areas of the element
+
+        Units: m^2
+        """
+    @property
+    def geometry(self) -> _PfActiveOutline2dGeometryStaticItem:
+        """Cross-sectional shape of the element
+        """
+
+class _PfActivePfCoilsElementsMany:
+    """Each PF coil is comprised of a number of cross-section elements described  individually
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def turns_with_sign(self) -> Path[npt.NDArray[np.float64]]:
+        """Number of effective turns in the element for calculating the magnetic field from the coil/loop. Should be positive, unless the coil has elements going in opposite directions.
+
+        Units: 1
+        """
+    @property
+    def area(self) -> Path[npt.NDArray[np.float64]]:
+        """Cross-sectional areas of the element
+
+        Units: m^2
+        """
+    @property
+    def geometry(self) -> _PfActiveOutline2dGeometryStaticMany:
+        """Cross-sectional shape of the element
+        """
+
+class _PfActivePfForceLimitsItem:
+    """Description of force limits
+    """
+
+    @property
+    def combination_matrix(self) -> Path[npt.NDArray[np.float64]]:
+        """Force limits are expressed as a linear combination of the forces on each individual coil. The weights of the linear combination are given by this matrix, while the limits are given by the sibling nodes limit_min and limit_max. Each row of this matrix corresponds to a force limit. The columns represent, for each coil, the 4 types of forces on the coil namely [coil1_radial, coil1_vertical, coil1_radial_crush, coil1_vertical_crush, coil2_radial, coil2_vertical, coil2_radial_crush, coil2_vertical_crush, ...]. There are therefore 4*coils_n columns.
+
+        Units: 1
+        """
+    @property
+    def limit_max(self) -> Path[npt.NDArray[np.float64]]:
+        """Maximum force limit, for each limit (line of the combination matrix). EMPTY_FLT value means unbounded
+
+        Units: N
+        """
+    @property
+    def limit_min(self) -> Path[npt.NDArray[np.float64]]:
+        """Minimum force limit, for each limit (line of the combination matrix). EMPTY_FLT value means unbounded
+
+        Units: N
+        """
+    @property
+    def force(self) -> _PfActiveSignalFlt1dItem:
+        """Force (positive when upwards for a vertical force, positive when outwards for a radial force)
+
+        Units: N
+        """
+
+class _PfActivePfForceLimitsMany:
+    """Description of force limits
+    """
+
+    @property
+    def combination_matrix(self) -> Path[npt.NDArray[np.float64]]:
+        """Force limits are expressed as a linear combination of the forces on each individual coil. The weights of the linear combination are given by this matrix, while the limits are given by the sibling nodes limit_min and limit_max. Each row of this matrix corresponds to a force limit. The columns represent, for each coil, the 4 types of forces on the coil namely [coil1_radial, coil1_vertical, coil1_radial_crush, coil1_vertical_crush, coil2_radial, coil2_vertical, coil2_radial_crush, coil2_vertical_crush, ...]. There are therefore 4*coils_n columns.
+
+        Units: 1
+        """
+    @property
+    def limit_max(self) -> Path[npt.NDArray[np.float64]]:
+        """Maximum force limit, for each limit (line of the combination matrix). EMPTY_FLT value means unbounded
+
+        Units: N
+        """
+    @property
+    def limit_min(self) -> Path[npt.NDArray[np.float64]]:
+        """Minimum force limit, for each limit (line of the combination matrix). EMPTY_FLT value means unbounded
+
+        Units: N
+        """
+    @property
+    def force(self) -> _PfActiveSignalFlt1dMany:
+        """Force (positive when upwards for a vertical force, positive when outwards for a radial force)
+
+        Units: N
+        """
+
+class _PfActivePfSuppliesItem:
+    """PF power supplies
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def type(self) -> Path[int]:
+        """Type of the supply; TBD add free description of non-linear power supplies
+        """
+    @property
+    def resistance(self) -> Path[float]:
+        """Power supply internal resistance
+
+        Units: ohm
+        """
+    @property
+    def delay(self) -> Path[float]:
+        """Pure delay in the supply
+
+        Units: s
+        """
+    @property
+    def filter_numerator(self) -> Path[npt.NDArray[np.float64]]:
+        """Coefficients of the numerator, in increasing order : a0 + a1*s + ... + an*s^n; used for a linear supply description
+
+        Units: mixed
+        """
+    @property
+    def filter_denominator(self) -> Path[npt.NDArray[np.float64]]:
+        """Coefficients of the denominator, in increasing order : b0 + b1*s + ... + bm*s^m; used for a linear supply description
+
+        Units: mixed
+        """
+    @property
+    def current_limit_max(self) -> Path[float]:
+        """Maximum current in the supply
+
+        Units: A
+        """
+    @property
+    def current_limit_min(self) -> Path[float]:
+        """Minimum current in the supply
+
+        Units: A
+        """
+    @property
+    def voltage_limit_max(self) -> Path[float]:
+        """Maximum voltage from the supply
+
+        Units: V
+        """
+    @property
+    def voltage_limit_min(self) -> Path[float]:
+        """Minimum voltage from the supply
+
+        Units: V
+        """
+    @property
+    def current_limiter_gain(self) -> Path[float]:
+        """Gain to prevent overcurrent in a linear model of the supply
+
+        Units: V
+        """
+    @property
+    def energy_limit_max(self) -> Path[float]:
+        """Maximum energy to be dissipated in the supply during a pulse
+
+        Units: J
+        """
+    @property
+    def nonlinear_model(self) -> Path[str | None]:
+        """Description of the nonlinear transfer function of the supply
+        """
+    @property
+    def voltage(self) -> _PfActiveSignalFlt1dItem:
+        """Voltage at the supply output (Vside1-Vside2)
+
+        Units: V
+        """
+    @property
+    def current(self) -> _PfActiveSignalFlt1dItem:
+        """Current at the supply output, defined positive if it flows from point 1 to point 2 in the circuit connected to the supply (outside the supply)
+
+        Units: A
+        """
+
+class _PfActivePfSuppliesMany:
+    """PF power supplies
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def type(self) -> Path[npt.NDArray[np.int32]]:
+        """Type of the supply; TBD add free description of non-linear power supplies
+        """
+    @property
+    def resistance(self) -> Path[npt.NDArray[np.float64]]:
+        """Power supply internal resistance
+
+        Units: ohm
+        """
+    @property
+    def delay(self) -> Path[npt.NDArray[np.float64]]:
+        """Pure delay in the supply
+
+        Units: s
+        """
+    @property
+    def filter_numerator(self) -> Path[npt.NDArray[np.float64]]:
+        """Coefficients of the numerator, in increasing order : a0 + a1*s + ... + an*s^n; used for a linear supply description
+
+        Units: mixed
+        """
+    @property
+    def filter_denominator(self) -> Path[npt.NDArray[np.float64]]:
+        """Coefficients of the denominator, in increasing order : b0 + b1*s + ... + bm*s^m; used for a linear supply description
+
+        Units: mixed
+        """
+    @property
+    def current_limit_max(self) -> Path[npt.NDArray[np.float64]]:
+        """Maximum current in the supply
+
+        Units: A
+        """
+    @property
+    def current_limit_min(self) -> Path[npt.NDArray[np.float64]]:
+        """Minimum current in the supply
+
+        Units: A
+        """
+    @property
+    def voltage_limit_max(self) -> Path[npt.NDArray[np.float64]]:
+        """Maximum voltage from the supply
+
+        Units: V
+        """
+    @property
+    def voltage_limit_min(self) -> Path[npt.NDArray[np.float64]]:
+        """Minimum voltage from the supply
+
+        Units: V
+        """
+    @property
+    def current_limiter_gain(self) -> Path[npt.NDArray[np.float64]]:
+        """Gain to prevent overcurrent in a linear model of the supply
+
+        Units: V
+        """
+    @property
+    def energy_limit_max(self) -> Path[npt.NDArray[np.float64]]:
+        """Maximum energy to be dissipated in the supply during a pulse
+
+        Units: J
+        """
+    @property
+    def nonlinear_model(self) -> Path[list[str | None]]:
+        """Description of the nonlinear transfer function of the supply
+        """
+    @property
+    def voltage(self) -> _PfActiveSignalFlt1dMany:
+        """Voltage at the supply output (Vside1-Vside2)
+
+        Units: V
+        """
+    @property
+    def current(self) -> _PfActiveSignalFlt1dMany:
+        """Current at the supply output, defined positive if it flows from point 1 to point 2 in the circuit connected to the supply (outside the supply)
+
+        Units: A
+        """
+
+class _PfActiveRectangleStaticItem:
+    """Rectangular description of a 2D object
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Geometric centre R
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Geometric centre Z
+
+        Units: m
+        """
+    @property
+    def width(self) -> Path[float]:
+        """Horizontal full width
+
+        Units: m
+        """
+    @property
+    def height(self) -> Path[float]:
+        """Vertical full height
+
+        Units: m
+        """
+
+class _PfActiveRectangleStaticMany:
+    """Rectangular description of a 2D object
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Geometric centre R
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Geometric centre Z
+
+        Units: m
+        """
+    @property
+    def width(self) -> Path[npt.NDArray[np.float64]]:
+        """Horizontal full width
+
+        Units: m
+        """
+    @property
+    def height(self) -> Path[npt.NDArray[np.float64]]:
+        """Vertical full height
+
+        Units: m
+        """
+
+class _PfActiveRz0dStaticItem:
+    """Structure for a single R, Z position (0D, static)
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Height
+
+        Units: m
+        """
+
+class _PfActiveRz0dStaticMany:
+    """Structure for a single R, Z position (0D, static)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+class _PfActiveRz1dStaticItem:
+    """Structure for list of R, Z positions (1D, constant)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+class _PfActiveRz1dStaticMany:
+    """Structure for list of R, Z positions (1D, constant)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+class _PfActiveSignalFlt1dItem:
+    """Signal (FLT_1D) with its time base
+    """
+
+    @property
+    def data(self) -> Path[npt.NDArray[np.float64]]:
+        """Data
+
+        Units: as_parent
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Time
+
+        Units: s
+        """
+
+class _PfActiveSignalFlt1dMany:
+    """Signal (FLT_1D) with its time base
+    """
+
+    @property
+    def data(self) -> Path[npt.NDArray[np.float64]]:
+        """Data
+
+        Units: as_parent
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Time
+
+        Units: s
+        """
+
+class _PfActiveTemperatureReferenceItem:
+    """Structure describing the reference temperature for which static data are given
+    """
+
+    @property
+    def description(self) -> Path[str | None]:
+        """Description of how the reference temperature is defined : for which object, at which location, ...
+        """
+    @property
+    def data(self) -> Path[float]:
+        """Reference temperature
+
+        Units: K
+        """
+
+class _PfActiveTemperatureReferenceMany:
+    """Structure describing the reference temperature for which static data are given
+    """
+
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description of how the reference temperature is defined : for which object, at which location, ...
+        """
+    @property
+    def data(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference temperature
+
+        Units: K
+        """
+
+class _PfActiveThickLineStaticItem:
+    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section
+    """
+
+    @property
+    def first_point(self) -> _PfActiveRz0dStaticItem:
+        """Position of the first point
+        """
+    @property
+    def second_point(self) -> _PfActiveRz0dStaticItem:
+        """Position of the second point
+        """
+    @property
+    def thickness(self) -> Path[float]:
+        """Thickness
+
+        Units: m
+        """
+
+class _PfActiveThickLineStaticMany:
+    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section
+    """
+
+    @property
+    def first_point(self) -> _PfActiveRz0dStaticMany:
+        """Position of the first point
+        """
+    @property
+    def second_point(self) -> _PfActiveRz0dStaticMany:
+        """Position of the second point
+        """
+    @property
+    def thickness(self) -> Path[npt.NDArray[np.float64]]:
+        """Thickness
+
+        Units: m
+        """
+
+# --------------------------------------------------------------------------
+# pf_active arrays of structures
+# --------------------------------------------------------------------------
+
+class _PfActiveIdentifierStaticArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PfActiveIdentifierStaticItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PfActiveIdentifierStaticMany: ...
+
+class _PfActiveIdentifierStaticArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _PfActiveIdentifierStaticMany: ...
+
+class _PfActiveLibraryArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PfActiveLibraryItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PfActiveLibraryMany: ...
+
+class _PfActiveLibraryArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _PfActiveLibraryMany: ...
+
+class _PfActivePfCircuitsArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PfActivePfCircuitsItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PfActivePfCircuitsMany: ...
+
+class _PfActivePfCircuitsArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _PfActivePfCircuitsMany: ...
+
+class _PfActivePfCoilsArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PfActivePfCoilsItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PfActivePfCoilsMany: ...
+
+class _PfActivePfCoilsArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _PfActivePfCoilsMany: ...
+
+class _PfActivePfCoilsElementsArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PfActivePfCoilsElementsItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PfActivePfCoilsElementsMany: ...
+
+class _PfActivePfCoilsElementsArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _PfActivePfCoilsElementsMany: ...
+
+class _PfActivePfSuppliesArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PfActivePfSuppliesItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PfActivePfSuppliesMany: ...
+
+class _PfActivePfSuppliesArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _PfActivePfSuppliesMany: ...
+
+# --------------------------------------------------------------------------
+# pf_active root
+# --------------------------------------------------------------------------
+
+class _PfActivePaths:
+    """Description of the axisymmetric active poloidal field (PF) coils and supplies; includes the limits of these systems; includes the forces on them; does not include non-axisymmetric coil systems
+    """
+
+    @property
+    def temperature_reference(self) -> _PfActiveTemperatureReferenceItem:
+        """Reference temperature for which the machine description data is given in this IDS
+        """
+    @property
+    def coil(self) -> _PfActivePfCoilsArrayFromItem:
+        """Active PF coils
+        """
+    @property
+    def force_limits(self) -> _PfActivePfForceLimitsItem:
+        """Description of force limits on the axisymmetric PF coil system
+        """
+    @property
+    def circuit(self) -> _PfActivePfCircuitsArrayFromItem:
+        """Circuits, connecting multiple PF coils to multiple supplies, defining the current and voltage relationships in the system
+        """
+    @property
+    def supply(self) -> _PfActivePfSuppliesArrayFromItem:
+        """PF power supplies
+        """
+    @property
+    def latency(self) -> Path[float]:
+        """Upper bound of the delay between input command received from the RT network and actuator starting to react. Applies globally to the system described by this IDS unless specific latencies (e.g. channel-specific or antenna-specific) are provided at a deeper level in the IDS structure.
+
+        Units: s
+        """
+    @property
+    def code(self) -> _PfActiveCodeItem: ...
+
+pf_active_paths: _PfActivePaths
+
+class PfPassive:
+    """Description of the axisymmetric passive conductors, currents flowing in them. Electromagnetic simulations are expected to use only this IDS to describe passive conductors and their specific discretization, not the component-related IDS (e.g. wall) which are used to store e.g. the component machine description"""
+
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path` out of this IDS.
+
+        The shape of the result follows the shape of the index: an integer index
+        gives one value, a slice gathers. Unset floats read back as NaN.
+        """
+    def __len__(self) -> int:
+        """The number of time slices held by this IDS."""
+    def __repr__(self) -> str: ...
+
+# ==========================================================================
+# pf_passive path nodes
+# ==========================================================================
+
+class _PfPassiveAnnulusStaticItem:
+    """Annulus description (2D object)
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Centre major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Centre height
+
+        Units: m
+        """
+    @property
+    def radius_inner(self) -> Path[float]:
+        """Inner radius
+
+        Units: m
+        """
+    @property
+    def radius_outer(self) -> Path[float]:
+        """Outer radius
+
+        Units: m
+        """
+
+class _PfPassiveAnnulusStaticMany:
+    """Annulus description (2D object)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Centre major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Centre height
+
+        Units: m
+        """
+    @property
+    def radius_inner(self) -> Path[npt.NDArray[np.float64]]:
+        """Inner radius
+
+        Units: m
+        """
+    @property
+    def radius_outer(self) -> Path[npt.NDArray[np.float64]]:
+        """Outer radius
+
+        Units: m
+        """
+
+class _PfPassiveArcsOfCircleStaticItem:
+    """Arcs of circle description of a 2D contour
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radii of the start point of each arc of circle
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the start point of each arc of circle
+
+        Units: m
+        """
+    @property
+    def curvature_radii(self) -> Path[npt.NDArray[np.float64]]:
+        """Curvature radius of each arc of circle
+
+        Units: m
+        """
+
+class _PfPassiveArcsOfCircleStaticMany:
+    """Arcs of circle description of a 2D contour
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radii of the start point of each arc of circle
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the start point of each arc of circle
+
+        Units: m
+        """
+    @property
+    def curvature_radii(self) -> Path[npt.NDArray[np.float64]]:
+        """Curvature radius of each arc of circle
+
+        Units: m
+        """
+
+class _PfPassiveCodeItem:
+    """Generic decription of the code-specific parameters for the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Name of software generating IDS
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[str | None]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[str | None]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[str | None]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[str | None]:
+        """List of the code specific parameters in XML format
+        """
+    @property
+    def output_flag(self) -> Path[npt.NDArray[np.int32]]:
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
+        """
+    @property
+    def library(self) -> _PfPassiveLibraryArrayFromItem:
+        """List of external libraries used by the code that has produced this IDS
+        """
+
+class _PfPassiveCodeMany:
+    """Generic decription of the code-specific parameters for the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Name of software generating IDS
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[list[str | None]]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[list[str | None]]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[list[str | None]]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[list[str | None]]:
+        """List of the code specific parameters in XML format
+        """
+    @property
+    def output_flag(self) -> Path[npt.NDArray[np.int32]]:
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
+        """
+    @property
+    def library(self) -> _PfPassiveLibraryArrayFromMany:
+        """List of external libraries used by the code that has produced this IDS
+        """
+
+class _PfPassiveLibraryItem:
+    """Library used by the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Name of software
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[str | None]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[str | None]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[str | None]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[str | None]:
+        """List of the code specific parameters in XML format
+        """
+
+class _PfPassiveLibraryMany:
+    """Library used by the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Name of software
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[list[str | None]]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[list[str | None]]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[list[str | None]]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[list[str | None]]:
+        """List of the code specific parameters in XML format
+        """
+
+class _PfPassiveObliqueStaticItem:
+    """Description of a 2D parallelogram
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Major radius of the reference point (from which the alpha and beta angles are defined, marked by a + on the diagram)
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Height of the reference point (from which the alpha and beta angles are defined, marked by a + on the diagram)
+
+        Units: m
+        """
+    @property
+    def length_alpha(self) -> Path[float]:
+        """Length of the parallelogram side inclined with angle alpha with respect to the major radius axis
+
+        Units: m
+        """
+    @property
+    def length_beta(self) -> Path[float]:
+        """Length of the parallelogram side inclined with angle beta with respect to the height axis
+
+        Units: m
+        """
+    @property
+    def alpha(self) -> Path[float]:
+        """Inclination of first angle measured counter-clockwise from horizontal outwardly directed radial vector (grad R).
+
+        Units: rad
+        """
+    @property
+    def beta(self) -> Path[float]:
+        """Inclination of second angle measured counter-clockwise from vertically upwards directed vector (grad Z). If both alpha and beta are zero (rectangle) then the simpler rectangular elements description should be used.
+
+        Units: rad
+        """
+
+class _PfPassiveObliqueStaticMany:
+    """Description of a 2D parallelogram
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of the reference point (from which the alpha and beta angles are defined, marked by a + on the diagram)
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the reference point (from which the alpha and beta angles are defined, marked by a + on the diagram)
+
+        Units: m
+        """
+    @property
+    def length_alpha(self) -> Path[npt.NDArray[np.float64]]:
+        """Length of the parallelogram side inclined with angle alpha with respect to the major radius axis
+
+        Units: m
+        """
+    @property
+    def length_beta(self) -> Path[npt.NDArray[np.float64]]:
+        """Length of the parallelogram side inclined with angle beta with respect to the height axis
+
+        Units: m
+        """
+    @property
+    def alpha(self) -> Path[npt.NDArray[np.float64]]:
+        """Inclination of first angle measured counter-clockwise from horizontal outwardly directed radial vector (grad R).
+
+        Units: rad
+        """
+    @property
+    def beta(self) -> Path[npt.NDArray[np.float64]]:
+        """Inclination of second angle measured counter-clockwise from vertically upwards directed vector (grad Z). If both alpha and beta are zero (rectangle) then the simpler rectangular elements description should be used.
+
+        Units: rad
+        """
+
+class _PfPassiveOutline2dGeometryStaticItem:
+    """Description of 2D geometry
+    """
+
+    @property
+    def geometry_type(self) -> Path[int]:
+        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')
+        """
+    @property
+    def outline(self) -> _PfPassiveRz1dStaticItem:
+        """Irregular outline of the element. Repeat the first point since this is a closed contour
+        """
+    @property
+    def rectangle(self) -> _PfPassiveRectangleStaticItem:
+        """Rectangular description of the element
+        """
+    @property
+    def oblique(self) -> _PfPassiveObliqueStaticItem:
+        """Parallelogram description of the element
+        """
+    @property
+    def arcs_of_circle(self) -> _PfPassiveArcsOfCircleStaticItem:
+        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle.
+        """
+    @property
+    def annulus(self) -> _PfPassiveAnnulusStaticItem:
+        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer
+        """
+    @property
+    def thick_line(self) -> _PfPassiveThickLineStaticItem:
+        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment
+        """
+
+class _PfPassiveOutline2dGeometryStaticMany:
+    """Description of 2D geometry
+    """
+
+    @property
+    def geometry_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')
+        """
+    @property
+    def outline(self) -> _PfPassiveRz1dStaticMany:
+        """Irregular outline of the element. Repeat the first point since this is a closed contour
+        """
+    @property
+    def rectangle(self) -> _PfPassiveRectangleStaticMany:
+        """Rectangular description of the element
+        """
+    @property
+    def oblique(self) -> _PfPassiveObliqueStaticMany:
+        """Parallelogram description of the element
+        """
+    @property
+    def arcs_of_circle(self) -> _PfPassiveArcsOfCircleStaticMany:
+        """Description of the element contour by a set of arcs of circle. For each of these, the position of the start point is given together with the curvature radius. The end point is given by the start point of the next arc of circle.
+        """
+    @property
+    def annulus(self) -> _PfPassiveAnnulusStaticMany:
+        """The element is an annulus of centre R, Z, with inner radius radius_inner and outer radius radius_outer
+        """
+    @property
+    def thick_line(self) -> _PfPassiveThickLineStaticMany:
+        """The element is approximated by a rectangle defined by a central segment and a thickness in the direction perpendicular to the segment
+        """
+
+class _PfPassivePfCoilsElementsItem:
+    """Each PF coil is comprised of a number of cross-section elements described  individually
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def turns_with_sign(self) -> Path[float]:
+        """Number of effective turns in the element for calculating the magnetic field from the coil/loop. Should be positive, unless the coil has elements going in opposite directions.
+
+        Units: 1
+        """
+    @property
+    def area(self) -> Path[float]:
+        """Cross-sectional areas of the element
+
+        Units: m^2
+        """
+    @property
+    def geometry(self) -> _PfPassiveOutline2dGeometryStaticItem:
+        """Cross-sectional shape of the element
+        """
+
+class _PfPassivePfCoilsElementsMany:
+    """Each PF coil is comprised of a number of cross-section elements described  individually
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def turns_with_sign(self) -> Path[npt.NDArray[np.float64]]:
+        """Number of effective turns in the element for calculating the magnetic field from the coil/loop. Should be positive, unless the coil has elements going in opposite directions.
+
+        Units: 1
+        """
+    @property
+    def area(self) -> Path[npt.NDArray[np.float64]]:
+        """Cross-sectional areas of the element
+
+        Units: m^2
+        """
+    @property
+    def geometry(self) -> _PfPassiveOutline2dGeometryStaticMany:
+        """Cross-sectional shape of the element
+        """
+
+class _PfPassiveLoopsItem:
+    """Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached.
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def resistance(self) -> Path[float]:
+        """Passive loop resistance
+
+        Units: ohm
+        """
+    @property
+    def resistivity(self) -> Path[float]:
+        """Passive loop resistivity
+
+        Units: ohm.m
+        """
+    @property
+    def element(self) -> _PfPassivePfCoilsElementsArrayFromItem:
+        """Each loop is comprised of a number of cross-section elements described  individually
+        """
+    @property
+    def current(self) -> Path[npt.NDArray[np.float64]]:
+        """Passive loop current
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes of this loop located at this level of the IDS structure
+
+        Units: s
+        """
+
+class _PfPassiveLoopsMany:
+    """Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached.
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def resistance(self) -> Path[npt.NDArray[np.float64]]:
+        """Passive loop resistance
+
+        Units: ohm
+        """
+    @property
+    def resistivity(self) -> Path[npt.NDArray[np.float64]]:
+        """Passive loop resistivity
+
+        Units: ohm.m
+        """
+    @property
+    def element(self) -> _PfPassivePfCoilsElementsArrayFromMany:
+        """Each loop is comprised of a number of cross-section elements described  individually
+        """
+    @property
+    def current(self) -> Path[npt.NDArray[np.float64]]:
+        """Passive loop current
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes of this loop located at this level of the IDS structure
+
+        Units: s
+        """
+
+class _PfPassiveRectangleStaticItem:
+    """Rectangular description of a 2D object
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Geometric centre R
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Geometric centre Z
+
+        Units: m
+        """
+    @property
+    def width(self) -> Path[float]:
+        """Horizontal full width
+
+        Units: m
+        """
+    @property
+    def height(self) -> Path[float]:
+        """Vertical full height
+
+        Units: m
+        """
+
+class _PfPassiveRectangleStaticMany:
+    """Rectangular description of a 2D object
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Geometric centre R
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Geometric centre Z
+
+        Units: m
+        """
+    @property
+    def width(self) -> Path[npt.NDArray[np.float64]]:
+        """Horizontal full width
+
+        Units: m
+        """
+    @property
+    def height(self) -> Path[npt.NDArray[np.float64]]:
+        """Vertical full height
+
+        Units: m
+        """
+
+class _PfPassiveRz0dStaticItem:
+    """Structure for a single R, Z position (0D, static)
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Height
+
+        Units: m
+        """
+
+class _PfPassiveRz0dStaticMany:
+    """Structure for a single R, Z position (0D, static)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+class _PfPassiveRz1dStaticItem:
+    """Structure for list of R, Z positions (1D, constant)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+class _PfPassiveRz1dStaticMany:
+    """Structure for list of R, Z positions (1D, constant)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+class _PfPassiveThickLineStaticItem:
+    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section
+    """
+
+    @property
+    def first_point(self) -> _PfPassiveRz0dStaticItem:
+        """Position of the first point
+        """
+    @property
+    def second_point(self) -> _PfPassiveRz0dStaticItem:
+        """Position of the second point
+        """
+    @property
+    def thickness(self) -> Path[float]:
+        """Thickness
+
+        Units: m
+        """
+
+class _PfPassiveThickLineStaticMany:
+    """2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section
+    """
+
+    @property
+    def first_point(self) -> _PfPassiveRz0dStaticMany:
+        """Position of the first point
+        """
+    @property
+    def second_point(self) -> _PfPassiveRz0dStaticMany:
+        """Position of the second point
+        """
+    @property
+    def thickness(self) -> Path[npt.NDArray[np.float64]]:
+        """Thickness
+
+        Units: m
+        """
+
+# --------------------------------------------------------------------------
+# pf_passive arrays of structures
+# --------------------------------------------------------------------------
+
+class _PfPassiveLibraryArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PfPassiveLibraryItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PfPassiveLibraryMany: ...
+
+class _PfPassiveLibraryArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _PfPassiveLibraryMany: ...
+
+class _PfPassivePfCoilsElementsArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PfPassivePfCoilsElementsItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PfPassivePfCoilsElementsMany: ...
+
+class _PfPassivePfCoilsElementsArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _PfPassivePfCoilsElementsMany: ...
+
+class _PfPassiveLoopsArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PfPassiveLoopsItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PfPassiveLoopsMany: ...
+
+class _PfPassiveLoopsArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _PfPassiveLoopsMany: ...
+
+# --------------------------------------------------------------------------
+# pf_passive root
+# --------------------------------------------------------------------------
+
+class _PfPassivePaths:
+    """Description of the axisymmetric passive conductors, currents flowing in them. Electromagnetic simulations are expected to use only this IDS to describe passive conductors and their specific discretization, not the component-related IDS (e.g. wall) which are used to store e.g. the component machine description
+    """
+
+    @property
+    def loop(self) -> _PfPassiveLoopsArrayFromItem:
+        """Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached.
+        """
+    @property
+    def code(self) -> _PfPassiveCodeItem: ...
+
+pf_passive_paths: _PfPassivePaths
+
+class Tf:
+    """Toroidal field coils"""
+
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path` out of this IDS.
+
+        The shape of the result follows the shape of the index: an integer index
+        gives one value, a slice gathers. Unset floats read back as NaN.
+        """
+    def __len__(self) -> int:
+        """The number of time slices held by this IDS."""
+    def __repr__(self) -> str: ...
+
+# ==========================================================================
+# tf path nodes
+# ==========================================================================
+
+class _TfCodeItem:
+    """Generic decription of the code-specific parameters for the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Name of software generating IDS
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[str | None]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[str | None]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[str | None]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[str | None]:
+        """List of the code specific parameters in XML format
+        """
+    @property
+    def output_flag(self) -> Path[npt.NDArray[np.int32]]:
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
+        """
+    @property
+    def library(self) -> _TfLibraryArrayFromItem:
+        """List of external libraries used by the code that has produced this IDS
+        """
+
+class _TfCodeMany:
+    """Generic decription of the code-specific parameters for the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Name of software generating IDS
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[list[str | None]]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[list[str | None]]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[list[str | None]]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[list[str | None]]:
+        """List of the code specific parameters in XML format
+        """
+    @property
+    def output_flag(self) -> Path[npt.NDArray[np.int32]]:
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
+        """
+    @property
+    def library(self) -> _TfLibraryArrayFromMany:
+        """List of external libraries used by the code that has produced this IDS
+        """
+
+class _TfCoilItem:
+    """Description of a given coil
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “Coil between sector 1 and 2”
+        """
+    @property
+    def conductor(self) -> _TfCoilConductorArrayFromItem:
+        """Set of conductors inside the coil. The structure can be used with size 1 for a simplified description as a single conductor. A conductor is composed of several elements, serially connected, i.e. transporting the same current.
+        """
+    @property
+    def turns(self) -> Path[float]:
+        """Number of total turns in the coil. May be a fraction when describing the coil connections.
+
+        Units: 1
+        """
+    @property
+    def resistance(self) -> Path[float]:
+        """Coil resistance
+
+        Units: ohm
+        """
+    @property
+    def current(self) -> _TfSignalFlt1dItem:
+        """Current in one turn of the coil (to be multiplied by the number of turns to calculate the magnetic field generated). Sign convention : a positive current flows in the direction in which conductor elements are ordered (from start to end for a positive polarity coil)
+
+        Units: A
+        """
+    @property
+    def voltage(self) -> _TfSignalFlt1dItem:
+        """Voltage on the coil terminals. Sign convention : positive when the current flows in the direction in which conductor elements are ordered (from start to end for a positive polarity coil)
+
+        Units: V
+        """
+    @property
+    def neutron_fast_flux_inboard(self) -> _TfSignalFlt1dItem:
+        """Fast neutron flux arriving on the inboard side of this coil
+
+        Units: m^-2.s^-1
+        """
+
+class _TfCoilMany:
+    """Description of a given coil
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “Coil between sector 1 and 2”
+        """
+    @property
+    def conductor(self) -> _TfCoilConductorArrayFromMany:
+        """Set of conductors inside the coil. The structure can be used with size 1 for a simplified description as a single conductor. A conductor is composed of several elements, serially connected, i.e. transporting the same current.
+        """
+    @property
+    def turns(self) -> Path[npt.NDArray[np.float64]]:
+        """Number of total turns in the coil. May be a fraction when describing the coil connections.
+
+        Units: 1
+        """
+    @property
+    def resistance(self) -> Path[npt.NDArray[np.float64]]:
+        """Coil resistance
+
+        Units: ohm
+        """
+    @property
+    def current(self) -> _TfSignalFlt1dMany:
+        """Current in one turn of the coil (to be multiplied by the number of turns to calculate the magnetic field generated). Sign convention : a positive current flows in the direction in which conductor elements are ordered (from start to end for a positive polarity coil)
+
+        Units: A
+        """
+    @property
+    def voltage(self) -> _TfSignalFlt1dMany:
+        """Voltage on the coil terminals. Sign convention : positive when the current flows in the direction in which conductor elements are ordered (from start to end for a positive polarity coil)
+
+        Units: V
+        """
+    @property
+    def neutron_fast_flux_inboard(self) -> _TfSignalFlt1dMany:
+        """Fast neutron flux arriving on the inboard side of this coil
+
+        Units: m^-2.s^-1
+        """
+
+class _TfCoilConductorItem:
+    """Description of a conductor
+    """
+
+    @property
+    def elements(self) -> _TfCoilConductorElementsItem:
+        """Set of geometrical elements (line segments and/or arcs of a circle) describing the contour of the conductor centre. We define a coordinate system associated to each element as follows: for the arc and circle elements: binormal = (start point - center) x (intermediate point - center). This vector points in the direction of the circle / arc axis. normal = (center - point on curve). The normal vector will rotate as the point moves around the curve. Tangent = normal x binormal. For the line element we require an extra point, using the currently redundant intermediate point to define the line element's normal axis. The local coordinates for the line element then become: tangent = end point - start point; normal = intermediate point - start point; binormal = tangent x normal. It is assumed that all the axes above are normalized such that they have a unit length.
+        """
+    @property
+    def cross_section(self) -> _TfCoilCrossSectionArrayFromItem:
+        """The cross-section perpendicular to the conductor contour is described by a series of contour points, given by their relative position with respect to the start point of each element. If the size of this array of structure is equal to 1, then the cross-section is given only for the first element and translated along the conductor elements. Otherwise, it's given explictly for each element, allowing to describe changes of the cross section shape
+        """
+    @property
+    def resistance(self) -> Path[float]:
+        """conductor resistance
+
+        Units: ohm
+        """
+    @property
+    def voltage(self) -> _TfSignalFlt1dItem:
+        """Voltage on the conductor terminals. Sign convention : positive when the current flows in the direction in which conductor elements are ordered (from start to end for a positive polarity coil)
+
+        Units: V
+        """
+
+class _TfCoilConductorMany:
+    """Description of a conductor
+    """
+
+    @property
+    def elements(self) -> _TfCoilConductorElementsMany:
+        """Set of geometrical elements (line segments and/or arcs of a circle) describing the contour of the conductor centre. We define a coordinate system associated to each element as follows: for the arc and circle elements: binormal = (start point - center) x (intermediate point - center). This vector points in the direction of the circle / arc axis. normal = (center - point on curve). The normal vector will rotate as the point moves around the curve. Tangent = normal x binormal. For the line element we require an extra point, using the currently redundant intermediate point to define the line element's normal axis. The local coordinates for the line element then become: tangent = end point - start point; normal = intermediate point - start point; binormal = tangent x normal. It is assumed that all the axes above are normalized such that they have a unit length.
+        """
+    @property
+    def cross_section(self) -> _TfCoilCrossSectionArrayFromMany:
+        """The cross-section perpendicular to the conductor contour is described by a series of contour points, given by their relative position with respect to the start point of each element. If the size of this array of structure is equal to 1, then the cross-section is given only for the first element and translated along the conductor elements. Otherwise, it's given explictly for each element, allowing to describe changes of the cross section shape
+        """
+    @property
+    def resistance(self) -> Path[npt.NDArray[np.float64]]:
+        """conductor resistance
+
+        Units: ohm
+        """
+    @property
+    def voltage(self) -> _TfSignalFlt1dMany:
+        """Voltage on the conductor terminals. Sign convention : positive when the current flows in the direction in which conductor elements are ordered (from start to end for a positive polarity coil)
+
+        Units: V
+        """
+
+class _TfCoilConductorElementsItem:
+    """Elements descibring the conductor contour
+    """
+
+    @property
+    def types(self) -> Path[npt.NDArray[np.int32]]:
+        """Type of every element: 1: line segment, its ends are given by the start and end points; index = 2: arc of a circle; index = 3: full circle
+        """
+    @property
+    def start_points(self) -> _TfCoilNaRphiz1dStaticItem:
+        """Position of the start point of every element
+        """
+    @property
+    def intermediate_points(self) -> _TfCoilNaRphiz1dStaticItem:
+        """Position of an intermediate point along the circle or arc of circle, for every element, providing the orientation of the element (must define with the corresponding start point an aperture angle strictly inferior to PI). In the case of a line segment (../types/index=1), fill this node with a point such that the vector intermediate_point - start_point defines the direction of the element's normal axis (see documentation of ../elements)
+        """
+    @property
+    def end_points(self) -> _TfCoilNaRphiz1dStaticItem:
+        """Position of the end point of every element. Meaningful only if type/index = 1 or 2, fill with default/empty value otherwise
+        """
+    @property
+    def centres(self) -> _TfCoilNaRphiz1dStaticItem:
+        """Position of the centre of the arc of a circle of every element (meaningful only if type/index = 2 or 3, fill with default/empty value otherwise)
+        """
+
+class _TfCoilConductorElementsMany:
+    """Elements descibring the conductor contour
+    """
+
+    @property
+    def types(self) -> Path[npt.NDArray[np.int32]]:
+        """Type of every element: 1: line segment, its ends are given by the start and end points; index = 2: arc of a circle; index = 3: full circle
+        """
+    @property
+    def start_points(self) -> _TfCoilNaRphiz1dStaticMany:
+        """Position of the start point of every element
+        """
+    @property
+    def intermediate_points(self) -> _TfCoilNaRphiz1dStaticMany:
+        """Position of an intermediate point along the circle or arc of circle, for every element, providing the orientation of the element (must define with the corresponding start point an aperture angle strictly inferior to PI). In the case of a line segment (../types/index=1), fill this node with a point such that the vector intermediate_point - start_point defines the direction of the element's normal axis (see documentation of ../elements)
+        """
+    @property
+    def end_points(self) -> _TfCoilNaRphiz1dStaticMany:
+        """Position of the end point of every element. Meaningful only if type/index = 1 or 2, fill with default/empty value otherwise
+        """
+    @property
+    def centres(self) -> _TfCoilNaRphiz1dStaticMany:
+        """Position of the centre of the arc of a circle of every element (meaningful only if type/index = 2 or 3, fill with default/empty value otherwise)
+        """
+
+class _TfCoilCrossSectionItem:
+    """Coil cross-section
+    """
+
+    @property
+    def geometry_type(self) -> _TfIdentifierStaticItem:
+        """Geometry type used to describe the cross section of this element. The conductor centre is given by the ../../elements description.
+        """
+    @property
+    def width(self) -> Path[float]:
+        """Full width of the rectangle or square in the normal direction, when geometry_type/index = 3 or 4. Diameter of the circle when geometry_type/index = 2. Outer diameter of the annulus in case geometry_type/index = 5
+
+        Units: m
+        """
+    @property
+    def height(self) -> Path[float]:
+        """Full height of the rectangle in the binormal direction, used only if geometry_type/index = 3
+
+        Units: m
+        """
+    @property
+    def radius_inner(self) -> Path[float]:
+        """Inner radius of the annulus, used only if geometry_type/index = 5
+
+        Units: m
+        """
+    @property
+    def outline(self) -> _TfNormalBinormalStaticItem:
+        """Polygonal outline of the cross section in the (normal, binormal) coordinate system. Do NOT repeat the first point.
+        """
+    @property
+    def area(self) -> Path[float]:
+        """Area of the conductor cross-section, derived from the above geometric data
+
+        Units: m^2
+        """
+
+class _TfCoilCrossSectionMany:
+    """Coil cross-section
+    """
+
+    @property
+    def geometry_type(self) -> _TfIdentifierStaticMany:
+        """Geometry type used to describe the cross section of this element. The conductor centre is given by the ../../elements description.
+        """
+    @property
+    def width(self) -> Path[npt.NDArray[np.float64]]:
+        """Full width of the rectangle or square in the normal direction, when geometry_type/index = 3 or 4. Diameter of the circle when geometry_type/index = 2. Outer diameter of the annulus in case geometry_type/index = 5
+
+        Units: m
+        """
+    @property
+    def height(self) -> Path[npt.NDArray[np.float64]]:
+        """Full height of the rectangle in the binormal direction, used only if geometry_type/index = 3
+
+        Units: m
+        """
+    @property
+    def radius_inner(self) -> Path[npt.NDArray[np.float64]]:
+        """Inner radius of the annulus, used only if geometry_type/index = 5
+
+        Units: m
+        """
+    @property
+    def outline(self) -> _TfNormalBinormalStaticMany:
+        """Polygonal outline of the cross section in the (normal, binormal) coordinate system. Do NOT repeat the first point.
+        """
+    @property
+    def area(self) -> Path[npt.NDArray[np.float64]]:
+        """Area of the conductor cross-section, derived from the above geometric data
+
+        Units: m^2
+        """
+
+class _TfCoilNaRphiz1dStaticItem:
+    """Structure for list of R, Z, Phi positions (1D, static), with a reference to the types coordinate specific to this IDS
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def phi(self) -> Path[npt.NDArray[np.float64]]:
+        """Toroidal angle (oriented counter-clockwise when viewed from above)
+
+        Units: rad
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+class _TfCoilNaRphiz1dStaticMany:
+    """Structure for list of R, Z, Phi positions (1D, static), with a reference to the types coordinate specific to this IDS
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def phi(self) -> Path[npt.NDArray[np.float64]]:
+        """Toroidal angle (oriented counter-clockwise when viewed from above)
+
+        Units: rad
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+class _TfGenericGridDynamicItem:
+    """Generic grid (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def identifier(self) -> _TfIdentifierDynamicAos3Item:
+        """Grid identifier
+        """
+    @property
+    def path(self) -> Path[str | None]:
+        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
+        """
+    @property
+    def space(self) -> _TfGenericGridDynamicSpaceArrayFromItem:
+        """Set of grid spaces
+        """
+    @property
+    def grid_subset(self) -> _TfGenericGridDynamicGridSubsetArrayFromItem:
+        """Grid subsets
+        """
+
+class _TfGenericGridDynamicMany:
+    """Generic grid (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def identifier(self) -> _TfIdentifierDynamicAos3Many:
+        """Grid identifier
+        """
+    @property
+    def path(self) -> Path[list[str | None]]:
+        """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
+        """
+    @property
+    def space(self) -> _TfGenericGridDynamicSpaceArrayFromMany:
+        """Set of grid spaces
+        """
+    @property
+    def grid_subset(self) -> _TfGenericGridDynamicGridSubsetArrayFromMany:
+        """Grid subsets
+        """
+
+class _TfGenericGridDynamicGridSubsetItem:
+    """Generic grid grid_subset (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def identifier(self) -> _TfIdentifierDynamicAos3Item:
+        """Grid subset identifier
+        """
+    @property
+    def dimension(self) -> Path[int]:
+        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes
+        """
+    @property
+    def element(self) -> _TfGenericGridDynamicGridSubsetElementArrayFromItem:
+        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces
+        """
+    @property
+    def base(self) -> _TfGenericGridDynamicGridSubsetMetricArrayFromItem:
+        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.
+        """
+    @property
+    def metric(self) -> _TfGenericGridDynamicGridSubsetMetricItem:
+        """Metric of the canonical frame onto Cartesian coordinates
+        """
+
+class _TfGenericGridDynamicGridSubsetMany:
+    """Generic grid grid_subset (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def identifier(self) -> _TfIdentifierDynamicAos3Many:
+        """Grid subset identifier
+        """
+    @property
+    def dimension(self) -> Path[npt.NDArray[np.int32]]:
+        """Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes
+        """
+    @property
+    def element(self) -> _TfGenericGridDynamicGridSubsetElementArrayFromMany:
+        """Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces
+        """
+    @property
+    def base(self) -> _TfGenericGridDynamicGridSubsetMetricArrayFromMany:
+        """Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.
+        """
+    @property
+    def metric(self) -> _TfGenericGridDynamicGridSubsetMetricMany:
+        """Metric of the canonical frame onto Cartesian coordinates
+        """
+
+class _TfGenericGridDynamicGridSubsetElementItem:
+    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def object(self) -> _TfGenericGridDynamicGridSubsetElementObjectArrayFromItem:
+        """Set of objects defining the element
+        """
+
+class _TfGenericGridDynamicGridSubsetElementMany:
+    """Generic grid, element part of a grid_subset (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def object(self) -> _TfGenericGridDynamicGridSubsetElementObjectArrayFromMany:
+        """Set of objects defining the element
+        """
+
+class _TfGenericGridDynamicGridSubsetElementObjectItem:
+    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def space(self) -> Path[int]:
+        """Index of the space from which that object is taken
+        """
+    @property
+    def dimension(self) -> Path[int]:
+        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes
+        """
+    @property
+    def index(self) -> Path[int]:
+        """Object index
+        """
+
+class _TfGenericGridDynamicGridSubsetElementObjectMany:
+    """Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def space(self) -> Path[npt.NDArray[np.int32]]:
+        """Index of the space from which that object is taken
+        """
+    @property
+    def dimension(self) -> Path[npt.NDArray[np.int32]]:
+        """Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes
+        """
+    @property
+    def index(self) -> Path[npt.NDArray[np.int32]]:
+        """Object index
+        """
+
+class _TfGenericGridDynamicGridSubsetMetricItem:
+    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def jacobian(self) -> Path[npt.NDArray[np.float64]]:
+        """Metric Jacobian
+
+        Units: mixed
+        """
+    @property
+    def tensor_covariant(self) -> Path[npt.NDArray[np.float64]]:
+        """Covariant metric tensor, given on each element of the subgrid (first dimension)
+
+        Units: mixed
+        """
+    @property
+    def tensor_contravariant(self) -> Path[npt.NDArray[np.float64]]:
+        """Contravariant metric tensor, given on each element of the subgrid (first dimension)
+
+        Units: mixed
+        """
+
+class _TfGenericGridDynamicGridSubsetMetricMany:
+    """Generic grid, metric description for a given grid_subset and base (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def jacobian(self) -> Path[npt.NDArray[np.float64]]:
+        """Metric Jacobian
+
+        Units: mixed
+        """
+    @property
+    def tensor_covariant(self) -> Path[npt.NDArray[np.float64]]:
+        """Covariant metric tensor, given on each element of the subgrid (first dimension)
+
+        Units: mixed
+        """
+    @property
+    def tensor_contravariant(self) -> Path[npt.NDArray[np.float64]]:
+        """Contravariant metric tensor, given on each element of the subgrid (first dimension)
+
+        Units: mixed
+        """
+
+class _TfGenericGridDynamicSpaceItem:
+    """Generic grid space (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def identifier(self) -> _TfIdentifierDynamicAos3Item:
+        """Space identifier
+        """
+    @property
+    def geometry_type(self) -> _TfIdentifierDynamicAos3Item:
+        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)
+        """
+    @property
+    def coordinates_type(self) -> _TfIdentifierDynamicAos3ArrayFromItem:
+        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space.
+        """
+    @property
+    def objects_per_dimension(self) -> _TfGenericGridDynamicSpaceDimensionArrayFromItem:
+        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described.
+        """
+
+class _TfGenericGridDynamicSpaceMany:
+    """Generic grid space (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def identifier(self) -> _TfIdentifierDynamicAos3Many:
+        """Space identifier
+        """
+    @property
+    def geometry_type(self) -> _TfIdentifierDynamicAos3Many:
+        """Type of space geometry (0: standard, 1:Fourier, >1: Fourier with periodicity)
+        """
+    @property
+    def coordinates_type(self) -> _TfIdentifierDynamicAos3ArrayFromMany:
+        """Type of coordinates describing the physical space, for every coordinate of the space. The size of this node therefore defines the dimension of the space.
+        """
+    @property
+    def objects_per_dimension(self) -> _TfGenericGridDynamicSpaceDimensionArrayFromMany:
+        """Definition of the space objects for every dimension (from one to the dimension of the highest-dimensional objects). The index correspond to 1=nodes, 2=edges, 3=faces, 4=cells/volumes, .... For every index, a collection of objects of that dimension is described.
+        """
+
+class _TfGenericGridDynamicSpaceDimensionItem:
+    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def object(self) -> _TfGenericGridDynamicSpaceDimensionObjectArrayFromItem:
+        """Set of objects for a given dimension
+        """
+    @property
+    def geometry_content(self) -> _TfIdentifierDynamicAos3Item:
+        """Content of the ../object/geometry node for this dimension
+        """
+
+class _TfGenericGridDynamicSpaceDimensionMany:
+    """Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def object(self) -> _TfGenericGridDynamicSpaceDimensionObjectArrayFromMany:
+        """Set of objects for a given dimension
+        """
+    @property
+    def geometry_content(self) -> _TfIdentifierDynamicAos3Many:
+        """Content of the ../object/geometry node for this dimension
+        """
+
+class _TfGenericGridDynamicSpaceDimensionObjectItem:
+    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def boundary(self) -> _TfGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
+        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object
+        """
+    @property
+    def geometry(self) -> Path[npt.NDArray[np.float64]]:
+        """Geometry data associated with the object, its detailed content is defined by ../../geometry_content. Its dimension depends on the type of object, geometry and coordinate considered.
+
+        Units: mixed
+        """
+    @property
+    def nodes(self) -> Path[npt.NDArray[np.int32]]:
+        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)
+        """
+    @property
+    def measure(self) -> Path[float]:
+        """Measure of the space object, i.e. physical size (length for 1d, area for 2d, volume for 3d objects,...)
+
+        Units: m^dimension
+        """
+    @property
+    def geometry_2d(self) -> Path[npt.NDArray[np.float64]]:
+        """2D geometry data associated with the object. Its dimension depends on the type of object, geometry and coordinate considered. Typically, the first dimension represents the object coordinates, while the second dimension would represent the values of the various degrees of freedom of the finite element attached to the object.
+
+        Units: mixed
+        """
+
+class _TfGenericGridDynamicSpaceDimensionObjectMany:
+    """Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def boundary(self) -> _TfGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromMany:
+        """Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object
+        """
+    @property
+    def geometry(self) -> Path[npt.NDArray[np.float64]]:
+        """Geometry data associated with the object, its detailed content is defined by ../../geometry_content. Its dimension depends on the type of object, geometry and coordinate considered.
+
+        Units: mixed
+        """
+    @property
+    def nodes(self) -> Path[npt.NDArray[np.int32]]:
+        """List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)
+        """
+    @property
+    def measure(self) -> Path[npt.NDArray[np.float64]]:
+        """Measure of the space object, i.e. physical size (length for 1d, area for 2d, volume for 3d objects,...)
+
+        Units: m^dimension
+        """
+    @property
+    def geometry_2d(self) -> Path[npt.NDArray[np.float64]]:
+        """2D geometry data associated with the object. Its dimension depends on the type of object, geometry and coordinate considered. Typically, the first dimension represents the object coordinates, while the second dimension would represent the values of the various degrees of freedom of the finite element attached to the object.
+
+        Units: mixed
+        """
+
+class _TfGenericGridDynamicSpaceDimensionObjectBoundaryItem:
+    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def index(self) -> Path[int]:
+        """Index of this (n-1)-dimensional boundary object
+        """
+    @property
+    def neighbours(self) -> Path[npt.NDArray[np.int32]]:
+        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary
+        """
+
+class _TfGenericGridDynamicSpaceDimensionObjectBoundaryMany:
+    """Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def index(self) -> Path[npt.NDArray[np.int32]]:
+        """Index of this (n-1)-dimensional boundary object
+        """
+    @property
+    def neighbours(self) -> Path[npt.NDArray[np.int32]]:
+        """List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary
+        """
+
+class _TfGenericGridScalarItem:
+    """Scalar real values on a generic grid (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def grid_index(self) -> Path[int]:
+        """Index of the grid used to represent this quantity
+        """
+    @property
+    def grid_subset_index(self) -> Path[int]:
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
+        """
+    @property
+    def values(self) -> Path[npt.NDArray[np.float64]]:
+        """One scalar value is provided per element in the grid subset.
+
+        Units: as_parent
+        """
+    @property
+    def coefficients(self) -> Path[npt.NDArray[np.float64]]:
+        """Interpolation coefficients, to be used for a high precision evaluation of the physical quantity with finite elements, provided per element in the grid subset (first dimension).
+
+        Units: as_parent
+        """
+
+class _TfGenericGridScalarMany:
+    """Scalar real values on a generic grid (dynamic within a type 3 AoS)
+    """
+
+    @property
+    def grid_index(self) -> Path[npt.NDArray[np.int32]]:
+        """Index of the grid used to represent this quantity
+        """
+    @property
+    def grid_subset_index(self) -> Path[npt.NDArray[np.int32]]:
+        """Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
+        """
+    @property
+    def values(self) -> Path[npt.NDArray[np.float64]]:
+        """One scalar value is provided per element in the grid subset.
+
+        Units: as_parent
+        """
+    @property
+    def coefficients(self) -> Path[npt.NDArray[np.float64]]:
+        """Interpolation coefficients, to be used for a high precision evaluation of the physical quantity with finite elements, provided per element in the grid subset (first dimension).
+
+        Units: as_parent
+        """
+
+class _TfIdentifierDynamicAos3Item:
+    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[int]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Verbose description
+        """
+
+class _TfIdentifierDynamicAos3Many:
+    """Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[npt.NDArray[np.int32]]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Verbose description
+        """
+
+class _TfIdentifierStaticItem:
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[int]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Verbose description
+        """
+
+class _TfIdentifierStaticMany:
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[npt.NDArray[np.int32]]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Verbose description
+        """
+
+class _TfLibraryItem:
+    """Library used by the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Name of software
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[str | None]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[str | None]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[str | None]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[str | None]:
+        """List of the code specific parameters in XML format
+        """
+
+class _TfLibraryMany:
+    """Library used by the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Name of software
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[list[str | None]]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[list[str | None]]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[list[str | None]]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[list[str | None]]:
+        """List of the code specific parameters in XML format
+        """
+
+class _TfNormalBinormalStaticItem:
+    """Structure for list of normal, binormal positions (1D, static)
+    """
+
+    @property
+    def normal(self) -> Path[npt.NDArray[np.float64]]:
+        """Coordinate along the normal axis
+
+        Units: m
+        """
+    @property
+    def binormal(self) -> Path[npt.NDArray[np.float64]]:
+        """Coordinates along the binormal axis
+
+        Units: m
+        """
+
+class _TfNormalBinormalStaticMany:
+    """Structure for list of normal, binormal positions (1D, static)
+    """
+
+    @property
+    def normal(self) -> Path[npt.NDArray[np.float64]]:
+        """Coordinate along the normal axis
+
+        Units: m
+        """
+    @property
+    def binormal(self) -> Path[npt.NDArray[np.float64]]:
+        """Coordinates along the binormal axis
+
+        Units: m
+        """
+
+class _TfSignalFlt1dItem:
+    """Signal (FLT_1D) with its time base
+    """
+
+    @property
+    def data(self) -> Path[npt.NDArray[np.float64]]:
+        """Data
+
+        Units: as_parent
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Time
+
+        Units: s
+        """
+
+class _TfSignalFlt1dMany:
+    """Signal (FLT_1D) with its time base
+    """
+
+    @property
+    def data(self) -> Path[npt.NDArray[np.float64]]:
+        """Data
+
+        Units: as_parent
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Time
+
+        Units: s
+        """
+
+class _TfGgdItem:
+    """Toroidal field map represented on ggd
+    """
+
+    @property
+    def grid(self) -> _TfGenericGridDynamicItem:
+        """Grid description
+        """
+    @property
+    def b_field_r(self) -> _TfGenericGridScalarArrayFromItem:
+        """R component of the vacuum magnetic field, given on various grid subsets
+
+        Units: T
+        """
+    @property
+    def b_field_z(self) -> _TfGenericGridScalarArrayFromItem:
+        """Z component of the vacuum magnetic field, given on various grid subsets
+
+        Units: T
+        """
+    @property
+    def b_field_tor(self) -> _TfGenericGridScalarArrayFromItem:
+        """Toroidal component of the vacuum magnetic field, given on various grid subsets
+
+        Units: T
+        """
+    @property
+    def a_field_r(self) -> _TfGenericGridScalarArrayFromItem:
+        """R component of the vacuum vector potential, given on various grid subsets
+
+        Units: T.m
+        """
+    @property
+    def a_field_z(self) -> _TfGenericGridScalarArrayFromItem:
+        """Z component of the vacuum vector potential, given on various grid subsets
+
+        Units: T.m
+        """
+    @property
+    def a_field_tor(self) -> _TfGenericGridScalarArrayFromItem:
+        """Toroidal component of the vacuum vector potential, given on various grid subsets
+
+        Units: T.m
+        """
+    @property
+    def time(self) -> Path[float]:
+        """Time
+
+        Units: s
+        """
+
+class _TfGgdMany:
+    """Toroidal field map represented on ggd
+    """
+
+    @property
+    def grid(self) -> _TfGenericGridDynamicMany:
+        """Grid description
+        """
+    @property
+    def b_field_r(self) -> _TfGenericGridScalarArrayFromMany:
+        """R component of the vacuum magnetic field, given on various grid subsets
+
+        Units: T
+        """
+    @property
+    def b_field_z(self) -> _TfGenericGridScalarArrayFromMany:
+        """Z component of the vacuum magnetic field, given on various grid subsets
+
+        Units: T
+        """
+    @property
+    def b_field_tor(self) -> _TfGenericGridScalarArrayFromMany:
+        """Toroidal component of the vacuum magnetic field, given on various grid subsets
+
+        Units: T
+        """
+    @property
+    def a_field_r(self) -> _TfGenericGridScalarArrayFromMany:
+        """R component of the vacuum vector potential, given on various grid subsets
+
+        Units: T.m
+        """
+    @property
+    def a_field_z(self) -> _TfGenericGridScalarArrayFromMany:
+        """Z component of the vacuum vector potential, given on various grid subsets
+
+        Units: T.m
+        """
+    @property
+    def a_field_tor(self) -> _TfGenericGridScalarArrayFromMany:
+        """Toroidal component of the vacuum vector potential, given on various grid subsets
+
+        Units: T.m
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Time
+
+        Units: s
+        """
+
+# --------------------------------------------------------------------------
+# tf arrays of structures
+# --------------------------------------------------------------------------
+
+class _TfCoilArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfCoilItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfCoilMany: ...
+
+class _TfCoilArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfCoilMany: ...
+
+class _TfCoilConductorArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfCoilConductorItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfCoilConductorMany: ...
+
+class _TfCoilConductorArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfCoilConductorMany: ...
+
+class _TfCoilCrossSectionArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfCoilCrossSectionItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfCoilCrossSectionMany: ...
+
+class _TfCoilCrossSectionArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfCoilCrossSectionMany: ...
+
+class _TfGenericGridDynamicGridSubsetArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicGridSubsetMany: ...
+
+class _TfGenericGridDynamicGridSubsetArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetMany: ...
+
+class _TfGenericGridDynamicGridSubsetElementArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetElementItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicGridSubsetElementMany: ...
+
+class _TfGenericGridDynamicGridSubsetElementArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetElementMany: ...
+
+class _TfGenericGridDynamicGridSubsetElementObjectArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetElementObjectItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicGridSubsetElementObjectMany: ...
+
+class _TfGenericGridDynamicGridSubsetElementObjectArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetElementObjectMany: ...
+
+class _TfGenericGridDynamicGridSubsetMetricArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetMetricItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicGridSubsetMetricMany: ...
+
+class _TfGenericGridDynamicGridSubsetMetricArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetMetricMany: ...
+
+class _TfGenericGridDynamicSpaceArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicSpaceMany: ...
+
+class _TfGenericGridDynamicSpaceArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceMany: ...
+
+class _TfGenericGridDynamicSpaceDimensionArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceDimensionItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicSpaceDimensionMany: ...
+
+class _TfGenericGridDynamicSpaceDimensionArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceDimensionMany: ...
+
+class _TfGenericGridDynamicSpaceDimensionObjectArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceDimensionObjectItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicSpaceDimensionObjectMany: ...
+
+class _TfGenericGridDynamicSpaceDimensionObjectArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceDimensionObjectMany: ...
+
+class _TfGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceDimensionObjectBoundaryItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
+
+class _TfGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
+
+class _TfGenericGridScalarArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfGenericGridScalarItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfGenericGridScalarMany: ...
+
+class _TfGenericGridScalarArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfGenericGridScalarMany: ...
+
+class _TfIdentifierDynamicAos3ArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfIdentifierDynamicAos3Item: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfIdentifierDynamicAos3Many: ...
+
+class _TfIdentifierDynamicAos3ArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfIdentifierDynamicAos3Many: ...
+
+class _TfLibraryArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfLibraryItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfLibraryMany: ...
+
+class _TfLibraryArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfLibraryMany: ...
+
+class _TfGgdArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _TfGgdItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _TfGgdMany: ...
+
+class _TfGgdArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _TfGgdMany: ...
+
+# --------------------------------------------------------------------------
+# tf root
+# --------------------------------------------------------------------------
+
+class _TfPaths:
+    """Toroidal field coils
+    """
+
+    @property
+    def r0(self) -> Path[float]:
+        """Reference major radius of the device (from the official description of the device). This node is the placeholder for this official machine description quantity (typically the middle of the vessel at the equatorial midplane, although the exact definition may depend on the device)
+
+        Units: m
+        """
+    @property
+    def is_periodic(self) -> Path[int]:
+        """Flag indicating whether coils are described one by one in the coil() structure (flag=0) or whether the coil structure represents only coils having different characteristics (flag = 1, n_coils must be filled in that case). In the latter case, the coil() sequence is repeated periodically around the torus.
+        """
+    @property
+    def coils_n(self) -> Path[int]:
+        """Number of coils around the torus, in case is_periodic = 1
+        """
+    @property
+    def coil(self) -> _TfCoilArrayFromItem:
+        """Set of coils around the tokamak
+        """
+    @property
+    def field_map(self) -> _TfGgdArrayFromItem:
+        """Map of the vacuum field at various time slices, represented using the generic grid description
+        """
+    @property
+    def b_field_phi_vacuum_r(self) -> _TfSignalFlt1dItem:
+        """Vacuum magnetic field times major radius within the cage of toroidal field coils. Positive sign means counter-clockwise when viewed from above.
+
+        Units: T.m
+        """
+    @property
+    def delta_b_field_phi_vacuum_r(self) -> _TfSignalFlt1dItem:
+        """Variation of (vacuum field times major radius in the toroidal field magnet) from the start of the plasma.
+
+        Units: T.m
+        """
+    @property
+    def latency(self) -> Path[float]:
+        """Upper bound of the delay between input command received from the RT network and actuator starting to react. Applies globally to the system described by this IDS unless specific latencies (e.g. channel-specific or antenna-specific) are provided at a deeper level in the IDS structure.
+
+        Units: s
+        """
+    @property
+    def code(self) -> _TfCodeItem: ...
+
+tf_paths: _TfPaths
+
 class Wall:
     """Description of the torus wall and its interaction with the plasma"""
 
@@ -5403,8 +8858,7 @@ class Wall:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. An unset float reads back as NaN, and
-        an unset integer as IMAS's EMPTY_INT (-999999999).
+        gives one value, a slice gathers. Unset floats read back as NaN.
         """
     def __len__(self) -> int:
         """The number of time slices held by this IDS."""

@@ -13,6 +13,7 @@ use ndarray::{Array1, Array2, ArrayView2, Axis, MeshIndex, meshgrid, s};
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
 use pyo3::prelude::*;
+use rayon::prelude::*;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
@@ -441,68 +442,55 @@ impl Plasma {
             let g_d3_psi_d_r_d_z2_filaments: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2(); // shape = [n_r * n_z, n_filament]
             let g_d3_psi_d_z3_filaments: Array2<f64> = greens_calculator.d3_psi_d_z3(); // shape = [n_r * n_z, n_filament]
 
-            let mut greens_dof: Vec<EquilibriumGreensPfPassiveDof> = Vec::with_capacity(dof_names.len());
+            // The current distribution belonging to each degree of freedom, collected up-front so that
+            // all of them can be applied to a Green's table in a single pass over it
+            let n_dof: usize = dof_names.len();
+            let mut current_distributions: Vec<Array1<f64>> = Vec::with_capacity(n_dof);
+            for i_dof in 0..n_dof {
+                current_distributions.push(
+                    passives_local
+                        .results
+                        .get(&passive_name)
+                        .get("dof")
+                        .get(&dof_names[i_dof])
+                        .get("current_distribution")
+                        .unwrap_array1(),
+                );
+            }
 
-            for dof_name in dof_names {
-                // Current distribution
-                let current_distribution: Array1<f64> = passives_local
-                    .results
-                    .get(&passive_name)
-                    .get("dof")
-                    .get(&dof_name)
-                    .get("current_distribution")
-                    .unwrap_array1();
+            // Apply the current distributions and sum over the filaments; one column per degree of freedom
+            let g_psi_with_dof: Array2<f64> = apply_current_distributions(&g_psi_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_br_with_dof: Array2<f64> = apply_current_distributions(&g_br_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_bz_with_dof: Array2<f64> = apply_current_distributions(&g_bz_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_d_br_d_z_with_dof: Array2<f64> = apply_current_distributions(&d_g_br_filaments_d_z, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_d_bz_d_z_with_dof: Array2<f64> = apply_current_distributions(&d_g_bz_filaments_d_z, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_d_psi_d_r_with_dof: Array2<f64> = apply_current_distributions(&g_d_psi_d_r_coil_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_d_psi_d_z_with_dof: Array2<f64> = apply_current_distributions(&g_d_psi_d_z_coil_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_d2_psi_d_r2_with_dof: Array2<f64> = apply_current_distributions(&g_d2_psi_d_r2_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_d2_psi_d_r_d_z_with_dof: Array2<f64> = apply_current_distributions(&g_d2_psi_d_r_d_z_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_d2_psi_d_z2_with_dof: Array2<f64> = apply_current_distributions(&g_d2_psi_d_z2_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_d3_psi_d_r2_d_z_with_dof: Array2<f64> = apply_current_distributions(&g_d3_psi_d_r2_d_z_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_d3_psi_d_r_d_z2_with_dof: Array2<f64> = apply_current_distributions(&g_d3_psi_d_r_d_z2_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
+            let g_d3_psi_d_z3_with_dof: Array2<f64> = apply_current_distributions(&g_d3_psi_d_z3_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
 
-                // Apply the current_distribution
-                let g_psi_filaments_with_dof: Array2<f64> = &g_psi_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
-                let g_br_filaments_with_dof: Array2<f64> = &g_br_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_bz_filaments_with_dof: Array2<f64> = &g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
-                let d_g_br_filaments_with_dof_d_z: Array2<f64> = &d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
-                let d_g_bz_filaments_with_dof_d_z: Array2<f64> = &d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
-                let g_d_psi_d_r_coil_filaments_with_dof: Array2<f64> = &g_d_psi_d_r_coil_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d_psi_d_z_coil_filaments_with_dof: Array2<f64> = &g_d_psi_d_z_coil_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_r2_filaments_with_dof: Array2<f64> = &g_d2_psi_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_r_d_z_filaments_with_dof: Array2<f64> = &g_d2_psi_d_r_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_z2_filaments_with_dof: Array2<f64> = &g_d2_psi_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_r2_d_z_filaments_with_dof: Array2<f64> = &g_d3_psi_d_r2_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_r_d_z2_filaments_with_dof: Array2<f64> = &g_d3_psi_d_r_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_z3_filaments_with_dof: Array2<f64> = &g_d3_psi_d_z3_filaments * &current_distribution; // shape = [n_r * n_z]
-
-                // Sum over all filaments
-                let g_psi: Array1<f64> = g_psi_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_br: Array1<f64> = g_br_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_bz: Array1<f64> = g_bz_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d_br_d_z: Array1<f64> = d_g_br_filaments_with_dof_d_z.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d_bz_d_z: Array1<f64> = d_g_bz_filaments_with_dof_d_z.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d_psi_d_r: Array1<f64> = g_d_psi_d_r_coil_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d_psi_d_z: Array1<f64> = g_d_psi_d_z_coil_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d2_psi_d_r2: Array1<f64> = g_d2_psi_d_r2_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d2_psi_d_r_d_z: Array1<f64> = g_d2_psi_d_r_d_z_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d2_psi_d_z2: Array1<f64> = g_d2_psi_d_z2_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d3_psi_d_r2_d_z: Array1<f64> = g_d3_psi_d_r2_d_z_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d3_psi_d_r_d_z2: Array1<f64> = g_d3_psi_d_r_d_z2_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-                let g_d3_psi_d_z3: Array1<f64> = g_d3_psi_d_z3_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
-
-                // Store in the equilibrium IDS. Cloned because the same tables also go into the
-                // DataTree below, which `gs_solution.rs` still reads
+            let mut greens_dof: Vec<EquilibriumGreensPfPassiveDof> = Vec::with_capacity(n_dof);
+            for i_dof in 0..n_dof {
                 greens_dof.push(EquilibriumGreensPfPassiveDof {
-                    name: Some(dof_name),
-                    psi: Some(g_psi),
-                    br: Some(g_br),
-                    bz: Some(g_bz),
-                    d_br_d_z: Some(g_d_br_d_z),
-                    d_bz_d_z: Some(g_d_bz_d_z),
-                    d_psi_d_r: Some(g_d_psi_d_r),
-                    d_psi_d_z: Some(g_d_psi_d_z),
-                    d2_psi_d_r2: Some(g_d2_psi_d_r2),
-                    d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z),
-                    d2_psi_d_z2: Some(g_d2_psi_d_z2),
-                    d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z),
-                    d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2),
-                    d3_psi_d_z3: Some(g_d3_psi_d_z3),
+                    name: Some(dof_names[i_dof].clone()),
+                    psi: Some(g_psi_with_dof.column(i_dof).to_owned()),
+                    br: Some(g_br_with_dof.column(i_dof).to_owned()),
+                    bz: Some(g_bz_with_dof.column(i_dof).to_owned()),
+                    d_br_d_z: Some(g_d_br_d_z_with_dof.column(i_dof).to_owned()),
+                    d_bz_d_z: Some(g_d_bz_d_z_with_dof.column(i_dof).to_owned()),
+                    d_psi_d_r: Some(g_d_psi_d_r_with_dof.column(i_dof).to_owned()),
+                    d_psi_d_z: Some(g_d_psi_d_z_with_dof.column(i_dof).to_owned()),
+                    d2_psi_d_r2: Some(g_d2_psi_d_r2_with_dof.column(i_dof).to_owned()),
+                    d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z_with_dof.column(i_dof).to_owned()),
+                    d2_psi_d_z2: Some(g_d2_psi_d_z2_with_dof.column(i_dof).to_owned()),
+                    d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z_with_dof.column(i_dof).to_owned()),
+                    d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2_with_dof.column(i_dof).to_owned()),
+                    d3_psi_d_z3: Some(g_d3_psi_d_z3_with_dof.column(i_dof).to_owned()),
                 });
-
-                // Store
             }
 
             greens_pf_passive.push(EquilibriumGreensPfPassive {
@@ -707,4 +695,92 @@ impl Plasma {
     pub fn get_greens_passive_grid_d2_psi_d_r_d_z(&self) -> Array2<f64> {
         return self.greens_passive_grid(|dof| &dof.d2_psi_d_r_d_z);
     }
+}
+
+/// Apply every degree of freedom's current distribution to a Green's table, and sum over the passive
+/// filaments.
+///
+/// The straightforward way to write this is one pass per degree of freedom:
+/// ```ignore
+/// let with_dof: Array2<f64> = &greens_filaments * &current_distribution;  // a table-sized temporary
+/// let g: Array1<f64> = with_dof.sum_axis(Axis(1));
+/// ```
+/// which re-reads the whole `[n_grid, n_filament]` table once per degree of freedom, and allocates
+/// and streams a table-sized temporary each time. For ST40's inner vessel that is 15 degrees of
+/// freedom against a 56 MB table, for each of 13 tables.
+///
+/// This does all the degrees of freedom in a single pass over the table instead: one grid point's
+/// row is loaded, and every degree of freedom is applied to it while it is still in cache. Nothing
+/// table-sized is allocated.
+///
+/// The arithmetic is unchanged. The products are formed in the same order and handed to the same
+/// `ndarray` summation that `sum_axis` used, so the answer is identical bit for bit.
+///
+/// # Arguments
+/// * `greens_filaments` - Green's table between the grid and this passive's filaments, shape = [n_grid, n_filament]
+/// * `current_distributions` - one current distribution per degree of freedom, each of length `n_filament`, [dimensionless]
+///
+/// # Returns
+/// * `greens_with_dof` - shape = [n_grid, n_dof]
+fn apply_current_distributions(greens_filaments: &Array2<f64>, current_distributions: &[Array1<f64>]) -> Array2<f64> {
+    let n_grid: usize = greens_filaments.nrows();
+    let n_filament: usize = greens_filaments.ncols();
+    let n_dof: usize = current_distributions.len();
+
+    let mut greens_with_dof: Array2<f64> = Array2::from_elem((n_grid, n_dof), f64::NAN);
+    if n_dof == 0 || n_filament == 0 || n_grid == 0 {
+        return greens_with_dof;
+    }
+
+    // Both arrays are freshly allocated, and so are contiguous and row-major
+    let greens_filaments_flat: &[f64] = greens_filaments
+        .as_slice()
+        .expect("plasma.apply_current_distributions: `greens_filaments` must be contiguous");
+    let mut current_distributions_flat: Vec<&[f64]> = Vec::with_capacity(n_dof);
+    for i_dof in 0..n_dof {
+        current_distributions_flat.push(
+            current_distributions[i_dof]
+                .as_slice()
+                .expect("plasma.apply_current_distributions: `current_distribution` must be contiguous"),
+        );
+    }
+
+    // One rayon task per block of grid points, rather than per grid point, so that the work in a
+    // task is large compared with the cost of handing it to a worker thread
+    const N_GRID_PER_TASK: usize = 64;
+
+    {
+        let greens_with_dof_flat: &mut [f64] = greens_with_dof
+            .as_slice_mut()
+            .expect("plasma.apply_current_distributions: `greens_with_dof` must be contiguous");
+
+        greens_filaments_flat
+            .par_chunks(N_GRID_PER_TASK * n_filament)
+            .zip(greens_with_dof_flat.par_chunks_mut(N_GRID_PER_TASK * n_dof))
+            .for_each(|(greens_filaments_block, greens_with_dof_block): (&[f64], &mut [f64])| {
+                let n_grid_in_block: usize = greens_filaments_block.len() / n_filament;
+
+                // Scratch space for one grid point's row, re-used by every degree of freedom and
+                // every grid point in this block
+                let mut products: Array1<f64> = Array1::from_elem(n_filament, f64::NAN);
+
+                for i_grid_in_block in 0..n_grid_in_block {
+                    let greens_filaments_row: &[f64] =
+                        &greens_filaments_block[i_grid_in_block * n_filament..(i_grid_in_block + 1) * n_filament];
+
+                    for i_dof in 0..n_dof {
+                        let current_distribution: &[f64] = current_distributions_flat[i_dof];
+                        for i_filament in 0..n_filament {
+                            products[i_filament] = greens_filaments_row[i_filament] * current_distribution[i_filament];
+                        }
+
+                        // `Array1::sum()` on contiguous data is the same eight-accumulator reduction
+                        // that `sum_axis(Axis(1))` applied to each row, so this is bit-identical
+                        greens_with_dof_block[i_grid_in_block * n_dof + i_dof] = products.sum();
+                    }
+                }
+            });
+    }
+
+    return greens_with_dof;
 }
