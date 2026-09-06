@@ -1,12 +1,13 @@
 use super::epp_chi_sq_mag::epp_chi_sq_mag;
-use super::equilibrium_solve::GradShafranovInputs;
+use super::equilibrium_solve::{GradShafranovInputs, PsiAndDerivativesGreens};
+use super::initial_current_seed::quadratic_current_density_seed;
 use super::{GradShafranovSolve, output_flag};
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
 use crate::sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
 use crate::source_functions::SourceFunctionTraits;
-use crate::wall::Wall;
+use crate::wall::{Wall, limiter_points, vacuum_vessel_outline};
 use imas_rs::ids::wall::Wall as WallIds;
 use imas_rs::{Code, Equilibrium, EquilibriumGreens, EquilibriumTimeSlice};
 use log::info; // use log::{debug, error, info};
@@ -162,6 +163,58 @@ pub fn solve_grad_shafranov(
     // Geometry only, so the same tables serve every time-slice. Borrowed from a different field
     // of the IDS than `time_slice`, so the parallel solve can hold both at once
     let greens_tables: &EquilibriumGreens = &equilibrium_ids.greens;
+    // The same tables, reorganised into the matrix shapes the per-iteration GEMMs want. This
+    // depends only on the geometry, so it is built once here and shared by every time-slice;
+    // it used to be rebuilt inside each of the 480 parallel solves
+    let psi_and_derivatives_greens: PsiAndDerivativesGreens = PsiAndDerivativesGreens::new(greens_tables);
+
+    // The initial current-density guess. Every input to it is shared between time-slices - the
+    // grid, the wall, and `code/initial_guess` - so it is built once here. It used to be rebuilt
+    // inside each of the parallel solves, which put 7% of the whole run inside `geo`, testing a
+    // 4097-point ellipse against the vessel polygon once per slice.
+    // The `Result` is carried into the solve rather than unwrapped here, so that a bad initial
+    // guess still fails every time-slice with the reason it always did
+    let initial_j_2d: Result<Array2<f64>, String> = {
+        let grid_r: Array1<f64> = equilibrium_ids.time_slice[0].profiles_2d[0]
+            .grid
+            .dim1
+            .clone()
+            .expect("solve_grad_shafranov: `profiles_2d(0)/grid/dim1` unset");
+        let grid_z: Array1<f64> = equilibrium_ids.time_slice[0].profiles_2d[0]
+            .grid
+            .dim2
+            .clone()
+            .expect("solve_grad_shafranov: `profiles_2d(0)/grid/dim2` unset");
+        let d_area: f64 = equilibrium_ids.time_slice[0].profiles_2d[0]
+            .grid
+            .d_area
+            .expect("solve_grad_shafranov: `profiles_2d(0)/grid/d_area` unset");
+        let initial_guess_ip: f64 = equilibrium_ids.code.initial_guess.ip.unwrap();
+        let initial_guess_cur_r: f64 = equilibrium_ids.code.initial_guess.cur_r.unwrap();
+        let initial_guess_cur_z: f64 = equilibrium_ids.code.initial_guess.cur_z.unwrap();
+        let initial_guess_minor_radius: f64 = equilibrium_ids.code.initial_guess.minor_radius.unwrap();
+        let initial_guess_elongation: f64 = equilibrium_ids.code.initial_guess.elongation.unwrap();
+
+        // Limiter, from the `wall` IDS. `limiter_points` gathers every limiter unit,
+        // `vacuum_vessel_outline` is `unit(0)` alone
+        match (limiter_points(&wall_owned), vacuum_vessel_outline(&wall_owned)) {
+            (Ok((limiter_r, limiter_z)), Ok((vessel_r, vessel_z))) => quadratic_current_density_seed(
+                &grid_r,
+                &grid_z,
+                &limiter_r,
+                &limiter_z,
+                &vessel_r,
+                &vessel_z,
+                d_area,
+                initial_guess_ip,
+                initial_guess_cur_r,
+                initial_guess_cur_z,
+                initial_guess_minor_radius,
+                initial_guess_elongation,
+            ),
+            (Err(reason), _) | (_, Err(reason)) => Err(reason),
+        }
+    };
 
     // Solve the GS equation for all time-slices, in parallel
     let timing_start_ids: Instant = Instant::now();
@@ -175,6 +228,8 @@ pub fn solve_grad_shafranov(
             // and deliberately does not know what time-slice it is solving
             let grad_shafranov_inputs: GradShafranovInputs = GradShafranovInputs {
                 wall: &wall_owned,
+                psi_and_derivatives_greens: &psi_and_derivatives_greens,
+                initial_j_2d: &initial_j_2d,
                 coils_dynamic: &coils_dynamic[i_time],
                 bp_probes_static: &bp_probes_static[i_time],
                 bp_probes_dynamic: &bp_probes_dynamic[i_time],

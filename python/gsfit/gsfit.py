@@ -81,17 +81,27 @@ class Gsfit(DiagnosticAndSimulationBase):
         :param kwargs: Additional arguments to be passed to the database_reader. This is for FreeGS and FreeGNSKE
 
         This will perform the following steps:
-        1. Set the environment variables
-        2. Setup the timeslices to reconstruct
-        3. Read in all the machine settings and initalise the following Rust implementations:
+        1. Start creating the MDSplus nodes, in a separate process
+        2. Set the environment variables
+        3. Setup the timeslices to reconstruct
+        4. Read in all the machine settings and initalise the following Rust implementations:
             `coils`, `passives`, `plasma`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
-        4. Initialise the Greens functions
-        5. Solve the GS equation
-        6. Map the results to the MDSplus database structure and store in `self.results`
-        7. Write the results to MDSplus
+        5. Initialise the Greens functions
+        6. Solve the GS equation
+        7. Map the results to the MDSplus database structure and store in `self.results`
+        8. Wait for the MDSplus nodes, then write the results into them
         """
 
         self.logger.info(f"Running Gsfit, for pulseNo={self.pulseNo}")
+
+        # Creating the MDSplus nodes needs nothing but the settings, which have already been read,
+        # so start it now and let it run while we read the databases and solve the GS equation.
+        # The settings are the user's to change up to this point, so the values in force now are
+        # the ones the node creation is given; from here on they are fixed.
+        # `write_results_to_mdsplus` waits for it, and checks that it worked, before writing
+        if self.write_to_mds:
+            self.logger.info("Creating the MDSplus nodes in a separate process")
+            self.start_mds_node_creation(workflows=self.get_workflow_names())
 
         self.set_environment_variables()
 
@@ -119,7 +129,9 @@ class Gsfit(DiagnosticAndSimulationBase):
         Write the results to MDSplus:
         1. Results are collected from the Rust objects and stored in `self.results`,which is similar
            to a nested dictionary, and has a 1:1 mapping to the MDSplus database structure.
-        2. The results are then written to MDSplus.
+        2. We wait for the MDSplus nodes, which `run` started creating in a separate process, and
+           check that the creation did not fail. If `run` was not used, the nodes are created here.
+        3. The results are then written to MDSplus.
         """
 
         # Map the results to MDSplus.
@@ -131,12 +143,31 @@ class Gsfit(DiagnosticAndSimulationBase):
         # Do the writing to MDSplus
         self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
         if self.write_to_mds:
+            # The nodes must exist, and must have been created without error, before we write into them
+            self.wait_for_mds_node_creation(workflows=self.get_workflow_names())
+
             self.logger.info("Writing to MDSplus")
-            self._write_to_mds()
+            self._write_data_to_mds()
             if self.settings["GSFIT_code_settings.json"]["database_writer"]["method"] == "tokamak_energy_mdsplus_new":
                 from .database_writers.tokamak_energy_mdsplus_new.create_mdsplus_links import create_mdsplus_links
 
                 create_mdsplus_links(pulseNo_write=self.pulseNo_write, run_name=self.run_name)
+
+    def get_workflow_names(self) -> list[str]:
+        """
+        The names of the input codes which will be stored under `INPUT.WORKFLOW`,
+        for example `["elmag", "mag", "psu2coil"]`.
+
+        Which codes these are depends on the `database_reader`, and whether they are stored at all
+        depends on the `database_writer`, so the selected `database_writer` is asked. The answer
+        comes from the settings alone, which means the `INPUT.WORKFLOW` MDSplus nodes can be
+        created before GSFit has read any data.
+        """
+
+        database_writer_method = self.settings["GSFIT_code_settings.json"]["database_writer"]["method"]
+        database_writer = get_database_writer(database_writer_method)
+
+        return database_writer.get_workflow_names(self)
 
     def setup_timeslices(self) -> None:
         """
@@ -175,7 +206,9 @@ class Gsfit(DiagnosticAndSimulationBase):
         """
 
         # Set the number of cores (for Rayon, Rust's parallelisation library)
-        os.environ["RAYON_NUM_THREADS"] = str(self.settings["GSFIT_code_settings.json"]["RAYON_NUM_THREADS"])
+        n_rayon_threads: int = self.settings["GSFIT_code_settings.json"]["RAYON_NUM_THREADS"]
+        os.environ["RAYON_NUM_THREADS"] = str(n_rayon_threads)
+        self.logger.info(msg=f"RAYON_NUM_THREADS = {n_rayon_threads}")
 
     def inverse_solver_rust(self) -> None:
         """

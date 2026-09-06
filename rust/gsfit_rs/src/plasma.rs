@@ -765,8 +765,7 @@ fn apply_current_distributions(greens_filaments: &Array2<f64>, current_distribut
                 let mut products: Array1<f64> = Array1::from_elem(n_filament, f64::NAN);
 
                 for i_grid_in_block in 0..n_grid_in_block {
-                    let greens_filaments_row: &[f64] =
-                        &greens_filaments_block[i_grid_in_block * n_filament..(i_grid_in_block + 1) * n_filament];
+                    let greens_filaments_row: &[f64] = &greens_filaments_block[i_grid_in_block * n_filament..(i_grid_in_block + 1) * n_filament];
 
                     for i_dof in 0..n_dof {
                         let current_distribution: &[f64] = current_distributions_flat[i_dof];

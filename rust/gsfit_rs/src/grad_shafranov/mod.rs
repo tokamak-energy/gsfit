@@ -2,6 +2,7 @@
 mod epp_chi_sq_mag;
 mod equilibrium_solve;
 mod grad_shafranov_solver;
+mod initial_current_seed;
 
 // Expose functions to public
 pub use equilibrium_solve::{GradShafranovInputs, GradShafranovSolve, output_flag};
