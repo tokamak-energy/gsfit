@@ -15,7 +15,7 @@ edition = "2024"
 # Workspace-wide profile settings (note, this overwrites the "member packages")
 [profile.release]
 debug = false
-overflow-checks = true
+overflow-checks = false
 opt-level = 3  # Highest optimization level
 lto = true  # Link Time Optimization
 codegen-units = 1  # Fewer units can lead to better optimization

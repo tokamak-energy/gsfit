@@ -12,6 +12,7 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 use numpy::borrow::PyReadonlyArray1;
+use std::sync::Arc;
 
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass(module = "gsfit_rs")]
@@ -141,7 +142,7 @@ impl HallProbes {
     /// This splits the HallProbes into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         // Vector of boolean's to say if we use the sensor or not
         let include: Vec<bool> = self.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
 
@@ -271,7 +272,7 @@ impl HallProbes {
 
         // Return the static and dynamic results
         // nonlinear least squares algorithm (e.g., Levenberg-Marquardt, Gauss-Newton, or similar iterative methods) to minimize the sum of squared residuals for all sensors
-        let results_static_2d: Vec<SensorsStatic> = vec![results_static];
+        let results_static_2d: Vec<Arc<SensorsStatic>> = vec![Arc::new(results_static)];
         
         // Return the static and dynamic results
         (results_static_2d, results_dynamic)

@@ -15,6 +15,7 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
@@ -281,8 +282,8 @@ impl BpProbes {
     /// This splits the BpProbes into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    /// TODO: change `SensorsStatic` to Vec<SensorsStatic> to be consistent with other sensor types.
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    /// TODO: change `SensorsStatic` to Vec<Arc<SensorsStatic>> to be consistent with other sensor types.
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
 
         // Vector of boolean's to say if we use the sensor or not
@@ -306,7 +307,7 @@ impl BpProbes {
         // If there are no sensors selected, return empty data
         if n_sensors == 0 {
             let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
-            let static_data_empty_vs_time: Vec<SensorsStatic> = vec![static_data_empty; n_time];
+            let static_data_empty_vs_time: Vec<Arc<SensorsStatic>> = vec![Arc::new(static_data_empty); n_time];
             let dynamic_data_empty_vs_time: Vec<SensorsDynamic> = vec![dynamic_data_empty; n_time];
             return (static_data_empty_vs_time, dynamic_data_empty_vs_time);
         }
@@ -426,7 +427,9 @@ impl BpProbes {
             results_dynamic.push(results_dynamic_this_time_slice);
         }
 
-        let results_static_time_dependent: Vec<SensorsStatic> = vec![results_static.clone(); n_time];
+        // These Green's tables are fixed geometry, so every time-slice gets an `Arc` handle
+        // to the same copy rather than 480 identical copies of it
+        let results_static_time_dependent: Vec<Arc<SensorsStatic>> = vec![Arc::new(results_static); n_time];
 
         // Return the static and dynamic results
         (results_static_time_dependent, results_dynamic)
@@ -627,15 +630,7 @@ impl BpProbes {
             // Store
             self.results.get_or_insert(&sensor_name).get_or_insert("greens").insert("plasma", g_with_plasma); // shape = [(n_z * n_r)]
 
-            let greens_calculator: Greens = Greens::sensor_to_conductor(
-                array![sensor_r],
-                array![sensor_z],
-                plasma_r.clone(),
-                plasma_z.clone(),
-                plasma_r.clone() * 0.0, // TODO: should be d_r not 0.0
-                plasma_z.clone() * 0.0,
-            );
-
+            // Same `greens_calculator` as above: the sensor and the grid have not changed
             let g_d_b_r_d_z_matrix: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape() = (1, n_z*n_r)
             let g_d_b_z_d_z_matrix: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape() = (1, n_z*n_r)
 

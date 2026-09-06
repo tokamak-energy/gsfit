@@ -453,7 +453,6 @@ impl Plasma {
                     .get("current_distribution")
                     .unwrap_array1();
 
-
                 // Apply the current_distribution
                 let g_psi_filaments_with_dof: Array2<f64> = &g_psi_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
                 let g_br_filaments_with_dof: Array2<f64> = &g_br_filaments * &current_distribution; // shape = [n_r * n_z]

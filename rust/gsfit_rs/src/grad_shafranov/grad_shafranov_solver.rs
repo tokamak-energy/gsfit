@@ -56,20 +56,22 @@ pub fn solve_grad_shafranov(
     // TF rod current interpolated to `times_to_reconstruct`; used as f_vac = MU_0 * i_rod / (2 * PI)
     // in the diamagnetic-loop constraint
     let i_rod_vs_time: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").get("value").unwrap_array1();
-    let (bp_probes_static, bp_probes_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+    let (bp_probes_static, bp_probes_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
         bp_probes.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (flux_loops_static, flux_loops_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+    let (flux_loops_static, flux_loops_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
         flux_loops.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (rogowski_coils_static, rogowski_coils_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+    let (rogowski_coils_static, rogowski_coils_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
         rogowski_coils.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (isoflux_statics, isoflux_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = isoflux.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (isoflux_boundary_statics, isoflux_boundary_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+    let (isoflux_statics, isoflux_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
+        isoflux.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (isoflux_boundary_statics, isoflux_boundary_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
         isoflux_boundary.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (pressure_statics, pressure_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+    let (pressure_statics, pressure_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
         pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (stationary_point_statics, stationary_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+    let (stationary_point_statics, stationary_point_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
         stationary_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (dialoop_statics, dialoop_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (dialoop_statics, dialoop_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
+        dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
     // TODO: might be better to combine all sensors here, before passing to the solver
 
@@ -219,13 +221,7 @@ pub fn solve_grad_shafranov(
     info!("GSFit time elapsed: {:?}", duration_ids);
 
     // Post-process
-    plasma.equilibrium_post_processor_new(
-        &mut equilibrium_ids,
-        &coils,
-        &wall_owned,
-        &p_prime_source_function,
-        &ff_prime_source_function,
-    );
+    plasma.equilibrium_post_processor_new(&mut equilibrium_ids, &coils, &wall_owned, &p_prime_source_function, &ff_prime_source_function);
     passives.equilibrium_post_processor(&equilibrium_ids);
 
     // Give the IDS back to `plasma`

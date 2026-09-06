@@ -17,6 +17,7 @@ use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use std::f64::consts::PI;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
@@ -272,7 +273,7 @@ impl Pressure {
     /// This splits the Pressure into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         // Number of time-slices to reconstruct
         let n_time: usize = times_to_reconstruct.len();
 
@@ -315,7 +316,7 @@ impl Pressure {
         }
 
         // Create the time-dependent data structures
-        let mut results_static: Vec<SensorsStatic> = Vec::with_capacity(n_time);
+        let mut results_static: Vec<Arc<SensorsStatic>> = Vec::with_capacity(n_time);
         let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);
 
         'time_loop: for i_time in 0..n_time {
@@ -336,7 +337,7 @@ impl Pressure {
             // If there are no sensors at this time-slice then push empty and continue
             if include_indices.is_empty() {
                 let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
-                results_static.push(static_data_empty);
+                results_static.push(Arc::new(static_data_empty));
                 results_dynamic.push(dynamic_data_empty);
                 continue 'time_loop; // Go to next time-slice
             }
@@ -414,7 +415,7 @@ impl Pressure {
                 geometry_r,
                 geometry_z,
             };
-            results_static.push(results_static_this_time_slice);
+            results_static.push(Arc::new(results_static_this_time_slice));
 
             // Select time-slice and the sensors we use in reconstruction
             let measured_this_time_slice_and_sensors: Array1<f64> = measured.slice(s![.., i_time]).select(Axis(0), &include_indices).to_owned();
