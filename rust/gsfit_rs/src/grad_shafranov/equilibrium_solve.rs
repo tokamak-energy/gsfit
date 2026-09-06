@@ -851,38 +851,38 @@ impl<'a> EquilibriumSolver<'a> {
             + n_delta_z_regularisation;
 
         // Magnetic sensor's Greens tables
-        let greens_bp_probes_grid: Array2<f64> = bp_probes_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_bp_probes_dz: Array2<f64> = bp_probes_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_bp_probes_pf: Array2<f64> = bp_probes_static.greens_with_pf.to_owned(); // shape = [n_pf, n_sensors]
-        let greens_bp_probes_passives: Array2<f64> = bp_probes_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_bp_probes_grid: &Array2<f64> = &bp_probes_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_bp_probes_dz: &Array2<f64> = &bp_probes_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_bp_probes_pf: &Array2<f64> = &bp_probes_static.greens_with_pf; // shape = [n_pf, n_sensors]
+        let greens_bp_probes_passives: &Array2<f64> = &bp_probes_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        let greens_flux_loops_grid: Array2<f64> = flux_loops_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_flux_loops_dz: Array2<f64> = flux_loops_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_flux_loops_pf: Array2<f64> = flux_loops_static.greens_with_pf.to_owned(); // shape = [n_pf, n_sensors]
-        let greens_flux_loops_passives: Array2<f64> = flux_loops_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_flux_loops_grid: &Array2<f64> = &flux_loops_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_flux_loops_dz: &Array2<f64> = &flux_loops_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_flux_loops_pf: &Array2<f64> = &flux_loops_static.greens_with_pf; // shape = [n_pf, n_sensors]
+        let greens_flux_loops_passives: &Array2<f64> = &flux_loops_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        let greens_rogowski_coils_grid: Array2<f64> = rogowski_coils_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_rogowski_coils_dz: Array2<f64> = rogowski_coils_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_rogowski_coils_pf: Array2<f64> = rogowski_coils_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_rogowski_coils_passives: Array2<f64> = rogowski_coils_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_rogowski_coils_grid: &Array2<f64> = &rogowski_coils_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_rogowski_coils_dz: &Array2<f64> = &rogowski_coils_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_rogowski_coils_pf: &Array2<f64> = &rogowski_coils_static.greens_with_pf; // shape = [n_z*n_r, n_sensors]
+        let greens_rogowski_coils_passives: &Array2<f64> = &rogowski_coils_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        let greens_isoflux_grid: Array2<f64> = isoflux_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_isoflux_dz: Array2<f64> = isoflux_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_isoflux_pf: Array2<f64> = isoflux_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_isoflux_passives: Array2<f64> = isoflux_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_isoflux_grid: &Array2<f64> = &isoflux_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_isoflux_dz: &Array2<f64> = &isoflux_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_isoflux_pf: &Array2<f64> = &isoflux_static.greens_with_pf; // shape = [n_z*n_r, n_sensors]
+        let greens_isoflux_passives: &Array2<f64> = &isoflux_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        let greens_isoflux_boundary_grid: Array2<f64> = isoflux_boundary_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_isoflux_boundary_dz: Array2<f64> = isoflux_boundary_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_isoflux_boundary_pf: Array2<f64> = isoflux_boundary_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_isoflux_boundary_passives: Array2<f64> = isoflux_boundary_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_isoflux_boundary_grid: &Array2<f64> = &isoflux_boundary_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_isoflux_boundary_dz: &Array2<f64> = &isoflux_boundary_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_isoflux_boundary_pf: &Array2<f64> = &isoflux_boundary_static.greens_with_pf; // shape = [n_z*n_r, n_sensors]
+        let greens_isoflux_boundary_passives: &Array2<f64> = &isoflux_boundary_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        let greens_magnetic_axis_grid: Array2<f64> = magnetic_axis_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_magnetic_axis_dz: Array2<f64> = magnetic_axis_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_magnetic_axis_pf: Array2<f64> = magnetic_axis_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_magnetic_axis_passives: Array2<f64> = magnetic_axis_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_magnetic_axis_grid: &Array2<f64> = &magnetic_axis_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_magnetic_axis_dz: &Array2<f64> = &magnetic_axis_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_magnetic_axis_pf: &Array2<f64> = &magnetic_axis_static.greens_with_pf; // shape = [n_z*n_r, n_sensors]
+        let greens_magnetic_axis_passives: &Array2<f64> = &magnetic_axis_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
         // pf_coil_currents
-        let pf_coil_currents: Array1<f64> = coils_dynamic.measured.to_owned();
+        let pf_coil_currents: &Array1<f64> = &coils_dynamic.measured;
 
         // TODO: IDEA- change the normalisation so that it does represent current. But this won't work for the IVC eigenvalues
         self.passive_dof_values = Array1::zeros(n_passive_dof);
@@ -1133,7 +1133,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_bp_probes_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
+                let tmp: Array1<f64> = greens_bp_probes_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -1185,7 +1185,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_flux_loops_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
+                let tmp: Array1<f64> = greens_flux_loops_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -1282,7 +1282,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_rogowski_coils_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
+                let tmp: Array1<f64> = greens_rogowski_coils_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -1335,7 +1335,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_isoflux_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
+                let tmp: Array1<f64> = greens_isoflux_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -1388,7 +1388,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_isoflux_boundary_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
+                let tmp: Array1<f64> = greens_isoflux_boundary_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -1527,7 +1527,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_magnetic_axis_pf.slice(s![.., i_sensor]).to_owned() * &pf_coil_currents;
+                let tmp: Array1<f64> = greens_magnetic_axis_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -1623,7 +1623,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
             }
 
-            let a_preconditioned: Array2<f64> = a.clone().dot(&d);
+            let a_preconditioned: Array2<f64> = a.dot(&d);
 
             // SVD-based least squares solve using faer (equivalent to LAPACK dgelss)
             let (m_usize, n_usize) = a_preconditioned.dim();
@@ -1914,14 +1914,14 @@ impl<'a> EquilibriumSolver<'a> {
         let ff_prime_dof_values: Array1<f64> = self.time_slice.source_functions.ff_prime.coefficients.clone().unwrap();
 
         let p_prime_2d: Array2<f64> = p_prime_source_function
-            .source_function_value(&psi_norm_flat, &p_prime_dof_values.clone())
+            .source_function_value(&psi_norm_flat, &p_prime_dof_values)
             .to_shape((n_z, n_r))
             .unwrap()
             .to_owned();
         let j_2d_p_prime: Array2<f64> = 2.0 * PI * mesh_r * p_prime_2d * &mask;
 
         let ff_prime_2d: Array2<f64> = ff_prime_source_function
-            .source_function_value(&psi_norm_flat, &ff_prime_dof_values.clone())
+            .source_function_value(&psi_norm_flat, &ff_prime_dof_values)
             .to_shape((n_z, n_r))
             .unwrap()
             .to_owned();

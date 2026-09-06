@@ -192,19 +192,19 @@ impl Plasma {
         // `time_slice`. Cloned because the same tables also go into the DataTree below, which
         // `gs_solution.rs` still reads
         let greens_grid_grid: EquilibriumGreensGridGrid = EquilibriumGreensGridGrid {
-            psi: Some(g_psi.clone()),
-            br: Some(g_br.clone()),
-            bz: Some(g_bz.clone()),
-            d_br_d_z: Some(g_d_br_d_z.clone()),
-            d_bz_d_z: Some(g_d_bz_d_z.clone()),
-            d_psi_d_r: Some(g_d_psi_d_r.clone()),
-            d_psi_d_z: Some(g_d_psi_d_z.clone()),
-            d2_psi_d_r2: Some(g_d2_psi_d_r2.clone()),
-            d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z.clone()),
-            d2_psi_d_z2: Some(g_d2_psi_d_z2.clone()),
-            d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z.clone()),
-            d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2.clone()),
-            d3_psi_d_z3: Some(g_d3_psi_d_z3.clone()),
+            psi: Some(g_psi),
+            br: Some(g_br),
+            bz: Some(g_bz),
+            d_br_d_z: Some(g_d_br_d_z),
+            d_bz_d_z: Some(g_d_bz_d_z),
+            d_psi_d_r: Some(g_d_psi_d_r),
+            d_psi_d_z: Some(g_d_psi_d_z),
+            d2_psi_d_r2: Some(g_d2_psi_d_r2),
+            d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z),
+            d2_psi_d_z2: Some(g_d2_psi_d_z2),
+            d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z),
+            d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2),
+            d3_psi_d_z3: Some(g_d3_psi_d_z3),
         };
 
         // The equilibrium IDS. `initialise_equilibrium_ids` fills in the time-slices below; what is
@@ -362,18 +362,18 @@ impl Plasma {
             // Store in the equilibrium IDS
             greens_pf_active.push(EquilibriumGreensPfActive {
                 name: Some(coil_name.clone()),
-                psi: Some(g_psi.clone()),
-                br: Some(g_br.clone()),
-                bz: Some(g_bz.clone()),
-                d_br_d_z: Some(g_d_br_d_z.clone()),
-                d_bz_d_z: Some(g_d_bz_d_z.clone()),
-                d_psi_d_r: Some(g_d_psi_d_r.clone()),
-                d_psi_d_z: Some(g_d_psi_d_z.clone()),
-                d2_psi_d_r2: Some(g_d2_psi_d_r2.clone()),
-                d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z.clone()),
-                d2_psi_d_z2: Some(g_d2_psi_d_z2.clone()),
-                d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z.clone()),
-                d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2.clone()),
+                psi: Some(g_psi),
+                br: Some(g_br),
+                bz: Some(g_bz),
+                d_br_d_z: Some(g_d_br_d_z),
+                d_bz_d_z: Some(g_d_bz_d_z),
+                d_psi_d_r: Some(g_d_psi_d_r),
+                d_psi_d_z: Some(g_d_psi_d_z),
+                d2_psi_d_r2: Some(g_d2_psi_d_r2),
+                d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z),
+                d2_psi_d_z2: Some(g_d2_psi_d_z2),
+                d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z),
+                d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2),
                 d3_psi_d_z3: Some(g_d3_psi_d_z3),
             });
         }
@@ -415,6 +415,32 @@ impl Plasma {
             let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
             let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
+            // Green's tables. These depend only on the grid and this passive's filament geometry,
+            // so they are built once per passive; the degree of freedom is applied to them below
+            let greens_calculator: Greens = Greens::sensor_to_conductor(
+                flat_r.clone(),
+                flat_z.clone(),
+                passive_r.clone(),
+                passive_z.clone(),
+                passive_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+                passive_z.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+            );
+
+            // Green's functions for `psi`, `b_r`, `b_z`, and derivatives
+            let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_r * n_z, n_filament]
+            let g_br_filaments: Array2<f64> = greens_calculator.b_r(); // shape = [n_r * n_z, n_filament]
+            let g_bz_filaments: Array2<f64> = greens_calculator.b_z(); // shape = [n_r * n_z, n_filament]
+            let d_g_br_filaments_d_z: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [n_r * n_z, n_filament]
+            let d_g_bz_filaments_d_z: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d_psi_d_r_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_r(); // shape = [n_r * n_z, n_filament]
+            let g_d_psi_d_z_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d2_psi_d_r2_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = [n_r * n_z, n_filament]
+            let g_d2_psi_d_r_d_z_filaments: Array2<f64> = greens_calculator.d2_psi_d_r_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d2_psi_d_z2_filaments: Array2<f64> = greens_calculator.d2_psi_d_z2(); // shape = [n_r * n_z, n_filament]
+            let g_d3_psi_d_r2_d_z_filaments: Array2<f64> = greens_calculator.d3_psi_d_r2_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d3_psi_d_r_d_z2_filaments: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2(); // shape = [n_r * n_z, n_filament]
+            let g_d3_psi_d_z3_filaments: Array2<f64> = greens_calculator.d3_psi_d_z3(); // shape = [n_r * n_z, n_filament]
+
             let mut greens_dof: Vec<EquilibriumGreensPfPassiveDof> = Vec::with_capacity(dof_names.len());
 
             for dof_name in dof_names {
@@ -427,45 +453,21 @@ impl Plasma {
                     .get("current_distribution")
                     .unwrap_array1();
 
-                // Green's table
-                let greens_calculator: Greens = Greens::sensor_to_conductor(
-                    flat_r.clone(),
-                    flat_z.clone(),
-                    passive_r.clone(),
-                    passive_z.clone(),
-                    passive_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
-                    passive_z.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
-                );
-
-                // Green's functions for `psi`, `b_r`, `b_z`, and derivatives
-                let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_r * n_z, n_filament]
-                let g_br_filaments: Array2<f64> = greens_calculator.b_r(); // shape = [n_r * n_z, n_filament]
-                let g_bz_filaments: Array2<f64> = greens_calculator.b_z(); // shape = [n_r * n_z, n_filament]
-                let d_g_br_filaments_d_z: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [n_r * n_z, n_filament]
-                let d_g_bz_filaments_d_z: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d_psi_d_r_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_r(); // shape = [n_r * n_z, n_filament]
-                let g_d_psi_d_z_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d2_psi_d_r2_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = [n_r * n_z, n_filament]
-                let g_d2_psi_d_r_d_z_filaments: Array2<f64> = greens_calculator.d2_psi_d_r_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d2_psi_d_z2_filaments: Array2<f64> = greens_calculator.d2_psi_d_z2(); // shape = [n_r * n_z, n_filament]
-                let g_d3_psi_d_r2_d_z_filaments: Array2<f64> = greens_calculator.d3_psi_d_r2_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d3_psi_d_r_d_z2_filaments: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2(); // shape = [n_r * n_z, n_filament]
-                let g_d3_psi_d_z3_filaments: Array2<f64> = greens_calculator.d3_psi_d_z3(); // shape = [n_r * n_z, n_filament]
 
                 // Apply the current_distribution
-                let g_psi_filaments_with_dof: Array2<f64> = g_psi_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
+                let g_psi_filaments_with_dof: Array2<f64> = &g_psi_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
                 let g_br_filaments_with_dof: Array2<f64> = &g_br_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_bz_filaments_with_dof: Array2<f64> = g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
-                let d_g_br_filaments_with_dof_d_z: Array2<f64> = d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
-                let d_g_bz_filaments_with_dof_d_z: Array2<f64> = d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
-                let g_d_psi_d_r_coil_filaments_with_dof: Array2<f64> = g_d_psi_d_r_coil_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d_psi_d_z_coil_filaments_with_dof: Array2<f64> = g_d_psi_d_z_coil_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_r2_filaments_with_dof: Array2<f64> = g_d2_psi_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_r_d_z_filaments_with_dof: Array2<f64> = g_d2_psi_d_r_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_z2_filaments_with_dof: Array2<f64> = g_d2_psi_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_r2_d_z_filaments_with_dof: Array2<f64> = g_d3_psi_d_r2_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_r_d_z2_filaments_with_dof: Array2<f64> = g_d3_psi_d_r_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_z3_filaments_with_dof: Array2<f64> = g_d3_psi_d_z3_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_bz_filaments_with_dof: Array2<f64> = &g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
+                let d_g_br_filaments_with_dof_d_z: Array2<f64> = &d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
+                let d_g_bz_filaments_with_dof_d_z: Array2<f64> = &d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
+                let g_d_psi_d_r_coil_filaments_with_dof: Array2<f64> = &g_d_psi_d_r_coil_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d_psi_d_z_coil_filaments_with_dof: Array2<f64> = &g_d_psi_d_z_coil_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_r2_filaments_with_dof: Array2<f64> = &g_d2_psi_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_r_d_z_filaments_with_dof: Array2<f64> = &g_d2_psi_d_r_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_z2_filaments_with_dof: Array2<f64> = &g_d2_psi_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_r2_d_z_filaments_with_dof: Array2<f64> = &g_d3_psi_d_r2_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_r_d_z2_filaments_with_dof: Array2<f64> = &g_d3_psi_d_r_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_z3_filaments_with_dof: Array2<f64> = &g_d3_psi_d_z3_filaments * &current_distribution; // shape = [n_r * n_z]
 
                 // Sum over all filaments
                 let g_psi: Array1<f64> = g_psi_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
@@ -485,27 +487,27 @@ impl Plasma {
                 // Store in the equilibrium IDS. Cloned because the same tables also go into the
                 // DataTree below, which `gs_solution.rs` still reads
                 greens_dof.push(EquilibriumGreensPfPassiveDof {
-                    name: Some(dof_name.clone()),
-                    psi: Some(g_psi.clone()),
-                    br: Some(g_br.clone()),
-                    bz: Some(g_bz.clone()),
-                    d_br_d_z: Some(g_d_br_d_z.clone()),
-                    d_bz_d_z: Some(g_d_bz_d_z.clone()),
-                    d_psi_d_r: Some(g_d_psi_d_r.clone()),
-                    d_psi_d_z: Some(g_d_psi_d_z.clone()),
-                    d2_psi_d_r2: Some(g_d2_psi_d_r2.clone()),
-                    d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z.clone()),
-                    d2_psi_d_z2: Some(g_d2_psi_d_z2.clone()),
-                    d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z.clone()),
-                    d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2.clone()),
-                    d3_psi_d_z3: Some(g_d3_psi_d_z3.clone()),
+                    name: Some(dof_name),
+                    psi: Some(g_psi),
+                    br: Some(g_br),
+                    bz: Some(g_bz),
+                    d_br_d_z: Some(g_d_br_d_z),
+                    d_bz_d_z: Some(g_d_bz_d_z),
+                    d_psi_d_r: Some(g_d_psi_d_r),
+                    d_psi_d_z: Some(g_d_psi_d_z),
+                    d2_psi_d_r2: Some(g_d2_psi_d_r2),
+                    d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z),
+                    d2_psi_d_z2: Some(g_d2_psi_d_z2),
+                    d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z),
+                    d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2),
+                    d3_psi_d_z3: Some(g_d3_psi_d_z3),
                 });
 
                 // Store
             }
 
             greens_pf_passive.push(EquilibriumGreensPfPassive {
-                name: Some(passive_name.clone()),
+                name: Some(passive_name),
                 dof: greens_dof,
             });
         }

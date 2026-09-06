@@ -51,9 +51,6 @@ pub fn solve_grad_shafranov(
         return;
     }
 
-    // Import rust implementation
-    // let plasma_owned: Plasma = plasma.clone(); // .clone() is a bit expensive
-
     // Get static and dynamic data
     let coils_dynamic: Vec<SensorsDynamic> = coils.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     // TF rod current interpolated to `times_to_reconstruct`; used as f_vac = MU_0 * i_rod / (2 * PI)
@@ -76,13 +73,6 @@ pub fn solve_grad_shafranov(
 
     // TODO: might be better to combine all sensors here, before passing to the solver
 
-    // Create the Equilibrium IDS with the pre-allocated time slices; data is Null initially.
-    // `plasma` owns it, but it is taken out for the duration of the solve: the solver needs
-    // `&Plasma` for the grid at the same time as `&mut EquilibriumTimeSlice`, and `&Plasma`
-    // borrows the whole struct, so the two would overlap. It is put back below.
-    //
-    // Taken *before* `plasma` is cloned below, so that the clone does not duplicate the Greens
-    // tables, which are by far the largest thing on the IDS
     // The IDS was allocated by `Plasma::new`, so the time-slices already exist. Check that they are
     // the times we have been asked to solve at, rather than silently solving a different grid
     let ids_times: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.unwrap();
@@ -90,10 +80,13 @@ pub fn solve_grad_shafranov(
         ids_times, times_to_reconstruct_ndarray,
         "the equilibrium IDS was built for different times than `solve_inverse_problem` was asked to solve"
     );
+    // Move the IDS out of `plasma` for the solve, and put it back at the end.
+    // `plasma` is a `PyRefMut`, so every field access borrows the whole of it. Leaving the IDS
+    // inside would therefore mean borrowing `plasma` twice at once, which does not compile:
+    //   * the parallel solve holds `&code` and `&greens` while mutating `time_slice`
+    //   * `equilibrium_post_processor_new` needs `&mut plasma` and `&mut` the IDS together
     let mut equilibrium_ids: Equilibrium = std::mem::take(&mut plasma.equilibrium_ids);
 
-    // Create a local copy
-    let coils_owned: Coils = coils.to_owned();
     // Copied out of the `PyRef`, because the per-time-slice solves run on Rayon's threads and
     // a `PyRef` is neither `Send` nor `Sync`
     let wall_owned: WallIds = wall.wall_ids.clone();
@@ -228,33 +221,28 @@ pub fn solve_grad_shafranov(
     // Post-process
     plasma.equilibrium_post_processor_new(
         &mut equilibrium_ids,
-        &coils_owned,
+        &coils,
         &wall_owned,
         &p_prime_source_function,
         &ff_prime_source_function,
     );
     passives.equilibrium_post_processor(&equilibrium_ids);
 
-    // Hand the solved IDS back to `plasma`, which owns it. Done after the post-processing, so that
-    // `equilibrium_post_processor_new` can borrow the IDS while `plasma` is borrowed mutably
+    // Give the IDS back to `plasma`
     plasma.equilibrium_ids = equilibrium_ids;
 
     // Get error codes for failed time-slices
 
-    // Get owned versions for calculating sensor values
-    let coils_owned: Coils = coils.to_owned();
-    let passives_owned: Passives = passives.to_owned();
-    let plasma_owned: Plasma = plasma.to_owned();
-
-    // Calculate sensor values
-    bp_probes.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
-    flux_loops.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
-    rogowski_coils.calculate_sensor_values_rs(&coils_owned, &passives_owned, &plasma_owned);
+    // Calculate sensor values. Borrowed rather than cloned: each of these is a separate
+    // `PyRefMut`, so borrowing them here does not clash with the `&mut` on the sensor being written
+    bp_probes.calculate_sensor_values_rs(&coils, &passives, &plasma);
+    flux_loops.calculate_sensor_values_rs(&coils, &passives, &plasma);
+    rogowski_coils.calculate_sensor_values_rs(&coils, &passives, &plasma);
     if pressure_sensors.results.data.len() > 0 {
-        pressure_sensors.calculate_sensor_values_rust(&plasma_owned);
+        pressure_sensors.calculate_sensor_values_rust(&plasma);
     }
     // The diamagnetic loop depends only on the toroidal flux function `f` (no Green's functions)
-    dialoop.calculate_sensor_values_rs(&plasma_owned);
+    dialoop.calculate_sensor_values_rs(&plasma);
 
     // Calculate chi_sq_mag for each time slice
     let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, &dialoop, n_time);

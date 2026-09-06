@@ -116,7 +116,7 @@ impl BpProbes {
         let coils_local: &Coils = &coils;
 
         // Run the Rust method
-        self.greens_with_coils_rs(coils_local.to_owned());
+        self.greens_with_coils_rs(coils_local);
     }
 
     /// Greens with passives
@@ -125,7 +125,7 @@ impl BpProbes {
         let passives_local: &Passives = &passives;
 
         // Run the Rust method
-        self.greens_with_passives_rs(passives_local.to_owned());
+        self.greens_with_passives_rs(passives_local);
     }
 
     /// Greens with plasma
@@ -134,7 +134,7 @@ impl BpProbes {
         let plasma_local: &Plasma = &plasma;
 
         // Run the Rust method
-        self.greens_with_plasma_rs(plasma_local.to_owned());
+        self.greens_with_plasma_rs(plasma_local);
     }
 
     /// Calculate sensor values
@@ -551,7 +551,7 @@ impl BpProbes {
             .insert("value", measured);
     }
 
-    pub fn greens_with_coils_rs(&mut self, coils: Coils) {
+    pub fn greens_with_coils_rs(&mut self, coils: &Coils) {
         for sensor_name in self.results.keys() {
             let sensor_angle_pol: f64 = self.results.get(&sensor_name).get("geometry").get("angle_pol").unwrap_f64();
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
@@ -590,7 +590,7 @@ impl BpProbes {
         }
     }
 
-    pub fn greens_with_plasma_rs(&mut self, plasma: Plasma) {
+    pub fn greens_with_plasma_rs(&mut self, plasma: &Plasma) {
         // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
         // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the
         // (R, Z) mesh, so iterating them row-major gives the flattened grid the Green's tables are
@@ -655,7 +655,7 @@ impl BpProbes {
         }
     }
 
-    pub fn greens_with_passives_rs(&mut self, passives: Passives) {
+    pub fn greens_with_passives_rs(&mut self, passives: &Passives) {
         // Loop over sensors
         for sensor_name in self.results.keys() {
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();

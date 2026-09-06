@@ -237,8 +237,8 @@ impl RogowskiCoils {
                         self.construct_virtual_bp_probes(&sensor_name, &gap_name);
 
                     // Calculate Greens betwen the virtual bp-probes and the coils
-                    virtual_b_r_probes.greens_with_coils_rs(coils.clone());
-                    virtual_b_z_probes.greens_with_coils_rs(coils.clone());
+                    virtual_b_r_probes.greens_with_coils_rs(&coils);
+                    virtual_b_z_probes.greens_with_coils_rs(&coils);
 
                     let g_gaps_b_r: Array1<f64> = virtual_b_r_probes.results.get("*").get("greens").get("pf").get(&pf_coil_name).unwrap_array1(); // shape = [n_virtual_bp_probes]
                     let g_gaps_b_z: Array1<f64> = virtual_b_z_probes.results.get("*").get("greens").get("pf").get(&pf_coil_name).unwrap_array1();
@@ -334,8 +334,8 @@ impl RogowskiCoils {
                             self.construct_virtual_bp_probes(&sensor_name, gap_name);
 
                         // Calculate Greens betwen the virtual bp-probes and the coils
-                        virtual_b_r_probes.greens_with_passives_rs(passives_local.clone());
-                        virtual_b_z_probes.greens_with_passives_rs(passives_local.clone());
+                        virtual_b_r_probes.greens_with_passives_rs(passives_local);
+                        virtual_b_z_probes.greens_with_passives_rs(passives_local);
 
                         let g_gaps_b_r: Array1<f64> = virtual_b_r_probes
                             .results
@@ -436,8 +436,8 @@ impl RogowskiCoils {
                     self.construct_virtual_bp_probes(&sensor_name, gap_name);
 
                 // Calculate Greens betwen the virtual bp-probes and the coils
-                virtual_b_r_probes.greens_with_plasma_rs(plasma.clone());
-                virtual_b_z_probes.greens_with_plasma_rs(plasma.clone());
+                virtual_b_r_probes.greens_with_plasma_rs(&plasma);
+                virtual_b_z_probes.greens_with_plasma_rs(&plasma);
 
                 let g_gaps_b_r: Array2<f64> = virtual_b_r_probes.results.get("*").get("greens").get("plasma").unwrap_array2(); // shape = [n_z * n_r, n_virtual_bp_probes]
                 let g_gaps_b_z: Array2<f64> = virtual_b_z_probes.results.get("*").get("greens").get("plasma").unwrap_array2();
