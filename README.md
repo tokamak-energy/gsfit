@@ -13,7 +13,7 @@
 [![ty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json)](https://github.com/astral-sh/ty)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
-[![gsfit.imas_rs generated from IMAS DD](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftokamak-energy%2Fgsfit%2Fimas_as_internal_data_structure%2Frust%2Fimas_rs%2Fsrc%2Fimas_dd_version.txt&search=%5E%28%5B0-9%5D%5B%5E-%5Cs%5D%2A%28%3F%3A-%5B0-9%5D%2B%29%3F%29%28%3F%3A-g%5B0-9a-f%5D%2B%29%3F%28-dirty%29%3F&replace=%241%242&label=gsfit.imas_rs%20generated%20from%20IMAS%20DD&color=blue)](rust/imas_rs/imas_updater/README.md)
+[![gsfit.imas_rs generated from IMAS DD](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftokamak-energy%2Fgsfit%2Fimas_as_internal_data_structure%2Frust%2Fimas_rs%2Fsrc%2Fimas_dd_version.txt&search=%5E%28%5B0-9%5D%5B%5E-%5Cs%5D%2A%28%3F%3A-%5B0-9%5D%2B%29%3F%29%28%3F%3A-g%5B0-9a-f%5D%2B%29%3F%28-dirty%29%3F&replace=%241%242&label=gsfit.imas_rs%20generated%20from%20IMAS%20DD&color=lightgrey)](rust/imas_rs/imas_updater/README.md)
 [![IMAS DD latest](https://img.shields.io/github/v/release/iterorganization/IMAS-Data-Dictionary?label=IMAS%20DD%20latest&color=lightgrey)](https://github.com/iterorganization/IMAS-Data-Dictionary/releases)
 [![IMAS DD develop commits ahead](https://img.shields.io/github/commits-since/iterorganization/IMAS-Data-Dictionary/latest/develop?label=IMAS%20DD%20develop%20commits%20ahead&color=lightgrey)](https://github.com/iterorganization/IMAS-Data-Dictionary/commits/develop)
 
