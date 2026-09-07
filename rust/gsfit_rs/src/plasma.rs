@@ -461,6 +461,33 @@ impl Plasma {
             let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
             let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
+            // Green's table between the grid and this passive's filaments.
+            // The table depends only on the geometry, so it is calculated once per passive and
+            // contracted with each degree of freedom's current distribution below.
+            let greens_calculator: Greens = Greens::sensor_to_conductor(
+                flat_r.clone(),
+                flat_z.clone(),
+                passive_r.clone(),
+                passive_z.clone(),
+                passive_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+                passive_z.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+            );
+
+            // Green's functions for `psi`, `b_r`, `b_z`, and derivatives
+            let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_r * n_z, n_filament]
+            let g_br_filaments: Array2<f64> = greens_calculator.b_r(); // shape = [n_r * n_z, n_filament]
+            let g_bz_filaments: Array2<f64> = greens_calculator.b_z(); // shape = [n_r * n_z, n_filament]
+            let d_g_br_filaments_d_z: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [n_r * n_z, n_filament]
+            let d_g_bz_filaments_d_z: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d_psi_d_r_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_r(); // shape = [n_r * n_z, n_filament]
+            let g_d_psi_d_z_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d2_psi_d_r2_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = [n_r * n_z, n_filament]
+            let g_d2_psi_d_r_d_z_filaments: Array2<f64> = greens_calculator.d2_psi_d_r_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d2_psi_d_z2_filaments: Array2<f64> = greens_calculator.d2_psi_d_z2(); // shape = [n_r * n_z, n_filament]
+            let g_d3_psi_d_r2_d_z_filaments: Array2<f64> = greens_calculator.d3_psi_d_r2_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d3_psi_d_r_d_z2_filaments: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2(); // shape = [n_r * n_z, n_filament]
+            let g_d3_psi_d_z3_filaments: Array2<f64> = greens_calculator.d3_psi_d_z3(); // shape = [n_r * n_z, n_filament]
+
             for dof_name in dof_names {
                 // Current distribution
                 let current_distribution: Array1<f64> = passives_local
@@ -471,45 +498,20 @@ impl Plasma {
                     .get("current_distribution")
                     .unwrap_array1();
 
-                // Green's table
-                let greens_calculator: Greens = Greens::sensor_to_conductor(
-                    flat_r.clone(),
-                    flat_z.clone(),
-                    passive_r.clone(),
-                    passive_z.clone(),
-                    passive_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
-                    passive_z.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
-                );
-
-                // Green's functions for `psi`, `b_r`, `b_z`, and derivatives
-                let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_r * n_z, n_filament]
-                let g_br_filaments: Array2<f64> = greens_calculator.b_r(); // shape = [n_r * n_z, n_filament]
-                let g_bz_filaments: Array2<f64> = greens_calculator.b_z(); // shape = [n_r * n_z, n_filament]
-                let d_g_br_filaments_d_z: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [n_r * n_z, n_filament]
-                let d_g_bz_filaments_d_z: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d_psi_d_r_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_r(); // shape = [n_r * n_z, n_filament]
-                let g_d_psi_d_z_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d2_psi_d_r2_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = [n_r * n_z, n_filament]
-                let g_d2_psi_d_r_d_z_filaments: Array2<f64> = greens_calculator.d2_psi_d_r_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d2_psi_d_z2_filaments: Array2<f64> = greens_calculator.d2_psi_d_z2(); // shape = [n_r * n_z, n_filament]
-                let g_d3_psi_d_r2_d_z_filaments: Array2<f64> = greens_calculator.d3_psi_d_r2_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d3_psi_d_r_d_z2_filaments: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2(); // shape = [n_r * n_z, n_filament]
-                let g_d3_psi_d_z3_filaments: Array2<f64> = greens_calculator.d3_psi_d_z3(); // shape = [n_r * n_z, n_filament]
-
                 // Apply the current_distribution
-                let g_psi_filaments_with_dof: Array2<f64> = g_psi_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
+                let g_psi_filaments_with_dof: Array2<f64> = &g_psi_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
                 let g_br_filaments_with_dof: Array2<f64> = &g_br_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_bz_filaments_with_dof: Array2<f64> = g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
-                let d_g_br_filaments_with_dof_d_z: Array2<f64> = d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
-                let d_g_bz_filaments_with_dof_d_z: Array2<f64> = d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
-                let g_d_psi_d_r_coil_filaments_with_dof: Array2<f64> = g_d_psi_d_r_coil_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d_psi_d_z_coil_filaments_with_dof: Array2<f64> = g_d_psi_d_z_coil_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_r2_filaments_with_dof: Array2<f64> = g_d2_psi_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_r_d_z_filaments_with_dof: Array2<f64> = g_d2_psi_d_r_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_z2_filaments_with_dof: Array2<f64> = g_d2_psi_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_r2_d_z_filaments_with_dof: Array2<f64> = g_d3_psi_d_r2_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_r_d_z2_filaments_with_dof: Array2<f64> = g_d3_psi_d_r_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_z3_filaments_with_dof: Array2<f64> = g_d3_psi_d_z3_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_bz_filaments_with_dof: Array2<f64> = &g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
+                let d_g_br_filaments_with_dof_d_z: Array2<f64> = &d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
+                let d_g_bz_filaments_with_dof_d_z: Array2<f64> = &d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
+                let g_d_psi_d_r_coil_filaments_with_dof: Array2<f64> = &g_d_psi_d_r_coil_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d_psi_d_z_coil_filaments_with_dof: Array2<f64> = &g_d_psi_d_z_coil_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_r2_filaments_with_dof: Array2<f64> = &g_d2_psi_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_r_d_z_filaments_with_dof: Array2<f64> = &g_d2_psi_d_r_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_z2_filaments_with_dof: Array2<f64> = &g_d2_psi_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_r2_d_z_filaments_with_dof: Array2<f64> = &g_d3_psi_d_r2_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_r_d_z2_filaments_with_dof: Array2<f64> = &g_d3_psi_d_r_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_z3_filaments_with_dof: Array2<f64> = &g_d3_psi_d_z3_filaments * &current_distribution; // shape = [n_r * n_z]
 
                 // Sum over all filaments
                 let g_psi: Array1<f64> = g_psi_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]

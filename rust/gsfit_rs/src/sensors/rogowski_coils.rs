@@ -294,6 +294,21 @@ impl RogowskiCoils {
                 vec![], // No holes
             );
 
+            // Virtual bp-probes along each gap, with their Green's tables against all passive degrees of freedom.
+            // These depend only on the gap geometry, so they are constructed once per gap (not per passive dof)
+            let mut virtual_bp_probes_per_gap: Vec<(BpProbes, BpProbes, f64, f64)> = Vec::with_capacity(gap_names.len());
+            for gap_name in &gap_names {
+                // Construct virtual bp probes
+                let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
+                    self.construct_virtual_bp_probes(&sensor_name, gap_name);
+
+                // Calculate Greens betwen the virtual bp-probes and the passives
+                virtual_b_r_probes.greens_with_passives_rs(passives_local.clone());
+                virtual_b_z_probes.greens_with_passives_rs(passives_local.clone());
+
+                virtual_bp_probes_per_gap.push((virtual_b_r_probes, virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z));
+            }
+
             // Calculate Greens with each passive degree of freedom
             for passive_name in passives_local.results.keys() {
                 let _tmp: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
@@ -324,18 +339,11 @@ impl RogowskiCoils {
 
                     let g_all: Array1<f64> = &inside_vec * current_distribution;
 
-                    // Calculate the greens for the gaps (needed for later)
-                    // TODO: this is wasteful as we are re-calculating the same thing
-                    // (at least there are not many PF coils. but still not good...)
+                    // Calculate the greens for the gaps
                     let mut g_gap: f64 = 0.0;
-                    for gap_name in &gap_names {
-                        // Construct virtual bp probes
-                        let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
-                            self.construct_virtual_bp_probes(&sensor_name, gap_name);
-
-                        // Calculate Greens betwen the virtual bp-probes and the coils
-                        virtual_b_r_probes.greens_with_passives_rs(passives_local.clone());
-                        virtual_b_z_probes.greens_with_passives_rs(passives_local.clone());
+                    for (virtual_b_r_probes, virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) in &virtual_bp_probes_per_gap {
+                        let gap_virtual_d_r: f64 = *gap_virtual_d_r;
+                        let gap_virtual_d_z: f64 = *gap_virtual_d_z;
 
                         let g_gaps_b_r: Array1<f64> = virtual_b_r_probes
                             .results
