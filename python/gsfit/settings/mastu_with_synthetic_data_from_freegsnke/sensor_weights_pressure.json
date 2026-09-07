@@ -1,4 +1,16 @@
 {
+    "include": false,
+    "sensor_name_prefix": "SYNTHETIC_PRESSURE",
+    "fit_settings": {
+        "weight": 1.0,
+        "comment": "Synthetic pressure sensor, generated from the FreeGSNKE truth equilibrium"
+    },
+    "synthetic": {
+        "r_start": 0.0,
+        "r_end": 0.6,
+        "n_sensors": 10,
+        "minimum_pressure": 500.0
+    },
     "BDA_PRESSURE_001": {
         "fit_settings": {
             "expected_value": 80.0e3,
