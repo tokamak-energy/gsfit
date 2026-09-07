@@ -37,7 +37,7 @@ def setup_wall(
 
     # Vacuum vessel contour, which bounds the region the plasma is allowed to occupy
     elmag_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus"]["workflow"]["elmag"]["run_name"]
-    elmag = GetData(13321, f"ELMAG#{elmag_run_name}", is_fail_quiet=False)
+    elmag = GetData(pulseNo, f"ELMAG#{elmag_run_name}", is_fail_quiet=False)
     vacuum_vessel_r = typing.cast(npt.NDArray[np.float64], elmag.get("LIMITER.LIMIT_PTS.R"))
     vacuum_vessel_z = typing.cast(npt.NDArray[np.float64], elmag.get("LIMITER.LIMIT_PTS.Z"))
 
