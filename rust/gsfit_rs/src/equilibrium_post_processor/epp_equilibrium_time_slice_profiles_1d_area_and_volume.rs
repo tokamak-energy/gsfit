@@ -79,24 +79,23 @@ pub fn epp_equilibrium_time_slice_profiles_1d_area_and_volume(time_slice: &mut E
         volume_profile[i_psi_norm] = 2.0 * PI * mass_centroid_r * area;
     }
 
-    // Take derivatives
+    // Take derivatives.
+    // `d_psi = psi_profile[1] - psi_profile[0]`, so the numerators must also run in increasing
+    // index order: a forward difference at the first point, central differences in the interior,
+    // and a backward difference at the last point.
     let mut volume_prime_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
-    volume_prime_profile[0] = (volume_profile[0] - volume_profile[1]) / d_psi;
+    volume_prime_profile[0] = (volume_profile[1] - volume_profile[0]) / d_psi;
     for i_psi_norm in 1..n_psi_norm - 1 {
-        volume_prime_profile[i_psi_norm] = (volume_profile[i_psi_norm - 1] - volume_profile[i_psi_norm + 1]) / (2.0 * d_psi);
+        volume_prime_profile[i_psi_norm] = (volume_profile[i_psi_norm + 1] - volume_profile[i_psi_norm - 1]) / (2.0 * d_psi);
     }
-    volume_prime_profile[n_psi_norm - 1] = (volume_profile[n_psi_norm - 2] - volume_profile[n_psi_norm - 1]) / d_psi;
+    volume_prime_profile[n_psi_norm - 1] = (volume_profile[n_psi_norm - 1] - volume_profile[n_psi_norm - 2]) / d_psi;
 
-    // Note: `equilibrium_post_processor` in `plasma.rs` differences `volume_profile` here rather
-    // than `area_profile`, so its `area_prime` is a second copy of `vol_prime`. That is a
-    // copy-paste bug, fixed here, so this is the one quantity where the two post-processors
-    // deliberately disagree
     let mut area_prime_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
-    area_prime_profile[0] = (area_profile[0] - area_profile[1]) / d_psi;
+    area_prime_profile[0] = (area_profile[1] - area_profile[0]) / d_psi;
     for i_psi_norm in 1..n_psi_norm - 1 {
-        area_prime_profile[i_psi_norm] = (area_profile[i_psi_norm - 1] - area_profile[i_psi_norm + 1]) / (2.0 * d_psi);
+        area_prime_profile[i_psi_norm] = (area_profile[i_psi_norm + 1] - area_profile[i_psi_norm - 1]) / (2.0 * d_psi);
     }
-    area_prime_profile[n_psi_norm - 1] = (area_profile[n_psi_norm - 2] - area_profile[n_psi_norm - 1]) / d_psi;
+    area_prime_profile[n_psi_norm - 1] = (area_profile[n_psi_norm - 1] - area_profile[n_psi_norm - 2]) / d_psi;
 
     time_slice.profiles_1d.volume = Some(volume_profile);
     time_slice.profiles_1d.dvolume_dpsi = Some(volume_prime_profile);
