@@ -267,6 +267,24 @@ pub fn find_stationary_points_using_winding_number(
             let i_z_lower: usize = i_z;
             let i_z_upper: usize = i_z + 1;
 
+            // A cell with no zero crossing on any of its four edges has no perimeter events, so its
+            // winding number is zero; skip it (this is the large majority of cells)
+            let i_edge_bottom: usize = i_z_lower * (n_r - 1) + i_r_left;
+            let i_edge_top: usize = i_z_upper * (n_r - 1) + i_r_left;
+            let i_edge_left: usize = i_z_lower * n_r + i_r_left;
+            let i_edge_right: usize = i_z_lower * n_r + i_r_right;
+            if d_psi_d_z_zero_horizontal[i_edge_bottom].is_empty()
+                && d_psi_d_r_zero_horizontal[i_edge_bottom].is_empty()
+                && d_psi_d_z_zero_horizontal[i_edge_top].is_empty()
+                && d_psi_d_r_zero_horizontal[i_edge_top].is_empty()
+                && d_psi_d_z_zero_vertical[i_edge_left].is_empty()
+                && d_psi_d_r_zero_vertical[i_edge_left].is_empty()
+                && d_psi_d_z_zero_vertical[i_edge_right].is_empty()
+                && d_psi_d_r_zero_vertical[i_edge_right].is_empty()
+            {
+                continue;
+            }
+
             // Walk the perimeter of the cell CCW: BL → BR → TR → TL → BL.
             // Track every time `br` or `bz` cross zero.
             // Each zero-crossing "event" changes `total_quarter_turns` by +/-1.
