@@ -140,10 +140,7 @@ impl Tf {
                 let n_time: usize = signal_time.len();
                 string_output += &format!("║  {:<74} ║\n", format!(" b_field_phi_vacuum_r: {n_time} time point(s)"));
                 if n_time > 0 {
-                    string_output += &format!(
-                        "║  {:<74} ║\n",
-                        format!(" time = [{}, {}] second", signal_time[0], signal_time[n_time - 1])
-                    );
+                    string_output += &format!("║  {:<74} ║\n", format!(" time = [{}, {}] second", signal_time[0], signal_time[n_time - 1]));
                     string_output += &format!(
                         "║  {:<74} ║\n",
                         format!(" data = [{}, {}] tesla * metre", signal_data[0], signal_data[n_time - 1])

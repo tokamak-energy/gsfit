@@ -2,6 +2,7 @@ import typing
 from typing import TYPE_CHECKING
 
 import numpy as np
+import numpy.typing as npt
 from gsfit_rs.imas import equilibrium_paths as ep
 
 # from st40_database import GetData
@@ -102,7 +103,7 @@ def _assign(results: typing.Any, mdsplus_path: tuple[str, ...], value: typing.An
     node[mdsplus_path[-1]] = value
 
 
-def _n_points_per_time(padded: "np.ndarray") -> "np.ndarray":
+def _n_points_per_time(padded: npt.NDArray[np.float64]) -> npt.NDArray[np.int32]:
     """Number of real points in each row of a NaN-padded `[n_time, n_points]` array.
 
     The IDS stores one contour per time-slice, each its own length; gathering over time pads the
@@ -110,7 +111,9 @@ def _n_points_per_time(padded: "np.ndarray") -> "np.ndarray":
     how much of each row is real. Contour coordinates are always finite, so a NaN can only be
     padding.
     """
-    return np.isfinite(padded).sum(axis=1).astype(np.int32)
+    n_points: npt.NDArray[np.int32] = np.isfinite(padded).sum(axis=1).astype(np.int32)
+
+    return n_points
 
 
 def map_results_to_database(

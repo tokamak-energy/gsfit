@@ -161,7 +161,69 @@ pub fn flood_fill_mask(
         return mask_2d;
     }
 
-    // Start the flood fill algorithm, going anticlockwise from the magnetic axis
+    // Outside the vessel the fill would paint the centre post and wrap all the way round to the
+    // opposite Z; past a saddle point it would leak out along the divertor legs
+    let mut is_blocked_2d: Array2<bool> = Array2::from_elem((n_z, n_r), false);
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            is_blocked_2d[(i_z, i_r)] = !mask_vessel_2d[(i_z, i_r)] || indices_do_not_cross.contains_key(&(i_z, i_r));
+        }
+    }
+
+    mask_2d = flood_fill_from_seed(psi_2d, psi_b, i_r_nearest_mag, i_z_nearest_mag, &is_blocked_2d);
+
+    mask_2d
+}
+
+/// The region `psi > psi_level` which contains the magnetic axis, as a mask.
+///
+/// This is `flood_fill_mask` for a surface **strictly inside** the plasma boundary, where
+/// `{psi > psi_level}` is a closed region. The fill therefore cannot escape, so neither the vessel
+/// nor the saddle points are needed to stop it - which is what makes it cheap enough to call once
+/// per flux surface.
+///
+/// # Arguments
+/// * `r` - R grid points, [metre]
+/// * `z` - Z grid points, [metre]
+/// * `psi_2d` - poloidal flux, shape = (n_z, n_r), [weber]
+/// * `psi_level` - the flux value bounding the region, [weber]
+/// * `mag_r` - R coordinate of the magnetic axis, [metre]
+/// * `mag_z` - Z coordinate of the magnetic axis, [metre]
+///
+/// # Returns
+/// * `mask_2d` - 1.0 inside the surface, 0.0 outside, shape = (n_z, n_r), [dimensionless]
+pub fn flood_fill_mask_at_psi(r: &Array1<f64>, z: &Array1<f64>, psi_2d: &Array2<f64>, psi_level: f64, mag_r: f64, mag_z: f64) -> Array2<f64> {
+    let n_r: usize = r.len();
+    let n_z: usize = z.len();
+
+    let i_r_nearest_mag: usize = (r - mag_r).abs().argmin().unwrap();
+    let i_z_nearest_mag: usize = (z - mag_z).abs().argmin().unwrap();
+
+    // The magnetic axis must be inside the surface for there to be anything to fill
+    if psi_2d[(i_z_nearest_mag, i_r_nearest_mag)] < psi_level {
+        return Array2::from_elem((n_z, n_r), 0.0);
+    }
+
+    let is_blocked_2d: Array2<bool> = Array2::from_elem((n_z, n_r), false);
+
+    return flood_fill_from_seed(psi_2d, psi_level, i_r_nearest_mag, i_z_nearest_mag, &is_blocked_2d);
+}
+
+/// Breadth-first fill of the `psi > psi_level` region connected to the seed grid point.
+///
+/// # Arguments
+/// * `psi_2d` - poloidal flux, shape = (n_z, n_r), [weber]
+/// * `psi_level` - the flux value bounding the region, [weber]
+/// * `i_r_seed`, `i_z_seed` - grid indices to start the fill from
+/// * `is_blocked_2d` - grid points the fill may not enter, whatever their `psi`, shape = (n_z, n_r)
+///
+/// # Returns
+/// * `mask_2d` - 1.0 filled, 0.0 not filled, shape = (n_z, n_r), [dimensionless]
+fn flood_fill_from_seed(psi_2d: &Array2<f64>, psi_level: f64, i_r_seed: usize, i_z_seed: usize, is_blocked_2d: &Array2<bool>) -> Array2<f64> {
+    let n_z: usize = psi_2d.nrows();
+    let n_r: usize = psi_2d.ncols();
+    let mut mask_2d: Array2<f64> = Array2::from_elem((n_z, n_r), 0.0);
+
     // Directions: right, down, left, up (anticlockwise)
     let directions: [(isize, isize); 4] = [
         (0, 1),  // right (i_z, i_r+1)
@@ -171,8 +233,8 @@ pub fn flood_fill_mask(
     ];
 
     let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
-    queue.push_back((i_z_nearest_mag, i_r_nearest_mag));
-    mask_2d[(i_z_nearest_mag, i_r_nearest_mag)] = 1.0;
+    queue.push_back((i_z_seed, i_r_seed));
+    mask_2d[(i_z_seed, i_r_seed)] = 1.0;
 
     // Absolute upper bound: each grid cell is marked before being enqueued and never re-enqueued,
     // so the queue can be popped at most `n_r * n_z` times.
@@ -197,37 +259,18 @@ pub fn flood_fill_mask(
             let new_i_z: usize = new_i_z as usize;
             let new_i_r: usize = new_i_r as usize;
 
-            // Respect the vessel wall during the flood fill
-            // This prevents the fill from painting the centre post and wrapping all the way round to the opposite Z
-            if !mask_vessel_2d[(new_i_z, new_i_r)] {
+            if is_blocked_2d[(new_i_z, new_i_r)] {
                 continue 'loop_over_directions;
             }
 
-            // Check if we are going past a saddle point
-            if indices_do_not_cross.contains_key(&(new_i_z, new_i_r)) {
-                // Don't add this point to the `mask`, and don't add it to the `queue`
-                continue 'loop_over_directions;
-            }
-
-            if mask_2d[(new_i_z, new_i_r)] == 0.0 && psi_2d[(new_i_z, new_i_r)] > psi_b {
-                // `mask` is not allowed to pass a saddle point, regardless of if the plasma is diverted or limited
-                if !indices_do_not_cross.contains_key(&(new_i_z, new_i_r)) {
-                    mask_2d[(new_i_z, new_i_r)] = 1.0;
-                    queue.push_back((new_i_z, new_i_r));
-                }
+            if mask_2d[(new_i_z, new_i_r)] == 0.0 && psi_2d[(new_i_z, new_i_r)] > psi_level {
+                mask_2d[(new_i_z, new_i_r)] = 1.0;
+                queue.push_back((new_i_z, new_i_r));
             }
         }
     }
 
-    // Note: this is handled in the flood fill while loop.
-    // // Ensure points outside the vessel are masked out (defensive, should already be zero)
-    // for (mask_val, inside_vessel) in mask_2d.iter_mut().zip(mask_vessel_2d.iter()) {
-    //     if !inside_vessel {
-    //         *mask_val = 0.0;
-    //     }
-    // }
-
-    mask_2d
+    return mask_2d;
 }
 
 #[test]

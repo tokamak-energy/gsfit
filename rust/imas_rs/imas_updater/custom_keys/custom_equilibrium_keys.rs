@@ -1,16 +1,16 @@
 //! Custom (non-IMAS) keys added to the equilibrium IDS.
 //!
-//! This file is **not** compiled: it is deliberately absent from `mod.rs`. It is read by
-//! `../../imas_updater/build_ids.py`, which splices the fields below into the matching
-//! generated structs in `equilibrium.rs`. It is written in ordinary Rust syntax so that it
-//! reads exactly like the generated file, and so editors can still parse it.
+//! This file is **not** compiled: it sits outside `src/`, as an input to
+//! `../build_ids.py`, which splices the fields below into the matching generated structs in
+//! `../../src/ids/equilibrium.rs`. It is written in ordinary Rust syntax so that it reads
+//! exactly like the generated file, and so editors can still parse it.
 //!
 //! Rust cannot add a field to a struct from a different file, so this splice at generation
 //! time is what lets the keys sit flat alongside the IMAS ones (`profiles_2d.d_psi_d_r`,
 //! not `profiles_2d.custom.d_psi_d_r`).
 //!
 //! To add a key: add the field to the struct below, matching the generated struct name
-//! exactly, then re-run `build_ids.py`. A `pub struct` whose name is *not* a generated struct
+//! exactly, then re-run `../build_ids.py`. A `pub struct` whose name is *not* a generated struct
 //! declares a new nested structure instead (e.g. `EquilibriumBoundaryBounding`); it must be
 //! referenced by some key's type, which is what still catches a mistyped struct name. Only the field name, type and `///` comments are
 //! read; everything else here is ignored. Base types are written bare here (`FLT_2D`) and
@@ -127,6 +127,19 @@ pub struct EquilibriumGlobalQuantities {
     /// physical quantity. Kept because GSFit has always reported it as `global/p`
     /// Units: Pa
     pub pressure_2d_sum: FLT_0D,
+    /// Radial separation of the two separatrices at the height of the magnetic axis, on the
+    /// outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
+    /// X-point)`. So it is negative for a lower single null, positive for an upper single null,
+    /// and passes through zero at a connected double null. NaN when the plasma is limited, or
+    /// when only one X-point was found
+    ///
+    /// It is evaluated in flux rather than by differencing two traced contours: the difference in
+    /// `psi` between the two X-points is mapped to the outboard midplane through
+    /// `d(psi)/d(r)` there. `psi` is stationary at an X-point, so this is insensitive to the
+    /// X-point positions at second order, which is what makes a sub-millimetre answer meaningful
+    /// on a centimetre grid
+    /// Units: m
+    pub d_r_sep: FLT_0D,
     /// Loop voltage at the plasma boundary, `-d(boundary/psi)/d(time)`, by finite differences over
     /// the reconstruction times. Distinct from the data dictionary's `v_external`, which
     /// differentiates `psi_external_average` instead

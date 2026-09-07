@@ -3,6 +3,7 @@ use super::equilibrium_solve::{GradShafranovInputs, PsiAndDerivativesGreens};
 use super::initial_current_seed::quadratic_current_density_seed;
 use super::{GradShafranovSolve, output_flag};
 use crate::coils::Coils;
+use crate::equilibrium_post_processor::equilibrium_post_processor;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
 use crate::sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
@@ -74,9 +75,8 @@ pub fn solve_grad_shafranov(
         .data
         .as_ref()
         .expect("solve_grad_shafranov: `tf/b_field_phi_vacuum_r/data` is unset");
-    let interpolator: interpolation::Dim1Linear =
-        interpolation::Dim1Linear::new(b_field_phi_vacuum_r_time.to_owned(), b_field_phi_vacuum_r_data.to_owned())
-            .expect("solve_grad_shafranov: cannot build the `tf/b_field_phi_vacuum_r` interpolator");
+    let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(b_field_phi_vacuum_r_time.to_owned(), b_field_phi_vacuum_r_data.to_owned())
+        .expect("solve_grad_shafranov: cannot build the `tf/b_field_phi_vacuum_r` interpolator");
     let f_vac_vs_time: Array1<f64> = interpolator
         .interpolate_array1(&times_to_reconstruct_ndarray)
         .expect("solve_grad_shafranov: cannot interpolate `tf/b_field_phi_vacuum_r` onto the reconstruction times");
@@ -116,9 +116,8 @@ pub fn solve_grad_shafranov(
     );
     // Move the IDS out of `plasma` for the solve, and put it back at the end.
     // `plasma` is a `PyRefMut`, so every field access borrows the whole of it. Leaving the IDS
-    // inside would therefore mean borrowing `plasma` twice at once, which does not compile:
-    //   * the parallel solve holds `&code` and `&greens` while mutating `time_slice`
-    //   * `equilibrium_post_processor_new` needs `&mut plasma` and `&mut` the IDS together
+    // inside would therefore mean borrowing `plasma` twice at once, which does not compile: the
+    // parallel solve holds `&code` and `&greens` while mutating `time_slice`
     let mut equilibrium_ids: Equilibrium = std::mem::take(&mut plasma.equilibrium_ids);
 
     // Copied out of the `PyRef`, because the per-time-slice solves run on Rayon's threads and
@@ -327,7 +326,7 @@ pub fn solve_grad_shafranov(
     info!("GSFit time elapsed: {:?}", duration_ids);
 
     // Post-process
-    plasma.equilibrium_post_processor_new(&mut equilibrium_ids, &coils, &wall_owned, &p_prime_source_function, &ff_prime_source_function);
+    equilibrium_post_processor(&mut equilibrium_ids, &wall_owned, &p_prime_source_function, &ff_prime_source_function);
     passives.equilibrium_post_processor(&equilibrium_ids);
 
     // Give the IDS back to `plasma`

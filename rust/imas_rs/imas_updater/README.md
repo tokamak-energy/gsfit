@@ -68,6 +68,16 @@ a `Py<IdsName>` `#[pyclass]` wrapper modelled on `PyEquilibrium`, and two lines 
 
 The IDSs currently generated are `equilibrium`, `pf_active`, `pf_passive`, `tf` and `wall`.
 
+## Custom (non-IMAS) keys
+
+`custom_keys/custom_<ids_name>_keys.rs` holds the hand-written keys GSFit needs which the
+Data Dictionary does not define. `build_ids.py` splices them into the matching generated
+structs, so they come out flat alongside the IMAS ones (`profiles_2d.d_psi_d_r`, not
+`profiles_2d.custom.d_psi_d_r`). They are written in Rust syntax so they read like the
+generated file, but they are an *input* to the generator and are never compiled, which is
+why they live here rather than in `../src/ids/`. An IDS without such a file simply has no
+custom keys.
+
 ## Hand-written code
 
 Only `../src/ids/*.rs` is generated. Everything else in the crate is hand-written and is

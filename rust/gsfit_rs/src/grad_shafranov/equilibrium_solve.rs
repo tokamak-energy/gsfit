@@ -1838,7 +1838,7 @@ impl<'a> EquilibriumSolver<'a> {
     /// Copy the solution into an IMAS `EquilibriumTimeSlice`.
     ///
     /// Keys with no counterpart in the data dictionary are custom keys, declared by hand in
-    /// `imas_rs/src/ids/custom_equilibrium_keys.rs`.
+    /// `imas_rs/imas_updater/custom_keys/custom_equilibrium_keys.rs`.
     fn write_to_time_slice(&mut self) {
         // Degrees of freedom
         self.time_slice.passive_dof_values = Some(self.passive_dof_values.to_owned());

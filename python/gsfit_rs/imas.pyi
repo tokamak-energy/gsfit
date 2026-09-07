@@ -2135,6 +2135,21 @@ physical quantity. Kept because GSFit has always reported it as `global/p`
         Units: Pa
         """
     @property
+    def d_r_sep(self) -> Path[float]:
+        """Radial separation of the two separatrices at the height of the magnetic axis, on the
+outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
+X-point)`. So it is negative for a lower single null, positive for an upper single null,
+and passes through zero at a connected double null. NaN when the plasma is limited, or
+when only one X-point was found
+It is evaluated in flux rather than by differencing two traced contours: the difference in
+`psi` between the two X-points is mapped to the outboard midplane through
+`d(psi)/d(r)` there. `psi` is stationary at an X-point, so this is insensitive to the
+X-point positions at second order, which is what makes a sub-millimetre answer meaningful
+on a centimetre grid
+
+        Units: m
+        """
+    @property
     def v_loop(self) -> Path[float]:
         """Loop voltage at the plasma boundary, `-d(boundary/psi)/d(time)`, by finite differences over
 the reconstruction times. Distinct from the data dictionary's `v_external`, which
@@ -2316,6 +2331,21 @@ not weighted by their volume, so this is a diagnostic of the 2D pressure rather 
 physical quantity. Kept because GSFit has always reported it as `global/p`
 
         Units: Pa
+        """
+    @property
+    def d_r_sep(self) -> Path[npt.NDArray[np.float64]]:
+        """Radial separation of the two separatrices at the height of the magnetic axis, on the
+outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
+X-point)`. So it is negative for a lower single null, positive for an upper single null,
+and passes through zero at a connected double null. NaN when the plasma is limited, or
+when only one X-point was found
+It is evaluated in flux rather than by differencing two traced contours: the difference in
+`psi` between the two X-points is mapped to the outboard midplane through
+`d(psi)/d(r)` there. `psi` is stationary at an X-point, so this is insensitive to the
+X-point positions at second order, which is what makes a sub-millimetre answer meaningful
+on a centimetre grid
+
+        Units: m
         """
     @property
     def v_loop(self) -> Path[npt.NDArray[np.float64]]:
