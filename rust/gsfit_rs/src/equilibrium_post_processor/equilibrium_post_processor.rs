@@ -15,6 +15,7 @@
 
 use super::epp_bp_sq_flux_surface_average::epp_bp_sq_flux_surface_average;
 use super::epp_equilibrium_global_quantities_v_loop::epp_equilibrium_global_quantities_v_loop;
+use super::epp_equilibrium_vacuum_toroidal_field_b0::epp_equilibrium_vacuum_toroidal_field_b0;
 use super::epp_equilibrium_time_slice_boundary_geometry::epp_equilibrium_time_slice_boundary_geometry;
 use super::epp_equilibrium_time_slice_boundary_outline::epp_equilibrium_time_slice_boundary_outline;
 use super::epp_equilibrium_time_slice_constraints_diamagnetic_flux_reconstructed::epp_equilibrium_time_slice_constraints_diamagnetic_flux_reconstructed;
@@ -93,8 +94,7 @@ impl Plasma {
         }
 
         // The vacuum toroidal field reference radius is a property of the machine rather than of a
-        // time-slice, so it is read once, here. `Plasma::new` sets it from the
-        // `vacuum_toroidal_field_reference_radius` setting
+        // time-slice, so it is read once, here. `solve_grad_shafranov` copies it from `tf/r0`
         let r0: f64 = equilibrium_ids.vacuum_toroidal_field.r0.unwrap();
 
         // Flux-surface-averaged b_p ** 2 is evaluated slightly inside the boundary, because
@@ -152,6 +152,7 @@ impl Plasma {
         // The loop voltage differentiates the boundary flux across time, so unlike everything above
         // it needs all of the time-slices at once and cannot run inside the loop
         epp_equilibrium_global_quantities_v_loop(equilibrium_ids);
+        epp_equilibrium_vacuum_toroidal_field_b0(equilibrium_ids);
 
         // TODO: move the post-processing across from `equilibrium_post_processor`, one quantity at
         // a time, checking each against the old path as it moves

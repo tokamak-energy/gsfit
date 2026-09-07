@@ -10,6 +10,7 @@ mod passives;
 mod plasma;
 mod sensors;
 mod source_functions;
+mod tf;
 mod wall;
 
 // Load structs and functions
@@ -26,6 +27,7 @@ use plasma::Plasma;
 mod python_pickling_methods;
 use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, StationaryPoint};
 use source_functions::{EfitPolynomial, TensionedCubicBSpline};
+use tf::Tf;
 use wall::Wall;
 
 // Load public modules
@@ -64,6 +66,7 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Coils>()?;
     m.add_class::<Passives>()?;
     m.add_class::<Plasma>()?;
+    m.add_class::<Tf>()?;
     m.add_class::<Wall>()?;
 
     // Expose sensor classes

@@ -7,6 +7,7 @@ use crate::passives::Passives;
 use crate::plasma::Plasma;
 use crate::sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
 use crate::source_functions::SourceFunctionTraits;
+use crate::tf::Tf;
 use crate::wall::{Wall, limiter_points, vacuum_vessel_outline};
 use imas_rs::ids::wall::Wall as WallIds;
 use imas_rs::{Code, Equilibrium, EquilibriumGreens, EquilibriumTimeSlice};
@@ -16,13 +17,17 @@ use numpy::PyArrayMethods; // used in to convert python data into ndarray
 use numpy::borrow::PyReadonlyArray1;
 use pyo3::prelude::*;
 use rayon::prelude::*;
+use std::f64::consts::PI;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+
+const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
 #[pyfunction]
 pub fn solve_grad_shafranov(
     mut plasma: PyRefMut<Plasma>,
     wall: PyRef<Wall>,
+    tf: PyRef<Tf>,
     mut coils: PyRefMut<Coils>,
     mut passives: PyRefMut<Passives>,
     mut bp_probes: PyRefMut<BpProbes>,
@@ -55,9 +60,34 @@ pub fn solve_grad_shafranov(
 
     // Get static and dynamic data
     let coils_dynamic: Vec<SensorsDynamic> = coils.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    // TF rod current interpolated to `times_to_reconstruct`; used as f_vac = MU_0 * i_rod / (2 * PI)
-    // in the diamagnetic-loop constraint
-    let i_rod_vs_time: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").get("value").unwrap_array1();
+    // The toroidal field, from the `tf` IDS. `b_field_phi_vacuum_r` is stored on the experimental
+    // timebase, so it is interpolated onto `times_to_reconstruct` here
+    let b_field_phi_vacuum_r_time: &Array1<f64> = tf
+        .tf_ids
+        .b_field_phi_vacuum_r
+        .time
+        .as_ref()
+        .expect("solve_grad_shafranov: `tf/b_field_phi_vacuum_r/time` is unset");
+    let b_field_phi_vacuum_r_data: &Array1<f64> = tf
+        .tf_ids
+        .b_field_phi_vacuum_r
+        .data
+        .as_ref()
+        .expect("solve_grad_shafranov: `tf/b_field_phi_vacuum_r/data` is unset");
+    let interpolator: interpolation::Dim1Linear =
+        interpolation::Dim1Linear::new(b_field_phi_vacuum_r_time.to_owned(), b_field_phi_vacuum_r_data.to_owned())
+            .expect("solve_grad_shafranov: cannot build the `tf/b_field_phi_vacuum_r` interpolator");
+    let f_vac_vs_time: Array1<f64> = interpolator
+        .interpolate_array1(&times_to_reconstruct_ndarray)
+        .expect("solve_grad_shafranov: cannot interpolate `tf/b_field_phi_vacuum_r` onto the reconstruction times");
+
+    // `f_vac = R0 * B_phi0 = MU_0 * i_rod / (2 * PI)`, so this inverts exactly the conversion the
+    // solver and the post-processor apply when they use it. The sign carries through
+    let i_rod_vs_time: Array1<f64> = f_vac_vs_time * (2.0 * PI / MU_0);
+
+    // The reference major radius the vacuum toroidal field is quoted at. A property of the machine
+    // rather than of a time-slice, so it is read once, here
+    let vacuum_toroidal_field_r0: f64 = tf.tf_ids.r0.expect("solve_grad_shafranov: `tf/r0` is unset");
     let (bp_probes_static, bp_probes_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
         bp_probes.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (flux_loops_static, flux_loops_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
@@ -153,6 +183,11 @@ pub fn solve_grad_shafranov(
     equilibrium_ids.code.iterations_n_min = Some(n_iter_min as i32);
     equilibrium_ids.code.iterations_n_no_vertical_feedback = Some(n_iter_no_vertical_feedback as i32);
     equilibrium_ids.code.grad_shafranov_deviation_value_tolerance = Some(gs_error);
+
+    // The data dictionary requires `vacuum_toroidal_field/r0 * b0` to equal the `tf` IDS's
+    // `b_field_phi_vacuum_r`, so `r0` is copied across rather than configured separately.
+    // `epp_equilibrium_vacuum_toroidal_field_b0` fills `b0` from the same signal
+    equilibrium_ids.vacuum_toroidal_field.r0 = Some(vacuum_toroidal_field_r0);
 
     // Per-time-slice solver inputs, written into the IDS before the solve begins. The TF rod
     // current is a measurement, so it varies from slice to slice

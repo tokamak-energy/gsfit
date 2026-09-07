@@ -47,8 +47,6 @@ impl Plasma {
     /// * `initial_guess_cur_z` - vertical centre of the initial current distribution, [metre]
     /// * `initial_guess_minor_radius` - radial semi-axis of the initial current distribution, [metre]
     /// * `initial_guess_elongation` - elongation of the initial current distribution, [dimensionless]
-    /// * `vacuum_toroidal_field_reference_radius` - reference major radius the vacuum toroidal
-    ///   field is quoted at, `vacuum_toroidal_field/r0`, [metre]
     /// * `times_to_reconstruct` - the times the equilibrium will be solved at (1d array), [second].
     ///   One equilibrium time-slice is allocated per time, so that the IDS is fully formed before
     ///   the Green's tables are built
@@ -73,7 +71,6 @@ impl Plasma {
         initial_guess_cur_z: f64,
         initial_guess_minor_radius: f64,
         initial_guess_elongation: f64,
-        vacuum_toroidal_field_reference_radius: f64,
         times_to_reconstruct: PyReadonlyArray1<f64>,
     ) -> Self {
         // Change Python types into Rust types
@@ -219,9 +216,6 @@ impl Plasma {
         equilibrium_ids.code.initial_guess.minor_radius = Some(initial_guess_minor_radius);
         equilibrium_ids.code.initial_guess.elongation = Some(initial_guess_elongation);
 
-        // The reference major radius the vacuum toroidal field is quoted at. A property of the
-        // machine rather than of a time-slice, so it is stored once, here
-        equilibrium_ids.vacuum_toroidal_field.r0 = Some(vacuum_toroidal_field_reference_radius);
         equilibrium_ids.greens.grid_grid = greens_grid_grid;
 
         let mut plasma: Self = Self {

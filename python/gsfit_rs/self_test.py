@@ -1,5 +1,6 @@
 import numpy as np
 from gsfit_rs.imas import equilibrium_paths as ep
+from scipy.constants import mu_0
 
 from gsfit_rs import BpProbes
 from gsfit_rs import Coils
@@ -13,6 +14,7 @@ from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
 from gsfit_rs import StationaryPoint
+from gsfit_rs import Tf
 from gsfit_rs import Wall
 from gsfit_rs import solve_grad_shafranov
 
@@ -38,10 +40,6 @@ def run() -> None:
         d_z=np.array([0.0, 0.0]),
         time=np.array([0.0, 1.0]),
         measured=np.array([100.0e3, 100.0e3]),
-    )
-    coils.add_tf_coil(
-        time=np.array([0.0, 1.0]),
-        measured=np.array([2.0e3, 2.0e3]),
     )
 
     limit_pts_r = np.array([10.0, 10.0, 10.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 10.0, 10.0, 10.0])
@@ -122,8 +120,21 @@ def run() -> None:
         initial_guess_cur_z=0.0,
         initial_guess_minor_radius=0.5,
         initial_guess_elongation=2.0,
-        vacuum_toroidal_field_reference_radius=10.5,
         times_to_reconstruct=np.array([0.5]),
+    )
+
+    # Toroidal field. `b_field_phi_vacuum_r` is the vacuum poloidal-current function
+    # `f_vac = mu_0 * i_rod / (2 * pi)`, here for a 2 kA rod current. `gsfit_rs` converts it back
+    # to a rod current using its own `mu_0`, which is a different CODATA revision to
+    # `scipy.constants`, so the value it recovers is ~7e-10 different from `i_rod` below. Compare
+    # the two with a tolerance rather than exactly
+    i_rod = 2.0e3  # [ampere]
+    f_vac = mu_0 * i_rod / (2.0 * np.pi)  # [tesla * metre]
+    tf = Tf()
+    tf.set_r0(10.5)
+    tf.set_b_field_phi_vacuum_r(
+        time=np.array([0.0, 1.0]),
+        data=np.array([f_vac, f_vac]),
     )
 
     # Wall. `unit(0)` is the vacuum vessel contour; here it is the only limiter unit
@@ -165,6 +176,7 @@ def run() -> None:
     solve_grad_shafranov(
         plasma=plasma,
         wall=wall,
+        tf=tf,
         coils=coils,
         passives=passives,
         bp_probes=bp_probes,

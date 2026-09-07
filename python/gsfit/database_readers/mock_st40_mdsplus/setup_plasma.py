@@ -38,9 +38,6 @@ def setup_plasma(
     initial_guess_minor_radius = settings["GSFIT_code_settings.json"]["initial_guess"]["minor_radius"]
     initial_guess_elongation = settings["GSFIT_code_settings.json"]["initial_guess"]["elongation"]
 
-    # Reference major radius the vacuum toroidal field is quoted at
-    vacuum_toroidal_field_reference_radius = settings["GSFIT_code_settings.json"]["vacuum_toroidal_field_reference_radius"]
-
     # Set the source functions types
     p_prime_source_function = build_source_function(settings["source_function_p_prime.json"])
     ff_prime_source_function = build_source_function(settings["source_function_ff_prime.json"])
@@ -89,7 +86,6 @@ def setup_plasma(
         initial_guess_cur_z,
         initial_guess_minor_radius,
         initial_guess_elongation,
-        vacuum_toroidal_field_reference_radius,
         times_to_reconstruct,
     )
 

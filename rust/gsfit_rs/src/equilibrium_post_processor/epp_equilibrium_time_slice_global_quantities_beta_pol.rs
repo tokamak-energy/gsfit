@@ -28,7 +28,7 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// * `bp_sq_fs_avg` - flux-surface-averaged `b_p ** 2` from `epp_bp_sq_flux_surface_average`
 ///   [tesla ** 2]
 /// * `r0` - the vacuum toroidal field reference radius `vacuum_toroidal_field/r0` [metre], which
-///   `Plasma::new` sets from the `vacuum_toroidal_field_reference_radius` setting
+///   `solve_grad_shafranov` copies from `tf/r0`
 ///
 /// **Must run after `epp_equilibrium_time_slice_global_quantities_energy_mhd`**, which supplies
 /// `int(p dV)`, after `epp_equilibrium_time_slice_profiles_1d_area_and_volume`, which supplies the

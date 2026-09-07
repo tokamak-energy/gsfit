@@ -96,24 +96,6 @@ impl Coils {
             .insert("controlled_by", "voltage".to_string());
     }
 
-    pub fn add_tf_coil(&mut self, time: PyReadonlyArray1<f64>, measured: PyReadonlyArray1<f64>) {
-        // Change Python types into Rust types
-        let time_ndarray: Array1<f64> = time.to_owned_array();
-        let measured_ndarray: Array1<f64> = measured.to_owned_array();
-
-        // Store the rod current
-        self.results
-            .get_or_insert("tf")
-            .get_or_insert("rod_i")
-            .get_or_insert("experimental")
-            .insert("time", time_ndarray);
-        self.results
-            .get_or_insert("tf")
-            .get_or_insert("rod_i")
-            .get_or_insert("experimental")
-            .insert("value", measured_ndarray);
-    }
-
     pub fn greens_with_self(&mut self) {
         for coil_name in self.results.get("pf").keys() {
             let coil_r: Array1<f64> = self.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
@@ -298,27 +280,7 @@ impl Coils {
     }
 
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> Vec<SensorsDynamic> {
-        // TF coil
-        let time_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("experimental").get("time").unwrap_array1();
-        let measured_experimental: Array1<f64> = self.results.get("tf").get("rod_i").get("experimental").get("value").unwrap_array1();
-
-        // Create the interpolator
-        let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_experimental.clone(), measured_experimental.clone())
-            .expect("Coils.split_into_static_and_dynamic: Can't make interpolator, has the TF coil been added?");
-
-        // Do the interpolation
-        let measured_tf: Array1<f64> = interpolator
-            .interpolate_array1(times_to_reconstruct)
-            .expect("Coils.split_into_static_and_dynamic: Can't do TF interpolation");
-
-        // Store in self
-        self.results
-            .get_or_insert("tf")
-            .get_or_insert("rod_i")
-            .get_or_insert("measured")
-            .insert("value", measured_tf);
-
-        // PF coils
+        // PF coils. The toroidal field is not here: it lives in the `tf` IDS, on `Tf`
         let coil_names: Vec<String> = self.results.get("pf").keys();
         let n_coils: usize = coil_names.len();
 

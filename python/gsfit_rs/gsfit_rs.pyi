@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.typing as npt
 
-from .imas import Equilibrium, Wall as WallIds
+from .imas import Equilibrium, Tf as TfIds, Wall as WallIds
 
 class DataTreeAccessor:
     """Base class providing common data tree access methods for all gsfit_rs classes."""
@@ -62,6 +62,7 @@ class DataTreeAccessor:
 def solve_grad_shafranov(
     plasma: Plasma,
     wall: Wall,
+    tf: Tf,
     coils: Coils,
     passives: Passives,
     bp_probes: BpProbes,
@@ -83,6 +84,7 @@ def solve_grad_shafranov(
     """
     :param plasma: Plasma object, note this is mutated and contains the solution
     :param wall: Wall object, supplying the limiter points and the vacuum vessel contour
+    :param tf: Tf object, supplying the reference major radius and the vacuum toroidal field
     :param coils: Coils object
     :param passives: Passives object, note this is mutated and contains the solution
     :param bp_probes: BpProbes object, note this is mutated and contains the solution
@@ -341,16 +343,6 @@ class Coils(DataTreeAccessor):
         :param angle2: Angle of the PF coil from the horizontal ("DIII-D" parallelogram type) [radians]
         """
         ...
-    def add_tf_coil(
-        cls,
-        time: npt.NDArray[np.float64],
-        measured: npt.NDArray[np.float64],
-    ) -> None:
-        """
-        :param time: Experimental time [second]
-        :param measured: Experimental "rod" current [ampere]
-        """
-        ...
     def greens_with_self(
         cls,
     ) -> None:
@@ -433,7 +425,6 @@ class Plasma(DataTreeAccessor):
         initial_guess_cur_z: float,
         initial_guess_minor_radius: float,
         initial_guess_elongation: float,
-        vacuum_toroidal_field_reference_radius: float,
         times_to_reconstruct: npt.NDArray[np.float64],
     ) -> Plasma:
         """
@@ -451,7 +442,6 @@ class Plasma(DataTreeAccessor):
         :param initial_guess_cur_z: Vertical centre of the initial current distribution [metre]
         :param initial_guess_minor_radius: Radial semi-axis of the initial current distribution [metre]
         :param initial_guess_elongation: Elongation of the initial current distribution [dimensionless]
-        :param vacuum_toroidal_field_reference_radius: Reference major radius the vacuum toroidal field is quoted at, `vacuum_toroidal_field/r0` [metre]
         :param times_to_reconstruct: Times the equilibrium will be solved at; one equilibrium time-slice is allocated per time [second]
         """
         ...
@@ -468,6 +458,62 @@ class Plasma(DataTreeAccessor):
         """The equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`.
 
         Empty until the Grad-Shafranov solver has run.
+
+        The IDS is copied into the returned object, so it is a snapshot: changes made on
+        the Rust side afterwards are not seen by it.
+        """
+        ...
+
+class Tf:
+    """The machine's toroidal field, stored as an IMAS `tf` IDS.
+
+    Two nodes are filled: `tf/r0`, the reference major radius, and
+    `tf/b_field_phi_vacuum_r`, the vacuum field times major radius on the experimental
+    timebase.
+
+    `b_field_phi_vacuum_r` is the vacuum poloidal-current function
+    `f_vac = R0 * B_phi0 = mu_0 * i_rod / (2 * pi)`, so the rod current is not stored
+    separately: `solve_grad_shafranov` recovers it as `i_rod = 2 * pi * f_vac / mu_0`.
+
+    It is signed: positive means counter-clockwise viewed from above.
+
+    Read it back through `tf_ids` and a path from `gsfit_rs.imas.tf_paths`.
+    """
+
+    def __new__(cls) -> Tf:
+        """Construct an empty toroidal field, ready for `set_r0` and `set_b_field_phi_vacuum_r`."""
+        ...
+    def set_r0(self, r0: float) -> None:
+        """
+        Set `tf/r0`, the reference major radius.
+
+        :param r0: reference major radius the vacuum toroidal field is quoted at [metre]
+
+        The solver copies this onto `equilibrium/vacuum_toroidal_field/r0`, so that the two
+        IDSs cannot disagree.
+        """
+        ...
+    def set_b_field_phi_vacuum_r(
+        self,
+        time: npt.NDArray[np.float64],
+        data: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        Set `tf/b_field_phi_vacuum_r`, the vacuum field times major radius.
+
+        :param time: the experimental timebase [second]
+        :param data: vacuum toroidal field times major radius [tesla * metre]
+
+        Store the **experimental** signal, not one interpolated onto the reconstruction
+        times: `solve_grad_shafranov` interpolates it itself.
+        """
+        ...
+    @property
+    def tf_ids(self) -> TfIds:
+        """The tf IDS, read with `gsfit_rs.imas.tf_paths`.
+
+        This is the only way to read the data back out: there are no bespoke accessors, so
+        every quantity is reached by its data dictionary path.
 
         The IDS is copied into the returned object, so it is a snapshot: changes made on
         the Rust side afterwards are not seen by it.

@@ -52,6 +52,7 @@ class Gsfit(DiagnosticAndSimulationBase):
     pressure_sensors: gsfit_rs.Pressure
     stationary_point: gsfit_rs.StationaryPoint
     dialoop: gsfit_rs.Dialoop
+    tf: gsfit_rs.Tf
     wall: gsfit_rs.Wall
 
     # Set by `write_results_to_database` when the `imas` database_writer is selected: the
@@ -92,7 +93,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         2. Set the environment variables
         3. Setup the timeslices to reconstruct
         4. Read in all the machine settings and initalise the following Rust implementations:
-            `coils`, `passives`, `plasma`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
+            `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
         5. Initialise the Greens functions
         6. Solve the GS equation
         7. Map the results to the MDSplus database structure and store in `self.results`
@@ -117,7 +118,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.setup_timeslices()
 
         # Read in all the machine settings and initalise the following Rust implementations:
-        # `coils`, `passives`, `plasma`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
+        # `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
         self.setup_objects(**kwargs)
 
         # Calculate the Greens functions for all permutations between current source objects and sensors.
@@ -255,6 +256,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         coils = self.coils
         passives = self.passives
         plasma = self.plasma
+        tf = self.tf
         wall = self.wall
         bp_probes = self.bp_probes
         flux_loops = self.flux_loops
@@ -273,6 +275,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         gsfit_rs.solve_grad_shafranov(
             plasma,
             wall,
+            tf,
             coils,
             passives,
             bp_probes,
@@ -352,7 +355,7 @@ class Gsfit(DiagnosticAndSimulationBase):
     def setup_objects(self, **kwargs: dict[str, typing.Any]) -> None:
         """
         Initialises the Rust objects needed to run the GSFit inverse solver:
-        `coils`, `passives`, `plasma`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
+        `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
 
         Different machines will use different data stores (e.g. MDSplus, or FreeGNSKE object).
         New readers for different devices / forward GS solvers can be added to:
@@ -404,6 +407,11 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.wall = database_reader.setup_wall(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`wall` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
+        self.tf = database_reader.setup_tf(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`tf` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
         self.isoflux = database_reader.setup_isoflux_sensors(pulseNo=self.pulseNo, settings=self.settings, times_to_reconstruct=times_to_reconstruct, **kwargs)

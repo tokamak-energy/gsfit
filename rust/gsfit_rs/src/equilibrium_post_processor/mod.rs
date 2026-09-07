@@ -35,5 +35,6 @@ mod epp_equilibrium_time_slice_profiles_2d_d_b_field_z_d_z;
 mod epp_equilibrium_time_slice_profiles_2d_pressure;
 mod epp_equilibrium_time_slice_profiles_r_midplane;
 mod epp_equilibrium_time_slice_sol;
+mod epp_equilibrium_vacuum_toroidal_field_b0;
 mod epp_flux_surfaces;
 mod equilibrium_post_processor;

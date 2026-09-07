@@ -14,6 +14,7 @@ from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
 from gsfit_rs import StationaryPoint
+from gsfit_rs import Tf
 from gsfit_rs import Wall
 
 
@@ -21,7 +22,7 @@ class DatabaseReaderProtocol(Protocol):
     """
     Protocol for reading experimental data.
     Each method is responsible for initialising one of the Rust objects:
-    `bp_probes`, `coils`, `dialoop`, `flux_loops`, `isoflux`, `isoflux_boundary`, `stationary_point`, `passives`, `plasma`, and `rogowski_coils`.
+    `bp_probes`, `coils`, `dialoop`, `flux_loops`, `isoflux`, `isoflux_boundary`, `stationary_point`, `passives`, `plasma`, `rogowski_coils`, `tf`, and `wall`.
 
     The Protocol defines the inputs and outputs of each method.
     New database readers should be implemented **all** methods.
@@ -99,12 +100,6 @@ class DatabaseReaderProtocol(Protocol):
                 time=...,       # read from a database
                 measured=...,   # read from a database
             )
-
-        # Add TF coil
-        coils.add_tf_coil(
-            time=...,   # read from a database
-            i_rod=...,  # read from a database
-        )
 
         return coils
         ```
@@ -407,11 +402,56 @@ class DatabaseReaderProtocol(Protocol):
             initial_guess_cur_z=...,                           # read from `GSFIT_code_settings.json` file
             initial_guess_minor_radius=...,                    # read from `GSFIT_code_settings.json` file
             initial_guess_elongation=...,                      # read from `GSFIT_code_settings.json` file
-            vacuum_toroidal_field_reference_radius=...,        # read from `GSFIT_code_settings.json` file
             times_to_reconstruct=times_to_reconstruct,         # passed in, from `setup_timeslices`
         )
 
         return plasma
+        ```
+        """
+        ...
+
+    def setup_tf(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> Tf:
+        """
+        This method initialises the Rust `Tf` class, which holds an IMAS `tf` IDS.
+
+        :param pulseNo: Pulse number, used to read from the database
+        :param settings: Dictionary containing the JSON settings read from the `settings` directory
+        :param kwargs: Additional objects, such as FreeGNSKE object
+
+        Initialising requires reading data from:
+        1. Database reading (e.g. MDSplus, or FreeGSNKE object): Which contains the toroidal field measurement
+
+        Two nodes are filled. `tf/r0` is the machine's reference major radius, which the solver
+        copies onto `equilibrium/vacuum_toroidal_field/r0` so that the two IDSs cannot disagree.
+        `tf/b_field_phi_vacuum_r` is the vacuum field times major radius, which is the vacuum
+        poloidal-current function `f_vac = R0 * B_phi0 = mu_0 * i_rod / (2 * pi)`. The rod current
+        is not stored separately: the solver recovers it as `i_rod = 2 * pi * f_vac / mu_0`.
+
+        **Store the experimental signal**, on its own timebase, not one interpolated onto the
+        reconstruction times. `solve_grad_shafranov` interpolates it itself.
+
+        **`b_field_phi_vacuum_r` is signed**: positive means counter-clockwise viewed from above.
+        A reader which passes a magnitude will silently reverse the toroidal field, and with it
+        `f`, `q`, `profiles_2d/b_field_phi` and the diamagnetic flux constraint.
+
+        Different machines will use different data stores for the toroidal field.
+        This Protocol allows different database readers to be selected.
+        The output of this method must always be a `Tf` object.
+
+        At a minimum this method should look like this:
+        ```python
+        # Initialise the Tf Rust class
+        tf = Tf()
+
+        tf.set_r0(...)  # read from `GSFIT_code_settings.json` file
+
+        # A machine holding a rod current converts it; one holding `R * B_phi` passes it straight
+        tf.set_b_field_phi_vacuum_r(
+            time=...,  # read from a database
+            data=...,  # read from a database
+        )
+
+        return tf
         ```
         """
         ...
