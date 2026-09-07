@@ -685,6 +685,42 @@ impl RogowskiCoils {
         let sensor_names: Vec<String> = include_indices.iter().map(|&index| sensor_names_all[index].clone()).collect();
         let n_sensors: usize = sensor_names.len();
 
+        // Time dependent: interpolate all sensors (included or not) to `times_to_reconstruct` and store the
+        // measured values, so that they are available for the sensor post-processing even when no sensor
+        // of this type is included in the fit
+        let mut measured: Array2<f64> = Array2::from_elem((n_sensors_all, n_time), f64::NAN);
+        for i_sensor in 0..n_sensors_all {
+            // Sensor names
+            let sensor_name: &str = &sensor_names_all[i_sensor];
+
+            // Measured values
+            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("i").get("experimental").get("time").unwrap_array1();
+            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("i").get("experimental").get("value").unwrap_array1();
+
+            // Create the interpolator
+            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone())
+                .expect("RogowskiCoils.split_into_static_and_dynamic: Can't make interpolator");
+            // Do the interpolation
+            let measured_this_coil: Array1<f64> = interpolator
+                .interpolate_array1(times_to_reconstruct)
+                .expect("RogowskiCoils.split_into_static_and_dynamic: Can't do interpolation");
+
+            // Store for later
+            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_coil);
+
+            // Store in self
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("i")
+                .get_or_insert("measured")
+                .insert("value", measured_this_coil);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("i")
+                .get_or_insert("measured")
+                .insert("time", times_to_reconstruct.clone());
+        }
+
         // If there are no sensors selected, return empty data
         if n_sensors == 0 {
             let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
@@ -760,41 +796,6 @@ impl RogowskiCoils {
             geometry_r: Array1::from_elem(n_sensors, f64::NAN), // not used for RogowskiCoils
             geometry_z: Array1::from_elem(n_sensors, f64::NAN), // not used for RogowskiCoils
         };
-
-        // Time dependent
-        // Interpolate all sensors to `times_to_reconstruct`
-        let mut measured: Array2<f64> = Array2::from_elem((n_sensors_all, n_time), f64::NAN);
-        for i_sensor in 0..n_sensors_all {
-            // Sensor names
-            let sensor_name: &str = &sensor_names_all[i_sensor];
-
-            // Measured values
-            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("i").get("experimental").get("time").unwrap_array1();
-            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("i").get("experimental").get("value").unwrap_array1();
-
-            // Create the interpolator
-            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone())
-                .expect("RogowskiCoils.split_into_static_and_dynamic: Can't make interpolator");
-            // Do the interpolation
-            let measured_this_coil: Array1<f64> = interpolator
-                .interpolate_array1(times_to_reconstruct)
-                .expect("RogowskiCoils.split_into_static_and_dynamic: Can't do interpolation");
-
-            // Store for later
-            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_coil);
-
-            // Store in self
-            self.results
-                .get_or_insert(sensor_name)
-                .get_or_insert("i")
-                .get_or_insert("measured")
-                .insert("value", measured_this_coil);
-            self.results
-                .get_or_insert(sensor_name)
-                .get_or_insert("i")
-                .get_or_insert("measured")
-                .insert("time", times_to_reconstruct.clone());
-        }
 
         // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
         let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);

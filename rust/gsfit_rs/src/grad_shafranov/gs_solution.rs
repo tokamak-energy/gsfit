@@ -612,8 +612,9 @@ impl<'a> GsSolution<'a> {
         let vessel_z: Array1<f64> = plasma.results.get("vessel").get("z").unwrap_array1();
 
         // Degrees of freedom
-        let passives_shape: &[usize] = bp_probes_static.greens_with_passives.shape();
-        let n_passive_dof: usize = passives_shape[0];
+        // Number of passive degrees of freedom, from the passives themselves (the sensor tables are
+        // empty when a sensor type has no included sensors)
+        let n_passive_dof: usize = self.passive_regularisations.ncols();
         let n_p_prime_dof: usize = p_prime_source_function.source_function_n_dof();
         let n_ff_prime_dof: usize = ff_prime_source_function.source_function_n_dof();
         let n_iter_no_vertical_feedback: usize = self.n_iter_no_vertical_feedback;
