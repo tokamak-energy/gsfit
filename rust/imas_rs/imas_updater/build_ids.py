@@ -31,6 +31,10 @@ REPO_ROOT: Path = WORKSPACE_DIR.parent
 # Where the generated Python type stub goes. This is the `gsfit_rs` Python package, which
 # mounts the `imas_rs` classes as the `gsfit_rs.imas` submodule.
 PYTHON_STUB_FILE: Path = REPO_ROOT / "python" / "gsfit_rs" / "imas.pyi"
+# Plain-text record of the Data Dictionary version the generated files came from. This is the
+# single source of truth for that version: `imas_rs::IMAS_DD_VERSION` includes it, the badge in
+# the top-level `README.md` reads it, and `README.md` in this directory points at it.
+IMAS_DD_VERSION_FILE: Path = CRATE_DIR / "src" / "imas_dd_version.txt"
 
 
 # XML Schema namespace
@@ -2031,12 +2035,32 @@ def build_ids(
     return None
 
 
+def get_imas_dd_version() -> str:
+    """
+    The version of the local IMAS Data Dictionary clone, as `git describe` reports it,
+    e.g. `4.1.1-60-gf5d44e8`. A `-dirty` suffix means the clone had uncommitted changes, so
+    the generated files cannot be reproduced from the Data Dictionary repository alone.
+    """
+
+    completed_process = subprocess.run(
+        ["git", "-C", str(DATA_DICTIONARY_DIR), "describe", "--tags", "--dirty"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    return completed_process.stdout.strip()
+
+
 if __name__ == "__main__":
     if not DATA_DICTIONARY_DIR.is_dir():
         raise FileNotFoundError(
             f"IMAS Data Dictionary not found at {DATA_DICTIONARY_DIR}\n"
             "See rust/imas_rs/imas_updater/README.md for how to clone it."
         )
+
+    # Read before generating anything, so a clone that `git` cannot describe fails immediately
+    imas_dd_version: str = get_imas_dd_version()
 
     ids_names: list[str] = ["equilibrium", "pf_active", "pf_passive", "tf", "wall"]
 
@@ -2060,3 +2084,7 @@ if __name__ == "__main__":
     PYTHON_STUB_FILE.parent.mkdir(parents=True, exist_ok=True)
     PYTHON_STUB_FILE.write_text("\n".join(stub_sections))
     print(f"Generated: {PYTHON_STUB_FILE}")
+
+    # Written last, so that it only ever describes a run which regenerated every file above
+    IMAS_DD_VERSION_FILE.write_text(f"{imas_dd_version}\n")
+    print(f"Generated: {IMAS_DD_VERSION_FILE} -> {imas_dd_version}")

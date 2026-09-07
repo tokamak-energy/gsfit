@@ -9,6 +9,9 @@ from diagnostic_and_simulation_base import DiagnosticAndSimulationBase
 from .database_readers import get_database_reader
 from .database_writers import get_database_writer
 
+if typing.TYPE_CHECKING:
+    from imas.ids_toplevel import IDSToplevel
+
 np.set_printoptions(linewidth=200)
 
 
@@ -51,6 +54,10 @@ class Gsfit(DiagnosticAndSimulationBase):
     dialoop: gsfit_rs.Dialoop
     wall: gsfit_rs.Wall
 
+    # Set by `write_results_to_database` when the `imas` database_writer is selected: the
+    # populated IMAS `equilibrium` IDS. `None` for every other writer
+    equilibrium_ids: "IDSToplevel | None" = None
+
     # TODO: move to DiagnosticAndSimulationBase
     def __getitem__(self, key: str) -> typing.Any:
         return self.results[key]
@@ -90,6 +97,8 @@ class Gsfit(DiagnosticAndSimulationBase):
         6. Solve the GS equation
         7. Map the results to the MDSplus database structure and store in `self.results`
         8. Wait for the MDSplus nodes, then write the results into them
+
+        Steps 1 and 8 are skipped for the `imas` database_writer, which writes nothing.
         """
 
         self.logger.info(f"Running Gsfit, for pulseNo={self.pulseNo}")
@@ -98,8 +107,8 @@ class Gsfit(DiagnosticAndSimulationBase):
         # so start it now and let it run while we read the databases and solve the GS equation.
         # The settings are the user's to change up to this point, so the values in force now are
         # the ones the node creation is given; from here on they are fixed.
-        # `write_results_to_mdsplus` waits for it, and checks that it worked, before writing
-        if self.write_to_mds:
+        # `write_results_to_database` waits for it, and checks that it worked, before writing
+        if self.writes_to_mdsplus():
             self.logger.info("Creating the MDSplus nodes in a separate process")
             self.start_mds_node_creation(workflows=self.get_workflow_names())
 
@@ -122,33 +131,54 @@ class Gsfit(DiagnosticAndSimulationBase):
         else:
             raise ValueError(f"Unknown type_of_run={self.settings['GSFIT_code_settings.json']['type_of_run']}")
 
-        self.write_results_to_mdsplus()
+        self.write_results_to_database()
 
-    def write_results_to_mdsplus(self) -> None:
+    def writes_to_mdsplus(self) -> bool:
         """
-        Write the results to MDSplus:
-        1. Results are collected from the Rust objects and stored in `self.results`,which is similar
-           to a nested dictionary, and has a 1:1 mapping to the MDSplus database structure.
+        Whether this run will write to MDSplus at all.
+
+        `write_to_mds` is the user's switch, but the `imas` database_writer does not write to
+        MDSplus whatever it is set to: it builds an IMAS `equilibrium` IDS instead. Asking this
+        rather than `write_to_mds` keeps the MDSplus node creation, which starts before anything
+        else in `run`, in step with the writing that happens at the end.
+        """
+
+        database_writer_method = self.settings["GSFIT_code_settings.json"]["database_writer"]["method"]
+
+        return self.write_to_mds and database_writer_method != "imas"
+
+    def write_results_to_database(self) -> None:
+        """
+        Write the results to the database:
+        1. Results are collected from the Rust objects and stored in `self.results`, which is
+           similar to a nested dictionary, and has a 1:1 mapping to the MDSplus database structure.
         2. We wait for the MDSplus nodes, which `run` started creating in a separate process, and
            check that the creation did not fail. If `run` was not used, the nodes are created here.
         3. The results are then written to MDSplus.
+
+        The `imas` database_writer does neither 2 nor 3. It returns an IMAS `equilibrium` IDS,
+        which is kept on `self.equilibrium_ids` for the caller to use, and nothing is written.
         """
 
-        # Map the results to MDSplus.
-        # `self.results` is a 1:1 mapping to MDSplus
+        # Map the results to the database structure.
+        # For the MDSplus writers `self.results` is a 1:1 mapping to MDSplus
         database_writer_method = self.settings["GSFIT_code_settings.json"]["database_writer"]["method"]
         database_writer = get_database_writer(database_writer_method)
-        database_writer.map_results_to_database(self)
+        if database_writer_method != "imas":
+            database_writer.map_results_to_database(self)
+        else:
+            self.equilibrium_ids = database_writer.map_results_to_database(self)
+            self.logger.info("IMAS IDS populated; access it via `self.equilibrium_ids`")
 
         # Do the writing to MDSplus
         self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
-        if self.write_to_mds:
+        if self.writes_to_mdsplus():
             # The nodes must exist, and must have been created without error, before we write into them
             self.wait_for_mds_node_creation(workflows=self.get_workflow_names())
 
-            self.logger.info("Writing to MDSplus")
+            self.logger.info("Writing to database")
             self._write_data_to_mds()
-            if self.settings["GSFIT_code_settings.json"]["database_writer"]["method"] == "tokamak_energy_mdsplus_new":
+            if database_writer_method == "tokamak_energy_mdsplus_new":
                 from .database_writers.tokamak_energy_mdsplus_new.create_mdsplus_links import create_mdsplus_links
 
                 create_mdsplus_links(pulseNo_write=self.pulseNo_write, run_name=self.run_name)

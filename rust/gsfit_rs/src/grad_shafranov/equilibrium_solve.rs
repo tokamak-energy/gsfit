@@ -1545,12 +1545,13 @@ impl<'a> EquilibriumSolver<'a> {
             }
         }
 
-        // GEMMs, using `faer` (multi-threaded).
-        // `Par::rayon(0)` - the whole pool - unconditionally. This runs inside the caller's
-        // parallel loop over time-slices, so it looked like nested parallelism worth avoiding, but
-        // measured at 480 time-slices `Par::Seq` was 0.3 s *slower* over the solve, and with a
-        // single time-slice the outer loop provides no parallelism at all and this is the only
-        // thing keeping the cores busy. Unconditional is right for both.
+        // GEMMs, using `faer`. `Par::rayon(0)` - the whole pool - unconditionally. This runs
+        // inside the caller's parallel loop over time-slices, so it looks like nested parallelism
+        // worth avoiding, but it is not: measured with `Par::Seq` at 8, 16 and 32 threads it is
+        // slightly *slower* at every count (e.g. 8 threads 120.3 s vs 124.8 s over the solve),
+        // because with the pool already saturated by the outer loop faer runs the GEMM inline. At
+        // a single time-slice the outer loop provides no parallelism and this is the only thing
+        // keeping the cores busy. Unconditional is right for both regimes.
         let mut plasma_even: faer::Mat<f64> = faer::Mat::zeros(n_z, 5 * n_r);
         matmul(
             plasma_even.as_mut(),

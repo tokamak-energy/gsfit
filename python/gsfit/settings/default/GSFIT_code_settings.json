@@ -1,5 +1,5 @@
 {
-    "RAYON_NUM_THREADS": 32,
+    "RAYON_NUM_THREADS": 10,
     "database_reader": {
         "method": "st40_mdsplus_with_digital_filter",
         "st40_mdsplus": {

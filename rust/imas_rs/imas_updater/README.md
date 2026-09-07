@@ -8,13 +8,25 @@ Dictionary. Regeneration happens only when you run the script below.
 
 ## Pinned Data Dictionary version
 
-The committed `../src/ids/*.rs` files were generated from:
+The committed `../src/ids/*.rs` files were generated from
+[IMAS-Data-Dictionary](https://github.com/iterorganization/IMAS-Data-Dictionary), at the
+version recorded in [`../src/imas_dd_version.txt`](../src/imas_dd_version.txt).
 
-| | |
-| --- | --- |
-| Repository | `git@github.com:iterorganization/IMAS-Data-Dictionary.git` |
-| Version | `4.1.1-60-gf5d44e8` |
-| Commit | `f5d44e8` |
+That file is the single source of truth for the version, and is written by `build_ids.py`
+in the same run that writes the generated files, so it cannot drift from them. Do not copy
+the version anywhere else: Rust reads it as `imas_rs::IMAS_DD_VERSION`, and the badge in the
+repository's top-level `README.md` reads it from GitHub. That badge trims the commit hash
+off, so it shows `4.1.1-60` where the file holds `4.1.1-60-gf5d44e8`.
+
+The trimmed number is what the neighbouring `IMAS DD develop: commits ahead` badge counts:
+how far the Data Dictionary's `develop` branch has moved past its latest release. While the
+two agree, `../src/ids/*.rs` was generated from the tip of `develop`; once the badge reads
+higher, `develop` has commits that the generated files do not have.
+
+The version is `git describe --tags --dirty` output, e.g. `4.1.1-60-gf5d44e8` for the 60th
+commit after tag `4.1.1`, at commit `f5d44e8`. A `-dirty` suffix means the clone had
+uncommitted changes, so the generated files cannot be reproduced from the Data Dictionary
+repository alone.
 
 ## Updating the IDS structs
 
@@ -24,10 +36,11 @@ The committed `../src/ids/*.rs` files were generated from:
    git clone git@github.com:iterorganization/IMAS-Data-Dictionary.git rust/imas_rs/imas_updater/IMAS-Data-Dictionary
    ```
 
-2. Check out the version you want to generate from:
+2. Check out the version you want to generate from. Anything `git describe` can name works,
+   e.g. a tag, a commit, or the tip of a branch:
 
    ```bash
-   git -C rust/imas_rs/imas_updater/IMAS-Data-Dictionary checkout 4542d30
+   git -C rust/imas_rs/imas_updater/IMAS-Data-Dictionary checkout 4.1.1
    ```
 
 3. Run the generator. It writes one file per IDS into `../src/ids/` and then runs
@@ -39,8 +52,8 @@ The committed `../src/ids/*.rs` files were generated from:
 
 4. Review the diff, then `cargo check -p imas_rs` and `cargo check -p gsfit_rs`.
 
-5. If you moved to a newer Data Dictionary, update the pinned version in the table above
-   in the same commit as the regenerated `.rs` files.
+5. Commit `../src/imas_dd_version.txt` alongside the regenerated `.rs` files. Step 3 rewrites
+   it for you, so there is nothing to update by hand.
 
 ## Adding another IDS
 

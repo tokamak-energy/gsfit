@@ -216,7 +216,7 @@ for i_config, config in enumerate(scan_configs):
     gsfit_controller.inverse_solver_rust()
     section_start_time = print_timing(f"[{config['run_name']}] Run inverse solver", section_start_time)
 
-    gsfit_controller.write_results_to_mdsplus()
+    gsfit_controller.write_results_to_database()
     section_start_time = print_timing(f"[{config['run_name']}] Write results", section_start_time)
 
     config_elapsed_time = time.perf_counter() - config_start_time

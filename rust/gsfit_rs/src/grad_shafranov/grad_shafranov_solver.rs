@@ -42,6 +42,7 @@ pub fn solve_grad_shafranov(
     anderson_mixing_from_previous_iter: f64,
 ) {
     println!("solve_grad_shafranov starting");
+    let timing_start_serial_setup: Instant = Instant::now();
 
     // Convert to rust data type
     let times_to_reconstruct_ndarray: Array1<f64> = times_to_reconstruct.to_owned_array();
@@ -216,6 +217,15 @@ pub fn solve_grad_shafranov(
         }
     };
 
+    // Everything above this point is serial: splitting the sensors into static and dynamic,
+    // building the IDS, the shared Greens tables and the initial current seed. Timed separately
+    // because it is a single-core stretch at the head of the solve stage, and without a number
+    // for it the only way to size it is to read it off a CPU-utilisation plot
+    println!(
+        "solve_grad_shafranov: serial setup done; {:.2}ms",
+        timing_start_serial_setup.elapsed().as_secs_f64() * 1e3
+    );
+
     // Solve the GS equation for all time-slices, in parallel
     let timing_start_ids: Instant = Instant::now();
     equilibrium_ids
@@ -256,6 +266,12 @@ pub fn solve_grad_shafranov(
             // Solve
             time_slice.solve(&grad_shafranov_inputs, equilibrium_code, greens_tables);
         });
+    println!(
+        "solve_grad_shafranov: parallel time-slice solve done; {:.2}ms",
+        timing_start_ids.elapsed().as_secs_f64() * 1e3
+    );
+    let timing_start_serial_finish: Instant = Instant::now();
+
     // `code/output_flag` is indexed by time, so it is assembled here rather than by the per-slice
     // solver: 0 for a usable slice, negative for one which failed
     let output_flags: Array1<i32> = Array1::from_iter(equilibrium_ids.time_slice.iter().map(output_flag));
@@ -302,4 +318,12 @@ pub fn solve_grad_shafranov(
     for (i_time, time_slice) in plasma.equilibrium_ids.time_slice.iter_mut().enumerate() {
         time_slice.constraints.chi_squared_reduced = Some(chi_mag[i_time]);
     }
+
+    // Everything after the parallel loop: the per-slice report lines, the post-processors, and
+    // recalculating the sensor values. Mostly serial, and it is the second single-core stretch on
+    // a CPU-utilisation plot
+    println!(
+        "solve_grad_shafranov: serial finish done; {:.2}ms",
+        timing_start_serial_finish.elapsed().as_secs_f64() * 1e3
+    );
 }
