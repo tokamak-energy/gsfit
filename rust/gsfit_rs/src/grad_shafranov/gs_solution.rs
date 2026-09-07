@@ -13,7 +13,6 @@ use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
 use faer::linalg::solvers::{SolveLstsq, Svd as FaerSvd};
 use geo::{Contains, Coord, LineString, Point, Polygon};
-use ndarray::Axis;
 use ndarray::{Array1, Array2, Array3, ArrayView2, s};
 use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;

@@ -73,8 +73,6 @@ pub fn find_boundary(
         limit_pts_z,
         mag_r,
         mag_z,
-        vessel_r,
-        vessel_z,
         mask_vessel_2d,
         stationary_points,
     );

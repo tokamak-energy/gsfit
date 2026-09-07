@@ -17,8 +17,7 @@ use ndarray_stats::QuantileExt;
 /// * `limit_pts_z` - Z coordinates of limiter points, [metre]
 /// * `mag_r` - R coordinate of magnetic axis, [metre]
 /// * `mag_z` - Z coordinate of magnetic axis, [metre]
-/// * `vessel_r` - R coordinates of vessel points, [metre]
-/// * `vessel_z` - Z coordinates of vessel points, [metre]
+/// * `mask_vessel_2d` - `true` for grid points inside the vessel (from `vessel_mask`), shape = (n_z, n_r), dimensionless
 /// * `stationary_points` - Vector of `StationaryPoint` objects representing stationary points in psi
 ///
 /// # Returns
@@ -34,8 +33,6 @@ pub fn find_viable_limit_point(
     limit_pts_z: &Array1<f64>,
     mag_r: f64,
     mag_z: f64,
-    vessel_r: &Array1<f64>,
-    vessel_z: &Array1<f64>,
     mask_vessel_2d: &Array2<bool>,
     stationary_points: &[StationaryPoint],
 ) -> Result<BoundaryContour, String> {

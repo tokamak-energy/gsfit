@@ -1368,7 +1368,6 @@ impl Plasma {
             p_prime_profile.slice_mut(s![i_time, ..]).assign(&p_prime_profile_this_time);
 
             let psi_profile_this_time: Array1<f64> = &psi_n * (psi_b[i_time] - psi_a[i_time]) + psi_a[i_time];
-            let d_psi: f64 = psi_profile_this_time[1] - psi_profile_this_time[0];
             psi_profile.slice_mut(s![i_time, ..]).assign(&psi_profile_this_time);
 
             // Mid-plane profiles
