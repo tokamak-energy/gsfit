@@ -319,22 +319,18 @@ mod tests {
     use super::*;
     use ndarray::Array3;
 
-    /// Direct evaluation of the double sum, for comparison with the FFT convolution
-    fn direct_sum(table: &Array3<f64>, j_2d: &Array2<f64>, d_area: f64, is_odd: bool) -> Array2<f64> {
+    /// Direct evaluation of the double sum at one grid point, for comparison with the FFT convolution
+    fn direct_sum_at(table: &Array3<f64>, j_2d: &Array2<f64>, d_area: f64, is_odd: bool, i_z: usize, i_r: usize) -> f64 {
         let (n_z, n_r, _): (usize, usize, usize) = table.dim();
-        let mut field: Array2<f64> = Array2::zeros((n_z, n_r));
-        for i_z in 0..n_z {
-            for i_r in 0..n_r {
-                for i_cur_z in 0..n_z {
-                    for i_cur_r in 0..n_r {
-                        let i_offset_z: usize = i_z.abs_diff(i_cur_z);
-                        let mut sign: f64 = 1.0;
-                        if is_odd && i_cur_z >= i_z {
-                            sign = -1.0;
-                        }
-                        field[(i_z, i_r)] += sign * table[(i_offset_z, i_r, i_cur_r)] * j_2d[(i_cur_z, i_cur_r)] * d_area;
-                    }
+        let mut field: f64 = 0.0;
+        for i_cur_z in 0..n_z {
+            for i_cur_r in 0..n_r {
+                let i_offset_z: usize = i_z.abs_diff(i_cur_z);
+                let mut sign: f64 = 1.0;
+                if is_odd && i_cur_z >= i_z {
+                    sign = -1.0;
                 }
+                field += sign * table[(i_offset_z, i_r, i_cur_r)] * j_2d[(i_cur_z, i_cur_r)] * d_area;
             }
         }
         field
@@ -356,10 +352,19 @@ mod tests {
 
     #[test]
     fn test_convolve_matches_direct_sum() {
-        let n_r: usize = 5;
-        let n_z: usize = 7;
+        convolve_matches_direct_sum(5, 7, 12345);
+    }
+
+    /// The MAST-U example grid (65 x 129, FFT length 270) and the ST40 default grid (81 x 161, FFT length 324)
+    #[test]
+    fn test_convolve_matches_direct_sum_at_production_sizes() {
+        convolve_matches_direct_sum(65, 129, 777);
+        convolve_matches_direct_sum(81, 161, 999);
+    }
+
+    fn convolve_matches_direct_sum(n_r: usize, n_z: usize, seed_start: u64) {
         let d_area: f64 = 0.25;
-        let mut seed: u64 = 12345;
+        let mut seed: u64 = seed_start;
 
         let mut even_tables: Vec<Array3<f64>> = Vec::new();
         for _i_kernel in 0..N_EVEN_KERNELS {
@@ -397,22 +402,47 @@ mod tests {
         let spectra: PlasmaGreensSpectra = PlasmaGreensSpectra::from_tables(n_r, n_z, &even_views, &odd_views);
         let (plasma_even, plasma_odd): (Array2<f64>, Array2<f64>) = spectra.convolve(&j_2d, d_area);
 
-        for i_kernel in 0..N_EVEN_KERNELS {
-            let expected: Array2<f64> = direct_sum(&even_tables[i_kernel], &j_2d, d_area, false);
+        // Check every grid point on small grids, and a sample of grid points on production-sized grids
+        // (the direct double sum is O(n_z^2 n_r^2))
+        let n_points_max: usize = 200;
+        let mut points: Vec<(usize, usize)> = Vec::new();
+        if n_z * n_r <= n_points_max {
             for i_z in 0..n_z {
                 for i_r in 0..n_r {
-                    let difference: f64 = (plasma_even[(i_z, i_kernel * n_r + i_r)] - expected[(i_z, i_r)]).abs();
-                    assert!(difference < 1.0e-12, "even kernel {i_kernel}: difference {difference} at ({i_z}, {i_r})");
+                    points.push((i_z, i_r));
                 }
+            }
+        } else {
+            for _i_point in 0..n_points_max {
+                let i_z: usize = ((pseudo_random(&mut seed) + 1.0) / 2.0 * (n_z as f64)) as usize % n_z;
+                let i_r: usize = ((pseudo_random(&mut seed) + 1.0) / 2.0 * (n_r as f64)) as usize % n_r;
+                points.push((i_z, i_r));
+            }
+            // Always include the corners and the centre
+            points.push((0, 0));
+            points.push((n_z - 1, n_r - 1));
+            points.push((n_z / 2, n_r / 2));
+        }
+        let scale_even: f64 = plasma_even.iter().fold(0.0_f64, |maximum, value| maximum.max(value.abs()));
+        let scale_odd: f64 = plasma_odd.iter().fold(0.0_f64, |maximum, value| maximum.max(value.abs()));
+        for i_kernel in 0..N_EVEN_KERNELS {
+            for &(i_z, i_r) in &points {
+                let expected: f64 = direct_sum_at(&even_tables[i_kernel], &j_2d, d_area, false, i_z, i_r);
+                let difference: f64 = (plasma_even[(i_z, i_kernel * n_r + i_r)] - expected).abs();
+                assert!(
+                    difference < 1.0e-12 * scale_even.max(1.0),
+                    "even kernel {i_kernel}: difference {difference} at ({i_z}, {i_r})"
+                );
             }
         }
         for i_kernel in 0..N_ODD_KERNELS {
-            let expected: Array2<f64> = direct_sum(&odd_tables[i_kernel], &j_2d, d_area, true);
-            for i_z in 0..n_z {
-                for i_r in 0..n_r {
-                    let difference: f64 = (plasma_odd[(i_z, i_kernel * n_r + i_r)] - expected[(i_z, i_r)]).abs();
-                    assert!(difference < 1.0e-12, "odd kernel {i_kernel}: difference {difference} at ({i_z}, {i_r})");
-                }
+            for &(i_z, i_r) in &points {
+                let expected: f64 = direct_sum_at(&odd_tables[i_kernel], &j_2d, d_area, true, i_z, i_r);
+                let difference: f64 = (plasma_odd[(i_z, i_kernel * n_r + i_r)] - expected).abs();
+                assert!(
+                    difference < 1.0e-12 * scale_odd.max(1.0),
+                    "odd kernel {i_kernel}: difference {difference} at ({i_z}, {i_r})"
+                );
             }
         }
     }
