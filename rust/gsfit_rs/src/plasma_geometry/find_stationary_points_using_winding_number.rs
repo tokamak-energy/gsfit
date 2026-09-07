@@ -4,7 +4,6 @@ use super::cubic_interpolation::cubic_interpolation_v2;
 use crate::plasma_geometry::hessian;
 use ndarray::{Array2, ArrayView1, ArrayView2, s};
 use ndarray_stats::QuantileExt;
-use std::collections::HashMap;
 
 /// Finds stationary points: extrema's (minima or maxima) and saddle points
 /// TODO: improve documentation - can this method also find higher-order stationary points?
@@ -144,12 +143,18 @@ pub fn find_stationary_points_using_winding_number(
         }
     }
 
-    // key: (i_r_from, i_z_from, i_r_to, i_z_to)
-    // value: vector of crossing coordinates
+    // Zero crossings along every grid edge, stored densely (this is inside the Picard loop, so a hash map
+    // keyed by the edge end-points was a measurable cost):
+    // * horizontal edges `(i_r, i_z) -> (i_r + 1, i_z)` are indexed by `i_z * (n_r - 1) + i_r`
+    // * vertical edges `(i_r, i_z) -> (i_r, i_z + 1)` are indexed by `i_z * n_r + i_r`
+    let n_horizontal_edges: usize = n_z * (n_r - 1);
+    let n_vertical_edges: usize = (n_z - 1) * n_r;
     // `(r,z)` location where `d(psi)/d(z)=0`, along all edges
-    let mut d_psi_d_z_zero_coordinates: HashMap<(usize, usize, usize, usize), Vec<Coordinate>> = HashMap::new();
+    let mut d_psi_d_z_zero_horizontal: Vec<Vec<Coordinate>> = Vec::with_capacity(n_horizontal_edges);
+    let mut d_psi_d_z_zero_vertical: Vec<Vec<Coordinate>> = Vec::with_capacity(n_vertical_edges);
     // `(r,z)` location where `d(psi)/d(r)=0`, along all edges
-    let mut d_psi_d_r_zero_coordinates: HashMap<(usize, usize, usize, usize), Vec<Coordinate>> = HashMap::new();
+    let mut d_psi_d_r_zero_horizontal: Vec<Vec<Coordinate>> = Vec::with_capacity(n_horizontal_edges);
+    let mut d_psi_d_r_zero_vertical: Vec<Vec<Coordinate>> = Vec::with_capacity(n_vertical_edges);
 
     // Horizontal march: (i_r_left, i_z) → (i_r_right, i_z)
     // We don't need to do (i_r_left, i_z+1) → (i_r_right, i_z+1) as this will be covered by the next horizontal march
@@ -171,7 +176,8 @@ pub fn find_stationary_points_using_winding_number(
             for &r_cross in &d_psi_d_z_zero_crossings_this_edge {
                 crossing_coordinates_this_edge.push(Coordinate { r: r_cross, z: z[i_z] });
             }
-            d_psi_d_z_zero_coordinates.insert((i_r_left, i_z, i_r_right, i_z), crossing_coordinates_this_edge);
+            // Horizontal edges are visited in index order, so pushing matches `i_z * (n_r - 1) + i_r_left`
+            d_psi_d_z_zero_horizontal.push(crossing_coordinates_this_edge);
 
             let d_psi_d_r_zero_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 r[i_r_left],
@@ -186,7 +192,7 @@ pub fn find_stationary_points_using_winding_number(
             for &r_cross in &d_psi_d_r_zero_crossings_this_edge {
                 crossing_coordinates_this_edge.push(Coordinate { r: r_cross, z: z[i_z] });
             }
-            d_psi_d_r_zero_coordinates.insert((i_r_left, i_z, i_r_right, i_z), crossing_coordinates_this_edge);
+            d_psi_d_r_zero_horizontal.push(crossing_coordinates_this_edge);
         }
     }
 
@@ -221,7 +227,8 @@ pub fn find_stationary_points_using_winding_number(
                     crossing_coordinates_this_edge.push(Coordinate { r: r[i_r], z: z_cross });
                 }
             }
-            d_psi_d_z_zero_coordinates.insert((i_r, i_z_lower, i_r, i_z_upper), crossing_coordinates_this_edge);
+            // Vertical edges are visited in index order, so pushing matches `i_z_lower * n_r + i_r`
+            d_psi_d_z_zero_vertical.push(crossing_coordinates_this_edge);
 
             let bz_crossings_this_edge: Vec<f64> = cubic_interpolation_v2(
                 z_start,
@@ -238,13 +245,15 @@ pub fn find_stationary_points_using_winding_number(
                     crossing_coordinates_this_edge.push(Coordinate { r: r[i_r], z: z_cross });
                 }
             }
-            d_psi_d_r_zero_coordinates.insert((i_r, i_z_lower, i_r, i_z_upper), crossing_coordinates_this_edge);
+            d_psi_d_r_zero_vertical.push(crossing_coordinates_this_edge);
         }
     }
 
     // If no zero-crossings found, then so no stationary points are possible
-    let no_d_psi_d_z_zero_crossings: bool = d_psi_d_z_zero_coordinates.values().all(|crossings| crossings.is_empty());
-    let no_d_psi_d_r_zero_crossings: bool = d_psi_d_r_zero_coordinates.values().all(|crossings| crossings.is_empty());
+    let no_d_psi_d_z_zero_crossings: bool =
+        d_psi_d_z_zero_horizontal.iter().all(|crossings| crossings.is_empty()) && d_psi_d_z_zero_vertical.iter().all(|crossings| crossings.is_empty());
+    let no_d_psi_d_r_zero_crossings: bool =
+        d_psi_d_r_zero_horizontal.iter().all(|crossings| crossings.is_empty()) && d_psi_d_r_zero_vertical.iter().all(|crossings| crossings.is_empty());
     if no_d_psi_d_z_zero_crossings || no_d_psi_d_r_zero_crossings {
         return stationary_points;
     }
@@ -258,6 +267,24 @@ pub fn find_stationary_points_using_winding_number(
             let i_z_lower: usize = i_z;
             let i_z_upper: usize = i_z + 1;
 
+            // A cell with no zero crossing on any of its four edges has no perimeter events, so its
+            // winding number is zero; skip it (this is the large majority of cells)
+            let i_edge_bottom: usize = i_z_lower * (n_r - 1) + i_r_left;
+            let i_edge_top: usize = i_z_upper * (n_r - 1) + i_r_left;
+            let i_edge_left: usize = i_z_lower * n_r + i_r_left;
+            let i_edge_right: usize = i_z_lower * n_r + i_r_right;
+            if d_psi_d_z_zero_horizontal[i_edge_bottom].is_empty()
+                && d_psi_d_r_zero_horizontal[i_edge_bottom].is_empty()
+                && d_psi_d_z_zero_horizontal[i_edge_top].is_empty()
+                && d_psi_d_r_zero_horizontal[i_edge_top].is_empty()
+                && d_psi_d_z_zero_vertical[i_edge_left].is_empty()
+                && d_psi_d_r_zero_vertical[i_edge_left].is_empty()
+                && d_psi_d_z_zero_vertical[i_edge_right].is_empty()
+                && d_psi_d_r_zero_vertical[i_edge_right].is_empty()
+            {
+                continue;
+            }
+
             // Walk the perimeter of the cell CCW: BL → BR → TR → TL → BL.
             // Track every time `br` or `bz` cross zero.
             // Each zero-crossing "event" changes `total_quarter_turns` by +/-1.
@@ -268,8 +295,8 @@ pub fn find_stationary_points_using_winding_number(
             // Bottom edge: BL → BR (r increasing at z = z[i_z]).
             // Bottom edge: (i_r_left, i_z_bottom) → (i_r_right, i_z_bottom)
             let bottom_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &d_psi_d_z_zero_coordinates[&(i_r_left, i_z_lower, i_r_right, i_z_lower)],
-                &d_psi_d_r_zero_coordinates[&(i_r_left, i_z_lower, i_r_right, i_z_lower)],
+                &d_psi_d_z_zero_horizontal[i_z_lower * (n_r - 1) + i_r_left],
+                &d_psi_d_r_zero_horizontal[i_z_lower * (n_r - 1) + i_r_left],
                 r[i_r],
                 r[i_r + 1],
                 true,
@@ -280,8 +307,8 @@ pub fn find_stationary_points_using_winding_number(
 
             // Right edge: BR → TR (z increasing at r = r[i_r+1]).
             let right_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &d_psi_d_z_zero_coordinates[&(i_r_right, i_z_lower, i_r_right, i_z_upper)],
-                &d_psi_d_r_zero_coordinates[&(i_r_right, i_z_lower, i_r_right, i_z_upper)],
+                &d_psi_d_z_zero_vertical[i_z_lower * n_r + i_r_right],
+                &d_psi_d_r_zero_vertical[i_z_lower * n_r + i_r_right],
                 z[i_z],
                 z[i_z + 1],
                 false,
@@ -292,8 +319,8 @@ pub fn find_stationary_points_using_winding_number(
 
             // Top edge: TR → TL (r decreasing at z = z[i_z+1]).
             let top_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &d_psi_d_z_zero_coordinates[&(i_r_left, i_z_upper, i_r_right, i_z_upper)],
-                &d_psi_d_r_zero_coordinates[&(i_r_left, i_z_upper, i_r_right, i_z_upper)],
+                &d_psi_d_z_zero_horizontal[i_z_upper * (n_r - 1) + i_r_left],
+                &d_psi_d_r_zero_horizontal[i_z_upper * (n_r - 1) + i_r_left],
                 r[i_r + 1],
                 r[i_r],
                 true,
@@ -304,8 +331,8 @@ pub fn find_stationary_points_using_winding_number(
 
             // Left edge: TL → BL (z decreasing at r = r[i_r]).
             let left_events: Vec<CrossingKind> = combine_and_order_edge_events(
-                &d_psi_d_z_zero_coordinates[&(i_r_left, i_z_lower, i_r_left, i_z_upper)],
-                &d_psi_d_r_zero_coordinates[&(i_r_left, i_z_lower, i_r_left, i_z_upper)],
+                &d_psi_d_z_zero_vertical[i_z_lower * n_r + i_r_left],
+                &d_psi_d_r_zero_vertical[i_z_lower * n_r + i_r_left],
                 z[i_z_upper],
                 z[i_z_lower],
                 false,

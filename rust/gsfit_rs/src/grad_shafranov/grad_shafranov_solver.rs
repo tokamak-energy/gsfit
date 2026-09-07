@@ -1,8 +1,10 @@
 use super::epp_chi_sq_mag::epp_chi_sq_mag;
 use super::gs_solution::GsSolution;
+use super::gs_solution::PsiAndDerivativesGreens;
 use crate::coils::Coils;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
+use crate::plasma_geometry::vessel_mask;
 use crate::sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
 use crate::source_functions::SourceFunctionTraits;
 use log::info; // use log::{debug, error, info};
@@ -73,11 +75,9 @@ pub fn solve_grad_shafranov(
     // TF rod current interpolated to `times_to_reconstruct`; used as f_vac = MU_0 * i_rod / (2 * PI)
     // in the diamagnetic-loop constraint
     let i_rod_vs_time: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").get("value").unwrap_array1();
-    let (bp_probes_static, bp_probes_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
-        bp_probes.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (flux_loops_static, flux_loops_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
-        flux_loops.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (rogowski_coils_static, rogowski_coils_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
+    let (bp_probes_static, bp_probes_dynamic): (SensorsStatic, Vec<SensorsDynamic>) = bp_probes.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (flux_loops_static, flux_loops_dynamic): (SensorsStatic, Vec<SensorsDynamic>) = flux_loops.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (rogowski_coils_static, rogowski_coils_dynamic): (SensorsStatic, Vec<SensorsDynamic>) =
         rogowski_coils.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (isoflux_statics, isoflux_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = isoflux.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (isoflux_boundary_statics, isoflux_boundary_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
@@ -86,7 +86,7 @@ pub fn solve_grad_shafranov(
         pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
     let (stationary_point_statics, stationary_point_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) =
         stationary_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (dialoop_statics, dialoop_dynamic): (Vec<SensorsStatic>, Vec<SensorsDynamic>) = dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let (dialoop_static, dialoop_dynamic): (SensorsStatic, Vec<SensorsDynamic>) = dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
 
     // TODO: might be better to combine all sensors here, before passing to the solver
 
@@ -144,6 +144,15 @@ pub fn solve_grad_shafranov(
         i_reg += n_passive_regularisation_this_passive;
     }
 
+    // Quantities shared by every time-slice (and every Picard iteration), calculated once:
+    // the reorganised plasma/coil/passive Green's tables and the inside-vessel grid mask
+    let psi_and_derivatives_greens: PsiAndDerivativesGreens = PsiAndDerivativesGreens::new(&plasma_owned);
+    let grid_r: Array1<f64> = plasma_owned.results.get("grid").get("r").unwrap_array1();
+    let grid_z: Array1<f64> = plasma_owned.results.get("grid").get("z").unwrap_array1();
+    let vessel_r: Array1<f64> = plasma_owned.results.get("vessel").get("r").unwrap_array1();
+    let vessel_z: Array1<f64> = plasma_owned.results.get("vessel").get("z").unwrap_array1();
+    let mask_vessel_2d: Array2<bool> = vessel_mask(&grid_r, &grid_z, &vessel_r, &vessel_z);
+
     // loop over time in parallel and store in "results"
     let timing_start: Instant = Instant::now();
     let mut gs_solutions: Vec<GsSolution> = (0..n_time)
@@ -155,13 +164,13 @@ pub fn solve_grad_shafranov(
             let mut gs_object: GsSolution = GsSolution::new(
                 &plasma_owned,
                 &coils_dynamic[i_time],
-                &bp_probes_static[i_time],
+                &bp_probes_static,
                 &bp_probes_dynamic[i_time],
-                &flux_loops_static[i_time],
+                &flux_loops_static,
                 &flux_loops_dynamic[i_time],
-                &dialoop_statics[i_time],
+                &dialoop_static,
                 &dialoop_dynamic[i_time],
-                &rogowski_coils_static[i_time],
+                &rogowski_coils_static,
                 &rogowski_coils_dynamic[i_time],
                 &isoflux_statics[i_time],
                 &isoflux_dynamic[i_time],
@@ -180,6 +189,8 @@ pub fn solve_grad_shafranov(
                 ff_prime_source_function.clone(),
                 passive_regularisations.clone(),
                 passive_regularisations_weight.clone(),
+                &psi_and_derivatives_greens,
+                &mask_vessel_2d,
             );
 
             // Solve

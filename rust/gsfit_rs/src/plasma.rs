@@ -21,6 +21,7 @@ use numpy::borrow::PyReadonlyArray1;
 use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
+use rayon::prelude::*;
 use std::f64::consts::PI;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
@@ -39,6 +40,24 @@ pub struct Plasma {
 }
 
 // Python accessible methods
+/// Per-time-slice results of the expensive part of the equilibrium post-processing
+/// (see `Plasma::equilibrium_post_processor`); calculated in parallel over the time-slices
+struct PostProcessedSlice {
+    boundary_contour: MarchingContour,
+    f_profile: Array1<f64>,
+    volume_profile: Array1<f64>,
+    volume_prime_profile: Array1<f64>,
+    area_profile: Array1<f64>,
+    area_prime_profile: Array1<f64>,
+    q_profile: Array1<f64>,
+    q_profile_vacuum: Array1<f64>,
+    bp_sq_fs_avg: f64,
+    hfs_leg_r: Array1<f64>,
+    hfs_leg_z: Array1<f64>,
+    lfs_leg_r: Array1<f64>,
+    lfs_leg_z: Array1<f64>,
+}
+
 #[pymethods]
 impl Plasma {
     /// Create a new Plasma instance
@@ -461,6 +480,33 @@ impl Plasma {
             let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
             let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
+            // Green's table between the grid and this passive's filaments.
+            // The table depends only on the geometry, so it is calculated once per passive and
+            // contracted with each degree of freedom's current distribution below.
+            let greens_calculator: Greens = Greens::sensor_to_conductor(
+                flat_r.clone(),
+                flat_z.clone(),
+                passive_r.clone(),
+                passive_z.clone(),
+                passive_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+                passive_z.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+            );
+
+            // Green's functions for `psi`, `b_r`, `b_z`, and derivatives
+            let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_r * n_z, n_filament]
+            let g_br_filaments: Array2<f64> = greens_calculator.b_r(); // shape = [n_r * n_z, n_filament]
+            let g_bz_filaments: Array2<f64> = greens_calculator.b_z(); // shape = [n_r * n_z, n_filament]
+            let d_g_br_filaments_d_z: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [n_r * n_z, n_filament]
+            let d_g_bz_filaments_d_z: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d_psi_d_r_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_r(); // shape = [n_r * n_z, n_filament]
+            let g_d_psi_d_z_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d2_psi_d_r2_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = [n_r * n_z, n_filament]
+            let g_d2_psi_d_r_d_z_filaments: Array2<f64> = greens_calculator.d2_psi_d_r_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d2_psi_d_z2_filaments: Array2<f64> = greens_calculator.d2_psi_d_z2(); // shape = [n_r * n_z, n_filament]
+            let g_d3_psi_d_r2_d_z_filaments: Array2<f64> = greens_calculator.d3_psi_d_r2_d_z(); // shape = [n_r * n_z, n_filament]
+            let g_d3_psi_d_r_d_z2_filaments: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2(); // shape = [n_r * n_z, n_filament]
+            let g_d3_psi_d_z3_filaments: Array2<f64> = greens_calculator.d3_psi_d_z3(); // shape = [n_r * n_z, n_filament]
+
             for dof_name in dof_names {
                 // Current distribution
                 let current_distribution: Array1<f64> = passives_local
@@ -471,45 +517,20 @@ impl Plasma {
                     .get("current_distribution")
                     .unwrap_array1();
 
-                // Green's table
-                let greens_calculator: Greens = Greens::sensor_to_conductor(
-                    flat_r.clone(),
-                    flat_z.clone(),
-                    passive_r.clone(),
-                    passive_z.clone(),
-                    passive_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
-                    passive_z.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
-                );
-
-                // Green's functions for `psi`, `b_r`, `b_z`, and derivatives
-                let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_r * n_z, n_filament]
-                let g_br_filaments: Array2<f64> = greens_calculator.b_r(); // shape = [n_r * n_z, n_filament]
-                let g_bz_filaments: Array2<f64> = greens_calculator.b_z(); // shape = [n_r * n_z, n_filament]
-                let d_g_br_filaments_d_z: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [n_r * n_z, n_filament]
-                let d_g_bz_filaments_d_z: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d_psi_d_r_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_r(); // shape = [n_r * n_z, n_filament]
-                let g_d_psi_d_z_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d2_psi_d_r2_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = [n_r * n_z, n_filament]
-                let g_d2_psi_d_r_d_z_filaments: Array2<f64> = greens_calculator.d2_psi_d_r_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d2_psi_d_z2_filaments: Array2<f64> = greens_calculator.d2_psi_d_z2(); // shape = [n_r * n_z, n_filament]
-                let g_d3_psi_d_r2_d_z_filaments: Array2<f64> = greens_calculator.d3_psi_d_r2_d_z(); // shape = [n_r * n_z, n_filament]
-                let g_d3_psi_d_r_d_z2_filaments: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2(); // shape = [n_r * n_z, n_filament]
-                let g_d3_psi_d_z3_filaments: Array2<f64> = greens_calculator.d3_psi_d_z3(); // shape = [n_r * n_z, n_filament]
-
                 // Apply the current_distribution
-                let g_psi_filaments_with_dof: Array2<f64> = g_psi_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
+                let g_psi_filaments_with_dof: Array2<f64> = &g_psi_filaments * &current_distribution; // shape = [n_r * n_z, n_filament]
                 let g_br_filaments_with_dof: Array2<f64> = &g_br_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_bz_filaments_with_dof: Array2<f64> = g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
-                let d_g_br_filaments_with_dof_d_z: Array2<f64> = d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
-                let d_g_bz_filaments_with_dof_d_z: Array2<f64> = d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
-                let g_d_psi_d_r_coil_filaments_with_dof: Array2<f64> = g_d_psi_d_r_coil_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d_psi_d_z_coil_filaments_with_dof: Array2<f64> = g_d_psi_d_z_coil_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_r2_filaments_with_dof: Array2<f64> = g_d2_psi_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_r_d_z_filaments_with_dof: Array2<f64> = g_d2_psi_d_r_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d2_psi_d_z2_filaments_with_dof: Array2<f64> = g_d2_psi_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_r2_d_z_filaments_with_dof: Array2<f64> = g_d3_psi_d_r2_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_r_d_z2_filaments_with_dof: Array2<f64> = g_d3_psi_d_r_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
-                let g_d3_psi_d_z3_filaments_with_dof: Array2<f64> = g_d3_psi_d_z3_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_bz_filaments_with_dof: Array2<f64> = &g_bz_filaments * &current_distribution; // shape = [n_r * n_z]
+                let d_g_br_filaments_with_dof_d_z: Array2<f64> = &d_g_br_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
+                let d_g_bz_filaments_with_dof_d_z: Array2<f64> = &d_g_bz_filaments_d_z * &current_distribution; // shape = [n_r * n_z]
+                let g_d_psi_d_r_coil_filaments_with_dof: Array2<f64> = &g_d_psi_d_r_coil_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d_psi_d_z_coil_filaments_with_dof: Array2<f64> = &g_d_psi_d_z_coil_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_r2_filaments_with_dof: Array2<f64> = &g_d2_psi_d_r2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_r_d_z_filaments_with_dof: Array2<f64> = &g_d2_psi_d_r_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d2_psi_d_z2_filaments_with_dof: Array2<f64> = &g_d2_psi_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_r2_d_z_filaments_with_dof: Array2<f64> = &g_d3_psi_d_r2_d_z_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_r_d_z2_filaments_with_dof: Array2<f64> = &g_d3_psi_d_r_d_z2_filaments * &current_distribution; // shape = [n_r * n_z]
+                let g_d3_psi_d_z3_filaments_with_dof: Array2<f64> = &g_d3_psi_d_z3_filaments * &current_distribution; // shape = [n_r * n_z]
 
                 // Sum over all filaments
                 let g_psi: Array1<f64> = g_psi_filaments_with_dof.sum_axis(Axis(1)); // shape = [n_r * n_z]
@@ -1026,6 +1047,8 @@ impl Plasma {
 
         // Get the mesh (note, the [0] is because the mesh is the same for all time slices)
         let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
+        // TF rod current per time-slice (needed by the parallel post-processing below)
+        let i_rod: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").get("value").unwrap_array1();
         let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
         let r_mesh: Array2<f64> = plasma.results.get("grid").get("mesh").get("r").unwrap_array2();
         let z_mesh: Array2<f64> = plasma.results.get("grid").get("mesh").get("z").unwrap_array2();
@@ -1096,6 +1119,123 @@ impl Plasma {
 
         let mut xpt_diverted: Vec<bool> = Vec::with_capacity(n_time);
 
+        // The boundary contour, the flux-surface contouring and the profiles derived from it, and the
+        // scrape-off-layer legs depend only on each time-slice's own solution and dominate the
+        // post-processing cost, so they are calculated in parallel over the time-slices here; the
+        // serial loop below then only assembles results. The arithmetic is unchanged.
+        let plasma_for_scrape_off_layer: &Plasma = self;
+        let gs_solutions_shared: &[GsSolution] = gs_solutions;
+        let post_processed_slices: Vec<PostProcessedSlice> = (0..n_time)
+            .into_par_iter()
+            .map(|i_time: usize| {
+                let gs_solution: &GsSolution = &gs_solutions_shared[i_time];
+                let empty_1d = || Array1::from_elem(0, f64::NAN);
+                let mut post_processed_slice: PostProcessedSlice = PostProcessedSlice {
+                    boundary_contour: MarchingContour {
+                        r: empty_1d(),
+                        z: empty_1d(),
+                        n: 0,
+                    },
+                    f_profile: empty_1d(),
+                    volume_profile: empty_1d(),
+                    volume_prime_profile: empty_1d(),
+                    area_profile: empty_1d(),
+                    area_prime_profile: empty_1d(),
+                    q_profile: empty_1d(),
+                    q_profile_vacuum: empty_1d(),
+                    bp_sq_fs_avg: f64::NAN,
+                    hfs_leg_r: empty_1d(),
+                    hfs_leg_z: empty_1d(),
+                    lfs_leg_r: empty_1d(),
+                    lfs_leg_z: empty_1d(),
+                };
+                // Time-slices which didn't converge are skipped, as in the loop below
+                if gs_solution.psi_a.is_nan() {
+                    return post_processed_slice;
+                }
+                let psi_a_local: f64 = gs_solution.psi_a;
+                let psi_b_local: f64 = gs_solution.psi_b;
+
+                post_processed_slice.f_profile = epp_f_profile(gs_solution, &psi_n, psi_a_local, psi_b_local, i_rod[i_time]);
+
+                let psi_profile_local: Array1<f64> = &psi_n * (psi_b_local - psi_a_local) + psi_a_local;
+                let d_psi: f64 = psi_profile_local[1] - psi_profile_local[0];
+
+                // Find plasma boundary
+                let r_xpt_local: Option<f64>;
+                let z_xpt_local: Option<f64>;
+                if gs_solution.xpt_diverted {
+                    r_xpt_local = Some(gs_solution.bounding_r);
+                    z_xpt_local = Some(gs_solution.bounding_z);
+                } else {
+                    r_xpt_local = None;
+                    z_xpt_local = None;
+                }
+                let boundary_contour_local: MarchingContour = marching_squares(
+                    &r,
+                    &z,
+                    &gs_solution.psi_2d,
+                    &gs_solution.d_psi_d_r_2d,
+                    &gs_solution.d_psi_d_z_2d,
+                    psi_b_local,
+                    &gs_solution.mask,
+                    r_xpt_local,
+                    z_xpt_local,
+                    gs_solution.r_mag,
+                    gs_solution.z_mag,
+                );
+                let boundary_contour_is_finite: bool = boundary_contour_local
+                    .r
+                    .iter()
+                    .chain(boundary_contour_local.z.iter())
+                    .all(|value| value.is_finite());
+                let boundary_is_valid: bool = boundary_contour_local.n != 0 && boundary_contour_is_finite;
+                post_processed_slice.boundary_contour = boundary_contour_local;
+                if !boundary_is_valid {
+                    return post_processed_slice;
+                }
+                let boundary_contour_local: &MarchingContour = &post_processed_slice.boundary_contour;
+
+                // Volume and area profiles
+                let (volume_profile_local, volume_prime_profile_local, area_profile_local, area_prime_profile_local): (
+                    Array1<f64>,
+                    Array1<f64>,
+                    Array1<f64>,
+                    Array1<f64>,
+                ) = epp_vol_profile(gs_solution, &boundary_contour_local.r, &boundary_contour_local.z, &psi_n, &r, &z, d_psi);
+
+                // Flux surfaces and the safety factor (plasma, and vacuum toroidal field for the diamagnetic flux)
+                let flux_surfaces: Vec<FluxSurface> = epp_flux_surfaces(gs_solution, &boundary_contour_local.r, &boundary_contour_local.z, &psi_n, &r, &z);
+                post_processed_slice.q_profile = epp_q_profile(gs_solution, &flux_surfaces, &post_processed_slice.f_profile, &r, &z);
+                let f_profile_vacuum: Array1<f64> = 0.0 * &post_processed_slice.f_profile + MU_0 * i_rod[i_time] / (2.0 * PI);
+                post_processed_slice.q_profile_vacuum = epp_q_profile(gs_solution, &flux_surfaces, &f_profile_vacuum, &r, &z);
+
+                // Flux-surface-averaged b_p ** 2, used for beta_p(1) and li(1).
+                // Evaluated slightly inside the boundary because b_p = 0 at the x-point,
+                // which lies on the boundary for diverted plasmas, making `∮ d_ell / b_p`
+                // log-divergent on the separatrix
+                let bp_sq_fs_avg_psi_n: f64 = 0.995;
+                post_processed_slice.bp_sq_fs_avg =
+                    epp_bp_sq_flux_surface_average(gs_solution, &boundary_contour_local.r, &boundary_contour_local.z, bp_sq_fs_avg_psi_n, &r, &z);
+
+                // Scrape-off-layer legs
+                if gs_solution.xpt_diverted {
+                    let (hfs_leg_r, hfs_leg_z, lfs_leg_r, lfs_leg_z): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>) =
+                        epp_scrape_off_layer(gs_solution, plasma_for_scrape_off_layer);
+                    post_processed_slice.hfs_leg_r = hfs_leg_r;
+                    post_processed_slice.hfs_leg_z = hfs_leg_z;
+                    post_processed_slice.lfs_leg_r = lfs_leg_r;
+                    post_processed_slice.lfs_leg_z = lfs_leg_z;
+                }
+
+                post_processed_slice.volume_profile = volume_profile_local;
+                post_processed_slice.volume_prime_profile = volume_prime_profile_local;
+                post_processed_slice.area_profile = area_profile_local;
+                post_processed_slice.area_prime_profile = area_prime_profile_local;
+                post_processed_slice
+            })
+            .collect();
+
         // Loop over time, and perform post-processing on `gs_solutions`
         let mut p_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
         let mut bt_2d: Array3<f64> = Array3::from_elem((n_time, n_z, n_r), f64::NAN);
@@ -1134,8 +1274,6 @@ impl Plasma {
         let mut lfs_legs_r: Vec<Array1<f64>> = Vec::with_capacity(n_time);
         let mut lfs_legs_z: Vec<Array1<f64>> = Vec::with_capacity(n_time);
         let mut lfs_legs_n: Vec<usize> = vec![0; n_time];
-
-        let i_rod: Array1<f64> = coils.results.get("tf").get("rod_i").get("measured").get("value").unwrap_array1();
 
         let mut boundary_contours: Vec<MarchingContour> = Vec::with_capacity(n_time);
 
@@ -1217,7 +1355,7 @@ impl Plasma {
             p_1d[i_time] = p_2d.slice(s![i_time, .., ..]).sum();
 
             // Profiles
-            let f_profile_local: Array1<f64> = epp_f_profile(&gs_solutions[i_time], &psi_n, psi_a[i_time], psi_b[i_time], i_rod[i_time]);
+            let f_profile_local: Array1<f64> = post_processed_slices[i_time].f_profile.clone();
             f_profile.slice_mut(s![i_time, ..]).assign(&f_profile_local);
 
             let ff_prime_profile_local: Array1<f64> = epp_ff_prime_profile(&gs_solutions[i_time], &psi_n);
@@ -1230,7 +1368,6 @@ impl Plasma {
             p_prime_profile.slice_mut(s![i_time, ..]).assign(&p_prime_profile_this_time);
 
             let psi_profile_this_time: Array1<f64> = &psi_n * (psi_b[i_time] - psi_a[i_time]) + psi_a[i_time];
-            let d_psi: f64 = psi_profile_this_time[1] - psi_profile_this_time[0];
             psi_profile.slice_mut(s![i_time, ..]).assign(&psi_profile_this_time);
 
             // Mid-plane profiles
@@ -1249,36 +1386,8 @@ impl Plasma {
             let (bt_2d_this_time, _bt_vac_this_time): (Array2<f64>, Array2<f64>) = epp_bt_2d(&gs_solutions[i_time], &r, &z, i_rod[i_time]);
             bt_2d.slice_mut(s![i_time, .., ..]).assign(&bt_2d_this_time);
 
-            // Find plasma boundary
-            let psi_2d_local: Array2<f64> = psi_2d.slice(s![i_time, .., ..]).to_owned();
-            let mask_2d_local: Array2<f64> = mask_2d.slice(s![i_time, .., ..]).to_owned();
-            let psi_b_local: f64 = gs_solutions[i_time].psi_b;
-
-            let r_xpt_local: Option<f64>;
-            let z_xpt_local: Option<f64>;
-            if xpt_diverted[i_time] {
-                r_xpt_local = Some(bounding_r[i_time]);
-                z_xpt_local = Some(bounding_z[i_time]);
-            } else {
-                r_xpt_local = None;
-                z_xpt_local = None;
-            }
-            let mag_r_local: f64 = r_mag[i_time];
-            let mag_z_local: f64 = z_mag[i_time];
-
-            let boundary_contour_local: MarchingContour = marching_squares(
-                &r,
-                &z,
-                &psi_2d_local,
-                &gs_solutions[i_time].d_psi_d_r_2d,
-                &gs_solutions[i_time].d_psi_d_z_2d,
-                psi_b_local,
-                &mask_2d_local,
-                r_xpt_local,
-                z_xpt_local,
-                mag_r_local,
-                mag_z_local,
-            );
+            // Plasma boundary (calculated in parallel above)
+            let boundary_contour_local: MarchingContour = post_processed_slices[i_time].boundary_contour.clone();
             boundary_contours.push(boundary_contour_local.clone());
             // Defensive programming: when a time-slice has failed the boundary contour can be
             // empty, or contain NAN's or junk; skip further post-processing for this time slice
@@ -1302,20 +1411,10 @@ impl Plasma {
             // Plasma volume
             // plasma_volume[i_time] = epp_plasma_volume(&gs_solutions[i_time], r_geo[i_time]);
 
-            let (volume_profile_this_time, volume_prime_profile_this_time, area_profile_this_time, area_prime_profile_this_time): (
-                Array1<f64>,
-                Array1<f64>,
-                Array1<f64>,
-                Array1<f64>,
-            ) = epp_vol_profile(
-                &gs_solutions[i_time],
-                &boundary_contour_local.r,
-                &boundary_contour_local.z,
-                &psi_n,
-                &r,
-                &z,
-                d_psi,
-            );
+            let volume_profile_this_time: Array1<f64> = post_processed_slices[i_time].volume_profile.clone();
+            let volume_prime_profile_this_time: Array1<f64> = post_processed_slices[i_time].volume_prime_profile.clone();
+            let area_profile_this_time: Array1<f64> = post_processed_slices[i_time].area_profile.clone();
+            let area_prime_profile_this_time: Array1<f64> = post_processed_slices[i_time].area_prime_profile.clone();
             area_profile.slice_mut(s![i_time, ..]).assign(&area_profile_this_time);
             area_prime_profile.slice_mut(s![i_time, ..]).assign(&area_prime_profile_this_time);
             volume_profile.slice_mut(s![i_time, ..]).assign(&volume_profile_this_time);
@@ -1323,10 +1422,7 @@ impl Plasma {
 
             plasma_volume[i_time] = volume_profile_this_time.last().unwrap().to_owned();
 
-            let flux_surfaces: Vec<FluxSurface> =
-                epp_flux_surfaces(&gs_solutions[i_time], &boundary_contour_local.r, &boundary_contour_local.z, &psi_n, &r, &z);
-
-            let q_profile_this_time: Array1<f64> = epp_q_profile(&gs_solutions[i_time], &flux_surfaces, &f_profile_local, &r, &z);
+            let q_profile_this_time: Array1<f64> = post_processed_slices[i_time].q_profile.clone();
             q_profile.slice_mut(s![i_time, ..]).assign(&q_profile_this_time);
 
             let flux_tor_profile_this_time_slice: Array1<f64> = epp_flux_toroidal_profile(&q_profile_this_time, &psi_profile_this_time);
@@ -1334,8 +1430,7 @@ impl Plasma {
 
             // TODO: this is **VERY** hacky, and **SHOULD** be improved!!
             // set f_profile to the vacuum profile, then calculate the vacuum q-profile, then the vacuum toroidal flux
-            let f_profile_vacuum: Array1<f64> = 0.0 * &f_profile_local + MU_0 * i_rod[i_time] / (2.0 * PI);
-            let q_profile_vacuum: Array1<f64> = epp_q_profile(&gs_solutions[i_time], &flux_surfaces, &f_profile_vacuum, &r, &z);
+            let q_profile_vacuum: Array1<f64> = post_processed_slices[i_time].q_profile_vacuum.clone();
             let flux_tor_profile_vacuum: Array1<f64> = epp_flux_toroidal_profile(&q_profile_vacuum, &psi_profile_this_time);
             flux_dia[i_time] = flux_tor_profile_this_time_slice.last().unwrap().to_owned() - flux_tor_profile_vacuum.last().unwrap().to_owned();
 
@@ -1371,15 +1466,8 @@ impl Plasma {
             // Evaluated slightly inside the boundary because b_p = 0 at the x-point,
             // which lies on the boundary for diverted plasmas, making `∮ d_ell / b_p`
             // log-divergent on the separatrix
-            let bp_sq_fs_avg_psi_n: f64 = 0.995;
-            let bp_sq_fs_avg: f64 = epp_bp_sq_flux_surface_average(
-                &gs_solutions[i_time],
-                &boundary_contour_local.r,
-                &boundary_contour_local.z,
-                bp_sq_fs_avg_psi_n,
-                &r,
-                &z,
-            );
+            // (calculated in parallel above)
+            let bp_sq_fs_avg: f64 = post_processed_slices[i_time].bp_sq_fs_avg;
 
             // Plasma beta (must be after r_geo and plasma_volume are computed)
             (beta_p_1[i_time], beta_p_2[i_time], beta_p_3[i_time]) =
@@ -1408,24 +1496,11 @@ impl Plasma {
             let beta_n_this_time_slice: f64 = epp_beta_n(beta_t_this_time_slice, r_minor[i_time], bt_vac_at_r_geo[i_time], ip[i_time]);
             beta_n[i_time] = beta_n_this_time_slice;
 
-            // Find SOL boundary contour
-            if gs_solutions[i_time].xpt_diverted {
-                let (hfs_leg_r, hfs_leg_z, lfs_leg_r, lfs_leg_z): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>) =
-                    epp_scrape_off_layer(&gs_solutions[i_time], &self);
-                hfs_legs_r.push(hfs_leg_r);
-                hfs_legs_z.push(hfs_leg_z);
-                lfs_legs_r.push(lfs_leg_r);
-                lfs_legs_z.push(lfs_leg_z);
-            } else {
-                let hfs_leg_r: Array1<f64> = Array1::from_elem(0, f64::NAN);
-                let hfs_leg_z: Array1<f64> = Array1::from_elem(0, f64::NAN);
-                let lfs_leg_r: Array1<f64> = Array1::from_elem(0, f64::NAN);
-                let lfs_leg_z: Array1<f64> = Array1::from_elem(0, f64::NAN);
-                hfs_legs_r.push(hfs_leg_r);
-                hfs_legs_z.push(hfs_leg_z);
-                lfs_legs_r.push(lfs_leg_r);
-                lfs_legs_z.push(lfs_leg_z);
-            }
+            // SOL boundary contour (calculated in parallel above; empty arrays when not diverted)
+            hfs_legs_r.push(post_processed_slices[i_time].hfs_leg_r.clone());
+            hfs_legs_z.push(post_processed_slices[i_time].hfs_leg_z.clone());
+            lfs_legs_r.push(post_processed_slices[i_time].lfs_leg_r.clone());
+            lfs_legs_z.push(post_processed_slices[i_time].lfs_leg_z.clone());
         }
 
         // Find the longest div leg

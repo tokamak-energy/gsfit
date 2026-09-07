@@ -138,17 +138,18 @@ impl FluxLoops {
                 let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
-                for dof_name in dof_names {
-                    let greens_calculator: Greens = Greens::sensor_to_conductor(
-                        array![sensor_r],
-                        array![sensor_z],
-                        passive_r.clone(),
-                        passive_z.clone(),
-                        passive_r.clone() * 0.0, // TODO: should I set these to NaN?
-                        passive_z.clone() * 0.0,
-                    );
-                    let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, passive_r.len())
+                // Green's table between this sensor and the passive's filaments (independent of the degrees of freedom)
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
+                    array![sensor_r],
+                    array![sensor_z],
+                    passive_r.clone(),
+                    passive_z.clone(),
+                    passive_r.clone() * 0.0, // TODO: should I set these to NaN?
+                    passive_z.clone() * 0.0,
+                );
+                let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, passive_r.len())
 
+                for dof_name in dof_names {
                     // Current distribution
                     let current_distribution: Array1<f64> = passives_local
                         .results
@@ -158,7 +159,7 @@ impl FluxLoops {
                         .get("current_distribution")
                         .unwrap_array1();
 
-                    let g_with_dof_full: Array2<f64> = g_psi_matrix * &current_distribution; // shape = [n_r * n_z, n_filament]
+                    let g_with_dof_full: Array2<f64> = &g_psi_matrix * &current_distribution; // shape = [1, n_filament]
 
                     // Sum over all filaments
                     let g: f64 = g_with_dof_full.sum(); // shape = [n_r * n_z]
@@ -431,7 +432,7 @@ impl FluxLoops {
     /// This splits the FluxLoops into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (SensorsStatic, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
 
         // Vector of boolean's to say if we use the sensor or not
@@ -452,12 +453,48 @@ impl FluxLoops {
         let sensor_names: Vec<String> = include_indices.iter().map(|&index| sensor_names_all[index].clone()).collect();
         let n_sensors: usize = sensor_names.len();
 
+        // Time dependent: interpolate all sensors (included or not) to `times_to_reconstruct` and store the
+        // measured values, so that they are available for the sensor post-processing even when no sensor
+        // of this type is included in the fit
+        let mut measured: Array2<f64> = Array2::from_elem((n_sensors_all, n_time), f64::NAN);
+        for i_sensor in 0..n_sensors_all {
+            // Sensor names
+            let sensor_name: &str = &sensor_names_all[i_sensor];
+
+            // Measured values
+            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("psi").get("experimental").get("time").unwrap_array1();
+            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("psi").get("experimental").get("value").unwrap_array1();
+
+            // Create the interpolator
+            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone())
+                .expect("FluxLoops.split_into_static_and_dynamic: Can't make interpolator");
+
+            // Do the interpolation
+            let measured_this_sensor: Array1<f64> = interpolator
+                .interpolate_array1(times_to_reconstruct)
+                .expect("FluxLoops.split_into_static_and_dynamic: Can't do interpolation");
+
+            // Store for later
+            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_sensor);
+
+            // Store in self
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("psi")
+                .get_or_insert("measured")
+                .insert("value", measured_this_sensor);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("psi")
+                .get_or_insert("measured")
+                .insert("time", times_to_reconstruct.clone());
+        }
+
         // If there are no sensors selected, return empty data
         if n_sensors == 0 {
             let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
-            let static_data_empty_vs_time: Vec<SensorsStatic> = vec![static_data_empty; n_time];
             let dynamic_data_empty_vs_time: Vec<SensorsDynamic> = vec![dynamic_data_empty; n_time];
-            return (static_data_empty_vs_time, dynamic_data_empty_vs_time);
+            return (static_data_empty, dynamic_data_empty_vs_time);
         }
 
         // Fit settings
@@ -529,42 +566,6 @@ impl FluxLoops {
             geometry_z: Array1::from_elem(n_sensors, f64::NAN), // not used for FluxLoops
         };
 
-        // Time dependent
-        // Interpolate all sensors to `times_to_reconstruct`
-        let mut measured: Array2<f64> = Array2::from_elem((n_sensors_all, n_time), f64::NAN);
-        for i_sensor in 0..n_sensors_all {
-            // Sensor names
-            let sensor_name: &str = &sensor_names_all[i_sensor];
-
-            // Measured values
-            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("psi").get("experimental").get("time").unwrap_array1();
-            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("psi").get("experimental").get("value").unwrap_array1();
-
-            // Create the interpolator
-            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone())
-                .expect("FluxLoops.split_into_static_and_dynamic: Can't make interpolator");
-
-            // Do the interpolation
-            let measured_this_sensor: Array1<f64> = interpolator
-                .interpolate_array1(times_to_reconstruct)
-                .expect("FluxLoops.split_into_static_and_dynamic: Can't do interpolation");
-
-            // Store for later
-            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_sensor);
-
-            // Store in self
-            self.results
-                .get_or_insert(sensor_name)
-                .get_or_insert("psi")
-                .get_or_insert("measured")
-                .insert("value", measured_this_sensor);
-            self.results
-                .get_or_insert(sensor_name)
-                .get_or_insert("psi")
-                .get_or_insert("measured")
-                .insert("time", times_to_reconstruct.clone());
-        }
-
         // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
         let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);
         for i_time in 0..n_time {
@@ -577,10 +578,8 @@ impl FluxLoops {
             results_dynamic.push(results_dynamic_this_time_slice);
         }
 
-        let results_static_time_dependent: Vec<SensorsStatic> = vec![results_static.clone(); n_time];
-
-        // Return the static and dynamic results
-        (results_static_time_dependent, results_dynamic)
+        // The Green's tables do not depend on time, so a single static table is shared by all time-slices
+        (results_static, results_dynamic)
     }
 
     pub fn calculate_sensor_values_rs(&mut self, coils: &Coils, passives: &Passives, plasma: &Plasma) {

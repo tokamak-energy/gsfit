@@ -1,6 +1,7 @@
 use super::Greens;
 use super::filament_geometry::FilamentGeometry;
 use ndarray::{Array1, Array2, s};
+use rayon::prelude::*;
 
 /// Mutual inductance between filaments of finite size
 ///
@@ -44,50 +45,61 @@ pub fn mutual_inductance_finite_size_to_finite_size(
     // TODO: can this can be adjusted automatically to achieve a desired accuracy ??
     let n_sub_filaments: usize = 10;
 
+    // Each row of `g_psi` (one "first" filament against all "second" filaments) is independent, so the
+    // rows are computed in parallel. Every element is evaluated exactly as in the serial loop.
+    let g_psi_rows: Vec<Array1<f64>> = (0..n_filaments)
+        .into_par_iter()
+        .map(|i_filament: usize| {
+            let mut g_psi_row: Array1<f64> = Array1::from_elem(n_filaments_prime, f64::NAN);
+            // Discretise the first filament
+            let (r_sub_filament, z_sub_filament, _d_r_sub_filament, _d_z_sub_filament, _area): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, f64) =
+                discretise_parallelogram(
+                    r[i_filament],
+                    z[i_filament],
+                    d_r[i_filament],
+                    d_z[i_filament],
+                    angle_1[i_filament],
+                    angle_2[i_filament],
+                    n_sub_filaments,
+                );
+
+            for i_filament_prime in 0..n_filaments_prime {
+                // Discretise the second filament
+                let (r_sub_filament_prime, z_sub_filament_prime, _d_r_sub_filament_prime, _d_z_sub_filament_prime, _area_prime): (
+                    Array1<f64>,
+                    Array1<f64>,
+                    Array1<f64>,
+                    Array1<f64>,
+                    f64,
+                ) = discretise_parallelogram(
+                    r_prime[i_filament_prime],
+                    z_prime[i_filament_prime],
+                    d_r_prime[i_filament_prime],
+                    d_z_prime[i_filament_prime],
+                    angle_1_prime[i_filament_prime],
+                    angle_2_prime[i_filament_prime],
+                    n_sub_filaments,
+                );
+
+                // Calculate the greens function for the sub-filaments to sub-filaments
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
+                    r_sub_filament.clone(),
+                    z_sub_filament.clone(),
+                    r_sub_filament_prime.clone(),
+                    z_sub_filament_prime.clone(),
+                    r_sub_filament_prime.clone() * 0.0 + d_r[i_filament] / (n_sub_filaments as f64),
+                    z_sub_filament_prime.clone() * 0.0 + d_z[i_filament] / (n_sub_filaments as f64),
+                );
+                let g_sub_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_sub_filaments * n_sub_filaments, n_sub_filaments * n_sub_filaments]
+
+                g_psi_row[i_filament_prime] = g_sub_filaments.sum() / ((n_sub_filaments as f64).powi(4));
+            }
+            g_psi_row
+        })
+        .collect();
+
     for i_filament in 0..n_filaments {
-        // Discretise the first filament
-        let (r_sub_filament, z_sub_filament, _d_r_sub_filament, _d_z_sub_filament, _area): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, f64) =
-            discretise_parallelogram(
-                r[i_filament],
-                z[i_filament],
-                d_r[i_filament],
-                d_z[i_filament],
-                angle_1[i_filament],
-                angle_2[i_filament],
-                n_sub_filaments,
-            );
-
-        for i_filament_prime in 0..n_filaments_prime {
-            // Discretise the second filament
-            let (r_sub_filament_prime, z_sub_filament_prime, _d_r_sub_filament_prime, _d_z_sub_filament_prime, _area_prime): (
-                Array1<f64>,
-                Array1<f64>,
-                Array1<f64>,
-                Array1<f64>,
-                f64,
-            ) = discretise_parallelogram(
-                r_prime[i_filament_prime],
-                z_prime[i_filament_prime],
-                d_r_prime[i_filament_prime],
-                d_z_prime[i_filament_prime],
-                angle_1_prime[i_filament_prime],
-                angle_2_prime[i_filament_prime],
-                n_sub_filaments,
-            );
-
-            // Calculate the greens function for the sub-filaments to sub-filaments
-            let greens_calculator: Greens = Greens::sensor_to_conductor(
-                r_sub_filament.clone(),
-                z_sub_filament.clone(),
-                r_sub_filament_prime.clone(),
-                z_sub_filament_prime.clone(),
-                r_sub_filament_prime.clone() * 0.0 + d_r[i_filament] / (n_sub_filaments as f64),
-                z_sub_filament_prime.clone() * 0.0 + d_z[i_filament] / (n_sub_filaments as f64),
-            );
-            let g_sub_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_sub_filaments * n_sub_filaments, n_sub_filaments * n_sub_filaments]
-
-            g_psi[(i_filament, i_filament_prime)] = g_sub_filaments.sum() / ((n_sub_filaments as f64).powi(4));
-        }
+        g_psi.slice_mut(s![i_filament, ..]).assign(&g_psi_rows[i_filament]);
     }
 
     g_psi

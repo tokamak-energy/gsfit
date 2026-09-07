@@ -20,6 +20,24 @@ const XI: f64 = 0.157;
 /// We could replace this tolerance with one on `k_sq`, as the problem we are avoiding is that `K(k_sq) --> \infty` as `k_sq --> 1.0`, but that loses the physical meaning of "near distance".
 const SELF_POINT_DISTANCE_TOLERANCE: f64 = 1e-7; // = 0.1 μm
 
+/// Tables with at most this many sensors **and** at most this many conductors are evaluated
+/// sequentially rather than on the Rayon thread pool: for such small tables, e.g. the 100 x 100
+/// sub-filament blocks of the mutual-inductance quadrature (whose outer loop is already parallel),
+/// the task overhead exceeds the work. The results are identical either way.
+const PARALLEL_MIN_DIMENSION: usize = 256;
+
+/// Evaluate `f(i_conductor_rz)` for every conductor, in parallel for large tables and sequentially for small ones
+fn map_over_conductors<T: Send>(n_rz: usize, conductor_n_rz: usize, f: impl Fn(usize) -> T + Sync + Send) -> Vec<T> {
+    if n_rz <= PARALLEL_MIN_DIMENSION && conductor_n_rz <= PARALLEL_MIN_DIMENSION {
+        let mut results: Vec<T> = Vec::with_capacity(conductor_n_rz);
+        for i_conductor_rz in 0..conductor_n_rz {
+            results.push(f(i_conductor_rz));
+        }
+        return results;
+    }
+    return (0..conductor_n_rz).into_par_iter().map(f).collect();
+}
+
 /// Greens-function table between "sensors" `(r, z)` and "conductors" `(conductor_r, conductor_z)`.
 ///
 /// Several methods (`greens_psi`, `greens_d_psi_d_r`, ...) share the same elliptic integrals.
@@ -139,20 +157,17 @@ impl Greens {
         );
 
         // Pre-compute the elliptic integrals
-        let elliptic_integrals: Vec<(Array1<f64>, Array1<f64>)> = (0..conductor_n_rz)
-            .into_par_iter()
-            .map(|i_conductor_rz: usize| {
-                let r_sq: Array1<f64> = (&sensor_r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2));
-                let z_sq: Array1<f64> = (&sensor_z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
+        let elliptic_integrals: Vec<(Array1<f64>, Array1<f64>)> = map_over_conductors(n_rz, conductor_n_rz, |i_conductor_rz: usize| {
+            let r_sq: Array1<f64> = (&sensor_r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2));
+            let z_sq: Array1<f64> = (&sensor_z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
 
-                let rr: Array1<f64> = &sensor_r * conductor_r[i_conductor_rz];
-                let k_sq: Array1<f64> = 4.0 * &rr / (r_sq + z_sq);
+            let rr: Array1<f64> = &sensor_r * conductor_r[i_conductor_rz];
+            let k_sq: Array1<f64> = 4.0 * &rr / (r_sq + z_sq);
 
-                let e: Array1<f64> = k_sq.mapv(|x: f64| ellpe(x));
-                let k: Array1<f64> = k_sq.mapv(|x: f64| ellpk(1.0 - x)); // very annoying how this is defined differently to E
-                (e, k)
-            })
-            .collect();
+            let e: Array1<f64> = k_sq.mapv(|x: f64| ellpe(x));
+            let k: Array1<f64> = k_sq.mapv(|x: f64| ellpk(1.0 - x)); // very annoying how this is defined differently to E
+            (e, k)
+        });
 
         // Convert to Array2<f64>, with shape = (n_rz, conductor_n_rz)
         let mut elliptic_integral_e: Array2<f64> = Array2::from_elem((n_rz, conductor_n_rz), f64::NAN);
@@ -209,20 +224,17 @@ impl Greens {
         );
 
         // Pre-compute the elliptic integrals
-        let elliptic_integrals: Vec<(Array1<f64>, Array1<f64>)> = (0..conductor_n_rz)
-            .into_par_iter()
-            .map(|i_conductor_rz: usize| {
-                let r_sq: Array1<f64> = (&sensor_r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2));
-                let z_sq: Array1<f64> = (&sensor_z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
+        let elliptic_integrals: Vec<(Array1<f64>, Array1<f64>)> = map_over_conductors(n_rz, conductor_n_rz, |i_conductor_rz: usize| {
+            let r_sq: Array1<f64> = (&sensor_r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2));
+            let z_sq: Array1<f64> = (&sensor_z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
 
-                let rr: Array1<f64> = &sensor_r * conductor_r[i_conductor_rz];
-                let k_sq: Array1<f64> = 4.0 * &rr / (r_sq + z_sq);
+            let rr: Array1<f64> = &sensor_r * conductor_r[i_conductor_rz];
+            let k_sq: Array1<f64> = 4.0 * &rr / (r_sq + z_sq);
 
-                let e: Array1<f64> = k_sq.mapv(|x: f64| ellpe(x));
-                let k: Array1<f64> = k_sq.mapv(|x: f64| ellpk(1.0 - x)); // very annoying how this is defined differently to E
-                (e, k)
-            })
-            .collect();
+            let e: Array1<f64> = k_sq.mapv(|x: f64| ellpe(x));
+            let k: Array1<f64> = k_sq.mapv(|x: f64| ellpk(1.0 - x)); // very annoying how this is defined differently to E
+            (e, k)
+        });
 
         // Convert to Array2<f64>, with shape = (n_rz, conductor_n_rz)
         let mut elliptic_integral_e: Array2<f64> = Array2::from_elem((n_rz, conductor_n_rz), f64::NAN);
@@ -280,57 +292,53 @@ impl Greens {
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
-        let results: Vec<Array1<f64>> = (0..conductor_n_rz)
-            .into_par_iter()
-            .map(|i_conductor_rz: usize| {
-                let r_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2));
-                let z_sq: Array1<f64> = (z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
+        let results: Vec<Array1<f64>> = map_over_conductors(n_rz, conductor_n_rz, |i_conductor_rz: usize| {
+            let r_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2));
+            let z_sq: Array1<f64> = (z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
 
-                let rr: Array1<f64> = r * conductor_r[i_conductor_rz];
-                let k_sq: Array1<f64> = 4.0 * &rr / (&r_sq + &z_sq);
-                let u: Array1<f64> = (&r_sq + &z_sq).mapv(|x: f64| x.sqrt());
+            let rr: Array1<f64> = r * conductor_r[i_conductor_rz];
+            let k_sq: Array1<f64> = 4.0 * &rr / (&r_sq + &z_sq);
+            let u: Array1<f64> = (&r_sq + &z_sq).mapv(|x: f64| x.sqrt());
 
-                let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
-                let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
 
-                // g_psi = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * sqrt(r * conductor_r) * (2 - k_sq) / k
-                // coeff_s = -2 * MU_0 * r * conductor_r / u
-                let mut green_this_filament = Array1::<f64>::zeros(n_rz);
-                for i_rz in 0..n_rz {
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
+            // g_psi = coeff_a * (K - E) + coeff_s * E
+            // coeff_a = MU_0 * sqrt(r * conductor_r) * (2 - k_sq) / k
+            // coeff_s = -2 * MU_0 * r * conductor_r / u
+            let mut green_this_filament = Array1::<f64>::zeros(n_rz);
+            for i_rz in 0..n_rz {
+                let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
 
-                    let coeff_a: f64 = MU_0 * rr[i_rz].sqrt() * (2.0 - k_sq[i_rz]) / k_sq[i_rz].sqrt();
-                    let coeff_s: f64 = -2.0 * MU_0 * rr[i_rz] / u[i_rz];
+                let coeff_a: f64 = MU_0 * rr[i_rz].sqrt() * (2.0 - k_sq[i_rz]) / k_sq[i_rz].sqrt();
+                let coeff_s: f64 = -2.0 * MU_0 * rr[i_rz] / u[i_rz];
 
-                    green_this_filament[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                green_this_filament[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+            }
+
+            // Test for checking if conductor and sensor are at same location
+            // this is for grid-grid calculation
+            // If we do this earlier we can skip calculating elliptic integrals.
+            // But this would be quite complicated as we do the elliptic integrals in initialisation.
+            //
+            // Self-point: the flux at the centre of the cell from its own uniform current
+            // psi = MU_0 * r * (ln(8 * r) - 2 - p_c)
+            // where `p_c` is the mean log distance from the cell centre to the cross-section:
+            // p_c = 0.5 * ln((d_r^2 + d_z^2) / 4) - 3/2 + (d_r / (2 * d_z)) * atan(d_z / d_r) + (d_z / (2 * d_r)) * atan(d_r / d_z)
+            for i_rz in 0..n_rz {
+                if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                    && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                {
+                    let d_r: f64 = conductor_d_r[i_conductor_rz];
+                    let d_z: f64 = conductor_d_z[i_conductor_rz];
+                    let p_c: f64 =
+                        0.5 * ((d_r.powi(2) + d_z.powi(2)) / 4.0).ln() - 1.5 + d_r / (2.0 * d_z) * (d_z / d_r).atan() + d_z / (2.0 * d_r) * (d_r / d_z).atan();
+                    green_this_filament[i_rz] = MU_0 * r[i_rz] * ((8.0 * r[i_rz]).ln() - 2.0 - p_c);
                 }
+            }
 
-                // Test for checking if conductor and sensor are at same location
-                // this is for grid-grid calculation
-                // If we do this earlier we can skip calculating elliptic integrals.
-                // But this would be quite complicated as we do the elliptic integrals in initialisation.
-                //
-                // Self-point: the flux at the centre of the cell from its own uniform current
-                // psi = MU_0 * r * (ln(8 * r) - 2 - p_c)
-                // where `p_c` is the mean log distance from the cell centre to the cross-section:
-                // p_c = 0.5 * ln((d_r^2 + d_z^2) / 4) - 3/2 + (d_r / (2 * d_z)) * atan(d_z / d_r) + (d_z / (2 * d_r)) * atan(d_r / d_z)
-                for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
-                        let d_r: f64 = conductor_d_r[i_conductor_rz];
-                        let d_z: f64 = conductor_d_z[i_conductor_rz];
-                        let p_c: f64 = 0.5 * ((d_r.powi(2) + d_z.powi(2)) / 4.0).ln() - 1.5
-                            + d_r / (2.0 * d_z) * (d_z / d_r).atan()
-                            + d_z / (2.0 * d_r) * (d_r / d_z).atan();
-                        green_this_filament[i_rz] = MU_0 * r[i_rz] * ((8.0 * r[i_rz]).ln() - 2.0 - p_c);
-                    }
-                }
-
-                return green_this_filament;
-            })
-            .collect();
+            return green_this_filament;
+        });
 
         let mut g_psi: Array2<f64> = Array2::from_elem((n_rz, conductor_n_rz), f64::NAN);
         for i_conductor_rz in 0..conductor_n_rz {
@@ -378,45 +386,42 @@ impl Greens {
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
-        let g_d_psi_d_r_vec: Vec<Array1<f64>> = (0..conductor_n_rz)
-            .into_par_iter()
-            .map(|i_conductor_rz: usize| {
-                let h_sq: Array1<f64> = (z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
-                let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
-                let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+        let g_d_psi_d_r_vec: Vec<Array1<f64>> = map_over_conductors(n_rz, conductor_n_rz, |i_conductor_rz: usize| {
+            let h_sq: Array1<f64> = (z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
+            let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+            let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
+            let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
 
-                let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
-                let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
 
-                // g_d_psi_d_r = coeff_a * (K - E) + coeff_s * E
-                let mut g_d_psi_d_r_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
-                for i_rz in 0..n_rz {
-                    let rp: f64 = conductor_r[i_conductor_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
+            // g_d_psi_d_r = coeff_a * (K - E) + coeff_s * E
+            let mut g_d_psi_d_r_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
+            for i_rz in 0..n_rz {
+                let rp: f64 = conductor_r[i_conductor_rz];
+                let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
 
-                    let coeff_a: f64 = MU_0 * r[i_rz] / u[i_rz];
-                    let coeff_s: f64 = -2.0 * MU_0 * r[i_rz] * rp * (r[i_rz] - rp) / (u[i_rz] * d_sq[i_rz]);
+                let coeff_a: f64 = MU_0 * r[i_rz] / u[i_rz];
+                let coeff_s: f64 = -2.0 * MU_0 * r[i_rz] * rp * (r[i_rz] - rp) / (u[i_rz] * d_sq[i_rz]);
 
-                    g_d_psi_d_r_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                g_d_psi_d_r_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+            }
+
+            // Self-point: the hoop field of the finite rectangular cross-section
+            // <d_psi_d_r> = (MU_0 / 2) * (ln(16 * r / sqrt(d_r^2 + d_z^2)) + 1 - (d_z / d_r) * atan(d_r / d_z))
+            for i_rz in 0..n_rz {
+                if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                    && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                {
+                    let d_r: f64 = conductor_d_r[i_conductor_rz];
+                    let d_z: f64 = conductor_d_z[i_conductor_rz];
+                    g_d_psi_d_r_local[i_rz] =
+                        MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
                 }
+            }
 
-                // Self-point: the hoop field of the finite rectangular cross-section
-                // <d_psi_d_r> = (MU_0 / 2) * (ln(16 * r / sqrt(d_r^2 + d_z^2)) + 1 - (d_z / d_r) * atan(d_r / d_z))
-                for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
-                        let d_r: f64 = conductor_d_r[i_conductor_rz];
-                        let d_z: f64 = conductor_d_z[i_conductor_rz];
-                        g_d_psi_d_r_local[i_rz] =
-                            MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
-                    }
-                }
-
-                g_d_psi_d_r_local
-            })
-            .collect();
+            g_d_psi_d_r_local
+        });
 
         let mut g_d_psi_d_r: Array2<f64> = Array2::from_elem((n_rz, conductor_n_rz), f64::NAN);
         for i_conductor_rz in 0..conductor_n_rz {
@@ -447,45 +452,42 @@ impl Greens {
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
-        let g_d_psi_d_z_vec: Vec<Array1<f64>> = (0..conductor_n_rz)
-            .into_par_iter()
-            .map(|i_conductor_rz: usize| {
-                let h: Array1<f64> = z - conductor_z[i_conductor_rz];
-                let h_sq: Array1<f64> = h.mapv(|x: f64| x.powi(2));
-                let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
-                let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+        let g_d_psi_d_z_vec: Vec<Array1<f64>> = map_over_conductors(n_rz, conductor_n_rz, |i_conductor_rz: usize| {
+            let h: Array1<f64> = z - conductor_z[i_conductor_rz];
+            let h_sq: Array1<f64> = h.mapv(|x: f64| x.powi(2));
+            let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+            let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
+            let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
 
-                let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
-                let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
 
-                // g_d_psi_d_z = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * h / u
-                // coeff_s = -2 * MU_0 * r * conductor_r * h / (u * d_sq)
-                let mut g_d_psi_d_z_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
-                for i_rz in 0..n_rz {
-                    let rp: f64 = conductor_r[i_conductor_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
+            // g_d_psi_d_z = coeff_a * (K - E) + coeff_s * E
+            // coeff_a = MU_0 * h / u
+            // coeff_s = -2 * MU_0 * r * conductor_r * h / (u * d_sq)
+            let mut g_d_psi_d_z_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
+            for i_rz in 0..n_rz {
+                let rp: f64 = conductor_r[i_conductor_rz];
+                let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
 
-                    let coeff_a: f64 = MU_0 * h[i_rz] / u[i_rz];
-                    let coeff_s: f64 = -2.0 * MU_0 * r[i_rz] * rp * h[i_rz] / (u[i_rz] * d_sq[i_rz]);
+                let coeff_a: f64 = MU_0 * h[i_rz] / u[i_rz];
+                let coeff_s: f64 = -2.0 * MU_0 * r[i_rz] * rp * h[i_rz] / (u[i_rz] * d_sq[i_rz]);
 
-                    g_d_psi_d_z_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                g_d_psi_d_z_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+            }
+
+            // Self-point: the kernel is odd in h, so the value is EXACTLY zero for any
+            // z-symmetric cross-section
+            for i_rz in 0..n_rz {
+                if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                    && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                {
+                    g_d_psi_d_z_local[i_rz] = 0.0;
                 }
+            }
 
-                // Self-point: the kernel is odd in h, so the value is EXACTLY zero for any
-                // z-symmetric cross-section
-                for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
-                        g_d_psi_d_z_local[i_rz] = 0.0;
-                    }
-                }
-
-                g_d_psi_d_z_local
-            })
-            .collect();
+            g_d_psi_d_z_local
+        });
 
         let mut g_d_psi_d_z: Array2<f64> = Array2::from_elem((n_rz, conductor_n_rz), f64::NAN);
         for i_conductor_rz in 0..conductor_n_rz {
@@ -526,52 +528,49 @@ impl Greens {
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
-        let g_d2_psi_d_r2_vec: Vec<Array1<f64>> = (0..conductor_n_rz)
-            .into_par_iter()
-            .map(|i_conductor_rz: usize| {
-                let h_sq: Array1<f64> = (z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
-                let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
-                let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+        let g_d2_psi_d_r2_vec: Vec<Array1<f64>> = map_over_conductors(n_rz, conductor_n_rz, |i_conductor_rz: usize| {
+            let h_sq: Array1<f64> = (z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
+            let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+            let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
+            let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
 
-                let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
-                let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
 
-                // g_d2_psi_d_r2 = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * (u_sq + d_sq) * h_sq / (2 * u^3 * d_sq)
-                // coeff_s = 2 * MU_0 * conductor_r * (conductor_r * u_sq * d_sq - r * (2 * u_sq - d_sq) * h_sq) / (u^3 * d_sq^2)
-                let mut g_d2_psi_d_r2_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
-                for i_rz in 0..n_rz {
-                    let rp: f64 = conductor_r[i_conductor_rz];
-                    let us: f64 = u_sq[i_rz];
-                    let ds: f64 = d_sq[i_rz];
-                    let hs: f64 = h_sq[i_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
+            // g_d2_psi_d_r2 = coeff_a * (K - E) + coeff_s * E
+            // coeff_a = MU_0 * (u_sq + d_sq) * h_sq / (2 * u^3 * d_sq)
+            // coeff_s = 2 * MU_0 * conductor_r * (conductor_r * u_sq * d_sq - r * (2 * u_sq - d_sq) * h_sq) / (u^3 * d_sq^2)
+            let mut g_d2_psi_d_r2_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
+            for i_rz in 0..n_rz {
+                let rp: f64 = conductor_r[i_conductor_rz];
+                let us: f64 = u_sq[i_rz];
+                let ds: f64 = d_sq[i_rz];
+                let hs: f64 = h_sq[i_rz];
+                let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
 
-                    let coeff_a: f64 = MU_0 * (us + ds) * hs / (2.0 * u[i_rz] * us * ds);
-                    let coeff_s: f64 = 2.0 * MU_0 * rp * (rp * us * ds - r[i_rz] * (2.0 * us - ds) * hs) / (u[i_rz] * us * ds * ds);
+                let coeff_a: f64 = MU_0 * (us + ds) * hs / (2.0 * u[i_rz] * us * ds);
+                let coeff_s: f64 = 2.0 * MU_0 * rp * (rp * us * ds - r[i_rz] * (2.0 * us - ds) * hs) / (u[i_rz] * us * ds * ds);
 
-                    g_d2_psi_d_r2_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                g_d2_psi_d_r2_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+            }
+
+            // Self-point: dominated by the cell's own interior field, plus a share of the
+            // hoop-field correction `d_psi_d_r / r` (split by XI) so that Ampere's law is satisfied
+            // <d2_psi_d_r2> = -4 * MU_0 * r * atan(d_z / d_r) / (d_r * d_z) + (1/2 - XI) * <d_psi_d_r> / r
+            for i_rz in 0..n_rz {
+                if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                    && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                {
+                    let d_r: f64 = conductor_d_r[i_conductor_rz];
+                    let d_z: f64 = conductor_d_z[i_conductor_rz];
+                    let d_psi_d_r_self: f64 =
+                        MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
+                    g_d2_psi_d_r2_local[i_rz] = -4.0 * MU_0 * r[i_rz] * (d_z / d_r).atan() / (d_r * d_z) + (0.5 - XI) * d_psi_d_r_self / r[i_rz];
                 }
+            }
 
-                // Self-point: dominated by the cell's own interior field, plus a share of the
-                // hoop-field correction `d_psi_d_r / r` (split by XI) so that Ampere's law is satisfied
-                // <d2_psi_d_r2> = -4 * MU_0 * r * atan(d_z / d_r) / (d_r * d_z) + (1/2 - XI) * <d_psi_d_r> / r
-                for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
-                        let d_r: f64 = conductor_d_r[i_conductor_rz];
-                        let d_z: f64 = conductor_d_z[i_conductor_rz];
-                        let d_psi_d_r_self: f64 =
-                            MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
-                        g_d2_psi_d_r2_local[i_rz] = -4.0 * MU_0 * r[i_rz] * (d_z / d_r).atan() / (d_r * d_z) + (0.5 - XI) * d_psi_d_r_self / r[i_rz];
-                    }
-                }
-
-                g_d2_psi_d_r2_local
-            })
-            .collect();
+            g_d2_psi_d_r2_local
+        });
 
         let mut g_d2_psi_d_r2: Array2<f64> = Array2::from_elem((n_rz, conductor_n_rz), f64::NAN);
         for i_conductor_rz in 0..conductor_n_rz {
@@ -602,48 +601,45 @@ impl Greens {
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
-        let g_d2_psi_d_r_d_z_vec: Vec<Array1<f64>> = (0..conductor_n_rz)
-            .into_par_iter()
-            .map(|i_conductor_rz: usize| {
-                let h: Array1<f64> = z - conductor_z[i_conductor_rz];
-                let h_sq: Array1<f64> = h.mapv(|x: f64| x.powi(2));
-                let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
-                let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let w_sq: Array1<f64> = r.mapv(|x: f64| conductor_r[i_conductor_rz].powi(2) - x.powi(2)) - &h_sq;
+        let g_d2_psi_d_r_d_z_vec: Vec<Array1<f64>> = map_over_conductors(n_rz, conductor_n_rz, |i_conductor_rz: usize| {
+            let h: Array1<f64> = z - conductor_z[i_conductor_rz];
+            let h_sq: Array1<f64> = h.mapv(|x: f64| x.powi(2));
+            let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+            let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
+            let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+            let w_sq: Array1<f64> = r.mapv(|x: f64| conductor_r[i_conductor_rz].powi(2) - x.powi(2)) - &h_sq;
 
-                let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
-                let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
 
-                // g_d2_psi_d_r_d_z = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * r * h * w_sq / (u^3 * d_sq)
-                // coeff_s = 2 * MU_0 * r * conductor_r * h * (2 * u_sq * (r - conductor_r) - (r + conductor_r) * d_sq) / (u^3 * d_sq^2)
-                let mut g_d2_psi_d_r_d_z_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
-                for i_rz in 0..n_rz {
-                    let rp: f64 = conductor_r[i_conductor_rz];
-                    let us: f64 = u_sq[i_rz];
-                    let ds: f64 = d_sq[i_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
+            // g_d2_psi_d_r_d_z = coeff_a * (K - E) + coeff_s * E
+            // coeff_a = MU_0 * r * h * w_sq / (u^3 * d_sq)
+            // coeff_s = 2 * MU_0 * r * conductor_r * h * (2 * u_sq * (r - conductor_r) - (r + conductor_r) * d_sq) / (u^3 * d_sq^2)
+            let mut g_d2_psi_d_r_d_z_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
+            for i_rz in 0..n_rz {
+                let rp: f64 = conductor_r[i_conductor_rz];
+                let us: f64 = u_sq[i_rz];
+                let ds: f64 = d_sq[i_rz];
+                let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
 
-                    let coeff_a: f64 = MU_0 * r[i_rz] * h[i_rz] * w_sq[i_rz] / (u[i_rz] * us * ds);
-                    let coeff_s: f64 = 2.0 * MU_0 * r[i_rz] * rp * h[i_rz] * (2.0 * us * (r[i_rz] - rp) - (r[i_rz] + rp) * ds) / (u[i_rz] * us * ds * ds);
+                let coeff_a: f64 = MU_0 * r[i_rz] * h[i_rz] * w_sq[i_rz] / (u[i_rz] * us * ds);
+                let coeff_s: f64 = 2.0 * MU_0 * r[i_rz] * rp * h[i_rz] * (2.0 * us * (r[i_rz] - rp) - (r[i_rz] + rp) * ds) / (u[i_rz] * us * ds * ds);
 
-                    g_d2_psi_d_r_d_z_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                g_d2_psi_d_r_d_z_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+            }
+
+            // Self-point: the kernel is odd in h, so the value is EXACTLY zero for any
+            // z-symmetric cross-section
+            for i_rz in 0..n_rz {
+                if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                    && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                {
+                    g_d2_psi_d_r_d_z_local[i_rz] = 0.0;
                 }
+            }
 
-                // Self-point: the kernel is odd in h, so the value is EXACTLY zero for any
-                // z-symmetric cross-section
-                for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
-                        g_d2_psi_d_r_d_z_local[i_rz] = 0.0;
-                    }
-                }
-
-                g_d2_psi_d_r_d_z_local
-            })
-            .collect();
+            g_d2_psi_d_r_d_z_local
+        });
 
         let mut g_d2_psi_d_r_d_z: Array2<f64> = Array2::from_elem((n_rz, conductor_n_rz), f64::NAN);
         for i_conductor_rz in 0..conductor_n_rz {
@@ -681,52 +677,49 @@ impl Greens {
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
-        let g_d2_psi_d_z2_vec: Vec<Array1<f64>> = (0..conductor_n_rz)
-            .into_par_iter()
-            .map(|i_conductor_rz: usize| {
-                let h_sq: Array1<f64> = (z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
-                let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
-                let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+        let g_d2_psi_d_z2_vec: Vec<Array1<f64>> = map_over_conductors(n_rz, conductor_n_rz, |i_conductor_rz: usize| {
+            let h_sq: Array1<f64> = (z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
+            let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+            let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
+            let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
 
-                let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
-                let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
 
-                // g_d2_psi_d_z2 = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * (2 * u_sq * d_sq - (u_sq + d_sq) * h_sq) / (2 * u^3 * d_sq)
-                // coeff_s = -2 * MU_0 * r * conductor_r * (u_sq * d_sq - (2 * u_sq - d_sq) * h_sq) / (u^3 * d_sq^2)
-                let mut g_d2_psi_d_z2_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
-                for i_rz in 0..n_rz {
-                    let rp: f64 = conductor_r[i_conductor_rz];
-                    let us: f64 = u_sq[i_rz];
-                    let ds: f64 = d_sq[i_rz];
-                    let hs: f64 = h_sq[i_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
+            // g_d2_psi_d_z2 = coeff_a * (K - E) + coeff_s * E
+            // coeff_a = MU_0 * (2 * u_sq * d_sq - (u_sq + d_sq) * h_sq) / (2 * u^3 * d_sq)
+            // coeff_s = -2 * MU_0 * r * conductor_r * (u_sq * d_sq - (2 * u_sq - d_sq) * h_sq) / (u^3 * d_sq^2)
+            let mut g_d2_psi_d_z2_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
+            for i_rz in 0..n_rz {
+                let rp: f64 = conductor_r[i_conductor_rz];
+                let us: f64 = u_sq[i_rz];
+                let ds: f64 = d_sq[i_rz];
+                let hs: f64 = h_sq[i_rz];
+                let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
 
-                    let coeff_a: f64 = MU_0 * (2.0 * us * ds - (us + ds) * hs) / (2.0 * u[i_rz] * us * ds);
-                    let coeff_s: f64 = -2.0 * MU_0 * r[i_rz] * rp * (us * ds - (2.0 * us - ds) * hs) / (u[i_rz] * us * ds * ds);
+                let coeff_a: f64 = MU_0 * (2.0 * us * ds - (us + ds) * hs) / (2.0 * u[i_rz] * us * ds);
+                let coeff_s: f64 = -2.0 * MU_0 * r[i_rz] * rp * (us * ds - (2.0 * us - ds) * hs) / (u[i_rz] * us * ds * ds);
 
-                    g_d2_psi_d_z2_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                g_d2_psi_d_z2_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+            }
+
+            // Self-point: dominated by the cell's own interior field, plus a share of the
+            // hoop-field correction `d_psi_d_r / r` (split by XI) so that Ampere's law is satisfied
+            // <d2_psi_d_z2> = -4 * MU_0 * r * atan(d_r / d_z) / (d_r * d_z) + (1/2 + XI) * <d_psi_d_r> / r
+            for i_rz in 0..n_rz {
+                if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                    && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                {
+                    let d_r: f64 = conductor_d_r[i_conductor_rz];
+                    let d_z: f64 = conductor_d_z[i_conductor_rz];
+                    let d_psi_d_r_self: f64 =
+                        MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
+                    g_d2_psi_d_z2_local[i_rz] = -4.0 * MU_0 * r[i_rz] * (d_r / d_z).atan() / (d_r * d_z) + (0.5 + XI) * d_psi_d_r_self / r[i_rz];
                 }
+            }
 
-                // Self-point: dominated by the cell's own interior field, plus a share of the
-                // hoop-field correction `d_psi_d_r / r` (split by XI) so that Ampere's law is satisfied
-                // <d2_psi_d_z2> = -4 * MU_0 * r * atan(d_r / d_z) / (d_r * d_z) + (1/2 + XI) * <d_psi_d_r> / r
-                for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
-                        let d_r: f64 = conductor_d_r[i_conductor_rz];
-                        let d_z: f64 = conductor_d_z[i_conductor_rz];
-                        let d_psi_d_r_self: f64 =
-                            MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
-                        g_d2_psi_d_z2_local[i_rz] = -4.0 * MU_0 * r[i_rz] * (d_r / d_z).atan() / (d_r * d_z) + (0.5 + XI) * d_psi_d_r_self / r[i_rz];
-                    }
-                }
-
-                g_d2_psi_d_z2_local
-            })
-            .collect();
+            g_d2_psi_d_z2_local
+        });
 
         let mut g_d2_psi_d_z2: Array2<f64> = Array2::from_elem((n_rz, conductor_n_rz), f64::NAN);
         for i_conductor_rz in 0..conductor_n_rz {
@@ -757,50 +750,47 @@ impl Greens {
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
-        let g_d3_psi_d_z3_vec: Vec<Array1<f64>> = (0..conductor_n_rz)
-            .into_par_iter()
-            .map(|i_conductor_rz: usize| {
-                let h: Array1<f64> = z - conductor_z[i_conductor_rz];
-                let h_sq: Array1<f64> = h.mapv(|x: f64| x.powi(2));
-                let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
-                let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+        let g_d3_psi_d_z3_vec: Vec<Array1<f64>> = map_over_conductors(n_rz, conductor_n_rz, |i_conductor_rz: usize| {
+            let h: Array1<f64> = z - conductor_z[i_conductor_rz];
+            let h_sq: Array1<f64> = h.mapv(|x: f64| x.powi(2));
+            let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+            let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
+            let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
 
-                let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
-                let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
 
-                // g_d3_psi_d_z3 = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = -MU_0 * h * (u_sq * d_sq * (3 * (u_sq + d_sq) + 10 * h_sq) - 4 * (u_sq + d_sq)^2 * h_sq) / (2 * u^5 * d_sq^2)
-                // coeff_s = 2 * MU_0 * r * conductor_r * h * (3 * u_sq * d_sq * (2 * u_sq - d_sq) - (8 * u_sq^2 - u_sq * d_sq - 4 * d_sq^2) * h_sq) / (u^5 * d_sq^3)
-                let mut g_d3_psi_d_z3_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
-                for i_rz in 0..n_rz {
-                    let rp: f64 = conductor_r[i_conductor_rz];
-                    let us: f64 = u_sq[i_rz];
-                    let ds: f64 = d_sq[i_rz];
-                    let hs: f64 = h_sq[i_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
+            // g_d3_psi_d_z3 = coeff_a * (K - E) + coeff_s * E
+            // coeff_a = -MU_0 * h * (u_sq * d_sq * (3 * (u_sq + d_sq) + 10 * h_sq) - 4 * (u_sq + d_sq)^2 * h_sq) / (2 * u^5 * d_sq^2)
+            // coeff_s = 2 * MU_0 * r * conductor_r * h * (3 * u_sq * d_sq * (2 * u_sq - d_sq) - (8 * u_sq^2 - u_sq * d_sq - 4 * d_sq^2) * h_sq) / (u^5 * d_sq^3)
+            let mut g_d3_psi_d_z3_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
+            for i_rz in 0..n_rz {
+                let rp: f64 = conductor_r[i_conductor_rz];
+                let us: f64 = u_sq[i_rz];
+                let ds: f64 = d_sq[i_rz];
+                let hs: f64 = h_sq[i_rz];
+                let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
 
-                    let coeff_a: f64 =
-                        -MU_0 * h[i_rz] * (us * ds * (3.0 * (us + ds) + 10.0 * hs) - 4.0 * (us + ds) * (us + ds) * hs) / (2.0 * u[i_rz] * us * us * ds * ds);
-                    let coeff_s: f64 = 2.0 * MU_0 * r[i_rz] * rp * h[i_rz] * (3.0 * us * ds * (2.0 * us - ds) - (8.0 * us * us - us * ds - 4.0 * ds * ds) * hs)
-                        / (u[i_rz] * us * us * ds * ds * ds);
+                let coeff_a: f64 =
+                    -MU_0 * h[i_rz] * (us * ds * (3.0 * (us + ds) + 10.0 * hs) - 4.0 * (us + ds) * (us + ds) * hs) / (2.0 * u[i_rz] * us * us * ds * ds);
+                let coeff_s: f64 = 2.0 * MU_0 * r[i_rz] * rp * h[i_rz] * (3.0 * us * ds * (2.0 * us - ds) - (8.0 * us * us - us * ds - 4.0 * ds * ds) * hs)
+                    / (u[i_rz] * us * us * ds * ds * ds);
 
-                    g_d3_psi_d_z3_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                g_d3_psi_d_z3_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+            }
+
+            // Set to zero when conductor and sensor are at the same location
+            // (d3_psi_d_z3 is odd in h, so zero is the symmetric value at the self-point)
+            for i_rz in 0..n_rz {
+                if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                    && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                {
+                    g_d3_psi_d_z3_local[i_rz] = 0.0;
                 }
+            }
 
-                // Set to zero when conductor and sensor are at the same location
-                // (d3_psi_d_z3 is odd in h, so zero is the symmetric value at the self-point)
-                for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
-                        g_d3_psi_d_z3_local[i_rz] = 0.0;
-                    }
-                }
-
-                g_d3_psi_d_z3_local
-            })
-            .collect();
+            g_d3_psi_d_z3_local
+        });
 
         let mut g_d3_psi_d_z3: Array2<f64> = Array2::from_elem((n_rz, conductor_n_rz), f64::NAN);
         for i_conductor_rz in 0..conductor_n_rz {
@@ -868,61 +858,58 @@ impl Greens {
         let elliptic_integral_k: ArrayView2<f64> = self.elliptic_integral_k.view();
         let elliptic_integral_e: ArrayView2<f64> = self.elliptic_integral_e.view();
 
-        let g_d3_psi_d_r_d_z2_vec: Vec<Array1<f64>> = (0..conductor_n_rz)
-            .into_par_iter()
-            .map(|i_conductor_rz: usize| {
-                let h_sq: Array1<f64> = (z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
-                let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
-                let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
-                let w_sq: Array1<f64> = r.mapv(|x: f64| conductor_r[i_conductor_rz].powi(2) - x.powi(2)) - &h_sq;
+        let g_d3_psi_d_r_d_z2_vec: Vec<Array1<f64>> = map_over_conductors(n_rz, conductor_n_rz, |i_conductor_rz: usize| {
+            let h_sq: Array1<f64> = (z - conductor_z[i_conductor_rz]).mapv(|x: f64| x.powi(2));
+            let u_sq: Array1<f64> = (r + conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+            let u: Array1<f64> = u_sq.mapv(|x: f64| x.sqrt());
+            let d_sq: Array1<f64> = (r - conductor_r[i_conductor_rz]).mapv(|x: f64| x.powi(2)) + &h_sq;
+            let w_sq: Array1<f64> = r.mapv(|x: f64| conductor_r[i_conductor_rz].powi(2) - x.powi(2)) - &h_sq;
 
-                let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
-                let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_k_local: ArrayView1<f64> = elliptic_integral_k.slice(s![.., i_conductor_rz]);
+            let elliptic_integral_e_local: ArrayView1<f64> = elliptic_integral_e.slice(s![.., i_conductor_rz]);
 
-                // g_d3_psi_d_r_d_z2 = coeff_a * (K - E) + coeff_s * E
-                // coeff_a = MU_0 * r * (u_sq * d_sq * w_sq - (5 * u_sq * d_sq + 4 * (u_sq + d_sq) * w_sq) * h_sq) / (u^5 * d_sq^2)
-                // coeff_s = MU_0 * r * conductor_r * (conductor_r * (8 * u_sq^3 - 3 * u_sq^2 * d_sq + 4 * d_sq^3)
-                //     - r * (8 * u_sq^3 - 3 * u_sq^2 * d_sq - 4 * d_sq^3)
-                //     - r * (8 * u_sq^2 - u_sq * d_sq - 4 * d_sq^2) * (w_sq + 2 * h_sq)
-                //     - conductor_r * (8 * u_sq^2 + 3 * u_sq * d_sq + 4 * d_sq^2) * w_sq) / (u^5 * d_sq^3)
-                let mut g_d3_psi_d_r_d_z2_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
-                for i_rz in 0..n_rz {
-                    let rp: f64 = conductor_r[i_conductor_rz];
-                    let us: f64 = u_sq[i_rz];
-                    let ds: f64 = d_sq[i_rz];
-                    let hs: f64 = h_sq[i_rz];
-                    let ws: f64 = w_sq[i_rz];
-                    let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
+            // g_d3_psi_d_r_d_z2 = coeff_a * (K - E) + coeff_s * E
+            // coeff_a = MU_0 * r * (u_sq * d_sq * w_sq - (5 * u_sq * d_sq + 4 * (u_sq + d_sq) * w_sq) * h_sq) / (u^5 * d_sq^2)
+            // coeff_s = MU_0 * r * conductor_r * (conductor_r * (8 * u_sq^3 - 3 * u_sq^2 * d_sq + 4 * d_sq^3)
+            //     - r * (8 * u_sq^3 - 3 * u_sq^2 * d_sq - 4 * d_sq^3)
+            //     - r * (8 * u_sq^2 - u_sq * d_sq - 4 * d_sq^2) * (w_sq + 2 * h_sq)
+            //     - conductor_r * (8 * u_sq^2 + 3 * u_sq * d_sq + 4 * d_sq^2) * w_sq) / (u^5 * d_sq^3)
+            let mut g_d3_psi_d_r_d_z2_local: Array1<f64> = Array1::from_elem(n_rz, f64::NAN);
+            for i_rz in 0..n_rz {
+                let rp: f64 = conductor_r[i_conductor_rz];
+                let us: f64 = u_sq[i_rz];
+                let ds: f64 = d_sq[i_rz];
+                let hs: f64 = h_sq[i_rz];
+                let ws: f64 = w_sq[i_rz];
+                let k_minus_e: f64 = elliptic_integral_k_local[i_rz] - elliptic_integral_e_local[i_rz];
 
-                    let coeff_a: f64 = MU_0 * r[i_rz] * (us * ds * ws - (5.0 * us * ds + 4.0 * (us + ds) * ws) * hs) / (u[i_rz] * us * us * ds * ds);
-                    let coeff_s: f64 = MU_0
-                        * r[i_rz]
-                        * rp
-                        * (rp * (8.0 * us * us * us - 3.0 * us * us * ds + 4.0 * ds * ds * ds)
-                            - r[i_rz] * (8.0 * us * us * us - 3.0 * us * us * ds - 4.0 * ds * ds * ds)
-                            - r[i_rz] * (8.0 * us * us - us * ds - 4.0 * ds * ds) * (ws + 2.0 * hs)
-                            - rp * (8.0 * us * us + 3.0 * us * ds + 4.0 * ds * ds) * ws)
-                        / (u[i_rz] * us * us * ds * ds * ds);
+                let coeff_a: f64 = MU_0 * r[i_rz] * (us * ds * ws - (5.0 * us * ds + 4.0 * (us + ds) * ws) * hs) / (u[i_rz] * us * us * ds * ds);
+                let coeff_s: f64 = MU_0
+                    * r[i_rz]
+                    * rp
+                    * (rp * (8.0 * us * us * us - 3.0 * us * us * ds + 4.0 * ds * ds * ds)
+                        - r[i_rz] * (8.0 * us * us * us - 3.0 * us * us * ds - 4.0 * ds * ds * ds)
+                        - r[i_rz] * (8.0 * us * us - us * ds - 4.0 * ds * ds) * (ws + 2.0 * hs)
+                        - rp * (8.0 * us * us + 3.0 * us * ds + 4.0 * ds * ds) * ws)
+                    / (u[i_rz] * us * us * ds * ds * ds);
 
-                    g_d3_psi_d_r_d_z2_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+                g_d3_psi_d_r_d_z2_local[i_rz] = coeff_a * k_minus_e + coeff_s * elliptic_integral_e_local[i_rz];
+            }
+
+            // Self-point: pure toroidal-curvature (hoop) effect
+            // <d3_psi_d_r_d_z2> = -MU_0 * (4 * atan(d_r / d_z) - 2 * d_r * d_z / (d_r^2 + d_z^2)) / (d_r * d_z)
+            for i_rz in 0..n_rz {
+                if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                    && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+                {
+                    let d_r: f64 = conductor_d_r[i_conductor_rz];
+                    let d_z: f64 = conductor_d_z[i_conductor_rz];
+                    g_d3_psi_d_r_d_z2_local[i_rz] = -MU_0 * (4.0 * (d_r / d_z).atan() - 2.0 * d_r * d_z / (d_r.powi(2) + d_z.powi(2))) / (d_r * d_z);
                 }
+            }
 
-                // Self-point: pure toroidal-curvature (hoop) effect
-                // <d3_psi_d_r_d_z2> = -MU_0 * (4 * atan(d_r / d_z) - 2 * d_r * d_z / (d_r^2 + d_z^2)) / (d_r * d_z)
-                for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
-                        let d_r: f64 = conductor_d_r[i_conductor_rz];
-                        let d_z: f64 = conductor_d_z[i_conductor_rz];
-                        g_d3_psi_d_r_d_z2_local[i_rz] = -MU_0 * (4.0 * (d_r / d_z).atan() - 2.0 * d_r * d_z / (d_r.powi(2) + d_z.powi(2))) / (d_r * d_z);
-                    }
-                }
-
-                g_d3_psi_d_r_d_z2_local
-            })
-            .collect();
+            g_d3_psi_d_r_d_z2_local
+        });
 
         let mut g_d3_psi_d_r_d_z2: Array2<f64> = Array2::from_elem((n_rz, conductor_n_rz), f64::NAN);
         for i_conductor_rz in 0..conductor_n_rz {

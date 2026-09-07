@@ -294,6 +294,21 @@ impl RogowskiCoils {
                 vec![], // No holes
             );
 
+            // Virtual bp-probes along each gap, with their Green's tables against all passive degrees of freedom.
+            // These depend only on the gap geometry, so they are constructed once per gap (not per passive dof)
+            let mut virtual_bp_probes_per_gap: Vec<(BpProbes, BpProbes, f64, f64)> = Vec::with_capacity(gap_names.len());
+            for gap_name in &gap_names {
+                // Construct virtual bp probes
+                let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
+                    self.construct_virtual_bp_probes(&sensor_name, gap_name);
+
+                // Calculate Greens betwen the virtual bp-probes and the passives
+                virtual_b_r_probes.greens_with_passives_rs(passives_local.clone());
+                virtual_b_z_probes.greens_with_passives_rs(passives_local.clone());
+
+                virtual_bp_probes_per_gap.push((virtual_b_r_probes, virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z));
+            }
+
             // Calculate Greens with each passive degree of freedom
             for passive_name in passives_local.results.keys() {
                 let _tmp: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
@@ -324,18 +339,11 @@ impl RogowskiCoils {
 
                     let g_all: Array1<f64> = &inside_vec * current_distribution;
 
-                    // Calculate the greens for the gaps (needed for later)
-                    // TODO: this is wasteful as we are re-calculating the same thing
-                    // (at least there are not many PF coils. but still not good...)
+                    // Calculate the greens for the gaps
                     let mut g_gap: f64 = 0.0;
-                    for gap_name in &gap_names {
-                        // Construct virtual bp probes
-                        let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
-                            self.construct_virtual_bp_probes(&sensor_name, gap_name);
-
-                        // Calculate Greens betwen the virtual bp-probes and the coils
-                        virtual_b_r_probes.greens_with_passives_rs(passives_local.clone());
-                        virtual_b_z_probes.greens_with_passives_rs(passives_local.clone());
+                    for (virtual_b_r_probes, virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) in &virtual_bp_probes_per_gap {
+                        let gap_virtual_d_r: f64 = *gap_virtual_d_r;
+                        let gap_virtual_d_z: f64 = *gap_virtual_d_z;
 
                         let g_gaps_b_r: Array1<f64> = virtual_b_r_probes
                             .results
@@ -656,7 +664,7 @@ impl RogowskiCoils {
     /// This splits the RogowskiCoils into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (SensorsStatic, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
 
         // Vector of boolean's to say if we use the sensor or not
@@ -677,12 +685,47 @@ impl RogowskiCoils {
         let sensor_names: Vec<String> = include_indices.iter().map(|&index| sensor_names_all[index].clone()).collect();
         let n_sensors: usize = sensor_names.len();
 
+        // Time dependent: interpolate all sensors (included or not) to `times_to_reconstruct` and store the
+        // measured values, so that they are available for the sensor post-processing even when no sensor
+        // of this type is included in the fit
+        let mut measured: Array2<f64> = Array2::from_elem((n_sensors_all, n_time), f64::NAN);
+        for i_sensor in 0..n_sensors_all {
+            // Sensor names
+            let sensor_name: &str = &sensor_names_all[i_sensor];
+
+            // Measured values
+            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("i").get("experimental").get("time").unwrap_array1();
+            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("i").get("experimental").get("value").unwrap_array1();
+
+            // Create the interpolator
+            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone())
+                .expect("RogowskiCoils.split_into_static_and_dynamic: Can't make interpolator");
+            // Do the interpolation
+            let measured_this_coil: Array1<f64> = interpolator
+                .interpolate_array1(times_to_reconstruct)
+                .expect("RogowskiCoils.split_into_static_and_dynamic: Can't do interpolation");
+
+            // Store for later
+            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_coil);
+
+            // Store in self
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("i")
+                .get_or_insert("measured")
+                .insert("value", measured_this_coil);
+            self.results
+                .get_or_insert(sensor_name)
+                .get_or_insert("i")
+                .get_or_insert("measured")
+                .insert("time", times_to_reconstruct.clone());
+        }
+
         // If there are no sensors selected, return empty data
         if n_sensors == 0 {
             let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
-            let static_data_empty_vs_time: Vec<SensorsStatic> = vec![static_data_empty; n_time];
             let dynamic_data_empty_vs_time: Vec<SensorsDynamic> = vec![dynamic_data_empty; n_time];
-            return (static_data_empty_vs_time, dynamic_data_empty_vs_time);
+            return (static_data_empty, dynamic_data_empty_vs_time);
         }
 
         // Fit settings
@@ -754,41 +797,6 @@ impl RogowskiCoils {
             geometry_z: Array1::from_elem(n_sensors, f64::NAN), // not used for RogowskiCoils
         };
 
-        // Time dependent
-        // Interpolate all sensors to `times_to_reconstruct`
-        let mut measured: Array2<f64> = Array2::from_elem((n_sensors_all, n_time), f64::NAN);
-        for i_sensor in 0..n_sensors_all {
-            // Sensor names
-            let sensor_name: &str = &sensor_names_all[i_sensor];
-
-            // Measured values
-            let experimental_time: Array1<f64> = self.results.get(sensor_name).get("i").get("experimental").get("time").unwrap_array1();
-            let experimental_values: Array1<f64> = self.results.get(sensor_name).get("i").get("experimental").get("value").unwrap_array1();
-
-            // Create the interpolator
-            let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(experimental_time.clone(), experimental_values.clone())
-                .expect("RogowskiCoils.split_into_static_and_dynamic: Can't make interpolator");
-            // Do the interpolation
-            let measured_this_coil: Array1<f64> = interpolator
-                .interpolate_array1(times_to_reconstruct)
-                .expect("RogowskiCoils.split_into_static_and_dynamic: Can't do interpolation");
-
-            // Store for later
-            measured.slice_mut(s![i_sensor, ..]).assign(&measured_this_coil);
-
-            // Store in self
-            self.results
-                .get_or_insert(sensor_name)
-                .get_or_insert("i")
-                .get_or_insert("measured")
-                .insert("value", measured_this_coil);
-            self.results
-                .get_or_insert(sensor_name)
-                .get_or_insert("i")
-                .get_or_insert("measured")
-                .insert("time", times_to_reconstruct.clone());
-        }
-
         // MDSplus is "Sensor-Major", but we want to rearrange the data to be "Time-Major"
         let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);
         for i_time in 0..n_time {
@@ -801,10 +809,8 @@ impl RogowskiCoils {
             results_dynamic.push(results_dynamic_this_time_slice);
         }
 
-        let results_static_time_dependent: Vec<SensorsStatic> = vec![results_static.clone(); n_time];
-
-        // Return the static and dynamic results
-        (results_static_time_dependent, results_dynamic)
+        // The Green's tables do not depend on time, so a single static table is shared by all time-slices
+        (results_static, results_dynamic)
     }
 
     pub fn calculate_sensor_values_rs(&mut self, coils: &Coils, passives: &Passives, plasma: &Plasma) {

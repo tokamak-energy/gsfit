@@ -25,6 +25,7 @@ pub use find_magnetic_axis::find_magnetic_axis;
 pub use find_stationary_points_using_winding_number::find_stationary_points_using_winding_number;
 pub use find_viable_xpt::find_viable_xpt;
 pub use flood_fill_mask::flood_fill_mask;
+pub use flood_fill_mask::vessel_mask;
 pub use hessian::hessian;
 
 // Define the possible **external** failures this module can produce

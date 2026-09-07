@@ -247,31 +247,35 @@ impl IsofluxBoundary {
                 let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
+                // Green's tables between the (time-dependent) location and the passive's filaments;
+                // these do not depend on the degrees of freedom, so they are calculated once per time-slice
+                let mut g_full_location_1_vs_time: Vec<Array2<f64>> = Vec::with_capacity(n_time);
+                for i_time in 0..n_time {
+                    let greens_calculator: Greens = Greens::sensor_to_conductor(
+                        array![location_1_r[i_time]],
+                        array![location_1_z[i_time]],
+                        passive_r.clone(),
+                        passive_z.clone(),
+                        passive_r.clone() * 0.0,
+                        passive_z.clone() * 0.0,
+                    );
+                    g_full_location_1_vs_time.push(greens_calculator.psi()); // shape = [1, n_filaments]
+                }
+
                 // Loop over all degrees of freedom
                 for dof_name in dof_names {
+                    // Current distribution
+                    let current_distribution: Array1<f64> = passives
+                        .results
+                        .get(&passive_name)
+                        .get("dof")
+                        .get(&dof_name)
+                        .get("current_distribution")
+                        .unwrap_array1();
+
                     let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                     for i_time in 0..n_time {
-                        // Location 1
-                        let greens_calculator: Greens = Greens::sensor_to_conductor(
-                            array![location_1_r[i_time]],
-                            array![location_1_z[i_time]],
-                            passive_r.clone(),
-                            passive_z.clone(),
-                            passive_r.clone() * 0.0,
-                            passive_z.clone() * 0.0,
-                        );
-                        let g_full_location_1: Array2<f64> = greens_calculator.psi(); // shape = [1, n_z * n_r]
-
-                        // Current distribution
-                        let current_distribution: Array1<f64> = passives
-                            .results
-                            .get(&passive_name)
-                            .get("dof")
-                            .get(&dof_name)
-                            .get("current_distribution")
-                            .unwrap_array1();
-
-                        let g_with_dof_full_location_1: Array2<f64> = g_full_location_1 * &current_distribution; // shape = [n_r * n_z, n_filament]
+                        let g_with_dof_full_location_1: Array2<f64> = &g_full_location_1_vs_time[i_time] * &current_distribution; // shape = [1, n_filament]
 
                         // Sum over all filaments
                         g_vs_time[i_time] = g_with_dof_full_location_1.sum();
