@@ -101,3 +101,4 @@ venv_gsfit/
 
 # Ruff autoforamtting
 .ruff_cache
+benchmark_results/
