@@ -408,6 +408,16 @@ pub struct GsSolution<'a> {
     pub ff_prime_dof_values: Array1<f64>,
     pub p_prime_dof_values: Array1<f64>,
     pub psi_2d_coils: Array2<f64>,
+    /// Derivatives of the PF coil flux on the grid; fixed within a time-slice, filled on the first
+    /// call of `calculate_psi_and_derivatives` (empty until then)
+    d_psi_d_r_2d_coils: Array2<f64>,
+    d_psi_d_z_2d_coils: Array2<f64>,
+    d2_psi_d_r2_2d_coils: Array2<f64>,
+    d2_psi_d_r_d_z_2d_coils: Array2<f64>,
+    d2_psi_d_z2_2d_coils: Array2<f64>,
+    d3_psi_d_r2_d_z_2d_coils: Array2<f64>,
+    d3_psi_d_r_d_z2_2d_coils: Array2<f64>,
+    d3_psi_d_z3_2d_coils: Array2<f64>,
     pub passive_dof_values: Array1<f64>,
     pub psi_2d: Array2<f64>,
     pub d_psi_d_r_2d: Array2<f64>,
@@ -516,6 +526,14 @@ impl<'a> GsSolution<'a> {
             j_2d: Array2::zeros((0, 0)),
             mask: Array2::zeros((0, 0)),
             psi_2d_coils: Array2::zeros((0, 0)),
+            d_psi_d_r_2d_coils: Array2::zeros((0, 0)),
+            d_psi_d_z_2d_coils: Array2::zeros((0, 0)),
+            d2_psi_d_r2_2d_coils: Array2::zeros((0, 0)),
+            d2_psi_d_r_d_z_2d_coils: Array2::zeros((0, 0)),
+            d2_psi_d_z2_2d_coils: Array2::zeros((0, 0)),
+            d3_psi_d_r2_d_z_2d_coils: Array2::zeros((0, 0)),
+            d3_psi_d_r_d_z2_2d_coils: Array2::zeros((0, 0)),
+            d3_psi_d_z3_2d_coils: Array2::zeros((0, 0)),
             psi_b: f64::NAN,
             psi_a: f64::NAN,
             ip: f64::NAN,
@@ -861,6 +879,17 @@ impl<'a> GsSolution<'a> {
             let psi_n_flat: Array1<f64> = Array1::from_iter(psi_n_2d.iter().cloned());
             let j_2d_flat: Array1<f64> = Array1::from_iter(j_2d.iter().cloned());
 
+            // Source-function basis functions on the grid, evaluated once per iteration
+            // (they were re-evaluated for every sensor and degree of freedom in the fitting matrix)
+            let mut p_prime_basis: Vec<Array1<f64>> = Vec::with_capacity(n_p_prime_dof);
+            for i_p_prime_dof in 0..n_p_prime_dof {
+                p_prime_basis.push(p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof));
+            }
+            let mut ff_prime_basis: Vec<Array1<f64>> = Vec::with_capacity(n_ff_prime_dof);
+            for i_ff_prime_dof in 0..n_ff_prime_dof {
+                ff_prime_basis.push(ff_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_ff_prime_dof));
+            }
+
             let n_vertical_stabilisation: usize;
             if i_iter > n_iter_no_vertical_feedback {
                 n_vertical_stabilisation = 1;
@@ -884,14 +913,8 @@ impl<'a> GsSolution<'a> {
 
                 // p_prime degrees of freedom
                 for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_bp_probes_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
+                    fitting_matrix[(i_constraint, i_p_prime_dof)] =
+                        2.0 * PI * d_area * (&greens_bp_probes_grid.slice(s![.., i_sensor]) * &mask_flat * &p_prime_basis[i_p_prime_dof] * &flat_r).sum();
                 }
 
                 // ff_prime degrees of freedom
@@ -899,11 +922,7 @@ impl<'a> GsSolution<'a> {
                     fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
                         * PI
                         * d_area
-                        * (&greens_bp_probes_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
+                        * (&greens_bp_probes_grid.slice(s![.., i_sensor]) * &mask_flat * &ff_prime_basis[i_ff_prime_dof] / (MU_0 * &flat_r)).sum();
                 }
 
                 // Add passive degrees of freedom
@@ -936,14 +955,8 @@ impl<'a> GsSolution<'a> {
             for i_sensor in 0..n_fl {
                 // p_prime degrees of freedom
                 for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_flux_loops_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
+                    fitting_matrix[(i_constraint, i_p_prime_dof)] =
+                        2.0 * PI * d_area * (&greens_flux_loops_grid.slice(s![.., i_sensor]) * &mask_flat * &p_prime_basis[i_p_prime_dof] * &flat_r).sum();
                 }
 
                 // ff_prime degrees of freedom
@@ -951,11 +964,7 @@ impl<'a> GsSolution<'a> {
                     fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
                         * PI
                         * d_area
-                        * (&greens_flux_loops_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
+                        * (&greens_flux_loops_grid.slice(s![.., i_sensor]) * &mask_flat * &ff_prime_basis[i_ff_prime_dof] / (MU_0 * &flat_r)).sum();
                 }
 
                 // Add passive degrees of freedom
@@ -1033,14 +1042,8 @@ impl<'a> GsSolution<'a> {
             for i_sensor in 0..n_rog {
                 // p_prime degrees of freedom
                 for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_rogowski_coils_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
+                    fitting_matrix[(i_constraint, i_p_prime_dof)] =
+                        2.0 * PI * d_area * (&greens_rogowski_coils_grid.slice(s![.., i_sensor]) * &mask_flat * &p_prime_basis[i_p_prime_dof] * &flat_r).sum();
                 }
 
                 // ff_prime degrees of freedom
@@ -1048,11 +1051,7 @@ impl<'a> GsSolution<'a> {
                     fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
                         * PI
                         * d_area
-                        * (&greens_rogowski_coils_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
+                        * (&greens_rogowski_coils_grid.slice(s![.., i_sensor]) * &mask_flat * &ff_prime_basis[i_ff_prime_dof] / (MU_0 * &flat_r)).sum();
                 }
 
                 // Add passive degrees of freedom
@@ -1085,14 +1084,8 @@ impl<'a> GsSolution<'a> {
             for i_sensor in 0..n_isoflux {
                 // p_prime degrees of freedom
                 for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_isoflux_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
+                    fitting_matrix[(i_constraint, i_p_prime_dof)] =
+                        2.0 * PI * d_area * (&greens_isoflux_grid.slice(s![.., i_sensor]) * &mask_flat * &p_prime_basis[i_p_prime_dof] * &flat_r).sum();
                 }
 
                 // ff_prime degrees of freedom
@@ -1100,11 +1093,7 @@ impl<'a> GsSolution<'a> {
                     fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
                         * PI
                         * d_area
-                        * (&greens_isoflux_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
+                        * (&greens_isoflux_grid.slice(s![.., i_sensor]) * &mask_flat * &ff_prime_basis[i_ff_prime_dof] / (MU_0 * &flat_r)).sum();
                 }
 
                 // Add passive degrees of freedom
@@ -1140,11 +1129,7 @@ impl<'a> GsSolution<'a> {
                     fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
                         * PI
                         * d_area
-                        * (&greens_isoflux_boundary_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
+                        * (&greens_isoflux_boundary_grid.slice(s![.., i_sensor]) * &mask_flat * &p_prime_basis[i_p_prime_dof] * &flat_r).sum();
                 }
 
                 // ff_prime degrees of freedom
@@ -1152,11 +1137,7 @@ impl<'a> GsSolution<'a> {
                     fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
                         * PI
                         * d_area
-                        * (&greens_isoflux_boundary_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
+                        * (&greens_isoflux_boundary_grid.slice(s![.., i_sensor]) * &mask_flat * &ff_prime_basis[i_ff_prime_dof] / (MU_0 * &flat_r)).sum();
                 }
 
                 // Add passive degrees of freedom
@@ -1278,14 +1259,8 @@ impl<'a> GsSolution<'a> {
             for i_sensor in 0..n_magnetic_axis_constraints {
                 // p_prime degrees of freedom
                 for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
+                    fitting_matrix[(i_constraint, i_p_prime_dof)] =
+                        2.0 * PI * d_area * (&greens_magnetic_axis_grid.slice(s![.., i_sensor]) * &mask_flat * &p_prime_basis[i_p_prime_dof] * &flat_r).sum();
                 }
 
                 // ff_prime degrees of freedom
@@ -1293,11 +1268,7 @@ impl<'a> GsSolution<'a> {
                     fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
                         * PI
                         * d_area
-                        * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_n_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
+                        * (&greens_magnetic_axis_grid.slice(s![.., i_sensor]) * &mask_flat * &ff_prime_basis[i_ff_prime_dof] / (MU_0 * &flat_r)).sum();
                 }
 
                 // Add passive degrees of freedom
@@ -1523,9 +1494,11 @@ impl<'a> GsSolution<'a> {
         let n_r: usize = plasma.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = plasma.results.get("grid").get("n_z").unwrap_usize();
         let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
-        let j_2d: &Array2<f64> = &self.j_2d;
-        let pf_coil_currents: &Array1<f64> = &self.coils_dynamic.measured;
-        let passive_dof_values: &Array1<f64> = &self.passive_dof_values;
+        let j_2d: Array2<f64> = self.j_2d.clone();
+        let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
+        let pf_coil_currents: &Array1<f64> = &coils_dynamic.measured;
+        let passive_dof_values: Array1<f64> = self.passive_dof_values.clone();
+        let passive_dof_values: &Array1<f64> = &passive_dof_values;
         let delta_z: f64 = self.delta_z;
 
         // ====================================================================
@@ -1542,17 +1515,28 @@ impl<'a> GsSolution<'a> {
         };
 
         // PF coils
-        // `psi` is precomputed (the PF currents are fixed within a time-slice);
-        // the other fields are the Greens tables contracted with the PF currents
+        // `psi` is precomputed (the PF currents are fixed within a time-slice); the other fields are
+        // the Greens tables contracted with the PF currents, calculated on the first iteration and
+        // reused by the following ones
+        if self.d_psi_d_r_2d_coils.is_empty() {
+            self.d_psi_d_r_2d_coils = contract(&greens_tables.g_d_psi_d_r_coils_matrix, pf_coil_currents);
+            self.d_psi_d_z_2d_coils = contract(&greens_tables.g_d_psi_d_z_coils_matrix, pf_coil_currents);
+            self.d2_psi_d_r2_2d_coils = contract(&greens_tables.g_d2_psi_d_r2_coils_matrix, pf_coil_currents);
+            self.d2_psi_d_r_d_z_2d_coils = contract(&greens_tables.g_d2_psi_d_r_d_z_coils_matrix, pf_coil_currents);
+            self.d2_psi_d_z2_2d_coils = contract(&greens_tables.g_d2_psi_d_z2_coils_matrix, pf_coil_currents);
+            self.d3_psi_d_r2_d_z_2d_coils = contract(&greens_tables.g_d3_psi_d_r2_d_z_coils_matrix, pf_coil_currents);
+            self.d3_psi_d_r_d_z2_2d_coils = contract(&greens_tables.g_d3_psi_d_r_d_z2_coils_matrix, pf_coil_currents);
+            self.d3_psi_d_z3_2d_coils = contract(&greens_tables.g_d3_psi_d_z3_coils_matrix, pf_coil_currents);
+        }
         let psi_2d_coils: &Array2<f64> = &self.psi_2d_coils;
-        let d_psi_d_r_2d_coils: Array2<f64> = contract(&greens_tables.g_d_psi_d_r_coils_matrix, pf_coil_currents);
-        let d_psi_d_z_2d_coils: Array2<f64> = contract(&greens_tables.g_d_psi_d_z_coils_matrix, pf_coil_currents);
-        let d2_psi_d_r2_2d_coils: Array2<f64> = contract(&greens_tables.g_d2_psi_d_r2_coils_matrix, pf_coil_currents);
-        let d2_psi_d_r_d_z_2d_coils: Array2<f64> = contract(&greens_tables.g_d2_psi_d_r_d_z_coils_matrix, pf_coil_currents);
-        let d2_psi_d_z2_2d_coils: Array2<f64> = contract(&greens_tables.g_d2_psi_d_z2_coils_matrix, pf_coil_currents);
-        let d3_psi_d_r2_d_z_2d_coils: Array2<f64> = contract(&greens_tables.g_d3_psi_d_r2_d_z_coils_matrix, pf_coil_currents);
-        let d3_psi_d_r_d_z2_2d_coils: Array2<f64> = contract(&greens_tables.g_d3_psi_d_r_d_z2_coils_matrix, pf_coil_currents);
-        let d3_psi_d_z3_2d_coils: Array2<f64> = contract(&greens_tables.g_d3_psi_d_z3_coils_matrix, pf_coil_currents);
+        let d_psi_d_r_2d_coils: &Array2<f64> = &self.d_psi_d_r_2d_coils;
+        let d_psi_d_z_2d_coils: &Array2<f64> = &self.d_psi_d_z_2d_coils;
+        let d2_psi_d_r2_2d_coils: &Array2<f64> = &self.d2_psi_d_r2_2d_coils;
+        let d2_psi_d_r_d_z_2d_coils: &Array2<f64> = &self.d2_psi_d_r_d_z_2d_coils;
+        let d2_psi_d_z2_2d_coils: &Array2<f64> = &self.d2_psi_d_z2_2d_coils;
+        let d3_psi_d_r2_d_z_2d_coils: &Array2<f64> = &self.d3_psi_d_r2_d_z_2d_coils;
+        let d3_psi_d_r_d_z2_2d_coils: &Array2<f64> = &self.d3_psi_d_r_d_z2_2d_coils;
+        let d3_psi_d_z3_2d_coils: &Array2<f64> = &self.d3_psi_d_z3_2d_coils;
 
         // Passives: the Greens tables contracted with the passive degrees of freedom
         let psi_2d_passives: Array2<f64> = contract(&greens_tables.g_psi_passives_matrix, passive_dof_values);
@@ -1567,7 +1551,7 @@ impl<'a> GsSolution<'a> {
 
         // Plasma: FFT convolution along `z` (see `PlasmaGreensSpectra`); the even and odd kernels are
         // returned as column-wise concatenated blocks, shape = (n_z, 5 * n_r) and (n_z, 4 * n_r)
-        let (plasma_even, plasma_odd): (Array2<f64>, Array2<f64>) = greens_tables.plasma_spectra.convolve(j_2d, d_area);
+        let (plasma_even, plasma_odd): (Array2<f64>, Array2<f64>) = greens_tables.plasma_spectra.convolve(&j_2d, d_area);
 
         // Assemble the unshifted fields (coils + passives + plasma).
         // The `plasma_even` / `plasma_odd` column blocks follow the kernel order documented on `PlasmaGreensSpectra`

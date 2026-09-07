@@ -2,7 +2,6 @@ use super::StationaryPoint;
 use geo::{Contains, Coord, LineString, Point, Polygon};
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
-use std::collections::HashMap;
 use std::collections::VecDeque;
 
 /// Mask of the grid points which lie inside the vacuum vessel
@@ -114,8 +113,12 @@ pub fn flood_fill_mask(
         near_boundary_test
     });
 
+    // Grid sizes
+    let n_r: usize = r.len();
+    let n_z: usize = z.len();
+
     // Label points we should not cross
-    let mut indices_do_not_cross: HashMap<(usize, usize), ()> = HashMap::new();
+    let mut do_not_cross_2d: Array2<bool> = Array2::from_elem((n_z, n_r), false);
     for stationary_point in stationary_points.iter() {
         // Find the nearest grid point to the stationary point
         let i_r_nearest: usize = stationary_point.i_r_nearest;
@@ -128,39 +131,36 @@ pub fn flood_fill_mask(
         // x-point could conceivably escape left/right too
         if z[i_z_nearest] > 0.0 {
             if i_r_nearest > 1 {
-                indices_do_not_cross.insert((i_z_nearest_upper, i_r_nearest - 2), ());
+                do_not_cross_2d[(i_z_nearest_upper, i_r_nearest - 2)] = true;
             }
             if i_r_nearest > 0 {
-                indices_do_not_cross.insert((i_z_nearest_upper, i_r_nearest - 1), ());
+                do_not_cross_2d[(i_z_nearest_upper, i_r_nearest - 1)] = true;
             }
-            indices_do_not_cross.insert((i_z_nearest_upper, i_r_nearest), ());
+            do_not_cross_2d[(i_z_nearest_upper, i_r_nearest)] = true;
             if i_r_nearest < r.len() - 1 {
-                indices_do_not_cross.insert((i_z_nearest_upper, i_r_nearest + 1), ());
+                do_not_cross_2d[(i_z_nearest_upper, i_r_nearest + 1)] = true;
             }
             if i_r_nearest < r.len() - 2 {
-                indices_do_not_cross.insert((i_z_nearest_upper, i_r_nearest + 2), ());
+                do_not_cross_2d[(i_z_nearest_upper, i_r_nearest + 2)] = true;
             }
         }
         if z[i_z_nearest] < 0.0 {
             if i_r_nearest > 1 {
-                indices_do_not_cross.insert((i_z_nearest_lower, i_r_nearest - 2), ());
+                do_not_cross_2d[(i_z_nearest_lower, i_r_nearest - 2)] = true;
             }
             if i_r_nearest > 0 {
-                indices_do_not_cross.insert((i_z_nearest_lower, i_r_nearest - 1), ());
+                do_not_cross_2d[(i_z_nearest_lower, i_r_nearest - 1)] = true;
             }
-            indices_do_not_cross.insert((i_z_nearest_lower, i_r_nearest), ());
+            do_not_cross_2d[(i_z_nearest_lower, i_r_nearest)] = true;
             if i_r_nearest < r.len() - 1 {
-                indices_do_not_cross.insert((i_z_nearest_lower, i_r_nearest + 1), ());
+                do_not_cross_2d[(i_z_nearest_lower, i_r_nearest + 1)] = true;
             }
             if i_r_nearest < r.len() - 2 {
-                indices_do_not_cross.insert((i_z_nearest_lower, i_r_nearest + 2), ());
+                do_not_cross_2d[(i_z_nearest_lower, i_r_nearest + 2)] = true;
             }
         }
     }
 
-    // Grid sizes
-    let n_r: usize = r.len();
-    let n_z: usize = z.len();
     let mut mask_2d: Array2<f64> = Array2::from_elem((n_z, n_r), 0.0);
 
     // Find the index of the grid point closest to the magnetic axis
@@ -220,14 +220,14 @@ pub fn flood_fill_mask(
             }
 
             // Check if we are going past a saddle point
-            if indices_do_not_cross.contains_key(&(new_i_z, new_i_r)) {
+            if do_not_cross_2d[(new_i_z, new_i_r)] {
                 // Don't add this point to the `mask`, and don't add it to the `queue`
                 continue 'loop_over_directions;
             }
 
             if mask_2d[(new_i_z, new_i_r)] == 0.0 && psi_2d[(new_i_z, new_i_r)] > psi_b {
                 // `mask` is not allowed to pass a saddle point, regardless of if the plasma is diverted or limited
-                if !indices_do_not_cross.contains_key(&(new_i_z, new_i_r)) {
+                if !do_not_cross_2d[(new_i_z, new_i_r)] {
                     mask_2d[(new_i_z, new_i_r)] = 1.0;
                     queue.push_back((new_i_z, new_i_r));
                 }
