@@ -48,13 +48,13 @@ jobs:
 
           if [[ -z "${commits_ahead}" ]]; then
             echo "Could not compare \`${imas_dd_ref}\` against the Data Dictionary's \`develop\` branch; skipping"
-            echo "IMAS Data Dictionary: could not be checked" >> "${GITHUB_STEP_SUMMARY}"
+            echo "gsfit.imas_rs: IMAS Data Dictionary: could not be checked" >> "${GITHUB_STEP_SUMMARY}"
           elif [[ "${commits_ahead}" == "0" ]]; then
             echo "Up to date with the Data Dictionary's \`develop\` branch"
-            echo "IMAS Data Dictionary: \`${imas_dd_version}\` is up to date with \`develop\`" >> "${GITHUB_STEP_SUMMARY}"
+            echo "gsfit.imas_rs: IMAS Data Dictionary: \`${imas_dd_version}\` is up to date with \`develop\`" >> "${GITHUB_STEP_SUMMARY}"
           else
             echo "::warning title=IMAS Data Dictionary has moved on::rust/imas_rs was generated from ${imas_dd_version}, and the Data Dictionary's develop branch is now ${commits_ahead} commit(s) ahead. Regenerating is a deliberate manual step: see rust/imas_rs/imas_updater/README.md."
-            echo "IMAS Data Dictionary: \`develop\` is **${commits_ahead} commit(s) ahead** of \`${imas_dd_version}\`" >> "${GITHUB_STEP_SUMMARY}"
+            echo "gsfit.imas_rs: IMAS Data Dictionary: \`develop\` is **${commits_ahead} commit(s) ahead** of \`${imas_dd_version}\`" >> "${GITHUB_STEP_SUMMARY}"
           fi
 
   sdist:
