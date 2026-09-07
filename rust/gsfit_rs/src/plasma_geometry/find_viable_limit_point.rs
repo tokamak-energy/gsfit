@@ -36,6 +36,7 @@ pub fn find_viable_limit_point(
     mag_z: f64,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
+    mask_vessel_2d: &Array2<bool>,
     stationary_points: &[StationaryPoint],
 ) -> Result<BoundaryContour, String> {
     // TODO: add logic for negative plasma current
@@ -192,8 +193,7 @@ pub fn find_viable_limit_point(
             stationary_points,
             mag_r,
             mag_z,
-            vessel_r,
-            vessel_z,
+            mask_vessel_2d,
         );
         potential_limit_point.mask = Some(mask_2d.clone());
 

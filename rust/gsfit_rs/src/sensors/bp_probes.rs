@@ -282,7 +282,7 @@ impl BpProbes {
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
     /// TODO: change `SensorsStatic` to Vec<SensorsStatic> to be consistent with other sensor types.
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (SensorsStatic, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
 
         // Vector of boolean's to say if we use the sensor or not
@@ -306,9 +306,8 @@ impl BpProbes {
         // If there are no sensors selected, return empty data
         if n_sensors == 0 {
             let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
-            let static_data_empty_vs_time: Vec<SensorsStatic> = vec![static_data_empty; n_time];
             let dynamic_data_empty_vs_time: Vec<SensorsDynamic> = vec![dynamic_data_empty; n_time];
-            return (static_data_empty_vs_time, dynamic_data_empty_vs_time);
+            return (static_data_empty, dynamic_data_empty_vs_time);
         }
 
         // Fit settings
@@ -426,10 +425,8 @@ impl BpProbes {
             results_dynamic.push(results_dynamic_this_time_slice);
         }
 
-        let results_static_time_dependent: Vec<SensorsStatic> = vec![results_static.clone(); n_time];
-
-        // Return the static and dynamic results
-        (results_static_time_dependent, results_dynamic)
+        // The Green's tables do not depend on time, so a single static table is shared by all time-slices
+        (results_static, results_dynamic)
     }
 
     /// Calculate sensor values

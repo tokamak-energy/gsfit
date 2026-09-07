@@ -16,6 +16,7 @@ use ndarray::{Array1, Array2};
 /// * `limit_pts_z` - Z coordinates of limiter points, [metre]
 /// * `vessel_r` - R coordinates of vessel points, [metre]
 /// * `vessel_z` - Z coordinates of vessel points, [metre]
+/// * `mask_vessel_2d` - `true` for grid points inside the vessel (from `vessel_mask`), shape = (n_z, n_r), dimensionless
 /// * `mag_r` - R coordinate of magnetic axis, [metre]
 /// * `mag_z` - Z coordinate of magnetic axis, [metre]
 ///
@@ -33,6 +34,7 @@ pub fn find_boundary(
     limit_pts_z: &Array1<f64>,
     vessel_r: &Array1<f64>,
     vessel_z: &Array1<f64>,
+    mask_vessel_2d: &Array2<bool>,
     mag_r: f64,
     mag_z: f64,
 ) -> Result<BoundaryContour, Error> {
@@ -73,6 +75,7 @@ pub fn find_boundary(
         mag_z,
         vessel_r,
         vessel_z,
+        mask_vessel_2d,
         stationary_points,
     );
 
@@ -155,7 +158,7 @@ pub fn find_boundary(
     }
 
     // Calculate the mask
-    let mask: Array2<f64> = flood_fill_mask(r, z, psi_2d, psi_b, stationary_points, mag_r, mag_z, vessel_r, vessel_z);
+    let mask: Array2<f64> = flood_fill_mask(r, z, psi_2d, psi_b, stationary_points, mag_r, mag_z, mask_vessel_2d);
 
     let boundary_contour: BoundaryContour = BoundaryContour {
         boundary_r: boundary_r.clone(),

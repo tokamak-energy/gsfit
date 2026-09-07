@@ -506,6 +506,10 @@ pub struct GsSolution<'a> {
     pub ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
     passive_regularisations: Array2<f64>,
     passive_regularisations_weight: Array1<f64>,
+    /// Reorganised Green's tables, shared by all time-slices (see `PsiAndDerivativesGreens`)
+    psi_and_derivatives_greens: &'a PsiAndDerivativesGreens,
+    /// `true` for grid points inside the vacuum vessel, shared by all time-slices
+    mask_vessel_2d: &'a Array2<bool>,
     pub error_state: Option<Error>,
 }
 
@@ -538,6 +542,8 @@ impl<'a> GsSolution<'a> {
         ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
         passive_regularisations: Array2<f64>,
         passive_regularisations_weight: Array1<f64>,
+        psi_and_derivatives_greens: &'a PsiAndDerivativesGreens,
+        mask_vessel_2d: &'a Array2<bool>,
     ) -> Self {
         GsSolution {
             // Object inputs
@@ -598,6 +604,8 @@ impl<'a> GsSolution<'a> {
             ff_prime_source_function,
             passive_regularisations,
             passive_regularisations_weight,
+            psi_and_derivatives_greens,
+            mask_vessel_2d,
             error_state: None,
         }
     }
@@ -707,35 +715,35 @@ impl<'a> GsSolution<'a> {
             + n_delta_z_regularisation;
 
         // Magnetic sensor's Greens tables
-        let greens_bp_probes_grid: Array2<f64> = bp_probes_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_bp_probes_dz: Array2<f64> = bp_probes_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_bp_probes_pf: Array2<f64> = bp_probes_static.greens_with_pf.to_owned(); // shape = [n_pf, n_sensors]
-        let greens_bp_probes_passives: Array2<f64> = bp_probes_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_bp_probes_grid: &Array2<f64> = &bp_probes_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_bp_probes_dz: &Array2<f64> = &bp_probes_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_bp_probes_pf: &Array2<f64> = &bp_probes_static.greens_with_pf; // shape = [n_pf, n_sensors]
+        let greens_bp_probes_passives: &Array2<f64> = &bp_probes_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        let greens_flux_loops_grid: Array2<f64> = flux_loops_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_flux_loops_dz: Array2<f64> = flux_loops_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_flux_loops_pf: Array2<f64> = flux_loops_static.greens_with_pf.to_owned(); // shape = [n_pf, n_sensors]
-        let greens_flux_loops_passives: Array2<f64> = flux_loops_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_flux_loops_grid: &Array2<f64> = &flux_loops_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_flux_loops_dz: &Array2<f64> = &flux_loops_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_flux_loops_pf: &Array2<f64> = &flux_loops_static.greens_with_pf; // shape = [n_pf, n_sensors]
+        let greens_flux_loops_passives: &Array2<f64> = &flux_loops_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        let greens_rogowski_coils_grid: Array2<f64> = rogowski_coils_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_rogowski_coils_dz: Array2<f64> = rogowski_coils_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_rogowski_coils_pf: Array2<f64> = rogowski_coils_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_rogowski_coils_passives: Array2<f64> = rogowski_coils_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_rogowski_coils_grid: &Array2<f64> = &rogowski_coils_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_rogowski_coils_dz: &Array2<f64> = &rogowski_coils_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_rogowski_coils_pf: &Array2<f64> = &rogowski_coils_static.greens_with_pf; // shape = [n_z*n_r, n_sensors]
+        let greens_rogowski_coils_passives: &Array2<f64> = &rogowski_coils_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        let greens_isoflux_grid: Array2<f64> = isoflux_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_isoflux_dz: Array2<f64> = isoflux_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_isoflux_pf: Array2<f64> = isoflux_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_isoflux_passives: Array2<f64> = isoflux_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_isoflux_grid: &Array2<f64> = &isoflux_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_isoflux_dz: &Array2<f64> = &isoflux_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_isoflux_pf: &Array2<f64> = &isoflux_static.greens_with_pf; // shape = [n_z*n_r, n_sensors]
+        let greens_isoflux_passives: &Array2<f64> = &isoflux_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        let greens_isoflux_boundary_grid: Array2<f64> = isoflux_boundary_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_isoflux_boundary_dz: Array2<f64> = isoflux_boundary_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_isoflux_boundary_pf: Array2<f64> = isoflux_boundary_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_isoflux_boundary_passives: Array2<f64> = isoflux_boundary_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_isoflux_boundary_grid: &Array2<f64> = &isoflux_boundary_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_isoflux_boundary_dz: &Array2<f64> = &isoflux_boundary_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_isoflux_boundary_pf: &Array2<f64> = &isoflux_boundary_static.greens_with_pf; // shape = [n_z*n_r, n_sensors]
+        let greens_isoflux_boundary_passives: &Array2<f64> = &isoflux_boundary_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        let greens_magnetic_axis_grid: Array2<f64> = magnetic_axis_static.greens_with_grid.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_d_magnetic_axis_dz: Array2<f64> = magnetic_axis_static.greens_d_sensor_dz.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_magnetic_axis_pf: Array2<f64> = magnetic_axis_static.greens_with_pf.to_owned(); // shape = [n_z*n_r, n_sensors]
-        let greens_magnetic_axis_passives: Array2<f64> = magnetic_axis_static.greens_with_passives.to_owned(); // shape = [n_passive_dof, n_sensors]
+        let greens_magnetic_axis_grid: &Array2<f64> = &magnetic_axis_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
+        let greens_d_magnetic_axis_dz: &Array2<f64> = &magnetic_axis_static.greens_d_sensor_dz; // shape = [n_z*n_r, n_sensors]
+        let greens_magnetic_axis_pf: &Array2<f64> = &magnetic_axis_static.greens_with_pf; // shape = [n_z*n_r, n_sensors]
+        let greens_magnetic_axis_passives: &Array2<f64> = &magnetic_axis_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
         // pf_coil_currents
         let pf_coil_currents: Array1<f64> = coils_dynamic.measured.to_owned();
@@ -761,9 +769,10 @@ impl<'a> GsSolution<'a> {
         let mut dof_values_previous: Array1<f64> = Array1::zeros(n_p_prime_dof + n_ff_prime_dof + n_passive_dof + 1);
         let mut psi_a_previous: f64 = 0.0; // needed to calculate gs-error
 
-        // Precompute the reorganised Greens tables for `calculate_psi_and_derivatives`
-        // (they do not change between iterations);  timing: 240ms, with [n_r, n_z]=[81, 321]
-        let psi_and_derivatives_greens: PsiAndDerivativesGreens = PsiAndDerivativesGreens::new(plasma);
+        // The reorganised Greens tables for `calculate_psi_and_derivatives` and the inside-vessel mask
+        // do not change between iterations or time-slices; they are calculated once in `solve_grad_shafranov`
+        let psi_and_derivatives_greens: &PsiAndDerivativesGreens = self.psi_and_derivatives_greens;
+        let mask_vessel_2d: &Array2<bool> = self.mask_vessel_2d;
 
         // Iteration loop
         'iteration_loop: for i_iter in 0..self.n_iter_max {
@@ -774,7 +783,7 @@ impl<'a> GsSolution<'a> {
 
             // Updates `psi` and all of its derivatives (including the `delta_z` vertical stability correction);
             // timing: 350ms, with [n_r, n_z]=[81, 321]
-            self.calculate_psi_and_derivatives(&psi_and_derivatives_greens);
+            self.calculate_psi_and_derivatives(psi_and_derivatives_greens);
             let psi_2d: Array2<f64> = self.psi_2d.to_owned();
             let d_psi_d_r_2d: Array2<f64> = self.d_psi_d_r_2d.to_owned();
             let d_psi_d_z_2d: Array2<f64> = self.d_psi_d_z_2d.to_owned();
@@ -849,6 +858,7 @@ impl<'a> GsSolution<'a> {
                 &limit_pts_z,
                 &vessel_r,
                 &vessel_z,
+                mask_vessel_2d,
                 self.r_mag,
                 self.z_mag,
             );

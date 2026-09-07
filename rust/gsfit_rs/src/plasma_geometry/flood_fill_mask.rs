@@ -5,6 +5,45 @@ use ndarray_stats::QuantileExt;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 
+/// Mask of the grid points which lie inside the vacuum vessel
+///
+/// The flood fill stops at the vessel wall, so this mask is needed by `flood_fill_mask`. It depends
+/// only on the grid and vessel geometry, so it is calculated once per reconstruction and shared by
+/// every time-slice and Picard iteration.
+///
+/// # Arguments
+/// * `r` - R grid points, [metre]
+/// * `z` - Z grid points, [metre]
+/// * `vessel_r` - R coordinates of vessel points, [metre]
+/// * `vessel_z` - Z coordinates of vessel points, [metre]
+///
+/// # Returns
+/// * `mask_vessel_2d` - `true` for grid points inside the vessel, shape = (n_z, n_r), dimensionless
+pub fn vessel_mask(r: &Array1<f64>, z: &Array1<f64>, vessel_r: &Array1<f64>, vessel_z: &Array1<f64>) -> Array2<bool> {
+    let n_r: usize = r.len();
+    let n_z: usize = z.len();
+    let n_vessel_pts: usize = vessel_r.len();
+    let mut vessel_coords: Vec<Coord<f64>> = Vec::with_capacity(n_vessel_pts);
+    for i_vessel in 0..n_vessel_pts {
+        vessel_coords.push(Coord {
+            x: vessel_r[i_vessel],
+            y: vessel_z[i_vessel],
+        });
+    }
+    let vessel_polygon: Polygon = Polygon::new(
+        LineString::from(vessel_coords),
+        vec![], // No holes
+    );
+    let mut mask_vessel_2d: Array2<bool> = Array2::from_elem((n_z, n_r), false);
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            let test_point: Point = Point::new(r[i_r], z[i_z]);
+            mask_vessel_2d[(i_z, i_r)] = vessel_polygon.contains(&test_point);
+        }
+    }
+    mask_vessel_2d
+}
+
 /// Flood fill algorithm to create a mask of points inside the plasma boundary
 /// starting from the magnetic axis location
 /// * mask=0.0 --> outside the plasma
@@ -18,8 +57,7 @@ use std::collections::VecDeque;
 /// * `stationary_points` - Vector of `StationaryPoint` objects (including maxima/minima, and can include saddle points)
 /// * `mag_r_previous` - R coordinate of magnetic axis from previous iteration, [metre]
 /// * `mag_z_previous` - Z coordinate of magnetic axis from previous iteration, [metre]
-/// * `vessel_r` - R coordinates of vessel points, [metre]
-/// * `vessel_z` - Z coordinates of vessel points, [metre]
+/// * `mask_vessel_2d` - `true` for grid points inside the vacuum vessel, from `vessel_mask`, shape = (n_z, n_r), dimensionless
 ///
 /// # Returns
 /// * `mask_2d` - 1.0 = inside plasma boundary, 0.0 for points outside plasma boundary; f64 to make multiplication easier, shape = (n_z, n_r), dimensionless
@@ -36,8 +74,7 @@ pub fn flood_fill_mask(
     stationary_points: &[StationaryPoint],
     mag_r_previous: f64, // Note: mag_r and mag_z are from previous iteration; this can be a problem if the magnetic axis moves significantly
     mag_z_previous: f64, // which can happen when the plasma is significantly displaced vertically from the initial guess location, e.g. during a VDE
-    vessel_r: &Array1<f64>,
-    vessel_z: &Array1<f64>,
+    mask_vessel_2d: &Array2<bool>,
 ) -> Array2<f64> {
     // TODO 1: Is there a problem left/right of the x-point?
     // TODO 2: Perhaps start the fill between the x-point and the previous magnetic axis location,
@@ -125,27 +162,6 @@ pub fn flood_fill_mask(
     let n_r: usize = r.len();
     let n_z: usize = z.len();
     let mut mask_2d: Array2<f64> = Array2::from_elem((n_z, n_r), 0.0);
-
-    // Pre-compute a mask for points that lie inside the vessel so we can stop flood fill steps at the wall
-    let n_vessel_pts: usize = vessel_r.len();
-    let mut vessel_coords: Vec<Coord<f64>> = Vec::with_capacity(n_vessel_pts);
-    for i_vessel in 0..n_vessel_pts {
-        vessel_coords.push(Coord {
-            x: vessel_r[i_vessel],
-            y: vessel_z[i_vessel],
-        });
-    }
-    let vessel_polygon: Polygon = Polygon::new(
-        LineString::from(vessel_coords),
-        vec![], // No holes
-    );
-    let mut mask_vessel_2d: Array2<bool> = Array2::from_elem((n_z, n_r), false);
-    for i_z in 0..n_z {
-        for i_r in 0..n_r {
-            let test_point: Point = Point::new(r[i_r], z[i_z]);
-            mask_vessel_2d[(i_z, i_r)] = vessel_polygon.contains(&test_point);
-        }
-    }
 
     // Find the index of the grid point closest to the magnetic axis
     let i_r_nearest_mag: usize = (r - mag_r_previous).abs().argmin().unwrap();
@@ -256,7 +272,8 @@ fn test_flood_fill_mask() {
     let mag_r_previous: f64 = 0.5115792196972574;
     let mag_z_previous: f64 = -0.007343976139471093;
 
-    let mask_2d: Array2<f64> = flood_fill_mask(&r, &z, &psi_2d, psi_b, &stationary_points, mag_r_previous, mag_z_previous, &vessel_r, &vessel_z);
+    let mask_vessel_2d: Array2<bool> = vessel_mask(&r, &z, &vessel_r, &vessel_z);
+    let mask_2d: Array2<f64> = flood_fill_mask(&r, &z, &psi_2d, psi_b, &stationary_points, mag_r_previous, mag_z_previous, &mask_vessel_2d);
 
     let total_number_of_painted_cells: f64 = mask_2d.sum();
     assert_eq!(

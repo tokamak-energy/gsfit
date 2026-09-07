@@ -143,7 +143,7 @@ impl Dialoop {
     /// Diamagnetic loops do not use Green's functions: the response is computed directly from the
     /// ff' source function inside the GS solver (see `gs_solution.rs`). The Green's arrays below are
     /// therefore left empty.
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (SensorsStatic, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
 
         // Vector of boolean's to say if we use the sensor or not
@@ -202,9 +202,8 @@ impl Dialoop {
         // If there are no sensors selected, return empty data
         if n_sensors == 0 {
             let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
-            let static_data_empty_vs_time: Vec<SensorsStatic> = vec![static_data_empty; n_time];
             let dynamic_data_empty_vs_time: Vec<SensorsDynamic> = vec![dynamic_data_empty; n_time];
-            return (static_data_empty_vs_time, dynamic_data_empty_vs_time);
+            return (static_data_empty, dynamic_data_empty_vs_time);
         }
 
         // Fit settings
@@ -235,9 +234,8 @@ impl Dialoop {
             results_dynamic.push(results_dynamic_this_time_slice);
         }
 
-        let results_static_time_dependent: Vec<SensorsStatic> = vec![results_static.clone(); n_time];
-
-        (results_static_time_dependent, results_dynamic)
+        // The Green's tables do not depend on time, so a single static table is shared by all time-slices
+        (results_static, results_dynamic)
     }
 
     /// Calculate the diamagnetic flux for each sensor and time-slice from a reconstructed plasma.
