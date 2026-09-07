@@ -1,4 +1,5 @@
 use super::Error;
+use super::plasma_greens_spectra::PlasmaGreensSpectra;
 use crate::Plasma;
 use crate::plasma_geometry;
 use crate::plasma_geometry::BoundaryContour;
@@ -10,13 +11,10 @@ use crate::plasma_geometry::find_magnetic_axis;
 use crate::plasma_geometry::find_stationary_points_using_winding_number;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
-use faer::linalg::matmul::matmul;
 use faer::linalg::solvers::{SolveLstsq, Svd as FaerSvd};
-use faer::mat::MatRef;
-use faer::{Accum, Par};
 use geo::{Contains, Coord, LineString, Point, Polygon};
 use ndarray::Axis;
-use ndarray::{Array1, Array2, Array3, ArrayView2, concatenate, s};
+use ndarray::{Array1, Array2, Array3, ArrayView2, s};
 use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;
 use std::sync::Arc;
@@ -280,37 +278,24 @@ mod tests {
 
 /// Greens tables reorganised for `calculate_psi_and_derivatives`.
 ///
-/// Precomputed **once per time-slice** (the tables do not change between Picard iterations),
-/// while `calculate_psi_and_derivatives` is called **every** iteration.
+/// Precomputed **once per reconstruction** (the tables depend only on the grid, coils and passives)
+/// and shared by every time-slice, while `calculate_psi_and_derivatives` is called **every** Picard iteration.
 ///
 /// The expensive part of `calculate_psi_and_derivatives` is the plasma grid-to-grid convolution:
 /// ```text
 ///     field[(i_z, i_r)] = sum_{i_cur_z, i_cur_r} g[(|i_z - i_cur_z|, i_r, i_cur_r)] * j_2d[(i_cur_z, i_cur_r)] * d_area
 /// ```
-/// Because the Greens table only depends on the **vertical offset** `i_offset_z = |i_z - i_cur_z|`,
-/// the convolution can be reorganised into a single matrix multiplication:
-/// ```text
-///     field = w @ g_plasma_by_offset
-/// ```
-/// where row `i_z` of `w` gathers, for each `(i_offset_z, i_cur_r)`, the (at most two) current
-/// sources which see grid point `i_z` at that offset: `j_2d[(i_z - i_offset_z, i_cur_r)]` and
-/// `j_2d[(i_z + i_offset_z, i_cur_r)]`. Kernels which are **even** in `z - z_current_source`
-/// (`psi`, `d_psi_d_r`, `d2_psi_d_r2`, `d2_psi_d_z2`, `d3_psi_d_r_d_z2`) take the sum of the two
-/// sources; kernels which are **odd** (`d_psi_d_z`, `d2_psi_d_r_d_z`, `d3_psi_d_r2_d_z`,
-/// `d3_psi_d_z3`) take the difference. `w` is built fresh each iteration (it depends on `j_2d`), which is cheap;
-/// the GEMM is done with `faer`.
+/// Because the Greens table only depends on the **vertical offset** `|i_z - i_cur_z|`, this is a
+/// one-dimensional convolution along `z` for every radial pair `(i_r, i_cur_r)`, which is evaluated
+/// with FFTs by `PlasmaGreensSpectra` (the kernel spectra are stored here). Kernels which are
+/// **even** in `z - z_current_source` (`psi`, `d_psi_d_r`, `d2_psi_d_r2`, `d2_psi_d_z2`,
+/// `d3_psi_d_r_d_z2`) and kernels which are **odd** (`d_psi_d_z`, `d2_psi_d_r_d_z`,
+/// `d3_psi_d_r2_d_z`, `d3_psi_d_z3`) are returned as two column-wise concatenated blocks.
 ///
-/// The even kernels and the odd kernels are each concatenated column-wise, so the plasma
-/// contribution to all nine fields costs exactly two GEMMs.
+/// The PF coil and passive tables are small matrix-vector products and are kept as dense matrices.
 pub struct PsiAndDerivativesGreens {
-    /// Plasma grid-to-grid, even kernels, concatenated column-wise in the order
-    /// [`psi`, `d_psi_d_r`, `d2_psi_d_r2`, `d2_psi_d_z2`, `d3_psi_d_r_d_z2`];
-    /// rows = (i_offset_z * n_r + i_cur_r); shape = (n_z * n_r, 5 * n_r)
-    g_even_plasma_by_offset: Array2<f64>,
-    /// Plasma grid-to-grid, odd kernels, concatenated column-wise in the order
-    /// [`d_psi_d_z`, `d2_psi_d_r_d_z`, `d3_psi_d_r2_d_z`, `d3_psi_d_z3`];
-    /// rows = (i_offset_z * n_r + i_cur_r); shape = (n_z * n_r, 4 * n_r)
-    g_odd_plasma_by_offset: Array2<f64>,
+    /// Fourier transforms of the plasma grid-to-grid kernels, for the convolution along `z`
+    plasma_spectra: PlasmaGreensSpectra,
     /// PF coils; each shape = (n_z * n_r, n_pf)
     g_d_psi_d_r_coils_matrix: Array2<f64>,
     g_d_psi_d_z_coils_matrix: Array2<f64>,
@@ -337,61 +322,8 @@ impl PsiAndDerivativesGreens {
         let n_r: usize = plasma.results.get("grid").get("n_r").unwrap_usize();
         let n_z: usize = plasma.results.get("grid").get("n_z").unwrap_usize();
 
-        // Plasma grid-to-grid tables; stored shape = (n_z * n_r, n_r), which unflattens to
-        // (i_offset_z, i_r, i_cur_r). Permute to (i_offset_z, i_cur_r, i_r) and re-flatten so
-        // that rows = (i_offset_z, i_cur_r) match the columns of `w`, and columns = i_r
-        let permute_to_by_offset = |g_flat: Array2<f64>| -> Array2<f64> {
-            let g_3d: Array3<f64> = g_flat
-                .to_shape((n_z, n_r, n_r))
-                .expect("PsiAndDerivativesGreens: failed to reshape grid_grid table into (n_z, n_r, n_r)")
-                .to_owned();
-            let g_3d_permuted: Array3<f64> = g_3d.permuted_axes([0, 2, 1]);
-            let g_by_offset: Array2<f64> = g_3d_permuted
-                .as_standard_layout()
-                .to_shape((n_z * n_r, n_r))
-                .expect("PsiAndDerivativesGreens: failed to flatten permuted table into (n_z * n_r, n_r)")
-                .to_owned();
-            return g_by_offset;
-        };
-
-        let grid_grid = |key: &str| -> Array2<f64> { permute_to_by_offset(plasma.results.get("greens").get("grid_grid").get(key).unwrap_array2()) };
-        let g_psi_plasma_by_offset: Array2<f64> = grid_grid("psi");
-        let g_d_psi_d_r_plasma_by_offset: Array2<f64> = grid_grid("d_psi_d_r");
-        let g_d_psi_d_z_plasma_by_offset: Array2<f64> = grid_grid("d_psi_d_z");
-        let g_d2_psi_d_r2_plasma_by_offset: Array2<f64> = grid_grid("d2_psi_d_r2");
-        let g_d2_psi_d_r_d_z_plasma_by_offset: Array2<f64> = grid_grid("d2_psi_d_r_d_z");
-        let g_d2_psi_d_z2_plasma_by_offset: Array2<f64> = grid_grid("d2_psi_d_z2");
-        let g_d3_psi_d_r2_d_z_plasma_by_offset: Array2<f64> = grid_grid("d3_psi_d_r2_d_z");
-        let g_d3_psi_d_r_d_z2_plasma_by_offset: Array2<f64> = grid_grid("d3_psi_d_r_d_z2");
-        let g_d3_psi_d_z3_plasma_by_offset: Array2<f64> = grid_grid("d3_psi_d_z3");
-
-        // Concatenate per parity, so each parity is a single GEMM
-        // (`as_standard_layout` because `concatenate` does not guarantee a C-contiguous result)
-        let g_even_plasma_by_offset: Array2<f64> = concatenate(
-            Axis(1),
-            &[
-                g_psi_plasma_by_offset.view(),
-                g_d_psi_d_r_plasma_by_offset.view(),
-                g_d2_psi_d_r2_plasma_by_offset.view(),
-                g_d2_psi_d_z2_plasma_by_offset.view(),
-                g_d3_psi_d_r_d_z2_plasma_by_offset.view(),
-            ],
-        )
-        .expect("PsiAndDerivativesGreens: failed to concatenate even kernels")
-        .as_standard_layout()
-        .to_owned();
-        let g_odd_plasma_by_offset: Array2<f64> = concatenate(
-            Axis(1),
-            &[
-                g_d_psi_d_z_plasma_by_offset.view(),
-                g_d2_psi_d_r_d_z_plasma_by_offset.view(),
-                g_d3_psi_d_r2_d_z_plasma_by_offset.view(),
-                g_d3_psi_d_z3_plasma_by_offset.view(),
-            ],
-        )
-        .expect("PsiAndDerivativesGreens: failed to concatenate odd kernels")
-        .as_standard_layout()
-        .to_owned();
+        // Plasma grid-to-grid tables, transformed along `z` (see `PlasmaGreensSpectra`)
+        let plasma_spectra: PlasmaGreensSpectra = PlasmaGreensSpectra::new(plasma);
 
         // PF coils: (n_z, n_r, n_pf) flattens to (n_z * n_r, n_pf)
         let coils_matrix = |key: &str| -> Array2<f64> {
@@ -423,8 +355,7 @@ impl PsiAndDerivativesGreens {
         let g_d3_psi_d_z3_passives_matrix: Array2<f64> = plasma.get_greens_passive_grid_d3_psi_d_z3();
 
         return Self {
-            g_even_plasma_by_offset,
-            g_odd_plasma_by_offset,
+            plasma_spectra,
             g_d_psi_d_r_coils_matrix,
             g_d_psi_d_z_coils_matrix,
             g_d2_psi_d_r2_coils_matrix,
@@ -1583,8 +1514,8 @@ impl<'a> GsSolution<'a> {
     ///
     /// Only `psi` and its derivatives are used; `br` and `bz` do not appear.
     ///
-    /// The plasma contribution is calculated with two GEMMs; see `PsiAndDerivativesGreens` for the
-    /// reorganisation of the convolution over current sources.
+    /// The plasma contribution is a convolution along `z` for every radial pair, evaluated with FFTs;
+    /// see `PlasmaGreensSpectra`.
     pub fn calculate_psi_and_derivatives(&mut self, greens_tables: &PsiAndDerivativesGreens) {
         // Unpack from self
         let plasma: &Plasma = self.plasma;
@@ -1633,87 +1564,12 @@ impl<'a> GsSolution<'a> {
         let d3_psi_d_r_d_z2_2d_passives: Array2<f64> = contract(&greens_tables.g_d3_psi_d_r_d_z2_passives_matrix, passive_dof_values);
         let d3_psi_d_z3_2d_passives: Array2<f64> = contract(&greens_tables.g_d3_psi_d_z3_passives_matrix, passive_dof_values);
 
-        // Plasma: two GEMMs over the reorganised tables (see `PsiAndDerivativesGreens`).
-        // `w_even` and `w_odd` gather the current sources by (vertical offset, source radius):
-        //     w_even[(i_z, i_offset_z * n_r + i_cur_r)] = d_area * (j_below + j_above)
-        //     w_odd[(i_z, i_offset_z * n_r + i_cur_r)]  = d_area * (j_below - j_above)
-        // where `j_below = j_2d[(i_z - i_offset_z, i_cur_r)]` (a source below the grid point) and
-        // `j_above = j_2d[(i_z + i_offset_z, i_cur_r)]` (a source at or above the grid point).
-        // The odd kernels (`d_psi_d_z`, `d2_psi_d_r_d_z`) change sign with the source side:
-        // sources with `i_z <= i_cur_z` enter with -1
-        let mut w_even: Array2<f64> = Array2::zeros((n_z, n_z * n_r));
-        let mut w_odd: Array2<f64> = Array2::zeros((n_z, n_z * n_r));
-        for i_z in 0..n_z {
-            for i_offset_z in 0..n_z {
-                let i_column_start: usize = i_offset_z * n_r;
-
-                // Source below the grid point: i_cur_z = i_z - i_offset_z (excluding i_offset_z = 0)
-                if i_offset_z > 0 && i_z >= i_offset_z {
-                    let i_cur_z: usize = i_z - i_offset_z;
-                    for i_cur_r in 0..n_r {
-                        let j_this: f64 = d_area * j_2d[(i_cur_z, i_cur_r)];
-                        w_even[(i_z, i_column_start + i_cur_r)] += j_this;
-                        w_odd[(i_z, i_column_start + i_cur_r)] += j_this;
-                    }
-                }
-
-                // Source at or above the grid point: i_cur_z = i_z + i_offset_z (including i_offset_z = 0)
-                if i_z + i_offset_z < n_z {
-                    let i_cur_z: usize = i_z + i_offset_z;
-                    for i_cur_r in 0..n_r {
-                        let j_this: f64 = d_area * j_2d[(i_cur_z, i_cur_r)];
-                        w_even[(i_z, i_column_start + i_cur_r)] += j_this;
-                        w_odd[(i_z, i_column_start + i_cur_r)] -= j_this;
-                    }
-                }
-            }
-        }
-
-        // GEMMs, using `faer` (multi-threaded)
-        let mut plasma_even: faer::Mat<f64> = faer::Mat::zeros(n_z, 5 * n_r);
-        matmul(
-            plasma_even.as_mut(),
-            Accum::Replace,
-            MatRef::from_row_major_slice(
-                w_even.as_slice().expect("calculate_psi_and_derivatives: `w_even` is not contiguous"),
-                n_z,
-                n_z * n_r,
-            ),
-            MatRef::from_row_major_slice(
-                greens_tables
-                    .g_even_plasma_by_offset
-                    .as_slice()
-                    .expect("calculate_psi_and_derivatives: `g_even_plasma_by_offset` is not contiguous"),
-                n_z * n_r,
-                5 * n_r,
-            ),
-            1.0,
-            Par::rayon(0),
-        );
-        let mut plasma_odd: faer::Mat<f64> = faer::Mat::zeros(n_z, 4 * n_r);
-        matmul(
-            plasma_odd.as_mut(),
-            Accum::Replace,
-            MatRef::from_row_major_slice(
-                w_odd.as_slice().expect("calculate_psi_and_derivatives: `w_odd` is not contiguous"),
-                n_z,
-                n_z * n_r,
-            ),
-            MatRef::from_row_major_slice(
-                greens_tables
-                    .g_odd_plasma_by_offset
-                    .as_slice()
-                    .expect("calculate_psi_and_derivatives: `g_odd_plasma_by_offset` is not contiguous"),
-                n_z * n_r,
-                4 * n_r,
-            ),
-            1.0,
-            Par::rayon(0),
-        );
+        // Plasma: FFT convolution along `z` (see `PlasmaGreensSpectra`); the even and odd kernels are
+        // returned as column-wise concatenated blocks, shape = (n_z, 5 * n_r) and (n_z, 4 * n_r)
+        let (plasma_even, plasma_odd): (Array2<f64>, Array2<f64>) = greens_tables.plasma_spectra.convolve(j_2d, d_area);
 
         // Assemble the unshifted fields (coils + passives + plasma).
-        // The `plasma_even` / `plasma_odd` column blocks follow the concatenation order
-        // documented on `PsiAndDerivativesGreens`
+        // The `plasma_even` / `plasma_odd` column blocks follow the kernel order documented on `PlasmaGreensSpectra`
         let mut psi_2d_unshifted: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
         let mut d_psi_d_r_2d_unshifted: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
         let mut d_psi_d_z_2d_unshifted: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);

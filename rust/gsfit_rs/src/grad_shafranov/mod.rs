@@ -6,6 +6,7 @@ mod gs_solution;
 // Expose functions to public
 pub use grad_shafranov_solver::solve_grad_shafranov;
 pub use gs_solution::GsSolution;
+pub mod plasma_greens_spectra;
 
 // Define the possible **external** failures this module can produce
 #[derive(Debug)]
