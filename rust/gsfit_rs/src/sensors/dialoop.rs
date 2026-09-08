@@ -143,7 +143,7 @@ impl Dialoop {
     /// 2.) A `Vec` of time-dependent objects (one per time-slice we want to reconstruct).
     ///
     /// Diamagnetic loops do not use Green's functions: the response is computed directly from the
-    /// ff' source function inside the GS solver (see `gs_solution.rs`). The Green's arrays below are
+    /// ff' source function inside the GS solver (see `equilibrium_solve.rs`). The Green's arrays below are
     /// therefore left empty.
     pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();

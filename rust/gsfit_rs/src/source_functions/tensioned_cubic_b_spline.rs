@@ -882,7 +882,7 @@ fn test_source_function_integral() {
 
     let n_dof: usize = interior_knots.len() + 4;
 
-    // `regularisations` is used within `gs_solution` to calculate `spline_dof` values.
+    // `regularisations` is used within `equilibrium_solve` to calculate `spline_dof` values.
     // Since we are supplying our own `spline_dof` values, `regularisations` has no effect, so can be set to NaN
     let regularisations: Array2<f64> = Array2::from_elem((n_dof, n_dof), f64::NAN);
 

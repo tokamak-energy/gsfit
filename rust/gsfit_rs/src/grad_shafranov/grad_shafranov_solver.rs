@@ -1,7 +1,7 @@
 use super::epp_chi_sq_mag::epp_chi_sq_mag;
-use super::equilibrium_solve::{GradShafranovInputs, PsiAndDerivativesGreens};
+use super::equilibrium_solve::{EquilibriumSolver, GradShafranovInputs, PsiAndDerivativesGreens};
 use super::initial_current_seed::quadratic_current_density_seed;
-use super::{GradShafranovSolve, output_flag};
+use super::output_flag;
 use crate::coils::Coils;
 use crate::equilibrium_post_processor::equilibrium_post_processor;
 use crate::passives::Passives;
@@ -114,11 +114,11 @@ pub fn solve_grad_shafranov(
         ids_times, times_to_reconstruct_ndarray,
         "the equilibrium IDS was built for different times than `solve_inverse_problem` was asked to solve"
     );
-    // Move the IDS out of `plasma` for the solve, and put it back at the end.
-    // `plasma` is a `PyRefMut`, so every field access borrows the whole of it. Leaving the IDS
-    // inside would therefore mean borrowing `plasma` twice at once, which does not compile: the
-    // parallel solve holds `&code` and `&greens` while mutating `time_slice`
-    let mut equilibrium_ids: Equilibrium = std::mem::take(&mut plasma.equilibrium_ids);
+    // Deref the `PyRefMut` once. Every field access on the `PyRefMut` itself borrows the whole of
+    // it, so the parallel solve could not hold `&code` and `&greens` while mutating `time_slice`;
+    // through a plain `&mut Plasma` those are disjoint fields and borrow independently
+    let plasma: &mut Plasma = &mut plasma;
+    let equilibrium_ids: &mut Equilibrium = &mut plasma.equilibrium_ids;
 
     // Copied out of the `PyRef`, because the per-time-slice solves run on Rayon's threads and
     // a `PyRef` is neither `Send` nor `Sync`
@@ -298,7 +298,9 @@ pub fn solve_grad_shafranov(
             };
 
             // Solve
-            time_slice.solve(&grad_shafranov_inputs, equilibrium_code, greens_tables);
+            let mut solver: EquilibriumSolver = EquilibriumSolver::new(time_slice, equilibrium_code, greens_tables, &grad_shafranov_inputs);
+            solver.solve();
+            solver.write_to_time_slice();
         });
     println!(
         "solve_grad_shafranov: parallel time-slice solve done; {:.2}ms",
@@ -326,11 +328,8 @@ pub fn solve_grad_shafranov(
     info!("GSFit time elapsed: {:?}", duration_ids);
 
     // Post-process
-    equilibrium_post_processor(&mut equilibrium_ids, &wall_owned, &p_prime_source_function, &ff_prime_source_function);
-    passives.equilibrium_post_processor(&equilibrium_ids);
-
-    // Give the IDS back to `plasma`
-    plasma.equilibrium_ids = equilibrium_ids;
+    equilibrium_post_processor(equilibrium_ids, &wall_owned, &p_prime_source_function, &ff_prime_source_function);
+    passives.equilibrium_post_processor(equilibrium_ids);
 
     // Get error codes for failed time-slices
 

@@ -1,13 +1,7 @@
 //! Grad-Shafranov solver writing into the IMAS `Equilibrium` IDS.
 //!
-//! The solver itself is a copy of `gs_solution.rs`: `EquilibriumSolver` has the same fields and
-//! the same methods as `GsSolution`, so the two can be diffed line for line while both are kept.
-//! The only difference is what happens at the end - `write_to_time_slice` copies the results into
-//! an `EquilibriumTimeSlice` instead of leaving them on the struct for `equilibrium_post_processor`
-//! to collect.
-//!
-//! `gs_solution.rs` is expected to be deleted once the two are confirmed to agree, at which point
-//! this file becomes the only solver.
+//! `EquilibriumSolver` solves a single time-slice, mutating the `time_slice`
+//! Equilibrium structure during iterations.
 
 use super::Error;
 use crate::plasma_geometry;
@@ -353,30 +347,7 @@ impl<'a> EquilibriumSolver<'a> {
         time_slice: &'a mut EquilibriumTimeSlice,
         equilibrium_code: &'a Code,
         greens_tables: &'a EquilibriumGreens,
-        psi_and_derivatives_greens: &'a PsiAndDerivativesGreens,
-        initial_j_2d: &'a Result<Array2<f64>, String>,
-        wall: &'a WallIds,
-        coils_dynamic: &'a SensorsDynamic,
-        bp_probes_static: &'a SensorsStatic,
-        bp_probes_dynamic: &'a SensorsDynamic,
-        flux_loops_static: &'a SensorsStatic,
-        flux_loops_dynamic: &'a SensorsDynamic,
-        dialoop_static: &'a SensorsStatic,
-        dialoop_dynamic: &'a SensorsDynamic,
-        rogowski_coils_static: &'a SensorsStatic,
-        rogowski_coils_dynamic: &'a SensorsDynamic,
-        isoflux_static: &'a SensorsStatic,
-        isoflux_dynamic: &'a SensorsDynamic,
-        isoflux_boundary_static: &'a SensorsStatic,
-        isoflux_boundary_dynamic: &'a SensorsDynamic,
-        pressure_sensors_static: &'a SensorsStatic,
-        pressure_sensors_dynamic: &'a SensorsDynamic,
-        magnetic_axis_static: &'a SensorsStatic,
-        magnetic_axis_dynamic: &'a SensorsDynamic,
-        p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
-        ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
-        passive_regularisations: Array2<f64>,
-        passive_regularisations_weight: Array1<f64>,
+        inputs: &GradShafranovInputs<'a>,
     ) -> Self {
         // The solver writes `psi` straight into the IDS, so `profiles_2d` has to exist before the
         // first iteration. GSFit solves on a single rectangular (R, Z) grid, so there is exactly
@@ -392,32 +363,32 @@ impl<'a> EquilibriumSolver<'a> {
             time_slice,
             equilibrium_code,
             greens_tables,
-            psi_and_derivatives_greens,
-            initial_j_2d,
-            wall,
-            coils_dynamic,
-            bp_probes_static,
-            bp_probes_dynamic,
-            flux_loops_static,
-            flux_loops_dynamic,
-            dialoop_static,
-            dialoop_dynamic,
-            rogowski_coils_static,
-            rogowski_coils_dynamic,
-            isoflux_static,
-            isoflux_dynamic,
-            isoflux_boundary_static,
-            isoflux_boundary_dynamic,
-            pressure_sensors_static,
-            pressure_sensors_dynamic,
-            magnetic_axis_static,
-            magnetic_axis_dynamic,
+            psi_and_derivatives_greens: inputs.psi_and_derivatives_greens,
+            initial_j_2d: inputs.initial_j_2d,
+            wall: inputs.wall,
+            coils_dynamic: inputs.coils_dynamic,
+            bp_probes_static: inputs.bp_probes_static,
+            bp_probes_dynamic: inputs.bp_probes_dynamic,
+            flux_loops_static: inputs.flux_loops_static,
+            flux_loops_dynamic: inputs.flux_loops_dynamic,
+            dialoop_static: inputs.dialoop_static,
+            dialoop_dynamic: inputs.dialoop_dynamic,
+            rogowski_coils_static: inputs.rogowski_coils_static,
+            rogowski_coils_dynamic: inputs.rogowski_coils_dynamic,
+            isoflux_static: inputs.isoflux_static,
+            isoflux_dynamic: inputs.isoflux_dynamic,
+            isoflux_boundary_static: inputs.isoflux_boundary_static,
+            isoflux_boundary_dynamic: inputs.isoflux_boundary_dynamic,
+            pressure_sensors_static: inputs.pressure_sensors_static,
+            pressure_sensors_dynamic: inputs.pressure_sensors_dynamic,
+            magnetic_axis_static: inputs.magnetic_axis_static,
+            magnetic_axis_dynamic: inputs.magnetic_axis_dynamic,
             // Results
             passive_dof_values: Array1::zeros(0),
-            p_prime_source_function,
-            ff_prime_source_function,
-            passive_regularisations,
-            passive_regularisations_weight,
+            p_prime_source_function: inputs.p_prime_source_function.clone(),
+            ff_prime_source_function: inputs.ff_prime_source_function.clone(),
+            passive_regularisations: inputs.passive_regularisations.to_owned(),
+            passive_regularisations_weight: inputs.passive_regularisations_weight.to_owned(),
         }
     }
 
@@ -1839,7 +1810,11 @@ impl<'a> EquilibriumSolver<'a> {
     ///
     /// Keys with no counterpart in the data dictionary are custom keys, declared by hand in
     /// `imas_rs/imas_updater/custom_keys/custom_equilibrium_keys.rs`.
-    fn write_to_time_slice(&mut self) {
+    pub fn write_to_time_slice(&mut self) {
+        // TODO: this should go into:
+        // `time_slice(itime)/constraints/pf_passive_current(i1)/reconstructed`
+        // but the IMAS data structure needs a bit of thought, since our passive degrees of freedom are the
+        // eigenmodes! Perhaps we store each filament's current individually?
         // Degrees of freedom
         self.time_slice.passive_dof_values = Some(self.passive_dof_values.to_owned());
     }
@@ -1901,58 +1876,4 @@ pub struct GradShafranovInputs<'a> {
     pub ff_prime_source_function: &'a Arc<dyn SourceFunctionTraits + Send + Sync>,
     pub passive_regularisations: &'a Array2<f64>,
     pub passive_regularisations_weight: &'a Array1<f64>,
-}
-
-/// Grad-Shafranov solve, attached to the IMAS `EquilibriumTimeSlice`.
-///
-/// `EquilibriumTimeSlice` is defined in the `imas_rs` crate, so Rust's orphan rule forbids writing
-/// `impl EquilibriumTimeSlice { ... }` from inside `gsfit_rs`. Declaring a local trait and
-/// implementing it for the foreign type gives us the same `time_slice.solve()` method syntax, while
-/// keeping all of the physics inside `gsfit_rs` and leaving `imas_rs` as a pure (auto-generated)
-/// data-dictionary crate.
-///
-/// The trait must be in scope at the call site: `use crate::grad_shafranov::GradShafranovSolve;`
-pub trait GradShafranovSolve {
-    fn solve(&mut self, inputs: &GradShafranovInputs, equilibrium_code: &Code, greens_tables: &EquilibriumGreens);
-}
-
-impl GradShafranovSolve for EquilibriumTimeSlice {
-    /// Solve the Grad-Shafranov equation for a single time-slice
-    ///
-    /// Note: the GS solver is designed to consider a single time-slice
-    /// and deliberately does not know which time-slice it is solving
-    fn solve(&mut self, inputs: &GradShafranovInputs, equilibrium_code: &Code, greens_tables: &EquilibriumGreens) {
-        let mut solver: EquilibriumSolver = EquilibriumSolver::new(
-            self,
-            equilibrium_code,
-            greens_tables,
-            inputs.psi_and_derivatives_greens,
-            inputs.initial_j_2d,
-            inputs.wall,
-            inputs.coils_dynamic,
-            inputs.bp_probes_static,
-            inputs.bp_probes_dynamic,
-            inputs.flux_loops_static,
-            inputs.flux_loops_dynamic,
-            inputs.dialoop_static,
-            inputs.dialoop_dynamic,
-            inputs.rogowski_coils_static,
-            inputs.rogowski_coils_dynamic,
-            inputs.isoflux_static,
-            inputs.isoflux_dynamic,
-            inputs.isoflux_boundary_static,
-            inputs.isoflux_boundary_dynamic,
-            inputs.pressure_sensors_static,
-            inputs.pressure_sensors_dynamic,
-            inputs.magnetic_axis_static,
-            inputs.magnetic_axis_dynamic,
-            inputs.p_prime_source_function.clone(),
-            inputs.ff_prime_source_function.clone(),
-            inputs.passive_regularisations.to_owned(),
-            inputs.passive_regularisations_weight.to_owned(),
-        );
-
-        solver.solve();
-        solver.write_to_time_slice();
-    }
 }

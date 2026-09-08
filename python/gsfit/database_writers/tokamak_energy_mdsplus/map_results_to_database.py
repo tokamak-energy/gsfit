@@ -189,16 +189,6 @@ def map_results_to_database(
     # MDSplus wants the rectangle plus the count of real points in each row
     results["P_BOUNDARY"]["NBND"] = _n_points_per_time(results["P_BOUNDARY"]["RBND"])
 
-    # X-points
-    # TODO: the upper and lower x-points came from `gs_solution.rs`, which has been removed. The
-    # solver does not put them on the IDS, so there is nowhere to read them from; these nodes are
-    # left unwritten until the solver stores them
-    # results["XPOINTS"]["UPPER"]["R"] = ...
-    # results["XPOINTS"]["UPPER"]["Z"] = ...
-    # results["XPOINTS"]["LOWER"]["R"] = ...
-    # results["XPOINTS"]["LOWER"]["Z"] = ...
-
-
     # Passives
     for passive_name in passives.keys():
         if passive_name == "IVC":

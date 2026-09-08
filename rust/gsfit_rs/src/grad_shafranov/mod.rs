@@ -5,7 +5,7 @@ mod grad_shafranov_solver;
 mod initial_current_seed;
 
 // Expose functions to public
-pub use equilibrium_solve::{GradShafranovInputs, GradShafranovSolve, output_flag};
+pub use equilibrium_solve::output_flag;
 pub use grad_shafranov_solver::solve_grad_shafranov;
 
 // Define the possible **external** failures this module can produce

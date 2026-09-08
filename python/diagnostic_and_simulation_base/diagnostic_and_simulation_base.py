@@ -167,6 +167,7 @@ class DiagnosticAndSimulationBase:
         # State for the background MDSplus node creation, see `start_mds_node_creation`
         self._mds_node_creation_process: multiprocessing.process.BaseProcess | None = None
         self._mds_node_creation_connection: Connection | None = None
+        self._mds_nodes_created = False
 
         self._load_settings_from_files()
 
@@ -283,6 +284,7 @@ class DiagnosticAndSimulationBase:
         """
 
         seconds = _create_script_nodes(**self._mds_node_arguments(workflows))
+        self._mds_nodes_created = True
 
         # Logged so that we can see how much of the node creation was hidden behind the analysis
         self.logger.info(msg=f"MDSplus nodes created;  {seconds * 1e3:,.2f}ms")
@@ -337,11 +339,21 @@ class DiagnosticAndSimulationBase:
 
         **`fork`, not `spawn`.** `spawn` re-imports the main module in the child, and GSFit's entry
         scripts run the analysis at module level with no `if __name__ == "__main__"` guard, so the
-        child would start a second reconstruction. `fork` does not re-import, and is safe here
-        because nothing has started a thread yet at the point the analysis calls this.
+        child would start a second reconstruction. `forkserver` re-imports it too, so it is no help
+        either. `fork` does not re-import, and is safe here because nothing has started a thread yet
+        at the point the analysis calls this.
+
+        **Only where `fork` can be used.** Windows has no `fork` at all, and on macOS forking a
+        process which has already initialised Apple's frameworks can abort the child. On those
+        platforms the nodes are created here and now instead, which costs the overlap with the
+        analysis but is correct everywhere.
 
         :param workflows: see `_mds_node_arguments`.
         """
+
+        if "fork" not in multiprocessing.get_all_start_methods() or sys.platform == "darwin":
+            self._create_mds_nodes(workflows)
+            return
 
         context = multiprocessing.get_context("fork")
         self._mds_node_creation_connection, connection_child = context.Pipe(duplex=False)
@@ -367,11 +379,15 @@ class DiagnosticAndSimulationBase:
         The data must not be written unless this returns without raising.
 
         If `start_mds_node_creation` was never called then the nodes are created here instead, so
-        this is always safe to call before writing.
+        this is always safe to call before writing. The same applies when it was called but had to
+        create them synchronously, in which case there is nothing left to wait for.
 
         :param workflows: only used when the nodes have to be created here; see
             `_mds_node_arguments`.
         """
+
+        if self._mds_nodes_created:
+            return
 
         process = self._mds_node_creation_process
         connection = self._mds_node_creation_connection

@@ -187,8 +187,7 @@ impl Plasma {
 
         // Store the plasma grid-to-grid Greens tables in the equilibrium IDS. They are geometry, so
         // they are the same for every time-slice and hang off the IDS root rather than off
-        // `time_slice`. Cloned because the same tables also go into the DataTree below, which
-        // `gs_solution.rs` still reads
+        // `time_slice`
         let greens_grid_grid: EquilibriumGreensGridGrid = EquilibriumGreensGridGrid {
             psi: Some(g_psi),
             br: Some(g_br),
