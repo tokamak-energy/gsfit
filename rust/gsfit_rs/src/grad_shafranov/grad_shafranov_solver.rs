@@ -178,10 +178,10 @@ pub fn solve_grad_shafranov(
 
     // Settings the solver is run with. These apply to every time-slice, so they live on the IDS
     // itself rather than inside `time_slice`
-    equilibrium_ids.code.iterations_n_max = Some(n_iter_max as i32);
-    equilibrium_ids.code.iterations_n_min = Some(n_iter_min as i32);
-    equilibrium_ids.code.iterations_n_no_vertical_feedback = Some(n_iter_no_vertical_feedback as i32);
-    equilibrium_ids.code.grad_shafranov_deviation_value_tolerance = Some(gs_error);
+    equilibrium_ids.code.numerics.iterations.n_max = Some(n_iter_max as i32);
+    equilibrium_ids.code.numerics.iterations.n_min = Some(n_iter_min as i32);
+    equilibrium_ids.code.numerics.iterations.n_no_vertical_feedback = Some(n_iter_no_vertical_feedback as i32);
+    equilibrium_ids.code.numerics.grad_shafranov_deviation_tolerance = Some(gs_error);
 
     // The data dictionary requires `vacuum_toroidal_field/r0 * b0` to equal the `tf` IDS's
     // `b_field_phi_vacuum_r`, so `r0` is copied across rather than configured separately.

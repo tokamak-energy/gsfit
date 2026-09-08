@@ -982,16 +982,10 @@ pub struct Code {
     pub output_flag: Option<INT_1D>,
     /// List of external libraries used by the code that has produced this IDS
     pub library: Vec<Library>,
-    /// Maximum number of iterations the convergence loop is allowed to run for
-    pub iterations_n_max: Option<INT_0D>,
-    /// Minimum number of iterations before the convergence test is allowed to pass
-    pub iterations_n_min: Option<INT_0D>,
-    /// Number of initial iterations for which the vertical feedback is switched off
-    pub iterations_n_no_vertical_feedback: Option<INT_0D>,
-    /// Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
-    /// converged
-    /// Units: mixed
-    pub grad_shafranov_deviation_value_tolerance: Option<FLT_0D>,
+    /// Numerical settings the Grad-Shafranov solve is run with
+    pub numerics: EquilibriumCodeNumerics,
+    /// The (R, Z) grid the Grad-Shafranov equation is solved on
+    pub grid: EquilibriumCodeGrid,
     /// Initial guess for the plasma, used to seed the first iteration
     pub initial_guess: EquilibriumCodeInitialGuess,
 }
@@ -1129,6 +1123,49 @@ pub struct EquilibriumBoundaryBounding {
     /// Height of the point which defines the plasma boundary
     /// Units: m
     pub z: Option<FLT_0D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeGrid {
+    /// Number of grid points in the radial direction
+    pub n_r: Option<INT_0D>,
+    /// Number of grid points in the vertical direction
+    pub n_z: Option<INT_0D>,
+    /// Major radius of the innermost grid column
+    /// Units: m
+    pub r_min: Option<FLT_0D>,
+    /// Major radius of the outermost grid column
+    /// Units: m
+    pub r_max: Option<FLT_0D>,
+    /// Height of the lowest grid row
+    /// Units: m
+    pub z_min: Option<FLT_0D>,
+    /// Height of the highest grid row
+    /// Units: m
+    pub z_max: Option<FLT_0D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeNumerics {
+    /// Bounds on the Picard iteration loop
+    pub iterations: EquilibriumCodeNumericsIterations,
+    /// Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
+    /// converged
+    /// Units: mixed
+    pub grad_shafranov_deviation_tolerance: Option<FLT_0D>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeNumericsIterations {
+    /// Maximum number of iterations the convergence loop is allowed to run for
+    pub n_max: Option<INT_0D>,
+    /// Minimum number of iterations before the convergence test is allowed to pass
+    pub n_min: Option<INT_0D>,
+    /// Number of initial iterations for which the vertical feedback is switched off
+    pub n_no_vertical_feedback: Option<INT_0D>,
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs

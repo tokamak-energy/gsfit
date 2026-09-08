@@ -22,8 +22,7 @@ use faer::{Accum, Par};
 use imas_rs::EMPTY_INT;
 use imas_rs::ids::wall::Wall as WallIds;
 use imas_rs::{
-    Code, EquilibriumContourTreeNode, EquilibriumGreens, EquilibriumGreensPfActive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d,
-    EquilibriumProfiles2dGrid, EquilibriumTimeSlice,
+    Code, EquilibriumContourTreeNode, EquilibriumGreens, EquilibriumGreensPfActive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d, EquilibriumTimeSlice,
 };
 use ndarray::Axis;
 use ndarray::{Array1, Array2, Array3, ArrayView2, concatenate, s};
@@ -392,25 +391,6 @@ impl<'a> EquilibriumSolver<'a> {
         }
     }
 
-    /// The grid this time-slice is solved on, taken from `profiles_2d(0)/grid`.
-    ///
-    /// # Returns
-    /// * `n_r` - number of radial grid points
-    /// * `n_z` - number of vertical grid points
-    /// * `d_area` - area of one grid cell in the poloidal plane, [metre ** 2]
-    ///
-    /// Returned by value rather than by reference, so the borrow of `self` ends at the call and
-    /// the caller is free to take `&mut self.time_slice` afterwards.
-    fn grid(&self) -> (usize, usize, f64) {
-        let grid: &EquilibriumProfiles2dGrid = &self.time_slice.profiles_2d[0].grid;
-
-        let n_r: usize = grid.dim1.as_ref().unwrap().len();
-        let n_z: usize = grid.dim2.as_ref().unwrap().len();
-        let d_area: f64 = grid.d_area.unwrap();
-
-        return (n_r, n_z, d_area);
-    }
-
     /// If the solver fails to converge, this function will set the solution to NAN values (but with the correct shape).
     fn set_to_failed_time_slice(&mut self, error: Error) {
         // Classified against the data dictionary's convergence status enumeration. Listed
@@ -532,10 +512,10 @@ impl<'a> EquilibriumSolver<'a> {
         let n_p_prime_dof: usize = p_prime_source_function.source_function_n_dof();
         let n_ff_prime_dof: usize = ff_prime_source_function.source_function_n_dof();
         // Solver settings, supplied through `equilibrium.code`
-        let n_iter_max: usize = self.equilibrium_code.iterations_n_max.unwrap() as usize;
-        let n_iter_min: usize = self.equilibrium_code.iterations_n_min.unwrap() as usize;
-        let n_iter_no_vertical_feedback: usize = self.equilibrium_code.iterations_n_no_vertical_feedback.unwrap() as usize;
-        let gs_error_tolerance: f64 = self.equilibrium_code.grad_shafranov_deviation_value_tolerance.unwrap();
+        let n_iter_max: usize = self.equilibrium_code.numerics.iterations.n_max.unwrap() as usize;
+        let n_iter_min: usize = self.equilibrium_code.numerics.iterations.n_min.unwrap() as usize;
+        let n_iter_no_vertical_feedback: usize = self.equilibrium_code.numerics.iterations.n_no_vertical_feedback.unwrap() as usize;
+        let gs_error_tolerance: f64 = self.equilibrium_code.numerics.grad_shafranov_deviation_tolerance.unwrap();
 
         // Constraints
         let n_bp: usize = bp_probes_dynamic.measured.len();
@@ -601,13 +581,9 @@ impl<'a> EquilibriumSolver<'a> {
         // TODO: IDEA- change the normalisation so that it does represent current. But this won't work for the IVC eigenvalues
         self.passive_dof_values = Array1::zeros(n_passive_dof);
 
-        // Initialise the plasma from the shared current-density seed. Only the starting
-        // magnetic-axis position is read from `equilibrium.code.initial_guess` here; the seed
-        // itself was built once by the caller, because it is the same for every time-slice
-        let initial_guess_cur_r: f64 = self.equilibrium_code.initial_guess.cur_r.unwrap();
-        let initial_guess_cur_z: f64 = self.equilibrium_code.initial_guess.cur_z.unwrap();
-
-        if let Err(reason) = self.initialise_plasma_with_quadratic_current_density(initial_guess_cur_r, initial_guess_cur_z) {
+        // Initialise the plasma.
+        // Note: the initial seed is the same for all time-slices
+        if let Err(reason) = self.initialise_plasma_with_quadratic_current_density() {
             self.set_to_failed_time_slice(Error::InvalidInitialCurrent(reason));
             return;
         }
@@ -1398,7 +1374,7 @@ impl<'a> EquilibriumSolver<'a> {
             self.time_slice.convergence.delta_z = Some(delta_z);
 
             // Calculate j_2d
-            self.calculate_j(&mesh_r); // TODO: I don't like having to pass mesh_r in
+            self.calculate_j();
             let j_2d: Array2<f64> = self.time_slice.profiles_2d[0].j_phi.clone().unwrap();
 
             // Total plasma current
@@ -1439,9 +1415,10 @@ impl<'a> EquilibriumSolver<'a> {
     /// The plasma contribution is calculated with two GEMMs; see `PsiAndDerivativesGreens` for the
     /// reorganisation of the convolution over current sources.
     pub fn calculate_psi_and_derivatives(&mut self, greens_tables: &PsiAndDerivativesGreens) {
-        // Unpack from self. The grid comes from the time-slice's own `profiles_2d`, so it cannot
-        // disagree with the flux arrays being written into that same structure
-        let (n_r, n_z, d_area): (usize, usize, f64) = self.grid();
+        // Unpack from self
+        let n_r: usize = self.equilibrium_code.grid.n_r.unwrap() as usize;
+        let n_z: usize = self.equilibrium_code.grid.n_z.unwrap() as usize;
+        let d_area: f64 = self.time_slice.profiles_2d[0].grid.d_area.unwrap();
         let j_2d: &Array2<f64> = self.time_slice.profiles_2d[0].j_phi.as_ref().unwrap();
         let pf_coil_currents: &Array1<f64> = &self.coils_dynamic.measured;
         let passive_dof_values: &Array1<f64> = &self.passive_dof_values;
@@ -1612,9 +1589,12 @@ impl<'a> EquilibriumSolver<'a> {
         self.time_slice.profiles_2d[0].d2_psi_d_z2 = Some(d2_psi_d_z2_2d);
     }
 
-    fn calculate_j(&mut self, mesh_r: &Array2<f64>) {
+    fn calculate_j(&mut self) {
+        // Unpack from self
+        let mesh_r: &Array2<f64> = &self.time_slice.profiles_2d[0].r.clone().unwrap();
         let psi_norm_2d: Array2<f64> = self.time_slice.profiles_2d[0].psi_norm.clone().unwrap();
-        let (n_z, n_r) = psi_norm_2d.dim();
+        let n_r: usize = self.equilibrium_code.grid.n_r.unwrap() as usize;
+        let n_z: usize = self.equilibrium_code.grid.n_z.unwrap() as usize;
         let mask: Array2<f64> = self.time_slice.profiles_2d[0].mask.clone().unwrap();
         let p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.p_prime_source_function.clone();
         let ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.ff_prime_source_function.clone();
@@ -1649,8 +1629,10 @@ impl<'a> EquilibriumSolver<'a> {
     /// The current-density seed is not built here: every input to it is shared between
     /// time-slices, so `grad_shafranov_solver` builds it once and this takes a borrow.
     /// `psi_coils` *is* per-time-slice, because it depends on this slice's measured PF currents.
-    pub fn initialise_plasma_with_quadratic_current_density(&mut self, initial_guess_cur_r: f64, initial_guess_cur_z: f64) -> Result<(), String> {
+    pub fn initialise_plasma_with_quadratic_current_density(&mut self) -> Result<(), String> {
         // Unpack objects
+        let initial_guess_cur_r: f64 = self.equilibrium_code.initial_guess.cur_r.unwrap();
+        let initial_guess_cur_z: f64 = self.equilibrium_code.initial_guess.cur_z.unwrap();
         let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
 
         // Extract stuff from Coils
@@ -1659,10 +1641,8 @@ impl<'a> EquilibriumSolver<'a> {
         // Flux from the poloidal field coils, from the Greens tables on the IDS. The coils are
         // summed in IDS order, which is the order the measured currents are in
         let n_pf: usize = self.greens_tables.pf_active.len();
-        let (n_z, n_r): (usize, usize) = match self.greens_tables.pf_active.first() {
-            Some(coil) => coil.psi.as_ref().unwrap().dim(),
-            None => return Err("equilibrium_solve: `greens/pf_active` is empty".to_string()),
-        };
+        let n_r: usize = self.equilibrium_code.grid.n_r.unwrap() as usize;
+        let n_z: usize = self.equilibrium_code.grid.n_z.unwrap() as usize;
 
         let mut psi_2d_coils: Array2<f64> = Array2::zeros((n_z, n_r));
         for i_pf in 0..n_pf {
@@ -1716,8 +1696,8 @@ impl<'a> EquilibriumSolver<'a> {
         // Define some variables
         let d_r: f64 = r[1] - r[0];
         let d_z: f64 = z[1] - z[0];
-        let n_r: usize = r.len();
-        let n_z: usize = z.len();
+        let n_r: usize = self.equilibrium_code.grid.n_r.unwrap() as usize;
+        let n_z: usize = self.equilibrium_code.grid.n_z.unwrap() as usize;
 
         // Laplacian(psi)
         let mut laplacian_psi: Array2<f64> = Array2::zeros((n_z, n_r));

@@ -11276,6 +11276,202 @@ static NODES_CODE_LIBRARY: &[Node] = &[
     },
 ];
 
+static NODES_CODE_NUMERICS_ITERATIONS: &[Node] = &[
+    Node {
+        name: "n_max",
+        documentation: "Maximum number of iterations the convergence loop is allowed to run for",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.numerics.iterations.n_max.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "n_min",
+        documentation: "Minimum number of iterations before the convergence test is allowed to pass",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.numerics.iterations.n_min.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "n_no_vertical_feedback",
+        documentation: "Number of initial iterations for which the vertical feedback is switched off",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.numerics.iterations.n_no_vertical_feedback.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_CODE_NUMERICS: &[Node] = &[
+    Node {
+        name: "iterations",
+        documentation: "Bounds on the Picard iteration loop",
+        units: "",
+        kind: NodeKind::Structure(NODES_CODE_NUMERICS_ITERATIONS),
+    },
+    Node {
+        name: "grad_shafranov_deviation_tolerance",
+        documentation: "Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
+converged",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.numerics.grad_shafranov_deviation_tolerance.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_CODE_GRID: &[Node] = &[
+    Node {
+        name: "n_r",
+        documentation: "Number of grid points in the radial direction",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.grid.n_r.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "n_z",
+        documentation: "Number of grid points in the vertical direction",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.grid.n_z.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "r_min",
+        documentation: "Major radius of the innermost grid column",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.grid.r_min.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "r_max",
+        documentation: "Major radius of the outermost grid column",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.grid.r_max.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "z_min",
+        documentation: "Height of the lowest grid row",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.grid.z_min.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "z_max",
+        documentation: "Height of the highest grid row",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.grid.z_max.clone() },
+                )
+            },
+        }),
+    },
+];
+
 static NODES_CODE_INITIAL_GUESS: &[Node] = &[
     Node {
         name: "ip",
@@ -11503,77 +11699,16 @@ static NODES_CODE: &[Node] = &[
         kind: NodeKind::ArrayOfStructures(NODES_CODE_LIBRARY),
     },
     Node {
-        name: "iterations_n_max",
-        documentation: "Maximum number of iterations the convergence loop is allowed to run for",
+        name: "numerics",
+        documentation: "Numerical settings the Grad-Shafranov solve is run with",
         units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.iterations_n_max.clone() },
-                )
-            },
-        }),
+        kind: NodeKind::Structure(NODES_CODE_NUMERICS),
     },
     Node {
-        name: "iterations_n_min",
-        documentation: "Minimum number of iterations before the convergence test is allowed to pass",
+        name: "grid",
+        documentation: "The (R, Z) grid the Grad-Shafranov equation is solved on",
         units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.iterations_n_min.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "iterations_n_no_vertical_feedback",
-        documentation: "Number of initial iterations for which the vertical feedback is switched off",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.iterations_n_no_vertical_feedback.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "grad_shafranov_deviation_value_tolerance",
-        documentation: "Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
-converged",
-        units: "mixed",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.grad_shafranov_deviation_value_tolerance.clone() },
-                )
-            },
-        }),
+        kind: NodeKind::Structure(NODES_CODE_GRID),
     },
     Node {
         name: "initial_guess",

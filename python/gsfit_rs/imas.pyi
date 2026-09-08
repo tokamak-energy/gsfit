@@ -127,23 +127,12 @@ class _EquilibriumCodeItem:
         """List of external libraries used by the code that has produced this IDS
         """
     @property
-    def iterations_n_max(self) -> Path[int]:
-        """Maximum number of iterations the convergence loop is allowed to run for
+    def numerics(self) -> _EquilibriumCodeNumericsItem:
+        """Numerical settings the Grad-Shafranov solve is run with
         """
     @property
-    def iterations_n_min(self) -> Path[int]:
-        """Minimum number of iterations before the convergence test is allowed to pass
-        """
-    @property
-    def iterations_n_no_vertical_feedback(self) -> Path[int]:
-        """Number of initial iterations for which the vertical feedback is switched off
-        """
-    @property
-    def grad_shafranov_deviation_value_tolerance(self) -> Path[float]:
-        """Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
-converged
-
-        Units: mixed
+    def grid(self) -> _EquilibriumCodeGridItem:
+        """The (R, Z) grid the Grad-Shafranov equation is solved on
         """
     @property
     def initial_guess(self) -> _EquilibriumCodeInitialGuessItem:
@@ -187,23 +176,12 @@ class _EquilibriumCodeMany:
         """List of external libraries used by the code that has produced this IDS
         """
     @property
-    def iterations_n_max(self) -> Path[npt.NDArray[np.int32]]:
-        """Maximum number of iterations the convergence loop is allowed to run for
+    def numerics(self) -> _EquilibriumCodeNumericsMany:
+        """Numerical settings the Grad-Shafranov solve is run with
         """
     @property
-    def iterations_n_min(self) -> Path[npt.NDArray[np.int32]]:
-        """Minimum number of iterations before the convergence test is allowed to pass
-        """
-    @property
-    def iterations_n_no_vertical_feedback(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of initial iterations for which the vertical feedback is switched off
-        """
-    @property
-    def grad_shafranov_deviation_value_tolerance(self) -> Path[npt.NDArray[np.float64]]:
-        """Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
-converged
-
-        Units: mixed
+    def grid(self) -> _EquilibriumCodeGridMany:
+        """The (R, Z) grid the Grad-Shafranov equation is solved on
         """
     @property
     def initial_guess(self) -> _EquilibriumCodeInitialGuessMany:
@@ -526,6 +504,80 @@ class _EquilibriumBoundaryClosestMany:
         Units: m
         """
 
+class _EquilibriumCodeGridItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def n_r(self) -> Path[int]:
+        """Number of grid points in the radial direction
+        """
+    @property
+    def n_z(self) -> Path[int]:
+        """Number of grid points in the vertical direction
+        """
+    @property
+    def r_min(self) -> Path[float]:
+        """Major radius of the innermost grid column
+
+        Units: m
+        """
+    @property
+    def r_max(self) -> Path[float]:
+        """Major radius of the outermost grid column
+
+        Units: m
+        """
+    @property
+    def z_min(self) -> Path[float]:
+        """Height of the lowest grid row
+
+        Units: m
+        """
+    @property
+    def z_max(self) -> Path[float]:
+        """Height of the highest grid row
+
+        Units: m
+        """
+
+class _EquilibriumCodeGridMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def n_r(self) -> Path[npt.NDArray[np.int32]]:
+        """Number of grid points in the radial direction
+        """
+    @property
+    def n_z(self) -> Path[npt.NDArray[np.int32]]:
+        """Number of grid points in the vertical direction
+        """
+    @property
+    def r_min(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of the innermost grid column
+
+        Units: m
+        """
+    @property
+    def r_max(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of the outermost grid column
+
+        Units: m
+        """
+    @property
+    def z_min(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the lowest grid row
+
+        Units: m
+        """
+    @property
+    def z_max(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the highest grid row
+
+        Units: m
+        """
+
 class _EquilibriumCodeInitialGuessItem:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
     """
@@ -590,6 +642,72 @@ class _EquilibriumCodeInitialGuessMany:
     @property
     def elongation(self) -> Path[npt.NDArray[np.float64]]:
         """Elongation of the initial current distribution
+        """
+
+class _EquilibriumCodeNumericsItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def iterations(self) -> _EquilibriumCodeNumericsIterationsItem:
+        """Bounds on the Picard iteration loop
+        """
+    @property
+    def grad_shafranov_deviation_tolerance(self) -> Path[float]:
+        """Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
+converged
+
+        Units: mixed
+        """
+
+class _EquilibriumCodeNumericsMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def iterations(self) -> _EquilibriumCodeNumericsIterationsMany:
+        """Bounds on the Picard iteration loop
+        """
+    @property
+    def grad_shafranov_deviation_tolerance(self) -> Path[npt.NDArray[np.float64]]:
+        """Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
+converged
+
+        Units: mixed
+        """
+
+class _EquilibriumCodeNumericsIterationsItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def n_max(self) -> Path[int]:
+        """Maximum number of iterations the convergence loop is allowed to run for
+        """
+    @property
+    def n_min(self) -> Path[int]:
+        """Minimum number of iterations before the convergence test is allowed to pass
+        """
+    @property
+    def n_no_vertical_feedback(self) -> Path[int]:
+        """Number of initial iterations for which the vertical feedback is switched off
+        """
+
+class _EquilibriumCodeNumericsIterationsMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def n_max(self) -> Path[npt.NDArray[np.int32]]:
+        """Maximum number of iterations the convergence loop is allowed to run for
+        """
+    @property
+    def n_min(self) -> Path[npt.NDArray[np.int32]]:
+        """Minimum number of iterations before the convergence test is allowed to pass
+        """
+    @property
+    def n_no_vertical_feedback(self) -> Path[npt.NDArray[np.int32]]:
+        """Number of initial iterations for which the vertical feedback is switched off
         """
 
 class _EquilibriumConstraintsItem:

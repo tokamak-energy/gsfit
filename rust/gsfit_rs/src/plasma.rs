@@ -209,6 +209,13 @@ impl Plasma {
         let mut equilibrium_ids: Equilibrium = Equilibrium::default();
 
         // Store values
+        equilibrium_ids.code.grid.n_r = Some(n_r as i32);
+        equilibrium_ids.code.grid.n_z = Some(n_z as i32);
+        equilibrium_ids.code.grid.r_min = Some(r_min);
+        equilibrium_ids.code.grid.r_max = Some(r_max);
+        equilibrium_ids.code.grid.z_min = Some(z_min);
+        equilibrium_ids.code.grid.z_max = Some(z_max);
+
         equilibrium_ids.code.initial_guess.ip = Some(initial_guess_ip);
         equilibrium_ids.code.initial_guess.cur_r = Some(initial_guess_cur_r);
         equilibrium_ids.code.initial_guess.cur_z = Some(initial_guess_cur_z);
@@ -238,13 +245,9 @@ impl Plasma {
     /// * `coils` - The Coils object (a Rust implementation, initialised in Python)
     ///
     fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
-        // Get variables out of self
-        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
-        // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the
-        // (R, Z) mesh, so iterating them row-major gives the flattened grid
-        let grid: &EquilibriumProfiles2dGrid = &self.equilibrium_ids.time_slice(0).profiles_2d(0).grid;
-        let n_r: usize = grid.dim1.as_ref().unwrap().len();
-        let n_z: usize = grid.dim2.as_ref().unwrap().len();
+        // Unpack from self
+        let n_r: usize = self.equilibrium_ids.code.grid.n_r.unwrap() as usize;
+        let n_z: usize = self.equilibrium_ids.code.grid.n_z.unwrap() as usize;
         let mesh_r: &Array2<f64> = self.equilibrium_ids.time_slice(0).profiles_2d(0).r.as_ref().unwrap();
         let mesh_z: &Array2<f64> = self.equilibrium_ids.time_slice(0).profiles_2d(0).z.as_ref().unwrap();
         let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
@@ -505,9 +508,8 @@ impl Plasma {
         string_output += &format!("║  {:<74} ║\n", "<gsfit_rs.Plasma>");
         string_output += &format!("║  {:<74} ║\n", version);
 
-        let grid: &EquilibriumProfiles2dGrid = &self.equilibrium_ids.time_slice(0).profiles_2d(0).grid;
-        let n_r: usize = grid.dim1.as_ref().unwrap().len();
-        let n_z: usize = grid.dim2.as_ref().unwrap().len();
+        let n_r: usize = self.equilibrium_ids.code.grid.n_r.unwrap() as usize;
+        let n_z: usize = self.equilibrium_ids.code.grid.n_z.unwrap() as usize;
         string_output += &format!("║  {:<74} ║\n", format!(" n_r = {}, n_z = {}", n_r, n_z));
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
@@ -596,13 +598,10 @@ impl Plasma {
     /// # Returns
     /// * `greens_with_passives` - shape `(n_z * n_r, n_dof_total)`
     fn greens_passive_grid(&self, select: fn(&EquilibriumGreensPfPassiveDof) -> &Option<Array1<f64>>) -> Array2<f64> {
+        // Unpack from self
         let n_dof_total: usize = self.equilibrium_ids.greens.pf_passive.iter().map(|pf_passive| pf_passive.dof.len()).sum();
-
-        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
-        // because GSFit solves on a single rectangular (R, Z) grid
-        let grid: &EquilibriumProfiles2dGrid = &self.equilibrium_ids.time_slice(0).profiles_2d(0).grid;
-        let n_r: usize = grid.dim1.as_ref().unwrap().len();
-        let n_z: usize = grid.dim2.as_ref().unwrap().len();
+        let n_r: usize = self.equilibrium_ids.code.grid.n_r.unwrap() as usize;
+        let n_z: usize = self.equilibrium_ids.code.grid.n_z.unwrap() as usize;
 
         let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 

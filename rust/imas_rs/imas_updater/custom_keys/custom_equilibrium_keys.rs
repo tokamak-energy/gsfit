@@ -178,18 +178,60 @@ pub struct Equilibrium {
 }
 
 pub struct Code {
-    /// Maximum number of iterations the convergence loop is allowed to run for
-    pub iterations_n_max: INT_0D,
-    /// Minimum number of iterations before the convergence test is allowed to pass
-    pub iterations_n_min: INT_0D,
-    /// Number of initial iterations for which the vertical feedback is switched off
-    pub iterations_n_no_vertical_feedback: INT_0D,
+    /// Numerical settings the Grad-Shafranov solve is run with
+    pub numerics: EquilibriumCodeNumerics,
+    /// The (R, Z) grid the Grad-Shafranov equation is solved on
+    pub grid: EquilibriumCodeGrid,
+    /// Initial guess for the plasma, used to seed the first iteration
+    pub initial_guess: EquilibriumCodeInitialGuess,
+}
+
+/// The (R, Z) grid the Grad-Shafranov equation is solved on.
+///
+/// The same rectangular grid is used for every time-slice, so it is described once here. It is
+/// also stored per time-slice, as the axes themselves, in `time_slice/profiles_2d(0)/grid`; this
+/// is the definition those axes are built from, `linspace(r_min, r_max, n_r)` and
+/// `linspace(z_min, z_max, n_z)`.
+pub struct EquilibriumCodeGrid {
+    /// Number of grid points in the radial direction
+    pub n_r: INT_0D,
+    /// Number of grid points in the vertical direction
+    pub n_z: INT_0D,
+    /// Major radius of the innermost grid column
+    /// Units: m
+    pub r_min: FLT_0D,
+    /// Major radius of the outermost grid column
+    /// Units: m
+    pub r_max: FLT_0D,
+    /// Height of the lowest grid row
+    /// Units: m
+    pub z_min: FLT_0D,
+    /// Height of the highest grid row
+    /// Units: m
+    pub z_max: FLT_0D,
+}
+
+/// Numerical settings the Grad-Shafranov solve is run with.
+///
+/// These are the same for every time-slice, which is why they sit on `code` rather than inside
+/// `time_slice`.
+pub struct EquilibriumCodeNumerics {
+    /// Bounds on the Picard iteration loop
+    pub iterations: EquilibriumCodeNumericsIterations,
     /// Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
     /// converged
     /// Units: mixed
-    pub grad_shafranov_deviation_value_tolerance: FLT_0D,
-    /// Initial guess for the plasma, used to seed the first iteration
-    pub initial_guess: EquilibriumCodeInitialGuess,
+    pub grad_shafranov_deviation_tolerance: FLT_0D,
+}
+
+/// Bounds on the Picard iteration loop
+pub struct EquilibriumCodeNumericsIterations {
+    /// Maximum number of iterations the convergence loop is allowed to run for
+    pub n_max: INT_0D,
+    /// Minimum number of iterations before the convergence test is allowed to pass
+    pub n_min: INT_0D,
+    /// Number of initial iterations for which the vertical feedback is switched off
+    pub n_no_vertical_feedback: INT_0D,
 }
 
 /// Initial guess for the plasma, used to seed the first iteration.

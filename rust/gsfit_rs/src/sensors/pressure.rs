@@ -180,8 +180,8 @@ impl Pressure {
 
         // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
         // because GSFit solves on a single rectangular (R, Z) grid
-        let n_r: usize = plasma_local.equilibrium_ids.time_slice(0).profiles_2d(0).grid.dim1.as_ref().unwrap().len();
-        let n_z: usize = plasma_local.equilibrium_ids.time_slice(0).profiles_2d(0).grid.dim2.as_ref().unwrap().len();
+        let n_r: usize = plasma_local.equilibrium_ids.code.grid.n_r.unwrap() as usize;
+        let n_z: usize = plasma_local.equilibrium_ids.code.grid.n_z.unwrap() as usize;
 
         for sensor_name in &self.results.keys() {
             // Create zero array

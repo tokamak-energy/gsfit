@@ -424,8 +424,8 @@ impl StationaryPoint {
         let mesh_z: &Array2<f64> = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).z.as_ref().unwrap();
         let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
-        let n_r: usize = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).grid.dim1.as_ref().unwrap().len();
-        let n_z: usize = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).grid.dim2.as_ref().unwrap().len();
+        let n_r: usize = plasma.equilibrium_ids.code.grid.n_r.unwrap() as usize;
+        let n_z: usize = plasma.equilibrium_ids.code.grid.n_z.unwrap() as usize;
 
         for sensor_name in self.results.keys() {
             // Get time
