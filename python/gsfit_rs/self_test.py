@@ -120,6 +120,12 @@ def run() -> None:
         initial_guess_cur_z=0.0,
         initial_guess_minor_radius=0.5,
         initial_guess_elongation=2.0,
+        n_iter_max=30,
+        n_iter_min=1,
+        n_iter_no_vertical_feedback=100,
+        gs_error=1.0e5,
+        use_anderson_mixing=False,
+        anderson_mixing_from_previous_iter=0.0,
         times_to_reconstruct=np.array([0.5]),
     )
 
@@ -187,13 +193,6 @@ def run() -> None:
         pressure_sensors=pressure_sensors,
         stationary_point=stationary_point,
         dialoop=dialoop,
-        times_to_reconstruct=np.array([0.5]),
-        n_iter_max=30,
-        n_iter_min=1,
-        n_iter_no_vertical_feedback=100,
-        gs_error=1.0e5,
-        use_anderson_mixing=False,
-        anderson_mixing_from_previous_iter=0.0,
     )
 
     equilibrium_ids = plasma.equilibrium_ids
@@ -216,9 +215,6 @@ def run() -> None:
     plt.plot(boundary_r, boundary_z, color="red")
     plt.plot()
     plt.savefig("self_test_output.png")
-    import pdb
-
-    pdb.set_trace()
 
 
 if __name__ == "__main__":

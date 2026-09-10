@@ -4,45 +4,54 @@
 //! *derived* quantity - the profiles, the boundary geometry, the betas, `q`, the flux surfaces and
 //! the scrape-off layer - is calculated afterwards, from that solution.
 
-use super::epp_bp_sq_flux_surface_average::epp_bp_sq_flux_surface_average;
-use super::epp_equilibrium_global_quantities_v_loop::epp_equilibrium_global_quantities_v_loop;
-use super::epp_equilibrium_time_slice_boundary_geometry::epp_equilibrium_time_slice_boundary_geometry;
-use super::epp_equilibrium_time_slice_boundary_outline::epp_equilibrium_time_slice_boundary_outline;
-use super::epp_equilibrium_time_slice_constraints_diamagnetic_flux_reconstructed::epp_equilibrium_time_slice_constraints_diamagnetic_flux_reconstructed;
-use super::epp_equilibrium_time_slice_global_quantities_area_and_volume::epp_equilibrium_time_slice_global_quantities_area_and_volume;
-use super::epp_equilibrium_time_slice_global_quantities_beta_pol::epp_equilibrium_time_slice_global_quantities_beta_pol;
-use super::epp_equilibrium_time_slice_global_quantities_beta_tor::epp_equilibrium_time_slice_global_quantities_beta_tor;
-use super::epp_equilibrium_time_slice_global_quantities_bt_vac_at_r_geo::epp_equilibrium_time_slice_global_quantities_bt_vac_at_r_geo;
-use super::epp_equilibrium_time_slice_global_quantities_d_r_sep::epp_equilibrium_time_slice_global_quantities_d_r_sep;
-use super::epp_equilibrium_time_slice_global_quantities_energy_mhd::epp_equilibrium_time_slice_global_quantities_energy_mhd;
-use super::epp_equilibrium_time_slice_global_quantities_li::epp_equilibrium_time_slice_global_quantities_li;
-use super::epp_equilibrium_time_slice_global_quantities_pressure_2d_sum::epp_equilibrium_time_slice_global_quantities_pressure_2d_sum;
-use super::epp_equilibrium_time_slice_global_quantities_q_95::epp_equilibrium_time_slice_global_quantities_q_95;
-use super::epp_equilibrium_time_slice_global_quantities_q_axis::epp_equilibrium_time_slice_global_quantities_q_axis;
-use super::epp_equilibrium_time_slice_profiles_1d_area_and_volume::epp_equilibrium_time_slice_profiles_1d_area_and_volume;
-use super::epp_equilibrium_time_slice_profiles_1d_dpressure_dpsi::epp_equilibrium_time_slice_profiles_1d_dpressure_dpsi;
-use super::epp_equilibrium_time_slice_profiles_1d_f::epp_equilibrium_time_slice_profiles_1d_f;
-use super::epp_equilibrium_time_slice_profiles_1d_f_df_dpsi::epp_equilibrium_time_slice_profiles_1d_f_df_dpsi;
-use super::epp_equilibrium_time_slice_profiles_1d_phi::epp_equilibrium_time_slice_profiles_1d_phi;
-use super::epp_equilibrium_time_slice_profiles_1d_pressure::epp_equilibrium_time_slice_profiles_1d_pressure;
-use super::epp_equilibrium_time_slice_profiles_1d_psi::epp_equilibrium_time_slice_profiles_1d_psi;
-use super::epp_equilibrium_time_slice_profiles_1d_q::epp_equilibrium_time_slice_profiles_1d_q;
-use super::epp_equilibrium_time_slice_profiles_1d_r_inboard_and_r_outboard::epp_equilibrium_time_slice_profiles_1d_r_inboard_and_r_outboard;
-use super::epp_equilibrium_time_slice_profiles_1d_rho_pol::epp_equilibrium_time_slice_profiles_1d_rho_pol;
-use super::epp_equilibrium_time_slice_profiles_1d_rho_tor::epp_equilibrium_time_slice_profiles_1d_rho_tor;
-use super::epp_equilibrium_time_slice_profiles_2d_b_field_phi::epp_equilibrium_time_slice_profiles_2d_b_field_phi;
-use super::epp_equilibrium_time_slice_profiles_2d_b_field_r_and_z::epp_equilibrium_time_slice_profiles_2d_b_field_r_and_z;
-use super::epp_equilibrium_time_slice_profiles_2d_d_b_field_z_d_z::epp_equilibrium_time_slice_profiles_2d_d_b_field_z_d_z;
-use super::epp_equilibrium_time_slice_profiles_2d_pressure::epp_equilibrium_time_slice_profiles_2d_pressure;
-use super::epp_equilibrium_time_slice_profiles_r_midplane::epp_equilibrium_time_slice_profiles_r_midplane;
-use super::epp_equilibrium_time_slice_sol::epp_equilibrium_time_slice_sol;
-use super::epp_equilibrium_vacuum_toroidal_field_b0::epp_equilibrium_vacuum_toroidal_field_b0;
-use super::epp_flux_surfaces::FluxSurface;
-use super::epp_flux_surfaces::epp_flux_surfaces;
+use super::bp_sq_flux_surface_average;
+use super::constant_values::ConstantValues;
+use super::dependency_sorter;
+use super::flux_surfaces;
+use super::intermediate_values::IntermediateValues;
+use super::intermediate_values::intermediate_values_placeholders;
+use super::boundary;
+use super::constraints;
+use super::convergence;
+use super::global_quantities;
+use super::profiles_1d;
+use super::profiles_1d_r_midplane;
+use super::profiles_2d;
+use super::sol;
 use crate::source_functions::SharedSourceFunction;
 use imas_rs::Equilibrium;
-use imas_rs::ids::wall::Wall as WallIds;
+use imas_rs::EquilibriumTimeSlice;
+use imas_rs::ids::wall::Wall;
+use ndarray::Array1;
 use rayon::prelude::*;
+use std::f64::consts::PI;
+use super::CalculatorIdentifier as CI;
+
+const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
+
+/// The signature every equilibrium post-processor needs to have:
+type CalculatorFunction = fn(&mut EquilibriumTimeSlice, &ConstantValues<'_>, &mut IntermediateValues);
+
+/// One row of the calculator table.
+///
+/// `Copy` because every field is plain data (an enum, a function pointer and a `&'static` slice),
+/// which lets `dependency_sorter::sort` copy the rows into their execution order
+#[derive(Clone, Copy)]
+pub(super) struct CalculatorEntry {
+    pub(super) identifier: CI,
+    pub(super) calculator_function: CalculatorFunction,
+    /// The calculators which fill a node or an `IntermediateValues` field this one reads
+    pub(super) dependencies: &'static [CI],
+}
+
+/// Build one row of the calculator table, so that the table reads one calculator per line
+fn entry(identifier: CI, calculator_function: CalculatorFunction, dependencies: &'static [CI]) -> CalculatorEntry {
+    return CalculatorEntry {
+        identifier,
+        calculator_function,
+        dependencies,
+    };
+}
 
 /// Post-process the reconstruction, reading the solved `equilibrium` IDS.
 ///
@@ -53,17 +62,15 @@ use rayon::prelude::*;
 ///   traced up to
 /// * `p_prime_source_function` - the p' source function the reconstruction was run with
 /// * `ff_prime_source_function` - the FF' source function the reconstruction was run with
-///
-/// The source functions are behaviour rather than data, so they cannot live on the IDS and are
-/// passed in alongside it. Everything else comes from the IDS, which is why this takes no
-/// `Plasma`.
 pub fn equilibrium_post_processor(
     equilibrium_ids: &mut Equilibrium,
-    wall_ids: &WallIds,
+    wall_ids: &Wall,
     p_prime_source_function: &SharedSourceFunction,
     ff_prime_source_function: &SharedSourceFunction,
 ) {
     println!("equilibrium_post_processor: starting");
+
+    equilibrium_ids.code.name = Some("gsfit".to_string());
 
     let n_time: usize = equilibrium_ids.time_slice.len();
     if n_time == 0 {
@@ -71,66 +78,122 @@ pub fn equilibrium_post_processor(
         return;
     }
 
-    // The vacuum toroidal field reference radius is a property of the machine rather than of a
-    // time-slice, so it is read once, here. `solve_grad_shafranov` copies it from `tf/r0`
+    // Vacuum toroidal field reference radius
     let r0: f64 = equilibrium_ids.vacuum_toroidal_field.r0.unwrap();
+    // Vacuum toroidal field at reference radius
+    let b0: &Array1<f64> = equilibrium_ids.vacuum_toroidal_field.b0.as_ref().unwrap();
 
-    // Flux-surface-averaged b_p ** 2 is evaluated slightly inside the boundary, because
-    // b_p = 0 at the x-point, which lies on the boundary for diverted plasmas, making
-    // `∮ d_ell / b_p` log-divergent on the separatrix
-    let bp_sq_fs_avg_psi_norm: f64 = 0.995;
+    // The calculator table: one row per calculator, in whatever order reads best. The order they
+    // run in comes from the `dependencies` column, via `dependency_sorter::sort` below
+    #[rustfmt::skip]
+    let calculators_unsorted: Vec<CalculatorEntry> = vec![
+        // identifier,                                                                         calculator_function,                                                                    dependencies
+        entry(CI::boundary__geometry,                                                          boundary::geometry::calculate,                                                          &[CI::boundary__outline__r__z]                                                                                                                      ),
+        entry(CI::boundary__outline__r__z,                                                     boundary::outline__r__z::calculate,                                                     &[]                                                                                                                                                 ),
+        entry(CI::boundary__psi_norm__rho_tor,                                                 boundary::psi_norm__rho_tor::calculate,                                                 &[CI::profiles_1d__rho_tor]                                                                                                                         ),
+        entry(CI::constraints__diamagnetic_flux_reconstructed,                                 constraints::diamagnetic_flux_reconstructed::calculate,                                 &[CI::intermediate_values__flux_surfaces, CI::profiles_1d__f, CI::profiles_1d__phi, CI::profiles_1d__psi]                                           ),
+        entry(CI::convergence__grad_shafranov_deviation_expression__description__index__name,  convergence::grad_shafranov_deviation_expression__description__index__name::calculate,  &[]                                                                                                                                                 ),
+        entry(CI::global_quantities__area__length_pol__surface__volume,                        global_quantities::area__length_pol__surface__volume::calculate,                        &[CI::boundary__outline__r__z, CI::profiles_1d__area__volume__derivatives]                                                                          ),
+        entry(CI::global_quantities__beta_pol,                                                 global_quantities::beta_pol::calculate,                                                 &[CI::boundary__geometry, CI::global_quantities__energy_mhd, CI::intermediate_values__bp_sq_fs_avg, CI::profiles_1d__area__volume__derivatives]     ),
+        entry(CI::global_quantities__beta_tor,                                                 global_quantities::beta_tor::calculate,                                                 &[CI::boundary__geometry, CI::global_quantities__bt_vac_at_r_geo, CI::global_quantities__energy_mhd, CI::profiles_1d__area__volume__derivatives]    ),
+        entry(CI::global_quantities__bt_vac_at_r_geo,                                          global_quantities::bt_vac_at_r_geo::calculate,                                          &[CI::boundary__geometry]                                                                                                                           ),
+        entry(CI::global_quantities__current_centre__r__velocity_z__z,                         global_quantities::current_centre__r__velocity_z__z::calculate,                         &[]                                                                                                                                                 ),
+        entry(CI::global_quantities__delta_r_sep,                                              global_quantities::delta_r_sep::calculate,                                              &[CI::profiles_1d__r_inboard__r_outboard]                                                                                                           ),
+        entry(CI::global_quantities__energy_mhd,                                               global_quantities::energy_mhd::calculate,                                               &[CI::profiles_2d__pressure]                                                                                                                        ),
+        entry(CI::global_quantities__f_x,                                                      global_quantities::f_x::calculate,                                                      &[CI::profiles_1d__r_inboard__r_outboard, CI::profiles_2d__b_field_r__b_field_z, CI::sol__legs_and_strike_points]                                   ),
+        entry(CI::global_quantities__li,                                                       global_quantities::li::calculate,                                                       &[CI::boundary__geometry, CI::intermediate_values__bp_sq_fs_avg, CI::profiles_1d__area__volume__derivatives, CI::profiles_2d__b_field_r__b_field_z] ),
+        entry(CI::global_quantities__magnetic_axis_b_field_phi,                                global_quantities::magnetic_axis_b_field_phi::calculate,                                &[CI::profiles_1d__f]                                                                                                                               ),
+        entry(CI::global_quantities__q_95,                                                     global_quantities::q_95::calculate,                                                     &[]                                                                                                                                                 ),
+        entry(CI::global_quantities__q_axis,                                                   global_quantities::q_axis::calculate,                                                   &[CI::profiles_1d__q]                                                                                                                               ),
+        entry(CI::global_quantities__q_min__psi__psi_norm__rho_tor_norm__value,                global_quantities::q_min__psi__psi_norm__rho_tor_norm__value::calculate,                &[CI::profiles_1d__psi, CI::profiles_1d__q, CI::profiles_1d__rho_tor_norm]                                                                          ),
+        entry(CI::intermediate_values__bp_sq_fs_avg,                                           bp_sq_flux_surface_average::calculate,                                                  &[CI::intermediate_values__flux_surfaces, CI::profiles_2d__b_field_r__b_field_z]                                                                    ),
+        entry(CI::intermediate_values__flux_surfaces,                                          flux_surfaces::calculate,                                                               &[CI::boundary__outline__r__z]                                                                                                                      ),
+        entry(CI::profiles_1d__area__volume__derivatives,                                      profiles_1d::area__volume__derivatives::calculate,                                      &[CI::intermediate_values__flux_surfaces, CI::profiles_1d__psi, CI::profiles_1d__rho_tor]                                                           ),
+        entry(CI::profiles_1d__b_field_average__b_field_max__b_field_min,                      profiles_1d::b_field_average__b_field_max__b_field_min::calculate,                      &[CI::intermediate_values__flux_surfaces, CI::profiles_1d__f, CI::profiles_2d__b_field_r__b_field_z]                                                ),
+        entry(CI::profiles_1d__beta_pol,                                                       profiles_1d::beta_pol::calculate,                                                       &[CI::profiles_1d__area__volume__derivatives, CI::profiles_1d__pressure]                                                                            ),
+        entry(CI::profiles_1d__dpressure_dpsi,                                                 profiles_1d::dpressure_dpsi::calculate,                                                 &[]                                                                                                                                                 ),
+        entry(CI::profiles_1d__dpsi_drho_tor,                                                  profiles_1d::dpsi_drho_tor::calculate,                                                  &[CI::profiles_1d__psi, CI::profiles_1d__rho_tor]                                                                                                   ),
+        entry(CI::profiles_1d__elongation__squareness__triangularity,                          profiles_1d::elongation__squareness__triangularity::calculate,                          &[CI::intermediate_values__flux_surfaces]                                                                                                           ),
+        entry(CI::profiles_1d__f,                                                              profiles_1d::f::calculate,                                                              &[]                                                                                                                                                 ),
+        entry(CI::profiles_1d__f_df_dpsi,                                                      profiles_1d::f_df_dpsi::calculate,                                                      &[]                                                                                                                                                 ),
+        entry(CI::profiles_1d__geometric_axis__r__z,                                           profiles_1d::geometric_axis__r__z::calculate,                                           &[CI::intermediate_values__flux_surfaces]                                                                                                           ),
+        entry(CI::profiles_1d__gm1_to_gm9,                                                     profiles_1d::gm1_to_gm9::calculate,                                                     &[CI::intermediate_values__flux_surfaces, CI::profiles_1d__f, CI::profiles_1d__psi, CI::profiles_1d__rho_tor, CI::profiles_2d__b_field_r__b_field_z]),
+        entry(CI::profiles_1d__j_parallel,                                                     profiles_1d::j_parallel::calculate,                                                     &[CI::intermediate_values__flux_surfaces, CI::profiles_2d__b_field_r__b_field_z, CI::profiles_2d__j_parallel]                                       ),
+        entry(CI::profiles_1d__j_phi,                                                          profiles_1d::j_phi::calculate,                                                          &[CI::intermediate_values__flux_surfaces, CI::profiles_2d__b_field_r__b_field_z]                                                                    ),
+        entry(CI::profiles_1d__magnetic_shear,                                                 profiles_1d::magnetic_shear::calculate,                                                 &[CI::profiles_1d__q, CI::profiles_1d__rho_tor]                                                                                                     ),
+        entry(CI::profiles_1d__phi,                                                            profiles_1d::phi::calculate,                                                            &[CI::profiles_1d__psi, CI::profiles_1d__q]                                                                                                         ),
+        entry(CI::profiles_1d__pressure,                                                       profiles_1d::pressure::calculate,                                                       &[]                                                                                                                                                 ),
+        entry(CI::profiles_1d__psi,                                                            profiles_1d::psi::calculate,                                                            &[]                                                                                                                                                 ),
+        entry(CI::profiles_1d__q,                                                              profiles_1d::q::calculate,                                                              &[CI::intermediate_values__flux_surfaces, CI::profiles_1d__f]                                                                                       ),
+        entry(CI::profiles_1d__r_inboard__r_outboard,                                          profiles_1d::r_inboard__r_outboard::calculate,                                          &[CI::intermediate_values__flux_surfaces]                                                                                                           ),
+        entry(CI::profiles_1d__rho_pol,                                                        profiles_1d::rho_pol::calculate,                                                        &[]                                                                                                                                                 ),
+        entry(CI::profiles_1d__rho_tor,                                                        profiles_1d::rho_tor::calculate,                                                        &[CI::profiles_1d__phi]                                                                                                                             ),
+        entry(CI::profiles_1d__rho_tor_norm,                                                   profiles_1d::rho_tor_norm::calculate,                                                   &[CI::profiles_1d__rho_tor]                                                                                                                         ),
+        entry(CI::profiles_1d__rho_volume_norm,                                                profiles_1d::rho_volume_norm::calculate,                                                &[CI::profiles_1d__area__volume__derivatives]                                                                                                       ),
+        entry(CI::profiles_1d_r_midplane__pressure,                                            profiles_1d_r_midplane::pressure::calculate,                                            &[]                                                                                                                                                 ),
+        entry(CI::profiles_2d__b_field_phi,                                                    profiles_2d::b_field_phi::calculate,                                                    &[]                                                                                                                                                 ),
+        entry(CI::profiles_2d__b_field_r__b_field_z,                                           profiles_2d::b_field_r__b_field_z::calculate,                                           &[]                                                                                                                                                 ),
+        entry(CI::profiles_2d__d_b_field_z_d_z,                                                profiles_2d::d_b_field_z_d_z::calculate,                                                &[]                                                                                                                                                 ),
+        entry(CI::profiles_2d__grid_volume_element,                                            profiles_2d::grid_volume_element::calculate,                                            &[]                                                                                                                                                 ),
+        entry(CI::profiles_2d__j_parallel,                                                     profiles_2d::j_parallel::calculate,                                                     &[CI::profiles_2d__b_field_phi, CI::profiles_2d__b_field_r__b_field_z]                                                                              ),
+        entry(CI::profiles_2d__phi,                                                            profiles_2d::phi::calculate,                                                            &[CI::profiles_1d__phi]                                                                                                                             ),
+        entry(CI::profiles_2d__pressure,                                                       profiles_2d::pressure::calculate,                                                       &[]                                                                                                                                                 ),
+        entry(CI::profiles_2d__theta,                                                          profiles_2d::theta::calculate,                                                          &[]                                                                                                                                                 ),
+        entry(CI::profiles_2d__type__description__index__name,                                 profiles_2d::type__description__index__name::calculate,                                 &[]                                                                                                                                                 ),
+        entry(CI::sol__legs_and_strike_points,                                                 sol::legs_and_strike_points::calculate,                                                 &[]                                                                                                                                                 ),
+    ];
+
+    // Sort the calculator execution order based on dependencies
+    let calculators_sorted: Vec<CalculatorEntry> = dependency_sorter::sort(calculators_unsorted);
 
     // Every quantity here is per-time-slice, so each one takes a single `time_slice` and knows
     // nothing about which slice it is, exactly as the solver does. That independence is what
     // lets the slices run in parallel
-    equilibrium_ids.time_slice.par_iter_mut().for_each(|time_slice| {
-        // Order matters: each of these may read what an earlier one wrote. `energy_mhd`
-        // integrates the pressure, so the pressure has to be there first
-        epp_equilibrium_time_slice_boundary_outline(time_slice);
+    equilibrium_ids.time_slice.par_iter_mut().enumerate().for_each(|(i_time, time_slice)| {
+    // equilibrium_ids.time_slice.iter_mut().enumerate().for_each(|(i_time, time_slice)| {
+        // Every calculator takes the same `(time_slice, &constant_values, &mut intermediate_values)`
+        // triple, which is what lets them be held in one table and called from one loop
+        //
+        // The two are split by whether a calculator can create an ordering dependency through
+        // them. `constant_values` is fixed before the first calculator runs and passed by shared
+        // reference, so the compiler proves it cannot; `intermediate_values` is passed by mutable
+        // reference precisely because calculators do fill it for each other, so every field on it
+        // is an ordering dependency which has to be declared in the `dependencies` column of
+        // `calculators_unsorted`
+        let constant_values: ConstantValues = ConstantValues {
+            b0: b0[i_time],
+            ff_prime_source_function,
+            i_rod: 2.0 * PI * r0 * b0[i_time] / MU_0,
+            p_prime_source_function,
+            r0,
+            wall_ids,
+        };
+        let mut intermediate_values: IntermediateValues = intermediate_values_placeholders();
 
-        // The flux surfaces fill no data dictionary path; they are an intermediate quantity,
-        // calculated once here and handed to the helpers which integrate around them, rather
-        // than each of those re-contouring for itself
-        let flux_surfaces: Vec<FluxSurface> = epp_flux_surfaces(time_slice);
-
-        epp_equilibrium_time_slice_profiles_2d_pressure(time_slice, p_prime_source_function);
-        epp_equilibrium_time_slice_global_quantities_energy_mhd(time_slice);
-        epp_equilibrium_time_slice_profiles_1d_f(time_slice, ff_prime_source_function);
-        epp_equilibrium_time_slice_profiles_1d_f_df_dpsi(time_slice, ff_prime_source_function);
-        epp_equilibrium_time_slice_profiles_1d_psi(time_slice);
-        epp_equilibrium_time_slice_profiles_1d_pressure(time_slice, p_prime_source_function);
-        epp_equilibrium_time_slice_profiles_1d_dpressure_dpsi(time_slice, p_prime_source_function);
-        epp_equilibrium_time_slice_profiles_2d_b_field_phi(time_slice, ff_prime_source_function);
-        epp_equilibrium_time_slice_profiles_2d_b_field_r_and_z(time_slice);
-        epp_equilibrium_time_slice_profiles_2d_d_b_field_z_d_z(time_slice);
-        epp_equilibrium_time_slice_profiles_r_midplane(time_slice, p_prime_source_function);
-        epp_equilibrium_time_slice_global_quantities_pressure_2d_sum(time_slice);
-        epp_equilibrium_time_slice_profiles_1d_area_and_volume(time_slice, &flux_surfaces);
-        epp_equilibrium_time_slice_global_quantities_area_and_volume(time_slice);
-        epp_equilibrium_time_slice_profiles_1d_q(time_slice, &flux_surfaces);
-        epp_equilibrium_time_slice_profiles_1d_r_inboard_and_r_outboard(time_slice, &flux_surfaces);
-        epp_equilibrium_time_slice_global_quantities_d_r_sep(time_slice, wall_ids);
-        epp_equilibrium_time_slice_profiles_1d_phi(time_slice);
-        epp_equilibrium_time_slice_profiles_1d_rho_tor(time_slice);
-        epp_equilibrium_time_slice_profiles_1d_rho_pol(time_slice);
-        epp_equilibrium_time_slice_global_quantities_q_axis(time_slice);
-        epp_equilibrium_time_slice_global_quantities_q_95(time_slice);
-        epp_equilibrium_time_slice_constraints_diamagnetic_flux_reconstructed(time_slice, &flux_surfaces);
-        epp_equilibrium_time_slice_boundary_geometry(time_slice);
-
-        // Flux-surface-averaged b_p ** 2 fills no data dictionary path either; it is shared by
-        // `beta_pol_1` and `li_1`
-        let bp_sq_fs_avg: f64 = epp_bp_sq_flux_surface_average(time_slice, &flux_surfaces, bp_sq_fs_avg_psi_norm);
-
-        epp_equilibrium_time_slice_global_quantities_beta_pol(time_slice, bp_sq_fs_avg, r0);
-        epp_equilibrium_time_slice_global_quantities_li(time_slice, bp_sq_fs_avg);
-        epp_equilibrium_time_slice_global_quantities_bt_vac_at_r_geo(time_slice);
-        epp_equilibrium_time_slice_global_quantities_beta_tor(time_slice);
-        epp_equilibrium_time_slice_sol(time_slice, wall_ids);
+        // Dispatching is all this loop does: `calculators_sorted` is already in dependency order,
+        // so running them in that order is enough
+        // println!("i_time = {:#?}", i_time);
+        // println!("time = {:#?}", time_slice.time.unwrap());
+        for calculator in &calculators_sorted {
+            let convergence_flag: i32 = time_slice.convergence.result.index.unwrap();
+            if convergence_flag == 1 {
+                // Correctly converged
+                let calculator_function: CalculatorFunction = calculator.calculator_function;
+                calculator_function(time_slice, &constant_values, &mut intermediate_values);
+            } else {
+                // Unconverged, skip equilibrium post-processing
+                
+            }
+            // println!("{:?}", calculator.identifier);  // added for debugging
+            
+            
+        }
     });
 
     // The loop voltage differentiates the boundary flux across time, so unlike everything above
     // it needs all of the time-slices at once and cannot run inside the loop
-    epp_equilibrium_global_quantities_v_loop(equilibrium_ids);
-    epp_equilibrium_vacuum_toroidal_field_b0(equilibrium_ids);
+    global_quantities::v_loop::calculate(equilibrium_ids);
+    // The current centre's vertical velocity likewise differentiates across time; it needs every
+    // time-slice's `current_centre/z`, which the loop above has just filled
+    global_quantities::current_centre__r__velocity_z__z::calculate_velocity_z(equilibrium_ids);
 }

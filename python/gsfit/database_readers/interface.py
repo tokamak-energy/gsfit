@@ -366,7 +366,7 @@ class DatabaseReaderProtocol(Protocol):
         :param kwargs: Additional objects, such as FreeGNSKE object
 
         Initialising requires reading data from three locations:
-        1. `GSFIT_code_settings.json`: Which contains the plasma grid size and the maximum number of iterations
+        1. `GSFIT_code_settings.json`: Which contains the plasma grid size and the numerical settings the solve is run with
         2. `source_function_p_prime.json`: Which contains the number of degrees of freedom for p_prime, and regularisation
         3. `source_function_ff_prime.json`: Which contains the number of degrees of freedom for ff_prime, and regularisation
 
@@ -402,6 +402,12 @@ class DatabaseReaderProtocol(Protocol):
             initial_guess_cur_z=...,                           # read from `GSFIT_code_settings.json` file
             initial_guess_minor_radius=...,                    # read from `GSFIT_code_settings.json` file
             initial_guess_elongation=...,                      # read from `GSFIT_code_settings.json` file
+            n_iter_max=...,                                    # read from `GSFIT_code_settings.json` file
+            n_iter_min=...,                                    # read from `GSFIT_code_settings.json` file
+            n_iter_no_vertical_feedback=...,                   # read from `GSFIT_code_settings.json` file
+            gs_error=...,                                      # read from `GSFIT_code_settings.json` file
+            use_anderson_mixing=...,                           # read from `GSFIT_code_settings.json` file
+            anderson_mixing_from_previous_iter=...,            # read from `GSFIT_code_settings.json` file
             times_to_reconstruct=times_to_reconstruct,         # passed in, from `setup_timeslices`
         )
 

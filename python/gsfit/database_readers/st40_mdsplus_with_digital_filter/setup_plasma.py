@@ -5,7 +5,6 @@ import gsfit_rs
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Plasma
-from st40_database import GetData
 
 from ...tensioned_cubic_splines_regularisations import make_tensioned_cubic_b_spline_regularisations
 
@@ -37,6 +36,14 @@ def setup_plasma(
     initial_guess_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["cur_z"]
     initial_guess_minor_radius = settings["GSFIT_code_settings.json"]["initial_guess"]["minor_radius"]
     initial_guess_elongation = settings["GSFIT_code_settings.json"]["initial_guess"]["elongation"]
+
+    # Numerical settings the Grad-Shafranov solve is run with
+    n_iter_max = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"]
+    n_iter_min = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_min"]
+    n_iter_no_vertical_feedback = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_no_vertical_feedback"]
+    gs_error = settings["GSFIT_code_settings.json"]["numerics"]["gs_error"]
+    use_anderson_mixing = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["use"]
+    anderson_mixing_from_previous_iter = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["mixing_from_previous_iter"]
 
     # Set the source functions types
     p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.TensionedCubicBSpline
@@ -114,23 +121,6 @@ def setup_plasma(
     n_psi_n = settings["GSFIT_code_settings.json"]["n_psi_n"]
     psi_n = np.linspace(0.0, 1.0, n_psi_n).astype(np.float64)
 
-    # Limiter
-    elmag_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus_with_digital_filter"]["workflow"]["elmag"]["run_name"]
-    elmag = GetData(pulseNo, f"ELMAG#{elmag_run_name}", is_fail_quiet=False)
-    limit_pts_r = typing.cast(npt.NDArray[np.float64], elmag.get("LIMITER.LIMIT_PTS.R"))
-    limit_pts_z = typing.cast(npt.NDArray[np.float64], elmag.get("LIMITER.LIMIT_PTS.Z"))
-
-    # Vacuum vessel where the plasma is allowed to be
-    vessel_r = limit_pts_r
-    vessel_z = limit_pts_z
-
-    # Add lower MC tiles
-    limit_pts_r = np.append(limit_pts_r, 0.7103)
-    limit_pts_z = np.append(limit_pts_z, -0.3131)
-    # Add upper MC tiles
-    limit_pts_r = np.append(limit_pts_r, 0.7103)
-    limit_pts_z = np.append(limit_pts_z, 0.3031)
-
     # Initialise the Plasma Rust class
     plasma = Plasma(
         n_r,
@@ -147,6 +137,12 @@ def setup_plasma(
         initial_guess_cur_z,
         initial_guess_minor_radius,
         initial_guess_elongation,
+        n_iter_max,
+        n_iter_min,
+        n_iter_no_vertical_feedback,
+        gs_error,
+        use_anderson_mixing,
+        anderson_mixing_from_previous_iter,
         times_to_reconstruct,
     )
 

@@ -653,6 +653,10 @@ class _EquilibriumCodeNumericsItem:
         """Bounds on the Picard iteration loop
         """
     @property
+    def anderson_mixing(self) -> _EquilibriumCodeNumericsAndersonMixingItem:
+        """Mixing of the previous iteration's degrees of freedom into the current ones
+        """
+    @property
     def grad_shafranov_deviation_tolerance(self) -> Path[float]:
         """Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
 converged
@@ -669,11 +673,47 @@ class _EquilibriumCodeNumericsMany:
         """Bounds on the Picard iteration loop
         """
     @property
+    def anderson_mixing(self) -> _EquilibriumCodeNumericsAndersonMixingMany:
+        """Mixing of the previous iteration's degrees of freedom into the current ones
+        """
+    @property
     def grad_shafranov_deviation_tolerance(self) -> Path[npt.NDArray[np.float64]]:
         """Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
 converged
 
         Units: mixed
+        """
+
+class _EquilibriumCodeNumericsAndersonMixingItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def use(self) -> Path[int]:
+        """Whether the mixing is applied; 0 for off, 1 for on. The data dictionary has no boolean
+base type, so this is an integer
+        """
+    @property
+    def mixing_from_previous_iter(self) -> Path[float]:
+        """Fraction of the previous iteration's degrees of freedom mixed into the current ones
+
+        Units: dimensionless
+        """
+
+class _EquilibriumCodeNumericsAndersonMixingMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def use(self) -> Path[npt.NDArray[np.int32]]:
+        """Whether the mixing is applied; 0 for off, 1 for on. The data dictionary has no boolean
+base type, so this is an integer
+        """
+    @property
+    def mixing_from_previous_iter(self) -> Path[npt.NDArray[np.float64]]:
+        """Fraction of the previous iteration's degrees of freedom mixed into the current ones
+
+        Units: dimensionless
         """
 
 class _EquilibriumCodeNumericsIterationsItem:
@@ -2197,14 +2237,6 @@ class _EquilibriumGlobalQuantitiesItem:
         Units: ohm
         """
     @property
-    def i_rod(self) -> Path[float]:
-        """Current flowing in the central rod of the toroidal field coil. It sets the vacuum
-toroidal field function `f_vac = mu_0 * i_rod / (2 * pi)`, which the diamagnetic loop
-constraint is written against. Signed: a negative value is a reversed toroidal field
-
-        Units: A
-        """
-    @property
     def beta_pol_1(self) -> Path[float]:
         """Poloidal beta normalised to the flux-surface-averaged poloidal field:
 `2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
@@ -2225,7 +2257,7 @@ vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
     @property
     def bt_vac_at_r_geo(self) -> Path[float]:
         """Vacuum toroidal magnetic field at the plasma geometric axis,
-`mu_0 * i_rod / (2 * pi * boundary/geometric_axis/r)`. Distinct from
+`vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
 `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
 `vacuum_toroidal_field/r0` rather than following the plasma
 
@@ -2245,15 +2277,7 @@ The data dictionary's own `li_3` is the same quantity normalised to
 `boundary/geometric_axis/r` instead
         """
     @property
-    def pressure_2d_sum(self) -> Path[float]:
-        """Plain sum of `profiles_2d/pressure` over every grid cell. Not an integral: the cells are
-not weighted by their volume, so this is a diagnostic of the 2D pressure rather than a
-physical quantity. Kept because GSFit has always reported it as `global/p`
-
-        Units: Pa
-        """
-    @property
-    def d_r_sep(self) -> Path[float]:
+    def delta_r_sep(self) -> Path[float]:
         """Radial separation of the two separatrices at the height of the magnetic axis, on the
 outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
 X-point)`. So it is negative for a lower single null, positive for an upper single null,
@@ -2266,6 +2290,15 @@ X-point positions at second order, which is what makes a sub-millimetre answer m
 on a centimetre grid
 
         Units: m
+        """
+    @property
+    def f_x(self) -> Path[float]:
+        """Flux expansion from the outboard midplane to the outboard strike point on the active
+X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`. The
+outboard midplane is at the height of the magnetic axis. This excludes the additional
+expansion along the target caused by the field-line incidence angle
+
+        Units: dimensionless
         """
     @property
     def v_loop(self) -> Path[float]:
@@ -2395,14 +2428,6 @@ class _EquilibriumGlobalQuantitiesMany:
         Units: ohm
         """
     @property
-    def i_rod(self) -> Path[npt.NDArray[np.float64]]:
-        """Current flowing in the central rod of the toroidal field coil. It sets the vacuum
-toroidal field function `f_vac = mu_0 * i_rod / (2 * pi)`, which the diamagnetic loop
-constraint is written against. Signed: a negative value is a reversed toroidal field
-
-        Units: A
-        """
-    @property
     def beta_pol_1(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal beta normalised to the flux-surface-averaged poloidal field:
 `2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
@@ -2423,7 +2448,7 @@ vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
     @property
     def bt_vac_at_r_geo(self) -> Path[npt.NDArray[np.float64]]:
         """Vacuum toroidal magnetic field at the plasma geometric axis,
-`mu_0 * i_rod / (2 * pi * boundary/geometric_axis/r)`. Distinct from
+`vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
 `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
 `vacuum_toroidal_field/r0` rather than following the plasma
 
@@ -2443,15 +2468,7 @@ The data dictionary's own `li_3` is the same quantity normalised to
 `boundary/geometric_axis/r` instead
         """
     @property
-    def pressure_2d_sum(self) -> Path[npt.NDArray[np.float64]]:
-        """Plain sum of `profiles_2d/pressure` over every grid cell. Not an integral: the cells are
-not weighted by their volume, so this is a diagnostic of the 2D pressure rather than a
-physical quantity. Kept because GSFit has always reported it as `global/p`
-
-        Units: Pa
-        """
-    @property
-    def d_r_sep(self) -> Path[npt.NDArray[np.float64]]:
+    def delta_r_sep(self) -> Path[npt.NDArray[np.float64]]:
         """Radial separation of the two separatrices at the height of the magnetic axis, on the
 outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
 X-point)`. So it is negative for a lower single null, positive for an upper single null,
@@ -2464,6 +2481,15 @@ X-point positions at second order, which is what makes a sub-millimetre answer m
 on a centimetre grid
 
         Units: m
+        """
+    @property
+    def f_x(self) -> Path[npt.NDArray[np.float64]]:
+        """Flux expansion from the outboard midplane to the outboard strike point on the active
+X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`. The
+outboard midplane is at the height of the magnetic axis. This excludes the additional
+expansion along the target caused by the field-line incidence angle
+
+        Units: dimensionless
         """
     @property
     def v_loop(self) -> Path[npt.NDArray[np.float64]]:

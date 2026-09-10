@@ -1,4 +1,4 @@
-use super::epp_chi_sq_mag::epp_chi_sq_mag;
+use super::chi_sq_mag::epp_chi_sq_mag;
 use super::equilibrium_solve::{EquilibriumSolver, GradShafranovInputs, PsiAndDerivativesGreens};
 use super::initial_current_seed::quadratic_current_density_seed;
 use super::output_flag;
@@ -14,15 +14,10 @@ use imas_rs::ids::wall::Wall as WallIds;
 use imas_rs::{Code, Equilibrium, EquilibriumGreens, EquilibriumTimeSlice};
 use log::info; // use log::{debug, error, info};
 use ndarray::{Array1, Array2, s};
-use numpy::PyArrayMethods; // used in to convert python data into ndarray
-use numpy::borrow::PyReadonlyArray1;
 use pyo3::prelude::*;
 use rayon::prelude::*;
-use std::f64::consts::PI;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-
-const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
 #[pyfunction]
 pub fn solve_grad_shafranov(
@@ -39,20 +34,15 @@ pub fn solve_grad_shafranov(
     mut pressure_sensors: PyRefMut<Pressure>,
     mut stationary_point: PyRefMut<StationaryPoint>,
     mut dialoop: PyRefMut<Dialoop>,
-    times_to_reconstruct: PyReadonlyArray1<f64>,
-    n_iter_max: usize,
-    n_iter_min: usize,
-    n_iter_no_vertical_feedback: usize,
-    gs_error: f64,
-    use_anderson_mixing: bool,
-    anderson_mixing_from_previous_iter: f64,
 ) {
     println!("solve_grad_shafranov starting");
     let timing_start_serial_setup: Instant = Instant::now();
 
-    // Convert to rust data type
-    let times_to_reconstruct_ndarray: Array1<f64> = times_to_reconstruct.to_owned_array();
-    let n_time: usize = times_to_reconstruct_ndarray.len();
+    // The reconstruction times, from the IDS `Plasma::new` allocated one time-slice per. Reading
+    // them here rather than taking them as an argument makes it impossible to solve a different
+    // set of times than the IDS was built for
+    let times_to_reconstruct: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.unwrap();
+    let n_time: usize = times_to_reconstruct.len();
 
     if n_time == 0 {
         println!("solve_grad_shafranov: no times to reconstruct, returning");
@@ -60,7 +50,7 @@ pub fn solve_grad_shafranov(
     }
 
     // Get static and dynamic data
-    let coils_dynamic: Vec<SensorsDynamic> = coils.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let coils_dynamic: Vec<SensorsDynamic> = coils.split_into_static_and_dynamic(&times_to_reconstruct);
     // The toroidal field, from the `tf` IDS. `b_field_phi_vacuum_r` is stored on the experimental
     // timebase, so it is interpolated onto `times_to_reconstruct` here
     let b_field_phi_vacuum_r_time: &Array1<f64> = tf
@@ -78,51 +68,39 @@ pub fn solve_grad_shafranov(
     let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(b_field_phi_vacuum_r_time.to_owned(), b_field_phi_vacuum_r_data.to_owned())
         .expect("solve_grad_shafranov: cannot build the `tf/b_field_phi_vacuum_r` interpolator");
     let f_vac_vs_time: Array1<f64> = interpolator
-        .interpolate_array1(&times_to_reconstruct_ndarray)
+        .interpolate_array1(&times_to_reconstruct)
         .expect("solve_grad_shafranov: cannot interpolate `tf/b_field_phi_vacuum_r` onto the reconstruction times");
 
-    // `f_vac = R0 * B_phi0 = MU_0 * i_rod / (2 * PI)`, so this inverts exactly the conversion the
-    // solver and the post-processor apply when they use it. The sign carries through
-    let i_rod_vs_time: Array1<f64> = f_vac_vs_time * (2.0 * PI / MU_0);
-
-    // The reference major radius the vacuum toroidal field is quoted at. A property of the machine
-    // rather than of a time-slice, so it is read once, here
+    // The reference major radius the vacuum toroidal field is quoted at, and the same signal
+    // expressed the way the equilibrium IDS holds it: `f_vac = r0 * b0`. The sign carries through
     let vacuum_toroidal_field_r0: f64 = tf.tf_ids.r0.expect("solve_grad_shafranov: `tf/r0` is unset");
-    let (bp_probes_static, bp_probes_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        bp_probes.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+    let b0_vs_time: Array1<f64> = f_vac_vs_time / vacuum_toroidal_field_r0;
+
+    let (bp_probes_static, bp_probes_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) = bp_probes.split_into_static_and_dynamic(&times_to_reconstruct);
     let (flux_loops_static, flux_loops_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        flux_loops.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+        flux_loops.split_into_static_and_dynamic(&times_to_reconstruct);
     let (rogowski_coils_static, rogowski_coils_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        rogowski_coils.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (isoflux_statics, isoflux_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        isoflux.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+        rogowski_coils.split_into_static_and_dynamic(&times_to_reconstruct);
+    let (isoflux_statics, isoflux_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) = isoflux.split_into_static_and_dynamic(&times_to_reconstruct);
     let (isoflux_boundary_statics, isoflux_boundary_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        isoflux_boundary.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+        isoflux_boundary.split_into_static_and_dynamic(&times_to_reconstruct);
     let (pressure_statics, pressure_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+        pressure_sensors.split_into_static_and_dynamic(&times_to_reconstruct);
     let (stationary_point_statics, stationary_point_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        stationary_point.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
-    let (dialoop_statics, dialoop_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) =
-        dialoop.split_into_static_and_dynamic(&times_to_reconstruct_ndarray);
+        stationary_point.split_into_static_and_dynamic(&times_to_reconstruct);
+    let (dialoop_statics, dialoop_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) = dialoop.split_into_static_and_dynamic(&times_to_reconstruct);
 
     // TODO: might be better to combine all sensors here, before passing to the solver
 
-    // The IDS was allocated by `Plasma::new`, so the time-slices already exist. Check that they are
-    // the times we have been asked to solve at, rather than silently solving a different grid
-    let ids_times: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.unwrap();
-    assert_eq!(
-        ids_times, times_to_reconstruct_ndarray,
-        "the equilibrium IDS was built for different times than `solve_inverse_problem` was asked to solve"
-    );
-    // Deref the `PyRefMut` once. Every field access on the `PyRefMut` itself borrows the whole of
-    // it, so the parallel solve could not hold `&code` and `&greens` while mutating `time_slice`;
-    // through a plain `&mut Plasma` those are disjoint fields and borrow independently
+    // Deref the `PyRefMut` once. Every field access on it calls `deref_mut`, which borrows the
+    // whole of it, so `&code` and `&greens` could not be held while `time_slice` is mutated;
+    // off one `&mut Equilibrium` they are disjoint fields and borrow independently
     let plasma: &mut Plasma = &mut plasma;
     let equilibrium_ids: &mut Equilibrium = &mut plasma.equilibrium_ids;
 
     // Copied out of the `PyRef`, because the per-time-slice solves run on Rayon's threads and
     // a `PyRef` is neither `Send` nor `Sync`
-    let wall_owned: WallIds = wall.wall_ids.clone();
+    let wall_ids: WallIds = wall.wall_ids.clone();
 
     let p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = plasma.p_prime_source_function.clone();
     let ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = plasma.ff_prime_source_function.clone();
@@ -176,32 +154,20 @@ pub fn solve_grad_shafranov(
 
     // Loop over time in parallel and store in "results"
 
-    // Settings the solver is run with. These apply to every time-slice, so they live on the IDS
-    // itself rather than inside `time_slice`
-    equilibrium_ids.code.numerics.iterations.n_max = Some(n_iter_max as i32);
-    equilibrium_ids.code.numerics.iterations.n_min = Some(n_iter_min as i32);
-    equilibrium_ids.code.numerics.iterations.n_no_vertical_feedback = Some(n_iter_no_vertical_feedback as i32);
-    equilibrium_ids.code.numerics.grad_shafranov_deviation_tolerance = Some(gs_error);
-
     // The data dictionary requires `vacuum_toroidal_field/r0 * b0` to equal the `tf` IDS's
-    // `b_field_phi_vacuum_r`, so `r0` is copied across rather than configured separately.
-    // `epp_equilibrium_vacuum_toroidal_field_b0` fills `b0` from the same signal
+    // `b_field_phi_vacuum_r`, so both are filled from that one signal here. The rod current is not
+    // a data dictionary node, so it is recovered from these two wherever it is needed
     equilibrium_ids.vacuum_toroidal_field.r0 = Some(vacuum_toroidal_field_r0);
-
-    // Per-time-slice solver inputs, written into the IDS before the solve begins. The TF rod
-    // current is a measurement, so it varies from slice to slice
-    for i_time in 0..n_time {
-        equilibrium_ids.time_slice[i_time].global_quantities.i_rod = Some(i_rod_vs_time[i_time]);
-    }
+    equilibrium_ids.vacuum_toroidal_field.b0 = Some(b0_vs_time.clone());
 
     let equilibrium_code: &Code = &equilibrium_ids.code;
     // Geometry only, so the same tables serve every time-slice. Borrowed from a different field
     // of the IDS than `time_slice`, so the parallel solve can hold both at once
-    let greens_tables: &EquilibriumGreens = &equilibrium_ids.greens;
+    let equilibrium_greens_tables: &EquilibriumGreens = &equilibrium_ids.greens;
     // The same tables, reorganised into the matrix shapes the per-iteration GEMMs want. This
     // depends only on the geometry, so it is built once here and shared by every time-slice;
     // it used to be rebuilt inside each of the 480 parallel solves
-    let psi_and_derivatives_greens: PsiAndDerivativesGreens = PsiAndDerivativesGreens::new(greens_tables);
+    let psi_and_derivatives_greens: PsiAndDerivativesGreens = PsiAndDerivativesGreens::new(equilibrium_greens_tables);
 
     // The initial current-density guess. Every input to it is shared between time-slices - the
     // grid, the wall, and `code/initial_guess` - so it is built once here. It used to be rebuilt
@@ -232,7 +198,7 @@ pub fn solve_grad_shafranov(
 
         // Limiter, from the `wall` IDS. `limiter_points` gathers every limiter unit,
         // `vacuum_vessel_outline` is `unit(0)` alone
-        match (limiter_points(&wall_owned), vacuum_vessel_outline(&wall_owned)) {
+        match (limiter_points(&wall_ids), vacuum_vessel_outline(&wall_ids)) {
             (Ok((limiter_r, limiter_z)), Ok((vessel_r, vessel_z))) => quadratic_current_density_seed(
                 &grid_r,
                 &grid_z,
@@ -261,7 +227,7 @@ pub fn solve_grad_shafranov(
     );
 
     // Solve the GS equation for all time-slices, in parallel
-    let timing_start_ids: Instant = Instant::now();
+    let gsfit_solve_all_time_slices_timing_start: Instant = Instant::now();
     equilibrium_ids
         .time_slice
         .par_iter_mut()
@@ -271,7 +237,6 @@ pub fn solve_grad_shafranov(
             // Note: the GS solver is designed to consider a single time-slice
             // and deliberately does not know what time-slice it is solving
             let grad_shafranov_inputs: GradShafranovInputs = GradShafranovInputs {
-                wall: &wall_owned,
                 psi_and_derivatives_greens: &psi_and_derivatives_greens,
                 initial_j_2d: &initial_j_2d,
                 coils_dynamic: &coils_dynamic[i_time],
@@ -298,13 +263,21 @@ pub fn solve_grad_shafranov(
             };
 
             // Solve
-            let mut solver: EquilibriumSolver = EquilibriumSolver::new(time_slice, equilibrium_code, greens_tables, &grad_shafranov_inputs);
+            let mut solver: EquilibriumSolver = EquilibriumSolver::new(
+                time_slice,
+                equilibrium_code,
+                equilibrium_greens_tables,
+                &wall_ids,
+                vacuum_toroidal_field_r0,
+                b0_vs_time[i_time],
+                &grad_shafranov_inputs,
+            );
             solver.solve();
             solver.write_to_time_slice();
         });
     println!(
         "solve_grad_shafranov: parallel time-slice solve done; {:.2}ms",
-        timing_start_ids.elapsed().as_secs_f64() * 1e3
+        gsfit_solve_all_time_slices_timing_start.elapsed().as_secs_f64() * 1e3
     );
     let timing_start_serial_finish: Instant = Instant::now();
 
@@ -317,18 +290,18 @@ pub fn solve_grad_shafranov(
         let solution_found: bool = time_slice.global_quantities.ip.unwrap().is_finite();
         println!(
             "time={:6.1}ms;  solution_found={};  gs_error={:.18};  n_iter={}",
-            times_to_reconstruct_ndarray[i_time] * 1e3,
+            times_to_reconstruct[i_time] * 1e3,
             solution_found,
             time_slice.convergence.grad_shafranov_deviation_value.unwrap(),
             time_slice.convergence.iterations_n.unwrap(),
         );
     }
 
-    let duration_ids: Duration = timing_start_ids.elapsed();
-    info!("GSFit time elapsed: {:?}", duration_ids);
+    let gsfit_solve_all_time_slices_duration: Duration = gsfit_solve_all_time_slices_timing_start.elapsed();
+    info!("GSFit time elapsed: {:?}", gsfit_solve_all_time_slices_duration);
 
     // Post-process
-    equilibrium_post_processor(equilibrium_ids, &wall_owned, &p_prime_source_function, &ff_prime_source_function);
+    equilibrium_post_processor(equilibrium_ids, &wall_ids, &p_prime_source_function, &ff_prime_source_function);
     passives.equilibrium_post_processor(equilibrium_ids);
 
     // Get error codes for failed time-slices

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs.imas import equilibrium_paths as ep
+from scipy.constants import mu_0
 
 # from st40_database import GetData
 
@@ -52,10 +53,11 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("GLOBAL", "BETA_P_2"), ep.time_slice[:].global_quantities.beta_pol_2),
     (("GLOBAL", "BETA_P_3"), ep.time_slice[:].global_quantities.beta_pol_3),
     (("GLOBAL", "BT_VAC_RGEO"), ep.time_slice[:].global_quantities.bt_vac_at_r_geo),
+    (("GLOBAL", "DELTA_R_SEP"), ep.time_slice[:].global_quantities.delta_r_sep),
     (("GLOBAL", "DELTA_Z"), ep.time_slice[:].convergence.delta_z),
     (("GLOBAL", "ENERGY_MHD"), ep.time_slice[:].global_quantities.energy_mhd),
+    (("GLOBAL", "FX"), ep.time_slice[:].global_quantities.f_x),
     (("GLOBAL", "IP"), ep.time_slice[:].global_quantities.ip),
-    (("GLOBAL", "I_ROD"), ep.time_slice[:].global_quantities.i_rod),
     (("GLOBAL", "LI_1"), ep.time_slice[:].global_quantities.li_1),
     (("GLOBAL", "LI_2"), ep.time_slice[:].global_quantities.li_2),
     (("GLOBAL", "LI_3"), ep.time_slice[:].global_quantities.li_3),
@@ -69,14 +71,30 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     # Profiles_1d, on the psi_norm grid
     (("PROFILES_1D", "PSI_NORM", "AREA"), ep.time_slice[:].profiles_1d.area),
     (("PROFILES_1D", "PSI_NORM", "AREA_PRIME"), ep.time_slice[:].profiles_1d.darea_dpsi),
+    (("PROFILES_1D", "PSI_NORM", "ELONGATION"), ep.time_slice[:].profiles_1d.elongation),
     (("PROFILES_1D", "PSI_NORM", "F"), ep.time_slice[:].profiles_1d.f),
     (("PROFILES_1D", "PSI_NORM", "FF_PRIME"), ep.time_slice[:].profiles_1d.f_df_dpsi),
     (("PROFILES_1D", "PSI_NORM", "FLUX_TOR"), ep.time_slice[:].profiles_1d.phi),
+    (("PROFILES_1D", "PSI_NORM", "MAG_SHEAR"), ep.time_slice[:].profiles_1d.magnetic_shear),
     (("PROFILES_1D", "PSI_NORM", "P_PRIME"), ep.time_slice[:].profiles_1d.dpressure_dpsi),
     (("PROFILES_1D", "PSI_NORM", "PRESSURE"), ep.time_slice[:].profiles_1d.pressure),
     (("PROFILES_1D", "PSI_NORM", "Q"), ep.time_slice[:].profiles_1d.q),
     (("PROFILES_1D", "PSI_NORM", "RHO_POL"), ep.time_slice[:].profiles_1d.rho_pol),
+    (("PROFILES_1D", "PSI_NORM", "R_INBOARD"), ep.time_slice[:].profiles_1d.r_inboard),
+    (("PROFILES_1D", "PSI_NORM", "R_OUTBOARD"), ep.time_slice[:].profiles_1d.r_outboard),
+    # `RHO_TOR` is the data dictionary's `sqrt(phi / (pi * b0))`, in metre. The dimensionless
+    # 0 -> 1 coordinate, which is what `RHO_POL` is the poloidal counterpart of, is `RHO_TOR_NORM`
     (("PROFILES_1D", "PSI_NORM", "RHO_TOR"), ep.time_slice[:].profiles_1d.rho_tor),
+    (("PROFILES_1D", "PSI_NORM", "RHO_TOR_NORM"), ep.time_slice[:].profiles_1d.rho_tor_norm),
+    # The shape of each flux surface, measured exactly as the `BOUNDARY` scalars of the same name
+    # are, so the last point of each of these is the corresponding `BOUNDARY` node
+    (("PROFILES_1D", "PSI_NORM", "SQUARE_L_I"), ep.time_slice[:].profiles_1d.squareness_lower_inner),
+    (("PROFILES_1D", "PSI_NORM", "SQUARE_L_O"), ep.time_slice[:].profiles_1d.squareness_lower_outer),
+    (("PROFILES_1D", "PSI_NORM", "SQUARE_U_I"), ep.time_slice[:].profiles_1d.squareness_upper_inner),
+    (("PROFILES_1D", "PSI_NORM", "SQUARE_U_O"), ep.time_slice[:].profiles_1d.squareness_upper_outer),
+    (("PROFILES_1D", "PSI_NORM", "TRIANG"), ep.time_slice[:].profiles_1d.triangularity),
+    (("PROFILES_1D", "PSI_NORM", "TRIANG_L"), ep.time_slice[:].profiles_1d.triangularity_lower),
+    (("PROFILES_1D", "PSI_NORM", "TRIANG_U"), ep.time_slice[:].profiles_1d.triangularity_upper),
     (("PROFILES_1D", "PSI_NORM", "VOL"), ep.time_slice[:].profiles_1d.volume),
     (("PROFILES_1D", "PSI_NORM", "VOL_PRIME"), ep.time_slice[:].profiles_1d.dvolume_dpsi),
     # Mid-plane profiles
@@ -181,6 +199,12 @@ def map_results_to_database(
     # The data dictionary defines `beta_tor` as a fraction, but this MDSplus node has always held a
     # percentage, so the factor of 100 is put back here rather than changing what consumers read
     results["GLOBAL"]["BETA_T"] = 100.0 * np.asarray(equilibrium_ids.get(ep.time_slice[:].global_quantities.beta_tor))
+
+    # The rod current is not a data dictionary node. It is recovered from the vacuum toroidal
+    # field, `f_vac = r0 * b0 = mu_0 * i_rod / (2 * pi)`
+    r0 = equilibrium_ids.get(ep.vacuum_toroidal_field.r0)
+    b0 = np.asarray(equilibrium_ids.get(ep.vacuum_toroidal_field.b0))
+    results["GLOBAL"]["I_ROD"] = 2.0 * np.pi * r0 * b0 / mu_0
 
 
     for sensor_name in bp_probes.keys():

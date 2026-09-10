@@ -313,6 +313,10 @@ pub struct EquilibriumSolver<'a> {
     /// every time-slice, so the caller builds it once; the `Result` is carried in so that a bad
     /// initial guess still fails every slice in the way it did when each built its own
     initial_j_2d: &'a Result<Array2<f64>, String>,
+    /// `vacuum_toroidal_field/r0` and `vacuum_toroidal_field/b0` at this time-slice. `b0` is
+    /// indexed by time on the IDS, so the caller hands in this slice's value rather than the array
+    vacuum_toroidal_field_r0: f64,
+    vacuum_toroidal_field_b0: f64,
     /// The machine's wall. The limiter points and the vacuum vessel contour are read from
     /// `wall/description_2d(0)/limiter`; see `crate::wall::Wall` for the unit ordering
     wall: &'a WallIds,
@@ -346,6 +350,9 @@ impl<'a> EquilibriumSolver<'a> {
         time_slice: &'a mut EquilibriumTimeSlice,
         equilibrium_code: &'a Code,
         greens_tables: &'a EquilibriumGreens,
+        wall: &'a WallIds,
+        vacuum_toroidal_field_r0: f64,
+        vacuum_toroidal_field_b0: f64,
         inputs: &GradShafranovInputs<'a>,
     ) -> Self {
         // The solver writes `psi` straight into the IDS, so `profiles_2d` has to exist before the
@@ -364,7 +371,9 @@ impl<'a> EquilibriumSolver<'a> {
             greens_tables,
             psi_and_derivatives_greens: inputs.psi_and_derivatives_greens,
             initial_j_2d: inputs.initial_j_2d,
-            wall: inputs.wall,
+            vacuum_toroidal_field_r0,
+            vacuum_toroidal_field_b0,
+            wall,
             coils_dynamic: inputs.coils_dynamic,
             bp_probes_static: inputs.bp_probes_static,
             bp_probes_dynamic: inputs.bp_probes_dynamic,
@@ -905,7 +914,7 @@ impl<'a> EquilibriumSolver<'a> {
             // f = sign(f_vac)*sqrt(f_vac^2 + 2*(psi_b-psi_a)*G) for small G gives
             // f - f_vac ~= (psi_b - psi_a)*G / f_vac, matching the term below without a separate
             // sign() factor.
-            let i_rod: f64 = self.time_slice.global_quantities.i_rod.unwrap();
+            let i_rod: f64 = 2.0 * PI * self.vacuum_toroidal_field_r0 * self.vacuum_toroidal_field_b0 / MU_0;
             let f_vac: f64 = MU_0 * i_rod / (2.0 * PI);
             let d_psi: f64 = psi_b - psi_a;
             for i_sensor in 0..n_dialoop {
@@ -1827,8 +1836,6 @@ pub fn output_flag(time_slice: &EquilibriumTimeSlice) -> i32 {
 /// is never handed a time index; it cannot read the wrong slice, and it does not know which slice
 /// it is solving.
 pub struct GradShafranovInputs<'a> {
-    /// The machine's wall, supplying the limiter points and the vacuum vessel contour
-    pub wall: &'a WallIds,
     /// The Greens tables reorganised for `calculate_psi_and_derivatives`. Built once, before the
     /// parallel loop over time-slices, because it depends only on the geometry
     pub psi_and_derivatives_greens: &'a PsiAndDerivativesGreens,

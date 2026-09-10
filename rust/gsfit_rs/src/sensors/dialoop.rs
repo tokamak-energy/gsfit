@@ -257,6 +257,10 @@ impl Dialoop {
         let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied()); // shape = [n_z * n_r]
         let d_area: f64 = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).grid.d_area.unwrap();
         let time: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.unwrap();
+        // The rod current is not a data dictionary node, so it is recovered from the vacuum
+        // toroidal field
+        let r0: f64 = plasma.equilibrium_ids.vacuum_toroidal_field.r0.unwrap();
+        let b0: &Array1<f64> = plasma.equilibrium_ids.vacuum_toroidal_field.b0.as_ref().unwrap();
 
         let n_time: usize = time.len();
 
@@ -274,7 +278,8 @@ impl Dialoop {
                 let ff_dof: Array1<f64> = time_slice.source_functions.ff_prime.coefficients.as_ref().unwrap().to_owned();
 
                 // Vacuum toroidal flux function: f_vac = R0 * B_phi0 = MU_0 * i_rod / (2 * PI)
-                let f_vac: f64 = MU_0 * time_slice.global_quantities.i_rod.unwrap() / (2.0 * PI);
+                let i_rod: f64 = 2.0 * PI * r0 * b0[i_time] / MU_0;
+                let f_vac: f64 = MU_0 * i_rod / (2.0 * PI);
 
                 // G(psi_n) = sum_i ff'_dof[i] * ff'_integral_i(psi_n)
                 let g_integral: Array1<f64> = plasma.ff_prime_source_function.source_function_integral(&psi_n_flat, &ff_dof);

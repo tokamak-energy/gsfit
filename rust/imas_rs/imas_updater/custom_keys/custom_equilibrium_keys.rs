@@ -88,11 +88,6 @@ pub struct EquilibriumTimeSlice {
 }
 
 pub struct EquilibriumGlobalQuantities {
-    /// Current flowing in the central rod of the toroidal field coil. It sets the vacuum
-    /// toroidal field function `f_vac = mu_0 * i_rod / (2 * pi)`, which the diamagnetic loop
-    /// constraint is written against. Signed: a negative value is a reversed toroidal field
-    /// Units: A
-    pub i_rod: FLT_0D,
     /// Poloidal beta normalised to the flux-surface-averaged poloidal field:
     /// `2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
     /// flux-surface average
@@ -107,7 +102,7 @@ pub struct EquilibriumGlobalQuantities {
     /// vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
     pub beta_pol_3: FLT_0D,
     /// Vacuum toroidal magnetic field at the plasma geometric axis,
-    /// `mu_0 * i_rod / (2 * pi * boundary/geometric_axis/r)`. Distinct from
+    /// `vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
     /// `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
     /// `vacuum_toroidal_field/r0` rather than following the plasma
     /// Units: T
@@ -122,11 +117,6 @@ pub struct EquilibriumGlobalQuantities {
     /// The data dictionary's own `li_3` is the same quantity normalised to
     /// `boundary/geometric_axis/r` instead
     pub li_2: FLT_0D,
-    /// Plain sum of `profiles_2d/pressure` over every grid cell. Not an integral: the cells are
-    /// not weighted by their volume, so this is a diagnostic of the 2D pressure rather than a
-    /// physical quantity. Kept because GSFit has always reported it as `global/p`
-    /// Units: Pa
-    pub pressure_2d_sum: FLT_0D,
     /// Radial separation of the two separatrices at the height of the magnetic axis, on the
     /// outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
     /// X-point)`. So it is negative for a lower single null, positive for an upper single null,
@@ -139,7 +129,13 @@ pub struct EquilibriumGlobalQuantities {
     /// X-point positions at second order, which is what makes a sub-millimetre answer meaningful
     /// on a centimetre grid
     /// Units: m
-    pub d_r_sep: FLT_0D,
+    pub delta_r_sep: FLT_0D,
+    /// Flux expansion from the outboard midplane to the outboard strike point on the active
+    /// X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`. The
+    /// outboard midplane is at the height of the magnetic axis. This excludes the additional
+    /// expansion along the target caused by the field-line incidence angle
+    /// Units: dimensionless
+    pub f_x: FLT_0D,
     /// Loop voltage at the plasma boundary, `-d(boundary/psi)/d(time)`, by finite differences over
     /// the reconstruction times. Distinct from the data dictionary's `v_external`, which
     /// differentiates `psi_external_average` instead
@@ -218,6 +214,8 @@ pub struct EquilibriumCodeGrid {
 pub struct EquilibriumCodeNumerics {
     /// Bounds on the Picard iteration loop
     pub iterations: EquilibriumCodeNumericsIterations,
+    /// Mixing of the previous iteration's degrees of freedom into the current ones
+    pub anderson_mixing: EquilibriumCodeNumericsAndersonMixing,
     /// Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
     /// converged
     /// Units: mixed
@@ -232,6 +230,16 @@ pub struct EquilibriumCodeNumericsIterations {
     pub n_min: INT_0D,
     /// Number of initial iterations for which the vertical feedback is switched off
     pub n_no_vertical_feedback: INT_0D,
+}
+
+/// Mixing of the previous iteration's degrees of freedom into the current ones
+pub struct EquilibriumCodeNumericsAndersonMixing {
+    /// Whether the mixing is applied; 0 for off, 1 for on. The data dictionary has no boolean
+    /// base type, so this is an integer
+    pub r#use: INT_0D,
+    /// Fraction of the previous iteration's degrees of freedom mixed into the current ones
+    /// Units: dimensionless
+    pub mixing_from_previous_iter: FLT_0D,
 }
 
 /// Initial guess for the plasma, used to seed the first iteration.

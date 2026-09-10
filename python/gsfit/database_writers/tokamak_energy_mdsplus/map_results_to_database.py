@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs.imas import equilibrium_paths as ep
+from scipy.constants import mu_0
 
 # from st40_database import GetData
 
@@ -37,10 +38,8 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("GLOBAL", "ELON"), ep.time_slice[:].boundary.elongation),
     (("GLOBAL", "PHI_DIA"), ep.time_slice[:].constraints.diamagnetic_flux.reconstructed),
     (("GLOBAL", "GS_ERROR"), ep.time_slice[:].convergence.grad_shafranov_deviation_value),
-    (("GLOBAL", "I_ROD"), ep.time_slice[:].global_quantities.i_rod),
     (("GLOBAL", "IP"), ep.time_slice[:].global_quantities.ip),
     (("GLOBAL", "N_ITER"), ep.time_slice[:].convergence.iterations_n),
-    (("GLOBAL", "P"), ep.time_slice[:].global_quantities.pressure_2d_sum),
     (("GLOBAL", "PSI_A"), ep.time_slice[:].global_quantities.psi_magnetic_axis),
     (("GLOBAL", "PSI_B"), ep.time_slice[:].boundary.psi),
     (("GLOBAL", "Q0"), ep.time_slice[:].global_quantities.q_axis),
@@ -155,6 +154,12 @@ def map_results_to_database(
     # The data dictionary defines `beta_tor` as a fraction, but this MDSplus node has always held a
     # percentage, so the factor of 100 is put back here rather than changing what consumers read
     results["GLOBAL"]["BETA_T"] = 100.0 * np.asarray(equilibrium_ids.get(ep.time_slice[:].global_quantities.beta_tor))
+
+    # The rod current is not a data dictionary node. It is recovered from the vacuum toroidal
+    # field, `f_vac = r0 * b0 = mu_0 * i_rod / (2 * pi)`
+    r0 = equilibrium_ids.get(ep.vacuum_toroidal_field.r0)
+    b0 = np.asarray(equilibrium_ids.get(ep.vacuum_toroidal_field.b0))
+    results["GLOBAL"]["I_ROD"] = 2.0 * np.pi * r0 * b0 / mu_0
 
 
     # Bp probes (note, this is all the sensors, both the ones we fit and the ones we don't)

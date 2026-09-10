@@ -73,13 +73,6 @@ def solve_grad_shafranov(
     pressure_sensors: Pressure,
     stationary_point: StationaryPoint,
     dialoop: Dialoop,
-    times_to_reconstruct: npt.NDArray[np.float64],
-    n_iter_max: int,
-    n_iter_min: int,
-    n_iter_no_vertical_feedback: int,
-    gs_error: float,
-    use_anderson_mixing: bool,
-    anderson_mixing_from_previous_iter: float,
 ) -> None:
     """
     :param plasma: Plasma object, note this is mutated and contains the solution
@@ -95,13 +88,9 @@ def solve_grad_shafranov(
     :param pressure_sensors: Pressure object, note this is mutated and contains the solution
     :param stationary_point: StationaryPoint object, note this is mutated and contains the solution
     :param dialoop: Dialoop object, note this is mutated and contains the solution
-    :param times_to_reconstruct: Times to reconstruct [second]
-    :param n_iter_max: Maximum number of iterations
-    :param n_iter_min: Minimum number of iterations
-    :param n_iter_no_vertical_feedback: Number of iterations without vertical feedback
-    :param gs_error: GS error
-    :param use_anderson_mixing: Whether to use Anderson mixing
-    :param anderson_mixing_from_previous_iter: Anderson mixing factor from the previous iteration [dimensionless]
+
+    The times to reconstruct are read from `plasma`, which was built with one equilibrium
+    time-slice per time.
     """
     ...
 
@@ -425,6 +414,12 @@ class Plasma(DataTreeAccessor):
         initial_guess_cur_z: float,
         initial_guess_minor_radius: float,
         initial_guess_elongation: float,
+        n_iter_max: int,
+        n_iter_min: int,
+        n_iter_no_vertical_feedback: int,
+        gs_error: float,
+        use_anderson_mixing: bool,
+        anderson_mixing_from_previous_iter: float,
         times_to_reconstruct: npt.NDArray[np.float64],
     ) -> Plasma:
         """
@@ -442,6 +437,12 @@ class Plasma(DataTreeAccessor):
         :param initial_guess_cur_z: Vertical centre of the initial current distribution [metre]
         :param initial_guess_minor_radius: Radial semi-axis of the initial current distribution [metre]
         :param initial_guess_elongation: Elongation of the initial current distribution [dimensionless]
+        :param n_iter_max: Maximum number of iterations
+        :param n_iter_min: Minimum number of iterations before the convergence test may pass
+        :param n_iter_no_vertical_feedback: Number of initial iterations with the vertical feedback switched off
+        :param gs_error: Grad-Shafranov deviation below which the solution is taken as converged
+        :param use_anderson_mixing: Whether to use Anderson mixing
+        :param anderson_mixing_from_previous_iter: Anderson mixing factor from the previous iteration [dimensionless]
         :param times_to_reconstruct: Times the equilibrium will be solved at; one equilibrium time-slice is allocated per time [second]
         """
         ...

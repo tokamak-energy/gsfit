@@ -1188,8 +1188,11 @@ def add_custom_keys_to_equilibrium_ids(
     }
 
     struct_pattern = re.compile(r"pub\s+struct\s+(\w+)\s*\{(.*?)\n\}", re.DOTALL)
+    # `(?:r#)?` so a key whose name is a Rust keyword can be written as the raw identifier it has
+    # to be in the generated code; the bare name is captured, and `sanitize_rust_identifier`
+    # puts the `r#` back
     field_pattern = re.compile(
-        r"((?:\s*///.*\n)*)\s*pub\s+(\w+)\s*:\s*([^,]+?)\s*,", re.MULTILINE
+        r"((?:\s*///.*\n)*)\s*pub\s+(?:r#)?(\w+)\s*:\s*([^,]+?)\s*,", re.MULTILINE
     )
 
     # A struct name which is not already generated declares a *new* nested type, e.g. the

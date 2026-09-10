@@ -7637,26 +7637,6 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
         }),
     },
     Node {
-        name: "i_rod",
-        documentation: "Current flowing in the central rod of the toroidal field coil. It sets the vacuum
-toroidal field function `f_vac = mu_0 * i_rod / (2 * pi)`, which the diamagnetic loop
-constraint is written against. Signed: a negative value is a reversed toroidal field",
-        units: "A",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.i_rod.clone() },
-                )
-            },
-        }),
-    },
-    Node {
         name: "beta_pol_1",
         documentation: "Poloidal beta normalised to the flux-surface-averaged poloidal field:
 `2 * mu_0 * <p> / <<b_p ** 2>>`, where `<x>` is the volume average and `<<x>>` the
@@ -7719,7 +7699,7 @@ vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead",
     Node {
         name: "bt_vac_at_r_geo",
         documentation: "Vacuum toroidal magnetic field at the plasma geometric axis,
-`mu_0 * i_rod / (2 * pi * boundary/geometric_axis/r)`. Distinct from
+`vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
 `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
 `vacuum_toroidal_field/r0` rather than following the plasma",
         units: "T",
@@ -7781,29 +7761,7 @@ The data dictionary's own `li_3` is the same quantity normalised to
         }),
     },
     Node {
-        name: "pressure_2d_sum",
-        documentation: "Plain sum of `profiles_2d/pressure` over every grid cell. Not an integral: the cells are
-not weighted by their volume, so this is a diagnostic of the 2D pressure rather than a
-physical quantity. Kept because GSFit has always reported it as `global/p`",
-        units: "Pa",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.pressure_2d_sum.clone()
-                    },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "d_r_sep",
+        name: "delta_r_sep",
         documentation: "Radial separation of the two separatrices at the height of the magnetic axis, on the
 outboard side: `r_outboard(psi at the lower X-point) - r_outboard(psi at the upper
 X-point)`. So it is negative for a lower single null, positive for an upper single null,
@@ -7824,7 +7782,28 @@ on a centimetre grid",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.d_r_sep.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.delta_r_sep.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "f_x",
+        documentation: "Flux expansion from the outboard midplane to the outboard strike point on the active
+X-point's last closed flux surface, `(r_omp * b_p_omp) / (r_strike * b_p_strike)`. The
+outboard midplane is at the height of the magnetic axis. This excludes the additional
+expansion along the target caused by the field-line incidence angle",
+        units: "dimensionless",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.f_x.clone() },
                 )
             },
         }),
@@ -11333,12 +11312,60 @@ static NODES_CODE_NUMERICS_ITERATIONS: &[Node] = &[
     },
 ];
 
+static NODES_CODE_NUMERICS_ANDERSON_MIXING: &[Node] = &[
+    Node {
+        name: "use",
+        documentation: "Whether the mixing is applied; 0 for off, 1 for on. The data dictionary has no boolean
+base type, so this is an integer",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.numerics.anderson_mixing.r#use.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "mixing_from_previous_iter",
+        documentation: "Fraction of the previous iteration's degrees of freedom mixed into the current ones",
+        units: "dimensionless",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    0,
+                    no_levels,
+                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> {
+                        equilibrium.code.numerics.anderson_mixing.mixing_from_previous_iter.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
 static NODES_CODE_NUMERICS: &[Node] = &[
     Node {
         name: "iterations",
         documentation: "Bounds on the Picard iteration loop",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_NUMERICS_ITERATIONS),
+    },
+    Node {
+        name: "anderson_mixing",
+        documentation: "Mixing of the previous iteration's degrees of freedom into the current ones",
+        units: "",
+        kind: NodeKind::Structure(NODES_CODE_NUMERICS_ANDERSON_MIXING),
     },
     Node {
         name: "grad_shafranov_deviation_tolerance",

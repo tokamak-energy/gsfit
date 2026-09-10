@@ -47,6 +47,12 @@ impl Plasma {
     /// * `initial_guess_cur_z` - vertical centre of the initial current distribution, [metre]
     /// * `initial_guess_minor_radius` - radial semi-axis of the initial current distribution, [metre]
     /// * `initial_guess_elongation` - elongation of the initial current distribution, [dimensionless]
+    /// * `n_iter_max` - maximum number of Picard iterations, [dimensionless]
+    /// * `n_iter_min` - minimum number of Picard iterations before the convergence test may pass, [dimensionless]
+    /// * `n_iter_no_vertical_feedback` - number of initial iterations with the vertical feedback off, [dimensionless]
+    /// * `gs_error` - Grad-Shafranov deviation below which the solution is taken as converged, [mixed]
+    /// * `use_anderson_mixing` - whether Anderson mixing is applied
+    /// * `anderson_mixing_from_previous_iter` - fraction of the previous iteration mixed in, [dimensionless]
     /// * `times_to_reconstruct` - the times the equilibrium will be solved at (1d array), [second].
     ///   One equilibrium time-slice is allocated per time, so that the IDS is fully formed before
     ///   the Green's tables are built
@@ -71,6 +77,12 @@ impl Plasma {
         initial_guess_cur_z: f64,
         initial_guess_minor_radius: f64,
         initial_guess_elongation: f64,
+        n_iter_max: usize,
+        n_iter_min: usize,
+        n_iter_no_vertical_feedback: usize,
+        gs_error: f64,
+        use_anderson_mixing: bool,
+        anderson_mixing_from_previous_iter: f64,
         times_to_reconstruct: PyReadonlyArray1<f64>,
     ) -> Self {
         // Change Python types into Rust types
@@ -221,6 +233,14 @@ impl Plasma {
         equilibrium_ids.code.initial_guess.cur_z = Some(initial_guess_cur_z);
         equilibrium_ids.code.initial_guess.minor_radius = Some(initial_guess_minor_radius);
         equilibrium_ids.code.initial_guess.elongation = Some(initial_guess_elongation);
+
+        equilibrium_ids.code.numerics.iterations.n_max = Some(n_iter_max as i32);
+        equilibrium_ids.code.numerics.iterations.n_min = Some(n_iter_min as i32);
+        equilibrium_ids.code.numerics.iterations.n_no_vertical_feedback = Some(n_iter_no_vertical_feedback as i32);
+        equilibrium_ids.code.numerics.grad_shafranov_deviation_tolerance = Some(gs_error);
+        // The data dictionary has no boolean base type, so the flag is stored as 0 or 1
+        equilibrium_ids.code.numerics.anderson_mixing.r#use = Some(use_anderson_mixing as i32);
+        equilibrium_ids.code.numerics.anderson_mixing.mixing_from_previous_iter = Some(anderson_mixing_from_previous_iter);
 
         equilibrium_ids.greens.grid_grid = greens_grid_grid;
 

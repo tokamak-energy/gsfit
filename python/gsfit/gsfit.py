@@ -267,8 +267,6 @@ class Gsfit(DiagnosticAndSimulationBase):
         stationary_point = self.stationary_point
         dialoop = self.dialoop
 
-        times_to_reconstruct = self.results["TIME"]
-
         self.logger.info(msg="About to call: `gsfit_rs.solve_grad_shafranov`")
         # Note: the solution to the GS equation is stored inside: `plasma`, `passives`, `bp_probes`, `flux_loops`, and `rogowski_coils`
         tic = time_py.time()
@@ -286,13 +284,6 @@ class Gsfit(DiagnosticAndSimulationBase):
             pressure_sensors,
             stationary_point,
             dialoop,
-            times_to_reconstruct,
-            self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"],
-            self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_min"],
-            self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_no_vertical_feedback"],
-            self.settings["GSFIT_code_settings.json"]["numerics"]["gs_error"],
-            self.settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["use"],
-            self.settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["mixing_from_previous_iter"],
         )
         toc = time_py.time()
         self.logger.info(msg=f"Finished: `gsfit_rs.solve_inverse_problem` time = {(toc - tic) * 1e3:,.2f}ms")

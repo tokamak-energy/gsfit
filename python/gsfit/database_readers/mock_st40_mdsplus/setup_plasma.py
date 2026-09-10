@@ -7,8 +7,6 @@ from gsfit_rs import EfitPolynomial
 from gsfit_rs import Plasma
 from gsfit_rs import TensionedCubicBSpline
 
-from .mock_get_data import MockGetData
-
 if TYPE_CHECKING:
     from . import DatabaseReader
 
@@ -38,6 +36,14 @@ def setup_plasma(
     initial_guess_minor_radius = settings["GSFIT_code_settings.json"]["initial_guess"]["minor_radius"]
     initial_guess_elongation = settings["GSFIT_code_settings.json"]["initial_guess"]["elongation"]
 
+    # Numerical settings the Grad-Shafranov solve is run with
+    n_iter_max = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"]
+    n_iter_min = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_min"]
+    n_iter_no_vertical_feedback = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_no_vertical_feedback"]
+    gs_error = settings["GSFIT_code_settings.json"]["numerics"]["gs_error"]
+    use_anderson_mixing = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["use"]
+    anderson_mixing_from_previous_iter = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["mixing_from_previous_iter"]
+
     # Set the source functions types
     p_prime_source_function = build_source_function(settings["source_function_p_prime.json"])
     ff_prime_source_function = build_source_function(settings["source_function_ff_prime.json"])
@@ -53,22 +59,6 @@ def setup_plasma(
     # Normalised poloidal flux grid
     n_psi_n = settings["GSFIT_code_settings.json"]["n_psi_n"]
     psi_n = np.linspace(0.0, 1.0, n_psi_n).astype(np.float64)
-
-    # Limiter
-    elmag = MockGetData.from_workflow(settings, pulseNo, "elmag")
-    limit_pts_r = typing.cast(npt.NDArray[np.float64], elmag.get("LIMITER.LIMIT_PTS.R"))
-    limit_pts_z = typing.cast(npt.NDArray[np.float64], elmag.get("LIMITER.LIMIT_PTS.Z"))
-
-    # Vacuum vessel where the plasma is allowed to be
-    vessel_r = limit_pts_r
-    vessel_z = limit_pts_z
-
-    # Add lower MC tiles
-    limit_pts_r = np.append(limit_pts_r, 0.7103)
-    limit_pts_z = np.append(limit_pts_z, -0.3131)
-    # Add upper MC tiles
-    limit_pts_r = np.append(limit_pts_r, 0.7103)
-    limit_pts_z = np.append(limit_pts_z, 0.3031)
 
     # Initialise the Plasma Rust class
     plasma = Plasma(
@@ -86,6 +76,12 @@ def setup_plasma(
         initial_guess_cur_z,
         initial_guess_minor_radius,
         initial_guess_elongation,
+        n_iter_max,
+        n_iter_min,
+        n_iter_no_vertical_feedback,
+        gs_error,
+        use_anderson_mixing,
+        anderson_mixing_from_previous_iter,
         times_to_reconstruct,
     )
 
