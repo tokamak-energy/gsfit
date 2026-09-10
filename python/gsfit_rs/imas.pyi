@@ -3908,6 +3908,40 @@ data dictionary's `rho_tor_norm`, which the data dictionary itself does not defi
         Units: dimensionless
         """
 
+class _EquilibriumProfiles1dRMidplaneItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of each point along the mid-plane, which is the grid's own radial axis
+
+        Units: m
+        """
+    @property
+    def pressure(self) -> Path[npt.NDArray[np.float64]]:
+        """Plasma pressure along the mid-plane. Zero outside the plasma boundary
+
+        Units: Pa
+        """
+
+class _EquilibriumProfiles1dRMidplaneMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of each point along the mid-plane, which is the grid's own radial axis
+
+        Units: m
+        """
+    @property
+    def pressure(self) -> Path[npt.NDArray[np.float64]]:
+        """Plasma pressure along the mid-plane. Zero outside the plasma boundary
+
+        Units: Pa
+        """
+
 class _EquilibriumProfiles1dRz1dDynamicAosItem:
     """Structure for list of R, Z positions (1D list of Npoints, dynamic within a type 3 array of structures (index on time)), with coordinates referring to profiles_1d/psi
     """
@@ -4274,40 +4308,6 @@ the grid is rectangular and uniformly spaced in both directions
         Units: m^2
         """
 
-class _EquilibriumProfilesRMidplaneItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
-
-    @property
-    def r(self) -> Path[npt.NDArray[np.float64]]:
-        """Major radius of each point along the mid-plane, which is the grid's own radial axis
-
-        Units: m
-        """
-    @property
-    def pressure(self) -> Path[npt.NDArray[np.float64]]:
-        """Plasma pressure along the mid-plane. Zero outside the plasma boundary
-
-        Units: Pa
-        """
-
-class _EquilibriumProfilesRMidplaneMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
-
-    @property
-    def r(self) -> Path[npt.NDArray[np.float64]]:
-        """Major radius of each point along the mid-plane, which is the grid's own radial axis
-
-        Units: m
-        """
-    @property
-    def pressure(self) -> Path[npt.NDArray[np.float64]]:
-        """Plasma pressure along the mid-plane. Zero outside the plasma boundary
-
-        Units: Pa
-        """
-
 class _EquilibriumSolItem:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
     """
@@ -4523,7 +4523,7 @@ class _EquilibriumTimeSliceItem:
         """Source functions which parameterise the plasma current profile
         """
     @property
-    def profiles_r_midplane(self) -> _EquilibriumProfilesRMidplaneItem:
+    def profiles_1d_r_midplane(self) -> _EquilibriumProfiles1dRMidplaneItem:
         """Profiles along the horizontal line through the middle of the grid
         """
     @property
@@ -4588,7 +4588,7 @@ class _EquilibriumTimeSliceMany:
         """Source functions which parameterise the plasma current profile
         """
     @property
-    def profiles_r_midplane(self) -> _EquilibriumProfilesRMidplaneMany:
+    def profiles_1d_r_midplane(self) -> _EquilibriumProfiles1dRMidplaneMany:
         """Profiles along the horizontal line through the middle of the grid
         """
     @property
@@ -13119,3 +13119,970 @@ class _WallPaths:
     def code(self) -> _WallCodeItem: ...
 
 wall_paths: _WallPaths
+
+class Magnetics:
+    """Magnetic diagnostics for equilibrium identification and plasma shape control."""
+
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path` out of this IDS.
+
+        The shape of the result follows the shape of the index: an integer index
+        gives one value, a slice gathers. Unset floats read back as NaN.
+        """
+    def __len__(self) -> int:
+        """The number of time slices held by this IDS."""
+    def __repr__(self) -> str: ...
+
+# ==========================================================================
+# magnetics path nodes
+# ==========================================================================
+
+class _MagneticsCodeItem:
+    """Generic decription of the code-specific parameters for the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Name of software generating IDS
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[str | None]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[str | None]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[str | None]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[str | None]:
+        """List of the code specific parameters in XML format
+        """
+    @property
+    def output_flag(self) -> Path[npt.NDArray[np.int32]]:
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
+        """
+    @property
+    def library(self) -> _MagneticsLibraryArrayFromItem:
+        """List of external libraries used by the code that has produced this IDS
+        """
+
+class _MagneticsCodeMany:
+    """Generic decription of the code-specific parameters for the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Name of software generating IDS
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[list[str | None]]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[list[str | None]]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[list[str | None]]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[list[str | None]]:
+        """List of the code specific parameters in XML format
+        """
+    @property
+    def output_flag(self) -> Path[npt.NDArray[np.int32]]:
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
+        """
+    @property
+    def library(self) -> _MagneticsLibraryArrayFromMany:
+        """List of external libraries used by the code that has produced this IDS
+        """
+
+class _MagneticsIdentifierStaticItem:
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[int]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Verbose description
+        """
+
+class _MagneticsIdentifierStaticMany:
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[npt.NDArray[np.int32]]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Verbose description
+        """
+
+class _MagneticsLibraryItem:
+    """Library used by the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Name of software
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[str | None]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[str | None]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[str | None]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[str | None]:
+        """List of the code specific parameters in XML format
+        """
+
+class _MagneticsLibraryMany:
+    """Library used by the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Name of software
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[list[str | None]]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[list[str | None]]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[list[str | None]]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[list[str | None]]:
+        """List of the code specific parameters in XML format
+        """
+
+class _MagneticsLineOfSight2pointsRzItem:
+    """Generic description of a line of sight, defined by two points, in R and Z only
+    """
+
+    @property
+    def first_point(self) -> _MagneticsRz0dStaticItem:
+        """Position of the first point
+        """
+    @property
+    def second_point(self) -> _MagneticsRz0dStaticItem:
+        """Position of the second point
+        """
+
+class _MagneticsLineOfSight2pointsRzMany:
+    """Generic description of a line of sight, defined by two points, in R and Z only
+    """
+
+    @property
+    def first_point(self) -> _MagneticsRz0dStaticMany:
+        """Position of the first point
+        """
+    @property
+    def second_point(self) -> _MagneticsRz0dStaticMany:
+        """Position of the second point
+        """
+
+class _MagneticsBpolProbeItem:
+    """Poloidal field probes
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def type(self) -> _MagneticsIdentifierStaticItem:
+        """Probe type
+        """
+    @property
+    def position(self) -> _MagneticsRphiz0dStaticItem:
+        """R, Z, Phi position of the coil centre
+        """
+    @property
+    def poloidal_angle(self) -> Path[float]:
+        """Angle of the sensor normal vector (vector parallel to the the axis of the coil, n on the diagram) with respect to horizontal plane (clockwise theta-like angle). Zero if sensor normal vector fully in the horizontal plane and oriented towards increasing major radius. Values in [0 , 2Pi]
+
+        Units: rad
+        """
+    @property
+    def toroidal_angle(self) -> Path[float]:
+        """Angle of the projection of the sensor normal vector (n) in the horizontal plane with the increasing R direction (i.e. grad(R)) (angle is counter-clockwise from above). Values should be taken modulo pi with values within (-pi/2,pi/2]. Zero if projected sensor normal is parallel to grad(R), pi/2 if it is parallel to grad(phi).
+
+        Units: rad
+        """
+    @property
+    def indices_differential(self) -> Path[npt.NDArray[np.int32]]:
+        """Indices (from the b_field_pol_probe array of structure) of the two probes used to build the field difference field(second index) - field(first index). Use only if ../type/index = 6, leave empty otherwise
+        """
+    @property
+    def bandwidth_3db(self) -> Path[npt.NDArray[np.float64]]:
+        """3dB bandwith (first index : lower frequency bound, second index : upper frequency bound)
+
+        Units: Hz
+        """
+    @property
+    def area(self) -> Path[float]:
+        """Area of each turn of the sensor; becomes effective area when multiplied by the turns
+
+        Units: m^2
+        """
+    @property
+    def length(self) -> Path[float]:
+        """Length of the sensor along it's normal vector (n)
+
+        Units: m
+        """
+    @property
+    def turns(self) -> Path[int]:
+        """Turns in the coil, including sign
+        """
+    @property
+    def field(self) -> _MagneticsSignalFlt1dValidityItem:
+        """Magnetic field component in direction of sensor normal axis (n) averaged over sensor volume defined by area and length, where n = cos(poloidal_angle)*cos(toroidal_angle)*grad(R) - sin(poloidal_angle)*grad(Z) + cos(poloidal_angle)*sin(toroidal_angle)*grad(Phi)/norm(grad(Phi))
+
+        Units: T
+        """
+    @property
+    def voltage(self) -> _MagneticsSignalFlt1dValidityItem:
+        """Voltage on the coil terminals
+
+        Units: V
+        """
+    @property
+    def non_linear_response(self) -> _MagneticsBpolProbeNonLinearItem:
+        """Non-linear response of the probe (typically in case of a Hall probe)
+        """
+
+class _MagneticsBpolProbeMany:
+    """Poloidal field probes
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def type(self) -> _MagneticsIdentifierStaticMany:
+        """Probe type
+        """
+    @property
+    def position(self) -> _MagneticsRphiz0dStaticMany:
+        """R, Z, Phi position of the coil centre
+        """
+    @property
+    def poloidal_angle(self) -> Path[npt.NDArray[np.float64]]:
+        """Angle of the sensor normal vector (vector parallel to the the axis of the coil, n on the diagram) with respect to horizontal plane (clockwise theta-like angle). Zero if sensor normal vector fully in the horizontal plane and oriented towards increasing major radius. Values in [0 , 2Pi]
+
+        Units: rad
+        """
+    @property
+    def toroidal_angle(self) -> Path[npt.NDArray[np.float64]]:
+        """Angle of the projection of the sensor normal vector (n) in the horizontal plane with the increasing R direction (i.e. grad(R)) (angle is counter-clockwise from above). Values should be taken modulo pi with values within (-pi/2,pi/2]. Zero if projected sensor normal is parallel to grad(R), pi/2 if it is parallel to grad(phi).
+
+        Units: rad
+        """
+    @property
+    def indices_differential(self) -> Path[npt.NDArray[np.int32]]:
+        """Indices (from the b_field_pol_probe array of structure) of the two probes used to build the field difference field(second index) - field(first index). Use only if ../type/index = 6, leave empty otherwise
+        """
+    @property
+    def bandwidth_3db(self) -> Path[npt.NDArray[np.float64]]:
+        """3dB bandwith (first index : lower frequency bound, second index : upper frequency bound)
+
+        Units: Hz
+        """
+    @property
+    def area(self) -> Path[npt.NDArray[np.float64]]:
+        """Area of each turn of the sensor; becomes effective area when multiplied by the turns
+
+        Units: m^2
+        """
+    @property
+    def length(self) -> Path[npt.NDArray[np.float64]]:
+        """Length of the sensor along it's normal vector (n)
+
+        Units: m
+        """
+    @property
+    def turns(self) -> Path[npt.NDArray[np.int32]]:
+        """Turns in the coil, including sign
+        """
+    @property
+    def field(self) -> _MagneticsSignalFlt1dValidityMany:
+        """Magnetic field component in direction of sensor normal axis (n) averaged over sensor volume defined by area and length, where n = cos(poloidal_angle)*cos(toroidal_angle)*grad(R) - sin(poloidal_angle)*grad(Z) + cos(poloidal_angle)*sin(toroidal_angle)*grad(Phi)/norm(grad(Phi))
+
+        Units: T
+        """
+    @property
+    def voltage(self) -> _MagneticsSignalFlt1dValidityMany:
+        """Voltage on the coil terminals
+
+        Units: V
+        """
+    @property
+    def non_linear_response(self) -> _MagneticsBpolProbeNonLinearMany:
+        """Non-linear response of the probe (typically in case of a Hall probe)
+        """
+
+class _MagneticsBpolProbeNonLinearItem:
+    """Non-linear response of the probe
+    """
+
+    @property
+    def b_field_linear(self) -> Path[npt.NDArray[np.float64]]:
+        """Array of magnetic field values (corresponding to the assumption of a linear relation between magnetic field and probe coil current), for each of which the probe non-linear response is given in ../b_field_non_linear
+
+        Units: T
+        """
+    @property
+    def b_field_non_linear(self) -> Path[npt.NDArray[np.float64]]:
+        """Magnetic field value taking into account the non-linear response of the probe
+
+        Units: T
+        """
+
+class _MagneticsBpolProbeNonLinearMany:
+    """Non-linear response of the probe
+    """
+
+    @property
+    def b_field_linear(self) -> Path[npt.NDArray[np.float64]]:
+        """Array of magnetic field values (corresponding to the assumption of a linear relation between magnetic field and probe coil current), for each of which the probe non-linear response is given in ../b_field_non_linear
+
+        Units: T
+        """
+    @property
+    def b_field_non_linear(self) -> Path[npt.NDArray[np.float64]]:
+        """Magnetic field value taking into account the non-linear response of the probe
+
+        Units: T
+        """
+
+class _MagneticsFluxLoopItem:
+    """Flux loops
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def type(self) -> _MagneticsIdentifierStaticItem:
+        """Flux loop type
+        """
+    @property
+    def position(self) -> _MagneticsRphiz0dStaticArrayFromItem:
+        """List of (R,phi,Z) points defining the outline of the flux loop. Leave empty if ../type/index = 6 (differential loop)
+        """
+    @property
+    def indices_differential(self) -> Path[npt.NDArray[np.int32]]:
+        """Indices (from the flux_loop array of structures) of the two loops used to build a differential measurement: loop(second index) - loop(first index). Use only if ../type/index = 6, leave empty otherwise.
+        """
+    @property
+    def area(self) -> Path[float]:
+        """Effective area (ratio between flux and average magnetic field over the loop). Leave empty if ../type/index = 6 (differential loop)
+
+        Units: m^2
+        """
+    @property
+    def gm9(self) -> Path[float]:
+        """Integral of 1/R over the loop area (ratio between flux and magnetic rigidity R0.B0). Use only if ../type/index = 3 to 5, leave empty otherwise.
+
+        Units: m
+        """
+    @property
+    def flux(self) -> _MagneticsSignalFlt1dValidityItem:
+        """Measured magnetic flux through loop with normal to enclosed surface determined by order of points
+
+        Units: Wb
+        """
+    @property
+    def voltage(self) -> _MagneticsSignalFlt1dValidityItem:
+        """Measured voltage between the loop terminals
+
+        Units: V
+        """
+
+class _MagneticsFluxLoopMany:
+    """Flux loops
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def type(self) -> _MagneticsIdentifierStaticMany:
+        """Flux loop type
+        """
+    @property
+    def position(self) -> _MagneticsRphiz0dStaticArrayFromMany:
+        """List of (R,phi,Z) points defining the outline of the flux loop. Leave empty if ../type/index = 6 (differential loop)
+        """
+    @property
+    def indices_differential(self) -> Path[npt.NDArray[np.int32]]:
+        """Indices (from the flux_loop array of structures) of the two loops used to build a differential measurement: loop(second index) - loop(first index). Use only if ../type/index = 6, leave empty otherwise.
+        """
+    @property
+    def area(self) -> Path[npt.NDArray[np.float64]]:
+        """Effective area (ratio between flux and average magnetic field over the loop). Leave empty if ../type/index = 6 (differential loop)
+
+        Units: m^2
+        """
+    @property
+    def gm9(self) -> Path[npt.NDArray[np.float64]]:
+        """Integral of 1/R over the loop area (ratio between flux and magnetic rigidity R0.B0). Use only if ../type/index = 3 to 5, leave empty otherwise.
+
+        Units: m
+        """
+    @property
+    def flux(self) -> _MagneticsSignalFlt1dValidityMany:
+        """Measured magnetic flux through loop with normal to enclosed surface determined by order of points
+
+        Units: Wb
+        """
+    @property
+    def voltage(self) -> _MagneticsSignalFlt1dValidityMany:
+        """Measured voltage between the loop terminals
+
+        Units: V
+        """
+
+class _MagneticsMethodDistinctItem:
+    """Processed quantities derived from the magnetic measurements, using various methods
+    """
+
+    @property
+    def method_name(self) -> Path[str | None]:
+        """Name of the calculation method
+        """
+    @property
+    def data(self) -> Path[npt.NDArray[np.float64]]:
+        """Data
+
+        Units: as_parent
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Time
+
+        Units: s
+        """
+
+class _MagneticsMethodDistinctMany:
+    """Processed quantities derived from the magnetic measurements, using various methods
+    """
+
+    @property
+    def method_name(self) -> Path[list[str | None]]:
+        """Name of the calculation method
+        """
+    @property
+    def data(self) -> Path[npt.NDArray[np.float64]]:
+        """Data
+
+        Units: as_parent
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Time
+
+        Units: s
+        """
+
+class _MagneticsRogowskiItem:
+    """Rogowski coil
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def measured_quantity(self) -> _MagneticsIdentifierStaticItem:
+        """Quantity measured by the sensor
+        """
+    @property
+    def position(self) -> _MagneticsRphiz0dStaticArrayFromItem:
+        """List of (R,Z,phi) points defining the position of the coil guiding centre. Values defining a single segment must be entered in contiguous order
+        """
+    @property
+    def indices_compound(self) -> Path[npt.NDArray[np.int32]]:
+        """Indices (from the rogowski_coil array of structure) of the partial Rogowskis used to build the coumpound signal (sum of the partial Rogowski signals). Can be set to any unique integer value for each section of a compound Rogowski coil. Use only if ../measure_quantity/index = 5, leave empty otherwise
+        """
+    @property
+    def area(self) -> Path[float]:
+        """Effective area of the loop wrapped around the guiding centre. In case of multiple layers, sum of the areas of each layer
+
+        Units: m^2
+        """
+    @property
+    def turns_per_metre(self) -> Path[float]:
+        """Number of turns per unit length. In case of multiple layers, turns are counted for a single layer
+
+        Units: m^-1
+        """
+    @property
+    def current(self) -> _MagneticsSignalFlt1dValidityItem:
+        """Measured current inside the Rogowski coil contour. The normal direction to the Rogowski coil is defined by the order of points in the list of guiding centre positions. The current is positive when oriented in the same direction as the normal.
+
+        Units: A
+        """
+
+class _MagneticsRogowskiMany:
+    """Rogowski coil
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def measured_quantity(self) -> _MagneticsIdentifierStaticMany:
+        """Quantity measured by the sensor
+        """
+    @property
+    def position(self) -> _MagneticsRphiz0dStaticArrayFromMany:
+        """List of (R,Z,phi) points defining the position of the coil guiding centre. Values defining a single segment must be entered in contiguous order
+        """
+    @property
+    def indices_compound(self) -> Path[npt.NDArray[np.int32]]:
+        """Indices (from the rogowski_coil array of structure) of the partial Rogowskis used to build the coumpound signal (sum of the partial Rogowski signals). Can be set to any unique integer value for each section of a compound Rogowski coil. Use only if ../measure_quantity/index = 5, leave empty otherwise
+        """
+    @property
+    def area(self) -> Path[npt.NDArray[np.float64]]:
+        """Effective area of the loop wrapped around the guiding centre. In case of multiple layers, sum of the areas of each layer
+
+        Units: m^2
+        """
+    @property
+    def turns_per_metre(self) -> Path[npt.NDArray[np.float64]]:
+        """Number of turns per unit length. In case of multiple layers, turns are counted for a single layer
+
+        Units: m^-1
+        """
+    @property
+    def current(self) -> _MagneticsSignalFlt1dValidityMany:
+        """Measured current inside the Rogowski coil contour. The normal direction to the Rogowski coil is defined by the order of points in the list of guiding centre positions. The current is positive when oriented in the same direction as the normal.
+
+        Units: A
+        """
+
+class _MagneticsShuntItem:
+    """Shunt for current measurement (often located in the divertor structure)
+    """
+
+    @property
+    def name(self) -> Path[str | None]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str | None]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def position(self) -> _MagneticsLineOfSight2pointsRzItem:
+        """Position of shunt terminals
+        """
+    @property
+    def resistance(self) -> Path[float]:
+        """Shunt resistance
+
+        Units: ohm
+        """
+    @property
+    def voltage(self) -> _MagneticsSignalFlt1dValidityItem:
+        """Voltage on the shunt terminals (Vfirst_point-Vsecond_point)
+
+        Units: V
+        """
+    @property
+    def divertor_index(self) -> Path[int]:
+        """If the shunt is located on a given divertor, index of that divertor in the divertors IDS
+        """
+    @property
+    def target_index(self) -> Path[int]:
+        """If the shunt is located on a divertor target, index of that target in the divertors IDS
+        """
+    @property
+    def tile_index(self) -> Path[int]:
+        """If the shunt is located on a divertor tile, index of that tile in the divertors IDS
+        """
+
+class _MagneticsShuntMany:
+    """Shunt for current measurement (often located in the divertor structure)
+    """
+
+    @property
+    def name(self) -> Path[list[str | None]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[list[str | None]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def position(self) -> _MagneticsLineOfSight2pointsRzMany:
+        """Position of shunt terminals
+        """
+    @property
+    def resistance(self) -> Path[npt.NDArray[np.float64]]:
+        """Shunt resistance
+
+        Units: ohm
+        """
+    @property
+    def voltage(self) -> _MagneticsSignalFlt1dValidityMany:
+        """Voltage on the shunt terminals (Vfirst_point-Vsecond_point)
+
+        Units: V
+        """
+    @property
+    def divertor_index(self) -> Path[npt.NDArray[np.int32]]:
+        """If the shunt is located on a given divertor, index of that divertor in the divertors IDS
+        """
+    @property
+    def target_index(self) -> Path[npt.NDArray[np.int32]]:
+        """If the shunt is located on a divertor target, index of that target in the divertors IDS
+        """
+    @property
+    def tile_index(self) -> Path[npt.NDArray[np.int32]]:
+        """If the shunt is located on a divertor tile, index of that tile in the divertors IDS
+        """
+
+class _MagneticsRphiz0dStaticItem:
+    """Structure for R, Z, Phi positions (0D, static)
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def phi(self) -> Path[float]:
+        """Toroidal angle (oriented counter-clockwise when viewed from above)
+
+        Units: rad
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Height
+
+        Units: m
+        """
+
+class _MagneticsRphiz0dStaticMany:
+    """Structure for R, Z, Phi positions (0D, static)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def phi(self) -> Path[npt.NDArray[np.float64]]:
+        """Toroidal angle (oriented counter-clockwise when viewed from above)
+
+        Units: rad
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+class _MagneticsRz0dStaticItem:
+    """Structure for a single R, Z position (0D, static)
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Height
+
+        Units: m
+        """
+
+class _MagneticsRz0dStaticMany:
+    """Structure for a single R, Z position (0D, static)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+class _MagneticsSignalFlt1dValidityItem:
+    """Signal (FLT_1D) with its time base and validity flags
+    """
+
+    @property
+    def data(self) -> Path[npt.NDArray[np.float64]]:
+        """Data
+
+        Units: as_parent
+        """
+    @property
+    def validity_timed(self) -> Path[npt.NDArray[np.int32]]:
+        """Indicator of the validity of the data for each time slice. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)
+        """
+    @property
+    def validity(self) -> Path[int]:
+        """Indicator of the validity of the data for the whole acquisition period. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Time
+
+        Units: s
+        """
+
+class _MagneticsSignalFlt1dValidityMany:
+    """Signal (FLT_1D) with its time base and validity flags
+    """
+
+    @property
+    def data(self) -> Path[npt.NDArray[np.float64]]:
+        """Data
+
+        Units: as_parent
+        """
+    @property
+    def validity_timed(self) -> Path[npt.NDArray[np.int32]]:
+        """Indicator of the validity of the data for each time slice. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)
+        """
+    @property
+    def validity(self) -> Path[npt.NDArray[np.int32]]:
+        """Indicator of the validity of the data for the whole acquisition period. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Time
+
+        Units: s
+        """
+
+# --------------------------------------------------------------------------
+# magnetics arrays of structures
+# --------------------------------------------------------------------------
+
+class _MagneticsLibraryArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _MagneticsLibraryItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _MagneticsLibraryMany: ...
+
+class _MagneticsLibraryArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _MagneticsLibraryMany: ...
+
+class _MagneticsBpolProbeArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _MagneticsBpolProbeItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _MagneticsBpolProbeMany: ...
+
+class _MagneticsBpolProbeArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _MagneticsBpolProbeMany: ...
+
+class _MagneticsFluxLoopArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _MagneticsFluxLoopItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _MagneticsFluxLoopMany: ...
+
+class _MagneticsFluxLoopArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _MagneticsFluxLoopMany: ...
+
+class _MagneticsMethodDistinctArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _MagneticsMethodDistinctItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _MagneticsMethodDistinctMany: ...
+
+class _MagneticsMethodDistinctArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _MagneticsMethodDistinctMany: ...
+
+class _MagneticsRogowskiArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _MagneticsRogowskiItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _MagneticsRogowskiMany: ...
+
+class _MagneticsRogowskiArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _MagneticsRogowskiMany: ...
+
+class _MagneticsShuntArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _MagneticsShuntItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _MagneticsShuntMany: ...
+
+class _MagneticsShuntArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _MagneticsShuntMany: ...
+
+class _MagneticsRphiz0dStaticArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _MagneticsRphiz0dStaticItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _MagneticsRphiz0dStaticMany: ...
+
+class _MagneticsRphiz0dStaticArrayFromMany:
+    # Only one array-of-structures level may be sliced, so once a level above
+    # has been sliced this one takes an integer only.
+    def __getitem__(self, index: int) -> _MagneticsRphiz0dStaticMany: ...
+
+# --------------------------------------------------------------------------
+# magnetics root
+# --------------------------------------------------------------------------
+
+class _MagneticsPaths:
+    """Magnetic diagnostics for equilibrium identification and plasma shape control.
+    """
+
+    @property
+    def flux_loop(self) -> _MagneticsFluxLoopArrayFromItem:
+        """Flux loops; partial flux loops can be described. In case of differential loops, the geometry of differential flux loops is stored in the flux_loop indices of the primitive loops. Signals may be stored on the primitive loop indices but this is optional if the index of the primitive loop is referenced by a differential loop index
+        """
+    @property
+    def b_field_pol_probe(self) -> _MagneticsBpolProbeArrayFromItem:
+        """Poloidal field probes
+        """
+    @property
+    def b_field_pol_probe_equivalent(self) -> Path[npt.NDArray[np.int32]]:
+        """Indices of equivalent poloidal field probes (from the b_field_pol_probe array) that differ only by their toroidal position and have the same (R,Z) position and the same coil orientation (poloidal and toroidal angles). Sets of equivalent probes (i.e. sets of (R, Z, poloidal_angle and toroidal_angle) values) are grouped by the first coordinate and the coils belonging to a given set are listed along the second coordinate. As an example, if there are N probes in a poloidal cross section that are replicated at the same poloidal positions and with the same orientation at 8 toroidal positions, the matrix will be of size Nx8.
+        """
+    @property
+    def b_field_phi_probe(self) -> _MagneticsBpolProbeArrayFromItem:
+        """Toroidal field probes
+        """
+    @property
+    def rogowski_coil(self) -> _MagneticsRogowskiArrayFromItem:
+        """Set of Rogowski coils. If some of the coils form a compound Rogowski sensor, they must be entered in contiguous order
+        """
+    @property
+    def shunt(self) -> _MagneticsShuntArrayFromItem:
+        """Set of shunt resistances through which currents in the divertor structure are measured. Shunts are modelled as piecewise straight line segments in the poloidal plane.
+        """
+    @property
+    def ip(self) -> _MagneticsMethodDistinctArrayFromItem:
+        """Plasma current. Positive sign means counter-clockwise when viewed from above. The array of structure corresponds to a set of calculation methods (starting with the generally recommended method).
+
+        Units: A
+        """
+    @property
+    def diamagnetic_flux(self) -> _MagneticsMethodDistinctArrayFromItem:
+        """Diamagnetic flux. The array of structure corresponds to a set of calculation methods (starting with the generally recommended method). Positive sign means counter-clockwise when viewed from above
+
+        Units: Wb
+        """
+    @property
+    def latency(self) -> Path[float]:
+        """Upper bound of the delay between physical information received by the detector and data available on the real-time (RT) network.
+
+        Units: s
+        """
+    @property
+    def code(self) -> _MagneticsCodeItem: ...
+
+magnetics_paths: _MagneticsPaths

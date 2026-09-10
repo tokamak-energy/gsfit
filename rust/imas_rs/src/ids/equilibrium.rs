@@ -818,7 +818,7 @@ pub struct EquilibriumTimeSlice {
     /// Source functions which parameterise the plasma current profile
     pub source_functions: EquilibriumSourceFunctions,
     /// Profiles along the horizontal line through the middle of the grid
-    pub profiles_r_midplane: EquilibriumProfilesRMidplane,
+    pub profiles_1d_r_midplane: EquilibriumProfiles1dRMidplane,
     /// Scrape-off layer: the open field lines outside the last closed flux surface
     pub sol: EquilibriumSol,
     /// Fitted degrees of freedom of the passive structure currents
@@ -1101,7 +1101,7 @@ pub struct GenericGridDynamicSpaceDimensionObjectBoundary {
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
 #[derive(Debug, Clone, Default)]
-pub struct EquilibriumProfilesRMidplane {
+pub struct EquilibriumProfiles1dRMidplane {
     /// Major radius of each point along the mid-plane, which is the grid's own radial axis
     /// Units: m
     pub r: Option<FLT_1D>,
@@ -7180,12 +7180,12 @@ impl<'a> EquilibriumTimeSliceSourceFunctionsView<'a> {
     }
 }
 
-/// View over `profiles_r_midplane` (EquilibriumProfilesRMidplane) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceProfilesRMidplaneView<'a> {
+/// View over `profiles_1d_r_midplane` (EquilibriumProfiles1dRMidplane) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceProfiles1dRMidplaneView<'a> {
     _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
 }
 
-impl<'a> EquilibriumTimeSliceProfilesRMidplaneView<'a> {
+impl<'a> EquilibriumTimeSliceProfiles1dRMidplaneView<'a> {
     pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
         Self {
             _phantom: std::marker::PhantomData,
@@ -7306,7 +7306,7 @@ pub struct EquilibriumTimeSliceSliceView<'a> {
     pub convergence: EquilibriumTimeSliceConvergenceView<'a>,
     pub time: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
     pub source_functions: EquilibriumTimeSliceSourceFunctionsView<'a>,
-    pub profiles_r_midplane: EquilibriumTimeSliceProfilesRMidplaneView<'a>,
+    pub profiles_1d_r_midplane: EquilibriumTimeSliceProfiles1dRMidplaneView<'a>,
     pub sol: EquilibriumTimeSliceSolView<'a>,
 }
 
@@ -7323,7 +7323,7 @@ impl<'a> EquilibriumTimeSliceSliceView<'a> {
             convergence: EquilibriumTimeSliceConvergenceView::new(data),
             time: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.time, "time"),
             source_functions: EquilibriumTimeSliceSourceFunctionsView::new(data),
-            profiles_r_midplane: EquilibriumTimeSliceProfilesRMidplaneView::new(data),
+            profiles_1d_r_midplane: EquilibriumTimeSliceProfiles1dRMidplaneView::new(data),
             sol: EquilibriumTimeSliceSolView::new(data),
         }
     }

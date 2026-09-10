@@ -26,7 +26,7 @@ use crate::dd_base_types::{FLT_0D, FLT_1D, FLT_2D, INT_0D, STR_0D};
 ///
 /// The row used is `floor(n_z / 2)`, which is the grid mid-row rather than the magnetic axis, so
 /// this is a cut through the grid rather than through the plasma.
-pub struct EquilibriumProfilesRMidplane {
+pub struct EquilibriumProfiles1dRMidplane {
     /// Major radius of each point along the mid-plane, which is the grid's own radial axis
     /// Units: m
     pub r: FLT_1D,
@@ -79,7 +79,7 @@ pub struct EquilibriumTimeSlice {
     /// Source functions which parameterise the plasma current profile
     pub source_functions: EquilibriumSourceFunctions,
     /// Profiles along the horizontal line through the middle of the grid
-    pub profiles_r_midplane: EquilibriumProfilesRMidplane,
+    pub profiles_1d_r_midplane: EquilibriumProfiles1dRMidplane,
     /// Scrape-off layer: the open field lines outside the last closed flux surface
     pub sol: EquilibriumSol,
     /// Fitted degrees of freedom of the passive structure currents

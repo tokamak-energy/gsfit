@@ -2069,11 +2069,11 @@ if __name__ == "__main__":
     # Read before generating anything, so a clone that `git` cannot describe fails immediately
     imas_dd_version: str = get_imas_dd_version()
 
-    ids_names: list[str] = ["equilibrium", "pf_active", "pf_passive", "tf", "wall"]
+    ids_names: list[str] = ["equilibrium", "pf_active", "pf_passive", "tf", "wall", "magnetics"]
 
     # Which IDSs get Python path bindings (`<ids>_paths` and a `get`). Adding one here also
     # needs a matching `#[pyclass]` wrapper and `mod <ids>_paths;` in `src/python/mod.rs`.
-    ids_names_with_python_paths: set[str] = {"equilibrium", "pf_active", "pf_passive", "tf", "wall"}
+    ids_names_with_python_paths: set[str] = {"equilibrium", "pf_active", "pf_passive", "tf", "wall", "magnetics"}
 
     stub_sections: list[str] = [generate_python_stub_preamble()]
 

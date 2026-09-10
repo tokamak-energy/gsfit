@@ -10793,7 +10793,7 @@ static NODES_TIME_SLICE_SOURCE_FUNCTIONS: &[Node] = &[
     },
 ];
 
-static NODES_TIME_SLICE_PROFILES_R_MIDPLANE: &[Node] = &[
+static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
     Node {
         name: "r",
         documentation: "Major radius of each point along the mid-plane, which is the grid's own radial axis",
@@ -10807,7 +10807,7 @@ static NODES_TIME_SLICE_PROFILES_R_MIDPLANE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_r_midplane.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.r.clone() },
                 )
             },
         }),
@@ -10825,7 +10825,7 @@ static NODES_TIME_SLICE_PROFILES_R_MIDPLANE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_r_midplane.pressure.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.pressure.clone() },
                 )
             },
         }),
@@ -11113,10 +11113,10 @@ static NODES_TIME_SLICE: &[Node] = &[
         kind: NodeKind::Structure(NODES_TIME_SLICE_SOURCE_FUNCTIONS),
     },
     Node {
-        name: "profiles_r_midplane",
+        name: "profiles_1d_r_midplane",
         documentation: "Profiles along the horizontal line through the middle of the grid",
         units: "",
-        kind: NodeKind::Structure(NODES_TIME_SLICE_PROFILES_R_MIDPLANE),
+        kind: NodeKind::Structure(NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE),
     },
     Node {
         name: "sol",

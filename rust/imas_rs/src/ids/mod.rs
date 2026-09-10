@@ -4,6 +4,7 @@
 //! Generated from IMAS Data Dictionary XSD schemas.
 
 pub mod equilibrium;
+pub mod magnetics;
 pub mod pf_active;
 pub mod pf_passive;
 pub mod tf;

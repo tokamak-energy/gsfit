@@ -73,7 +73,9 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 ///
 /// A single time-slice has no derivative and is given `NaN`. A `NaN` in `current_centre/z` poisons
 /// the velocity at the time-slices either side of it, which difference across it, but not at the
-/// time-slice itself: the central difference there uses only its neighbours.
+/// time-slice itself: the central difference there uses only its neighbours. An unconverged
+/// time-slice is skipped by the per-slice loop, so its `current_centre/z` is `None`; that is
+/// treated as `NaN` here, so it behaves the same way.
 pub fn calculate_velocity_z(equilibrium_ids: &mut Equilibrium) {
     let n_time: usize = equilibrium_ids.time_slice.len();
 
@@ -81,7 +83,12 @@ pub fn calculate_velocity_z(equilibrium_ids: &mut Equilibrium) {
     let mut current_centre_z: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
     for i_time in 0..n_time {
         time[i_time] = equilibrium_ids.time_slice[i_time].time.unwrap();
-        current_centre_z[i_time] = equilibrium_ids.time_slice[i_time].global_quantities.current_centre.z.unwrap();
+        current_centre_z[i_time] = match equilibrium_ids.time_slice[i_time].global_quantities.current_centre.z {
+            Some(current_centre_z_at_time) => current_centre_z_at_time,
+            // An unconverged time-slice is skipped by the per-slice loop, so `calculate` never
+            // filled it; treat it as `NaN`, which the derivative below already handles
+            None => f64::NAN,
+        };
     }
 
     let velocity_z: Array1<f64> = d_dt(&current_centre_z, &time);
@@ -257,6 +264,28 @@ mod tests {
         assert_abs_diff_eq!(velocity_z[0], 10.0, epsilon = 1e-12);
         assert!(velocity_z[1].is_nan());
         // The central difference at the NaN slice differences its neighbours, z[3] - z[1], so it is finite
+        assert_abs_diff_eq!(velocity_z[2], 10.0, epsilon = 1e-12);
+        assert!(velocity_z[3].is_nan());
+        assert_abs_diff_eq!(velocity_z[4], 10.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn velocity_z_treats_an_unconverged_time_slice_as_a_nan_centre() {
+        let time: Array1<f64> = array![0.0, 0.01, 0.02, 0.03, 0.04];
+        let current_centre_z: Array1<f64> = array![0.0, 0.1, 0.2, 0.3, 0.4];
+        let mut equilibrium_ids: Equilibrium = equilibrium_with_centre_z(time, current_centre_z);
+        // The per-slice loop skips an unconverged time-slice, so `calculate` never fills its centre
+        equilibrium_ids.time_slice[2].global_quantities.current_centre.z = None;
+
+        calculate_velocity_z(&mut equilibrium_ids);
+
+        let velocity_z: Vec<f64> = equilibrium_ids
+            .time_slice
+            .iter()
+            .map(|time_slice| time_slice.global_quantities.current_centre.velocity_z.unwrap())
+            .collect();
+        assert_abs_diff_eq!(velocity_z[0], 10.0, epsilon = 1e-12);
+        assert!(velocity_z[1].is_nan());
         assert_abs_diff_eq!(velocity_z[2], 10.0, epsilon = 1e-12);
         assert!(velocity_z[3].is_nan());
         assert_abs_diff_eq!(velocity_z[4], 10.0, epsilon = 1e-12);

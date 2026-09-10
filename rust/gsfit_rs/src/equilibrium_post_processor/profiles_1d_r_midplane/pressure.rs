@@ -1,4 +1,4 @@
-//! `time_slice(itime)/profiles_r_midplane/r` and `.../pressure`
+//! `time_slice(itime)/profiles_1d_r_midplane/r` and `.../pressure`
 
 use super::super::constant_values::ConstantValues;
 use super::super::intermediate_values::IntermediateValues;
@@ -12,7 +12,7 @@ use ndarray::{Array1, Array2, array};
 /// magnetic axis, so this is a cut through the grid rather than through the plasma.
 ///
 /// # Arguments
-/// * `time_slice` - the solved time-slice; the two `profiles_r_midplane` nodes are written into it
+/// * `time_slice` - the solved time-slice; the two `profiles_1d_r_midplane` nodes are written into it
 /// * `p_prime_source_function` - the p' source function the reconstruction was run with
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let p_prime_source_function: &SharedSourceFunction = constant_values.p_prime_source_function;
@@ -49,6 +49,6 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
         p_profile[i_r] = pressure_local * mask_2d[(i_z_centre, i_r)] * d_psi_d_psi_n;
     }
 
-    time_slice.profiles_r_midplane.r = Some(r.to_owned());
-    time_slice.profiles_r_midplane.pressure = Some(p_profile);
+    time_slice.profiles_1d_r_midplane.r = Some(r.to_owned());
+    time_slice.profiles_1d_r_midplane.pressure = Some(p_profile);
 }

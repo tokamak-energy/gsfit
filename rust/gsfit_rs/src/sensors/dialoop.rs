@@ -267,8 +267,14 @@ impl Dialoop {
         for sensor_name in self.results.keys() {
             let mut values: Array1<f64> = Array1::zeros(n_time);
 
-            for i_time in 0..n_time {
+            'loop_over_time_slices: for i_time in 0..n_time {
                 let time_slice: &EquilibriumTimeSlice = plasma.equilibrium_ids.time_slice(i_time);
+                let convergence_flag: i32 = time_slice.convergence.result.index.unwrap();
+                if convergence_flag != 1 {
+                    // Unconverged time-slice, skip processing
+                    values[i_time] = f64::NAN; // Mark unconverged time-slice as NaN
+                    continue 'loop_over_time_slices;
+                }
 
                 // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid
                 let psi_n_2d: &Array2<f64> = time_slice.profiles_2d(0).psi_norm.as_ref().unwrap();

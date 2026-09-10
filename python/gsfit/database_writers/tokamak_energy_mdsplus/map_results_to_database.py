@@ -73,7 +73,7 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES", "RHO", "RHO_TOR"), ep.time_slice[:].profiles_1d.rho_tor),
     (("PROFILES", "RHO", "VOL"), ep.time_slice[:].profiles_1d.volume),
     (("PROFILES", "RHO", "VOL_PRIME"), ep.time_slice[:].profiles_1d.dvolume_dpsi),
-    (("PROFILES", "R_MIDPLANE", "P"), ep.time_slice[:].profiles_r_midplane.pressure),
+    (("PROFILES", "R_MIDPLANE", "P"), ep.time_slice[:].profiles_1d_r_midplane.pressure),
     # Scrape off layer (SOL)
     (("SOL", "HFS", "CONTOUR", "R"), ep.time_slice[:].sol.hfs.contour.r),
     (("SOL", "HFS", "CONTOUR", "Z"), ep.time_slice[:].sol.hfs.contour.z),
@@ -90,7 +90,7 @@ _TIME_INDEPENDENT_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("TWO_D", "RGRID"), ep.time_slice[:].profiles_2d[0].grid.dim1),
     (("TWO_D", "ZGRID"), ep.time_slice[:].profiles_2d[0].grid.dim2),
     (("PROFILES", "RHO", "PSI_N"), ep.time_slice[:].profiles_1d.psi_norm),
-    (("PROFILES", "R_MIDPLANE", "R"), ep.time_slice[:].profiles_r_midplane.r),
+    (("PROFILES", "R_MIDPLANE", "R"), ep.time_slice[:].profiles_1d_r_midplane.r),
 ]
 
 

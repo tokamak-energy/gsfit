@@ -1,3 +1,3 @@
-//! Calculations written to `time_slice(itime)/profiles_r_midplane`.
+//! Calculations written to `time_slice(itime)/profiles_1d_r_midplane`.
 
 pub(super) mod pressure;

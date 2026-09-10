@@ -6,8 +6,6 @@ import numpy.typing as npt
 from gsfit_rs.imas import equilibrium_paths as ep
 from scipy.constants import mu_0
 
-# from st40_database import GetData
-
 if TYPE_CHECKING:
     from ...gsfit import Gsfit
     from . import DatabaseWriterTokamakEnergyMDSplusNew
@@ -44,9 +42,15 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("CONVERGENCE", "ITERATIONS_N"), ep.time_slice[:].convergence.iterations_n),
     # Global
     (("GLOBAL", "CURRENT_CENT", "R"), ep.time_slice[:].global_quantities.current_centre.r),
+    (("GLOBAL", "CURRENT_CENT", "VELOCITY_Z"), ep.time_slice[:].global_quantities.current_centre.velocity_z),
     (("GLOBAL", "CURRENT_CENT", "Z"), ep.time_slice[:].global_quantities.current_centre.z),
     (("GLOBAL", "MAG_AXIS", "R"), ep.time_slice[:].global_quantities.magnetic_axis.r),
+    (("GLOBAL", "MAG_AXIS", "B_FIELD_PHI"), ep.time_slice[:].global_quantities.magnetic_axis.b_field_phi),
     (("GLOBAL", "MAG_AXIS", "Z"), ep.time_slice[:].global_quantities.magnetic_axis.z),
+    (("GLOBAL", "Q_MIN", "VALUE"), ep.time_slice[:].global_quantities.q_min.value),
+    (("GLOBAL", "Q_MIN", "RHO_TOR_NORM"), ep.time_slice[:].global_quantities.q_min.rho_tor_norm),
+    (("GLOBAL", "Q_MIN", "PSI_NORM"), ep.time_slice[:].global_quantities.q_min.psi_norm),
+    (("GLOBAL", "Q_MIN", "PSI"), ep.time_slice[:].global_quantities.q_min.psi),
     (("GLOBAL", "AREA"), ep.time_slice[:].global_quantities.area),
     (("GLOBAL", "BETA_N"), ep.time_slice[:].global_quantities.beta_tor_norm),
     (("GLOBAL", "BETA_P_1"), ep.time_slice[:].global_quantities.beta_pol_1),
@@ -61,16 +65,21 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("GLOBAL", "LI_1"), ep.time_slice[:].global_quantities.li_1),
     (("GLOBAL", "LI_2"), ep.time_slice[:].global_quantities.li_2),
     (("GLOBAL", "LI_3"), ep.time_slice[:].global_quantities.li_3),
+    (("GLOBAL", "LENGTH_POL"), ep.time_slice[:].global_quantities.length_pol),
     (("GLOBAL", "PHI_DIA"), ep.time_slice[:].constraints.diamagnetic_flux.reconstructed),
     (("GLOBAL", "PSI_MAG_AXIS"), ep.time_slice[:].global_quantities.psi_magnetic_axis),
     (("GLOBAL", "Q_AXIS"), ep.time_slice[:].global_quantities.q_axis),
     (("GLOBAL", "Q_95"), ep.time_slice[:].global_quantities.q_95),
+    (("GLOBAL", "SURFACE"), ep.time_slice[:].global_quantities.surface),
     (("GLOBAL", "V_LOOP"), ep.time_slice[:].global_quantities.v_loop),
     (("GLOBAL", "VOLUME"), ep.time_slice[:].global_quantities.volume),
     (("GLOBAL", "XPT_DIVERTED"), ep.time_slice[:].boundary.type),
     # Profiles_1d, on the psi_norm grid
+    (("PROFILES_1D", "PSI_NORM", "GEO_AXIS", "R"), ep.time_slice[:].profiles_1d.geometric_axis.r),
+    (("PROFILES_1D", "PSI_NORM", "GEO_AXIS", "Z"), ep.time_slice[:].profiles_1d.geometric_axis.z),
     (("PROFILES_1D", "PSI_NORM", "AREA"), ep.time_slice[:].profiles_1d.area),
-    (("PROFILES_1D", "PSI_NORM", "AREA_PRIME"), ep.time_slice[:].profiles_1d.darea_dpsi),
+    (("PROFILES_1D", "PSI_NORM", "DAREA_DPSI"), ep.time_slice[:].profiles_1d.darea_dpsi),
+    (("PROFILES_1D", "PSI_NORM", "DAREA_DRHO_T"), ep.time_slice[:].profiles_1d.darea_drho_tor),
     (("PROFILES_1D", "PSI_NORM", "ELONGATION"), ep.time_slice[:].profiles_1d.elongation),
     (("PROFILES_1D", "PSI_NORM", "F"), ep.time_slice[:].profiles_1d.f),
     (("PROFILES_1D", "PSI_NORM", "FF_PRIME"), ep.time_slice[:].profiles_1d.f_df_dpsi),
@@ -78,6 +87,10 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "PSI_NORM", "MAG_SHEAR"), ep.time_slice[:].profiles_1d.magnetic_shear),
     (("PROFILES_1D", "PSI_NORM", "P_PRIME"), ep.time_slice[:].profiles_1d.dpressure_dpsi),
     (("PROFILES_1D", "PSI_NORM", "PRESSURE"), ep.time_slice[:].profiles_1d.pressure),
+    (("PROFILES_1D", "PSI_NORM", "PSI"), ep.time_slice[:].profiles_1d.psi),
+    (("PROFILES_1D", "PSI_NORM", "PHI"), ep.time_slice[:].profiles_1d.phi),
+    (("PROFILES_1D", "PSI_NORM", "J_PHI"), ep.time_slice[:].profiles_1d.j_phi),
+    (("PROFILES_1D", "PSI_NORM", "J_PARALLEL"), ep.time_slice[:].profiles_1d.j_parallel),
     (("PROFILES_1D", "PSI_NORM", "Q"), ep.time_slice[:].profiles_1d.q),
     (("PROFILES_1D", "PSI_NORM", "RHO_POL"), ep.time_slice[:].profiles_1d.rho_pol),
     (("PROFILES_1D", "PSI_NORM", "R_INBOARD"), ep.time_slice[:].profiles_1d.r_inboard),
@@ -97,8 +110,24 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "PSI_NORM", "TRIANG_U"), ep.time_slice[:].profiles_1d.triangularity_upper),
     (("PROFILES_1D", "PSI_NORM", "VOL"), ep.time_slice[:].profiles_1d.volume),
     (("PROFILES_1D", "PSI_NORM", "VOL_PRIME"), ep.time_slice[:].profiles_1d.dvolume_dpsi),
+    (("PROFILES_1D", "PSI_NORM", "RHO_VOL_NORM"), ep.time_slice[:].profiles_1d.rho_volume_norm),
+    (("PROFILES_1D", "PSI_NORM", "DVOL_DPSI"), ep.time_slice[:].profiles_1d.dvolume_dpsi),
+    (("PROFILES_1D", "PSI_NORM", "DVOL_DRHO_T"), ep.time_slice[:].profiles_1d.dvolume_drho_tor),
+    (("PROFILES_1D", "PSI_NORM", "SURFACE"), ep.time_slice[:].profiles_1d.surface),
+    (("PROFILES_1D", "PSI_NORM", "GM1"), ep.time_slice[:].profiles_1d.gm1),
+    (("PROFILES_1D", "PSI_NORM", "GM2"), ep.time_slice[:].profiles_1d.gm2),
+    (("PROFILES_1D", "PSI_NORM", "GM3"), ep.time_slice[:].profiles_1d.gm3),
+    (("PROFILES_1D", "PSI_NORM", "GM4"), ep.time_slice[:].profiles_1d.gm4),
+    (("PROFILES_1D", "PSI_NORM", "GM5"), ep.time_slice[:].profiles_1d.gm5),
+    (("PROFILES_1D", "PSI_NORM", "GM6"), ep.time_slice[:].profiles_1d.gm6),
+    (("PROFILES_1D", "PSI_NORM", "GM7"), ep.time_slice[:].profiles_1d.gm7),
+    (("PROFILES_1D", "PSI_NORM", "GM8"), ep.time_slice[:].profiles_1d.gm8),
+    (("PROFILES_1D", "PSI_NORM", "GM9"), ep.time_slice[:].profiles_1d.gm9),
+    (("PROFILES_1D", "PSI_NORM", "B_FIELD_AV"), ep.time_slice[:].profiles_1d.b_field_average),
+    (("PROFILES_1D", "PSI_NORM", "B_FIELD_MIN"), ep.time_slice[:].profiles_1d.b_field_min),
+    (("PROFILES_1D", "PSI_NORM", "B_FIELD_MAX"), ep.time_slice[:].profiles_1d.b_field_max),
     # Mid-plane profiles
-    (("PROFILES_1D", "R_MIDPLANE", "PRESSURE"), ep.time_slice[:].profiles_r_midplane.pressure),
+    (("PROFILES_1D", "R_MIDPLANE", "PRESSURE"), ep.time_slice[:].profiles_1d_r_midplane.pressure),
     # Profiles_2d. `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
     (("PROFILES_2D", "R_Z", "B_FIELD_PHI"), ep.time_slice[:].profiles_2d[0].b_field_phi),
     (("PROFILES_2D", "R_Z", "B_FIELD_R"), ep.time_slice[:].profiles_2d[0].b_field_r),
@@ -106,6 +135,10 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_2D", "R_Z", "MASK"), ep.time_slice[:].profiles_2d[0].mask),
     (("PROFILES_2D", "R_Z", "PRESSURE"), ep.time_slice[:].profiles_2d[0].pressure),
     (("PROFILES_2D", "R_Z", "PSI"), ep.time_slice[:].profiles_2d[0].psi),
+    (("PROFILES_2D", "R_Z", "PHI"), ep.time_slice[:].profiles_2d[0].phi),
+    (("PROFILES_2D", "R_Z", "THETA"), ep.time_slice[:].profiles_2d[0].theta),
+    (("PROFILES_2D", "R_Z", "J_PHI"), ep.time_slice[:].profiles_2d[0].j_phi),
+    (("PROFILES_2D", "R_Z", "J_PARALLEL"), ep.time_slice[:].profiles_2d[0].j_parallel),
     # Constraints
     (("CONSTRAINTS", "CHI_SQ_MAG"), ep.time_slice[:].constraints.chi_squared_reduced),
     # Scrape off layer (SOL)
@@ -123,7 +156,7 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
 # time-slice all the same, so the gather returns `[n_time, n_points]` and the first row is taken.
 _TIME_INDEPENDENT_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "PSI_NORM", "PSI_NORM"), ep.time_slice[:].profiles_1d.psi_norm),
-    (("PROFILES_1D", "R_MIDPLANE", "R"), ep.time_slice[:].profiles_r_midplane.r),
+    (("PROFILES_1D", "R_MIDPLANE", "R"), ep.time_slice[:].profiles_1d_r_midplane.r),
     (("PROFILES_2D", "R_Z", "R"), ep.time_slice[:].profiles_2d[0].grid.dim1),
     (("PROFILES_2D", "R_Z", "Z"), ep.time_slice[:].profiles_2d[0].grid.dim2),
 ]
