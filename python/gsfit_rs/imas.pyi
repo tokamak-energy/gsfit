@@ -3919,10 +3919,46 @@ class _EquilibriumProfiles1dRMidplaneItem:
         Units: m
         """
     @property
+    def dpressure_dpsi(self) -> Path[npt.NDArray[np.float64]]:
+        """Derivative of the pressure with respect to the poloidal flux, along the mid-plane. Zero
+outside the plasma boundary
+
+        Units: Pa.Wb^-1
+        """
+    @property
+    def f(self) -> Path[npt.NDArray[np.float64]]:
+        """Diamagnetic function `f = R * b_field_phi` along the mid-plane. The vacuum value outside the
+plasma boundary, where no poloidal current flows
+
+        Units: T.m
+        """
+    @property
+    def f_df_dpsi(self) -> Path[npt.NDArray[np.float64]]:
+        """Derivative of `f` with respect to the poloidal flux, multiplied by `f`, along the mid-plane.
+Zero outside the plasma boundary
+
+        Units: T^2.m^2.Wb^-1
+        """
+    @property
+    def j_phi(self) -> Path[npt.NDArray[np.float64]]:
+        """Toroidal plasma current density along the mid-plane. Zero outside the plasma boundary.
+Unlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the
+solved current density
+
+        Units: A.m^-2
+        """
+    @property
     def pressure(self) -> Path[npt.NDArray[np.float64]]:
         """Plasma pressure along the mid-plane. Zero outside the plasma boundary
 
         Units: Pa
+        """
+    @property
+    def q(self) -> Path[npt.NDArray[np.float64]]:
+        """Safety factor along the mid-plane. NaN outside the plasma boundary, where there is no closed
+flux surface to define it
+
+        Units: dimensionless
         """
 
 class _EquilibriumProfiles1dRMidplaneMany:
@@ -3936,10 +3972,46 @@ class _EquilibriumProfiles1dRMidplaneMany:
         Units: m
         """
     @property
+    def dpressure_dpsi(self) -> Path[npt.NDArray[np.float64]]:
+        """Derivative of the pressure with respect to the poloidal flux, along the mid-plane. Zero
+outside the plasma boundary
+
+        Units: Pa.Wb^-1
+        """
+    @property
+    def f(self) -> Path[npt.NDArray[np.float64]]:
+        """Diamagnetic function `f = R * b_field_phi` along the mid-plane. The vacuum value outside the
+plasma boundary, where no poloidal current flows
+
+        Units: T.m
+        """
+    @property
+    def f_df_dpsi(self) -> Path[npt.NDArray[np.float64]]:
+        """Derivative of `f` with respect to the poloidal flux, multiplied by `f`, along the mid-plane.
+Zero outside the plasma boundary
+
+        Units: T^2.m^2.Wb^-1
+        """
+    @property
+    def j_phi(self) -> Path[npt.NDArray[np.float64]]:
+        """Toroidal plasma current density along the mid-plane. Zero outside the plasma boundary.
+Unlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the
+solved current density
+
+        Units: A.m^-2
+        """
+    @property
     def pressure(self) -> Path[npt.NDArray[np.float64]]:
         """Plasma pressure along the mid-plane. Zero outside the plasma boundary
 
         Units: Pa
+        """
+    @property
+    def q(self) -> Path[npt.NDArray[np.float64]]:
+        """Safety factor along the mid-plane. NaN outside the plasma boundary, where there is no closed
+flux surface to define it
+
+        Units: dimensionless
         """
 
 class _EquilibriumProfiles1dRz1dDynamicAosItem:

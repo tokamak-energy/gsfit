@@ -36,9 +36,6 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("BOUNDARY", "BOUNDING", "Z"), ep.time_slice[:].boundary.bounding.z),
     # Convergence
     (("CONVERGENCE", "GS_ERROR"), ep.time_slice[:].convergence.grad_shafranov_deviation_value),
-    # A time-slice which did not converge has no iteration count and no boundary type. Those are
-    # the only two integer nodes here, and they read back as IMAS's `EMPTY_INT` (-999999999),
-    # which is the integer counterpart of the `NaN` every unset float reads back as
     (("CONVERGENCE", "ITERATIONS_N"), ep.time_slice[:].convergence.iterations_n),
     # Global
     (("GLOBAL", "CURRENT_CENT", "R"), ep.time_slice[:].global_quantities.current_centre.r),
@@ -95,12 +92,8 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "PSI_NORM", "RHO_POL"), ep.time_slice[:].profiles_1d.rho_pol),
     (("PROFILES_1D", "PSI_NORM", "R_INBOARD"), ep.time_slice[:].profiles_1d.r_inboard),
     (("PROFILES_1D", "PSI_NORM", "R_OUTBOARD"), ep.time_slice[:].profiles_1d.r_outboard),
-    # `RHO_TOR` is the data dictionary's `sqrt(phi / (pi * b0))`, in metre. The dimensionless
-    # 0 -> 1 coordinate, which is what `RHO_POL` is the poloidal counterpart of, is `RHO_TOR_NORM`
     (("PROFILES_1D", "PSI_NORM", "RHO_TOR"), ep.time_slice[:].profiles_1d.rho_tor),
     (("PROFILES_1D", "PSI_NORM", "RHO_TOR_NORM"), ep.time_slice[:].profiles_1d.rho_tor_norm),
-    # The shape of each flux surface, measured exactly as the `BOUNDARY` scalars of the same name
-    # are, so the last point of each of these is the corresponding `BOUNDARY` node
     (("PROFILES_1D", "PSI_NORM", "SQUARE_L_I"), ep.time_slice[:].profiles_1d.squareness_lower_inner),
     (("PROFILES_1D", "PSI_NORM", "SQUARE_L_O"), ep.time_slice[:].profiles_1d.squareness_lower_outer),
     (("PROFILES_1D", "PSI_NORM", "SQUARE_U_I"), ep.time_slice[:].profiles_1d.squareness_upper_inner),
@@ -127,7 +120,12 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "PSI_NORM", "B_FIELD_MIN"), ep.time_slice[:].profiles_1d.b_field_min),
     (("PROFILES_1D", "PSI_NORM", "B_FIELD_MAX"), ep.time_slice[:].profiles_1d.b_field_max),
     # Mid-plane profiles
+    (("PROFILES_1D", "R_MIDPLANE", "P_PRIME"), ep.time_slice[:].profiles_1d_r_midplane.dpressure_dpsi),
+    (("PROFILES_1D", "R_MIDPLANE", "F"), ep.time_slice[:].profiles_1d_r_midplane.f),
+    (("PROFILES_1D", "R_MIDPLANE", "FF_PRIME"), ep.time_slice[:].profiles_1d_r_midplane.f_df_dpsi),
+    (("PROFILES_1D", "R_MIDPLANE", "J_PHI"), ep.time_slice[:].profiles_1d_r_midplane.j_phi),
     (("PROFILES_1D", "R_MIDPLANE", "PRESSURE"), ep.time_slice[:].profiles_1d_r_midplane.pressure),
+    (("PROFILES_1D", "R_MIDPLANE", "Q"), ep.time_slice[:].profiles_1d_r_midplane.q),
     # Profiles_2d. `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
     (("PROFILES_2D", "R_Z", "B_FIELD_PHI"), ep.time_slice[:].profiles_2d[0].b_field_phi),
     (("PROFILES_2D", "R_Z", "B_FIELD_R"), ep.time_slice[:].profiles_2d[0].b_field_r),

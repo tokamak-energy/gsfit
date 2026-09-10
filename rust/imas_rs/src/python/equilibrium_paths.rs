@@ -10813,6 +10813,85 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
         }),
     },
     Node {
+        name: "dpressure_dpsi",
+        documentation: "Derivative of the pressure with respect to the poloidal flux, along the mid-plane. Zero
+outside the plasma boundary",
+        units: "Pa.Wb^-1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
+                        equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.dpressure_dpsi.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "f",
+        documentation: "Diamagnetic function `f = R * b_field_phi` along the mid-plane. The vacuum value outside the
+plasma boundary, where no poloidal current flows",
+        units: "T.m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.f.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "f_df_dpsi",
+        documentation: "Derivative of `f` with respect to the poloidal flux, multiplied by `f`, along the mid-plane.
+Zero outside the plasma boundary",
+        units: "T^2.m^2.Wb^-1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.f_df_dpsi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "j_phi",
+        documentation: "Toroidal plasma current density along the mid-plane. Zero outside the plasma boundary.
+Unlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the
+solved current density",
+        units: "A.m^-2",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.j_phi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
         name: "pressure",
         documentation: "Plasma pressure along the mid-plane. Zero outside the plasma boundary",
         units: "Pa",
@@ -10826,6 +10905,25 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
                     1,
                     lengths_time_slice,
                     |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.pressure.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "q",
+        documentation: "Safety factor along the mid-plane. NaN outside the plasma boundary, where there is no closed
+flux surface to define it",
+        units: "dimensionless",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.q.clone() },
                 )
             },
         }),

@@ -14,6 +14,7 @@ mod equilibrium_post_processor;
 mod flux_surface_average;
 mod flux_surfaces;
 mod intermediate_values;
+mod interpolate_profile;
 mod boundary;
 mod constraints;
 mod convergence;
@@ -75,7 +76,12 @@ pub enum CalculatorIdentifier {
     profiles_1d__rho_tor,
     profiles_1d__rho_tor_norm,
     profiles_1d__rho_volume_norm,
+    profiles_1d_r_midplane__dpressure_dpsi,
+    profiles_1d_r_midplane__f,
+    profiles_1d_r_midplane__f_df_dpsi,
+    profiles_1d_r_midplane__j_phi,
     profiles_1d_r_midplane__pressure,
+    profiles_1d_r_midplane__q,
     profiles_2d__b_field_phi,
     profiles_2d__b_field_r__b_field_z,
     profiles_2d__d_b_field_z_d_z,

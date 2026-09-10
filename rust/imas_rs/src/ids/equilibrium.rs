@@ -1105,9 +1105,30 @@ pub struct EquilibriumProfiles1dRMidplane {
     /// Major radius of each point along the mid-plane, which is the grid's own radial axis
     /// Units: m
     pub r: Option<FLT_1D>,
+    /// Derivative of the pressure with respect to the poloidal flux, along the mid-plane. Zero
+    /// outside the plasma boundary
+    /// Units: Pa.Wb^-1
+    pub dpressure_dpsi: Option<FLT_1D>,
+    /// Diamagnetic function `f = R * b_field_phi` along the mid-plane. The vacuum value outside the
+    /// plasma boundary, where no poloidal current flows
+    /// Units: T.m
+    pub f: Option<FLT_1D>,
+    /// Derivative of `f` with respect to the poloidal flux, multiplied by `f`, along the mid-plane.
+    /// Zero outside the plasma boundary
+    /// Units: T^2.m^2.Wb^-1
+    pub f_df_dpsi: Option<FLT_1D>,
+    /// Toroidal plasma current density along the mid-plane. Zero outside the plasma boundary.
+    /// Unlike `profiles_1d/j_phi`, which is a flux-surface average, this is a cut through the
+    /// solved current density
+    /// Units: A.m^-2
+    pub j_phi: Option<FLT_1D>,
     /// Plasma pressure along the mid-plane. Zero outside the plasma boundary
     /// Units: Pa
     pub pressure: Option<FLT_1D>,
+    /// Safety factor along the mid-plane. NaN outside the plasma boundary, where there is no closed
+    /// flux surface to define it
+    /// Units: dimensionless
+    pub q: Option<FLT_1D>,
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
