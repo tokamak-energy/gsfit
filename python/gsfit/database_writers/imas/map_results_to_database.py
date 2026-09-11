@@ -122,16 +122,17 @@ def _is_array_of_structures(path: typing.Any) -> bool:
 
 
 def _read_leaf(equilibrium_ids: typing.Any, path: typing.Any) -> typing.Any:
-    """Read one leaf out of the Rust IDS, or `None` if GSFit never set it.
+    """Read one leaf out of the Rust IDS, or `None` if it cannot be gathered.
 
-    A float GSFit did not set reads back as `NaN`, but an integer or a string has no such
-    stand-in, so the Rust getter raises instead. Either way the answer is the same - the node stays
-    unset in the output.
+    A leaf GSFit never set reads back as its IMAS empty value - `NaN`, `EMPTY_INT`, an empty
+    string or an empty array - and `_write_leaf` leaves such a node unset in the output. The read
+    itself only fails when the gather has no single shape, e.g. a per-slice integer array which
+    some slices set and others did not; that node is skipped for every slice.
     """
 
     try:
         return equilibrium_ids.get(path)
-    except (IndexError, ValueError, TypeError):
+    except (IndexError, TypeError):
         return None
 
 
@@ -159,11 +160,12 @@ def _write_leaf(destination: typing.Any, name: str, values: typing.Any, data_typ
     array = np.asarray(values)
 
     if data_type.startswith("INT"):
-        # `EMPTY_INT` is how a time-slice which did not converge reads back
+        # `EMPTY_INT` is how an unset integer reads back, e.g. from a time-slice which did not
+        # converge; an unset integer array is empty
         if array.ndim == 0:
             if int(array) != imas.ids_defs.EMPTY_INT:
                 setattr(destination, name, int(array))
-        else:
+        elif array.size > 0:
             setattr(destination, name, array.astype(np.int32))
         return
 

@@ -27,16 +27,16 @@ use ndarray::{Array1, Array2};
 /// * `time_slice` - the solved time-slice; `profiles_2d(0)/theta` is written into it [radian]
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on one rectangular (R, Z) grid.
-    let r: &Array1<f64> = time_slice.profiles_2d[0].grid.dim1.as_ref().unwrap();
-    let z: &Array1<f64> = time_slice.profiles_2d[0].grid.dim2.as_ref().unwrap();
+    let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
+    let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
     let n_r: usize = r.len();
     let n_z: usize = z.len();
     let mut theta: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
 
-    let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r.unwrap();
-    let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z.unwrap();
+    let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r;
+    let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z;
     if !mag_r.is_finite() || !mag_z.is_finite() {
-        time_slice.profiles_2d[0].theta = Some(theta);
+        time_slice.profiles_2d[0].theta = theta;
         return;
     }
 
@@ -52,7 +52,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         }
     }
 
-    time_slice.profiles_2d[0].theta = Some(theta);
+    time_slice.profiles_2d[0].theta = theta;
 }
 
 #[cfg(test)]
@@ -68,15 +68,15 @@ mod tests {
     #[test]
     fn theta_is_clockwise_from_the_outboard_midplane() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.magnetic_axis.r = Some(1.0);
-        time_slice.global_quantities.magnetic_axis.z = Some(0.0);
+        time_slice.global_quantities.magnetic_axis.r = 1.0;
+        time_slice.global_quantities.magnetic_axis.z = 0.0;
         time_slice.profiles_2d = vec![EquilibriumProfiles2d::default()];
-        time_slice.profiles_2d[0].grid.dim1 = Some(array![0.0, 1.0, 2.0]);
-        time_slice.profiles_2d[0].grid.dim2 = Some(array![-1.0, 0.0, 1.0]);
+        time_slice.profiles_2d[0].grid.dim1 = array![0.0, 1.0, 2.0];
+        time_slice.profiles_2d[0].grid.dim2 = array![-1.0, 0.0, 1.0];
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        let theta: &Array2<f64> = time_slice.profiles_2d[0].theta.as_ref().unwrap();
+        let theta: &Array2<f64> = &time_slice.profiles_2d[0].theta;
         assert_eq!(theta.dim(), (3, 3));
         assert_abs_diff_eq!(theta[(1, 2)], 0.0, epsilon = 1e-15); // outboard
         assert_abs_diff_eq!(theta[(2, 1)], -PI / 2.0, epsilon = 1e-15); // above
@@ -88,14 +88,14 @@ mod tests {
     #[test]
     fn failed_slice_is_all_nan() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.magnetic_axis.r = Some(f64::NAN);
-        time_slice.global_quantities.magnetic_axis.z = Some(f64::NAN);
+        time_slice.global_quantities.magnetic_axis.r = f64::NAN;
+        time_slice.global_quantities.magnetic_axis.z = f64::NAN;
         time_slice.profiles_2d = vec![EquilibriumProfiles2d::default()];
-        time_slice.profiles_2d[0].grid.dim1 = Some(array![0.5, 1.0]);
-        time_slice.profiles_2d[0].grid.dim2 = Some(array![-0.5, 0.5]);
+        time_slice.profiles_2d[0].grid.dim1 = array![0.5, 1.0];
+        time_slice.profiles_2d[0].grid.dim2 = array![-0.5, 0.5];
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        assert!(time_slice.profiles_2d[0].theta.as_ref().unwrap().iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_2d[0].theta.iter().all(|value| value.is_nan()));
     }
 }

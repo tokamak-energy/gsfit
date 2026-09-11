@@ -180,8 +180,8 @@ impl Pressure {
 
         // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
         // because GSFit solves on a single rectangular (R, Z) grid
-        let n_r: usize = plasma_local.equilibrium_ids.code.grid.n_r.unwrap() as usize;
-        let n_z: usize = plasma_local.equilibrium_ids.code.grid.n_z.unwrap() as usize;
+        let n_r: usize = plasma_local.equilibrium_ids.code.grid.n_r as usize;
+        let n_z: usize = plasma_local.equilibrium_ids.code.grid.n_z as usize;
 
         for sensor_name in &self.results.keys() {
             // Create zero array
@@ -431,14 +431,14 @@ impl Pressure {
 
     /// Calculate the sensor values
     pub fn calculate_sensor_values_rust(&mut self, plasma: &Plasma) {
-        let time: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.unwrap();
+        let time: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.to_array();
         let n_time: usize = time.len();
 
         // `time_slice[0]` because the grid is the same on every time-slice, and `profiles_2d[0]`
         // because GSFit solves on a single rectangular (R, Z) grid
-        let grid: &EquilibriumProfiles2dGrid = &plasma.equilibrium_ids.time_slice(0).profiles_2d(0).grid;
-        let r: Array1<f64> = grid.dim1.as_ref().unwrap().to_owned();
-        let z: Array1<f64> = grid.dim2.as_ref().unwrap().to_owned();
+        let grid: &EquilibriumProfiles2dGrid = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].grid;
+        let r: Array1<f64> = grid.dim1.to_owned();
+        let z: Array1<f64> = grid.dim2.to_owned();
         let d_r: f64 = r[1] - r[0];
         let d_z: f64 = z[1] - z[0];
 
@@ -491,16 +491,16 @@ impl Pressure {
             }
 
             for i_time in 0..n_time {
-                let time_slice: &EquilibriumTimeSlice = plasma.equilibrium_ids.time_slice(i_time);
+                let time_slice: &EquilibriumTimeSlice = &plasma.equilibrium_ids.time_slice[i_time];
 
-                let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
-                let psi_b: f64 = time_slice.boundary.psi.unwrap();
+                let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
+                let psi_b: f64 = time_slice.boundary.psi;
 
                 // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid
-                let psi_2d: &Array2<f64> = time_slice.profiles_2d(0).psi.as_ref().unwrap();
-                let br_2d: &Array2<f64> = time_slice.profiles_2d(0).b_field_r.as_ref().unwrap();
-                let bz_2d: &Array2<f64> = time_slice.profiles_2d(0).b_field_z.as_ref().unwrap();
-                let d_bz_d_z_2d: &Array2<f64> = time_slice.profiles_2d(0).d_b_field_z_d_z.as_ref().unwrap();
+                let psi_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi;
+                let br_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_r;
+                let bz_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_z;
+                let d_bz_d_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].d_b_field_z_d_z;
 
                 // Bicubic interpolation of psi at the sensor location
                 let f: ArrayView2<f64> = psi_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
@@ -544,7 +544,7 @@ impl Pressure {
                 // Analytically integrate p'(psi_n) with boundary condition p(psi_n = 1) = 0.
                 // Note: source_function_integral returns an integral from psi_n = 1 to psi_n,
                 // i.e. p(psi_n) = integral_{1}^{psi_n} p'(x) dx, scaled by (psi_b - psi_a).
-                let p_prime_dof_values: Array1<f64> = time_slice.source_functions.p_prime.coefficients.as_ref().unwrap().to_owned();
+                let p_prime_dof_values: Array1<f64> = time_slice.source_functions.p_prime.coefficients.to_owned();
                 sensor_values[i_time] = plasma
                     .p_prime_source_function
                     .source_function_integral(&Array1::from_vec(vec![psi_n_at_sensor]), &p_prime_dof_values)[0]

@@ -22,14 +22,14 @@ use ndarray::{Array1, Array2};
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let j_phi_2d: &Array2<f64> = time_slice.profiles_2d[0].j_phi.as_ref().unwrap();
+    let j_phi_2d: &Array2<f64> = &time_slice.profiles_2d[0].j_phi;
 
     // The mid-plane is the middle row of the grid
     let n_z: usize = j_phi_2d.dim().0;
     let i_z_centre: usize = (n_z as f64 / 2.0).floor() as usize;
     let j_phi_profile: Array1<f64> = j_phi_2d.row(i_z_centre).to_owned();
 
-    time_slice.profiles_1d_r_midplane.j_phi = Some(j_phi_profile);
+    time_slice.profiles_1d_r_midplane.j_phi = j_phi_profile;
 }
 
 #[cfg(test)]
@@ -46,7 +46,7 @@ mod tests {
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
         // The rows either side of the mid-plane hold 99, which no correct answer contains
-        let j_phi_profile: &Array1<f64> = time_slice.profiles_1d_r_midplane.j_phi.as_ref().unwrap();
+        let j_phi_profile: &Array1<f64> = &time_slice.profiles_1d_r_midplane.j_phi;
         assert_eq!(j_phi_profile.to_vec(), vec![0.0, 3.0, 4.0, 0.0]);
     }
 }

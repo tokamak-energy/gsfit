@@ -65,7 +65,7 @@ impl Tf {
             return Err(PyValueError::new_err(format!("`tf/r0` must be a positive major radius, got {r0}")));
         }
 
-        self.tf_ids.r0 = Some(r0);
+        self.tf_ids.r0 = r0;
 
         return Ok(());
     }
@@ -103,8 +103,8 @@ impl Tf {
         }
 
         self.tf_ids.b_field_phi_vacuum_r = SignalFlt1d {
-            data: Some(signal_data),
-            time: Some(signal_time),
+            data: signal_data,
+            time: signal_time,
         };
 
         return Ok(());
@@ -130,24 +130,25 @@ impl Tf {
         string_output += &format!("║  {:<74} ║\n", "<gsfit_rs.Tf>");
         string_output += &format!("║  {:<74} ║\n", version);
 
-        match self.tf_ids.r0 {
-            Some(r0) => string_output += &format!("║  {:<74} ║\n", format!(" r0 = {r0} metre")),
-            None => string_output += &format!("║  {:<74} ║\n", " r0 is unset"),
+        let r0: f64 = self.tf_ids.r0;
+        if r0.is_nan() {
+            string_output += &format!("║  {:<74} ║\n", " r0 is unset");
+        } else {
+            string_output += &format!("║  {:<74} ║\n", format!(" r0 = {r0} metre"));
         }
 
-        match (&self.tf_ids.b_field_phi_vacuum_r.time, &self.tf_ids.b_field_phi_vacuum_r.data) {
-            (Some(signal_time), Some(signal_data)) => {
-                let n_time: usize = signal_time.len();
-                string_output += &format!("║  {:<74} ║\n", format!(" b_field_phi_vacuum_r: {n_time} time point(s)"));
-                if n_time > 0 {
-                    string_output += &format!("║  {:<74} ║\n", format!(" time = [{}, {}] second", signal_time[0], signal_time[n_time - 1]));
-                    string_output += &format!(
-                        "║  {:<74} ║\n",
-                        format!(" data = [{}, {}] tesla * metre", signal_data[0], signal_data[n_time - 1])
-                    );
-                }
-            }
-            _ => string_output += &format!("║  {:<74} ║\n", " b_field_phi_vacuum_r is unset"),
+        let signal_time: &Array1<f64> = &self.tf_ids.b_field_phi_vacuum_r.time;
+        let signal_data: &Array1<f64> = &self.tf_ids.b_field_phi_vacuum_r.data;
+        if signal_time.is_empty() || signal_data.is_empty() {
+            string_output += &format!("║  {:<74} ║\n", " b_field_phi_vacuum_r is unset");
+        } else {
+            let n_time: usize = signal_time.len();
+            string_output += &format!("║  {:<74} ║\n", format!(" b_field_phi_vacuum_r: {n_time} time point(s)"));
+            string_output += &format!("║  {:<74} ║\n", format!(" time = [{}, {}] second", signal_time[0], signal_time[n_time - 1]));
+            string_output += &format!(
+                "║  {:<74} ║\n",
+                format!(" data = [{}, {}] tesla * metre", signal_data[0], signal_data[n_time - 1])
+            );
         }
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");

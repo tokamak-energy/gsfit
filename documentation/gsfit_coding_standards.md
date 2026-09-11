@@ -220,6 +220,11 @@ This means we typically will not use `while` loops at all.
 
 We should name the maximum limit `n_variable_max`, where the "`_max`" hints that we will most likely exit the loop before reaching the limit.
 
+## `mod.rs` and `lib.rs` files
+Normally, the `mod.rs` and `lib.rs` files should only be used to register and expose.
+It should not normally be used for code.
+The reason-- code can effectively be "hidden" within the module file.
+
 # Python
 When using strings I prefer a double backslash `\\` instead of raw, e.g.
 ```python

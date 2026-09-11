@@ -9,7 +9,7 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, INT_1D, STR_0D, STR_1D, StringAccumulator};
+use crate::dd_base_types::{Accumulator, EMPTY_INT, FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, INT_1D, STR_0D, STR_1D, StringAccumulator};
 
 // ============================================================================
 // Complex Types
@@ -19,9 +19,9 @@ use crate::dd_base_types::{Accumulator, FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, 
 #[derive(Debug, Clone, Default)]
 pub struct TfCoilConductorElements {
     /// Name or description of every element
-    pub names: Option<STR_1D>,
+    pub names: STR_1D,
     /// Type of every element: 1: line segment, its ends are given by the start and end points; index = 2: arc of a circle; index = 3: full circle
-    pub types: Option<INT_1D>,
+    pub types: INT_1D,
     /// Position of the start point of every element
     pub start_points: Rphiz1dStatic,
     /// Position of an intermediate point along the arc of circle, for every element, providing the orientation of the element (must define with the corresponding start point an aperture angle strictly inferior to PI). Meaningful only if type/index = 2, fill with default/empty value otherwise
@@ -33,7 +33,7 @@ pub struct TfCoilConductorElements {
 }
 
 /// Description of a conductor
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct TfCoilConductor {
     /// Set of geometrical elements (line segments and/or arcs of a circle) describing the contour of the TF conductor centre
     pub elements: TfCoilConductorElements,
@@ -41,7 +41,7 @@ pub struct TfCoilConductor {
     pub cross_section: DeltaRphiz1dStatic,
     /// conductor resistance
     /// Units: ohm
-    pub resistance: Option<FLT_0D>,
+    pub resistance: FLT_0D,
     /// Current in the conductor (positive when it flows from the first to the last element)
     /// Units: A
     pub current: SignalFlt1d,
@@ -50,20 +50,32 @@ pub struct TfCoilConductor {
     pub voltage: SignalFlt1d,
 }
 
+impl Default for TfCoilConductor {
+    fn default() -> Self {
+        Self {
+            elements: TfCoilConductorElements::default(),
+            cross_section: DeltaRphiz1dStatic::default(),
+            resistance: f64::NAN,
+            current: SignalFlt1d::default(),
+            voltage: SignalFlt1d::default(),
+        }
+    }
+}
+
 /// Description of a given coil
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct TfCoil {
     /// Short string identifier (unique for a given device)
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Description, e.g. �channel viewing the upper divertor�
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Set of conductors inside the coil. The structure can be used with size 1 for a simplified description as a single conductor. A conductor is composed of several elements, serially connected, i.e. transporting the same current.
     pub conductor: Vec<TfCoilConductor>,
     /// Number of total turns in a toroidal field coil. May be a fraction when describing the coil connections.
-    pub turns: Option<FLT_0D>,
+    pub turns: FLT_0D,
     /// Coil resistance
     /// Units: ohm
-    pub resistance: Option<FLT_0D>,
+    pub resistance: FLT_0D,
     /// Current in the coil
     /// Units: A
     pub current: SignalFlt1d,
@@ -72,8 +84,22 @@ pub struct TfCoil {
     pub voltage: SignalFlt1d,
 }
 
+impl Default for TfCoil {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            description: String::new(),
+            conductor: Vec::new(),
+            turns: f64::NAN,
+            resistance: f64::NAN,
+            current: SignalFlt1d::default(),
+            voltage: SignalFlt1d::default(),
+        }
+    }
+}
+
 /// Toroidal field map represented on ggd
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct TfGgd {
     /// Grid description
     pub grid: GenericGridDynamic,
@@ -97,7 +123,22 @@ pub struct TfGgd {
     pub a_field_tor: Vec<GenericGridScalar>,
     /// Time
     /// Units: s
-    pub time: Option<FLT_0D>,
+    pub time: FLT_0D,
+}
+
+impl Default for TfGgd {
+    fn default() -> Self {
+        Self {
+            grid: GenericGridDynamic::default(),
+            b_field_r: Vec::new(),
+            b_field_z: Vec::new(),
+            b_field_tor: Vec::new(),
+            a_field_r: Vec::new(),
+            a_field_z: Vec::new(),
+            a_field_tor: Vec::new(),
+            time: f64::NAN,
+        }
+    }
 }
 
 /// Structure for list of R, Z, Phi positions (1D, static)
@@ -105,13 +146,13 @@ pub struct TfGgd {
 pub struct Rphiz1dStatic {
     /// Major radius
     /// Units: m
-    pub r: Option<FLT_1D>,
+    pub r: FLT_1D,
     /// Toroidal angle (oriented counter-clockwise when viewed from above)
     /// Units: rad
-    pub phi: Option<FLT_1D>,
+    pub phi: FLT_1D,
     /// Height
     /// Units: m
-    pub z: Option<FLT_1D>,
+    pub z: FLT_1D,
 }
 
 /// Structure for R, Z, Phi relative positions (1D, static)
@@ -119,13 +160,13 @@ pub struct Rphiz1dStatic {
 pub struct DeltaRphiz1dStatic {
     /// Major radii (relative to a reference point)
     /// Units: m
-    pub delta_r: Option<FLT_1D>,
+    pub delta_r: FLT_1D,
     /// Toroidal angles (relative to a reference point)
     /// Units: rad
-    pub delta_phi: Option<FLT_1D>,
+    pub delta_phi: FLT_1D,
     /// Heights (relative to a reference point)
     /// Units: m
-    pub delta_z: Option<FLT_1D>,
+    pub delta_z: FLT_1D,
 }
 
 /// Signal (FLT_1D) with its time base
@@ -133,10 +174,10 @@ pub struct DeltaRphiz1dStatic {
 pub struct SignalFlt1d {
     /// Data
     /// Units: as_parent
-    pub data: Option<FLT_1D>,
+    pub data: FLT_1D,
     /// Time
     /// Units: s
-    pub time: Option<FLT_1D>,
+    pub time: FLT_1D,
 }
 
 /// Generic grid (dynamic within a type 3 AoS)
@@ -145,7 +186,7 @@ pub struct GenericGridDynamic {
     /// Grid identifier
     pub identifier: IdentifierDynamicAos3,
     /// Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
-    pub path: Option<STR_0D>,
+    pub path: STR_0D,
     /// Set of grid spaces
     pub space: Vec<GenericGridDynamicSpace>,
     /// Grid subsets
@@ -153,34 +194,45 @@ pub struct GenericGridDynamic {
 }
 
 /// Scalar real values on a generic grid (dynamic within a type 3 AoS)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct GenericGridScalar {
     /// Index of the grid used to represent this quantity
-    pub grid_index: Option<INT_0D>,
+    pub grid_index: INT_0D,
     /// Index of the grid subset the data is provided on. Corresponds to the index used in the grid subset definition: grid_subset(:)/identifier/index
-    pub grid_subset_index: Option<INT_0D>,
+    pub grid_subset_index: INT_0D,
     /// One scalar value is provided per element in the grid subset.
     /// Units: as_parent
-    pub values: Option<FLT_1D>,
+    pub values: FLT_1D,
     /// Interpolation coefficients, to be used for a high precision evaluation of the physical quantity with finite elements, provided per element in the grid subset (first dimension).
     /// Units: as_parent
-    pub coefficients: Option<FLT_2D>,
+    pub coefficients: FLT_2D,
+}
+
+impl Default for GenericGridScalar {
+    fn default() -> Self {
+        Self {
+            grid_index: EMPTY_INT,
+            grid_subset_index: EMPTY_INT,
+            values: Default::default(),
+            coefficients: Default::default(),
+        }
+    }
 }
 
 /// Description of a given coil
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Coil {
     /// Short string identifier (unique for a given device)
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Description, e.g. “Coil between sector 1 and 2”
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Set of conductors inside the coil. The structure can be used with size 1 for a simplified description as a single conductor. A conductor is composed of several elements, serially connected, i.e. transporting the same current.
     pub conductor: Vec<CoilConductor>,
     /// Number of total turns in the coil. May be a fraction when describing the coil connections.
-    pub turns: Option<FLT_0D>,
+    pub turns: FLT_0D,
     /// Coil resistance
     /// Units: ohm
-    pub resistance: Option<FLT_0D>,
+    pub resistance: FLT_0D,
     /// Current in one turn of the coil (to be multiplied by the number of turns to calculate the magnetic field generated). Sign convention : a positive current flows in the direction in which conductor elements are ordered (from start to end for a positive polarity coil)
     /// Units: A
     pub current: SignalFlt1d,
@@ -192,36 +244,61 @@ pub struct Coil {
     pub neutron_fast_flux_inboard: SignalFlt1d,
 }
 
+impl Default for Coil {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            description: String::new(),
+            conductor: Vec::new(),
+            turns: f64::NAN,
+            resistance: f64::NAN,
+            current: SignalFlt1d::default(),
+            voltage: SignalFlt1d::default(),
+            neutron_fast_flux_inboard: SignalFlt1d::default(),
+        }
+    }
+}
+
 /// Generic decription of the code-specific parameters for the code that has produced this IDS
 #[derive(Debug, Clone, Default)]
 pub struct Code {
     /// Name of software generating IDS
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Short description of the software (type, purpose)
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Unique commit reference of software
-    pub commit: Option<STR_0D>,
+    pub commit: STR_0D,
     /// Unique version (tag) of software
-    pub version: Option<STR_0D>,
+    pub version: STR_0D,
     /// URL of software repository
-    pub repository: Option<STR_0D>,
+    pub repository: STR_0D,
     /// List of the code specific parameters in XML format
-    pub parameters: Option<STR_0D>,
+    pub parameters: STR_0D,
     /// Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-    pub output_flag: Option<INT_1D>,
+    pub output_flag: INT_1D,
     /// List of external libraries used by the code that has produced this IDS
     pub library: Vec<Library>,
 }
 
 /// Standard type for identifiers (dynamic within type 3 array of structures (index on time)). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct IdentifierDynamicAos3 {
     /// Short string identifier
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-    pub index: Option<INT_0D>,
+    pub index: INT_0D,
     /// Verbose description
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
+}
+
+impl Default for IdentifierDynamicAos3 {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            index: EMPTY_INT,
+            description: String::new(),
+        }
+    }
 }
 
 /// Generic grid space (dynamic within a type 3 AoS)
@@ -238,12 +315,12 @@ pub struct GenericGridDynamicSpace {
 }
 
 /// Generic grid grid_subset (dynamic within a type 3 AoS)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct GenericGridDynamicGridSubset {
     /// Grid subset identifier
     pub identifier: IdentifierDynamicAos3,
     /// Space dimension of the grid subset elements, using the convention 1=nodes, 2=edges, 3=faces, 4=cells/volumes
-    pub dimension: Option<INT_0D>,
+    pub dimension: INT_0D,
     /// Set of elements defining the grid subset. An element is defined by a combination of objects from potentially all spaces
     pub element: Vec<GenericGridDynamicGridSubsetElement>,
     /// Set of bases for the grid subset. For each base, the structure describes the projection of the base vectors on the canonical frame of the grid.
@@ -252,8 +329,20 @@ pub struct GenericGridDynamicGridSubset {
     pub metric: GenericGridDynamicGridSubsetMetric,
 }
 
+impl Default for GenericGridDynamicGridSubset {
+    fn default() -> Self {
+        Self {
+            identifier: IdentifierDynamicAos3::default(),
+            dimension: EMPTY_INT,
+            element: Vec::new(),
+            base: Vec::new(),
+            metric: GenericGridDynamicGridSubsetMetric::default(),
+        }
+    }
+}
+
 /// Description of a conductor
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct CoilConductor {
     /// Set of geometrical elements (line segments and/or arcs of a circle) describing the contour of the conductor centre. We define a coordinate system associated to each element as follows: for the arc and circle elements: binormal = (start point - center) x (intermediate point - center). This vector points in the direction of the circle / arc axis. normal = (center - point on curve). The normal vector will rotate as the point moves around the curve. Tangent = normal x binormal. For the line element we require an extra point, using the currently redundant intermediate point to define the line element's normal axis. The local coordinates for the line element then become: tangent = end point - start point; normal = intermediate point - start point; binormal = tangent x normal. It is assumed that all the axes above are normalized such that they have a unit length.
     pub elements: CoilConductorElements,
@@ -261,27 +350,38 @@ pub struct CoilConductor {
     pub cross_section: Vec<CoilCrossSection>,
     /// conductor resistance
     /// Units: ohm
-    pub resistance: Option<FLT_0D>,
+    pub resistance: FLT_0D,
     /// Voltage on the conductor terminals. Sign convention : positive when the current flows in the direction in which conductor elements are ordered (from start to end for a positive polarity coil)
     /// Units: V
     pub voltage: SignalFlt1d,
+}
+
+impl Default for CoilConductor {
+    fn default() -> Self {
+        Self {
+            elements: CoilConductorElements::default(),
+            cross_section: Vec::new(),
+            resistance: f64::NAN,
+            voltage: SignalFlt1d::default(),
+        }
+    }
 }
 
 /// Library used by the code that has produced this IDS
 #[derive(Debug, Clone, Default)]
 pub struct Library {
     /// Name of software
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Short description of the software (type, purpose)
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Unique commit reference of software
-    pub commit: Option<STR_0D>,
+    pub commit: STR_0D,
     /// Unique version (tag) of software
-    pub version: Option<STR_0D>,
+    pub version: STR_0D,
     /// URL of software repository
-    pub repository: Option<STR_0D>,
+    pub repository: STR_0D,
     /// List of the code specific parameters in XML format
-    pub parameters: Option<STR_0D>,
+    pub parameters: STR_0D,
 }
 
 /// Generic grid, list of dimensions within a space (dynamic within a type 3 AoS)
@@ -305,20 +405,20 @@ pub struct GenericGridDynamicGridSubsetElement {
 pub struct GenericGridDynamicGridSubsetMetric {
     /// Metric Jacobian
     /// Units: mixed
-    pub jacobian: Option<FLT_1D>,
+    pub jacobian: FLT_1D,
     /// Covariant metric tensor, given on each element of the subgrid (first dimension)
     /// Units: mixed
-    pub tensor_covariant: Option<FLT_3D>,
+    pub tensor_covariant: FLT_3D,
     /// Contravariant metric tensor, given on each element of the subgrid (first dimension)
     /// Units: mixed
-    pub tensor_contravariant: Option<FLT_3D>,
+    pub tensor_contravariant: FLT_3D,
 }
 
 /// Elements descibring the conductor contour
 #[derive(Debug, Clone, Default)]
 pub struct CoilConductorElements {
     /// Type of every element: 1: line segment, its ends are given by the start and end points; index = 2: arc of a circle; index = 3: full circle
-    pub types: Option<INT_1D>,
+    pub types: INT_1D,
     /// Position of the start point of every element
     pub start_points: CoilNaRphiz1dStatic,
     /// Position of an intermediate point along the circle or arc of circle, for every element, providing the orientation of the element (must define with the corresponding start point an aperture angle strictly inferior to PI). In the case of a line segment (../types/index=1), fill this node with a point such that the vector intermediate_point - start_point defines the direction of the element's normal axis (see documentation of ../elements)
@@ -330,53 +430,88 @@ pub struct CoilConductorElements {
 }
 
 /// Coil cross-section
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct CoilCrossSection {
     /// Geometry type used to describe the cross section of this element. The conductor centre is given by the ../../elements description.
     pub geometry_type: IdentifierStatic,
     /// Full width of the rectangle or square in the normal direction, when geometry_type/index = 3 or 4. Diameter of the circle when geometry_type/index = 2. Outer diameter of the annulus in case geometry_type/index = 5
     /// Units: m
-    pub width: Option<FLT_0D>,
+    pub width: FLT_0D,
     /// Full height of the rectangle in the binormal direction, used only if geometry_type/index = 3
     /// Units: m
-    pub height: Option<FLT_0D>,
+    pub height: FLT_0D,
     /// Inner radius of the annulus, used only if geometry_type/index = 5
     /// Units: m
-    pub radius_inner: Option<FLT_0D>,
+    pub radius_inner: FLT_0D,
     /// Polygonal outline of the cross section in the (normal, binormal) coordinate system. Do NOT repeat the first point.
     pub outline: NormalBinormalStatic,
     /// Area of the conductor cross-section, derived from the above geometric data
     /// Units: m^2
-    pub area: Option<FLT_0D>,
+    pub area: FLT_0D,
+}
+
+impl Default for CoilCrossSection {
+    fn default() -> Self {
+        Self {
+            geometry_type: IdentifierStatic::default(),
+            width: f64::NAN,
+            height: f64::NAN,
+            radius_inner: f64::NAN,
+            outline: NormalBinormalStatic::default(),
+            area: f64::NAN,
+        }
+    }
 }
 
 /// Generic grid, list of objects of a given dimension within a space (dynamic within a type 3 AoS)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct GenericGridDynamicSpaceDimensionObject {
     /// Set of  (n-1)-dimensional objects defining the boundary of this n-dimensional object
     pub boundary: Vec<GenericGridDynamicSpaceDimensionObjectBoundary>,
     /// Geometry data associated with the object, its detailed content is defined by ../../geometry_content. Its dimension depends on the type of object, geometry and coordinate considered.
     /// Units: mixed
-    pub geometry: Option<FLT_1D>,
+    pub geometry: FLT_1D,
     /// List of nodes forming this object (indices to objects_per_dimension(1)%object(:) in Fortran notation)
-    pub nodes: Option<INT_1D>,
+    pub nodes: INT_1D,
     /// Measure of the space object, i.e. physical size (length for 1d, area for 2d, volume for 3d objects,...)
     /// Units: m^dimension
-    pub measure: Option<FLT_0D>,
+    pub measure: FLT_0D,
     /// 2D geometry data associated with the object. Its dimension depends on the type of object, geometry and coordinate considered. Typically, the first dimension represents the object coordinates, while the second dimension would represent the values of the various degrees of freedom of the finite element attached to the object.
     /// Units: mixed
-    pub geometry_2d: Option<FLT_2D>,
+    pub geometry_2d: FLT_2D,
+}
+
+impl Default for GenericGridDynamicSpaceDimensionObject {
+    fn default() -> Self {
+        Self {
+            boundary: Vec::new(),
+            geometry: Default::default(),
+            nodes: Default::default(),
+            measure: f64::NAN,
+            geometry_2d: Default::default(),
+        }
+    }
 }
 
 /// Generic grid, object part of an element part of a grid_subset (dynamic within a type 3 AoS)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct GenericGridDynamicGridSubsetElementObject {
     /// Index of the space from which that object is taken
-    pub space: Option<INT_0D>,
+    pub space: INT_0D,
     /// Dimension of the object - using the convention  1=nodes, 2=edges, 3=faces, 4=cells/volumes
-    pub dimension: Option<INT_0D>,
+    pub dimension: INT_0D,
     /// Object index
-    pub index: Option<INT_0D>,
+    pub index: INT_0D,
+}
+
+impl Default for GenericGridDynamicGridSubsetElementObject {
+    fn default() -> Self {
+        Self {
+            space: EMPTY_INT,
+            dimension: EMPTY_INT,
+            index: EMPTY_INT,
+        }
+    }
 }
 
 /// Structure for list of R, Z, Phi positions (1D, static), with a reference to the types coordinate specific to this IDS
@@ -384,24 +519,34 @@ pub struct GenericGridDynamicGridSubsetElementObject {
 pub struct CoilNaRphiz1dStatic {
     /// Major radius
     /// Units: m
-    pub r: Option<FLT_1D>,
+    pub r: FLT_1D,
     /// Toroidal angle (oriented counter-clockwise when viewed from above)
     /// Units: rad
-    pub phi: Option<FLT_1D>,
+    pub phi: FLT_1D,
     /// Height
     /// Units: m
-    pub z: Option<FLT_1D>,
+    pub z: FLT_1D,
 }
 
 /// Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct IdentifierStatic {
     /// Short string identifier
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-    pub index: Option<INT_0D>,
+    pub index: INT_0D,
     /// Verbose description
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
+}
+
+impl Default for IdentifierStatic {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            index: EMPTY_INT,
+            description: String::new(),
+        }
+    }
 }
 
 /// Structure for list of normal, binormal positions (1D, static)
@@ -409,19 +554,28 @@ pub struct IdentifierStatic {
 pub struct NormalBinormalStatic {
     /// Coordinate along the normal axis
     /// Units: m
-    pub normal: Option<FLT_1D>,
+    pub normal: FLT_1D,
     /// Coordinates along the binormal axis
     /// Units: m
-    pub binormal: Option<FLT_1D>,
+    pub binormal: FLT_1D,
 }
 
 /// Generic grid, description of an object boundary and its neighbours (dynamic within a type 3 AoS)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct GenericGridDynamicSpaceDimensionObjectBoundary {
     /// Index of this (n-1)-dimensional boundary object
-    pub index: Option<INT_0D>,
+    pub index: INT_0D,
     /// List of indices of the n-dimensional objects adjacent to the given n-dimensional object. An object can possibly have multiple neighbours on a boundary
-    pub neighbours: Option<INT_1D>,
+    pub neighbours: INT_1D,
+}
+
+impl Default for GenericGridDynamicSpaceDimensionObjectBoundary {
+    fn default() -> Self {
+        Self {
+            index: EMPTY_INT,
+            neighbours: Default::default(),
+        }
+    }
 }
 
 // ============================================================================
@@ -429,15 +583,15 @@ pub struct GenericGridDynamicSpaceDimensionObjectBoundary {
 // ============================================================================
 
 /// Toroidal field coils
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Tf {
     /// Reference major radius of the device (from the official description of the device). This node is the placeholder for this official machine description quantity (typically the middle of the vessel at the equatorial midplane, although the exact definition may depend on the device)
     /// Units: m
-    pub r0: Option<FLT_0D>,
+    pub r0: FLT_0D,
     /// Flag indicating whether coils are described one by one in the coil() structure (flag=0) or whether the coil structure represents only coils having different characteristics (flag = 1, n_coils must be filled in that case). In the latter case, the coil() sequence is repeated periodically around the torus.
-    pub is_periodic: Option<INT_0D>,
+    pub is_periodic: INT_0D,
     /// Number of coils around the torus, in case is_periodic = 1
-    pub coils_n: Option<INT_0D>,
+    pub coils_n: INT_0D,
     /// Set of coils around the tokamak
     pub coil: Vec<Coil>,
     /// Map of the vacuum field at various time slices, represented using the generic grid description
@@ -450,8 +604,24 @@ pub struct Tf {
     pub delta_b_field_phi_vacuum_r: SignalFlt1d,
     /// Upper bound of the delay between input command received from the RT network and actuator starting to react. Applies globally to the system described by this IDS unless specific latencies (e.g. channel-specific or antenna-specific) are provided at a deeper level in the IDS structure.
     /// Units: s
-    pub latency: Option<FLT_0D>,
+    pub latency: FLT_0D,
     pub code: Code,
+}
+
+impl Default for Tf {
+    fn default() -> Self {
+        Self {
+            r0: f64::NAN,
+            is_periodic: EMPTY_INT,
+            coils_n: EMPTY_INT,
+            coil: Vec::new(),
+            field_map: Vec::new(),
+            b_field_phi_vacuum_r: SignalFlt1d::default(),
+            delta_b_field_phi_vacuum_r: SignalFlt1d::default(),
+            latency: f64::NAN,
+            code: Code::default(),
+        }
+    }
 }
 
 // ============================================================================
@@ -586,7 +756,7 @@ impl<'a> TfCoilConductorSliceView<'a> {
             data,
             elements: TfCoilConductorElementsView::new(data),
             cross_section: TfCoilConductorCrossSectionView::new(data),
-            resistance: Accumulator::new(data, |item: &TfCoilConductor| item.resistance, "resistance"),
+            resistance: Accumulator::new(data, |item: &TfCoilConductor| item.resistance),
             current: TfCoilConductorCurrentView::new(data),
             voltage: TfCoilConductorVoltageView::new(data),
         }
@@ -605,40 +775,10 @@ impl<'a> TfCoilConductorSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple TfCoilConductor
-pub struct TfCoilConductorSliceViewMut<'a> {
-    data: &'a mut [TfCoilConductor],
-}
-
-impl<'a> TfCoilConductorSliceViewMut<'a> {
-    pub fn new(data: &'a mut [TfCoilConductor]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TfCoilConductor> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for TfCoilConductor - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for TfCoilConductor - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait TfCoilConductorIndex<'a> {
     type Output;
     fn get(self, data: &'a [TfCoilConductor]) -> Self::Output;
-}
-
-impl<'a> TfCoilConductorIndex<'a> for usize {
-    type Output = &'a TfCoilConductor;
-    fn get(self, data: &'a [TfCoilConductor]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> TfCoilConductorIndex<'a> for std::ops::Range<usize> {
@@ -683,61 +823,6 @@ impl<'a> TfCoilConductorIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for TfCoilConductor - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait TfCoilConductorMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [TfCoilConductor]) -> Self::Output;
-}
-
-impl<'a> TfCoilConductorMutIndex<'a> for usize {
-    type Output = &'a mut TfCoilConductor;
-    fn get_mut(self, data: &'a mut [TfCoilConductor]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> TfCoilConductorMutIndex<'a> for std::ops::Range<usize> {
-    type Output = TfCoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfCoilConductor]) -> Self::Output {
-        TfCoilConductorSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> TfCoilConductorMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = TfCoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfCoilConductor]) -> Self::Output {
-        TfCoilConductorSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> TfCoilConductorMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = TfCoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfCoilConductor]) -> Self::Output {
-        TfCoilConductorSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> TfCoilConductorMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = TfCoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfCoilConductor]) -> Self::Output {
-        TfCoilConductorSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> TfCoilConductorMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = TfCoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfCoilConductor]) -> Self::Output {
-        TfCoilConductorSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> TfCoilConductorMutIndex<'a> for std::ops::RangeFull {
-    type Output = TfCoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfCoilConductor]) -> Self::Output {
-        TfCoilConductorSliceViewMut::new(data)
-    }
-}
-
 // --- GenericGridScalar View Types ---
 
 /// View over multiple GenericGridScalar with field accumulation
@@ -751,8 +836,8 @@ impl<'a> GenericGridScalarSliceView<'a> {
     pub fn new(data: &'a [GenericGridScalar]) -> Self {
         Self {
             data,
-            grid_index: Accumulator::new(data, |item: &GenericGridScalar| item.grid_index, "grid_index"),
-            grid_subset_index: Accumulator::new(data, |item: &GenericGridScalar| item.grid_subset_index, "grid_subset_index"),
+            grid_index: Accumulator::new(data, |item: &GenericGridScalar| item.grid_index),
+            grid_subset_index: Accumulator::new(data, |item: &GenericGridScalar| item.grid_subset_index),
         }
     }
 
@@ -769,40 +854,10 @@ impl<'a> GenericGridScalarSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple GenericGridScalar
-pub struct GenericGridScalarSliceViewMut<'a> {
-    data: &'a mut [GenericGridScalar],
-}
-
-impl<'a> GenericGridScalarSliceViewMut<'a> {
-    pub fn new(data: &'a mut [GenericGridScalar]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut GenericGridScalar> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for GenericGridScalar - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for GenericGridScalar - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait GenericGridScalarIndex<'a> {
     type Output;
     fn get(self, data: &'a [GenericGridScalar]) -> Self::Output;
-}
-
-impl<'a> GenericGridScalarIndex<'a> for usize {
-    type Output = &'a GenericGridScalar;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> GenericGridScalarIndex<'a> for std::ops::Range<usize> {
@@ -847,61 +902,6 @@ impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for GenericGridScalar - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait GenericGridScalarMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [GenericGridScalar]) -> Self::Output;
-}
-
-impl<'a> GenericGridScalarMutIndex<'a> for usize {
-    type Output = &'a mut GenericGridScalar;
-    fn get_mut(self, data: &'a mut [GenericGridScalar]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> GenericGridScalarMutIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridScalarSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridScalarMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridScalarSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridScalarMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridScalarSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridScalarMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridScalarSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridScalarMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridScalarSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridScalarMutIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridScalarSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceViewMut::new(data)
-    }
-}
-
 // --- GenericGridDynamicSpace View Types ---
 
 /// View over `identifier` (IdentifierDynamicAos3) across multiple GenericGridDynamicSpace
@@ -914,13 +914,9 @@ pub struct GenericGridDynamicSpaceIdentifierView<'a> {
 impl<'a> GenericGridDynamicSpaceIdentifierView<'a> {
     pub fn new(data: &'a [GenericGridDynamicSpace]) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.name.clone(), "identifier.name"),
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.index, "identifier.index"),
-            description: StringAccumulator::new(
-                data,
-                |item: &GenericGridDynamicSpace| item.identifier.description.clone(),
-                "identifier.description",
-            ),
+            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.name.clone()),
+            index: Accumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.index),
+            description: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.description.clone()),
         }
     }
 }
@@ -935,13 +931,9 @@ pub struct GenericGridDynamicSpaceGeometryTypeView<'a> {
 impl<'a> GenericGridDynamicSpaceGeometryTypeView<'a> {
     pub fn new(data: &'a [GenericGridDynamicSpace]) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.name.clone(), "geometry_type.name"),
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.index, "geometry_type.index"),
-            description: StringAccumulator::new(
-                data,
-                |item: &GenericGridDynamicSpace| item.geometry_type.description.clone(),
-                "geometry_type.description",
-            ),
+            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.name.clone()),
+            index: Accumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.index),
+            description: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.description.clone()),
         }
     }
 }
@@ -975,40 +967,10 @@ impl<'a> GenericGridDynamicSpaceSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple GenericGridDynamicSpace
-pub struct GenericGridDynamicSpaceSliceViewMut<'a> {
-    data: &'a mut [GenericGridDynamicSpace],
-}
-
-impl<'a> GenericGridDynamicSpaceSliceViewMut<'a> {
-    pub fn new(data: &'a mut [GenericGridDynamicSpace]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut GenericGridDynamicSpace> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for GenericGridDynamicSpace - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for GenericGridDynamicSpace - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait GenericGridDynamicSpaceIndex<'a> {
     type Output;
     fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceIndex<'a> for usize {
-    type Output = &'a GenericGridDynamicSpace;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::Range<usize> {
@@ -1053,61 +1015,6 @@ impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for GenericGridDynamicSpace - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait GenericGridDynamicSpaceMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpace]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceMutIndex<'a> for usize {
-    type Output = &'a mut GenericGridDynamicSpace;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpace]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceMutIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceMutIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceViewMut::new(data)
-    }
-}
-
 // --- GenericGridDynamicGridSubset View Types ---
 
 /// View over `identifier` (IdentifierDynamicAos3) across multiple GenericGridDynamicGridSubset
@@ -1120,13 +1027,9 @@ pub struct GenericGridDynamicGridSubsetIdentifierView<'a> {
 impl<'a> GenericGridDynamicGridSubsetIdentifierView<'a> {
     pub fn new(data: &'a [GenericGridDynamicGridSubset]) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.name.clone(), "identifier.name"),
-            index: Accumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.index, "identifier.index"),
-            description: StringAccumulator::new(
-                data,
-                |item: &GenericGridDynamicGridSubset| item.identifier.description.clone(),
-                "identifier.description",
-            ),
+            name: StringAccumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.name.clone()),
+            index: Accumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.index),
+            description: StringAccumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.description.clone()),
         }
     }
 }
@@ -1157,7 +1060,7 @@ impl<'a> GenericGridDynamicGridSubsetSliceView<'a> {
         Self {
             data,
             identifier: GenericGridDynamicGridSubsetIdentifierView::new(data),
-            dimension: Accumulator::new(data, |item: &GenericGridDynamicGridSubset| item.dimension, "dimension"),
+            dimension: Accumulator::new(data, |item: &GenericGridDynamicGridSubset| item.dimension),
             metric: GenericGridDynamicGridSubsetMetricView::new(data),
         }
     }
@@ -1175,40 +1078,10 @@ impl<'a> GenericGridDynamicGridSubsetSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple GenericGridDynamicGridSubset
-pub struct GenericGridDynamicGridSubsetSliceViewMut<'a> {
-    data: &'a mut [GenericGridDynamicGridSubset],
-}
-
-impl<'a> GenericGridDynamicGridSubsetSliceViewMut<'a> {
-    pub fn new(data: &'a mut [GenericGridDynamicGridSubset]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut GenericGridDynamicGridSubset> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for GenericGridDynamicGridSubset - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for GenericGridDynamicGridSubset - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait GenericGridDynamicGridSubsetIndex<'a> {
     type Output;
     fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for usize {
-    type Output = &'a GenericGridDynamicGridSubset;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::Range<usize> {
@@ -1250,61 +1123,6 @@ impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeFull {
     type Output = GenericGridDynamicGridSubsetSliceView<'a>;
     fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
         GenericGridDynamicGridSubsetSliceView::new(data)
-    }
-}
-
-/// Mutable index trait for GenericGridDynamicGridSubset - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait GenericGridDynamicGridSubsetMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubset]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetMutIndex<'a> for usize {
-    type Output = &'a mut GenericGridDynamicGridSubset;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubset]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMutIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMutIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceViewMut::new(data)
     }
 }
 
@@ -1407,7 +1225,7 @@ impl<'a> CoilConductorSliceView<'a> {
         Self {
             data,
             elements: CoilConductorElementsView::new(data),
-            resistance: Accumulator::new(data, |item: &CoilConductor| item.resistance, "resistance"),
+            resistance: Accumulator::new(data, |item: &CoilConductor| item.resistance),
             voltage: CoilConductorVoltageView::new(data),
         }
     }
@@ -1425,40 +1243,10 @@ impl<'a> CoilConductorSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple CoilConductor
-pub struct CoilConductorSliceViewMut<'a> {
-    data: &'a mut [CoilConductor],
-}
-
-impl<'a> CoilConductorSliceViewMut<'a> {
-    pub fn new(data: &'a mut [CoilConductor]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut CoilConductor> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for CoilConductor - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for CoilConductor - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait CoilConductorIndex<'a> {
     type Output;
     fn get(self, data: &'a [CoilConductor]) -> Self::Output;
-}
-
-impl<'a> CoilConductorIndex<'a> for usize {
-    type Output = &'a CoilConductor;
-    fn get(self, data: &'a [CoilConductor]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> CoilConductorIndex<'a> for std::ops::Range<usize> {
@@ -1503,61 +1291,6 @@ impl<'a> CoilConductorIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for CoilConductor - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait CoilConductorMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [CoilConductor]) -> Self::Output;
-}
-
-impl<'a> CoilConductorMutIndex<'a> for usize {
-    type Output = &'a mut CoilConductor;
-    fn get_mut(self, data: &'a mut [CoilConductor]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> CoilConductorMutIndex<'a> for std::ops::Range<usize> {
-    type Output = CoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilConductor]) -> Self::Output {
-        CoilConductorSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilConductorMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = CoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilConductor]) -> Self::Output {
-        CoilConductorSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilConductorMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = CoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilConductor]) -> Self::Output {
-        CoilConductorSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilConductorMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = CoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilConductor]) -> Self::Output {
-        CoilConductorSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilConductorMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = CoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilConductor]) -> Self::Output {
-        CoilConductorSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilConductorMutIndex<'a> for std::ops::RangeFull {
-    type Output = CoilConductorSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilConductor]) -> Self::Output {
-        CoilConductorSliceViewMut::new(data)
-    }
-}
-
 // --- Library View Types ---
 
 /// View over multiple Library with field accumulation
@@ -1575,12 +1308,12 @@ impl<'a> LibrarySliceView<'a> {
     pub fn new(data: &'a [Library]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &Library| item.name.clone(), "name"),
-            description: StringAccumulator::new(data, |item: &Library| item.description.clone(), "description"),
-            commit: StringAccumulator::new(data, |item: &Library| item.commit.clone(), "commit"),
-            version: StringAccumulator::new(data, |item: &Library| item.version.clone(), "version"),
-            repository: StringAccumulator::new(data, |item: &Library| item.repository.clone(), "repository"),
-            parameters: StringAccumulator::new(data, |item: &Library| item.parameters.clone(), "parameters"),
+            name: StringAccumulator::new(data, |item: &Library| item.name.clone()),
+            description: StringAccumulator::new(data, |item: &Library| item.description.clone()),
+            commit: StringAccumulator::new(data, |item: &Library| item.commit.clone()),
+            version: StringAccumulator::new(data, |item: &Library| item.version.clone()),
+            repository: StringAccumulator::new(data, |item: &Library| item.repository.clone()),
+            parameters: StringAccumulator::new(data, |item: &Library| item.parameters.clone()),
         }
     }
 
@@ -1597,40 +1330,10 @@ impl<'a> LibrarySliceView<'a> {
     }
 }
 
-/// Mutable view over multiple Library
-pub struct LibrarySliceViewMut<'a> {
-    data: &'a mut [Library],
-}
-
-impl<'a> LibrarySliceViewMut<'a> {
-    pub fn new(data: &'a mut [Library]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Library> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for Library - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for Library - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait LibraryIndex<'a> {
     type Output;
     fn get(self, data: &'a [Library]) -> Self::Output;
-}
-
-impl<'a> LibraryIndex<'a> for usize {
-    type Output = &'a Library;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> LibraryIndex<'a> for std::ops::Range<usize> {
@@ -1675,61 +1378,6 @@ impl<'a> LibraryIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for Library - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait LibraryMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output;
-}
-
-impl<'a> LibraryMutIndex<'a> for usize {
-    type Output = &'a mut Library;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::Range<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeFull {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(data)
-    }
-}
-
 // --- IdentifierDynamicAos3 View Types ---
 
 /// View over multiple IdentifierDynamicAos3 with field accumulation
@@ -1744,9 +1392,9 @@ impl<'a> IdentifierDynamicAos3SliceView<'a> {
     pub fn new(data: &'a [IdentifierDynamicAos3]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &IdentifierDynamicAos3| item.name.clone(), "name"),
-            index: Accumulator::new(data, |item: &IdentifierDynamicAos3| item.index, "index"),
-            description: StringAccumulator::new(data, |item: &IdentifierDynamicAos3| item.description.clone(), "description"),
+            name: StringAccumulator::new(data, |item: &IdentifierDynamicAos3| item.name.clone()),
+            index: Accumulator::new(data, |item: &IdentifierDynamicAos3| item.index),
+            description: StringAccumulator::new(data, |item: &IdentifierDynamicAos3| item.description.clone()),
         }
     }
 
@@ -1763,40 +1411,10 @@ impl<'a> IdentifierDynamicAos3SliceView<'a> {
     }
 }
 
-/// Mutable view over multiple IdentifierDynamicAos3
-pub struct IdentifierDynamicAos3SliceViewMut<'a> {
-    data: &'a mut [IdentifierDynamicAos3],
-}
-
-impl<'a> IdentifierDynamicAos3SliceViewMut<'a> {
-    pub fn new(data: &'a mut [IdentifierDynamicAos3]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut IdentifierDynamicAos3> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for IdentifierDynamicAos3 - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for IdentifierDynamicAos3 - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait IdentifierDynamicAos3Index<'a> {
     type Output;
     fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output;
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for usize {
-    type Output = &'a IdentifierDynamicAos3;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::Range<usize> {
@@ -1841,61 +1459,6 @@ impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for IdentifierDynamicAos3 - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait IdentifierDynamicAos3MutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [IdentifierDynamicAos3]) -> Self::Output;
-}
-
-impl<'a> IdentifierDynamicAos3MutIndex<'a> for usize {
-    type Output = &'a mut IdentifierDynamicAos3;
-    fn get_mut(self, data: &'a mut [IdentifierDynamicAos3]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> IdentifierDynamicAos3MutIndex<'a> for std::ops::Range<usize> {
-    type Output = IdentifierDynamicAos3SliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3MutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = IdentifierDynamicAos3SliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3MutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = IdentifierDynamicAos3SliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3MutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = IdentifierDynamicAos3SliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3MutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = IdentifierDynamicAos3SliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3MutIndex<'a> for std::ops::RangeFull {
-    type Output = IdentifierDynamicAos3SliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceViewMut::new(data)
-    }
-}
-
 // --- GenericGridDynamicSpaceDimension View Types ---
 
 /// View over `geometry_content` (IdentifierDynamicAos3) across multiple GenericGridDynamicSpaceDimension
@@ -1908,21 +1471,9 @@ pub struct GenericGridDynamicSpaceDimensionGeometryContentView<'a> {
 impl<'a> GenericGridDynamicSpaceDimensionGeometryContentView<'a> {
     pub fn new(data: &'a [GenericGridDynamicSpaceDimension]) -> Self {
         Self {
-            name: StringAccumulator::new(
-                data,
-                |item: &GenericGridDynamicSpaceDimension| item.geometry_content.name.clone(),
-                "geometry_content.name",
-            ),
-            index: Accumulator::new(
-                data,
-                |item: &GenericGridDynamicSpaceDimension| item.geometry_content.index,
-                "geometry_content.index",
-            ),
-            description: StringAccumulator::new(
-                data,
-                |item: &GenericGridDynamicSpaceDimension| item.geometry_content.description.clone(),
-                "geometry_content.description",
-            ),
+            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpaceDimension| item.geometry_content.name.clone()),
+            index: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimension| item.geometry_content.index),
+            description: StringAccumulator::new(data, |item: &GenericGridDynamicSpaceDimension| item.geometry_content.description.clone()),
         }
     }
 }
@@ -1954,40 +1505,10 @@ impl<'a> GenericGridDynamicSpaceDimensionSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple GenericGridDynamicSpaceDimension
-pub struct GenericGridDynamicSpaceDimensionSliceViewMut<'a> {
-    data: &'a mut [GenericGridDynamicSpaceDimension],
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionSliceViewMut<'a> {
-    pub fn new(data: &'a mut [GenericGridDynamicSpaceDimension]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut GenericGridDynamicSpaceDimension> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for GenericGridDynamicSpaceDimension - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for GenericGridDynamicSpaceDimension - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait GenericGridDynamicSpaceDimensionIndex<'a> {
     type Output;
     fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for usize {
-    type Output = &'a GenericGridDynamicSpaceDimension;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::Range<usize> {
@@ -2032,61 +1553,6 @@ impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for GenericGridDynamicSpaceDimension - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait GenericGridDynamicSpaceDimensionMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimension]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionMutIndex<'a> for usize {
-    type Output = &'a mut GenericGridDynamicSpaceDimension;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionMutIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionMutIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceDimensionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceViewMut::new(data)
-    }
-}
-
 // --- GenericGridDynamicGridSubsetElement View Types ---
 
 /// View over multiple GenericGridDynamicGridSubsetElement with field accumulation
@@ -2112,40 +1578,10 @@ impl<'a> GenericGridDynamicGridSubsetElementSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple GenericGridDynamicGridSubsetElement
-pub struct GenericGridDynamicGridSubsetElementSliceViewMut<'a> {
-    data: &'a mut [GenericGridDynamicGridSubsetElement],
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementSliceViewMut<'a> {
-    pub fn new(data: &'a mut [GenericGridDynamicGridSubsetElement]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut GenericGridDynamicGridSubsetElement> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for GenericGridDynamicGridSubsetElement - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for GenericGridDynamicGridSubsetElement - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait GenericGridDynamicGridSubsetElementIndex<'a> {
     type Output;
     fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for usize {
-    type Output = &'a GenericGridDynamicGridSubsetElement;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::Range<usize> {
@@ -2190,61 +1626,6 @@ impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for GenericGridDynamicGridSubsetElement - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait GenericGridDynamicGridSubsetElementMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElement]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementMutIndex<'a> for usize {
-    type Output = &'a mut GenericGridDynamicGridSubsetElement;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementMutIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementMutIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetElementSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceViewMut::new(data)
-    }
-}
-
 // --- GenericGridDynamicGridSubsetMetric View Types ---
 
 /// View over multiple GenericGridDynamicGridSubsetMetric with field accumulation
@@ -2270,40 +1651,10 @@ impl<'a> GenericGridDynamicGridSubsetMetricSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple GenericGridDynamicGridSubsetMetric
-pub struct GenericGridDynamicGridSubsetMetricSliceViewMut<'a> {
-    data: &'a mut [GenericGridDynamicGridSubsetMetric],
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricSliceViewMut<'a> {
-    pub fn new(data: &'a mut [GenericGridDynamicGridSubsetMetric]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut GenericGridDynamicGridSubsetMetric> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for GenericGridDynamicGridSubsetMetric - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for GenericGridDynamicGridSubsetMetric - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait GenericGridDynamicGridSubsetMetricIndex<'a> {
     type Output;
     fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for usize {
-    type Output = &'a GenericGridDynamicGridSubsetMetric;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::Range<usize> {
@@ -2348,61 +1699,6 @@ impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for GenericGridDynamicGridSubsetMetric - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait GenericGridDynamicGridSubsetMetricMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetMetric]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricMutIndex<'a> for usize {
-    type Output = &'a mut GenericGridDynamicGridSubsetMetric;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricMutIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricMutIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetMetricSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceViewMut::new(data)
-    }
-}
-
 // --- CoilCrossSection View Types ---
 
 /// View over `geometry_type` (IdentifierStatic) across multiple CoilCrossSection
@@ -2415,13 +1711,9 @@ pub struct CoilCrossSectionGeometryTypeView<'a> {
 impl<'a> CoilCrossSectionGeometryTypeView<'a> {
     pub fn new(data: &'a [CoilCrossSection]) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &CoilCrossSection| item.geometry_type.name.clone(), "geometry_type.name"),
-            index: Accumulator::new(data, |item: &CoilCrossSection| item.geometry_type.index, "geometry_type.index"),
-            description: StringAccumulator::new(
-                data,
-                |item: &CoilCrossSection| item.geometry_type.description.clone(),
-                "geometry_type.description",
-            ),
+            name: StringAccumulator::new(data, |item: &CoilCrossSection| item.geometry_type.name.clone()),
+            index: Accumulator::new(data, |item: &CoilCrossSection| item.geometry_type.index),
+            description: StringAccumulator::new(data, |item: &CoilCrossSection| item.geometry_type.description.clone()),
         }
     }
 }
@@ -2455,11 +1747,11 @@ impl<'a> CoilCrossSectionSliceView<'a> {
         Self {
             data,
             geometry_type: CoilCrossSectionGeometryTypeView::new(data),
-            width: Accumulator::new(data, |item: &CoilCrossSection| item.width, "width"),
-            height: Accumulator::new(data, |item: &CoilCrossSection| item.height, "height"),
-            radius_inner: Accumulator::new(data, |item: &CoilCrossSection| item.radius_inner, "radius_inner"),
+            width: Accumulator::new(data, |item: &CoilCrossSection| item.width),
+            height: Accumulator::new(data, |item: &CoilCrossSection| item.height),
+            radius_inner: Accumulator::new(data, |item: &CoilCrossSection| item.radius_inner),
             outline: CoilCrossSectionOutlineView::new(data),
-            area: Accumulator::new(data, |item: &CoilCrossSection| item.area, "area"),
+            area: Accumulator::new(data, |item: &CoilCrossSection| item.area),
         }
     }
 
@@ -2476,40 +1768,10 @@ impl<'a> CoilCrossSectionSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple CoilCrossSection
-pub struct CoilCrossSectionSliceViewMut<'a> {
-    data: &'a mut [CoilCrossSection],
-}
-
-impl<'a> CoilCrossSectionSliceViewMut<'a> {
-    pub fn new(data: &'a mut [CoilCrossSection]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut CoilCrossSection> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for CoilCrossSection - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for CoilCrossSection - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait CoilCrossSectionIndex<'a> {
     type Output;
     fn get(self, data: &'a [CoilCrossSection]) -> Self::Output;
-}
-
-impl<'a> CoilCrossSectionIndex<'a> for usize {
-    type Output = &'a CoilCrossSection;
-    fn get(self, data: &'a [CoilCrossSection]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> CoilCrossSectionIndex<'a> for std::ops::Range<usize> {
@@ -2554,61 +1816,6 @@ impl<'a> CoilCrossSectionIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for CoilCrossSection - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait CoilCrossSectionMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [CoilCrossSection]) -> Self::Output;
-}
-
-impl<'a> CoilCrossSectionMutIndex<'a> for usize {
-    type Output = &'a mut CoilCrossSection;
-    fn get_mut(self, data: &'a mut [CoilCrossSection]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> CoilCrossSectionMutIndex<'a> for std::ops::Range<usize> {
-    type Output = CoilCrossSectionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilCrossSection]) -> Self::Output {
-        CoilCrossSectionSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilCrossSectionMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = CoilCrossSectionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilCrossSection]) -> Self::Output {
-        CoilCrossSectionSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilCrossSectionMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = CoilCrossSectionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilCrossSection]) -> Self::Output {
-        CoilCrossSectionSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilCrossSectionMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = CoilCrossSectionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilCrossSection]) -> Self::Output {
-        CoilCrossSectionSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilCrossSectionMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = CoilCrossSectionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilCrossSection]) -> Self::Output {
-        CoilCrossSectionSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilCrossSectionMutIndex<'a> for std::ops::RangeFull {
-    type Output = CoilCrossSectionSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [CoilCrossSection]) -> Self::Output {
-        CoilCrossSectionSliceViewMut::new(data)
-    }
-}
-
 // --- GenericGridDynamicSpaceDimensionObject View Types ---
 
 /// View over multiple GenericGridDynamicSpaceDimensionObject with field accumulation
@@ -2621,7 +1828,7 @@ impl<'a> GenericGridDynamicSpaceDimensionObjectSliceView<'a> {
     pub fn new(data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self {
         Self {
             data,
-            measure: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimensionObject| item.measure, "measure"),
+            measure: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimensionObject| item.measure),
         }
     }
 
@@ -2638,40 +1845,10 @@ impl<'a> GenericGridDynamicSpaceDimensionObjectSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple GenericGridDynamicSpaceDimensionObject
-pub struct GenericGridDynamicSpaceDimensionObjectSliceViewMut<'a> {
-    data: &'a mut [GenericGridDynamicSpaceDimensionObject],
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectSliceViewMut<'a> {
-    pub fn new(data: &'a mut [GenericGridDynamicSpaceDimensionObject]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut GenericGridDynamicSpaceDimensionObject> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for GenericGridDynamicSpaceDimensionObject - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for GenericGridDynamicSpaceDimensionObject - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait GenericGridDynamicSpaceDimensionObjectIndex<'a> {
     type Output;
     fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for usize {
-    type Output = &'a GenericGridDynamicSpaceDimensionObject;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::Range<usize> {
@@ -2716,61 +1893,6 @@ impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeFull
     }
 }
 
-/// Mutable index trait for GenericGridDynamicSpaceDimensionObject - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait GenericGridDynamicSpaceDimensionObjectMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObject]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectMutIndex<'a> for usize {
-    type Output = &'a mut GenericGridDynamicSpaceDimensionObject;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectMutIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectMutIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceViewMut::new(data)
-    }
-}
-
 // --- GenericGridDynamicGridSubsetElementObject View Types ---
 
 /// View over multiple GenericGridDynamicGridSubsetElementObject with field accumulation
@@ -2785,9 +1907,9 @@ impl<'a> GenericGridDynamicGridSubsetElementObjectSliceView<'a> {
     pub fn new(data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self {
         Self {
             data,
-            space: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.space, "space"),
-            dimension: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.dimension, "dimension"),
-            index: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.index, "index"),
+            space: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.space),
+            dimension: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.dimension),
+            index: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.index),
         }
     }
 
@@ -2804,40 +1926,10 @@ impl<'a> GenericGridDynamicGridSubsetElementObjectSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple GenericGridDynamicGridSubsetElementObject
-pub struct GenericGridDynamicGridSubsetElementObjectSliceViewMut<'a> {
-    data: &'a mut [GenericGridDynamicGridSubsetElementObject],
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectSliceViewMut<'a> {
-    pub fn new(data: &'a mut [GenericGridDynamicGridSubsetElementObject]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut GenericGridDynamicGridSubsetElementObject> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for GenericGridDynamicGridSubsetElementObject - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for GenericGridDynamicGridSubsetElementObject - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait GenericGridDynamicGridSubsetElementObjectIndex<'a> {
     type Output;
     fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for usize {
-    type Output = &'a GenericGridDynamicGridSubsetElementObject;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::Range<usize> {
@@ -2882,61 +1974,6 @@ impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeF
     }
 }
 
-/// Mutable index trait for GenericGridDynamicGridSubsetElementObject - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait GenericGridDynamicGridSubsetElementObjectMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElementObject]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectMutIndex<'a> for usize {
-    type Output = &'a mut GenericGridDynamicGridSubsetElementObject;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectMutIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectMutIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceViewMut::new(data)
-    }
-}
-
 // --- GenericGridDynamicSpaceDimensionObjectBoundary View Types ---
 
 /// View over multiple GenericGridDynamicSpaceDimensionObjectBoundary with field accumulation
@@ -2949,7 +1986,7 @@ impl<'a> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a> {
     pub fn new(data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self {
         Self {
             data,
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimensionObjectBoundary| item.index, "index"),
+            index: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimensionObjectBoundary| item.index),
         }
     }
 
@@ -2966,40 +2003,10 @@ impl<'a> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a> {
     }
 }
 
-/// Mutable view over multiple GenericGridDynamicSpaceDimensionObjectBoundary
-pub struct GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut<'a> {
-    data: &'a mut [GenericGridDynamicSpaceDimensionObjectBoundary],
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut<'a> {
-    pub fn new(data: &'a mut [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut GenericGridDynamicSpaceDimensionObjectBoundary> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for GenericGridDynamicSpaceDimensionObjectBoundary - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for GenericGridDynamicSpaceDimensionObjectBoundary - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> {
     type Output;
     fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for usize {
-    type Output = &'a GenericGridDynamicSpaceDimensionObjectBoundary;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::Range<usize> {
@@ -3041,61 +2048,6 @@ impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::R
     type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
     fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
         GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(data)
-    }
-}
-
-/// Mutable index trait for GenericGridDynamicSpaceDimensionObjectBoundary - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait GenericGridDynamicSpaceDimensionObjectBoundaryMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryMutIndex<'a> for usize {
-    type Output = &'a mut GenericGridDynamicSpaceDimensionObjectBoundary;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryMutIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryMutIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut::new(data)
     }
 }
 
@@ -3156,10 +2108,10 @@ impl<'a> CoilSliceView<'a> {
     pub fn new(data: &'a [Coil]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &Coil| item.name.clone(), "name"),
-            description: StringAccumulator::new(data, |item: &Coil| item.description.clone(), "description"),
-            turns: Accumulator::new(data, |item: &Coil| item.turns, "turns"),
-            resistance: Accumulator::new(data, |item: &Coil| item.resistance, "resistance"),
+            name: StringAccumulator::new(data, |item: &Coil| item.name.clone()),
+            description: StringAccumulator::new(data, |item: &Coil| item.description.clone()),
+            turns: Accumulator::new(data, |item: &Coil| item.turns),
+            resistance: Accumulator::new(data, |item: &Coil| item.resistance),
             current: CoilCurrentView::new(data),
             voltage: CoilVoltageView::new(data),
             neutron_fast_flux_inboard: CoilNeutronFastFluxInboardView::new(data),
@@ -3179,40 +2131,10 @@ impl<'a> CoilSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple Coil
-pub struct CoilSliceViewMut<'a> {
-    data: &'a mut [Coil],
-}
-
-impl<'a> CoilSliceViewMut<'a> {
-    pub fn new(data: &'a mut [Coil]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Coil> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for Coil - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for Coil - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait CoilIndex<'a> {
     type Output;
     fn get(self, data: &'a [Coil]) -> Self::Output;
-}
-
-impl<'a> CoilIndex<'a> for usize {
-    type Output = &'a Coil;
-    fn get(self, data: &'a [Coil]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> CoilIndex<'a> for std::ops::Range<usize> {
@@ -3257,61 +2179,6 @@ impl<'a> CoilIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for Coil - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait CoilMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [Coil]) -> Self::Output;
-}
-
-impl<'a> CoilMutIndex<'a> for usize {
-    type Output = &'a mut Coil;
-    fn get_mut(self, data: &'a mut [Coil]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> CoilMutIndex<'a> for std::ops::Range<usize> {
-    type Output = CoilSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Coil]) -> Self::Output {
-        CoilSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = CoilSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Coil]) -> Self::Output {
-        CoilSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = CoilSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Coil]) -> Self::Output {
-        CoilSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = CoilSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Coil]) -> Self::Output {
-        CoilSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = CoilSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Coil]) -> Self::Output {
-        CoilSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> CoilMutIndex<'a> for std::ops::RangeFull {
-    type Output = CoilSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Coil]) -> Self::Output {
-        CoilSliceViewMut::new(data)
-    }
-}
-
 // --- TfGgd View Types ---
 
 /// View over `grid.identifier` (IdentifierDynamicAos3) across multiple TfGgd
@@ -3324,9 +2191,9 @@ pub struct TfGgdGridIdentifierView<'a> {
 impl<'a> TfGgdGridIdentifierView<'a> {
     pub fn new(data: &'a [TfGgd]) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &TfGgd| item.grid.identifier.name.clone(), "grid.identifier.name"),
-            index: Accumulator::new(data, |item: &TfGgd| item.grid.identifier.index, "grid.identifier.index"),
-            description: StringAccumulator::new(data, |item: &TfGgd| item.grid.identifier.description.clone(), "grid.identifier.description"),
+            name: StringAccumulator::new(data, |item: &TfGgd| item.grid.identifier.name.clone()),
+            index: Accumulator::new(data, |item: &TfGgd| item.grid.identifier.index),
+            description: StringAccumulator::new(data, |item: &TfGgd| item.grid.identifier.description.clone()),
         }
     }
 }
@@ -3341,7 +2208,7 @@ impl<'a> TfGgdGridView<'a> {
     pub fn new(data: &'a [TfGgd]) -> Self {
         Self {
             identifier: TfGgdGridIdentifierView::new(data),
-            path: StringAccumulator::new(data, |item: &TfGgd| item.grid.path.clone(), "grid.path"),
+            path: StringAccumulator::new(data, |item: &TfGgd| item.grid.path.clone()),
         }
     }
 }
@@ -3358,7 +2225,7 @@ impl<'a> TfGgdSliceView<'a> {
         Self {
             data,
             grid: TfGgdGridView::new(data),
-            time: Accumulator::new(data, |item: &TfGgd| item.time, "time"),
+            time: Accumulator::new(data, |item: &TfGgd| item.time),
         }
     }
 
@@ -3375,40 +2242,10 @@ impl<'a> TfGgdSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple TfGgd
-pub struct TfGgdSliceViewMut<'a> {
-    data: &'a mut [TfGgd],
-}
-
-impl<'a> TfGgdSliceViewMut<'a> {
-    pub fn new(data: &'a mut [TfGgd]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TfGgd> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for TfGgd - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for TfGgd - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait TfGgdIndex<'a> {
     type Output;
     fn get(self, data: &'a [TfGgd]) -> Self::Output;
-}
-
-impl<'a> TfGgdIndex<'a> for usize {
-    type Output = &'a TfGgd;
-    fn get(self, data: &'a [TfGgd]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> TfGgdIndex<'a> for std::ops::Range<usize> {
@@ -3453,76 +2290,15 @@ impl<'a> TfGgdIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for TfGgd - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait TfGgdMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [TfGgd]) -> Self::Output;
-}
-
-impl<'a> TfGgdMutIndex<'a> for usize {
-    type Output = &'a mut TfGgd;
-    fn get_mut(self, data: &'a mut [TfGgd]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> TfGgdMutIndex<'a> for std::ops::Range<usize> {
-    type Output = TfGgdSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfGgd]) -> Self::Output {
-        TfGgdSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> TfGgdMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = TfGgdSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfGgd]) -> Self::Output {
-        TfGgdSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> TfGgdMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = TfGgdSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfGgd]) -> Self::Output {
-        TfGgdSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> TfGgdMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = TfGgdSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfGgd]) -> Self::Output {
-        TfGgdSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> TfGgdMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = TfGgdSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfGgd]) -> Self::Output {
-        TfGgdSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> TfGgdMutIndex<'a> for std::ops::RangeFull {
-    type Output = TfGgdSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [TfGgd]) -> Self::Output {
-        TfGgdSliceViewMut::new(data)
-    }
-}
-
 // ============================================================================
 // Struct Impl Blocks for Vec Field Access
 // ============================================================================
 
 impl TfCoil {
-    /// Access conductor - use index for single element or range for slice view
-    /// e.g. `.conductor(0)` returns `&TfCoilConductor`, `.conductor(0..2)` returns `TfCoilConductorSliceView`
+    /// The slice view over a range of conductor, e.g. `.conductor(0..2)` or `.conductor(..)`,
+    /// whose leaves gather one value per element. A single element is `.conductor[i]`.
     pub fn conductor<'a, I: TfCoilConductorIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.conductor)
-    }
-
-    /// Access conductor mutably - use index for single element or range for slice view
-    /// e.g. `.conductor_mut(0)` returns `&mut TfCoilConductor`, `.conductor_mut(0..2)` returns `TfCoilConductorSliceViewMut`
-    pub fn conductor_mut<'a, I: TfCoilConductorMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.conductor)
     }
 
     /// Get the number of conductor elements
@@ -3532,16 +2308,10 @@ impl TfCoil {
 }
 
 impl TfGgd {
-    /// Access b_field_r - use index for single element or range for slice view
-    /// e.g. `.b_field_r(0)` returns `&GenericGridScalar`, `.b_field_r(0..2)` returns `GenericGridScalarSliceView`
+    /// The slice view over a range of b_field_r, e.g. `.b_field_r(0..2)` or `.b_field_r(..)`,
+    /// whose leaves gather one value per element. A single element is `.b_field_r[i]`.
     pub fn b_field_r<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.b_field_r)
-    }
-
-    /// Access b_field_r mutably - use index for single element or range for slice view
-    /// e.g. `.b_field_r_mut(0)` returns `&mut GenericGridScalar`, `.b_field_r_mut(0..2)` returns `GenericGridScalarSliceViewMut`
-    pub fn b_field_r_mut<'a, I: GenericGridScalarMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.b_field_r)
     }
 
     /// Get the number of b_field_r elements
@@ -3551,16 +2321,10 @@ impl TfGgd {
 }
 
 impl TfGgd {
-    /// Access b_field_z - use index for single element or range for slice view
-    /// e.g. `.b_field_z(0)` returns `&GenericGridScalar`, `.b_field_z(0..2)` returns `GenericGridScalarSliceView`
+    /// The slice view over a range of b_field_z, e.g. `.b_field_z(0..2)` or `.b_field_z(..)`,
+    /// whose leaves gather one value per element. A single element is `.b_field_z[i]`.
     pub fn b_field_z<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.b_field_z)
-    }
-
-    /// Access b_field_z mutably - use index for single element or range for slice view
-    /// e.g. `.b_field_z_mut(0)` returns `&mut GenericGridScalar`, `.b_field_z_mut(0..2)` returns `GenericGridScalarSliceViewMut`
-    pub fn b_field_z_mut<'a, I: GenericGridScalarMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.b_field_z)
     }
 
     /// Get the number of b_field_z elements
@@ -3570,16 +2334,10 @@ impl TfGgd {
 }
 
 impl TfGgd {
-    /// Access b_field_tor - use index for single element or range for slice view
-    /// e.g. `.b_field_tor(0)` returns `&GenericGridScalar`, `.b_field_tor(0..2)` returns `GenericGridScalarSliceView`
+    /// The slice view over a range of b_field_tor, e.g. `.b_field_tor(0..2)` or `.b_field_tor(..)`,
+    /// whose leaves gather one value per element. A single element is `.b_field_tor[i]`.
     pub fn b_field_tor<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.b_field_tor)
-    }
-
-    /// Access b_field_tor mutably - use index for single element or range for slice view
-    /// e.g. `.b_field_tor_mut(0)` returns `&mut GenericGridScalar`, `.b_field_tor_mut(0..2)` returns `GenericGridScalarSliceViewMut`
-    pub fn b_field_tor_mut<'a, I: GenericGridScalarMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.b_field_tor)
     }
 
     /// Get the number of b_field_tor elements
@@ -3589,16 +2347,10 @@ impl TfGgd {
 }
 
 impl TfGgd {
-    /// Access a_field_r - use index for single element or range for slice view
-    /// e.g. `.a_field_r(0)` returns `&GenericGridScalar`, `.a_field_r(0..2)` returns `GenericGridScalarSliceView`
+    /// The slice view over a range of a_field_r, e.g. `.a_field_r(0..2)` or `.a_field_r(..)`,
+    /// whose leaves gather one value per element. A single element is `.a_field_r[i]`.
     pub fn a_field_r<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.a_field_r)
-    }
-
-    /// Access a_field_r mutably - use index for single element or range for slice view
-    /// e.g. `.a_field_r_mut(0)` returns `&mut GenericGridScalar`, `.a_field_r_mut(0..2)` returns `GenericGridScalarSliceViewMut`
-    pub fn a_field_r_mut<'a, I: GenericGridScalarMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.a_field_r)
     }
 
     /// Get the number of a_field_r elements
@@ -3608,16 +2360,10 @@ impl TfGgd {
 }
 
 impl TfGgd {
-    /// Access a_field_z - use index for single element or range for slice view
-    /// e.g. `.a_field_z(0)` returns `&GenericGridScalar`, `.a_field_z(0..2)` returns `GenericGridScalarSliceView`
+    /// The slice view over a range of a_field_z, e.g. `.a_field_z(0..2)` or `.a_field_z(..)`,
+    /// whose leaves gather one value per element. A single element is `.a_field_z[i]`.
     pub fn a_field_z<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.a_field_z)
-    }
-
-    /// Access a_field_z mutably - use index for single element or range for slice view
-    /// e.g. `.a_field_z_mut(0)` returns `&mut GenericGridScalar`, `.a_field_z_mut(0..2)` returns `GenericGridScalarSliceViewMut`
-    pub fn a_field_z_mut<'a, I: GenericGridScalarMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.a_field_z)
     }
 
     /// Get the number of a_field_z elements
@@ -3627,16 +2373,10 @@ impl TfGgd {
 }
 
 impl TfGgd {
-    /// Access a_field_tor - use index for single element or range for slice view
-    /// e.g. `.a_field_tor(0)` returns `&GenericGridScalar`, `.a_field_tor(0..2)` returns `GenericGridScalarSliceView`
+    /// The slice view over a range of a_field_tor, e.g. `.a_field_tor(0..2)` or `.a_field_tor(..)`,
+    /// whose leaves gather one value per element. A single element is `.a_field_tor[i]`.
     pub fn a_field_tor<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.a_field_tor)
-    }
-
-    /// Access a_field_tor mutably - use index for single element or range for slice view
-    /// e.g. `.a_field_tor_mut(0)` returns `&mut GenericGridScalar`, `.a_field_tor_mut(0..2)` returns `GenericGridScalarSliceViewMut`
-    pub fn a_field_tor_mut<'a, I: GenericGridScalarMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.a_field_tor)
     }
 
     /// Get the number of a_field_tor elements
@@ -3646,16 +2386,10 @@ impl TfGgd {
 }
 
 impl GenericGridDynamic {
-    /// Access space - use index for single element or range for slice view
-    /// e.g. `.space(0)` returns `&GenericGridDynamicSpace`, `.space(0..2)` returns `GenericGridDynamicSpaceSliceView`
+    /// The slice view over a range of space, e.g. `.space(0..2)` or `.space(..)`,
+    /// whose leaves gather one value per element. A single element is `.space[i]`.
     pub fn space<'a, I: GenericGridDynamicSpaceIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.space)
-    }
-
-    /// Access space mutably - use index for single element or range for slice view
-    /// e.g. `.space_mut(0)` returns `&mut GenericGridDynamicSpace`, `.space_mut(0..2)` returns `GenericGridDynamicSpaceSliceViewMut`
-    pub fn space_mut<'a, I: GenericGridDynamicSpaceMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.space)
     }
 
     /// Get the number of space elements
@@ -3665,16 +2399,10 @@ impl GenericGridDynamic {
 }
 
 impl GenericGridDynamic {
-    /// Access grid_subset - use index for single element or range for slice view
-    /// e.g. `.grid_subset(0)` returns `&GenericGridDynamicGridSubset`, `.grid_subset(0..2)` returns `GenericGridDynamicGridSubsetSliceView`
+    /// The slice view over a range of grid_subset, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`,
+    /// whose leaves gather one value per element. A single element is `.grid_subset[i]`.
     pub fn grid_subset<'a, I: GenericGridDynamicGridSubsetIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.grid_subset)
-    }
-
-    /// Access grid_subset mutably - use index for single element or range for slice view
-    /// e.g. `.grid_subset_mut(0)` returns `&mut GenericGridDynamicGridSubset`, `.grid_subset_mut(0..2)` returns `GenericGridDynamicGridSubsetSliceViewMut`
-    pub fn grid_subset_mut<'a, I: GenericGridDynamicGridSubsetMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.grid_subset)
     }
 
     /// Get the number of grid_subset elements
@@ -3684,16 +2412,10 @@ impl GenericGridDynamic {
 }
 
 impl Coil {
-    /// Access conductor - use index for single element or range for slice view
-    /// e.g. `.conductor(0)` returns `&CoilConductor`, `.conductor(0..2)` returns `CoilConductorSliceView`
+    /// The slice view over a range of conductor, e.g. `.conductor(0..2)` or `.conductor(..)`,
+    /// whose leaves gather one value per element. A single element is `.conductor[i]`.
     pub fn conductor<'a, I: CoilConductorIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.conductor)
-    }
-
-    /// Access conductor mutably - use index for single element or range for slice view
-    /// e.g. `.conductor_mut(0)` returns `&mut CoilConductor`, `.conductor_mut(0..2)` returns `CoilConductorSliceViewMut`
-    pub fn conductor_mut<'a, I: CoilConductorMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.conductor)
     }
 
     /// Get the number of conductor elements
@@ -3703,16 +2425,10 @@ impl Coil {
 }
 
 impl Code {
-    /// Access library - use index for single element or range for slice view
-    /// e.g. `.library(0)` returns `&Library`, `.library(0..2)` returns `LibrarySliceView`
+    /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
+    /// whose leaves gather one value per element. A single element is `.library[i]`.
     pub fn library<'a, I: LibraryIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.library)
-    }
-
-    /// Access library mutably - use index for single element or range for slice view
-    /// e.g. `.library_mut(0)` returns `&mut Library`, `.library_mut(0..2)` returns `LibrarySliceViewMut`
-    pub fn library_mut<'a, I: LibraryMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.library)
     }
 
     /// Get the number of library elements
@@ -3722,16 +2438,10 @@ impl Code {
 }
 
 impl GenericGridDynamicSpace {
-    /// Access coordinates_type - use index for single element or range for slice view
-    /// e.g. `.coordinates_type(0)` returns `&IdentifierDynamicAos3`, `.coordinates_type(0..2)` returns `IdentifierDynamicAos3SliceView`
+    /// The slice view over a range of coordinates_type, e.g. `.coordinates_type(0..2)` or `.coordinates_type(..)`,
+    /// whose leaves gather one value per element. A single element is `.coordinates_type[i]`.
     pub fn coordinates_type<'a, I: IdentifierDynamicAos3Index<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.coordinates_type)
-    }
-
-    /// Access coordinates_type mutably - use index for single element or range for slice view
-    /// e.g. `.coordinates_type_mut(0)` returns `&mut IdentifierDynamicAos3`, `.coordinates_type_mut(0..2)` returns `IdentifierDynamicAos3SliceViewMut`
-    pub fn coordinates_type_mut<'a, I: IdentifierDynamicAos3MutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.coordinates_type)
     }
 
     /// Get the number of coordinates_type elements
@@ -3741,16 +2451,10 @@ impl GenericGridDynamicSpace {
 }
 
 impl GenericGridDynamicSpace {
-    /// Access objects_per_dimension - use index for single element or range for slice view
-    /// e.g. `.objects_per_dimension(0)` returns `&GenericGridDynamicSpaceDimension`, `.objects_per_dimension(0..2)` returns `GenericGridDynamicSpaceDimensionSliceView`
+    /// The slice view over a range of objects_per_dimension, e.g. `.objects_per_dimension(0..2)` or `.objects_per_dimension(..)`,
+    /// whose leaves gather one value per element. A single element is `.objects_per_dimension[i]`.
     pub fn objects_per_dimension<'a, I: GenericGridDynamicSpaceDimensionIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.objects_per_dimension)
-    }
-
-    /// Access objects_per_dimension mutably - use index for single element or range for slice view
-    /// e.g. `.objects_per_dimension_mut(0)` returns `&mut GenericGridDynamicSpaceDimension`, `.objects_per_dimension_mut(0..2)` returns `GenericGridDynamicSpaceDimensionSliceViewMut`
-    pub fn objects_per_dimension_mut<'a, I: GenericGridDynamicSpaceDimensionMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.objects_per_dimension)
     }
 
     /// Get the number of objects_per_dimension elements
@@ -3760,16 +2464,10 @@ impl GenericGridDynamicSpace {
 }
 
 impl GenericGridDynamicGridSubset {
-    /// Access element - use index for single element or range for slice view
-    /// e.g. `.element(0)` returns `&GenericGridDynamicGridSubsetElement`, `.element(0..2)` returns `GenericGridDynamicGridSubsetElementSliceView`
+    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
+    /// whose leaves gather one value per element. A single element is `.element[i]`.
     pub fn element<'a, I: GenericGridDynamicGridSubsetElementIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.element)
-    }
-
-    /// Access element mutably - use index for single element or range for slice view
-    /// e.g. `.element_mut(0)` returns `&mut GenericGridDynamicGridSubsetElement`, `.element_mut(0..2)` returns `GenericGridDynamicGridSubsetElementSliceViewMut`
-    pub fn element_mut<'a, I: GenericGridDynamicGridSubsetElementMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.element)
     }
 
     /// Get the number of element elements
@@ -3779,16 +2477,10 @@ impl GenericGridDynamicGridSubset {
 }
 
 impl GenericGridDynamicGridSubset {
-    /// Access base - use index for single element or range for slice view
-    /// e.g. `.base(0)` returns `&GenericGridDynamicGridSubsetMetric`, `.base(0..2)` returns `GenericGridDynamicGridSubsetMetricSliceView`
+    /// The slice view over a range of base, e.g. `.base(0..2)` or `.base(..)`,
+    /// whose leaves gather one value per element. A single element is `.base[i]`.
     pub fn base<'a, I: GenericGridDynamicGridSubsetMetricIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.base)
-    }
-
-    /// Access base mutably - use index for single element or range for slice view
-    /// e.g. `.base_mut(0)` returns `&mut GenericGridDynamicGridSubsetMetric`, `.base_mut(0..2)` returns `GenericGridDynamicGridSubsetMetricSliceViewMut`
-    pub fn base_mut<'a, I: GenericGridDynamicGridSubsetMetricMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.base)
     }
 
     /// Get the number of base elements
@@ -3798,16 +2490,10 @@ impl GenericGridDynamicGridSubset {
 }
 
 impl CoilConductor {
-    /// Access cross_section - use index for single element or range for slice view
-    /// e.g. `.cross_section(0)` returns `&CoilCrossSection`, `.cross_section(0..2)` returns `CoilCrossSectionSliceView`
+    /// The slice view over a range of cross_section, e.g. `.cross_section(0..2)` or `.cross_section(..)`,
+    /// whose leaves gather one value per element. A single element is `.cross_section[i]`.
     pub fn cross_section<'a, I: CoilCrossSectionIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.cross_section)
-    }
-
-    /// Access cross_section mutably - use index for single element or range for slice view
-    /// e.g. `.cross_section_mut(0)` returns `&mut CoilCrossSection`, `.cross_section_mut(0..2)` returns `CoilCrossSectionSliceViewMut`
-    pub fn cross_section_mut<'a, I: CoilCrossSectionMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.cross_section)
     }
 
     /// Get the number of cross_section elements
@@ -3817,16 +2503,10 @@ impl CoilConductor {
 }
 
 impl GenericGridDynamicSpaceDimension {
-    /// Access object - use index for single element or range for slice view
-    /// e.g. `.object(0)` returns `&GenericGridDynamicSpaceDimensionObject`, `.object(0..2)` returns `GenericGridDynamicSpaceDimensionObjectSliceView`
+    /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
+    /// whose leaves gather one value per element. A single element is `.object[i]`.
     pub fn object<'a, I: GenericGridDynamicSpaceDimensionObjectIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.object)
-    }
-
-    /// Access object mutably - use index for single element or range for slice view
-    /// e.g. `.object_mut(0)` returns `&mut GenericGridDynamicSpaceDimensionObject`, `.object_mut(0..2)` returns `GenericGridDynamicSpaceDimensionObjectSliceViewMut`
-    pub fn object_mut<'a, I: GenericGridDynamicSpaceDimensionObjectMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.object)
     }
 
     /// Get the number of object elements
@@ -3836,16 +2516,10 @@ impl GenericGridDynamicSpaceDimension {
 }
 
 impl GenericGridDynamicGridSubsetElement {
-    /// Access object - use index for single element or range for slice view
-    /// e.g. `.object(0)` returns `&GenericGridDynamicGridSubsetElementObject`, `.object(0..2)` returns `GenericGridDynamicGridSubsetElementObjectSliceView`
+    /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
+    /// whose leaves gather one value per element. A single element is `.object[i]`.
     pub fn object<'a, I: GenericGridDynamicGridSubsetElementObjectIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.object)
-    }
-
-    /// Access object mutably - use index for single element or range for slice view
-    /// e.g. `.object_mut(0)` returns `&mut GenericGridDynamicGridSubsetElementObject`, `.object_mut(0..2)` returns `GenericGridDynamicGridSubsetElementObjectSliceViewMut`
-    pub fn object_mut<'a, I: GenericGridDynamicGridSubsetElementObjectMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.object)
     }
 
     /// Get the number of object elements
@@ -3855,16 +2529,10 @@ impl GenericGridDynamicGridSubsetElement {
 }
 
 impl GenericGridDynamicSpaceDimensionObject {
-    /// Access boundary - use index for single element or range for slice view
-    /// e.g. `.boundary(0)` returns `&GenericGridDynamicSpaceDimensionObjectBoundary`, `.boundary(0..2)` returns `GenericGridDynamicSpaceDimensionObjectBoundarySliceView`
+    /// The slice view over a range of boundary, e.g. `.boundary(0..2)` or `.boundary(..)`,
+    /// whose leaves gather one value per element. A single element is `.boundary[i]`.
     pub fn boundary<'a, I: GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.boundary)
-    }
-
-    /// Access boundary mutably - use index for single element or range for slice view
-    /// e.g. `.boundary_mut(0)` returns `&mut GenericGridDynamicSpaceDimensionObjectBoundary`, `.boundary_mut(0..2)` returns `GenericGridDynamicSpaceDimensionObjectBoundarySliceViewMut`
-    pub fn boundary_mut<'a, I: GenericGridDynamicSpaceDimensionObjectBoundaryMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.boundary)
     }
 
     /// Get the number of boundary elements
@@ -3874,16 +2542,10 @@ impl GenericGridDynamicSpaceDimensionObject {
 }
 
 impl Tf {
-    /// Access coil - use index for single element or range for slice view
-    /// e.g. `.coil(0)` returns `&Coil`, `.coil(0..2)` returns `CoilSliceView`
+    /// The slice view over a range of coil, e.g. `.coil(0..2)` or `.coil(..)`,
+    /// whose leaves gather one value per element. A single element is `.coil[i]`.
     pub fn coil<'a, I: CoilIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.coil)
-    }
-
-    /// Access coil mutably - use index for single element or range for slice view
-    /// e.g. `.coil_mut(0)` returns `&mut Coil`, `.coil_mut(0..2)` returns `CoilSliceViewMut`
-    pub fn coil_mut<'a, I: CoilMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.coil)
     }
 
     /// Get the number of coil elements
@@ -3893,16 +2555,10 @@ impl Tf {
 }
 
 impl Tf {
-    /// Access field_map - use index for single element or range for slice view
-    /// e.g. `.field_map(0)` returns `&TfGgd`, `.field_map(0..2)` returns `TfGgdSliceView`
+    /// The slice view over a range of field_map, e.g. `.field_map(0..2)` or `.field_map(..)`,
+    /// whose leaves gather one value per element. A single element is `.field_map[i]`.
     pub fn field_map<'a, I: TfGgdIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.field_map)
-    }
-
-    /// Access field_map mutably - use index for single element or range for slice view
-    /// e.g. `.field_map_mut(0)` returns `&mut TfGgd`, `.field_map_mut(0..2)` returns `TfGgdSliceViewMut`
-    pub fn field_map_mut<'a, I: TfGgdMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.field_map)
     }
 
     /// Get the number of field_map elements

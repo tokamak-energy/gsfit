@@ -26,22 +26,22 @@ use ndarray::Array1;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
-    let psi_norm: &Array1<f64> = time_slice.profiles_1d.psi_norm.as_ref().unwrap();
+    let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
     let n_psi_norm: usize = psi_norm.len();
 
     let mut r_inboard_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
     let mut r_outboard_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
 
     // A slice which did not converge has no flux surfaces to measure
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
-        time_slice.profiles_1d.r_inboard = Some(r_inboard_profile);
-        time_slice.profiles_1d.r_outboard = Some(r_outboard_profile);
+        time_slice.profiles_1d.r_inboard = r_inboard_profile;
+        time_slice.profiles_1d.r_outboard = r_outboard_profile;
         return;
     }
 
-    let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r.unwrap();
-    let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z.unwrap();
+    let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r;
+    let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z;
 
     // The magnetic axis is a point, so both radii collapse onto it
     r_inboard_profile[0] = mag_r;
@@ -88,6 +88,6 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         r_outboard_profile[i_psi_norm] = r_crossing_max;
     }
 
-    time_slice.profiles_1d.r_inboard = Some(r_inboard_profile);
-    time_slice.profiles_1d.r_outboard = Some(r_outboard_profile);
+    time_slice.profiles_1d.r_inboard = r_inboard_profile;
+    time_slice.profiles_1d.r_outboard = r_outboard_profile;
 }

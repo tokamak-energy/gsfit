@@ -35,8 +35,8 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let psi_norm_2d: &Array2<f64> = time_slice.profiles_2d[0].psi_norm.as_ref().unwrap();
-    let mask_2d: &Array2<f64> = time_slice.profiles_2d[0].mask.as_ref().unwrap();
+    let psi_norm_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi_norm;
+    let mask_2d: &Array2<f64> = &time_slice.profiles_2d[0].mask;
 
     // The mid-plane is the middle row of the grid
     let (n_z, n_r): (usize, usize) = psi_norm_2d.dim();
@@ -58,7 +58,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
         }
     }
 
-    time_slice.profiles_1d_r_midplane.f = Some(f_profile);
+    time_slice.profiles_1d_r_midplane.f = f_profile;
 }
 
 #[cfg(test)]
@@ -78,7 +78,7 @@ mod tests {
         //   f = sqrt(f_vac ** 2 + coefficient * (1 - psi_norm) ** 2)
         let ff_prime_coefficient: f64 = 12.0;
         let mut time_slice: EquilibriumTimeSlice = time_slice_for_test();
-        time_slice.source_functions.ff_prime.coefficients = Some(array![ff_prime_coefficient]);
+        time_slice.source_functions.ff_prime.coefficients = array![ff_prime_coefficient];
 
         // `i_rod` chosen so that `f_vac` is exactly 1
         let mut constant_values: ConstantValues = constant_values_for_test();
@@ -88,7 +88,7 @@ mod tests {
         calculate(&mut time_slice, &constant_values, &mut intermediate_values_for_test());
 
         // The mid-plane row is `psi_norm = [0.0, 0.25, 0.5, 0.0]` with `mask = [0, 1, 1, 0]`
-        let f_profile: &Array1<f64> = time_slice.profiles_1d_r_midplane.f.as_ref().unwrap();
+        let f_profile: &Array1<f64> = &time_slice.profiles_1d_r_midplane.f;
         assert_abs_diff_eq!(f_profile[0], f_vac, epsilon = 1e-15);
         assert_abs_diff_eq!(f_profile[1], f_expected(0.25, f_vac, ff_prime_coefficient), epsilon = 1e-15);
         assert_abs_diff_eq!(f_profile[2], f_expected(0.5, f_vac, ff_prime_coefficient), epsilon = 1e-15);

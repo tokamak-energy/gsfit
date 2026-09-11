@@ -22,11 +22,10 @@ use imas_rs::EquilibriumTimeSlice;
 /// # Arguments
 /// * `time_slice` - the time-slice whose convergence-expression identifier is written
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    time_slice.convergence.grad_shafranov_deviation_expression.description = Some(
-        "Maximum absolute difference over the plasma poloidal cross-section of the normalised poloidal flux (with normalization being the poloidal flux difference between the axis and boundary) between the current and preceding iteration, on fixed grid points".to_string(),
-    );
-    time_slice.convergence.grad_shafranov_deviation_expression.index = Some(6);
-    time_slice.convergence.grad_shafranov_deviation_expression.name = Some("max_absolute_psi_residual_norm".to_string());
+    time_slice.convergence.grad_shafranov_deviation_expression.description =
+        "Maximum absolute difference over the plasma poloidal cross-section of the normalised poloidal flux (with normalization being the poloidal flux difference between the axis and boundary) between the current and preceding iteration, on fixed grid points".to_string();
+    time_slice.convergence.grad_shafranov_deviation_expression.index = 6;
+    time_slice.convergence.grad_shafranov_deviation_expression.name = "max_absolute_psi_residual_norm".to_string();
 }
 
 #[cfg(test)]
@@ -41,16 +40,14 @@ mod tests {
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        assert_eq!(time_slice.convergence.grad_shafranov_deviation_expression.index, Some(6));
+        assert_eq!(time_slice.convergence.grad_shafranov_deviation_expression.index, 6);
         assert_eq!(
-            time_slice.convergence.grad_shafranov_deviation_expression.name.as_deref(),
-            Some("max_absolute_psi_residual_norm")
+            time_slice.convergence.grad_shafranov_deviation_expression.name,
+            "max_absolute_psi_residual_norm"
         );
         assert_eq!(
-            time_slice.convergence.grad_shafranov_deviation_expression.description.as_deref(),
-            Some(
-                "Maximum absolute difference over the plasma poloidal cross-section of the normalised poloidal flux (with normalization being the poloidal flux difference between the axis and boundary) between the current and preceding iteration, on fixed grid points"
-            )
+            time_slice.convergence.grad_shafranov_deviation_expression.description,
+            "Maximum absolute difference over the plasma poloidal cross-section of the normalised poloidal flux (with normalization being the poloidal flux difference between the axis and boundary) between the current and preceding iteration, on fixed grid points"
         );
     }
 }

@@ -504,10 +504,7 @@ def scalar_accumulator_field(
         projection += ".clone()"
 
     decl = f"    pub {field_name}: {accumulator_type},"
-    init = (
-        f"            {field_name}: {accumulator_ctor}::new("
-        f'data, {projection}, "{field_path}"),'
-    )
+    init = f"            {field_name}: {accumulator_ctor}::new(data, {projection}),"
     return decl, init
 
 
@@ -626,7 +623,7 @@ def generate_slice_view(
     generated_types: set[str],
 ) -> str:
     """
-    Generate SliceView and SliceViewMut for a type used in Vec<T>.
+    Generate the SliceView for a type used in Vec<T>.
     Uses generated_types to avoid creating duplicate type definitions.
     """
     lines = []
@@ -699,186 +696,66 @@ def generate_slice_view(
     lines.append(f"}}")
     lines.append(f"")
 
-    # Generate SliceViewMut
-    slice_view_mut_name = f"{type_name}SliceViewMut"
-    lines.append(f"/// Mutable view over multiple {type_name}")
-    lines.append(f"pub struct {slice_view_mut_name}<'a> {{")
-    lines.append(f"    data: &'a mut [{type_name}],")
-    lines.append(f"}}")
-    lines.append(f"")
-    lines.append(f"impl<'a> {slice_view_mut_name}<'a> {{")
-    lines.append(f"    pub fn new(data: &'a mut [{type_name}]) -> Self {{")
-    lines.append(f"        Self {{ data }}")
-    lines.append(f"    }}")
-    lines.append(f"")
-    lines.append(f"    pub fn len(&self) -> usize {{")
-    lines.append(f"        self.data.len()")
-    lines.append(f"    }}")
-    lines.append(f"")
-    lines.append(f"    pub fn is_empty(&self) -> bool {{")
-    lines.append(f"        self.data.is_empty()")
-    lines.append(f"    }}")
-    lines.append(f"")
-    lines.append(
-        f"    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut {type_name}> {{"
-    )
-    lines.append(f"        self.data.iter_mut()")
-    lines.append(f"    }}")
-    lines.append(f"}}")
-    lines.append(f"")
-
     return "\n".join(lines)
 
 
 def generate_index_traits(type_name: str) -> str:
-    """Generate Index and MutIndex traits for a Vec<T> element type.
+    """Generate the range-index trait for a Vec<T> element type.
 
-    This enables calling .field(0) for single element access and
-    .field(0..2) for range access using the same method name.
+    This is what gives `.field(0..2)` and `.field(..)` their slice view, whose leaves gather one
+    value per element. A single element is reached with ordinary indexing, `.field[i]`, so there
+    is deliberately no `usize` implementation and no mutable counterpart: `Vec` provides both,
+    and a `usize` implementation would only offer a second spelling of the same thing.
     """
     slice_view_name = f"{type_name}SliceView"
-    slice_view_mut_name = f"{type_name}SliceViewMut"
     index_trait_name = f"{type_name}Index"
-    mut_index_trait_name = f"{type_name}MutIndex"
 
     lines = [
-        f"/// Index trait for {type_name} - enables .field(0) and .field(0..2) syntax",
+        f"/// Range-index trait for {type_name} - enables the `.field(0..2)` and `.field(..)` slice view",
         f"pub trait {index_trait_name}<'a> {{",
         f"    type Output;",
         f"    fn get(self, data: &'a [{type_name}]) -> Self::Output;",
         f"}}",
         f"",
-        f"impl<'a> {index_trait_name}<'a> for usize {{",
-        f"    type Output = &'a {type_name};",
-        f"    fn get(self, data: &'a [{type_name}]) -> Self::Output {{",
-        f"        &data[self]",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {index_trait_name}<'a> for std::ops::Range<usize> {{",
-        f"    type Output = {slice_view_name}<'a>;",
-        f"    fn get(self, data: &'a [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_name}::new(&data[self])",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {index_trait_name}<'a> for std::ops::RangeFrom<usize> {{",
-        f"    type Output = {slice_view_name}<'a>;",
-        f"    fn get(self, data: &'a [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_name}::new(&data[self])",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {index_trait_name}<'a> for std::ops::RangeTo<usize> {{",
-        f"    type Output = {slice_view_name}<'a>;",
-        f"    fn get(self, data: &'a [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_name}::new(&data[self])",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {index_trait_name}<'a> for std::ops::RangeInclusive<usize> {{",
-        f"    type Output = {slice_view_name}<'a>;",
-        f"    fn get(self, data: &'a [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_name}::new(&data[self])",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {index_trait_name}<'a> for std::ops::RangeToInclusive<usize> {{",
-        f"    type Output = {slice_view_name}<'a>;",
-        f"    fn get(self, data: &'a [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_name}::new(&data[self])",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {index_trait_name}<'a> for std::ops::RangeFull {{",
-        f"    type Output = {slice_view_name}<'a>;",
-        f"    fn get(self, data: &'a [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_name}::new(data)",
-        f"    }}",
-        f"}}",
-        f"",
-        f"/// Mutable index trait for {type_name} - enables .field_mut(0) and .field_mut(0..2) syntax",
-        f"pub trait {mut_index_trait_name}<'a> {{",
-        f"    type Output;",
-        f"    fn get_mut(self, data: &'a mut [{type_name}]) -> Self::Output;",
-        f"}}",
-        f"",
-        f"impl<'a> {mut_index_trait_name}<'a> for usize {{",
-        f"    type Output = &'a mut {type_name};",
-        f"    fn get_mut(self, data: &'a mut [{type_name}]) -> Self::Output {{",
-        f"        &mut data[self]",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {mut_index_trait_name}<'a> for std::ops::Range<usize> {{",
-        f"    type Output = {slice_view_mut_name}<'a>;",
-        f"    fn get_mut(self, data: &'a mut [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_mut_name}::new(&mut data[self])",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {mut_index_trait_name}<'a> for std::ops::RangeFrom<usize> {{",
-        f"    type Output = {slice_view_mut_name}<'a>;",
-        f"    fn get_mut(self, data: &'a mut [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_mut_name}::new(&mut data[self])",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {mut_index_trait_name}<'a> for std::ops::RangeTo<usize> {{",
-        f"    type Output = {slice_view_mut_name}<'a>;",
-        f"    fn get_mut(self, data: &'a mut [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_mut_name}::new(&mut data[self])",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {mut_index_trait_name}<'a> for std::ops::RangeInclusive<usize> {{",
-        f"    type Output = {slice_view_mut_name}<'a>;",
-        f"    fn get_mut(self, data: &'a mut [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_mut_name}::new(&mut data[self])",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {mut_index_trait_name}<'a> for std::ops::RangeToInclusive<usize> {{",
-        f"    type Output = {slice_view_mut_name}<'a>;",
-        f"    fn get_mut(self, data: &'a mut [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_mut_name}::new(&mut data[self])",
-        f"    }}",
-        f"}}",
-        f"",
-        f"impl<'a> {mut_index_trait_name}<'a> for std::ops::RangeFull {{",
-        f"    type Output = {slice_view_mut_name}<'a>;",
-        f"    fn get_mut(self, data: &'a mut [{type_name}]) -> Self::Output {{",
-        f"        {slice_view_mut_name}::new(data)",
-        f"    }}",
-        f"}}",
-        f"",
     ]
+    for range_type, argument in [
+        ("std::ops::Range<usize>", "&data[self]"),
+        ("std::ops::RangeFrom<usize>", "&data[self]"),
+        ("std::ops::RangeTo<usize>", "&data[self]"),
+        ("std::ops::RangeInclusive<usize>", "&data[self]"),
+        ("std::ops::RangeToInclusive<usize>", "&data[self]"),
+        ("std::ops::RangeFull", "data"),
+    ]:
+        lines.extend(
+            [
+                f"impl<'a> {index_trait_name}<'a> for {range_type} {{",
+                f"    type Output = {slice_view_name}<'a>;",
+                f"    fn get(self, data: &'a [{type_name}]) -> Self::Output {{",
+                f"        {slice_view_name}::new({argument})",
+                f"    }}",
+                f"}}",
+                f"",
+            ]
+        )
     return "\n".join(lines)
 
 
 def generate_vec_field_impl(parent_ct: ComplexType, field: Field) -> str:
     """
-    Generate impl block methods for a Vec<T> field in a struct.
-    Uses the Index traits to enable .field(0) and .field(0..2) syntax.
+    Generate the impl block for a Vec<T> field: the `.field(range)` slice view and `.field_len()`.
+    A single element is `.field[i]`, which needs nothing generated.
     """
     inner_type = field.inner_type
     field_name = sanitize_rust_identifier(field.name)
     index_trait_name = f"{inner_type}Index"
-    mut_index_trait_name = f"{inner_type}MutIndex"
     parent_name = snake_to_pascal_case(parent_ct.name)
 
     lines = [
         f"impl {parent_name} {{",
-        f"    /// Access {field_name} - use index for single element or range for slice view",
-        f"    /// e.g. `.{field_name}(0)` returns `&{inner_type}`, `.{field_name}(0..2)` returns `{inner_type}SliceView`",
+        f"    /// The slice view over a range of {field_name}, e.g. `.{field_name}(0..2)` or `.{field_name}(..)`,",
+        f"    /// whose leaves gather one value per element. A single element is `.{field_name}[i]`.",
         f"    pub fn {field_name}<'a, I: {index_trait_name}<'a>>(&'a self, index: I) -> I::Output {{",
         f"        index.get(&self.{field_name})",
-        f"    }}",
-        f"",
-        f"    /// Access {field_name} mutably - use index for single element or range for slice view",
-        f"    /// e.g. `.{field_name}_mut(0)` returns `&mut {inner_type}`, `.{field_name}_mut(0..2)` returns `{inner_type}SliceViewMut`",
-        f"    pub fn {field_name}_mut<'a, I: {mut_index_trait_name}<'a>>(&'a mut self, index: I) -> I::Output {{",
-        f"        index.get_mut(&mut self.{field_name})",
         f"    }}",
         f"",
         f"    /// Get the number of {field_name} elements",
@@ -948,6 +825,35 @@ def generate_stub_types(referenced_types: set[str]) -> str:
     return "\n".join(lines)
 
 
+# What an unset scalar leaf holds. This is the IMAS convention: a float has NaN; an integer has
+# no NaN, so IMAS reserves `EMPTY_INT` (-999999999); a string is unset when empty. It is what
+# every leaf reads as until something writes it, in Rust and in Python alike, so there is no
+# `Option` to unwrap and no `Some` to write - but a value must be tested with `is_nan()`,
+# `== EMPTY_INT` or `is_empty()`, never against `None`.
+#
+# Anything not listed here - the nD arrays, `Vec<T>` arrays of structures, nested structures -
+# is unset in its ordinary `Default` state, which is empty.
+UNSET_SCALAR_VALUES: dict[str, str] = {
+    "FLT_0D": "f64::NAN",
+    "INT_0D": "EMPTY_INT",
+    "CPX_0D": "CPX_0D::new(f64::NAN, f64::NAN)",
+    "STR_0D": "String::new()",
+}
+
+
+def unset_value_for(f: Field) -> str:
+    """The Rust expression the generated `Default` initialises a field to."""
+    if f.rust_type in UNSET_SCALAR_VALUES:
+        return UNSET_SCALAR_VALUES[f.rust_type]
+    if f.rust_type.startswith("Vec<"):
+        return "Vec::new()"
+    if f.is_base_type:
+        # `FLT_1D::default()` would resolve to ndarray's inherent `default(shape)` constructor
+        # rather than the `Default` trait, so the trait is named explicitly
+        return "Default::default()"
+    return f"{f.rust_type}::default()"
+
+
 def generate_rust_struct(ct: ComplexType) -> str:
     """Generate Rust struct code for a ComplexType."""
     lines = []
@@ -957,9 +863,16 @@ def generate_rust_struct(ct: ComplexType) -> str:
         for line in ct.documentation.split("\n"):
             lines.append(f"/// {line.strip()}")
 
+    # `Default` is derived unless a scalar leaf needs a sentinel: the derived default of a scalar
+    # is `0.0` or `0`, and both are valid measurements, so such a struct gets an explicit `impl`
+    # below which starts every leaf as its IMAS "unset" value (see `unset_value_for`). A struct
+    # made only of arrays, strings and nested structures is unset in its derived state already,
+    # and writing that impl out by hand would only draw `clippy::derivable_impls`.
+    needs_manual_default: bool = any(f.rust_type in UNSET_SCALAR_VALUES and f.rust_type != "STR_0D" for f in ct.fields)
+
     # Struct definition
     struct_name = snake_to_pascal_case(ct.name)
-    lines.append("#[derive(Debug, Clone, Default)]")
+    lines.append("#[derive(Debug, Clone)]" if needs_manual_default else "#[derive(Debug, Clone, Default)]")
     lines.append(f"pub struct {struct_name} {{")
 
     # Fields
@@ -972,14 +885,22 @@ def generate_rust_struct(ct: ComplexType) -> str:
             lines.append(f"    /// Units: {f.units}")
 
         field_name = sanitize_rust_identifier(f.name)
-        # Every base-type leaf is wrapped in Option so that "unset" (None) is unambiguously
-        # distinct from a real value - 0.0 is a valid measurement, and a zero-length array is
-        # a valid result. This matters most for a freshly constructed IDS, where every leaf
-        # must read as absent rather than as an empty array someone might mistake for data.
-        # Arrays of structures (Vec<T>) and nested structs keep their natural empty state.
-        field_type = f"Option<{f.rust_type}>" if f.is_base_type else f.rust_type
-        lines.append(f"    pub {field_name}: {field_type},")
+        lines.append(f"    pub {field_name}: {f.rust_type},")
 
+    lines.append("}")
+    lines.append("")
+
+    if not needs_manual_default:
+        return "\n".join(lines)
+
+    lines.append(f"impl Default for {struct_name} {{")
+    lines.append("    fn default() -> Self {")
+    lines.append("        Self {")
+    for f in ct.fields:
+        field_name = sanitize_rust_identifier(f.name)
+        lines.append(f"            {field_name}: {unset_value_for(f)},")
+    lines.append("        }")
+    lines.append("    }")
     lines.append("}")
     lines.append("")
 
@@ -992,7 +913,7 @@ def generate_root_constructors(
     """Generate sizing constructors (`with_size`, `with_time`) for the root IDS.
 
     `with_size(n_time)` pre-populates the `time_slice` array with `n_time` default
-    (all-`None`) slices. `with_time(&[FLT_0D])` additionally sets each slice's
+    (all-unset) slices. `with_time(&[FLT_0D])` additionally sets each slice's
     `time` field. Only emitted when the root has a `Vec<T>` field named
     `time_slice` (the IMAS convention for a type-3 array of structures).
     """
@@ -1026,12 +947,14 @@ def generate_root_constructors(
         f"impl {root_name} {{",
         f"    /// Create a `{root_name}` pre-populated with `n_time` default (empty) time slices.",
         f"    ///",
-        f"    /// Every leaf field in each slice is unset (`None`), ready to be filled in,",
+        f"    /// Every leaf field in each slice is unset (NaN, `EMPTY_INT`, or empty), ready to be",
+        f"    /// filled in,",
         f"    /// e.g. via `time_slice.par_iter_mut()`.",
         f"    pub fn with_size(n_time: usize) -> Self {{",
-        f"        let mut ids = Self::default();",
-        f"        ids.time_slice = (0..n_time).map(|_| {inner_type}::default()).collect();",
-        f"        ids",
+        f"        Self {{",
+        f"            time_slice: (0..n_time).map(|_| {inner_type}::default()).collect(),",
+        f"            ..Self::default()",
+        f"        }}",
         f"    }}",
     ]
 
@@ -1040,7 +963,7 @@ def generate_root_constructors(
             [
                 f"",
                 f"    /// Create a `{root_name}` with one time slice per entry in `time`,",
-                f"    /// setting each slice's `time` field. All other leaf fields are unset (`None`).",
+                f"    /// setting each slice's `time` field. All other leaf fields are unset.",
                 f"    pub fn with_time(time: &FLT_1D) -> Self {{",
                 f"        let mut ids = Self::with_size(time.len());",
                 f"        ids.allocate_time_slices(time);",
@@ -1056,7 +979,7 @@ def generate_root_constructors(
                 f"    pub fn allocate_time_slices(&mut self, time: &FLT_1D) {{",
                 f"        self.time_slice = (0..time.len()).map(|_| {inner_type}::default()).collect();",
                 f"        for (slice, &t) in self.time_slice.iter_mut().zip(time.iter()) {{",
-                f"            slice.time = Some(t);",
+                f"            slice.time = t;",
                 f"        }}",
                 f"    }}",
             ]
@@ -1304,8 +1227,8 @@ PYTHON_LEAF_TYPES: dict[str, tuple[str, str]] = {
     "INT_0D": ("int", "npt.NDArray[np.int32]"),
     "INT_1D": ("npt.NDArray[np.int32]", "npt.NDArray[np.int32]"),
     "INT_2D": ("npt.NDArray[np.int32]", "npt.NDArray[np.int32]"),
-    "STR_0D": ("str | None", "list[str | None]"),
-    "STR_1D": ("list[str]", "list[list[str] | None]"),
+    "STR_0D": ("str", "list[str]"),
+    "STR_1D": ("list[str]", "list[list[str]]"),
 }
 
 # Names that cannot be written as an attribute in a `.pyi`, which would produce a
@@ -1390,7 +1313,10 @@ def build_path_tree(
             vec_expression = f"{rust_expression}.{rust_name}"
             child_vec_expressions = vec_expressions + [vec_expression]
             child_vec_dd_paths = vec_dd_paths + [child_dd_path]
-            element_expression = f"{vec_expression}.get(at[{len(vec_expressions)}])?"
+            # `gather` resolves every index against the real length before calling the
+            # projection, so plain indexing cannot go out of range here. A single element is
+            # always `.field[i]`; the round-bracket form is reserved for the slice view
+            element_expression = f"{vec_expression}[at[{len(vec_expressions)}]]"
 
             if f.inner_type in ancestry:
                 continue  # self-referential schema; stop rather than recurse forever
@@ -1581,7 +1507,7 @@ def generate_python_paths_rust(
                     "                        indices,\n"
                     f"                        {node.n_levels},\n"
                     f"                        {node.lengths_function},\n"
-                    f"                    |{ids_name}: &{ids_pascal}, {at_parameter}: &[usize]| -> Option<{node.data_type}> {{\n"
+                    f"                    |{ids_name}: &{ids_pascal}, {at_parameter}: &[usize]| -> {node.data_type} {{\n"
                     f"                            {node.projection}\n"
                     "                        },\n"
                     "                    )\n"
@@ -1768,7 +1694,10 @@ def generate_python_stub_section(
     lines.append('        """Read the data at `path` out of this IDS.')
     lines.append("")
     lines.append("        The shape of the result follows the shape of the index: an integer index")
-    lines.append("        gives one value, a slice gathers. Unset floats read back as NaN.")
+    lines.append("        gives one value, a slice gathers.")
+    lines.append("")
+    lines.append("        An unset leaf reads back as the IMAS empty value: NaN for a float,")
+    lines.append("        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.")
     lines.append('        """')
     lines.append("    def __len__(self) -> int:")
     lines.append('        """The number of time slices held by this IDS."""')
@@ -1860,6 +1789,9 @@ def generate_rust_file(
     for accumulator in ("Accumulator", "StringAccumulator"):
         if re.search(rf"\b{accumulator}(::|<)", views_code):
             imported.add(accumulator)
+    # The generated `Default` impls initialise every integer leaf to `EMPTY_INT`
+    if "INT_0D" in imported:
+        imported.add("EMPTY_INT")
     if imported:
         lines.append(f"use crate::dd_base_types::{{{', '.join(sorted(imported))}}};")
         lines.append("")

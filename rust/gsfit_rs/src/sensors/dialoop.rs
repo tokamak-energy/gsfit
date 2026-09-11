@@ -253,14 +253,14 @@ impl Dialoop {
         // `time_slice[0]` because the grid is the same on every time-slice, and `profiles_2d[0]`
         // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` is the (R, Z)
         // mesh, so iterating it row-major gives the flattened grid the Green's tables are indexed by
-        let mesh_r: &Array2<f64> = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).r.as_ref().unwrap();
+        let mesh_r: &Array2<f64> = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied()); // shape = [n_z * n_r]
-        let d_area: f64 = plasma.equilibrium_ids.time_slice(0).profiles_2d(0).grid.d_area.unwrap();
-        let time: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.unwrap();
+        let d_area: f64 = plasma.equilibrium_ids.time_slice[0].profiles_2d[0].grid.d_area;
+        let time: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.to_array();
         // The rod current is not a data dictionary node, so it is recovered from the vacuum
         // toroidal field
-        let r0: f64 = plasma.equilibrium_ids.vacuum_toroidal_field.r0.unwrap();
-        let b0: &Array1<f64> = plasma.equilibrium_ids.vacuum_toroidal_field.b0.as_ref().unwrap();
+        let r0: f64 = plasma.equilibrium_ids.vacuum_toroidal_field.r0;
+        let b0: &Array1<f64> = &plasma.equilibrium_ids.vacuum_toroidal_field.b0;
 
         let n_time: usize = time.len();
 
@@ -268,8 +268,8 @@ impl Dialoop {
             let mut values: Array1<f64> = Array1::zeros(n_time);
 
             'loop_over_time_slices: for i_time in 0..n_time {
-                let time_slice: &EquilibriumTimeSlice = plasma.equilibrium_ids.time_slice(i_time);
-                let convergence_flag: i32 = time_slice.convergence.result.index.unwrap();
+                let time_slice: &EquilibriumTimeSlice = &plasma.equilibrium_ids.time_slice[i_time];
+                let convergence_flag: i32 = time_slice.convergence.result.index;
                 if convergence_flag != 1 {
                     // Unconverged time-slice, skip processing
                     values[i_time] = f64::NAN; // Mark unconverged time-slice as NaN
@@ -277,11 +277,11 @@ impl Dialoop {
                 }
 
                 // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid
-                let psi_n_2d: &Array2<f64> = time_slice.profiles_2d(0).psi_norm.as_ref().unwrap();
-                let mask_2d: &Array2<f64> = time_slice.profiles_2d(0).mask.as_ref().unwrap();
+                let psi_n_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi_norm;
+                let mask_2d: &Array2<f64> = &time_slice.profiles_2d[0].mask;
                 let psi_n_flat: Array1<f64> = Array1::from_iter(psi_n_2d.iter().copied());
                 let mask_flat: Array1<f64> = Array1::from_iter(mask_2d.iter().copied());
-                let ff_dof: Array1<f64> = time_slice.source_functions.ff_prime.coefficients.as_ref().unwrap().to_owned();
+                let ff_dof: Array1<f64> = time_slice.source_functions.ff_prime.coefficients.to_owned();
 
                 // Vacuum toroidal flux function: f_vac = R0 * B_phi0 = MU_0 * i_rod / (2 * PI)
                 let i_rod: f64 = 2.0 * PI * r0 * b0[i_time] / MU_0;
@@ -295,7 +295,7 @@ impl Dialoop {
                 // (f_vac < 0) yields a negative f, matching the vacuum boundary condition
                 // f(psi_n = 1) = f_vac; otherwise the diamagnetic flux gets the wrong sign.
                 let f_sign: f64 = if f_vac >= 0.0 { 1.0 } else { -1.0 };
-                let d_psi: f64 = time_slice.boundary.psi.unwrap() - time_slice.global_quantities.psi_magnetic_axis.unwrap();
+                let d_psi: f64 = time_slice.boundary.psi - time_slice.global_quantities.psi_magnetic_axis;
                 let f_squared: Array1<f64> = 2.0 * d_psi * &g_integral + f_vac * f_vac;
                 let f_minus_f_vac: Array1<f64> = f_sign * f_squared.mapv(f64::sqrt) - f_vac;
 

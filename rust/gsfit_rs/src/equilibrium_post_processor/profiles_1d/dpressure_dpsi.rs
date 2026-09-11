@@ -17,8 +17,8 @@ use ndarray::Array1;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let p_prime_source_function: &SharedSourceFunction = constant_values.p_prime_source_function;
 
-    let psi_norm: &Array1<f64> = time_slice.profiles_1d.psi_norm.as_ref().unwrap();
-    let p_prime_dof_values: &Array1<f64> = time_slice.source_functions.p_prime.coefficients.as_ref().unwrap();
+    let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
+    let p_prime_dof_values: &Array1<f64> = &time_slice.source_functions.p_prime.coefficients;
 
     // p′(ψ_N) is one of the two source functions the Grad-Shafranov equation is parameterised by,
     // and the solver has already fitted its degrees of freedom. So the profile is just the source
@@ -26,5 +26,5 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     // the pressure itself.
     let p_prime_profile: Array1<f64> = p_prime_source_function.source_function_value(psi_norm, p_prime_dof_values);
 
-    time_slice.profiles_1d.dpressure_dpsi = Some(p_prime_profile);
+    time_slice.profiles_1d.dpressure_dpsi = p_prime_profile;
 }

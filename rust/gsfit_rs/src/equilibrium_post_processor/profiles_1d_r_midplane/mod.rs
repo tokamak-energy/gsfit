@@ -36,17 +36,17 @@ pub(super) fn time_slice_for_test() -> EquilibriumTimeSlice {
     let j_phi_2d: Array2<f64> = array![[99.0, 99.0, 99.0, 99.0], [0.0, 3.0, 4.0, 0.0], [99.0, 99.0, 99.0, 99.0]];
 
     let mut profiles_2d: EquilibriumProfiles2d = EquilibriumProfiles2d::default();
-    profiles_2d.grid.dim1 = Some(array![0.2, 0.4, 0.6, 0.8]);
-    profiles_2d.grid.dim2 = Some(array![-0.5, 0.0, 0.5]);
-    profiles_2d.psi_norm = Some(psi_norm_2d);
-    profiles_2d.mask = Some(mask_2d);
-    profiles_2d.j_phi = Some(j_phi_2d);
+    profiles_2d.grid.dim1 = array![0.2, 0.4, 0.6, 0.8];
+    profiles_2d.grid.dim2 = array![-0.5, 0.0, 0.5];
+    profiles_2d.psi_norm = psi_norm_2d;
+    profiles_2d.mask = mask_2d;
+    profiles_2d.j_phi = j_phi_2d;
 
     let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-    time_slice.global_quantities.psi_magnetic_axis = Some(0.0);
-    time_slice.boundary.psi = Some(-1.0);
-    time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.5, 1.0]);
-    time_slice.profiles_1d.q = Some(array![1.0, 2.0, 8.0]);
+    time_slice.global_quantities.psi_magnetic_axis = 0.0;
+    time_slice.boundary.psi = -1.0;
+    time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
+    time_slice.profiles_1d.q = array![1.0, 2.0, 8.0];
     time_slice.profiles_2d = vec![profiles_2d];
 
     return time_slice;

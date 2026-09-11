@@ -21,11 +21,11 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let ff_prime_source_function: &SharedSourceFunction = constant_values.ff_prime_source_function;
     let i_rod: f64 = constant_values.i_rod;
 
-    let psi_norm: &Array1<f64> = time_slice.profiles_1d.psi_norm.as_ref().unwrap();
-    let ff_prime_dof_values: &Array1<f64> = time_slice.source_functions.ff_prime.coefficients.as_ref().unwrap();
+    let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
+    let ff_prime_dof_values: &Array1<f64> = &time_slice.source_functions.ff_prime.coefficients;
 
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
-    let psi_b: f64 = time_slice.boundary.psi.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
+    let psi_b: f64 = time_slice.boundary.psi;
 
     let n_psi_norm: usize = psi_norm.len();
 
@@ -49,7 +49,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
         f_profile[i_psi_norm] = value_from_source_function(psi_norm[i_psi_norm], ff_prime_source_function, ff_prime_dof_values, f_vac, d_psi_d_psi_norm);
     }
 
-    time_slice.profiles_1d.f = Some(f_profile);
+    time_slice.profiles_1d.f = f_profile;
 }
 
 /// Evaluate the fitted poloidal-current function at one normalised poloidal flux.
@@ -59,9 +59,9 @@ pub(in crate::equilibrium_post_processor) fn value_at_psi_norm(
     i_rod: f64,
     psi_norm: f64,
 ) -> f64 {
-    let ff_prime_dof_values: &Array1<f64> = time_slice.source_functions.ff_prime.coefficients.as_ref().unwrap();
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
-    let psi_b: f64 = time_slice.boundary.psi.unwrap();
+    let ff_prime_dof_values: &Array1<f64> = &time_slice.source_functions.ff_prime.coefficients;
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
+    let psi_b: f64 = time_slice.boundary.psi;
     let f_vac: f64 = i_rod * MU_0 / (2.0 * PI);
     let d_psi_d_psi_norm: f64 = psi_b - psi_a;
 

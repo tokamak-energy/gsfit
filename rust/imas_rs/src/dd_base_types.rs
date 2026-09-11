@@ -26,9 +26,12 @@ pub type INT_0D = i32;
 
 /// The IMAS marker for an unset integer.
 ///
-/// A float has `NaN` to say "no value", but an integer has no such value, so IMAS reserves one:
-/// every unset `INT` reads back as this. It is what an unset integer becomes on the way out to
-/// Python; inside Rust an unset leaf stays `None`, which is the truthful representation.
+/// Every leaf of a freshly constructed IDS holds its "unset" value, and only holds a real value
+/// once something has written one. The unset values follow the IMAS convention: a float is `NaN`,
+/// a string or an array is empty, and an integer, which has no `NaN`, is this reserved value. They
+/// are the same in Rust and in Python, so there is nothing to unwrap on the way in and nothing to
+/// translate on the way out. Test for them with `is_nan()`, `== EMPTY_INT` or `is_empty()`; a
+/// float can never be tested with `==`, because `NaN != NaN`.
 pub const EMPTY_INT: INT_0D = -999999999;
 
 /// Floating-point scalar (double precision)
@@ -154,17 +157,16 @@ pub type StructArray<T> = Vec<T>;
 /// Lazily gathers one `Copy` scalar leaf field across a slice of IMAS structures.
 ///
 /// `T` is the array-of-structures element type (e.g. `EquilibriumTimeSlice`) and
-/// `U` the leaf's scalar type (`f64`, `i32`, `Complex64`).
+/// `U` the leaf's scalar type (`f64`, `i32`, `Complex64`). An unset element gathers
+/// as its unset value (`NaN`, `EMPTY_INT`), like any other.
 pub struct Accumulator<'a, T, U> {
     data: &'a [T],
-    project: fn(&T) -> Option<U>,
-    /// DD path of the gathered leaf, used in the panic message from `unwrap`.
-    path: &'static str,
+    project: fn(&T) -> U,
 }
 
 impl<'a, T, U> Accumulator<'a, T, U> {
-    pub fn new(data: &'a [T], project: fn(&T) -> Option<U>, path: &'static str) -> Self {
-        Self { data, project, path }
+    pub fn new(data: &'a [T], project: fn(&T) -> U) -> Self {
+        Self { data, project }
     }
 
     /// Number of elements gathered over.
@@ -176,26 +178,13 @@ impl<'a, T, U> Accumulator<'a, T, U> {
         self.data.is_empty()
     }
 
-    /// The DD path this accumulator reads, e.g. `global_quantities.magnetic_axis.r`.
-    pub fn path(&self) -> &'static str {
-        self.path
-    }
-
     /// Gather every value into an `Array1`.
-    ///
-    /// Panics if any element is unset (`None`), naming the offending path and
-    /// index, rather than silently substituting a placeholder value.
-    pub fn unwrap(&self) -> Array1<U> {
-        Array1::from_iter(
-            self.data
-                .iter()
-                .enumerate()
-                .map(|(index, item)| (self.project)(item).unwrap_or_else(|| panic!("{} is unset (None) at element {}", self.path, index))),
-        )
+    pub fn to_array(&self) -> Array1<U> {
+        Array1::from_iter(self.data.iter().map(|item| (self.project)(item)))
     }
 
-    /// Gather every value, keeping unset elements as `None`.
-    pub fn to_vec(&self) -> Vec<Option<U>> {
+    /// Gather every value into a `Vec`.
+    pub fn to_vec(&self) -> Vec<U> {
         self.data.iter().map(|item| (self.project)(item)).collect()
     }
 }
@@ -204,17 +193,15 @@ impl<'a, T, U> Accumulator<'a, T, U> {
 ///
 /// Separate from [`Accumulator`] because `String` is not `Copy`: values are
 /// cloned by the projection, and the gathered form is a `Vec<String>` rather
-/// than an `Array1`.
+/// than an `Array1`. An unset element gathers as an empty string.
 pub struct StringAccumulator<'a, T> {
     data: &'a [T],
-    project: fn(&T) -> Option<String>,
-    /// DD path of the gathered leaf, used in the panic message from `unwrap`.
-    path: &'static str,
+    project: fn(&T) -> String,
 }
 
 impl<'a, T> StringAccumulator<'a, T> {
-    pub fn new(data: &'a [T], project: fn(&T) -> Option<String>, path: &'static str) -> Self {
-        Self { data, project, path }
+    pub fn new(data: &'a [T], project: fn(&T) -> String) -> Self {
+        Self { data, project }
     }
 
     /// Number of elements gathered over.
@@ -226,67 +213,11 @@ impl<'a, T> StringAccumulator<'a, T> {
         self.data.is_empty()
     }
 
-    /// The DD path this accumulator reads.
-    pub fn path(&self) -> &'static str {
-        self.path
-    }
-
     /// Gather every value into a `Vec<String>`.
-    ///
-    /// Panics if any element is unset (`None`), naming the offending path and index.
-    pub fn unwrap(&self) -> Vec<String> {
-        self.data
-            .iter()
-            .enumerate()
-            .map(|(index, item)| (self.project)(item).unwrap_or_else(|| panic!("{} is unset (None) at element {}", self.path, index)))
-            .collect()
-    }
-
-    /// Gather every value, keeping unset elements as `None`.
-    pub fn to_vec(&self) -> Vec<Option<String>> {
+    pub fn to_vec(&self) -> Vec<String> {
         self.data.iter().map(|item| (self.project)(item)).collect()
     }
 }
-
-// ============================================================================
-// Optional/Nullable Variants
-// ============================================================================
-
-// In IMAS, many fields are optional. These type aliases provide clarity
-// when a field may or may not be present.
-
-/// Optional integer scalar
-pub type INT_0D_OPT = Option<INT_0D>;
-
-/// Optional floating-point scalar
-pub type FLT_0D_OPT = Option<FLT_0D>;
-
-/// Optional string scalar
-pub type STR_0D_OPT = Option<STR_0D>;
-
-/// Optional complex scalar
-pub type CPX_0D_OPT = Option<CPX_0D>;
-
-/// Optional 1D integer array
-pub type INT_1D_OPT = Option<INT_1D>;
-
-/// Optional 1D floating-point array
-pub type FLT_1D_OPT = Option<FLT_1D>;
-
-/// Optional 1D string array
-pub type STR_1D_OPT = Option<STR_1D>;
-
-/// Optional 1D complex array
-pub type CPX_1D_OPT = Option<CPX_1D>;
-
-/// Optional 2D integer array
-pub type INT_2D_OPT = Option<INT_2D>;
-
-/// Optional 2D floating-point array
-pub type FLT_2D_OPT = Option<FLT_2D>;
-
-/// Optional 2D complex array
-pub type CPX_2D_OPT = Option<CPX_2D>;
 
 // ============================================================================
 // Re-exports for convenience

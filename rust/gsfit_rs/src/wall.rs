@@ -57,9 +57,9 @@ impl Wall {
     pub fn new() -> Self {
         let mut description_2d: Wall2d = Wall2d::default();
         description_2d.r#type = IdentifierStatic {
-            name: Some("multiple_units_no_vessel".to_string()),
-            index: Some(1),
-            description: Some("Limiter is described with multiple units, no vessel description".to_string()),
+            name: "multiple_units_no_vessel".to_string(),
+            index: 1,
+            description: "Limiter is described with multiple units, no vessel description".to_string(),
         };
 
         let mut wall_ids: WallIds = WallIds::default();
@@ -99,11 +99,8 @@ impl Wall {
         }
 
         let mut limiter_unit: Wall2dLimiterUnit = Wall2dLimiterUnit::default();
-        limiter_unit.name = Some(name.to_string());
-        limiter_unit.outline = Rz1dStatic {
-            r: Some(unit_r),
-            z: Some(unit_z),
-        };
+        limiter_unit.name = name.to_string();
+        limiter_unit.outline = Rz1dStatic { r: unit_r, z: unit_z };
 
         let description_2d: &mut Wall2d = self
             .wall_ids
@@ -139,14 +136,8 @@ impl Wall {
             Ok(units) => {
                 let n_units: usize = units.len();
                 for i_unit in 0..n_units {
-                    let unit_name: &str = match &units[i_unit].name {
-                        Some(unit_name) => unit_name,
-                        None => "<unnamed>",
-                    };
-                    let n_points: usize = match &units[i_unit].outline.r {
-                        Some(unit_r) => unit_r.len(),
-                        None => 0,
-                    };
+                    let unit_name: &str = if units[i_unit].name.is_empty() { "<unnamed>" } else { &units[i_unit].name };
+                    let n_points: usize = units[i_unit].outline.r.len();
                     string_output += &format!("║  {:<74} ║\n", format!(" limiter unit({i_unit}) = {unit_name}; points = {n_points}"));
                 }
             }
@@ -175,16 +166,14 @@ fn limiter_units(wall_ids: &WallIds) -> Result<&Vec<Wall2dLimiterUnit>, String> 
 /// The outline of one limiter unit, checked for the two coordinates being present and the
 /// same length.
 fn unit_outline(unit: &Wall2dLimiterUnit, i_unit: usize) -> Result<(&Array1<f64>, &Array1<f64>), String> {
-    let unit_r: &Array1<f64> = unit
-        .outline
-        .r
-        .as_ref()
-        .ok_or_else(|| format!("`wall/description_2d(0)/limiter/unit({i_unit})/outline/r` is unset"))?;
-    let unit_z: &Array1<f64> = unit
-        .outline
-        .z
-        .as_ref()
-        .ok_or_else(|| format!("`wall/description_2d(0)/limiter/unit({i_unit})/outline/z` is unset"))?;
+    let unit_r: &Array1<f64> = &unit.outline.r;
+    let unit_z: &Array1<f64> = &unit.outline.z;
+    if unit_r.is_empty() {
+        return Err(format!("`wall/description_2d(0)/limiter/unit({i_unit})/outline/r` is unset"));
+    }
+    if unit_z.is_empty() {
+        return Err(format!("`wall/description_2d(0)/limiter/unit({i_unit})/outline/z` is unset"));
+    }
 
     if unit_r.len() != unit_z.len() {
         return Err(format!(
@@ -266,11 +255,8 @@ mod tests {
         let mut wall: Wall = Wall::new();
         for (unit_name, unit_r, unit_z) in units {
             let mut limiter_unit: Wall2dLimiterUnit = Wall2dLimiterUnit::default();
-            limiter_unit.name = Some(unit_name.to_string());
-            limiter_unit.outline = Rz1dStatic {
-                r: Some(unit_r),
-                z: Some(unit_z),
-            };
+            limiter_unit.name = unit_name.to_string();
+            limiter_unit.outline = Rz1dStatic { r: unit_r, z: unit_z };
             wall.wall_ids.description_2d[0].limiter.unit.push(limiter_unit);
         }
 

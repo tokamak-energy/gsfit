@@ -24,9 +24,9 @@ use imas_rs::EquilibriumTimeSlice;
 /// * `time_slice` - the time-slice whose `profiles_2d(0)/type` identifier is written
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on one rectangular (R, Z) grid.
-    time_slice.profiles_2d[0].r#type.description = Some("Total fields".to_string());
-    time_slice.profiles_2d[0].r#type.index = Some(0);
-    time_slice.profiles_2d[0].r#type.name = Some("total".to_string());
+    time_slice.profiles_2d[0].r#type.description = "Total fields".to_string();
+    time_slice.profiles_2d[0].r#type.index = 0;
+    time_slice.profiles_2d[0].r#type.name = "total".to_string();
 }
 
 #[cfg(test)]
@@ -43,8 +43,8 @@ mod tests {
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        assert_eq!(time_slice.profiles_2d[0].r#type.description.as_deref(), Some("Total fields"));
-        assert_eq!(time_slice.profiles_2d[0].r#type.index, Some(0));
-        assert_eq!(time_slice.profiles_2d[0].r#type.name.as_deref(), Some("total"));
+        assert_eq!(time_slice.profiles_2d[0].r#type.description, "Total fields");
+        assert_eq!(time_slice.profiles_2d[0].r#type.index, 0);
+        assert_eq!(time_slice.profiles_2d[0].r#type.name, "total");
     }
 }

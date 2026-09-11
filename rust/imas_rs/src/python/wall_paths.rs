@@ -39,7 +39,7 @@ fn lengths_description_2d(wall: &Wall, level: usize, _at: &[usize]) -> Option<us
 fn lengths_description_2d_limiter_unit(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_2d.len()),
-        1 => return Some(wall.description_2d.get(at[0])?.limiter.unit.len()),
+        1 => return Some(wall.description_2d[at[0]].limiter.unit.len()),
         _ => return None,
     }
 }
@@ -48,7 +48,7 @@ fn lengths_description_2d_limiter_unit(wall: &Wall, level: usize, at: &[usize]) 
 fn lengths_description_2d_mobile_unit(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_2d.len()),
-        1 => return Some(wall.description_2d.get(at[0])?.mobile.unit.len()),
+        1 => return Some(wall.description_2d[at[0]].mobile.unit.len()),
         _ => return None,
     }
 }
@@ -57,8 +57,8 @@ fn lengths_description_2d_mobile_unit(wall: &Wall, level: usize, at: &[usize]) -
 fn lengths_description_2d_mobile_unit_outline(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_2d.len()),
-        1 => return Some(wall.description_2d.get(at[0])?.mobile.unit.len()),
-        2 => return Some(wall.description_2d.get(at[0])?.mobile.unit.get(at[1])?.outline.len()),
+        1 => return Some(wall.description_2d[at[0]].mobile.unit.len()),
+        2 => return Some(wall.description_2d[at[0]].mobile.unit[at[1]].outline.len()),
         _ => return None,
     }
 }
@@ -67,7 +67,7 @@ fn lengths_description_2d_mobile_unit_outline(wall: &Wall, level: usize, at: &[u
 fn lengths_description_2d_vessel_unit(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_2d.len()),
-        1 => return Some(wall.description_2d.get(at[0])?.vessel.unit.len()),
+        1 => return Some(wall.description_2d[at[0]].vessel.unit.len()),
         _ => return None,
     }
 }
@@ -76,8 +76,8 @@ fn lengths_description_2d_vessel_unit(wall: &Wall, level: usize, at: &[usize]) -
 fn lengths_description_2d_vessel_unit_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_2d.len()),
-        1 => return Some(wall.description_2d.get(at[0])?.vessel.unit.len()),
-        2 => return Some(wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.element.len()),
+        1 => return Some(wall.description_2d[at[0]].vessel.unit.len()),
+        2 => return Some(wall.description_2d[at[0]].vessel.unit[at[1]].element.len()),
         _ => return None,
     }
 }
@@ -86,8 +86,8 @@ fn lengths_description_2d_vessel_unit_element(wall: &Wall, level: usize, at: &[u
 fn lengths_description_2d_vessel_unit_material(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_2d.len()),
-        1 => return Some(wall.description_2d.get(at[0])?.vessel.unit.len()),
-        2 => return Some(wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.material.len()),
+        1 => return Some(wall.description_2d[at[0]].vessel.unit.len()),
+        2 => return Some(wall.description_2d[at[0]].vessel.unit[at[1]].material.len()),
         _ => return None,
     }
 }
@@ -104,7 +104,7 @@ fn lengths_description_ggd(wall: &Wall, level: usize, _at: &[usize]) -> Option<u
 fn lengths_description_ggd_brdf(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.brdf.len()),
+        1 => return Some(wall.description_ggd[at[0]].brdf.len()),
         _ => return None,
     }
 }
@@ -113,8 +113,8 @@ fn lengths_description_ggd_brdf(wall: &Wall, level: usize, at: &[usize]) -> Opti
 fn lengths_description_ggd_brdf_parameters(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.brdf.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.brdf.get(at[1])?.parameters.len()),
+        1 => return Some(wall.description_ggd[at[0]].brdf.len()),
+        2 => return Some(wall.description_ggd[at[0]].brdf[at[1]].parameters.len()),
         _ => return None,
     }
 }
@@ -123,8 +123,8 @@ fn lengths_description_ggd_brdf_parameters(wall: &Wall, level: usize, at: &[usiz
 fn lengths_description_ggd_brdf_type(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.brdf.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.brdf.get(at[1])?.r#type.len()),
+        1 => return Some(wall.description_ggd[at[0]].brdf.len()),
+        2 => return Some(wall.description_ggd[at[0]].brdf[at[1]].r#type.len()),
         _ => return None,
     }
 }
@@ -133,7 +133,7 @@ fn lengths_description_ggd_brdf_type(wall: &Wall, level: usize, at: &[usize]) ->
 fn lengths_description_ggd_component(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.component.len()),
+        1 => return Some(wall.description_ggd[at[0]].component.len()),
         _ => return None,
     }
 }
@@ -142,8 +142,8 @@ fn lengths_description_ggd_component(wall: &Wall, level: usize, at: &[usize]) ->
 fn lengths_description_ggd_component_type(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.component.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.component.get(at[1])?.r#type.len()),
+        1 => return Some(wall.description_ggd[at[0]].component.len()),
+        2 => return Some(wall.description_ggd[at[0]].component[at[1]].r#type.len()),
         _ => return None,
     }
 }
@@ -152,7 +152,7 @@ fn lengths_description_ggd_component_type(wall: &Wall, level: usize, at: &[usize
 fn lengths_description_ggd_ggd(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
         _ => return None,
     }
 }
@@ -161,8 +161,8 @@ fn lengths_description_ggd_ggd(wall: &Wall, level: usize, at: &[usize]) -> Optio
 fn lengths_description_ggd_ggd_a_field(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.a_field.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].a_field.len()),
         _ => return None,
     }
 }
@@ -171,8 +171,8 @@ fn lengths_description_ggd_ggd_a_field(wall: &Wall, level: usize, at: &[usize]) 
 fn lengths_description_ggd_ggd_b_field(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.b_field.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].b_field.len()),
         _ => return None,
     }
 }
@@ -181,8 +181,8 @@ fn lengths_description_ggd_ggd_b_field(wall: &Wall, level: usize, at: &[usize]) 
 fn lengths_description_ggd_ggd_e_field(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.e_field.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].e_field.len()),
         _ => return None,
     }
 }
@@ -191,8 +191,8 @@ fn lengths_description_ggd_ggd_e_field(wall: &Wall, level: usize, at: &[usize]) 
 fn lengths_description_ggd_ggd_em_force_density(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.em_force_density.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].em_force_density.len()),
         _ => return None,
     }
 }
@@ -201,8 +201,8 @@ fn lengths_description_ggd_ggd_em_force_density(wall: &Wall, level: usize, at: &
 fn lengths_description_ggd_ggd_energy_fluxes_current_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.current.emitted.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.emitted.len()),
         _ => return None,
     }
 }
@@ -211,8 +211,8 @@ fn lengths_description_ggd_ggd_energy_fluxes_current_emitted(wall: &Wall, level:
 fn lengths_description_ggd_ggd_energy_fluxes_current_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.current.incident.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.incident.len()),
         _ => return None,
     }
 }
@@ -221,8 +221,8 @@ fn lengths_description_ggd_ggd_energy_fluxes_current_incident(wall: &Wall, level
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.electrons.emitted.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.emitted.len()),
         _ => return None,
     }
 }
@@ -231,8 +231,8 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_emitted(wall: &Wa
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.electrons.incident.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.incident.len()),
         _ => return None,
     }
 }
@@ -241,8 +241,8 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_incident(wall: &W
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.ion.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion.len()),
         _ => return None,
     }
 }
@@ -251,22 +251,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion(wall: &Wall, level: usi
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .ion
-                    .get(at[2])?
-                    .element
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].element.len()),
         _ => return None,
     }
 }
@@ -275,22 +262,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_element(wall: &Wall, le
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .ion
-                    .get(at[2])?
-                    .emitted
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].emitted.len()),
         _ => return None,
     }
 }
@@ -299,22 +273,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted(wall: &Wall, le
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .ion
-                    .get(at[2])?
-                    .incident
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].incident.len()),
         _ => return None,
     }
 }
@@ -323,22 +284,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_incident(wall: &Wall, l
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state.len()),
         _ => return None,
     }
 }
@@ -347,34 +295,12 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state(wall: &Wall, leve
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
+                wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                     .emitted
                     .len(),
             );
@@ -387,34 +313,12 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted(wall: &Wa
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
+                wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                     .incident
                     .len(),
             );
@@ -427,8 +331,8 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident(wall: &W
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.neutral.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral.len()),
         _ => return None,
     }
 }
@@ -437,22 +341,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral(wall: &Wall, level:
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .neutral
-                    .get(at[2])?
-                    .element
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].element.len()),
         _ => return None,
     }
 }
@@ -461,22 +352,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_element(wall: &Wall
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .neutral
-                    .get(at[2])?
-                    .emitted
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].emitted.len()),
         _ => return None,
     }
 }
@@ -485,22 +363,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted(wall: &Wall
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .neutral
-                    .get(at[2])?
-                    .incident
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].incident.len()),
         _ => return None,
     }
 }
@@ -509,22 +374,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident(wall: &Wal
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state.len()),
         _ => return None,
     }
 }
@@ -533,34 +385,12 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state(wall: &Wall, 
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
+                wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                     .emitted
                     .len(),
             );
@@ -573,34 +403,12 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted(wall:
 fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.kinetic.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .kinetic
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
+                wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                     .incident
                     .len(),
             );
@@ -613,8 +421,8 @@ fn lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident(wall
 fn lengths_description_ggd_ggd_energy_fluxes_radiation_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.radiation.emitted.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.emitted.len()),
         _ => return None,
     }
 }
@@ -623,8 +431,8 @@ fn lengths_description_ggd_ggd_energy_fluxes_radiation_emitted(wall: &Wall, leve
 fn lengths_description_ggd_ggd_energy_fluxes_radiation_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.radiation.incident.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.incident.len()),
         _ => return None,
     }
 }
@@ -633,8 +441,8 @@ fn lengths_description_ggd_ggd_energy_fluxes_radiation_incident(wall: &Wall, lev
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.ion.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion.len()),
         _ => return None,
     }
 }
@@ -643,22 +451,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion(wall: &Wall, leve
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .ion
-                    .get(at[2])?
-                    .element
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].element.len()),
         _ => return None,
     }
 }
@@ -667,22 +462,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_element(wall: &Wa
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .ion
-                    .get(at[2])?
-                    .emitted
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].emitted.len()),
         _ => return None,
     }
 }
@@ -691,22 +473,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_emitted(wall: &Wa
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .ion
-                    .get(at[2])?
-                    .incident
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].incident.len()),
         _ => return None,
     }
 }
@@ -715,22 +484,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_incident(wall: &W
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state.len()),
         _ => return None,
     }
 }
@@ -739,34 +495,12 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state(wall: &Wall
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
+                wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                     .emitted
                     .len(),
             );
@@ -779,34 +513,12 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted(wal
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.ion.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
+                wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                     .incident
                     .len(),
             );
@@ -819,8 +531,8 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident(wa
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.neutral.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral.len()),
         _ => return None,
     }
 }
@@ -829,22 +541,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral(wall: &Wall, 
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .neutral
-                    .get(at[2])?
-                    .element
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].element.len()),
         _ => return None,
     }
 }
@@ -853,22 +552,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_element(wall:
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .neutral
-                    .get(at[2])?
-                    .emitted
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].emitted.len()),
         _ => return None,
     }
 }
@@ -877,22 +563,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted(wall:
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .neutral
-                    .get(at[2])?
-                    .incident
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].incident.len()),
         _ => return None,
     }
 }
@@ -901,22 +574,9 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_incident(wall
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state.len()),
         _ => return None,
     }
 }
@@ -925,34 +585,12 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state(wall: &
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
+                wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                     .emitted
                     .len(),
             );
@@ -965,34 +603,12 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted
 fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.energy_fluxes.recombination.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .energy_fluxes
-                    .recombination
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
+                wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                     .incident
                     .len(),
             );
@@ -1005,8 +621,8 @@ fn lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_inciden
 fn lengths_description_ggd_ggd_j_total(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.j_total.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].j_total.len()),
         _ => return None,
     }
 }
@@ -1015,8 +631,8 @@ fn lengths_description_ggd_ggd_j_total(wall: &Wall, level: usize, at: &[usize]) 
 fn lengths_description_ggd_ggd_particle_fluxes_electrons_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.electrons.emitted.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.emitted.len()),
         _ => return None,
     }
 }
@@ -1025,8 +641,8 @@ fn lengths_description_ggd_ggd_particle_fluxes_electrons_emitted(wall: &Wall, le
 fn lengths_description_ggd_ggd_particle_fluxes_electrons_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.electrons.incident.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.incident.len()),
         _ => return None,
     }
 }
@@ -1035,8 +651,8 @@ fn lengths_description_ggd_ggd_particle_fluxes_electrons_incident(wall: &Wall, l
 fn lengths_description_ggd_ggd_particle_fluxes_ion(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion.len()),
         _ => return None,
     }
 }
@@ -1045,9 +661,9 @@ fn lengths_description_ggd_ggd_particle_fluxes_ion(wall: &Wall, level: usize, at
 fn lengths_description_ggd_ggd_particle_fluxes_ion_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.get(at[2])?.element.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].element.len()),
         _ => return None,
     }
 }
@@ -1056,9 +672,9 @@ fn lengths_description_ggd_ggd_particle_fluxes_ion_element(wall: &Wall, level: u
 fn lengths_description_ggd_ggd_particle_fluxes_ion_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.get(at[2])?.emitted.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].emitted.len()),
         _ => return None,
     }
 }
@@ -1067,9 +683,9 @@ fn lengths_description_ggd_ggd_particle_fluxes_ion_emitted(wall: &Wall, level: u
 fn lengths_description_ggd_ggd_particle_fluxes_ion_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.get(at[2])?.incident.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].incident.len()),
         _ => return None,
     }
 }
@@ -1078,9 +694,9 @@ fn lengths_description_ggd_ggd_particle_fluxes_ion_incident(wall: &Wall, level: 
 fn lengths_description_ggd_ggd_particle_fluxes_ion_state(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.get(at[2])?.state.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state.len()),
         _ => return None,
     }
 }
@@ -1089,24 +705,10 @@ fn lengths_description_ggd_ggd_particle_fluxes_ion_state(wall: &Wall, level: usi
 fn lengths_description_ggd_ggd_particle_fluxes_ion_state_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.get(at[2])?.state.len()),
-        4 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .particle_fluxes
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
-                    .emitted
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state.len()),
+        4 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].emitted.len()),
         _ => return None,
     }
 }
@@ -1115,24 +717,10 @@ fn lengths_description_ggd_ggd_particle_fluxes_ion_state_emitted(wall: &Wall, le
 fn lengths_description_ggd_ggd_particle_fluxes_ion_state_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.get(at[2])?.state.len()),
-        4 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .particle_fluxes
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
-                    .incident
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state.len()),
+        4 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].incident.len()),
         _ => return None,
     }
 }
@@ -1141,8 +729,8 @@ fn lengths_description_ggd_ggd_particle_fluxes_ion_state_incident(wall: &Wall, l
 fn lengths_description_ggd_ggd_particle_fluxes_neutral(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.neutral.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral.len()),
         _ => return None,
     }
 }
@@ -1151,21 +739,9 @@ fn lengths_description_ggd_ggd_particle_fluxes_neutral(wall: &Wall, level: usize
 fn lengths_description_ggd_ggd_particle_fluxes_neutral_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .particle_fluxes
-                    .neutral
-                    .get(at[2])?
-                    .element
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].element.len()),
         _ => return None,
     }
 }
@@ -1174,21 +750,9 @@ fn lengths_description_ggd_ggd_particle_fluxes_neutral_element(wall: &Wall, leve
 fn lengths_description_ggd_ggd_particle_fluxes_neutral_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .particle_fluxes
-                    .neutral
-                    .get(at[2])?
-                    .emitted
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].emitted.len()),
         _ => return None,
     }
 }
@@ -1197,21 +761,9 @@ fn lengths_description_ggd_ggd_particle_fluxes_neutral_emitted(wall: &Wall, leve
 fn lengths_description_ggd_ggd_particle_fluxes_neutral_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.neutral.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .particle_fluxes
-                    .neutral
-                    .get(at[2])?
-                    .incident
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].incident.len()),
         _ => return None,
     }
 }
@@ -1220,9 +772,9 @@ fn lengths_description_ggd_ggd_particle_fluxes_neutral_incident(wall: &Wall, lev
 fn lengths_description_ggd_ggd_particle_fluxes_neutral_state(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.neutral.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.neutral.get(at[2])?.state.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state.len()),
         _ => return None,
     }
 }
@@ -1231,24 +783,10 @@ fn lengths_description_ggd_ggd_particle_fluxes_neutral_state(wall: &Wall, level:
 fn lengths_description_ggd_ggd_particle_fluxes_neutral_state_emitted(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.neutral.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.neutral.get(at[2])?.state.len()),
-        4 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .particle_fluxes
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
-                    .emitted
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state.len()),
+        4 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].emitted.len()),
         _ => return None,
     }
 }
@@ -1257,20 +795,12 @@ fn lengths_description_ggd_ggd_particle_fluxes_neutral_state_emitted(wall: &Wall
 fn lengths_description_ggd_ggd_particle_fluxes_neutral_state_incident(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.neutral.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.neutral.get(at[2])?.state.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .particle_fluxes
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
+                wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                     .incident
                     .len(),
             );
@@ -1283,8 +813,8 @@ fn lengths_description_ggd_ggd_particle_fluxes_neutral_state_incident(wall: &Wal
 fn lengths_description_ggd_ggd_phi_potential(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.phi_potential.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].phi_potential.len()),
         _ => return None,
     }
 }
@@ -1293,8 +823,8 @@ fn lengths_description_ggd_ggd_phi_potential(wall: &Wall, level: usize, at: &[us
 fn lengths_description_ggd_ggd_power_density(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.power_density.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].power_density.len()),
         _ => return None,
     }
 }
@@ -1303,8 +833,8 @@ fn lengths_description_ggd_ggd_power_density(wall: &Wall, level: usize, at: &[us
 fn lengths_description_ggd_ggd_psi(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.psi.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].psi.len()),
         _ => return None,
     }
 }
@@ -1313,8 +843,8 @@ fn lengths_description_ggd_ggd_psi(wall: &Wall, level: usize, at: &[usize]) -> O
 fn lengths_description_ggd_ggd_recycling_ion(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.ion.len()),
         _ => return None,
     }
 }
@@ -1323,9 +853,9 @@ fn lengths_description_ggd_ggd_recycling_ion(wall: &Wall, level: usize, at: &[us
 fn lengths_description_ggd_ggd_recycling_ion_coefficient(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.get(at[2])?.coefficient.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].coefficient.len()),
         _ => return None,
     }
 }
@@ -1334,9 +864,9 @@ fn lengths_description_ggd_ggd_recycling_ion_coefficient(wall: &Wall, level: usi
 fn lengths_description_ggd_ggd_recycling_ion_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.get(at[2])?.element.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].element.len()),
         _ => return None,
     }
 }
@@ -1345,9 +875,9 @@ fn lengths_description_ggd_ggd_recycling_ion_element(wall: &Wall, level: usize, 
 fn lengths_description_ggd_ggd_recycling_ion_state(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.get(at[2])?.state.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state.len()),
         _ => return None,
     }
 }
@@ -1356,24 +886,10 @@ fn lengths_description_ggd_ggd_recycling_ion_state(wall: &Wall, level: usize, at
 fn lengths_description_ggd_ggd_recycling_ion_state_coefficient(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.get(at[2])?.state.len()),
-        4 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .recycling
-                    .ion
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
-                    .coefficient
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.ion.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state.len()),
+        4 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].coefficient.len()),
         _ => return None,
     }
 }
@@ -1382,8 +898,8 @@ fn lengths_description_ggd_ggd_recycling_ion_state_coefficient(wall: &Wall, leve
 fn lengths_description_ggd_ggd_recycling_neutral(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral.len()),
         _ => return None,
     }
 }
@@ -1392,9 +908,9 @@ fn lengths_description_ggd_ggd_recycling_neutral(wall: &Wall, level: usize, at: 
 fn lengths_description_ggd_ggd_recycling_neutral_coefficient(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.get(at[2])?.coefficient.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].coefficient.len()),
         _ => return None,
     }
 }
@@ -1403,9 +919,9 @@ fn lengths_description_ggd_ggd_recycling_neutral_coefficient(wall: &Wall, level:
 fn lengths_description_ggd_ggd_recycling_neutral_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.get(at[2])?.element.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].element.len()),
         _ => return None,
     }
 }
@@ -1414,9 +930,9 @@ fn lengths_description_ggd_ggd_recycling_neutral_element(wall: &Wall, level: usi
 fn lengths_description_ggd_ggd_recycling_neutral_state(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.get(at[2])?.state.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state.len()),
         _ => return None,
     }
 }
@@ -1425,24 +941,10 @@ fn lengths_description_ggd_ggd_recycling_neutral_state(wall: &Wall, level: usize
 fn lengths_description_ggd_ggd_recycling_neutral_state_coefficient(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.get(at[2])?.state.len()),
-        4 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .ggd
-                    .get(at[1])?
-                    .recycling
-                    .neutral
-                    .get(at[2])?
-                    .state
-                    .get(at[3])?
-                    .coefficient
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral.len()),
+        3 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state.len()),
+        4 => return Some(wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].coefficient.len()),
         _ => return None,
     }
 }
@@ -1451,8 +953,8 @@ fn lengths_description_ggd_ggd_recycling_neutral_state_coefficient(wall: &Wall, 
 fn lengths_description_ggd_ggd_resistivity(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.resistivity.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].resistivity.len()),
         _ => return None,
     }
 }
@@ -1461,8 +963,8 @@ fn lengths_description_ggd_ggd_resistivity(wall: &Wall, level: usize, at: &[usiz
 fn lengths_description_ggd_ggd_temperature(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.temperature.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].temperature.len()),
         _ => return None,
     }
 }
@@ -1471,8 +973,8 @@ fn lengths_description_ggd_ggd_temperature(wall: &Wall, level: usize, at: &[usiz
 fn lengths_description_ggd_ggd_v_biasing(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.ggd.get(at[1])?.v_biasing.len()),
+        1 => return Some(wall.description_ggd[at[0]].ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].ggd[at[1]].v_biasing.len()),
         _ => return None,
     }
 }
@@ -1481,7 +983,7 @@ fn lengths_description_ggd_ggd_v_biasing(wall: &Wall, level: usize, at: &[usize]
 fn lengths_description_ggd_grid_ggd(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.len()),
+        1 => return Some(wall.description_ggd[at[0]].grid_ggd.len()),
         _ => return None,
     }
 }
@@ -1490,8 +992,8 @@ fn lengths_description_ggd_grid_ggd(wall: &Wall, level: usize, at: &[usize]) -> 
 fn lengths_description_ggd_grid_ggd_grid_subset(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.grid_subset.len()),
+        1 => return Some(wall.description_ggd[at[0]].grid_ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset.len()),
         _ => return None,
     }
 }
@@ -1500,9 +1002,9 @@ fn lengths_description_ggd_grid_ggd_grid_subset(wall: &Wall, level: usize, at: &
 fn lengths_description_ggd_grid_ggd_grid_subset_base(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.grid_subset.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.grid_subset.get(at[2])?.base.len()),
+        1 => return Some(wall.description_ggd[at[0]].grid_ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset.len()),
+        3 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].base.len()),
         _ => return None,
     }
 }
@@ -1511,23 +1013,10 @@ fn lengths_description_ggd_grid_ggd_grid_subset_base(wall: &Wall, level: usize, 
 fn lengths_description_ggd_grid_ggd_grid_subset_element_object(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.grid_subset.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.grid_subset.get(at[2])?.element.len()),
-        4 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .grid_ggd
-                    .get(at[1])?
-                    .grid_subset
-                    .get(at[2])?
-                    .element
-                    .get(at[3])?
-                    .object
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].grid_ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset.len()),
+        3 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].element.len()),
+        4 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].element[at[3]].object.len()),
         _ => return None,
     }
 }
@@ -1536,8 +1025,8 @@ fn lengths_description_ggd_grid_ggd_grid_subset_element_object(wall: &Wall, leve
 fn lengths_description_ggd_grid_ggd_space(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.space.len()),
+        1 => return Some(wall.description_ggd[at[0]].grid_ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].space.len()),
         _ => return None,
     }
 }
@@ -1546,9 +1035,9 @@ fn lengths_description_ggd_grid_ggd_space(wall: &Wall, level: usize, at: &[usize
 fn lengths_description_ggd_grid_ggd_space_coordinates_type(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.space.len()),
-        3 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.space.get(at[2])?.coordinates_type.len()),
+        1 => return Some(wall.description_ggd[at[0]].grid_ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].space.len()),
+        3 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].coordinates_type.len()),
         _ => return None,
     }
 }
@@ -1557,20 +1046,9 @@ fn lengths_description_ggd_grid_ggd_space_coordinates_type(wall: &Wall, level: u
 fn lengths_description_ggd_grid_ggd_space_objects_per_dimension(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.space.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .grid_ggd
-                    .get(at[1])?
-                    .space
-                    .get(at[2])?
-                    .objects_per_dimension
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].grid_ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].space.len()),
+        3 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension.len()),
         _ => return None,
     }
 }
@@ -1579,30 +1057,12 @@ fn lengths_description_ggd_grid_ggd_space_objects_per_dimension(wall: &Wall, lev
 fn lengths_description_ggd_grid_ggd_space_objects_per_dimension_object(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.space.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .grid_ggd
-                    .get(at[1])?
-                    .space
-                    .get(at[2])?
-                    .objects_per_dimension
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].grid_ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].space.len()),
+        3 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .grid_ggd
-                    .get(at[1])?
-                    .space
-                    .get(at[2])?
-                    .objects_per_dimension
-                    .get(at[3])?
+                wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]]
                     .object
                     .len(),
             );
@@ -1615,46 +1075,19 @@ fn lengths_description_ggd_grid_ggd_space_objects_per_dimension_object(wall: &Wa
 fn lengths_description_ggd_grid_ggd_space_objects_per_dimension_object_boundary(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.space.len()),
-        3 => {
-            return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .grid_ggd
-                    .get(at[1])?
-                    .space
-                    .get(at[2])?
-                    .objects_per_dimension
-                    .len(),
-            );
-        }
+        1 => return Some(wall.description_ggd[at[0]].grid_ggd.len()),
+        2 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].space.len()),
+        3 => return Some(wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension.len()),
         4 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .grid_ggd
-                    .get(at[1])?
-                    .space
-                    .get(at[2])?
-                    .objects_per_dimension
-                    .get(at[3])?
+                wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]]
                     .object
                     .len(),
             );
         }
         5 => {
             return Some(
-                wall.description_ggd
-                    .get(at[0])?
-                    .grid_ggd
-                    .get(at[1])?
-                    .space
-                    .get(at[2])?
-                    .objects_per_dimension
-                    .get(at[3])?
-                    .object
-                    .get(at[4])?
+                wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                     .boundary
                     .len(),
             );
@@ -1667,7 +1100,7 @@ fn lengths_description_ggd_grid_ggd_space_objects_per_dimension_object_boundary(
 fn lengths_description_ggd_material(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.material.len()),
+        1 => return Some(wall.description_ggd[at[0]].material.len()),
         _ => return None,
     }
 }
@@ -1676,8 +1109,8 @@ fn lengths_description_ggd_material(wall: &Wall, level: usize, at: &[usize]) -> 
 fn lengths_description_ggd_material_grid_subset(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.material.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.material.get(at[1])?.grid_subset.len()),
+        1 => return Some(wall.description_ggd[at[0]].material.len()),
+        2 => return Some(wall.description_ggd[at[0]].material[at[1]].grid_subset.len()),
         _ => return None,
     }
 }
@@ -1686,7 +1119,7 @@ fn lengths_description_ggd_material_grid_subset(wall: &Wall, level: usize, at: &
 fn lengths_description_ggd_thickness(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.thickness.len()),
+        1 => return Some(wall.description_ggd[at[0]].thickness.len()),
         _ => return None,
     }
 }
@@ -1695,8 +1128,8 @@ fn lengths_description_ggd_thickness(wall: &Wall, level: usize, at: &[usize]) ->
 fn lengths_description_ggd_thickness_grid_subset(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.description_ggd.len()),
-        1 => return Some(wall.description_ggd.get(at[0])?.thickness.len()),
-        2 => return Some(wall.description_ggd.get(at[0])?.thickness.get(at[1])?.grid_subset.len()),
+        1 => return Some(wall.description_ggd[at[0]].thickness.len()),
+        2 => return Some(wall.description_ggd[at[0]].thickness[at[1]].grid_subset.len()),
         _ => return None,
     }
 }
@@ -1713,7 +1146,7 @@ fn lengths_global_quantities_neutral(wall: &Wall, level: usize, _at: &[usize]) -
 fn lengths_global_quantities_neutral_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.global_quantities.neutral.len()),
-        1 => return Some(wall.global_quantities.neutral.get(at[0])?.element.len()),
+        1 => return Some(wall.global_quantities.neutral[at[0]].element.len()),
         _ => return None,
     }
 }
@@ -1722,7 +1155,7 @@ fn lengths_global_quantities_neutral_element(wall: &Wall, level: usize, at: &[us
 fn lengths_global_quantities_neutral_incident_species(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.global_quantities.neutral.len()),
-        1 => return Some(wall.global_quantities.neutral.get(at[0])?.incident_species.len()),
+        1 => return Some(wall.global_quantities.neutral[at[0]].incident_species.len()),
         _ => return None,
     }
 }
@@ -1731,8 +1164,8 @@ fn lengths_global_quantities_neutral_incident_species(wall: &Wall, level: usize,
 fn lengths_global_quantities_neutral_incident_species_element(wall: &Wall, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(wall.global_quantities.neutral.len()),
-        1 => return Some(wall.global_quantities.neutral.get(at[0])?.incident_species.len()),
-        2 => return Some(wall.global_quantities.neutral.get(at[0])?.incident_species.get(at[1])?.element.len()),
+        1 => return Some(wall.global_quantities.neutral[at[0]].incident_species.len()),
+        2 => return Some(wall.global_quantities.neutral[at[0]].incident_species[at[1]].element.len()),
         _ => return None,
     }
 }
@@ -1750,7 +1183,7 @@ static NODES_TEMPERATURE_REFERENCE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<STR_0D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D {
                     wall.temperature_reference.description.clone()
                 })
             },
@@ -1764,7 +1197,7 @@ static NODES_TEMPERATURE_REFERENCE: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_0D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_0D {
                     wall.temperature_reference.data.clone()
                 })
             },
@@ -1781,7 +1214,7 @@ static NODES_FIRST_WALL_POWER_FLUX_PEAK: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.first_wall_power_flux_peak.data.clone()
                 })
             },
@@ -1795,7 +1228,7 @@ static NODES_FIRST_WALL_POWER_FLUX_PEAK: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.first_wall_power_flux_peak.time.clone()
                 })
             },
@@ -1812,7 +1245,7 @@ static NODES_FIRST_WALL_POWER_FLUX_PEAK_OUTSIDE_DIVERTORS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.first_wall_power_flux_peak_outside_divertors.data.clone()
                 })
             },
@@ -1826,7 +1259,7 @@ static NODES_FIRST_WALL_POWER_FLUX_PEAK_OUTSIDE_DIVERTORS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.first_wall_power_flux_peak_outside_divertors.time.clone()
                 })
             },
@@ -1843,7 +1276,7 @@ static NODES_GLOBAL_QUANTITIES_ELECTRONS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.electrons.pumping_speed.clone()
                 })
             },
@@ -1857,7 +1290,7 @@ static NODES_GLOBAL_QUANTITIES_ELECTRONS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.electrons.particle_flux_from_plasma.clone()
                 })
             },
@@ -1871,7 +1304,7 @@ static NODES_GLOBAL_QUANTITIES_ELECTRONS: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_2D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_2D {
                     wall.global_quantities.electrons.particle_flux_from_wall.clone()
                 })
             },
@@ -1885,7 +1318,7 @@ static NODES_GLOBAL_QUANTITIES_ELECTRONS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.electrons.gas_puff.clone()
                 })
             },
@@ -1907,7 +1340,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.global_quantities.neutral.get(at[0])?.element.get(at[1])?.a.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.global_quantities.neutral[at[0]].element[at[1]].a.clone() },
                 )
             },
         }),
@@ -1925,7 +1358,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.global_quantities.neutral.get(at[0])?.element.get(at[1])?.z_n.clone() },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.global_quantities.neutral[at[0]].element[at[1]].z_n.clone() },
                 )
             },
         }),
@@ -1943,7 +1376,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.global_quantities.neutral.get(at[0])?.element.get(at[1])?.atoms_n.clone() },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.global_quantities.neutral[at[0]].element[at[1]].atoms_n.clone() },
                 )
             },
         }),
@@ -1964,17 +1397,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_global_quantities_neutral_incident_species_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.global_quantities
-                            .neutral
-                            .get(at[0])?
-                            .incident_species
-                            .get(at[1])?
-                            .element
-                            .get(at[2])?
-                            .a
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].element[at[2]].a.clone() },
                 )
             },
         }),
@@ -1992,17 +1415,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_global_quantities_neutral_incident_species_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.global_quantities
-                            .neutral
-                            .get(at[0])?
-                            .incident_species
-                            .get(at[1])?
-                            .element
-                            .get(at[2])?
-                            .z_n
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].element[at[2]].z_n.clone() },
                 )
             },
         }),
@@ -2020,17 +1433,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_global_quantities_neutral_incident_species_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.global_quantities
-                            .neutral
-                            .get(at[0])?
-                            .incident_species
-                            .get(at[1])?
-                            .element
-                            .get(at[2])?
-                            .atoms_n
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].element[at[2]].atoms_n.clone() },
                 )
             },
         }),
@@ -2057,7 +1460,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_incident_species,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.global_quantities.neutral.get(at[0])?.incident_species.get(at[1])?.name.clone() },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].name.clone() },
                 )
             },
         }),
@@ -2075,7 +1478,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_incident_species,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.global_quantities.neutral.get(at[0])?.incident_species.get(at[1])?.angles.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].angles.clone() },
                 )
             },
         }),
@@ -2093,7 +1496,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_incident_species,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.global_quantities.neutral.get(at[0])?.incident_species.get(at[1])?.energies.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].energies.clone() },
                 )
             },
         }),
@@ -2111,15 +1514,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_incident_species,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_3D> {
-                        wall.global_quantities
-                            .neutral
-                            .get(at[0])?
-                            .incident_species
-                            .get(at[1])?
-                            .sputtering_physical
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_3D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].sputtering_physical.clone() },
                 )
             },
         }),
@@ -2137,15 +1532,7 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL_INCIDENT_SPECIES: &[Node] = &[
                     indices,
                     2,
                     lengths_global_quantities_neutral_incident_species,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.global_quantities
-                            .neutral
-                            .get(at[0])?
-                            .incident_species
-                            .get(at[1])?
-                            .sputtering_chemical
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.global_quantities.neutral[at[0]].incident_species[at[1]].sputtering_chemical.clone() },
                 )
             },
         }),
@@ -2167,13 +1554,9 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    1,
-                    lengths_global_quantities_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.global_quantities.neutral.get(at[0])?.name.clone() },
-                )
+                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.global_quantities.neutral[at[0]].name.clone()
+                })
             },
         }),
     },
@@ -2185,13 +1568,9 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    1,
-                    lengths_global_quantities_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.global_quantities.neutral.get(at[0])?.pumping_speed.clone() },
-                )
+                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.global_quantities.neutral[at[0]].pumping_speed.clone()
+                })
             },
         }),
     },
@@ -2203,13 +1582,9 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    1,
-                    lengths_global_quantities_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.global_quantities.neutral.get(at[0])?.particle_flux_from_plasma.clone() },
-                )
+                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.global_quantities.neutral[at[0]].particle_flux_from_plasma.clone()
+                })
             },
         }),
     },
@@ -2221,13 +1596,9 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    1,
-                    lengths_global_quantities_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> { wall.global_quantities.neutral.get(at[0])?.particle_flux_from_wall.clone() },
-                )
+                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.global_quantities.neutral[at[0]].particle_flux_from_wall.clone()
+                })
             },
         }),
     },
@@ -2239,13 +1610,9 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    1,
-                    lengths_global_quantities_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.global_quantities.neutral.get(at[0])?.gas_puff.clone() },
-                )
+                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.global_quantities.neutral[at[0]].gas_puff.clone()
+                })
             },
         }),
     },
@@ -2257,13 +1624,9 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    1,
-                    lengths_global_quantities_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.global_quantities.neutral.get(at[0])?.wall_inventory.clone() },
-                )
+                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.global_quantities.neutral[at[0]].wall_inventory.clone()
+                })
             },
         }),
     },
@@ -2275,13 +1638,9 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    1,
-                    lengths_global_quantities_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> { wall.global_quantities.neutral.get(at[0])?.recycling_particles_coefficient.clone() },
-                )
+                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.global_quantities.neutral[at[0]].recycling_particles_coefficient.clone()
+                })
             },
         }),
     },
@@ -2293,13 +1652,9 @@ static NODES_GLOBAL_QUANTITIES_NEUTRAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    1,
-                    lengths_global_quantities_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> { wall.global_quantities.neutral.get(at[0])?.recycling_energy_coefficient.clone() },
-                )
+                gather(wall, indices, 1, lengths_global_quantities_neutral, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.global_quantities.neutral[at[0]].recycling_energy_coefficient.clone()
+                })
             },
         }),
     },
@@ -2332,7 +1687,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.temperature.clone()
                 })
             },
@@ -2346,7 +1701,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_incident.clone()
                 })
             },
@@ -2360,7 +1715,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_conducted.clone()
                 })
             },
@@ -2374,7 +1729,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_convected.clone()
                 })
             },
@@ -2388,7 +1743,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_radiated.clone()
                 })
             },
@@ -2402,7 +1757,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_black_body.clone()
                 })
             },
@@ -2416,7 +1771,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_neutrals.clone()
                 })
             },
@@ -2430,7 +1785,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_recombination_plasma.clone()
                 })
             },
@@ -2444,7 +1799,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_recombination_neutrals.clone()
                 })
             },
@@ -2458,7 +1813,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_currents.clone()
                 })
             },
@@ -2472,7 +1827,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.power_to_cooling.clone()
                 })
             },
@@ -2486,7 +1841,7 @@ static NODES_GLOBAL_QUANTITIES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_1D {
                     wall.global_quantities.current_phi.clone()
                 })
             },
@@ -2503,8 +1858,8 @@ static NODES_DESCRIPTION_2D_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.description_2d.get(at[0])?.r#type.name.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].r#type.name.clone()
                 })
             },
         }),
@@ -2517,8 +1872,8 @@ static NODES_DESCRIPTION_2D_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                    wall.description_2d.get(at[0])?.r#type.index.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_2d[at[0]].r#type.index.clone()
                 })
             },
         }),
@@ -2531,8 +1886,8 @@ static NODES_DESCRIPTION_2D_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.description_2d.get(at[0])?.r#type.description.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].r#type.description.clone()
                 })
             },
         }),
@@ -2548,8 +1903,8 @@ static NODES_DESCRIPTION_2D_LIMITER_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.description_2d.get(at[0])?.limiter.r#type.name.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].limiter.r#type.name.clone()
                 })
             },
         }),
@@ -2562,8 +1917,8 @@ static NODES_DESCRIPTION_2D_LIMITER_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                    wall.description_2d.get(at[0])?.limiter.r#type.index.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_2d[at[0]].limiter.r#type.index.clone()
                 })
             },
         }),
@@ -2576,8 +1931,8 @@ static NODES_DESCRIPTION_2D_LIMITER_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.description_2d.get(at[0])?.limiter.r#type.description.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].limiter.r#type.description.clone()
                 })
             },
         }),
@@ -2593,13 +1948,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_COMPONENT_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.component_type.name.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].component_type.name.clone()
+                })
             },
         }),
     },
@@ -2611,13 +1962,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_COMPONENT_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.component_type.index.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].component_type.index.clone()
+                })
             },
         }),
     },
@@ -2629,15 +1976,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_COMPONENT_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.component_type.description.clone()
-                    },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].component_type.description.clone()
+                })
             },
         }),
     },
@@ -2652,13 +1993,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.outline.r.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].outline.r.clone()
+                })
             },
         }),
     },
@@ -2670,13 +2007,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.outline.z.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].outline.z.clone()
+                })
             },
         }),
     },
@@ -2691,22 +2024,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_MIDPLANE_POWER_DENSITY_NUCLEAR: &[Node]
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_2d
-                            .get(at[0])?
-                            .limiter
-                            .unit
-                            .get(at[1])?
-                            .midplane_power_density_nuclear
-                            .data
-                            .clone()
-                    },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].midplane_power_density_nuclear.data.clone()
+                })
             },
         }),
     },
@@ -2718,22 +2038,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_MIDPLANE_POWER_DENSITY_NUCLEAR: &[Node]
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_2d
-                            .get(at[0])?
-                            .limiter
-                            .unit
-                            .get(at[1])?
-                            .midplane_power_density_nuclear
-                            .time
-                            .clone()
-                    },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].midplane_power_density_nuclear.time.clone()
+                })
             },
         }),
     },
@@ -2748,13 +2055,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_POWER_NUCLEAR: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.power_nuclear.data.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].power_nuclear.data.clone()
+                })
             },
         }),
     },
@@ -2766,13 +2069,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT_POWER_NUCLEAR: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.power_nuclear.time.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].power_nuclear.time.clone()
+                })
             },
         }),
     },
@@ -2787,13 +2086,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.name.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].name.clone()
+                })
             },
         }),
     },
@@ -2805,13 +2100,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.description.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].description.clone()
+                })
             },
         }),
     },
@@ -2835,13 +2126,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.phi_extensions.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].phi_extensions.clone()
+                })
             },
         }),
     },
@@ -2853,13 +2140,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.resistivity.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].resistivity.clone()
+                })
             },
         }),
     },
@@ -2871,13 +2154,9 @@ static NODES_DESCRIPTION_2D_LIMITER_UNIT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_limiter_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.description_2d.get(at[0])?.limiter.unit.get(at[1])?.midplane_thickness.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_limiter_unit, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                    wall.description_2d[at[0]].limiter.unit[at[1]].midplane_thickness.clone()
+                })
             },
         }),
     },
@@ -2919,8 +2198,8 @@ static NODES_DESCRIPTION_2D_MOBILE_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.description_2d.get(at[0])?.mobile.r#type.name.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].mobile.r#type.name.clone()
                 })
             },
         }),
@@ -2933,8 +2212,8 @@ static NODES_DESCRIPTION_2D_MOBILE_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                    wall.description_2d.get(at[0])?.mobile.r#type.index.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_2d[at[0]].mobile.r#type.index.clone()
                 })
             },
         }),
@@ -2947,8 +2226,8 @@ static NODES_DESCRIPTION_2D_MOBILE_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.description_2d.get(at[0])?.mobile.r#type.description.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].mobile.r#type.description.clone()
                 })
             },
         }),
@@ -2969,7 +2248,7 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT_OUTLINE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_mobile_unit_outline,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.mobile.unit.get(at[1])?.outline.get(at[2])?.r.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].mobile.unit[at[1]].outline[at[2]].r.clone() },
                 )
             },
         }),
@@ -2987,7 +2266,7 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT_OUTLINE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_mobile_unit_outline,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.mobile.unit.get(at[1])?.outline.get(at[2])?.z.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].mobile.unit[at[1]].outline[at[2]].z.clone() },
                 )
             },
         }),
@@ -3005,7 +2284,7 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT_OUTLINE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_mobile_unit_outline,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.description_2d.get(at[0])?.mobile.unit.get(at[1])?.outline.get(at[2])?.time.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].mobile.unit[at[1]].outline[at[2]].time.clone() },
                 )
             },
         }),
@@ -3021,13 +2300,9 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_mobile_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_2d.get(at[0])?.mobile.unit.get(at[1])?.name.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_mobile_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].mobile.unit[at[1]].name.clone()
+                })
             },
         }),
     },
@@ -3045,13 +2320,9 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_mobile_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> { wall.description_2d.get(at[0])?.mobile.unit.get(at[1])?.phi_extensions.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_mobile_unit, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_2d[at[0]].mobile.unit[at[1]].phi_extensions.clone()
+                })
             },
         }),
     },
@@ -3063,13 +2334,9 @@ static NODES_DESCRIPTION_2D_MOBILE_UNIT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_mobile_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.description_2d.get(at[0])?.mobile.unit.get(at[1])?.resistivity.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_mobile_unit, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                    wall.description_2d[at[0]].mobile.unit[at[1]].resistivity.clone()
+                })
             },
         }),
     },
@@ -3099,8 +2366,8 @@ static NODES_DESCRIPTION_2D_VESSEL_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.description_2d.get(at[0])?.vessel.r#type.name.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].vessel.r#type.name.clone()
                 })
             },
         }),
@@ -3113,8 +2380,8 @@ static NODES_DESCRIPTION_2D_VESSEL_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                    wall.description_2d.get(at[0])?.vessel.r#type.index.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_2d[at[0]].vessel.r#type.index.clone()
                 })
             },
         }),
@@ -3127,8 +2394,8 @@ static NODES_DESCRIPTION_2D_VESSEL_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.description_2d.get(at[0])?.vessel.r#type.description.clone()
+                gather(wall, indices, 1, lengths_description_2d, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].vessel.r#type.description.clone()
                 })
             },
         }),
@@ -3144,13 +2411,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_OUTLINE_INNER: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.annular.outline_inner.r.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_inner.r.clone()
+                })
             },
         }),
     },
@@ -3162,13 +2425,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_OUTLINE_INNER: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.annular.outline_inner.z.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_inner.z.clone()
+                })
             },
         }),
     },
@@ -3183,13 +2442,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_OUTLINE_OUTER: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.annular.outline_outer.r.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_outer.r.clone()
+                })
             },
         }),
     },
@@ -3201,13 +2456,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_OUTLINE_OUTER: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.annular.outline_outer.z.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.outline_outer.z.clone()
+                })
             },
         }),
     },
@@ -3222,13 +2473,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_CENTRELINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.annular.centreline.r.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.centreline.r.clone()
+                })
             },
         }),
     },
@@ -3240,13 +2487,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR_CENTRELINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.annular.centreline.z.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.centreline.z.clone()
+                })
             },
         }),
     },
@@ -3279,13 +2522,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.annular.thickness.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.thickness.clone()
+                })
             },
         }),
     },
@@ -3297,13 +2536,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ANNULAR: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.annular.resistivity.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].annular.resistivity.clone()
+                })
             },
         }),
     },
@@ -3323,9 +2558,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT_OUTLINE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.element.get(at[2])?.outline.r.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].outline.r.clone() },
                 )
             },
         }),
@@ -3343,9 +2576,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT_OUTLINE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.element.get(at[2])?.outline.z.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].outline.z.clone() },
                 )
             },
         }),
@@ -3366,7 +2597,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.element.get(at[2])?.name.clone() },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].name.clone() },
                 )
             },
         }),
@@ -3390,17 +2621,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_2d
-                            .get(at[0])?
-                            .vessel
-                            .unit
-                            .get(at[1])?
-                            .element
-                            .get(at[2])?
-                            .midplane_thickness
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].midplane_thickness.clone() },
                 )
             },
         }),
@@ -3418,9 +2639,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.element.get(at[2])?.resistivity.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].resistivity.clone() },
                 )
             },
         }),
@@ -3438,9 +2657,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_ELEMENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.element.get(at[2])?.resistance.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_2d[at[0]].vessel.unit[at[1]].element[at[2]].resistance.clone() },
                 )
             },
         }),
@@ -3461,7 +2678,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_MATERIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_material,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.material.get(at[2])?.name.clone() },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].vessel.unit[at[1]].material[at[2]].name.clone() },
                 )
             },
         }),
@@ -3479,9 +2696,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_MATERIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_material,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.material.get(at[2])?.index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_2d[at[0]].vessel.unit[at[1]].material[at[2]].index.clone() },
                 )
             },
         }),
@@ -3499,9 +2714,7 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT_MATERIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_2d_vessel_unit_material,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.material.get(at[2])?.description.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_2d[at[0]].vessel.unit[at[1]].material[at[2]].description.clone() },
                 )
             },
         }),
@@ -3517,13 +2730,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.name.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].name.clone()
+                })
             },
         }),
     },
@@ -3535,13 +2744,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.description.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].description.clone()
+                })
             },
         }),
     },
@@ -3571,13 +2776,9 @@ static NODES_DESCRIPTION_2D_VESSEL_UNIT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_2d_vessel_unit,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_2d.get(at[0])?.vessel.unit.get(at[1])?.material_volume_fraction.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_2d_vessel_unit, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_2d[at[0]].vessel.unit[at[1]].material_volume_fraction.clone()
+                })
             },
         }),
     },
@@ -3634,8 +2835,8 @@ static NODES_DESCRIPTION_GGD_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_ggd, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.description_ggd.get(at[0])?.r#type.name.clone()
+                gather(wall, indices, 1, lengths_description_ggd, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_ggd[at[0]].r#type.name.clone()
                 })
             },
         }),
@@ -3648,8 +2849,8 @@ static NODES_DESCRIPTION_GGD_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_ggd, |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                    wall.description_ggd.get(at[0])?.r#type.index.clone()
+                gather(wall, indices, 1, lengths_description_ggd, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].r#type.index.clone()
                 })
             },
         }),
@@ -3662,8 +2863,8 @@ static NODES_DESCRIPTION_GGD_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_description_ggd, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.description_ggd.get(at[0])?.r#type.description.clone()
+                gather(wall, indices, 1, lengths_description_ggd, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_ggd[at[0]].r#type.description.clone()
                 })
             },
         }),
@@ -3679,13 +2880,9 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_IDENTIFIER: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_ggd_grid_ggd,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.identifier.name.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_ggd_grid_ggd, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_ggd[at[0]].grid_ggd[at[1]].identifier.name.clone()
+                })
             },
         }),
     },
@@ -3697,13 +2894,9 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_IDENTIFIER: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_ggd_grid_ggd,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.identifier.index.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_ggd_grid_ggd, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].grid_ggd[at[1]].identifier.index.clone()
+                })
             },
         }),
     },
@@ -3715,13 +2908,9 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_IDENTIFIER: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_ggd_grid_ggd,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.identifier.description.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_ggd_grid_ggd, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_ggd[at[0]].grid_ggd[at[1]].identifier.description.clone()
+                })
             },
         }),
     },
@@ -3741,9 +2930,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.space.get(at[2])?.identifier.name.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].identifier.name.clone() },
                 )
             },
         }),
@@ -3761,9 +2948,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.space.get(at[2])?.identifier.index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].identifier.index.clone() },
                 )
             },
         }),
@@ -3781,17 +2966,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .identifier
-                            .description
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].identifier.description.clone() },
                 )
             },
         }),
@@ -3812,17 +2987,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .geometry_type
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].geometry_type.name.clone() },
                 )
             },
         }),
@@ -3840,17 +3005,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .geometry_type
-                            .index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].geometry_type.index.clone() },
                 )
             },
         }),
@@ -3868,17 +3023,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_space,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .geometry_type
-                            .description
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].geometry_type.description.clone() },
                 )
             },
         }),
@@ -3899,18 +3044,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_coordinates_type,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .coordinates_type
-                            .get(at[3])?
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].coordinates_type[at[3]].name.clone() },
                 )
             },
         }),
@@ -3928,18 +3062,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_coordinates_type,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .coordinates_type
-                            .get(at[3])?
-                            .index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].coordinates_type[at[3]].index.clone() },
                 )
             },
         }),
@@ -3957,15 +3080,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_coordinates_type,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .coordinates_type
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].coordinates_type[at[3]]
                             .description
                             .clone()
                     },
@@ -3989,19 +3105,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDAR
                     indices,
                     6,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object_boundary,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
-                            .boundary
-                            .get(at[5])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]].boundary[at[5]]
                             .index
                             .clone()
                     },
@@ -4022,19 +3127,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDAR
                     indices,
                     6,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object_boundary,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
-                            .boundary
-                            .get(at[5])?
+                    |wall: &Wall, at: &[usize]| -> INT_1D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]].boundary[at[5]]
                             .neighbours
                             .clone()
                     },
@@ -4064,17 +3158,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .geometry
                             .clone()
                     },
@@ -4095,17 +3180,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_1D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .nodes
                             .clone()
                     },
@@ -4126,17 +3202,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .measure
                             .clone()
                     },
@@ -4157,17 +3224,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension_object,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .geometry_2d
                             .clone()
                     },
@@ -4191,15 +3249,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTE
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
                             .name
                             .clone()
@@ -4221,15 +3272,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTE
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
                             .index
                             .clone()
@@ -4251,15 +3295,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTE
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_space_objects_per_dimension,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
                             .description
                             .clone()
@@ -4326,17 +3363,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .identifier
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].identifier.name.clone() },
                 )
             },
         }),
@@ -4354,17 +3381,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .identifier
-                            .index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].identifier.index.clone() },
                 )
             },
         }),
@@ -4382,17 +3399,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .identifier
-                            .description
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].identifier.description.clone() },
                 )
             },
         }),
@@ -4413,17 +3420,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_grid_subset_element_object,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .space
                             .clone()
                     },
@@ -4444,17 +3442,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_grid_subset_element_object,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .dimension
                             .clone()
                     },
@@ -4475,17 +3464,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_grid_ggd_grid_subset_element_object,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .index
                             .clone()
                     },
@@ -4516,18 +3496,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_grid_subset_base,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .base
-                            .get(at[3])?
-                            .jacobian
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].base[at[3]].jacobian.clone() },
                 )
             },
         }),
@@ -4545,15 +3514,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_grid_subset_base,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_3D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .base
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_3D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].base[at[3]]
                             .tensor_covariant
                             .clone()
                     },
@@ -4574,15 +3536,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_grid_ggd_grid_subset_base,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_3D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .base
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_3D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].base[at[3]]
                             .tensor_contravariant
                             .clone()
                     },
@@ -4606,17 +3561,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .metric
-                            .jacobian
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].metric.jacobian.clone() },
                 )
             },
         }),
@@ -4634,17 +3579,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_3D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .metric
-                            .tensor_covariant
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_3D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].metric.tensor_covariant.clone() },
                 )
             },
         }),
@@ -4662,13 +3597,8 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_3D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .grid_ggd
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> FLT_3D {
+                        wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]]
                             .metric
                             .tensor_contravariant
                             .clone()
@@ -4699,9 +3629,7 @@ static NODES_DESCRIPTION_GGD_GRID_GGD_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_grid_ggd_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.grid_subset.get(at[2])?.dimension.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].grid_ggd[at[1]].grid_subset[at[2]].dimension.clone() },
                 )
             },
         }),
@@ -4741,13 +3669,9 @@ static NODES_DESCRIPTION_GGD_GRID_GGD: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_ggd_grid_ggd,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.path.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_ggd_grid_ggd, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.description_ggd[at[0]].grid_ggd[at[1]].path.clone()
+                })
             },
         }),
     },
@@ -4771,13 +3695,9 @@ static NODES_DESCRIPTION_GGD_GRID_GGD: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_ggd_grid_ggd,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.description_ggd.get(at[0])?.grid_ggd.get(at[1])?.time.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_ggd_grid_ggd, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                    wall.description_ggd[at[0]].grid_ggd[at[1]].time.clone()
+                })
             },
         }),
     },
@@ -4797,17 +3717,7 @@ static NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET_IDENTIFIERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_material_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .material
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .identifiers
-                            .names
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_1D { wall.description_ggd[at[0]].material[at[1]].grid_subset[at[2]].identifiers.names.clone() },
                 )
             },
         }),
@@ -4825,17 +3735,7 @@ static NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET_IDENTIFIERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_material_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .material
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .identifiers
-                            .indices
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_1D { wall.description_ggd[at[0]].material[at[1]].grid_subset[at[2]].identifiers.indices.clone() },
                 )
             },
         }),
@@ -4853,17 +3753,7 @@ static NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET_IDENTIFIERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_material_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .material
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .identifiers
-                            .descriptions
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_1D { wall.description_ggd[at[0]].material[at[1]].grid_subset[at[2]].identifiers.descriptions.clone() },
                 )
             },
         }),
@@ -4884,9 +3774,7 @@ static NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_material_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.material.get(at[1])?.grid_subset.get(at[2])?.grid_index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].material[at[1]].grid_subset[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -4904,16 +3792,7 @@ static NODES_DESCRIPTION_GGD_MATERIAL_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_material_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .material
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].material[at[1]].grid_subset[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -4941,13 +3820,9 @@ static NODES_DESCRIPTION_GGD_MATERIAL: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_ggd_material,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.description_ggd.get(at[0])?.material.get(at[1])?.time.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_ggd_material, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                    wall.description_ggd[at[0]].material[at[1]].time.clone()
+                })
             },
         }),
     },
@@ -4967,17 +3842,7 @@ static NODES_DESCRIPTION_GGD_COMPONENT_TYPE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_component_type,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .component
-                            .get(at[1])?
-                            .r#type
-                            .get(at[2])?
-                            .identifier
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].component[at[1]].r#type[at[2]].identifier.name.clone() },
                 )
             },
         }),
@@ -4995,17 +3860,7 @@ static NODES_DESCRIPTION_GGD_COMPONENT_TYPE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_component_type,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .component
-                            .get(at[1])?
-                            .r#type
-                            .get(at[2])?
-                            .identifier
-                            .index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].component[at[1]].r#type[at[2]].identifier.index.clone() },
                 )
             },
         }),
@@ -5023,17 +3878,7 @@ static NODES_DESCRIPTION_GGD_COMPONENT_TYPE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_component_type,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .component
-                            .get(at[1])?
-                            .r#type
-                            .get(at[2])?
-                            .identifier
-                            .description
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].component[at[1]].r#type[at[2]].identifier.description.clone() },
                 )
             },
         }),
@@ -5054,9 +3899,7 @@ static NODES_DESCRIPTION_GGD_COMPONENT_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_component_type,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.component.get(at[1])?.r#type.get(at[2])?.grid_index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].component[at[1]].r#type[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -5074,16 +3917,7 @@ static NODES_DESCRIPTION_GGD_COMPONENT_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_component_type,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .component
-                            .get(at[1])?
-                            .r#type
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].component[at[1]].r#type[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -5105,13 +3939,9 @@ static NODES_DESCRIPTION_GGD_COMPONENT: &[Node] = &[
             data_type: "STR_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_ggd_component,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_1D> { wall.description_ggd.get(at[0])?.component.get(at[1])?.identifiers.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_ggd_component, |wall: &Wall, at: &[usize]| -> STR_1D {
+                    wall.description_ggd[at[0]].component[at[1]].identifiers.clone()
+                })
             },
         }),
     },
@@ -5129,13 +3959,9 @@ static NODES_DESCRIPTION_GGD_COMPONENT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_ggd_component,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.description_ggd.get(at[0])?.component.get(at[1])?.time.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_ggd_component, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                    wall.description_ggd[at[0]].component[at[1]].time.clone()
+                })
             },
         }),
     },
@@ -5155,16 +3981,7 @@ static NODES_DESCRIPTION_GGD_THICKNESS_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_thickness_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .thickness
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .grid_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].thickness[at[1]].grid_subset[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -5182,16 +3999,7 @@ static NODES_DESCRIPTION_GGD_THICKNESS_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_thickness_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .thickness
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].thickness[at[1]].grid_subset[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -5209,9 +4017,7 @@ static NODES_DESCRIPTION_GGD_THICKNESS_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_thickness_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd.get(at[0])?.thickness.get(at[1])?.grid_subset.get(at[2])?.values.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].thickness[at[1]].grid_subset[at[2]].values.clone() },
                 )
             },
         }),
@@ -5229,16 +4035,7 @@ static NODES_DESCRIPTION_GGD_THICKNESS_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_thickness_grid_subset,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .thickness
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .coefficients
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].thickness[at[1]].grid_subset[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -5260,13 +4057,9 @@ static NODES_DESCRIPTION_GGD_THICKNESS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    2,
-                    lengths_description_ggd_thickness,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.description_ggd.get(at[0])?.thickness.get(at[1])?.time.clone() },
-                )
+                gather(wall, indices, 2, lengths_description_ggd_thickness, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                    wall.description_ggd[at[0]].thickness[at[1]].time.clone()
+                })
             },
         }),
     },
@@ -5281,15 +4074,9 @@ static NODES_DESCRIPTION_GGD_BRDF_TYPE_IDENTIFIERS: &[Node] = &[
             data_type: "STR_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_brdf_type,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_1D> {
-                        wall.description_ggd.get(at[0])?.brdf.get(at[1])?.r#type.get(at[2])?.identifiers.names.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_brdf_type, |wall: &Wall, at: &[usize]| -> STR_1D {
+                    wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].identifiers.names.clone()
+                })
             },
         }),
     },
@@ -5301,15 +4088,9 @@ static NODES_DESCRIPTION_GGD_BRDF_TYPE_IDENTIFIERS: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_brdf_type,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_1D> {
-                        wall.description_ggd.get(at[0])?.brdf.get(at[1])?.r#type.get(at[2])?.identifiers.indices.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_brdf_type, |wall: &Wall, at: &[usize]| -> INT_1D {
+                    wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].identifiers.indices.clone()
+                })
             },
         }),
     },
@@ -5321,23 +4102,9 @@ static NODES_DESCRIPTION_GGD_BRDF_TYPE_IDENTIFIERS: &[Node] = &[
             data_type: "STR_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_brdf_type,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .brdf
-                            .get(at[1])?
-                            .r#type
-                            .get(at[2])?
-                            .identifiers
-                            .descriptions
-                            .clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_brdf_type, |wall: &Wall, at: &[usize]| -> STR_1D {
+                    wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].identifiers.descriptions.clone()
+                })
             },
         }),
     },
@@ -5352,13 +4119,9 @@ static NODES_DESCRIPTION_GGD_BRDF_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_brdf_type,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.description_ggd.get(at[0])?.brdf.get(at[1])?.r#type.get(at[2])?.grid_index.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_brdf_type, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].grid_index.clone()
+                })
             },
         }),
     },
@@ -5370,15 +4133,9 @@ static NODES_DESCRIPTION_GGD_BRDF_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_brdf_type,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.brdf.get(at[1])?.r#type.get(at[2])?.grid_subset_index.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_brdf_type, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].brdf[at[1]].r#type[at[2]].grid_subset_index.clone()
+                })
             },
         }),
     },
@@ -5404,9 +4161,7 @@ static NODES_DESCRIPTION_GGD_BRDF_PARAMETERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_brdf_parameters,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.brdf.get(at[1])?.parameters.get(at[2])?.grid_index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].brdf[at[1]].parameters[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -5424,16 +4179,7 @@ static NODES_DESCRIPTION_GGD_BRDF_PARAMETERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_brdf_parameters,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .brdf
-                            .get(at[1])?
-                            .parameters
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].brdf[at[1]].parameters[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -5451,7 +4197,7 @@ static NODES_DESCRIPTION_GGD_BRDF_PARAMETERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_brdf_parameters,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> { wall.description_ggd.get(at[0])?.brdf.get(at[1])?.parameters.get(at[2])?.values.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].brdf[at[1]].parameters[at[2]].values.clone() },
                 )
             },
         }),
@@ -5469,9 +4215,7 @@ static NODES_DESCRIPTION_GGD_BRDF_PARAMETERS: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_brdf_parameters,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_3D> {
-                        wall.description_ggd.get(at[0])?.brdf.get(at[1])?.parameters.get(at[2])?.coefficients.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_3D { wall.description_ggd[at[0]].brdf[at[1]].parameters[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -5499,8 +4243,8 @@ static NODES_DESCRIPTION_GGD_BRDF: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_brdf, |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                    wall.description_ggd.get(at[0])?.brdf.get(at[1])?.time.clone()
+                gather(wall, indices, 2, lengths_description_ggd_brdf, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                    wall.description_ggd[at[0]].brdf[at[1]].time.clone()
                 })
             },
         }),
@@ -5521,9 +4265,7 @@ static NODES_DESCRIPTION_GGD_GGD_POWER_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_power_density,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.power_density.get(at[2])?.grid_index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].power_density[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -5541,16 +4283,7 @@ static NODES_DESCRIPTION_GGD_GGD_POWER_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_power_density,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .power_density
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].power_density[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -5568,7 +4301,7 @@ static NODES_DESCRIPTION_GGD_GGD_POWER_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_power_density,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.power_density.get(at[2])?.values.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].power_density[at[2]].values.clone() },
                 )
             },
         }),
@@ -5586,9 +4319,7 @@ static NODES_DESCRIPTION_GGD_GGD_POWER_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_power_density,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.power_density.get(at[2])?.coefficients.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].power_density[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -5609,9 +4340,7 @@ static NODES_DESCRIPTION_GGD_GGD_TEMPERATURE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_temperature,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.temperature.get(at[2])?.grid_index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].temperature[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -5629,16 +4358,7 @@ static NODES_DESCRIPTION_GGD_GGD_TEMPERATURE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_temperature,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .temperature
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].temperature[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -5656,7 +4376,7 @@ static NODES_DESCRIPTION_GGD_GGD_TEMPERATURE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_temperature,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.temperature.get(at[2])?.values.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].temperature[at[2]].values.clone() },
                 )
             },
         }),
@@ -5674,9 +4394,7 @@ static NODES_DESCRIPTION_GGD_GGD_TEMPERATURE: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_temperature,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.temperature.get(at[2])?.coefficients.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].temperature[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -5692,13 +4410,9 @@ static NODES_DESCRIPTION_GGD_GGD_V_BIASING: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_v_biasing,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.v_biasing.get(at[2])?.grid_index.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_v_biasing, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].grid_index.clone()
+                })
             },
         }),
     },
@@ -5710,15 +4424,9 @@ static NODES_DESCRIPTION_GGD_GGD_V_BIASING: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_v_biasing,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.v_biasing.get(at[2])?.grid_subset_index.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_v_biasing, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].grid_subset_index.clone()
+                })
             },
         }),
     },
@@ -5730,13 +4438,9 @@ static NODES_DESCRIPTION_GGD_GGD_V_BIASING: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_v_biasing,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.v_biasing.get(at[2])?.values.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_v_biasing, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].values.clone()
+                })
             },
         }),
     },
@@ -5748,15 +4452,9 @@ static NODES_DESCRIPTION_GGD_GGD_V_BIASING: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_v_biasing,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.v_biasing.get(at[2])?.coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_v_biasing, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].v_biasing[at[2]].coefficients.clone()
+                })
             },
         }),
     },
@@ -5776,19 +4474,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .a
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].element[at[3]].a.clone() },
                 )
             },
         }),
@@ -5806,19 +4492,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .z_n
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].element[at[3]].z_n.clone() },
                 )
             },
         }),
@@ -5836,19 +4510,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .atoms_n
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].element[at[3]].atoms_n.clone() },
                 )
             },
         }),
@@ -5869,16 +4531,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .coefficient
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].coefficient[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -5899,16 +4553,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .coefficient
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].coefficient[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -5929,19 +4575,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .coefficient
-                            .get(at[3])?
-                            .values
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].coefficient[at[3]].values.clone() },
                 )
             },
         }),
@@ -5959,16 +4593,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .coefficient
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].coefficient[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -5992,18 +4618,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE_COEFFICIENT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_ion_state_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .coefficient
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].coefficient[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -6024,18 +4640,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE_COEFFICIENT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_ion_state_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .coefficient
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].coefficient[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -6056,18 +4662,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE_COEFFICIENT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_ion_state_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .coefficient
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].coefficient[at[4]]
                             .values
                             .clone()
                     },
@@ -6088,18 +4684,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE_COEFFICIENT: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_ion_state_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .coefficient
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].coefficient[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -6123,19 +4709,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .z_min
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].z_min.clone() },
                 )
             },
         }),
@@ -6153,19 +4727,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .z_max
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].z_max.clone() },
                 )
             },
         }),
@@ -6183,19 +4745,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]].name.clone() },
                 )
             },
         }),
@@ -6213,16 +4763,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]]
                             .vibrational_level
                             .clone()
                     },
@@ -6243,16 +4785,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]]
                             .vibrational_mode
                             .clone()
                     },
@@ -6273,16 +4807,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].state[at[3]]
                             .electron_configuration
                             .clone()
                     },
@@ -6318,7 +4844,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.get(at[2])?.z_ion.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].z_ion.clone() },
                 )
             },
         }),
@@ -6336,7 +4862,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.get(at[2])?.name.clone() },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].name.clone() },
                 )
             },
         }),
@@ -6354,9 +4880,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.ion.get(at[2])?.neutral_index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].neutral_index.clone() },
                 )
             },
         }),
@@ -6380,17 +4904,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .ion
-                            .get(at[2])?
-                            .multiple_states_flag
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.ion[at[2]].multiple_states_flag.clone() },
                 )
             },
         }),
@@ -6417,19 +4931,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .a
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].element[at[3]].a.clone() },
                 )
             },
         }),
@@ -6447,19 +4949,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .z_n
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].element[at[3]].z_n.clone() },
                 )
             },
         }),
@@ -6477,19 +4967,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .atoms_n
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].element[at[3]].atoms_n.clone() },
                 )
             },
         }),
@@ -6510,16 +4988,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .coefficient
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].coefficient[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -6540,16 +5010,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .coefficient
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].coefficient[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -6570,16 +5032,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .coefficient
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].coefficient[at[3]]
                             .values
                             .clone()
                     },
@@ -6600,16 +5054,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_COEFFICIENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .coefficient
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].coefficient[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -6633,16 +5079,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_NEUTRAL_TYPE: &[Node] =
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .name
                             .clone()
@@ -6664,16 +5102,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_NEUTRAL_TYPE: &[Node] =
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .index
                             .clone()
@@ -6695,16 +5125,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_NEUTRAL_TYPE: &[Node] =
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .description
                             .clone()
@@ -6729,18 +5151,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_COEFFICIENT: &[Node] = 
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_neutral_state_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .coefficient
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].coefficient[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -6761,18 +5173,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_COEFFICIENT: &[Node] = 
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_neutral_state_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .coefficient
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].coefficient[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -6793,18 +5195,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_COEFFICIENT: &[Node] = 
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_neutral_state_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .coefficient
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].coefficient[at[4]]
                             .values
                             .clone()
                     },
@@ -6825,18 +5217,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE_COEFFICIENT: &[Node] = 
                     indices,
                     5,
                     lengths_description_ggd_ggd_recycling_neutral_state_coefficient,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .coefficient
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].coefficient[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -6860,19 +5242,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]].name.clone() },
                 )
             },
         }),
@@ -6890,16 +5260,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .vibrational_level
                             .clone()
                     },
@@ -6920,16 +5282,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .vibrational_mode
                             .clone()
                     },
@@ -6956,16 +5310,8 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_recycling_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].state[at[3]]
                             .electron_configuration
                             .clone()
                     },
@@ -7001,9 +5347,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.get(at[2])?.name.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].name.clone() },
                 )
             },
         }),
@@ -7021,9 +5365,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.recycling.neutral.get(at[2])?.ion_index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].ion_index.clone() },
                 )
             },
         }),
@@ -7047,17 +5389,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_recycling_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .recycling
-                            .neutral
-                            .get(at[2])?
-                            .multiple_states_flag
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].recycling.neutral[at[2]].multiple_states_flag.clone() },
                 )
             },
         }),
@@ -7099,15 +5431,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_INCIDENT: &[Node] = &
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .electrons
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.incident[at[2]]
                             .grid_index
                             .clone()
                     },
@@ -7128,15 +5453,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_INCIDENT: &[Node] = &
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .electrons
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.incident[at[2]]
                             .grid_subset_index
                             .clone()
                     },
@@ -7157,18 +5475,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_INCIDENT: &[Node] = &
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .electrons
-                            .incident
-                            .get(at[2])?
-                            .values
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.incident[at[2]].values.clone() },
                 )
             },
         }),
@@ -7186,15 +5493,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_INCIDENT: &[Node] = &
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .electrons
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.incident[at[2]]
                             .coefficients
                             .clone()
                     },
@@ -7218,15 +5518,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .electrons
-                            .emitted
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.emitted[at[2]]
                             .grid_index
                             .clone()
                     },
@@ -7247,15 +5540,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .electrons
-                            .emitted
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.emitted[at[2]]
                             .grid_subset_index
                             .clone()
                     },
@@ -7276,18 +5562,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .electrons
-                            .emitted
-                            .get(at[2])?
-                            .values
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.emitted[at[2]].values.clone() },
                 )
             },
         }),
@@ -7305,15 +5580,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ELECTRONS_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_electrons_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .electrons
-                            .emitted
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.electrons.emitted[at[2]]
                             .coefficients
                             .clone()
                     },
@@ -7352,19 +5620,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .a
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].element[at[3]].a.clone() },
                 )
             },
         }),
@@ -7382,19 +5638,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .z_n
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].element[at[3]].z_n.clone() },
                 )
             },
         }),
@@ -7412,19 +5656,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .atoms_n
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].element[at[3]].atoms_n.clone() },
                 )
             },
         }),
@@ -7445,16 +5677,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].incident[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -7475,16 +5699,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].incident[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -7505,19 +5721,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
-                            .values
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].incident[at[3]].values.clone() },
                 )
             },
         }),
@@ -7535,16 +5739,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].incident[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -7568,16 +5764,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].emitted[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -7598,16 +5786,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].emitted[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -7628,19 +5808,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
-                            .values
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].emitted[at[3]].values.clone() },
                 )
             },
         }),
@@ -7658,16 +5826,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].emitted[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -7691,18 +5851,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_INCIDENT: &[Node] = &
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -7723,18 +5873,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_INCIDENT: &[Node] = &
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -7755,18 +5895,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_INCIDENT: &[Node] = &
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].incident[at[4]]
                             .values
                             .clone()
                     },
@@ -7787,18 +5917,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_INCIDENT: &[Node] = &
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -7822,18 +5942,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_EMITTED: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -7854,18 +5964,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_EMITTED: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -7886,18 +5986,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_EMITTED: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].emitted[at[4]]
                             .values
                             .clone()
                     },
@@ -7918,18 +6008,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE_EMITTED: &[Node] = &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -7953,19 +6033,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .z_min
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].z_min.clone() },
                 )
             },
         }),
@@ -7983,19 +6051,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .z_max
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].z_max.clone() },
                 )
             },
         }),
@@ -8013,19 +6069,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]].name.clone() },
                 )
             },
         }),
@@ -8043,16 +6087,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]]
                             .vibrational_level
                             .clone()
                     },
@@ -8073,16 +6109,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]]
                             .vibrational_mode
                             .clone()
                     },
@@ -8103,16 +6131,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].state[at[3]]
                             .electron_configuration
                             .clone()
                     },
@@ -8154,9 +6174,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.get(at[2])?.z_ion.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].z_ion.clone() },
                 )
             },
         }),
@@ -8174,9 +6192,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.particle_fluxes.ion.get(at[2])?.name.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].name.clone() },
                 )
             },
         }),
@@ -8194,17 +6210,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .neutral_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].neutral_index.clone() },
                 )
             },
         }),
@@ -8234,17 +6240,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .ion
-                            .get(at[2])?
-                            .multiple_states_flag
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.ion[at[2]].multiple_states_flag.clone() },
                 )
             },
         }),
@@ -8271,19 +6267,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .a
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].element[at[3]].a.clone() },
                 )
             },
         }),
@@ -8301,19 +6285,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .z_n
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].element[at[3]].z_n.clone() },
                 )
             },
         }),
@@ -8331,16 +6303,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].element[at[3]]
                             .atoms_n
                             .clone()
                     },
@@ -8364,16 +6328,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].incident[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -8394,16 +6350,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].incident[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -8424,16 +6372,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].incident[at[3]]
                             .values
                             .clone()
                     },
@@ -8454,16 +6394,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_INCIDENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].incident[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -8487,16 +6419,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].emitted[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -8517,16 +6441,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].emitted[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -8547,16 +6463,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].emitted[at[3]]
                             .values
                             .clone()
                     },
@@ -8577,16 +6485,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].emitted[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -8610,16 +6510,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_NEUTRAL_TYPE: &[N
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .name
                             .clone()
@@ -8641,16 +6533,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_NEUTRAL_TYPE: &[N
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .index
                             .clone()
@@ -8672,16 +6556,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_NEUTRAL_TYPE: &[N
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .description
                             .clone()
@@ -8706,18 +6582,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_INCIDENT: &[Node]
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -8738,18 +6604,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_INCIDENT: &[Node]
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -8770,18 +6626,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_INCIDENT: &[Node]
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].incident[at[4]]
                             .values
                             .clone()
                     },
@@ -8802,18 +6648,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_INCIDENT: &[Node]
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -8837,18 +6673,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_EMITTED: &[Node] 
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -8869,18 +6695,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_EMITTED: &[Node] 
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -8901,18 +6717,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_EMITTED: &[Node] 
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .values
                             .clone()
                     },
@@ -8933,18 +6739,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE_EMITTED: &[Node] 
                     indices,
                     5,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -8968,19 +6764,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]].name.clone() },
                 )
             },
         }),
@@ -8998,16 +6782,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .vibrational_level
                             .clone()
                     },
@@ -9028,16 +6804,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .vibrational_mode
                             .clone()
                     },
@@ -9064,16 +6832,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_particle_fluxes_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].state[at[3]]
                             .electron_configuration
                             .clone()
                     },
@@ -9115,17 +6875,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].name.clone() },
                 )
             },
         }),
@@ -9143,17 +6893,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
-                            .ion_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]].ion_index.clone() },
                 )
             },
         }),
@@ -9183,14 +6923,8 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_particle_fluxes_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .particle_fluxes
-                            .neutral
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].particle_fluxes.neutral[at[2]]
                             .multiple_states_flag
                             .clone()
                     },
@@ -9241,15 +6975,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .radiation
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.incident[at[2]]
                             .grid_index
                             .clone()
                     },
@@ -9270,15 +6997,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .radiation
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.incident[at[2]]
                             .grid_subset_index
                             .clone()
                     },
@@ -9299,18 +7019,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .radiation
-                            .incident
-                            .get(at[2])?
-                            .values
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.incident[at[2]].values.clone() },
                 )
             },
         }),
@@ -9328,15 +7037,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .radiation
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.incident[at[2]]
                             .coefficients
                             .clone()
                     },
@@ -9360,18 +7062,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .radiation
-                            .emitted
-                            .get(at[2])?
-                            .grid_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.emitted[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9389,15 +7080,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .radiation
-                            .emitted
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.emitted[at[2]]
                             .grid_subset_index
                             .clone()
                     },
@@ -9418,18 +7102,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .radiation
-                            .emitted
-                            .get(at[2])?
-                            .values
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.emitted[at[2]].values.clone() },
                 )
             },
         }),
@@ -9447,15 +7120,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RADIATION_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_radiation_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .radiation
-                            .emitted
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.radiation.emitted[at[2]]
                             .coefficients
                             .clone()
                     },
@@ -9494,18 +7160,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .current
-                            .incident
-                            .get(at[2])?
-                            .grid_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.incident[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9523,15 +7178,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .current
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.incident[at[2]]
                             .grid_subset_index
                             .clone()
                     },
@@ -9552,18 +7200,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .current
-                            .incident
-                            .get(at[2])?
-                            .values
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.incident[at[2]].values.clone() },
                 )
             },
         }),
@@ -9581,15 +7218,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_INCIDENT: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .current
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.incident[at[2]]
                             .coefficients
                             .clone()
                     },
@@ -9613,18 +7243,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .current
-                            .emitted
-                            .get(at[2])?
-                            .grid_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.emitted[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9642,15 +7261,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .current
-                            .emitted
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.emitted[at[2]]
                             .grid_subset_index
                             .clone()
                     },
@@ -9671,18 +7283,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .current
-                            .emitted
-                            .get(at[2])?
-                            .values
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.emitted[at[2]].values.clone() },
                 )
             },
         }),
@@ -9700,18 +7301,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_CURRENT_EMITTED: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_current_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .current
-                            .emitted
-                            .get(at[2])?
-                            .coefficients
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.current.emitted[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -9747,17 +7337,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_ELEMENT: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].element[at[3]]
                             .a
                             .clone()
                     },
@@ -9778,17 +7359,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_ELEMENT: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].element[at[3]]
                             .z_n
                             .clone()
                     },
@@ -9809,17 +7381,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_ELEMENT: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].element[at[3]]
                             .atoms_n
                             .clone()
                     },
@@ -9843,17 +7406,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_INCIDENT: &[Nod
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].incident[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -9874,17 +7428,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_INCIDENT: &[Nod
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].incident[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -9905,17 +7450,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_INCIDENT: &[Nod
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].incident[at[3]]
                             .values
                             .clone()
                     },
@@ -9936,17 +7472,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_INCIDENT: &[Nod
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].incident[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -9970,17 +7497,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_EMITTED: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].emitted[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -10001,17 +7519,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_EMITTED: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].emitted[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -10032,17 +7541,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_EMITTED: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].emitted[at[3]]
                             .values
                             .clone()
                     },
@@ -10063,17 +7563,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_EMITTED: &[Node
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].emitted[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -10097,19 +7588,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_INCIDENT:
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -10130,19 +7610,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_INCIDENT:
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -10163,19 +7632,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_INCIDENT:
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].incident[at[4]]
                             .values
                             .clone()
                     },
@@ -10196,19 +7654,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_INCIDENT:
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -10232,19 +7679,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_EMITTED: 
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -10265,19 +7701,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_EMITTED: 
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -10298,19 +7723,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_EMITTED: 
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].emitted[at[4]]
                             .values
                             .clone()
                     },
@@ -10331,19 +7745,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE_EMITTED: 
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -10367,17 +7770,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .z_min
                             .clone()
                     },
@@ -10398,17 +7792,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .z_max
                             .clone()
                     },
@@ -10429,17 +7814,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .name
                             .clone()
                     },
@@ -10460,17 +7836,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .vibrational_level
                             .clone()
                     },
@@ -10491,17 +7858,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .vibrational_mode
                             .clone()
                     },
@@ -10522,17 +7880,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].state[at[3]]
                             .electron_configuration
                             .clone()
                     },
@@ -10574,18 +7923,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .z_ion
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].z_ion.clone() },
                 )
             },
         }),
@@ -10603,18 +7941,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]].name.clone() },
                 )
             },
         }),
@@ -10632,15 +7959,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]]
                             .neutral_index
                             .clone()
                     },
@@ -10673,15 +7993,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .ion
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.ion[at[2]]
                             .multiple_states_flag
                             .clone()
                     },
@@ -10711,17 +8024,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_ELEMENT: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].element[at[3]]
                             .a
                             .clone()
                     },
@@ -10742,17 +8046,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_ELEMENT: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].element[at[3]]
                             .z_n
                             .clone()
                     },
@@ -10773,17 +8068,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_ELEMENT: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].element[at[3]]
                             .atoms_n
                             .clone()
                     },
@@ -10807,17 +8093,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_INCIDENT: &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].incident[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -10838,17 +8115,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_INCIDENT: &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].incident[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -10869,17 +8137,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_INCIDENT: &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].incident[at[3]]
                             .values
                             .clone()
                     },
@@ -10900,17 +8159,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_INCIDENT: &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].incident[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -10934,17 +8184,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_EMITTED: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].emitted[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -10965,17 +8206,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_EMITTED: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].emitted[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -10996,17 +8228,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_EMITTED: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].emitted[at[3]]
                             .values
                             .clone()
                     },
@@ -11027,17 +8250,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_EMITTED: &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].emitted[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -11061,17 +8275,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_NEUTR
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .name
                             .clone()
@@ -11093,17 +8298,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_NEUTR
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .index
                             .clone()
@@ -11125,17 +8321,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_NEUTR
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .description
                             .clone()
@@ -11160,19 +8347,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_INCID
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -11193,19 +8369,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_INCID
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -11226,19 +8391,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_INCID
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].incident[at[4]]
                             .values
                             .clone()
                     },
@@ -11259,19 +8413,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_INCID
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -11295,19 +8438,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_EMITT
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -11328,19 +8460,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_EMITT
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -11361,19 +8482,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_EMITT
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .values
                             .clone()
                     },
@@ -11394,19 +8504,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE_EMITT
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -11430,17 +8529,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE: &[No
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .name
                             .clone()
                     },
@@ -11461,17 +8551,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE: &[No
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .vibrational_level
                             .clone()
                     },
@@ -11492,17 +8573,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE: &[No
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .vibrational_mode
                             .clone()
                     },
@@ -11529,17 +8601,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE: &[No
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].state[at[3]]
                             .electron_configuration
                             .clone()
                     },
@@ -11581,18 +8644,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL: &[Node] = 
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]].name.clone() },
                 )
             },
         }),
@@ -11610,15 +8662,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL: &[Node] = 
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]]
                             .ion_index
                             .clone()
                     },
@@ -11651,15 +8696,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL: &[Node] = 
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_recombination_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .recombination
-                            .neutral
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.recombination.neutral[at[2]]
                             .multiple_states_flag
                             .clone()
                     },
@@ -11704,16 +8742,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_INCIDENT: &[Nod
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .electrons
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.incident[at[2]]
                             .grid_index
                             .clone()
                     },
@@ -11734,16 +8764,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_INCIDENT: &[Nod
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .electrons
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.incident[at[2]]
                             .grid_subset_index
                             .clone()
                     },
@@ -11764,16 +8786,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_INCIDENT: &[Nod
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .electrons
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.incident[at[2]]
                             .values
                             .clone()
                     },
@@ -11794,16 +8808,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_INCIDENT: &[Nod
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .electrons
-                            .incident
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.incident[at[2]]
                             .coefficients
                             .clone()
                     },
@@ -11827,16 +8833,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_EMITTED: &[Node
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .electrons
-                            .emitted
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.emitted[at[2]]
                             .grid_index
                             .clone()
                     },
@@ -11857,16 +8855,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_EMITTED: &[Node
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .electrons
-                            .emitted
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.emitted[at[2]]
                             .grid_subset_index
                             .clone()
                     },
@@ -11887,16 +8877,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_EMITTED: &[Node
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .electrons
-                            .emitted
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.emitted[at[2]]
                             .values
                             .clone()
                     },
@@ -11917,16 +8899,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ELECTRONS_EMITTED: &[Node
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_electrons_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .electrons
-                            .emitted
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.electrons.emitted[at[2]]
                             .coefficients
                             .clone()
                     },
@@ -11965,20 +8939,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .a
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].element[at[3]].a.clone() },
                 )
             },
         }),
@@ -11996,17 +8957,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].element[at[3]]
                             .z_n
                             .clone()
                     },
@@ -12027,17 +8979,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_ELEMENT: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].element[at[3]]
                             .atoms_n
                             .clone()
                     },
@@ -12061,17 +9004,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_INCIDENT: &[Node] = &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].incident[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -12092,17 +9026,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_INCIDENT: &[Node] = &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].incident[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -12123,17 +9048,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_INCIDENT: &[Node] = &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].incident[at[3]]
                             .values
                             .clone()
                     },
@@ -12154,17 +9070,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_INCIDENT: &[Node] = &
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].incident[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -12188,17 +9095,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].emitted[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -12219,17 +9117,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].emitted[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -12250,17 +9139,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].emitted[at[3]]
                             .values
                             .clone()
                     },
@@ -12281,17 +9161,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_EMITTED: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].emitted[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -12315,19 +9186,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_INCIDENT: &[Nod
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -12348,19 +9208,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_INCIDENT: &[Nod
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -12381,19 +9230,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_INCIDENT: &[Nod
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].incident[at[4]]
                             .values
                             .clone()
                     },
@@ -12414,19 +9252,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_INCIDENT: &[Nod
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -12450,19 +9277,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_EMITTED: &[Node
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -12483,19 +9299,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_EMITTED: &[Node
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -12516,19 +9321,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_EMITTED: &[Node
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].emitted[at[4]]
                             .values
                             .clone()
                     },
@@ -12549,19 +9343,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE_EMITTED: &[Node
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -12585,17 +9368,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .z_min
                             .clone()
                     },
@@ -12616,17 +9390,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .z_max
                             .clone()
                     },
@@ -12647,17 +9412,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .name
                             .clone()
                     },
@@ -12678,17 +9434,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .vibrational_level
                             .clone()
                     },
@@ -12709,17 +9456,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .vibrational_mode
                             .clone()
                     },
@@ -12740,17 +9478,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].state[at[3]]
                             .electron_configuration
                             .clone()
                     },
@@ -12792,18 +9521,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .z_ion
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].z_ion.clone() },
                 )
             },
         }),
@@ -12821,18 +9539,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].name.clone() },
                 )
             },
         }),
@@ -12850,18 +9557,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
-                            .neutral_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]].neutral_index.clone() },
                 )
             },
         }),
@@ -12891,15 +9587,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_ion,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .ion
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.ion[at[2]]
                             .multiple_states_flag
                             .clone()
                     },
@@ -12929,17 +9618,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_ELEMENT: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].element[at[3]]
                             .a
                             .clone()
                     },
@@ -12960,17 +9640,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_ELEMENT: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].element[at[3]]
                             .z_n
                             .clone()
                     },
@@ -12991,17 +9662,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_ELEMENT: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_element,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].element[at[3]]
                             .atoms_n
                             .clone()
                     },
@@ -13025,17 +9687,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_INCIDENT: &[Node]
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].incident[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -13056,17 +9709,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_INCIDENT: &[Node]
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].incident[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -13087,17 +9731,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_INCIDENT: &[Node]
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].incident[at[3]]
                             .values
                             .clone()
                     },
@@ -13118,17 +9753,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_INCIDENT: &[Node]
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .incident
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].incident[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -13152,17 +9778,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_EMITTED: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].emitted[at[3]]
                             .grid_index
                             .clone()
                     },
@@ -13183,17 +9800,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_EMITTED: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].emitted[at[3]]
                             .grid_subset_index
                             .clone()
                     },
@@ -13214,17 +9822,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_EMITTED: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].emitted[at[3]]
                             .values
                             .clone()
                     },
@@ -13245,17 +9844,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_EMITTED: &[Node] 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .emitted
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].emitted[at[3]]
                             .coefficients
                             .clone()
                     },
@@ -13279,17 +9869,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_NEUTRAL_TYP
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .name
                             .clone()
@@ -13311,17 +9892,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_NEUTRAL_TYP
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .index
                             .clone()
@@ -13343,17 +9915,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_NEUTRAL_TYP
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .neutral_type
                             .description
                             .clone()
@@ -13378,19 +9941,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_INCIDENT: &
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -13411,19 +9963,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_INCIDENT: &
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].incident[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -13444,19 +9985,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_INCIDENT: &
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].incident[at[4]]
                             .values
                             .clone()
                     },
@@ -13477,19 +10007,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_INCIDENT: &
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_incident,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .incident
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].incident[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -13513,19 +10032,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_EMITTED: &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_index
                             .clone()
                     },
@@ -13546,19 +10054,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_EMITTED: &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .grid_subset_index
                             .clone()
                     },
@@ -13579,19 +10076,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_EMITTED: &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_1D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .values
                             .clone()
                     },
@@ -13612,19 +10098,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE_EMITTED: &[
                     indices,
                     5,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state_emitted,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
-                            .emitted
-                            .get(at[4])?
+                    |wall: &Wall, at: &[usize]| -> FLT_2D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]].emitted[at[4]]
                             .coefficients
                             .clone()
                     },
@@ -13648,17 +10123,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE: &[Node] = 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .name
                             .clone()
                     },
@@ -13679,17 +10145,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE: &[Node] = 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> FLT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .vibrational_level
                             .clone()
                     },
@@ -13710,17 +10167,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE: &[Node] = 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .vibrational_mode
                             .clone()
                     },
@@ -13747,17 +10195,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE: &[Node] = 
                     indices,
                     4,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral_state,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .state
-                            .get(at[3])?
+                    |wall: &Wall, at: &[usize]| -> STR_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].state[at[3]]
                             .electron_configuration
                             .clone()
                     },
@@ -13799,18 +10238,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .name
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> STR_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].name.clone() },
                 )
             },
         }),
@@ -13828,18 +10256,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
-                            .ion_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]].ion_index.clone() },
                 )
             },
         }),
@@ -13869,15 +10286,8 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_energy_fluxes_kinetic_neutral,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .energy_fluxes
-                            .kinetic
-                            .neutral
-                            .get(at[2])?
+                    |wall: &Wall, at: &[usize]| -> INT_0D {
+                        wall.description_ggd[at[0]].ggd[at[1]].energy_fluxes.kinetic.neutral[at[2]]
                             .multiple_states_flag
                             .clone()
                     },
@@ -13950,13 +10360,9 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_j_total,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.j_total.get(at[2])?.grid_index.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].grid_index.clone()
+                })
             },
         }),
     },
@@ -13968,15 +10374,9 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_j_total,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.j_total.get(at[2])?.grid_subset_index.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].grid_subset_index.clone()
+                })
             },
         }),
     },
@@ -13988,13 +10388,9 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_j_total,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.j_total.get(at[2])?.r.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].r.clone()
+                })
             },
         }),
     },
@@ -14006,15 +10402,9 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_j_total,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.j_total.get(at[2])?.r_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].r_coefficients.clone()
+                })
             },
         }),
     },
@@ -14026,13 +10416,9 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_j_total,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.j_total.get(at[2])?.phi.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].phi.clone()
+                })
             },
         }),
     },
@@ -14044,15 +10430,9 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_j_total,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.j_total.get(at[2])?.phi_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].phi_coefficients.clone()
+                })
             },
         }),
     },
@@ -14064,13 +10444,9 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_j_total,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.j_total.get(at[2])?.z.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].z.clone()
+                })
             },
         }),
     },
@@ -14082,15 +10458,9 @@ static NODES_DESCRIPTION_GGD_GGD_J_TOTAL: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_j_total,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.j_total.get(at[2])?.z_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_j_total, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].j_total[at[2]].z_coefficients.clone()
+                })
             },
         }),
     },
@@ -14105,13 +10475,9 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_b_field,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.b_field.get(at[2])?.grid_index.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].grid_index.clone()
+                })
             },
         }),
     },
@@ -14123,15 +10489,9 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_b_field,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.b_field.get(at[2])?.grid_subset_index.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].grid_subset_index.clone()
+                })
             },
         }),
     },
@@ -14143,13 +10503,9 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_b_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.b_field.get(at[2])?.r.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].r.clone()
+                })
             },
         }),
     },
@@ -14161,15 +10517,9 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_b_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.b_field.get(at[2])?.r_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].r_coefficients.clone()
+                })
             },
         }),
     },
@@ -14181,13 +10531,9 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_b_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.b_field.get(at[2])?.phi.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].phi.clone()
+                })
             },
         }),
     },
@@ -14199,15 +10545,9 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_b_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.b_field.get(at[2])?.phi_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].phi_coefficients.clone()
+                })
             },
         }),
     },
@@ -14219,13 +10559,9 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_b_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.b_field.get(at[2])?.z.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].z.clone()
+                })
             },
         }),
     },
@@ -14237,15 +10573,9 @@ static NODES_DESCRIPTION_GGD_GGD_B_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_b_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.b_field.get(at[2])?.z_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_b_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].b_field[at[2]].z_coefficients.clone()
+                })
             },
         }),
     },
@@ -14265,9 +10595,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.em_force_density.get(at[2])?.grid_index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -14285,16 +10613,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .em_force_density
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -14312,7 +10631,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.em_force_density.get(at[2])?.r.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].r.clone() },
                 )
             },
         }),
@@ -14330,16 +10649,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .em_force_density
-                            .get(at[2])?
-                            .r_coefficients
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].r_coefficients.clone() },
                 )
             },
         }),
@@ -14357,7 +10667,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.em_force_density.get(at[2])?.phi.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].phi.clone() },
                 )
             },
         }),
@@ -14375,16 +10685,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .em_force_density
-                            .get(at[2])?
-                            .phi_coefficients
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].phi_coefficients.clone() },
                 )
             },
         }),
@@ -14402,7 +10703,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.em_force_density.get(at[2])?.z.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].z.clone() },
                 )
             },
         }),
@@ -14420,16 +10721,7 @@ static NODES_DESCRIPTION_GGD_GGD_EM_FORCE_DENSITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_em_force_density,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .em_force_density
-                            .get(at[2])?
-                            .z_coefficients
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].em_force_density[at[2]].z_coefficients.clone() },
                 )
             },
         }),
@@ -14445,13 +10737,9 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_e_field,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.e_field.get(at[2])?.grid_index.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].grid_index.clone()
+                })
             },
         }),
     },
@@ -14463,15 +10751,9 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_e_field,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.e_field.get(at[2])?.grid_subset_index.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].grid_subset_index.clone()
+                })
             },
         }),
     },
@@ -14483,13 +10765,9 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_e_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.e_field.get(at[2])?.r.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].r.clone()
+                })
             },
         }),
     },
@@ -14501,15 +10779,9 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_e_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.e_field.get(at[2])?.r_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].r_coefficients.clone()
+                })
             },
         }),
     },
@@ -14521,13 +10793,9 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_e_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.e_field.get(at[2])?.phi.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].phi.clone()
+                })
             },
         }),
     },
@@ -14539,15 +10807,9 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_e_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.e_field.get(at[2])?.phi_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].phi_coefficients.clone()
+                })
             },
         }),
     },
@@ -14559,13 +10821,9 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_e_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.e_field.get(at[2])?.z.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].z.clone()
+                })
             },
         }),
     },
@@ -14577,15 +10835,9 @@ static NODES_DESCRIPTION_GGD_GGD_E_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_e_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.e_field.get(at[2])?.z_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_e_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].e_field[at[2]].z_coefficients.clone()
+                })
             },
         }),
     },
@@ -14600,13 +10852,9 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_a_field,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.a_field.get(at[2])?.grid_index.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].grid_index.clone()
+                })
             },
         }),
     },
@@ -14618,15 +10866,9 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_a_field,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.a_field.get(at[2])?.grid_subset_index.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].grid_subset_index.clone()
+                })
             },
         }),
     },
@@ -14638,13 +10880,9 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_a_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.a_field.get(at[2])?.r.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].r.clone()
+                })
             },
         }),
     },
@@ -14656,15 +10894,9 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_a_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.a_field.get(at[2])?.r_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].r_coefficients.clone()
+                })
             },
         }),
     },
@@ -14676,13 +10908,9 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_a_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.a_field.get(at[2])?.phi.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].phi.clone()
+                })
             },
         }),
     },
@@ -14694,15 +10922,9 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_a_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.a_field.get(at[2])?.phi_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].phi_coefficients.clone()
+                })
             },
         }),
     },
@@ -14714,13 +10936,9 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_a_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.a_field.get(at[2])?.z.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].z.clone()
+                })
             },
         }),
     },
@@ -14732,15 +10950,9 @@ static NODES_DESCRIPTION_GGD_GGD_A_FIELD: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_a_field,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.a_field.get(at[2])?.z_coefficients.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_a_field, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].a_field[at[2]].z_coefficients.clone()
+                })
             },
         }),
     },
@@ -14755,13 +10967,9 @@ static NODES_DESCRIPTION_GGD_GGD_PSI: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_psi,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.psi.get(at[2])?.grid_index.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_psi, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].grid_index.clone()
+                })
             },
         }),
     },
@@ -14773,15 +10981,9 @@ static NODES_DESCRIPTION_GGD_GGD_PSI: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_psi,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.psi.get(at[2])?.grid_subset_index.clone()
-                    },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_psi, |wall: &Wall, at: &[usize]| -> INT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].grid_subset_index.clone()
+                })
             },
         }),
     },
@@ -14793,13 +10995,9 @@ static NODES_DESCRIPTION_GGD_GGD_PSI: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_psi,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.psi.get(at[2])?.values.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_psi, |wall: &Wall, at: &[usize]| -> FLT_1D {
+                    wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].values.clone()
+                })
             },
         }),
     },
@@ -14811,13 +11009,9 @@ static NODES_DESCRIPTION_GGD_GGD_PSI: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(
-                    wall,
-                    indices,
-                    3,
-                    lengths_description_ggd_ggd_psi,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.psi.get(at[2])?.coefficients.clone() },
-                )
+                gather(wall, indices, 3, lengths_description_ggd_ggd_psi, |wall: &Wall, at: &[usize]| -> FLT_2D {
+                    wall.description_ggd[at[0]].ggd[at[1]].psi[at[2]].coefficients.clone()
+                })
             },
         }),
     },
@@ -14837,9 +11031,7 @@ static NODES_DESCRIPTION_GGD_GGD_PHI_POTENTIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_phi_potential,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.phi_potential.get(at[2])?.grid_index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].phi_potential[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -14857,16 +11049,7 @@ static NODES_DESCRIPTION_GGD_GGD_PHI_POTENTIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_phi_potential,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .phi_potential
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].phi_potential[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -14884,7 +11067,7 @@ static NODES_DESCRIPTION_GGD_GGD_PHI_POTENTIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_phi_potential,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.phi_potential.get(at[2])?.values.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].phi_potential[at[2]].values.clone() },
                 )
             },
         }),
@@ -14902,9 +11085,7 @@ static NODES_DESCRIPTION_GGD_GGD_PHI_POTENTIAL: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_phi_potential,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.phi_potential.get(at[2])?.coefficients.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].phi_potential[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -14925,9 +11106,7 @@ static NODES_DESCRIPTION_GGD_GGD_RESISTIVITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_resistivity,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.resistivity.get(at[2])?.grid_index.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].resistivity[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -14945,16 +11124,7 @@ static NODES_DESCRIPTION_GGD_GGD_RESISTIVITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_resistivity,
-                    |wall: &Wall, at: &[usize]| -> Option<INT_0D> {
-                        wall.description_ggd
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .resistivity
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> INT_0D { wall.description_ggd[at[0]].ggd[at[1]].resistivity[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -14972,7 +11142,7 @@ static NODES_DESCRIPTION_GGD_GGD_RESISTIVITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_resistivity,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_1D> { wall.description_ggd.get(at[0])?.ggd.get(at[1])?.resistivity.get(at[2])?.values.clone() },
+                    |wall: &Wall, at: &[usize]| -> FLT_1D { wall.description_ggd[at[0]].ggd[at[1]].resistivity[at[2]].values.clone() },
                 )
             },
         }),
@@ -14990,9 +11160,7 @@ static NODES_DESCRIPTION_GGD_GGD_RESISTIVITY: &[Node] = &[
                     indices,
                     3,
                     lengths_description_ggd_ggd_resistivity,
-                    |wall: &Wall, at: &[usize]| -> Option<FLT_2D> {
-                        wall.description_ggd.get(at[0])?.ggd.get(at[1])?.resistivity.get(at[2])?.coefficients.clone()
-                    },
+                    |wall: &Wall, at: &[usize]| -> FLT_2D { wall.description_ggd[at[0]].ggd[at[1]].resistivity[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -15092,8 +11260,8 @@ static NODES_DESCRIPTION_GGD_GGD: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 2, lengths_description_ggd_ggd, |wall: &Wall, at: &[usize]| -> Option<FLT_0D> {
-                    wall.description_ggd.get(at[0])?.ggd.get(at[1])?.time.clone()
+                gather(wall, indices, 2, lengths_description_ggd_ggd, |wall: &Wall, at: &[usize]| -> FLT_0D {
+                    wall.description_ggd[at[0]].ggd[at[1]].time.clone()
                 })
             },
         }),
@@ -15154,8 +11322,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.code.library.get(at[0])?.name.clone()
+                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.code.library[at[0]].name.clone()
                 })
             },
         }),
@@ -15168,8 +11336,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.code.library.get(at[0])?.description.clone()
+                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.code.library[at[0]].description.clone()
                 })
             },
         }),
@@ -15182,8 +11350,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.code.library.get(at[0])?.commit.clone()
+                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.code.library[at[0]].commit.clone()
                 })
             },
         }),
@@ -15196,8 +11364,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.code.library.get(at[0])?.version.clone()
+                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.code.library[at[0]].version.clone()
                 })
             },
         }),
@@ -15210,8 +11378,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.code.library.get(at[0])?.repository.clone()
+                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.code.library[at[0]].repository.clone()
                 })
             },
         }),
@@ -15224,8 +11392,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> Option<STR_0D> {
-                    wall.code.library.get(at[0])?.parameters.clone()
+                gather(wall, indices, 1, lengths_code_library, |wall: &Wall, at: &[usize]| -> STR_0D {
+                    wall.code.library[at[0]].parameters.clone()
                 })
             },
         }),
@@ -15241,9 +11409,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<STR_0D> {
-                    wall.code.name.clone()
-                })
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D { wall.code.name.clone() })
             },
         }),
     },
@@ -15255,7 +11421,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<STR_0D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D {
                     wall.code.description.clone()
                 })
             },
@@ -15269,9 +11435,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<STR_0D> {
-                    wall.code.commit.clone()
-                })
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D { wall.code.commit.clone() })
             },
         }),
     },
@@ -15283,7 +11447,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<STR_0D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D {
                     wall.code.version.clone()
                 })
             },
@@ -15297,7 +11461,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<STR_0D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D {
                     wall.code.repository.clone()
                 })
             },
@@ -15311,7 +11475,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<STR_0D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> STR_0D {
                     wall.code.parameters.clone()
                 })
             },
@@ -15325,7 +11489,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<INT_1D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> INT_1D {
                     wall.code.output_flag.clone()
                 })
             },
@@ -15354,7 +11518,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_0D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_0D {
                     wall.first_wall_surface_area.clone()
                 })
             },
@@ -15380,7 +11544,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let wall: &Wall = ids.downcast_ref().ok_or_else(|| "not a wall IDS".to_string())?;
-                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> Option<FLT_0D> {
+                gather(wall, indices, 0, no_levels, |wall: &Wall, _at: &[usize]| -> FLT_0D {
                     wall.first_wall_enclosed_volume.clone()
                 })
             },

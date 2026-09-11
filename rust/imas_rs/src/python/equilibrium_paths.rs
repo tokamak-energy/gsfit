@@ -47,7 +47,7 @@ fn lengths_greens_pf_passive(equilibrium: &Equilibrium, level: usize, _at: &[usi
 fn lengths_greens_pf_passive_dof(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.greens.pf_passive.len()),
-        1 => return Some(equilibrium.greens.pf_passive.get(at[0])?.dof.len()),
+        1 => return Some(equilibrium.greens.pf_passive[at[0]].dof.len()),
         _ => return None,
     }
 }
@@ -64,7 +64,7 @@ fn lengths_grids_ggd(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> 
 fn lengths_grids_ggd_grid(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.grids_ggd.len()),
-        1 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.len()),
+        1 => return Some(equilibrium.grids_ggd[at[0]].grid.len()),
         _ => return None,
     }
 }
@@ -73,8 +73,8 @@ fn lengths_grids_ggd_grid(equilibrium: &Equilibrium, level: usize, at: &[usize])
 fn lengths_grids_ggd_grid_grid_subset(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.grids_ggd.len()),
-        1 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.len()),
-        2 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.grid_subset.len()),
+        1 => return Some(equilibrium.grids_ggd[at[0]].grid.len()),
+        2 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset.len()),
         _ => return None,
     }
 }
@@ -83,9 +83,9 @@ fn lengths_grids_ggd_grid_grid_subset(equilibrium: &Equilibrium, level: usize, a
 fn lengths_grids_ggd_grid_grid_subset_base(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.grids_ggd.len()),
-        1 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.len()),
-        2 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.grid_subset.len()),
-        3 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.grid_subset.get(at[2])?.base.len()),
+        1 => return Some(equilibrium.grids_ggd[at[0]].grid.len()),
+        2 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset.len()),
+        3 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].base.len()),
         _ => return None,
     }
 }
@@ -94,24 +94,10 @@ fn lengths_grids_ggd_grid_grid_subset_base(equilibrium: &Equilibrium, level: usi
 fn lengths_grids_ggd_grid_grid_subset_element_object(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.grids_ggd.len()),
-        1 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.len()),
-        2 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.grid_subset.len()),
-        3 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.grid_subset.get(at[2])?.element.len()),
-        4 => {
-            return Some(
-                equilibrium
-                    .grids_ggd
-                    .get(at[0])?
-                    .grid
-                    .get(at[1])?
-                    .grid_subset
-                    .get(at[2])?
-                    .element
-                    .get(at[3])?
-                    .object
-                    .len(),
-            );
-        }
+        1 => return Some(equilibrium.grids_ggd[at[0]].grid.len()),
+        2 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset.len()),
+        3 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].element.len()),
+        4 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].element[at[3]].object.len()),
         _ => return None,
     }
 }
@@ -120,8 +106,8 @@ fn lengths_grids_ggd_grid_grid_subset_element_object(equilibrium: &Equilibrium, 
 fn lengths_grids_ggd_grid_space(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.grids_ggd.len()),
-        1 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.len()),
-        2 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.len()),
+        1 => return Some(equilibrium.grids_ggd[at[0]].grid.len()),
+        2 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space.len()),
         _ => return None,
     }
 }
@@ -130,9 +116,9 @@ fn lengths_grids_ggd_grid_space(equilibrium: &Equilibrium, level: usize, at: &[u
 fn lengths_grids_ggd_grid_space_coordinates_type(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.grids_ggd.len()),
-        1 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.len()),
-        2 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.len()),
-        3 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.get(at[2])?.coordinates_type.len()),
+        1 => return Some(equilibrium.grids_ggd[at[0]].grid.len()),
+        2 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space.len()),
+        3 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].coordinates_type.len()),
         _ => return None,
     }
 }
@@ -141,9 +127,9 @@ fn lengths_grids_ggd_grid_space_coordinates_type(equilibrium: &Equilibrium, leve
 fn lengths_grids_ggd_grid_space_objects_per_dimension(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.grids_ggd.len()),
-        1 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.len()),
-        2 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.len()),
-        3 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.get(at[2])?.objects_per_dimension.len()),
+        1 => return Some(equilibrium.grids_ggd[at[0]].grid.len()),
+        2 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space.len()),
+        3 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension.len()),
         _ => return None,
     }
 }
@@ -152,24 +138,10 @@ fn lengths_grids_ggd_grid_space_objects_per_dimension(equilibrium: &Equilibrium,
 fn lengths_grids_ggd_grid_space_objects_per_dimension_object(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.grids_ggd.len()),
-        1 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.len()),
-        2 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.len()),
-        3 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.get(at[2])?.objects_per_dimension.len()),
-        4 => {
-            return Some(
-                equilibrium
-                    .grids_ggd
-                    .get(at[0])?
-                    .grid
-                    .get(at[1])?
-                    .space
-                    .get(at[2])?
-                    .objects_per_dimension
-                    .get(at[3])?
-                    .object
-                    .len(),
-            );
-        }
+        1 => return Some(equilibrium.grids_ggd[at[0]].grid.len()),
+        2 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space.len()),
+        3 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension.len()),
+        4 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object.len()),
         _ => return None,
     }
 }
@@ -178,37 +150,13 @@ fn lengths_grids_ggd_grid_space_objects_per_dimension_object(equilibrium: &Equil
 fn lengths_grids_ggd_grid_space_objects_per_dimension_object_boundary(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.grids_ggd.len()),
-        1 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.len()),
-        2 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.len()),
-        3 => return Some(equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.get(at[2])?.objects_per_dimension.len()),
-        4 => {
-            return Some(
-                equilibrium
-                    .grids_ggd
-                    .get(at[0])?
-                    .grid
-                    .get(at[1])?
-                    .space
-                    .get(at[2])?
-                    .objects_per_dimension
-                    .get(at[3])?
-                    .object
-                    .len(),
-            );
-        }
+        1 => return Some(equilibrium.grids_ggd[at[0]].grid.len()),
+        2 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space.len()),
+        3 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension.len()),
+        4 => return Some(equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object.len()),
         5 => {
             return Some(
-                equilibrium
-                    .grids_ggd
-                    .get(at[0])?
-                    .grid
-                    .get(at[1])?
-                    .space
-                    .get(at[2])?
-                    .objects_per_dimension
-                    .get(at[3])?
-                    .object
-                    .get(at[4])?
+                equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                     .boundary
                     .len(),
             );
@@ -229,7 +177,7 @@ fn lengths_time_slice(equilibrium: &Equilibrium, level: usize, _at: &[usize]) ->
 fn lengths_time_slice_boundary_gap(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.boundary.gap.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].boundary.gap.len()),
         _ => return None,
     }
 }
@@ -238,7 +186,7 @@ fn lengths_time_slice_boundary_gap(equilibrium: &Equilibrium, level: usize, at: 
 fn lengths_time_slice_constraints_b_field_pol_probe(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.b_field_pol_probe.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.b_field_pol_probe.len()),
         _ => return None,
     }
 }
@@ -247,7 +195,7 @@ fn lengths_time_slice_constraints_b_field_pol_probe(equilibrium: &Equilibrium, l
 fn lengths_time_slice_constraints_faraday_angle(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.faraday_angle.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.faraday_angle.len()),
         _ => return None,
     }
 }
@@ -256,7 +204,7 @@ fn lengths_time_slice_constraints_faraday_angle(equilibrium: &Equilibrium, level
 fn lengths_time_slice_constraints_flux_loop(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.flux_loop.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.flux_loop.len()),
         _ => return None,
     }
 }
@@ -265,7 +213,7 @@ fn lengths_time_slice_constraints_flux_loop(equilibrium: &Equilibrium, level: us
 fn lengths_time_slice_constraints_iron_core_segment(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.iron_core_segment.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.iron_core_segment.len()),
         _ => return None,
     }
 }
@@ -274,7 +222,7 @@ fn lengths_time_slice_constraints_iron_core_segment(equilibrium: &Equilibrium, l
 fn lengths_time_slice_constraints_j_parallel(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.j_parallel.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.j_parallel.len()),
         _ => return None,
     }
 }
@@ -283,7 +231,7 @@ fn lengths_time_slice_constraints_j_parallel(equilibrium: &Equilibrium, level: u
 fn lengths_time_slice_constraints_j_phi(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.j_phi.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.j_phi.len()),
         _ => return None,
     }
 }
@@ -292,7 +240,7 @@ fn lengths_time_slice_constraints_j_phi(equilibrium: &Equilibrium, level: usize,
 fn lengths_time_slice_constraints_mse_polarization_angle(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.mse_polarization_angle.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.mse_polarization_angle.len()),
         _ => return None,
     }
 }
@@ -301,7 +249,7 @@ fn lengths_time_slice_constraints_mse_polarization_angle(equilibrium: &Equilibri
 fn lengths_time_slice_constraints_n_e(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.n_e.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.n_e.len()),
         _ => return None,
     }
 }
@@ -310,7 +258,7 @@ fn lengths_time_slice_constraints_n_e(equilibrium: &Equilibrium, level: usize, a
 fn lengths_time_slice_constraints_n_e_line(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.n_e_line.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.n_e_line.len()),
         _ => return None,
     }
 }
@@ -319,7 +267,7 @@ fn lengths_time_slice_constraints_n_e_line(equilibrium: &Equilibrium, level: usi
 fn lengths_time_slice_constraints_pf_current(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.pf_current.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.pf_current.len()),
         _ => return None,
     }
 }
@@ -328,7 +276,7 @@ fn lengths_time_slice_constraints_pf_current(equilibrium: &Equilibrium, level: u
 fn lengths_time_slice_constraints_pf_passive_current(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.pf_passive_current.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.pf_passive_current.len()),
         _ => return None,
     }
 }
@@ -337,7 +285,7 @@ fn lengths_time_slice_constraints_pf_passive_current(equilibrium: &Equilibrium, 
 fn lengths_time_slice_constraints_pressure(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.pressure.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.pressure.len()),
         _ => return None,
     }
 }
@@ -346,7 +294,7 @@ fn lengths_time_slice_constraints_pressure(equilibrium: &Equilibrium, level: usi
 fn lengths_time_slice_constraints_pressure_rotational(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.pressure_rotational.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.pressure_rotational.len()),
         _ => return None,
     }
 }
@@ -355,7 +303,7 @@ fn lengths_time_slice_constraints_pressure_rotational(equilibrium: &Equilibrium,
 fn lengths_time_slice_constraints_q(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.q.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.q.len()),
         _ => return None,
     }
 }
@@ -364,7 +312,7 @@ fn lengths_time_slice_constraints_q(equilibrium: &Equilibrium, level: usize, at:
 fn lengths_time_slice_constraints_strike_point(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.strike_point.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.strike_point.len()),
         _ => return None,
     }
 }
@@ -373,7 +321,7 @@ fn lengths_time_slice_constraints_strike_point(equilibrium: &Equilibrium, level:
 fn lengths_time_slice_constraints_x_point(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.constraints.x_point.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].constraints.x_point.len()),
         _ => return None,
     }
 }
@@ -382,7 +330,7 @@ fn lengths_time_slice_constraints_x_point(equilibrium: &Equilibrium, level: usiz
 fn lengths_time_slice_contour_tree_node(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.contour_tree.node.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].contour_tree.node.len()),
         _ => return None,
     }
 }
@@ -391,8 +339,8 @@ fn lengths_time_slice_contour_tree_node(equilibrium: &Equilibrium, level: usize,
 fn lengths_time_slice_contour_tree_node_levelset(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.contour_tree.node.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.contour_tree.node.get(at[1])?.levelset.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].contour_tree.node.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].contour_tree.node[at[1]].levelset.len()),
         _ => return None,
     }
 }
@@ -401,8 +349,8 @@ fn lengths_time_slice_contour_tree_node_levelset(equilibrium: &Equilibrium, leve
 fn lengths_time_slice_ggd_b_field_phi(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.ggd.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_phi.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].ggd.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].ggd[at[1]].b_field_phi.len()),
         _ => return None,
     }
 }
@@ -411,8 +359,8 @@ fn lengths_time_slice_ggd_b_field_phi(equilibrium: &Equilibrium, level: usize, a
 fn lengths_time_slice_ggd_b_field_r(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.ggd.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_r.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].ggd.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].ggd[at[1]].b_field_r.len()),
         _ => return None,
     }
 }
@@ -421,8 +369,8 @@ fn lengths_time_slice_ggd_b_field_r(equilibrium: &Equilibrium, level: usize, at:
 fn lengths_time_slice_ggd_b_field_z(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.ggd.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_z.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].ggd.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].ggd[at[1]].b_field_z.len()),
         _ => return None,
     }
 }
@@ -431,8 +379,8 @@ fn lengths_time_slice_ggd_b_field_z(equilibrium: &Equilibrium, level: usize, at:
 fn lengths_time_slice_ggd_j_parallel(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.ggd.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.j_parallel.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].ggd.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].ggd[at[1]].j_parallel.len()),
         _ => return None,
     }
 }
@@ -441,8 +389,8 @@ fn lengths_time_slice_ggd_j_parallel(equilibrium: &Equilibrium, level: usize, at
 fn lengths_time_slice_ggd_j_phi(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.ggd.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.j_phi.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].ggd.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].ggd[at[1]].j_phi.len()),
         _ => return None,
     }
 }
@@ -451,8 +399,8 @@ fn lengths_time_slice_ggd_j_phi(equilibrium: &Equilibrium, level: usize, at: &[u
 fn lengths_time_slice_ggd_phi(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.ggd.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.phi.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].ggd.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].ggd[at[1]].phi.len()),
         _ => return None,
     }
 }
@@ -461,8 +409,8 @@ fn lengths_time_slice_ggd_phi(equilibrium: &Equilibrium, level: usize, at: &[usi
 fn lengths_time_slice_ggd_psi(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.ggd.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.psi.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].ggd.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].ggd[at[1]].psi.len()),
         _ => return None,
     }
 }
@@ -471,8 +419,8 @@ fn lengths_time_slice_ggd_psi(equilibrium: &Equilibrium, level: usize, at: &[usi
 fn lengths_time_slice_ggd_r(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.ggd.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.r.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].ggd.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].ggd[at[1]].r.len()),
         _ => return None,
     }
 }
@@ -481,8 +429,8 @@ fn lengths_time_slice_ggd_r(equilibrium: &Equilibrium, level: usize, at: &[usize
 fn lengths_time_slice_ggd_theta(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.ggd.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.theta.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].ggd.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].ggd[at[1]].theta.len()),
         _ => return None,
     }
 }
@@ -491,8 +439,8 @@ fn lengths_time_slice_ggd_theta(equilibrium: &Equilibrium, level: usize, at: &[u
 fn lengths_time_slice_ggd_z(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.ggd.len()),
-        2 => return Some(equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.z.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].ggd.len()),
+        2 => return Some(equilibrium.time_slice[at[0]].ggd[at[1]].z.len()),
         _ => return None,
     }
 }
@@ -501,7 +449,7 @@ fn lengths_time_slice_ggd_z(equilibrium: &Equilibrium, level: usize, at: &[usize
 fn lengths_time_slice_profiles_2d(equilibrium: &Equilibrium, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(equilibrium.time_slice.len()),
-        1 => return Some(equilibrium.time_slice.get(at[0])?.profiles_2d.len()),
+        1 => return Some(equilibrium.time_slice[at[0]].profiles_2d.len()),
         _ => return None,
     }
 }
@@ -519,13 +467,9 @@ static NODES_VACUUM_TOROIDAL_FIELD: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.vacuum_toroidal_field.r0.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.vacuum_toroidal_field.r0.clone()
+                })
             },
         }),
     },
@@ -537,13 +481,9 @@ static NODES_VACUUM_TOROIDAL_FIELD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_1D> { equilibrium.vacuum_toroidal_field.b0.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_1D {
+                    equilibrium.vacuum_toroidal_field.b0.clone()
+                })
             },
         }),
     },
@@ -563,7 +503,7 @@ static NODES_GRIDS_GGD_GRID_IDENTIFIER: &[Node] = &[
                     indices,
                     2,
                     lengths_grids_ggd_grid,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.identifier.name.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].identifier.name.clone() },
                 )
             },
         }),
@@ -581,7 +521,7 @@ static NODES_GRIDS_GGD_GRID_IDENTIFIER: &[Node] = &[
                     indices,
                     2,
                     lengths_grids_ggd_grid,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> { equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.identifier.index.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].identifier.index.clone() },
                 )
             },
         }),
@@ -599,9 +539,7 @@ static NODES_GRIDS_GGD_GRID_IDENTIFIER: &[Node] = &[
                     indices,
                     2,
                     lengths_grids_ggd_grid,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.identifier.description.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].identifier.description.clone() },
                 )
             },
         }),
@@ -622,9 +560,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.get(at[2])?.identifier.name.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].identifier.name.clone() },
                 )
             },
         }),
@@ -642,9 +578,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.get(at[2])?.identifier.index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].identifier.index.clone() },
                 )
             },
         }),
@@ -662,17 +596,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .identifier
-                            .description
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].identifier.description.clone()
                     },
                 )
             },
@@ -694,9 +619,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.get(at[2])?.geometry_type.name.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].geometry_type.name.clone() },
                 )
             },
         }),
@@ -714,9 +637,7 @@ static NODES_GRIDS_GGD_GRID_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.space.get(at[2])?.geometry_type.index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].geometry_type.index.clone() },
                 )
             },
         }),
@@ -734,17 +655,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_GEOMETRY_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_space,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .geometry_type
-                            .description
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].geometry_type.description.clone()
                     },
                 )
             },
@@ -766,18 +678,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_coordinates_type,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .coordinates_type
-                            .get(at[3])?
-                            .name
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].coordinates_type[at[3]].name.clone()
                     },
                 )
             },
@@ -796,18 +698,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_coordinates_type,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .coordinates_type
-                            .get(at[3])?
-                            .index
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].coordinates_type[at[3]].index.clone()
                     },
                 )
             },
@@ -826,16 +718,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_coordinates_type,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .coordinates_type
-                            .get(at[3])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].coordinates_type[at[3]]
                             .description
                             .clone()
                     },
@@ -859,20 +743,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDARY: &[Node]
                     indices,
                     6,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object_boundary,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
-                            .boundary
-                            .get(at[5])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]].boundary[at[5]]
                             .index
                             .clone()
                     },
@@ -893,20 +765,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDARY: &[Node]
                     indices,
                     6,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object_boundary,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_1D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
-                            .boundary
-                            .get(at[5])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_1D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]].boundary[at[5]]
                             .neighbours
                             .clone()
                     },
@@ -936,18 +796,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .geometry
                             .clone()
                     },
@@ -968,18 +818,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_1D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_1D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .nodes
                             .clone()
                     },
@@ -1000,18 +840,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .measure
                             .clone()
                     },
@@ -1032,18 +862,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_space_objects_per_dimension_object,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]].object[at[4]]
                             .geometry_2d
                             .clone()
                     },
@@ -1067,16 +887,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTENT: &[Node
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_objects_per_dimension,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
                             .name
                             .clone()
@@ -1098,16 +910,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTENT: &[Node
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_objects_per_dimension,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
                             .index
                             .clone()
@@ -1129,16 +933,8 @@ static NODES_GRIDS_GGD_GRID_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTENT: &[Node
                     indices,
                     4,
                     lengths_grids_ggd_grid_space_objects_per_dimension,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .space
-                            .get(at[2])?
-                            .objects_per_dimension
-                            .get(at[3])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].space[at[2]].objects_per_dimension[at[3]]
                             .geometry_content
                             .description
                             .clone()
@@ -1205,18 +1001,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .identifier
-                            .name
-                            .clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].identifier.name.clone() },
                 )
             },
         }),
@@ -1234,17 +1019,8 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .identifier
-                            .index
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].identifier.index.clone()
                     },
                 )
             },
@@ -1263,17 +1039,8 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_IDENTIFIER: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .identifier
-                            .description
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].identifier.description.clone()
                     },
                 )
             },
@@ -1295,18 +1062,8 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_grid_subset_element_object,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .space
                             .clone()
                     },
@@ -1327,18 +1084,8 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_grid_subset_element_object,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .dimension
                             .clone()
                     },
@@ -1359,18 +1106,8 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     5,
                     lengths_grids_ggd_grid_grid_subset_element_object,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .element
-                            .get(at[3])?
-                            .object
-                            .get(at[4])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].element[at[3]].object[at[4]]
                             .index
                             .clone()
                     },
@@ -1401,18 +1138,8 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_grid_subset_base,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .base
-                            .get(at[3])?
-                            .jacobian
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].base[at[3]].jacobian.clone()
                     },
                 )
             },
@@ -1431,18 +1158,8 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_grid_subset_base,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_3D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .base
-                            .get(at[3])?
-                            .tensor_covariant
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_3D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].base[at[3]].tensor_covariant.clone()
                     },
                 )
             },
@@ -1461,16 +1178,8 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_BASE: &[Node] = &[
                     indices,
                     4,
                     lengths_grids_ggd_grid_grid_subset_base,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_3D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .base
-                            .get(at[3])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_3D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].base[at[3]]
                             .tensor_contravariant
                             .clone()
                     },
@@ -1494,18 +1203,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .metric
-                            .jacobian
-                            .clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].metric.jacobian.clone() },
                 )
             },
         }),
@@ -1523,17 +1221,8 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_3D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .metric
-                            .tensor_covariant
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_3D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].metric.tensor_covariant.clone()
                     },
                 )
             },
@@ -1552,17 +1241,8 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET_METRIC: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_3D> {
-                        equilibrium
-                            .grids_ggd
-                            .get(at[0])?
-                            .grid
-                            .get(at[1])?
-                            .grid_subset
-                            .get(at[2])?
-                            .metric
-                            .tensor_contravariant
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_3D {
+                        equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].metric.tensor_contravariant.clone()
                     },
                 )
             },
@@ -1590,9 +1270,7 @@ static NODES_GRIDS_GGD_GRID_GRID_SUBSET: &[Node] = &[
                     indices,
                     3,
                     lengths_grids_ggd_grid_grid_subset,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.grid_subset.get(at[2])?.dimension.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].grid_subset[at[2]].dimension.clone() },
                 )
             },
         }),
@@ -1637,7 +1315,7 @@ static NODES_GRIDS_GGD_GRID: &[Node] = &[
                     indices,
                     2,
                     lengths_grids_ggd_grid,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.grids_ggd.get(at[0])?.grid.get(at[1])?.path.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.grids_ggd[at[0]].grid[at[1]].path.clone() },
                 )
             },
         }),
@@ -1676,7 +1354,7 @@ static NODES_GRIDS_GGD: &[Node] = &[
                     indices,
                     1,
                     lengths_grids_ggd,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.grids_ggd.get(at[0])?.time.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.grids_ggd[at[0]].time.clone() },
                 )
             },
         }),
@@ -1697,7 +1375,7 @@ static NODES_TIME_SLICE_BOUNDARY_OUTLINE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.boundary.outline.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].boundary.outline.r.clone() },
                 )
             },
         }),
@@ -1715,7 +1393,7 @@ static NODES_TIME_SLICE_BOUNDARY_OUTLINE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.boundary.outline.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].boundary.outline.z.clone() },
                 )
             },
         }),
@@ -1736,7 +1414,7 @@ static NODES_TIME_SLICE_BOUNDARY_GEOMETRIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.geometric_axis.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.geometric_axis.r.clone() },
                 )
             },
         }),
@@ -1754,7 +1432,7 @@ static NODES_TIME_SLICE_BOUNDARY_GEOMETRIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.geometric_axis.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.geometric_axis.z.clone() },
                 )
             },
         }),
@@ -1775,7 +1453,7 @@ static NODES_TIME_SLICE_BOUNDARY_CLOSEST_WALL_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.closest_wall_point.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.closest_wall_point.r.clone() },
                 )
             },
         }),
@@ -1793,7 +1471,7 @@ static NODES_TIME_SLICE_BOUNDARY_CLOSEST_WALL_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.closest_wall_point.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.closest_wall_point.z.clone() },
                 )
             },
         }),
@@ -1811,9 +1489,7 @@ static NODES_TIME_SLICE_BOUNDARY_CLOSEST_WALL_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.boundary.closest_wall_point.distance.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.closest_wall_point.distance.clone() },
                 )
             },
         }),
@@ -1834,7 +1510,7 @@ static NODES_TIME_SLICE_BOUNDARY_DR_DZ_ZERO_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.dr_dz_zero_point.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.dr_dz_zero_point.r.clone() },
                 )
             },
         }),
@@ -1852,7 +1528,7 @@ static NODES_TIME_SLICE_BOUNDARY_DR_DZ_ZERO_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.dr_dz_zero_point.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.dr_dz_zero_point.z.clone() },
                 )
             },
         }),
@@ -1873,7 +1549,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.time_slice.get(at[0])?.boundary.gap.get(at[1])?.name.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].name.clone() },
                 )
             },
         }),
@@ -1891,9 +1567,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.boundary.gap.get(at[1])?.description.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].description.clone() },
                 )
             },
         }),
@@ -1911,7 +1585,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.gap.get(at[1])?.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].r.clone() },
                 )
             },
         }),
@@ -1929,7 +1603,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.gap.get(at[1])?.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].z.clone() },
                 )
             },
         }),
@@ -1947,7 +1621,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.gap.get(at[1])?.angle.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].angle.clone() },
                 )
             },
         }),
@@ -1965,7 +1639,7 @@ static NODES_TIME_SLICE_BOUNDARY_GAP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_boundary_gap,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.gap.get(at[1])?.value.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.gap[at[1]].value.clone() },
                 )
             },
         }),
@@ -1986,7 +1660,7 @@ static NODES_TIME_SLICE_BOUNDARY_BOUNDING: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.bounding.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.bounding.r.clone() },
                 )
             },
         }),
@@ -2004,7 +1678,7 @@ static NODES_TIME_SLICE_BOUNDARY_BOUNDING: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.bounding.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.bounding.z.clone() },
                 )
             },
         }),
@@ -2025,7 +1699,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> { equilibrium.time_slice.get(at[0])?.boundary.r#type.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].boundary.r#type.clone() },
                 )
             },
         }),
@@ -2049,7 +1723,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.psi_norm.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.psi_norm.clone() },
                 )
             },
         }),
@@ -2067,7 +1741,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.psi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.psi.clone() },
                 )
             },
         }),
@@ -2091,7 +1765,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.minor_radius.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.minor_radius.clone() },
                 )
             },
         }),
@@ -2109,7 +1783,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.elongation.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.elongation.clone() },
                 )
             },
         }),
@@ -2127,7 +1801,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.triangularity.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.triangularity.clone() },
                 )
             },
         }),
@@ -2145,7 +1819,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.triangularity_upper.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.triangularity_upper.clone() },
                 )
             },
         }),
@@ -2163,7 +1837,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.triangularity_lower.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.triangularity_lower.clone() },
                 )
             },
         }),
@@ -2181,7 +1855,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.squareness_upper_inner.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.squareness_upper_inner.clone() },
                 )
             },
         }),
@@ -2199,7 +1873,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.squareness_upper_outer.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.squareness_upper_outer.clone() },
                 )
             },
         }),
@@ -2217,7 +1891,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.squareness_lower_inner.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.squareness_lower_inner.clone() },
                 )
             },
         }),
@@ -2235,7 +1909,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.squareness_lower_outer.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.squareness_lower_outer.clone() },
                 )
             },
         }),
@@ -2271,7 +1945,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.rho_tor.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.rho_tor.clone() },
                 )
             },
         }),
@@ -2289,7 +1963,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.phi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.phi.clone() },
                 )
             },
         }),
@@ -2307,7 +1981,7 @@ static NODES_TIME_SLICE_BOUNDARY: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.boundary.phi_poloidal_current.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].boundary.phi_poloidal_current.clone() },
                 )
             },
         }),
@@ -2335,9 +2009,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE_NODE_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.contour_tree.node.get(at[1])?.node_type.name.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].node_type.name.clone() },
                 )
             },
         }),
@@ -2355,9 +2027,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE_NODE_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.contour_tree.node.get(at[1])?.node_type.index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].node_type.index.clone() },
                 )
             },
         }),
@@ -2375,8 +2045,8 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE_NODE_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.contour_tree.node.get(at[1])?.node_type.description.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].contour_tree.node[at[1]].node_type.description.clone()
                     },
                 )
             },
@@ -2398,9 +2068,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE_LEVELSET: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_contour_tree_node_levelset,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.contour_tree.node.get(at[1])?.levelset.get(at[2])?.r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].levelset[at[2]].r.clone() },
                 )
             },
         }),
@@ -2418,9 +2086,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE_LEVELSET: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_contour_tree_node_levelset,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.contour_tree.node.get(at[1])?.levelset.get(at[2])?.z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].levelset[at[2]].z.clone() },
                 )
             },
         }),
@@ -2441,9 +2107,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.contour_tree.node.get(at[1])?.critical_type.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].critical_type.clone() },
                 )
             },
         }),
@@ -2467,7 +2131,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.contour_tree.node.get(at[1])?.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].r.clone() },
                 )
             },
         }),
@@ -2485,7 +2149,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.contour_tree.node.get(at[1])?.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].z.clone() },
                 )
             },
         }),
@@ -2503,9 +2167,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE_NODE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_contour_tree_node,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.contour_tree.node.get(at[1])?.psi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].contour_tree.node[at[1]].psi.clone() },
                 )
             },
         }),
@@ -2538,7 +2200,7 @@ static NODES_TIME_SLICE_CONTOUR_TREE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_2D> { equilibrium.time_slice.get(at[0])?.contour_tree.edges.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_2D { equilibrium.time_slice[at[0]].contour_tree.edges.clone() },
                 )
             },
         }),
@@ -2559,9 +2221,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_tor_vacuum_r.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.measured.clone() },
                 )
             },
         }),
@@ -2579,9 +2239,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_tor_vacuum_r.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.source.clone() },
                 )
             },
         }),
@@ -2599,8 +2257,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_tor_vacuum_r.time_measurement.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.time_measurement.clone()
                     },
                 )
             },
@@ -2619,9 +2277,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_tor_vacuum_r.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.exact.clone() },
                 )
             },
         }),
@@ -2639,9 +2295,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_tor_vacuum_r.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.weight.clone() },
                 )
             },
         }),
@@ -2659,9 +2313,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_tor_vacuum_r.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.sigma.clone() },
                 )
             },
         }),
@@ -2679,8 +2331,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_tor_vacuum_r.reconstructed.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.reconstructed.clone()
                     },
                 )
             },
@@ -2699,9 +2351,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_TOR_VACUUM_R: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_tor_vacuum_r.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_tor_vacuum_r.chi_squared.clone() },
                 )
             },
         }),
@@ -2722,9 +2372,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_pol_probe.get(at[1])?.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].measured.clone() },
                 )
             },
         }),
@@ -2742,9 +2390,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_pol_probe.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].source.clone() },
                 )
             },
         }),
@@ -2762,15 +2408,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .b_field_pol_probe
-                            .get(at[1])?
-                            .time_measurement
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].time_measurement.clone()
                     },
                 )
             },
@@ -2789,9 +2428,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_pol_probe.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].exact.clone() },
                 )
             },
         }),
@@ -2809,9 +2446,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_pol_probe.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].weight.clone() },
                 )
             },
         }),
@@ -2829,9 +2464,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_pol_probe.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -2849,15 +2482,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .b_field_pol_probe
-                            .get(at[1])?
-                            .reconstructed
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].reconstructed.clone()
                     },
                 )
             },
@@ -2876,8 +2502,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_B_FIELD_POL_PROBE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_b_field_pol_probe,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.b_field_pol_probe.get(at[1])?.chi_squared.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.b_field_pol_probe[at[1]].chi_squared.clone()
                     },
                 )
             },
@@ -2899,9 +2525,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.diamagnetic_flux.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.measured.clone() },
                 )
             },
         }),
@@ -2919,9 +2543,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.diamagnetic_flux.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.source.clone() },
                 )
             },
         }),
@@ -2939,9 +2561,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.diamagnetic_flux.time_measurement.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.time_measurement.clone() },
                 )
             },
         }),
@@ -2959,9 +2579,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.diamagnetic_flux.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.exact.clone() },
                 )
             },
         }),
@@ -2979,9 +2597,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.diamagnetic_flux.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.weight.clone() },
                 )
             },
         }),
@@ -2999,9 +2615,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.diamagnetic_flux.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.sigma.clone() },
                 )
             },
         }),
@@ -3019,9 +2633,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.diamagnetic_flux.reconstructed.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.reconstructed.clone() },
                 )
             },
         }),
@@ -3039,9 +2651,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.diamagnetic_flux.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.chi_squared.clone() },
                 )
             },
         }),
@@ -3062,9 +2672,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.faraday_angle.get(at[1])?.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].measured.clone() },
                 )
             },
         }),
@@ -3082,9 +2690,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.faraday_angle.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].source.clone() },
                 )
             },
         }),
@@ -3102,15 +2708,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .faraday_angle
-                            .get(at[1])?
-                            .time_measurement
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].time_measurement.clone()
                     },
                 )
             },
@@ -3129,9 +2728,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.faraday_angle.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].exact.clone() },
                 )
             },
         }),
@@ -3149,9 +2746,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.faraday_angle.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].weight.clone() },
                 )
             },
         }),
@@ -3169,9 +2764,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.faraday_angle.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -3189,8 +2782,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.faraday_angle.get(at[1])?.reconstructed.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].reconstructed.clone()
                     },
                 )
             },
@@ -3209,9 +2802,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FARADAY_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_faraday_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.faraday_angle.get(at[1])?.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.faraday_angle[at[1]].chi_squared.clone() },
                 )
             },
         }),
@@ -3232,15 +2823,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .mse_polarization_angle
-                            .get(at[1])?
-                            .measured
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].measured.clone()
                     },
                 )
             },
@@ -3259,8 +2843,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.mse_polarization_angle.get(at[1])?.source.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].source.clone()
                     },
                 )
             },
@@ -3279,15 +2863,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .mse_polarization_angle
-                            .get(at[1])?
-                            .time_measurement
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].time_measurement.clone()
                     },
                 )
             },
@@ -3306,8 +2883,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.mse_polarization_angle.get(at[1])?.exact.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].exact.clone()
                     },
                 )
             },
@@ -3326,8 +2903,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.mse_polarization_angle.get(at[1])?.weight.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].weight.clone()
                     },
                 )
             },
@@ -3346,8 +2923,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.mse_polarization_angle.get(at[1])?.sigma.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].sigma.clone()
                     },
                 )
             },
@@ -3366,15 +2943,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .mse_polarization_angle
-                            .get(at[1])?
-                            .reconstructed
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].reconstructed.clone()
                     },
                 )
             },
@@ -3393,15 +2963,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_MSE_POLARIZATION_ANGLE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_mse_polarization_angle,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .mse_polarization_angle
-                            .get(at[1])?
-                            .chi_squared
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.mse_polarization_angle[at[1]].chi_squared.clone()
                     },
                 )
             },
@@ -3423,9 +2986,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.flux_loop.get(at[1])?.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].measured.clone() },
                 )
             },
         }),
@@ -3443,9 +3004,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.flux_loop.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].source.clone() },
                 )
             },
         }),
@@ -3463,9 +3022,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.flux_loop.get(at[1])?.time_measurement.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].time_measurement.clone() },
                 )
             },
         }),
@@ -3483,9 +3040,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.flux_loop.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].exact.clone() },
                 )
             },
         }),
@@ -3503,9 +3058,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.flux_loop.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].weight.clone() },
                 )
             },
         }),
@@ -3523,9 +3076,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.flux_loop.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -3543,9 +3094,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.flux_loop.get(at[1])?.reconstructed.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].reconstructed.clone() },
                 )
             },
         }),
@@ -3563,9 +3112,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_FLUX_LOOP: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_flux_loop,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.flux_loop.get(at[1])?.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.flux_loop[at[1]].chi_squared.clone() },
                 )
             },
         }),
@@ -3586,7 +3133,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.constraints.ip.measured.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.measured.clone() },
                 )
             },
         }),
@@ -3604,7 +3151,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.time_slice.get(at[0])?.constraints.ip.source.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.ip.source.clone() },
                 )
             },
         }),
@@ -3622,7 +3169,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.constraints.ip.time_measurement.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.time_measurement.clone() },
                 )
             },
         }),
@@ -3640,7 +3187,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> { equilibrium.time_slice.get(at[0])?.constraints.ip.exact.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.ip.exact.clone() },
                 )
             },
         }),
@@ -3658,7 +3205,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.constraints.ip.weight.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.weight.clone() },
                 )
             },
         }),
@@ -3676,7 +3223,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.constraints.ip.sigma.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.sigma.clone() },
                 )
             },
         }),
@@ -3694,7 +3241,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.constraints.ip.reconstructed.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.reconstructed.clone() },
                 )
             },
         }),
@@ -3712,7 +3259,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_IP: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.constraints.ip.chi_squared.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.ip.chi_squared.clone() },
                 )
             },
         }),
@@ -3733,13 +3280,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
                             .measured
                             .clone()
@@ -3761,13 +3303,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
                             .source
                             .clone()
@@ -3789,13 +3326,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
                             .time_measurement
                             .clone()
@@ -3817,16 +3349,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
-                            .magnetization_r
-                            .exact
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.exact.clone()
                     },
                 )
             },
@@ -3845,13 +3369,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
                             .weight
                             .clone()
@@ -3873,16 +3392,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
-                            .magnetization_r
-                            .sigma
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_r.sigma.clone()
                     },
                 )
             },
@@ -3901,13 +3412,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
                             .reconstructed
                             .clone()
@@ -3929,13 +3435,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_R: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_r
                             .chi_squared
                             .clone()
@@ -3960,13 +3461,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
                             .measured
                             .clone()
@@ -3988,13 +3484,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
                             .source
                             .clone()
@@ -4016,13 +3507,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
                             .time_measurement
                             .clone()
@@ -4044,16 +3530,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
-                            .magnetization_z
-                            .exact
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.exact.clone()
                     },
                 )
             },
@@ -4072,13 +3550,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
                             .weight
                             .clone()
@@ -4100,16 +3573,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
-                            .magnetization_z
-                            .sigma
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]].magnetization_z.sigma.clone()
                     },
                 )
             },
@@ -4128,13 +3593,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
                             .reconstructed
                             .clone()
@@ -4156,13 +3616,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_IRON_CORE_SEGMENT_MAGNETIZATION_Z: &[Node] =
                     indices,
                     2,
                     lengths_time_slice_constraints_iron_core_segment,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .iron_core_segment
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.iron_core_segment[at[1]]
                             .magnetization_z
                             .chi_squared
                             .clone()
@@ -4202,9 +3657,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.position.r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.r.clone() },
                 )
             },
         }),
@@ -4222,9 +3675,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.position.phi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.phi.clone() },
                 )
             },
         }),
@@ -4242,9 +3693,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.position.z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.z.clone() },
                 )
             },
         }),
@@ -4262,9 +3711,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.position.rho_tor_norm.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.rho_tor_norm.clone() },
                 )
             },
         }),
@@ -4282,9 +3729,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.position.psi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].position.psi.clone() },
                 )
             },
         }),
@@ -4305,9 +3750,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].measured.clone() },
                 )
             },
         }),
@@ -4331,9 +3774,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].source.clone() },
                 )
             },
         }),
@@ -4351,9 +3792,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.time_measurement.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].time_measurement.clone() },
                 )
             },
         }),
@@ -4371,9 +3810,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].exact.clone() },
                 )
             },
         }),
@@ -4391,9 +3828,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].weight.clone() },
                 )
             },
         }),
@@ -4411,9 +3846,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -4431,9 +3864,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.reconstructed.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].reconstructed.clone() },
                 )
             },
         }),
@@ -4451,9 +3882,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e.get(at[1])?.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e[at[1]].chi_squared.clone() },
                 )
             },
         }),
@@ -4474,9 +3903,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e_line.get(at[1])?.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].measured.clone() },
                 )
             },
         }),
@@ -4494,9 +3921,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e_line.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].source.clone() },
                 )
             },
         }),
@@ -4514,9 +3939,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e_line.get(at[1])?.time_measurement.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].time_measurement.clone() },
                 )
             },
         }),
@@ -4534,9 +3957,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e_line.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].exact.clone() },
                 )
             },
         }),
@@ -4554,9 +3975,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e_line.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].weight.clone() },
                 )
             },
         }),
@@ -4574,9 +3993,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e_line.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -4594,9 +4011,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e_line.get(at[1])?.reconstructed.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].reconstructed.clone() },
                 )
             },
         }),
@@ -4614,9 +4029,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_N_E_LINE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_n_e_line,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.n_e_line.get(at[1])?.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.n_e_line[at[1]].chi_squared.clone() },
                 )
             },
         }),
@@ -4637,9 +4050,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_current.get(at[1])?.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].measured.clone() },
                 )
             },
         }),
@@ -4657,9 +4068,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_current.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].source.clone() },
                 )
             },
         }),
@@ -4677,8 +4086,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_current.get(at[1])?.time_measurement.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].time_measurement.clone()
                     },
                 )
             },
@@ -4697,9 +4106,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_current.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].exact.clone() },
                 )
             },
         }),
@@ -4717,9 +4124,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_current.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].weight.clone() },
                 )
             },
         }),
@@ -4737,9 +4142,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_current.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -4757,9 +4160,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_current.get(at[1])?.reconstructed.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].reconstructed.clone() },
                 )
             },
         }),
@@ -4777,9 +4178,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_current.get(at[1])?.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_current[at[1]].chi_squared.clone() },
                 )
             },
         }),
@@ -4800,8 +4199,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_passive_current.get(at[1])?.measured.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].measured.clone()
                     },
                 )
             },
@@ -4820,9 +4219,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_passive_current.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].source.clone() },
                 )
             },
         }),
@@ -4840,15 +4237,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pf_passive_current
-                            .get(at[1])?
-                            .time_measurement
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].time_measurement.clone()
                     },
                 )
             },
@@ -4867,9 +4257,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_passive_current.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].exact.clone() },
                 )
             },
         }),
@@ -4887,9 +4275,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_passive_current.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].weight.clone() },
                 )
             },
         }),
@@ -4907,9 +4293,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pf_passive_current.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -4927,15 +4311,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pf_passive_current
-                            .get(at[1])?
-                            .reconstructed
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].reconstructed.clone()
                     },
                 )
             },
@@ -4954,15 +4331,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PF_PASSIVE_CURRENT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pf_passive_current,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pf_passive_current
-                            .get(at[1])?
-                            .chi_squared
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pf_passive_current[at[1]].chi_squared.clone()
                     },
                 )
             },
@@ -4984,9 +4354,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.position.r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.r.clone() },
                 )
             },
         }),
@@ -5004,9 +4372,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.position.phi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.phi.clone() },
                 )
             },
         }),
@@ -5024,9 +4390,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.position.z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.z.clone() },
                 )
             },
         }),
@@ -5044,16 +4408,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pressure
-                            .get(at[1])?
-                            .position
-                            .rho_tor_norm
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.rho_tor_norm.clone()
                     },
                 )
             },
@@ -5072,9 +4428,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.position.psi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].position.psi.clone() },
                 )
             },
         }),
@@ -5095,9 +4449,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].measured.clone() },
                 )
             },
         }),
@@ -5121,9 +4473,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].source.clone() },
                 )
             },
         }),
@@ -5141,9 +4491,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.time_measurement.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].time_measurement.clone() },
                 )
             },
         }),
@@ -5161,9 +4509,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].exact.clone() },
                 )
             },
         }),
@@ -5181,9 +4527,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].weight.clone() },
                 )
             },
         }),
@@ -5201,9 +4545,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -5221,9 +4563,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.reconstructed.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].reconstructed.clone() },
                 )
             },
         }),
@@ -5241,9 +4581,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure.get(at[1])?.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure[at[1]].chi_squared.clone() },
                 )
             },
         }),
@@ -5264,16 +4602,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pressure_rotational
-                            .get(at[1])?
-                            .position
-                            .r
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].position.r.clone()
                     },
                 )
             },
@@ -5292,16 +4622,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pressure_rotational
-                            .get(at[1])?
-                            .position
-                            .phi
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].position.phi.clone()
                     },
                 )
             },
@@ -5320,16 +4642,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pressure_rotational
-                            .get(at[1])?
-                            .position
-                            .z
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].position.z.clone()
                     },
                 )
             },
@@ -5348,13 +4662,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pressure_rotational
-                            .get(at[1])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]]
                             .position
                             .rho_tor_norm
                             .clone()
@@ -5376,16 +4685,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pressure_rotational
-                            .get(at[1])?
-                            .position
-                            .psi
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].position.psi.clone()
                     },
                 )
             },
@@ -5407,8 +4708,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure_rotational.get(at[1])?.measured.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].measured.clone()
                     },
                 )
             },
@@ -5433,9 +4734,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure_rotational.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].source.clone() },
                 )
             },
         }),
@@ -5453,15 +4752,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pressure_rotational
-                            .get(at[1])?
-                            .time_measurement
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].time_measurement.clone()
                     },
                 )
             },
@@ -5480,9 +4772,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure_rotational.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].exact.clone() },
                 )
             },
         }),
@@ -5500,9 +4790,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure_rotational.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].weight.clone() },
                 )
             },
         }),
@@ -5520,9 +4808,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.pressure_rotational.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -5540,15 +4826,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pressure_rotational
-                            .get(at[1])?
-                            .reconstructed
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].reconstructed.clone()
                     },
                 )
             },
@@ -5567,15 +4846,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_PRESSURE_ROTATIONAL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_pressure_rotational,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .pressure_rotational
-                            .get(at[1])?
-                            .chi_squared
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.pressure_rotational[at[1]].chi_squared.clone()
                     },
                 )
             },
@@ -5597,9 +4869,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.position.r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.r.clone() },
                 )
             },
         }),
@@ -5617,9 +4887,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.position.phi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.phi.clone() },
                 )
             },
         }),
@@ -5637,9 +4905,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.position.z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.z.clone() },
                 )
             },
         }),
@@ -5657,9 +4923,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.position.rho_tor_norm.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.rho_tor_norm.clone() },
                 )
             },
         }),
@@ -5677,9 +4941,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.position.psi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].position.psi.clone() },
                 )
             },
         }),
@@ -5700,9 +4962,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].measured.clone() },
                 )
             },
         }),
@@ -5726,7 +4986,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.source.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].source.clone() },
                 )
             },
         }),
@@ -5744,9 +5004,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.time_measurement.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].time_measurement.clone() },
                 )
             },
         }),
@@ -5764,7 +5022,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> { equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.exact.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].exact.clone() },
                 )
             },
         }),
@@ -5782,7 +5040,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.weight.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].weight.clone() },
                 )
             },
         }),
@@ -5800,7 +5058,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.sigma.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -5818,9 +5076,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.reconstructed.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].reconstructed.clone() },
                 )
             },
         }),
@@ -5838,9 +5094,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_Q: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_q,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.q.get(at[1])?.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.q[at[1]].chi_squared.clone() },
                 )
             },
         }),
@@ -5861,9 +5115,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.position.r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.r.clone() },
                 )
             },
         }),
@@ -5881,9 +5133,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.position.phi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.phi.clone() },
                 )
             },
         }),
@@ -5901,9 +5151,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.position.z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.z.clone() },
                 )
             },
         }),
@@ -5921,8 +5169,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.position.rho_tor_norm.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.rho_tor_norm.clone()
                     },
                 )
             },
@@ -5941,9 +5189,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.position.psi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].position.psi.clone() },
                 )
             },
         }),
@@ -5964,9 +5210,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].measured.clone() },
                 )
             },
         }),
@@ -5990,9 +5234,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].source.clone() },
                 )
             },
         }),
@@ -6010,9 +5252,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.time_measurement.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].time_measurement.clone() },
                 )
             },
         }),
@@ -6030,9 +5270,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].exact.clone() },
                 )
             },
         }),
@@ -6050,9 +5288,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].weight.clone() },
                 )
             },
         }),
@@ -6070,9 +5306,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -6090,9 +5324,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.reconstructed.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].reconstructed.clone() },
                 )
             },
         }),
@@ -6110,9 +5342,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PHI: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_phi.get(at[1])?.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_phi[at[1]].chi_squared.clone() },
                 )
             },
         }),
@@ -6133,9 +5363,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.position.r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.r.clone() },
                 )
             },
         }),
@@ -6153,9 +5381,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.position.phi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.phi.clone() },
                 )
             },
         }),
@@ -6173,9 +5399,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.position.z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.z.clone() },
                 )
             },
         }),
@@ -6193,16 +5417,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .j_parallel
-                            .get(at[1])?
-                            .position
-                            .rho_tor_norm
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.rho_tor_norm.clone()
                     },
                 )
             },
@@ -6221,9 +5437,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL_POSITION: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.position.psi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].position.psi.clone() },
                 )
             },
         }),
@@ -6244,9 +5458,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.measured.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].measured.clone() },
                 )
             },
         }),
@@ -6270,9 +5482,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].source.clone() },
                 )
             },
         }),
@@ -6290,8 +5500,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.time_measurement.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].time_measurement.clone()
                     },
                 )
             },
@@ -6310,9 +5520,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].exact.clone() },
                 )
             },
         }),
@@ -6330,9 +5538,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].weight.clone() },
                 )
             },
         }),
@@ -6350,9 +5556,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -6370,9 +5574,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.reconstructed.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].reconstructed.clone() },
                 )
             },
         }),
@@ -6390,9 +5592,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_J_PARALLEL: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.j_parallel.get(at[1])?.chi_squared.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.j_parallel[at[1]].chi_squared.clone() },
                 )
             },
         }),
@@ -6413,8 +5613,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT_POSITION_MEASURED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.x_point.get(at[1])?.position_measured.r.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.x_point[at[1]].position_measured.r.clone()
                     },
                 )
             },
@@ -6433,8 +5633,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT_POSITION_MEASURED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.x_point.get(at[1])?.position_measured.z.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.x_point[at[1]].position_measured.z.clone()
                     },
                 )
             },
@@ -6456,16 +5656,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT_POSITION_RECONSTRUCTED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .x_point
-                            .get(at[1])?
-                            .position_reconstructed
-                            .r
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.x_point[at[1]].position_reconstructed.r.clone()
                     },
                 )
             },
@@ -6484,16 +5676,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT_POSITION_RECONSTRUCTED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .x_point
-                            .get(at[1])?
-                            .position_reconstructed
-                            .z
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.x_point[at[1]].position_reconstructed.z.clone()
                     },
                 )
             },
@@ -6521,9 +5705,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.x_point.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].source.clone() },
                 )
             },
         }),
@@ -6541,9 +5723,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.x_point.get(at[1])?.time_measurement.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].time_measurement.clone() },
                 )
             },
         }),
@@ -6561,9 +5741,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.x_point.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].exact.clone() },
                 )
             },
         }),
@@ -6581,9 +5759,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.x_point.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].weight.clone() },
                 )
             },
         }),
@@ -6601,9 +5777,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.x_point.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -6627,9 +5801,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.x_point.get(at[1])?.chi_squared_r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].chi_squared_r.clone() },
                 )
             },
         }),
@@ -6647,9 +5819,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_X_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_x_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.x_point.get(at[1])?.chi_squared_z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.x_point[at[1]].chi_squared_z.clone() },
                 )
             },
         }),
@@ -6670,16 +5840,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT_POSITION_MEASURED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .strike_point
-                            .get(at[1])?
-                            .position_measured
-                            .r
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].position_measured.r.clone()
                     },
                 )
             },
@@ -6698,16 +5860,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT_POSITION_MEASURED: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .strike_point
-                            .get(at[1])?
-                            .position_measured
-                            .z
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].position_measured.z.clone()
                     },
                 )
             },
@@ -6729,16 +5883,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT_POSITION_RECONSTRUCTED: &[Node]
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .strike_point
-                            .get(at[1])?
-                            .position_reconstructed
-                            .r
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].position_reconstructed.r.clone()
                     },
                 )
             },
@@ -6757,16 +5903,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT_POSITION_RECONSTRUCTED: &[Node]
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .constraints
-                            .strike_point
-                            .get(at[1])?
-                            .position_reconstructed
-                            .z
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].position_reconstructed.z.clone()
                     },
                 )
             },
@@ -6794,9 +5932,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.strike_point.get(at[1])?.source.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].source.clone() },
                 )
             },
         }),
@@ -6814,8 +5950,8 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.strike_point.get(at[1])?.time_measurement.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D {
+                        equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].time_measurement.clone()
                     },
                 )
             },
@@ -6834,9 +5970,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.strike_point.get(at[1])?.exact.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].exact.clone() },
                 )
             },
         }),
@@ -6854,9 +5988,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.strike_point.get(at[1])?.weight.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].weight.clone() },
                 )
             },
         }),
@@ -6874,9 +6006,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.strike_point.get(at[1])?.sigma.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].sigma.clone() },
                 )
             },
         }),
@@ -6900,9 +6030,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.strike_point.get(at[1])?.chi_squared_r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].chi_squared_r.clone() },
                 )
             },
         }),
@@ -6920,9 +6048,7 @@ static NODES_TIME_SLICE_CONSTRAINTS_STRIKE_POINT: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_constraints_strike_point,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.constraints.strike_point.get(at[1])?.chi_squared_z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.strike_point[at[1]].chi_squared_z.clone() },
                 )
             },
         }),
@@ -7057,7 +6183,7 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.constraints.chi_squared_reduced.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.chi_squared_reduced.clone() },
                 )
             },
         }),
@@ -7075,7 +6201,7 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> { equilibrium.time_slice.get(at[0])?.constraints.freedom_degrees_n.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.freedom_degrees_n.clone() },
                 )
             },
         }),
@@ -7093,7 +6219,7 @@ static NODES_TIME_SLICE_CONSTRAINTS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> { equilibrium.time_slice.get(at[0])?.constraints.constraints_n.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].constraints.constraints_n.clone() },
                 )
             },
         }),
@@ -7114,9 +6240,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_MAGNETIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.magnetic_axis.r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.magnetic_axis.r.clone() },
                 )
             },
         }),
@@ -7134,9 +6258,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_MAGNETIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.magnetic_axis.z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.magnetic_axis.z.clone() },
                 )
             },
         }),
@@ -7154,9 +6276,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_MAGNETIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.magnetic_axis.b_field_phi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.magnetic_axis.b_field_phi.clone() },
                 )
             },
         }),
@@ -7177,9 +6297,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_CURRENT_CENTRE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.current_centre.r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.current_centre.r.clone() },
                 )
             },
         }),
@@ -7197,9 +6315,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_CURRENT_CENTRE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.current_centre.z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.current_centre.z.clone() },
                 )
             },
         }),
@@ -7217,9 +6333,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_CURRENT_CENTRE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.current_centre.velocity_z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.current_centre.velocity_z.clone() },
                 )
             },
         }),
@@ -7240,7 +6354,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_Q_MIN: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.q_min.value.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_min.value.clone() },
                 )
             },
         }),
@@ -7258,9 +6372,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_Q_MIN: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.q_min.rho_tor_norm.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_min.rho_tor_norm.clone() },
                 )
             },
         }),
@@ -7278,7 +6390,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_Q_MIN: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.q_min.psi_norm.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_min.psi_norm.clone() },
                 )
             },
         }),
@@ -7296,7 +6408,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES_Q_MIN: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.q_min.psi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_min.psi.clone() },
                 )
             },
         }),
@@ -7317,7 +6429,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.beta_pol.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_pol.clone() },
                 )
             },
         }),
@@ -7335,7 +6447,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.beta_tor.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_tor.clone() },
                 )
             },
         }),
@@ -7353,7 +6465,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.beta_tor_norm.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_tor_norm.clone() },
                 )
             },
         }),
@@ -7371,7 +6483,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.ip.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.ip.clone() },
                 )
             },
         }),
@@ -7389,7 +6501,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.li_3.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.li_3.clone() },
                 )
             },
         }),
@@ -7407,7 +6519,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.volume.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.volume.clone() },
                 )
             },
         }),
@@ -7425,7 +6537,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.area.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.area.clone() },
                 )
             },
         }),
@@ -7443,7 +6555,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.surface.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.surface.clone() },
                 )
             },
         }),
@@ -7461,7 +6573,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.length_pol.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.length_pol.clone() },
                 )
             },
         }),
@@ -7479,9 +6591,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.psi_magnetic_axis.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.psi_magnetic_axis.clone() },
                 )
             },
         }),
@@ -7511,7 +6621,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.q_axis.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_axis.clone() },
                 )
             },
         }),
@@ -7529,7 +6639,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.q_95.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.q_95.clone() },
                 )
             },
         }),
@@ -7553,7 +6663,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.energy_mhd.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.energy_mhd.clone() },
                 )
             },
         }),
@@ -7571,9 +6681,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.psi_external_average.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.psi_external_average.clone() },
                 )
             },
         }),
@@ -7591,7 +6699,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.v_external.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.v_external.clone() },
                 )
             },
         }),
@@ -7609,9 +6717,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.plasma_inductance.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.plasma_inductance.clone() },
                 )
             },
         }),
@@ -7629,9 +6735,7 @@ static NODES_TIME_SLICE_GLOBAL_QUANTITIES: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.plasma_resistance.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.plasma_resistance.clone() },
                 )
             },
         }),
@@ -7651,7 +6755,7 @@ flux-surface average",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.beta_pol_1.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_pol_1.clone() },
                 )
             },
         }),
@@ -7670,7 +6774,7 @@ flux-surface average",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.beta_pol_2.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_pol_2.clone() },
                 )
             },
         }),
@@ -7691,7 +6795,7 @@ vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.beta_pol_3.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.beta_pol_3.clone() },
                 )
             },
         }),
@@ -7712,9 +6816,7 @@ vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.global_quantities.bt_vac_at_r_geo.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.bt_vac_at_r_geo.clone() },
                 )
             },
         }),
@@ -7734,7 +6836,7 @@ flux-surface average",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.li_1.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.li_1.clone() },
                 )
             },
         }),
@@ -7755,7 +6857,7 @@ The data dictionary's own `li_3` is the same quantity normalised to
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.li_2.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.li_2.clone() },
                 )
             },
         }),
@@ -7782,7 +6884,7 @@ on a centimetre grid",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.delta_r_sep.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.delta_r_sep.clone() },
                 )
             },
         }),
@@ -7803,7 +6905,7 @@ expansion along the target caused by the field-line incidence angle",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.f_x.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.f_x.clone() },
                 )
             },
         }),
@@ -7823,7 +6925,7 @@ differentiates `psi_external_average` instead",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.global_quantities.v_loop.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].global_quantities.v_loop.clone() },
                 )
             },
         }),
@@ -7844,7 +6946,7 @@ static NODES_TIME_SLICE_PROFILES_1D_GEOMETRIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.geometric_axis.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.geometric_axis.r.clone() },
                 )
             },
         }),
@@ -7862,7 +6964,7 @@ static NODES_TIME_SLICE_PROFILES_1D_GEOMETRIC_AXIS: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.geometric_axis.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.geometric_axis.z.clone() },
                 )
             },
         }),
@@ -7883,7 +6985,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.psi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.psi.clone() },
                 )
             },
         }),
@@ -7901,7 +7003,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.psi_norm.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.psi_norm.clone() },
                 )
             },
         }),
@@ -7919,7 +7021,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.phi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.phi.clone() },
                 )
             },
         }),
@@ -7937,7 +7039,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.pressure.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.pressure.clone() },
                 )
             },
         }),
@@ -7955,7 +7057,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.f.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.f.clone() },
                 )
             },
         }),
@@ -7973,7 +7075,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.dpressure_dpsi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.dpressure_dpsi.clone() },
                 )
             },
         }),
@@ -7991,7 +7093,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.f_df_dpsi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.f_df_dpsi.clone() },
                 )
             },
         }),
@@ -8009,7 +7111,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.j_phi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.j_phi.clone() },
                 )
             },
         }),
@@ -8027,7 +7129,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.j_parallel.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.j_parallel.clone() },
                 )
             },
         }),
@@ -8045,7 +7147,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.q.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.q.clone() },
                 )
             },
         }),
@@ -8063,7 +7165,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.magnetic_shear.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.magnetic_shear.clone() },
                 )
             },
         }),
@@ -8081,7 +7183,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.r_inboard.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.r_inboard.clone() },
                 )
             },
         }),
@@ -8099,7 +7201,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.r_outboard.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.r_outboard.clone() },
                 )
             },
         }),
@@ -8117,7 +7219,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.rho_tor.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.rho_tor.clone() },
                 )
             },
         }),
@@ -8135,7 +7237,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.rho_tor_norm.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.rho_tor_norm.clone() },
                 )
             },
         }),
@@ -8153,7 +7255,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.dpsi_drho_tor.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.dpsi_drho_tor.clone() },
                 )
             },
         }),
@@ -8177,7 +7279,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.elongation.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.elongation.clone() },
                 )
             },
         }),
@@ -8195,7 +7297,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.triangularity.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.triangularity.clone() },
                 )
             },
         }),
@@ -8213,7 +7315,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.triangularity_upper.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.triangularity_upper.clone() },
                 )
             },
         }),
@@ -8231,7 +7333,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.triangularity_lower.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.triangularity_lower.clone() },
                 )
             },
         }),
@@ -8249,9 +7351,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_1d.squareness_upper_inner.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.squareness_upper_inner.clone() },
                 )
             },
         }),
@@ -8269,9 +7369,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_1d.squareness_upper_outer.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.squareness_upper_outer.clone() },
                 )
             },
         }),
@@ -8289,9 +7387,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_1d.squareness_lower_inner.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.squareness_lower_inner.clone() },
                 )
             },
         }),
@@ -8309,9 +7405,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_1d.squareness_lower_outer.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.squareness_lower_outer.clone() },
                 )
             },
         }),
@@ -8329,7 +7423,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.volume.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.volume.clone() },
                 )
             },
         }),
@@ -8347,7 +7441,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.rho_volume_norm.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.rho_volume_norm.clone() },
                 )
             },
         }),
@@ -8365,7 +7459,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.dvolume_dpsi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.dvolume_dpsi.clone() },
                 )
             },
         }),
@@ -8383,7 +7477,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.dvolume_drho_tor.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.dvolume_drho_tor.clone() },
                 )
             },
         }),
@@ -8401,7 +7495,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.area.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.area.clone() },
                 )
             },
         }),
@@ -8419,7 +7513,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.darea_dpsi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.darea_dpsi.clone() },
                 )
             },
         }),
@@ -8437,7 +7531,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.darea_drho_tor.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.darea_drho_tor.clone() },
                 )
             },
         }),
@@ -8455,7 +7549,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.surface.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.surface.clone() },
                 )
             },
         }),
@@ -8473,7 +7567,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.trapped_fraction.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.trapped_fraction.clone() },
                 )
             },
         }),
@@ -8491,7 +7585,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.gm1.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm1.clone() },
                 )
             },
         }),
@@ -8509,7 +7603,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.gm2.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm2.clone() },
                 )
             },
         }),
@@ -8527,7 +7621,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.gm3.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm3.clone() },
                 )
             },
         }),
@@ -8545,7 +7639,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.gm4.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm4.clone() },
                 )
             },
         }),
@@ -8563,7 +7657,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.gm5.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm5.clone() },
                 )
             },
         }),
@@ -8581,7 +7675,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.gm6.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm6.clone() },
                 )
             },
         }),
@@ -8599,7 +7693,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.gm7.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm7.clone() },
                 )
             },
         }),
@@ -8617,7 +7711,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.gm8.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm8.clone() },
                 )
             },
         }),
@@ -8635,7 +7729,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.gm9.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.gm9.clone() },
                 )
             },
         }),
@@ -8653,7 +7747,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.b_field_average.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.b_field_average.clone() },
                 )
             },
         }),
@@ -8671,7 +7765,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.b_field_min.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.b_field_min.clone() },
                 )
             },
         }),
@@ -8689,7 +7783,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.b_field_max.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.b_field_max.clone() },
                 )
             },
         }),
@@ -8707,7 +7801,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.beta_pol.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.beta_pol.clone() },
                 )
             },
         }),
@@ -8725,7 +7819,7 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.mass_density.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.mass_density.clone() },
                 )
             },
         }),
@@ -8744,7 +7838,7 @@ data dictionary's `rho_tor_norm`, which the data dictionary itself does not defi
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d.rho_pol.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.rho_pol.clone() },
                 )
             },
         }),
@@ -8765,9 +7859,7 @@ static NODES_TIME_SLICE_PROFILES_2D_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.r#type.name.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].r#type.name.clone() },
                 )
             },
         }),
@@ -8785,9 +7877,7 @@ static NODES_TIME_SLICE_PROFILES_2D_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.r#type.index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].r#type.index.clone() },
                 )
             },
         }),
@@ -8805,9 +7895,7 @@ static NODES_TIME_SLICE_PROFILES_2D_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.r#type.description.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].r#type.description.clone() },
                 )
             },
         }),
@@ -8828,9 +7916,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.grid_type.name.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid_type.name.clone() },
                 )
             },
         }),
@@ -8848,9 +7934,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.grid_type.index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid_type.index.clone() },
                 )
             },
         }),
@@ -8868,9 +7952,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID_TYPE: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.grid_type.description.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid_type.description.clone() },
                 )
             },
         }),
@@ -8891,9 +7973,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.grid.dim1.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid.dim1.clone() },
                 )
             },
         }),
@@ -8911,9 +7991,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.grid.dim2.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid.dim2.clone() },
                 )
             },
         }),
@@ -8931,9 +8009,7 @@ static NODES_TIME_SLICE_PROFILES_2D_GRID: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.grid.volume_element.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid.volume_element.clone() },
                 )
             },
         }),
@@ -8952,9 +8028,7 @@ the grid is rectangular and uniformly spaced in both directions",
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.grid.d_area.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].grid.d_area.clone() },
                 )
             },
         }),
@@ -8993,7 +8067,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].r.clone() },
                 )
             },
         }),
@@ -9011,7 +8085,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].z.clone() },
                 )
             },
         }),
@@ -9029,7 +8103,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.psi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].psi.clone() },
                 )
             },
         }),
@@ -9047,7 +8121,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.theta.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].theta.clone() },
                 )
             },
         }),
@@ -9065,7 +8139,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.phi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].phi.clone() },
                 )
             },
         }),
@@ -9083,7 +8157,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.j_phi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].j_phi.clone() },
                 )
             },
         }),
@@ -9101,9 +8175,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.j_parallel.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].j_parallel.clone() },
                 )
             },
         }),
@@ -9121,9 +8193,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.b_field_r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].b_field_r.clone() },
                 )
             },
         }),
@@ -9141,9 +8211,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.b_field_phi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].b_field_phi.clone() },
                 )
             },
         }),
@@ -9161,9 +8229,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.b_field_z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].b_field_z.clone() },
                 )
             },
         }),
@@ -9181,9 +8247,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.d_psi_d_r.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d_psi_d_r.clone() },
                 )
             },
         }),
@@ -9201,9 +8265,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.d_psi_d_z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d_psi_d_z.clone() },
                 )
             },
         }),
@@ -9221,9 +8283,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.d2_psi_d_r2.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d2_psi_d_r2.clone() },
                 )
             },
         }),
@@ -9241,9 +8301,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.d2_psi_d_r_d_z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d2_psi_d_r_d_z.clone() },
                 )
             },
         }),
@@ -9261,9 +8319,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.d2_psi_d_z2.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d2_psi_d_z2.clone() },
                 )
             },
         }),
@@ -9281,7 +8337,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.mask.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].mask.clone() },
                 )
             },
         }),
@@ -9299,7 +8355,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.psi_norm.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].psi_norm.clone() },
                 )
             },
         }),
@@ -9317,9 +8373,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.psi_coils.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].psi_coils.clone() },
                 )
             },
         }),
@@ -9337,7 +8391,7 @@ static NODES_TIME_SLICE_PROFILES_2D: &[Node] = &[
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.pressure.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].pressure.clone() },
                 )
             },
         }),
@@ -9356,9 +8410,7 @@ by the vertical stability control",
                     indices,
                     2,
                     lengths_time_slice_profiles_2d,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_2d.get(at[1])?.d_b_field_z_d_z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].profiles_2d[at[1]].d_b_field_z_d_z.clone() },
                 )
             },
         }),
@@ -9379,9 +8431,7 @@ static NODES_TIME_SLICE_GGD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_r,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.r.get(at[2])?.grid_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].r[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9399,9 +8449,7 @@ static NODES_TIME_SLICE_GGD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_r,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.r.get(at[2])?.grid_subset_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].r[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -9419,9 +8467,7 @@ static NODES_TIME_SLICE_GGD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_r,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.r.get(at[2])?.values.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].r[at[2]].values.clone() },
                 )
             },
         }),
@@ -9439,9 +8485,7 @@ static NODES_TIME_SLICE_GGD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_r,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.r.get(at[2])?.coefficients.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].r[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -9462,9 +8506,7 @@ static NODES_TIME_SLICE_GGD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_z,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.z.get(at[2])?.grid_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].z[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9482,9 +8524,7 @@ static NODES_TIME_SLICE_GGD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_z,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.z.get(at[2])?.grid_subset_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].z[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -9502,9 +8542,7 @@ static NODES_TIME_SLICE_GGD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_z,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.z.get(at[2])?.values.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].z[at[2]].values.clone() },
                 )
             },
         }),
@@ -9522,9 +8560,7 @@ static NODES_TIME_SLICE_GGD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_z,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.z.get(at[2])?.coefficients.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].z[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -9545,9 +8581,7 @@ static NODES_TIME_SLICE_GGD_PSI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_psi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.psi.get(at[2])?.grid_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].psi[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9565,9 +8599,7 @@ static NODES_TIME_SLICE_GGD_PSI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_psi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.psi.get(at[2])?.grid_subset_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].psi[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -9585,9 +8617,7 @@ static NODES_TIME_SLICE_GGD_PSI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_psi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.psi.get(at[2])?.values.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].psi[at[2]].values.clone() },
                 )
             },
         }),
@@ -9605,9 +8635,7 @@ static NODES_TIME_SLICE_GGD_PSI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_psi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.psi.get(at[2])?.coefficients.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].psi[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -9628,9 +8656,7 @@ static NODES_TIME_SLICE_GGD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.phi.get(at[2])?.grid_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].phi[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9648,9 +8674,7 @@ static NODES_TIME_SLICE_GGD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.phi.get(at[2])?.grid_subset_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].phi[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -9668,9 +8692,7 @@ static NODES_TIME_SLICE_GGD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.phi.get(at[2])?.values.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].phi[at[2]].values.clone() },
                 )
             },
         }),
@@ -9688,9 +8710,7 @@ static NODES_TIME_SLICE_GGD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.phi.get(at[2])?.coefficients.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].phi[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -9711,9 +8731,7 @@ static NODES_TIME_SLICE_GGD_THETA: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_theta,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.theta.get(at[2])?.grid_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].theta[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9731,9 +8749,7 @@ static NODES_TIME_SLICE_GGD_THETA: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_theta,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.theta.get(at[2])?.grid_subset_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].theta[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -9751,9 +8767,7 @@ static NODES_TIME_SLICE_GGD_THETA: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_theta,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.theta.get(at[2])?.values.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].theta[at[2]].values.clone() },
                 )
             },
         }),
@@ -9771,9 +8785,7 @@ static NODES_TIME_SLICE_GGD_THETA: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_theta,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.theta.get(at[2])?.coefficients.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].theta[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -9794,9 +8806,7 @@ static NODES_TIME_SLICE_GGD_J_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.j_phi.get(at[2])?.grid_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].j_phi[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9814,9 +8824,7 @@ static NODES_TIME_SLICE_GGD_J_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.j_phi.get(at[2])?.grid_subset_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].j_phi[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -9834,9 +8842,7 @@ static NODES_TIME_SLICE_GGD_J_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.j_phi.get(at[2])?.values.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].j_phi[at[2]].values.clone() },
                 )
             },
         }),
@@ -9854,9 +8860,7 @@ static NODES_TIME_SLICE_GGD_J_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.j_phi.get(at[2])?.coefficients.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].j_phi[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -9877,9 +8881,7 @@ static NODES_TIME_SLICE_GGD_J_PARALLEL: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.j_parallel.get(at[2])?.grid_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].j_parallel[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9897,16 +8899,8 @@ static NODES_TIME_SLICE_GGD_J_PARALLEL: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .j_parallel
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.time_slice[at[0]].ggd[at[1]].j_parallel[at[2]].grid_subset_index.clone()
                     },
                 )
             },
@@ -9925,9 +8919,7 @@ static NODES_TIME_SLICE_GGD_J_PARALLEL: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.j_parallel.get(at[2])?.values.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].j_parallel[at[2]].values.clone() },
                 )
             },
         }),
@@ -9945,9 +8937,7 @@ static NODES_TIME_SLICE_GGD_J_PARALLEL: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_j_parallel,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.j_parallel.get(at[2])?.coefficients.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].j_parallel[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -9968,9 +8958,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_r,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_r.get(at[2])?.grid_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_r[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -9988,17 +8976,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_r,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .b_field_r
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_r[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -10016,9 +8994,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_r,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_r.get(at[2])?.values.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_r[at[2]].values.clone() },
                 )
             },
         }),
@@ -10036,9 +9012,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_R: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_r,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_r.get(at[2])?.coefficients.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_r[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -10059,9 +9033,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_phi.get(at[2])?.grid_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_phi[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -10079,16 +9051,8 @@ static NODES_TIME_SLICE_GGD_B_FIELD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .b_field_phi
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.time_slice[at[0]].ggd[at[1]].b_field_phi[at[2]].grid_subset_index.clone()
                     },
                 )
             },
@@ -10107,9 +9071,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_phi.get(at[2])?.values.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_phi[at[2]].values.clone() },
                 )
             },
         }),
@@ -10127,9 +9089,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_PHI: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_phi,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_phi.get(at[2])?.coefficients.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_phi[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -10150,9 +9110,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_z,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_z.get(at[2])?.grid_index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_z[at[2]].grid_index.clone() },
                 )
             },
         }),
@@ -10170,17 +9128,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_z,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
-                            .ggd
-                            .get(at[1])?
-                            .b_field_z
-                            .get(at[2])?
-                            .grid_subset_index
-                            .clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_z[at[2]].grid_subset_index.clone() },
                 )
             },
         }),
@@ -10198,9 +9146,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_z,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_z.get(at[2])?.values.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_z[at[2]].values.clone() },
                 )
             },
         }),
@@ -10218,9 +9164,7 @@ static NODES_TIME_SLICE_GGD_B_FIELD_Z: &[Node] = &[
                     indices,
                     3,
                     lengths_time_slice_ggd_b_field_z,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.ggd.get(at[1])?.b_field_z.get(at[2])?.coefficients.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].ggd[at[1]].b_field_z[at[2]].coefficients.clone() },
                 )
             },
         }),
@@ -10304,7 +9248,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.time_slice.get(at[0])?.coordinate_system.grid_type.name.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].coordinate_system.grid_type.name.clone() },
                 )
             },
         }),
@@ -10322,9 +9266,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.coordinate_system.grid_type.index.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].coordinate_system.grid_type.index.clone() },
                 )
             },
         }),
@@ -10342,9 +9284,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID_TYPE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.coordinate_system.grid_type.description.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].coordinate_system.grid_type.description.clone() },
                 )
             },
         }),
@@ -10365,7 +9305,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.coordinate_system.grid.dim1.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].coordinate_system.grid.dim1.clone() },
                 )
             },
         }),
@@ -10383,7 +9323,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.coordinate_system.grid.dim2.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].coordinate_system.grid.dim2.clone() },
                 )
             },
         }),
@@ -10401,9 +9341,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM_GRID: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> {
-                        equilibrium.time_slice.get(at[0])?.coordinate_system.grid.volume_element.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].coordinate_system.grid.volume_element.clone() },
                 )
             },
         }),
@@ -10422,7 +9360,7 @@ the grid is rectangular and uniformly spaced in both directions",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.coordinate_system.grid.d_area.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].coordinate_system.grid.d_area.clone() },
                 )
             },
         }),
@@ -10455,7 +9393,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.coordinate_system.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].coordinate_system.r.clone() },
                 )
             },
         }),
@@ -10473,7 +9411,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.coordinate_system.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].coordinate_system.z.clone() },
                 )
             },
         }),
@@ -10491,7 +9429,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.time_slice.get(at[0])?.coordinate_system.jacobian.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.time_slice[at[0]].coordinate_system.jacobian.clone() },
                 )
             },
         }),
@@ -10509,9 +9447,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_4D> {
-                        equilibrium.time_slice.get(at[0])?.coordinate_system.tensor_covariant.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_4D { equilibrium.time_slice[at[0]].coordinate_system.tensor_covariant.clone() },
                 )
             },
         }),
@@ -10529,9 +9465,7 @@ static NODES_TIME_SLICE_COORDINATE_SYSTEM: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_4D> {
-                        equilibrium.time_slice.get(at[0])?.coordinate_system.tensor_contravariant.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_4D { equilibrium.time_slice[at[0]].coordinate_system.tensor_contravariant.clone() },
                 )
             },
         }),
@@ -10552,8 +9486,8 @@ static NODES_TIME_SLICE_CONVERGENCE_GRAD_SHAFRANOV_DEVIATION_EXPRESSION: &[Node]
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium.time_slice.get(at[0])?.convergence.grad_shafranov_deviation_expression.name.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]].convergence.grad_shafranov_deviation_expression.name.clone()
                     },
                 )
             },
@@ -10572,8 +9506,8 @@ static NODES_TIME_SLICE_CONVERGENCE_GRAD_SHAFRANOV_DEVIATION_EXPRESSION: &[Node]
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> {
-                        equilibrium.time_slice.get(at[0])?.convergence.grad_shafranov_deviation_expression.index.clone()
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
+                        equilibrium.time_slice[at[0]].convergence.grad_shafranov_deviation_expression.index.clone()
                     },
                 )
             },
@@ -10592,10 +9526,8 @@ static NODES_TIME_SLICE_CONVERGENCE_GRAD_SHAFRANOV_DEVIATION_EXPRESSION: &[Node]
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> {
-                        equilibrium
-                            .time_slice
-                            .get(at[0])?
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
+                        equilibrium.time_slice[at[0]]
                             .convergence
                             .grad_shafranov_deviation_expression
                             .description
@@ -10621,7 +9553,7 @@ static NODES_TIME_SLICE_CONVERGENCE_RESULT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.time_slice.get(at[0])?.convergence.result.name.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].convergence.result.name.clone() },
                 )
             },
         }),
@@ -10639,7 +9571,7 @@ static NODES_TIME_SLICE_CONVERGENCE_RESULT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> { equilibrium.time_slice.get(at[0])?.convergence.result.index.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].convergence.result.index.clone() },
                 )
             },
         }),
@@ -10657,7 +9589,7 @@ static NODES_TIME_SLICE_CONVERGENCE_RESULT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.time_slice.get(at[0])?.convergence.result.description.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].convergence.result.description.clone() },
                 )
             },
         }),
@@ -10678,7 +9610,7 @@ static NODES_TIME_SLICE_CONVERGENCE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<INT_0D> { equilibrium.time_slice.get(at[0])?.convergence.iterations_n.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].convergence.iterations_n.clone() },
                 )
             },
         }),
@@ -10702,9 +9634,7 @@ static NODES_TIME_SLICE_CONVERGENCE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.time_slice.get(at[0])?.convergence.grad_shafranov_deviation_value.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].convergence.grad_shafranov_deviation_value.clone() },
                 )
             },
         }),
@@ -10729,7 +9659,7 @@ solve has run, and 0 while the vertical feedback is switched off",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.convergence.delta_z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].convergence.delta_z.clone() },
                 )
             },
         }),
@@ -10749,9 +9679,7 @@ static NODES_TIME_SLICE_SOURCE_FUNCTIONS_P_PRIME: &[Node] = &[Node {
                 indices,
                 1,
                 lengths_time_slice,
-                |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                    equilibrium.time_slice.get(at[0])?.source_functions.p_prime.coefficients.clone()
-                },
+                |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].source_functions.p_prime.coefficients.clone() },
             )
         },
     }),
@@ -10770,9 +9698,7 @@ static NODES_TIME_SLICE_SOURCE_FUNCTIONS_FF_PRIME: &[Node] = &[Node {
                 indices,
                 1,
                 lengths_time_slice,
-                |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                    equilibrium.time_slice.get(at[0])?.source_functions.ff_prime.coefficients.clone()
-                },
+                |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].source_functions.ff_prime.coefficients.clone() },
             )
         },
     }),
@@ -10807,7 +9733,7 @@ static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.r.clone() },
                 )
             },
         }),
@@ -10826,9 +9752,7 @@ outside the plasma boundary",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.dpressure_dpsi.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.dpressure_dpsi.clone() },
                 )
             },
         }),
@@ -10847,7 +9771,7 @@ plasma boundary, where no poloidal current flows",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.f.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.f.clone() },
                 )
             },
         }),
@@ -10866,7 +9790,7 @@ Zero outside the plasma boundary",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.f_df_dpsi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.f_df_dpsi.clone() },
                 )
             },
         }),
@@ -10886,7 +9810,7 @@ solved current density",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.j_phi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.j_phi.clone() },
                 )
             },
         }),
@@ -10904,7 +9828,7 @@ solved current density",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.pressure.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.pressure.clone() },
                 )
             },
         }),
@@ -10923,7 +9847,7 @@ flux surface to define it",
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.profiles_1d_r_midplane.q.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane.q.clone() },
                 )
             },
         }),
@@ -10944,7 +9868,7 @@ static NODES_TIME_SLICE_SOL_HFS_CONTOUR: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.sol.hfs.contour.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].sol.hfs.contour.r.clone() },
                 )
             },
         }),
@@ -10962,7 +9886,7 @@ static NODES_TIME_SLICE_SOL_HFS_CONTOUR: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.sol.hfs.contour.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].sol.hfs.contour.z.clone() },
                 )
             },
         }),
@@ -10983,7 +9907,7 @@ static NODES_TIME_SLICE_SOL_HFS_STRIKE_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.sol.hfs.strike_point.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].sol.hfs.strike_point.r.clone() },
                 )
             },
         }),
@@ -11001,7 +9925,7 @@ static NODES_TIME_SLICE_SOL_HFS_STRIKE_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.sol.hfs.strike_point.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].sol.hfs.strike_point.z.clone() },
                 )
             },
         }),
@@ -11037,7 +9961,7 @@ static NODES_TIME_SLICE_SOL_LFS_CONTOUR: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.sol.lfs.contour.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].sol.lfs.contour.r.clone() },
                 )
             },
         }),
@@ -11055,7 +9979,7 @@ static NODES_TIME_SLICE_SOL_LFS_CONTOUR: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.sol.lfs.contour.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].sol.lfs.contour.z.clone() },
                 )
             },
         }),
@@ -11076,7 +10000,7 @@ static NODES_TIME_SLICE_SOL_LFS_STRIKE_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.sol.lfs.strike_point.r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].sol.lfs.strike_point.r.clone() },
                 )
             },
         }),
@@ -11094,7 +10018,7 @@ static NODES_TIME_SLICE_SOL_LFS_STRIKE_POINT: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.sol.lfs.strike_point.z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].sol.lfs.strike_point.z.clone() },
                 )
             },
         }),
@@ -11199,7 +10123,7 @@ static NODES_TIME_SLICE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_0D> { equilibrium.time_slice.get(at[0])?.time.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].time.clone() },
                 )
             },
         }),
@@ -11235,7 +10159,7 @@ static NODES_TIME_SLICE: &[Node] = &[
                     indices,
                     1,
                     lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.time_slice.get(at[0])?.passive_dof_values.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].passive_dof_values.clone() },
                 )
             },
         }),
@@ -11256,7 +10180,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.code.library.get(at[0])?.name.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].name.clone() },
                 )
             },
         }),
@@ -11274,7 +10198,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.code.library.get(at[0])?.description.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].description.clone() },
                 )
             },
         }),
@@ -11292,7 +10216,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.code.library.get(at[0])?.commit.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].commit.clone() },
                 )
             },
         }),
@@ -11310,7 +10234,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.code.library.get(at[0])?.version.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].version.clone() },
                 )
             },
         }),
@@ -11328,7 +10252,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.code.library.get(at[0])?.repository.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].repository.clone() },
                 )
             },
         }),
@@ -11346,7 +10270,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
                     indices,
                     1,
                     lengths_code_library,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.code.library.get(at[0])?.parameters.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.library[at[0]].parameters.clone() },
                 )
             },
         }),
@@ -11362,13 +10286,9 @@ static NODES_CODE_NUMERICS_ITERATIONS: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.numerics.iterations.n_max.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.numerics.iterations.n_max.clone()
+                })
             },
         }),
     },
@@ -11380,13 +10300,9 @@ static NODES_CODE_NUMERICS_ITERATIONS: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.numerics.iterations.n_min.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.numerics.iterations.n_min.clone()
+                })
             },
         }),
     },
@@ -11398,13 +10314,9 @@ static NODES_CODE_NUMERICS_ITERATIONS: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.numerics.iterations.n_no_vertical_feedback.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.numerics.iterations.n_no_vertical_feedback.clone()
+                })
             },
         }),
     },
@@ -11420,13 +10332,9 @@ base type, so this is an integer",
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.numerics.anderson_mixing.r#use.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.numerics.anderson_mixing.r#use.clone()
+                })
             },
         }),
     },
@@ -11438,15 +10346,9 @@ base type, so this is an integer",
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> {
-                        equilibrium.code.numerics.anderson_mixing.mixing_from_previous_iter.clone()
-                    },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.numerics.anderson_mixing.mixing_from_previous_iter.clone()
+                })
             },
         }),
     },
@@ -11474,13 +10376,9 @@ converged",
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.numerics.grad_shafranov_deviation_tolerance.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.numerics.grad_shafranov_deviation_tolerance.clone()
+                })
             },
         }),
     },
@@ -11495,13 +10393,9 @@ static NODES_CODE_GRID: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.grid.n_r.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.grid.n_r.clone()
+                })
             },
         }),
     },
@@ -11513,13 +10407,9 @@ static NODES_CODE_GRID: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_0D> { equilibrium.code.grid.n_z.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.grid.n_z.clone()
+                })
             },
         }),
     },
@@ -11531,13 +10421,9 @@ static NODES_CODE_GRID: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.grid.r_min.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.grid.r_min.clone()
+                })
             },
         }),
     },
@@ -11549,13 +10435,9 @@ static NODES_CODE_GRID: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.grid.r_max.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.grid.r_max.clone()
+                })
             },
         }),
     },
@@ -11567,13 +10449,9 @@ static NODES_CODE_GRID: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.grid.z_min.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.grid.z_min.clone()
+                })
             },
         }),
     },
@@ -11585,13 +10463,9 @@ static NODES_CODE_GRID: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.grid.z_max.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.grid.z_max.clone()
+                })
             },
         }),
     },
@@ -11606,13 +10480,9 @@ static NODES_CODE_INITIAL_GUESS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.initial_guess.ip.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.initial_guess.ip.clone()
+                })
             },
         }),
     },
@@ -11624,13 +10494,9 @@ static NODES_CODE_INITIAL_GUESS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.initial_guess.cur_r.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.initial_guess.cur_r.clone()
+                })
             },
         }),
     },
@@ -11642,13 +10508,9 @@ static NODES_CODE_INITIAL_GUESS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.initial_guess.cur_z.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.initial_guess.cur_z.clone()
+                })
             },
         }),
     },
@@ -11660,13 +10522,9 @@ static NODES_CODE_INITIAL_GUESS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.initial_guess.minor_radius.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.initial_guess.minor_radius.clone()
+                })
             },
         }),
     },
@@ -11678,13 +10536,9 @@ static NODES_CODE_INITIAL_GUESS: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_0D> { equilibrium.code.initial_guess.elongation.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.initial_guess.elongation.clone()
+                })
             },
         }),
     },
@@ -11699,13 +10553,9 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<STR_0D> { equilibrium.code.name.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
+                    equilibrium.code.name.clone()
+                })
             },
         }),
     },
@@ -11717,13 +10567,9 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<STR_0D> { equilibrium.code.description.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
+                    equilibrium.code.description.clone()
+                })
             },
         }),
     },
@@ -11735,13 +10581,9 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<STR_0D> { equilibrium.code.commit.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
+                    equilibrium.code.commit.clone()
+                })
             },
         }),
     },
@@ -11753,13 +10595,9 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<STR_0D> { equilibrium.code.version.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
+                    equilibrium.code.version.clone()
+                })
             },
         }),
     },
@@ -11771,13 +10609,9 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<STR_0D> { equilibrium.code.repository.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
+                    equilibrium.code.repository.clone()
+                })
             },
         }),
     },
@@ -11789,13 +10623,9 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<STR_0D> { equilibrium.code.parameters.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
+                    equilibrium.code.parameters.clone()
+                })
             },
         }),
     },
@@ -11807,13 +10637,9 @@ static NODES_CODE: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<INT_1D> { equilibrium.code.output_flag.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_1D {
+                    equilibrium.code.output_flag.clone()
+                })
             },
         }),
     },
@@ -11857,7 +10683,7 @@ static NODES_GREENS_PF_ACTIVE: &[Node] = &[
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.greens.pf_active.get(at[0])?.name.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.greens.pf_active[at[0]].name.clone() },
                 )
             },
         }),
@@ -11876,7 +10702,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.psi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].psi.clone() },
                 )
             },
         }),
@@ -11895,7 +10721,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.br.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].br.clone() },
                 )
             },
         }),
@@ -11914,7 +10740,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.bz.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].bz.clone() },
                 )
             },
         }),
@@ -11933,7 +10759,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.d_br_d_z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].d_br_d_z.clone() },
                 )
             },
         }),
@@ -11952,7 +10778,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.d_bz_d_z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].d_bz_d_z.clone() },
                 )
             },
         }),
@@ -11971,7 +10797,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.d_psi_d_r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].d_psi_d_r.clone() },
                 )
             },
         }),
@@ -11990,7 +10816,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.d_psi_d_z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].d_psi_d_z.clone() },
                 )
             },
         }),
@@ -12009,7 +10835,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.d2_psi_d_r2.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].d2_psi_d_r2.clone() },
                 )
             },
         }),
@@ -12028,7 +10854,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.d2_psi_d_r_d_z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].d2_psi_d_r_d_z.clone() },
                 )
             },
         }),
@@ -12047,7 +10873,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.d2_psi_d_z2.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].d2_psi_d_z2.clone() },
                 )
             },
         }),
@@ -12066,7 +10892,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.d3_psi_d_r2_d_z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].d3_psi_d_r2_d_z.clone() },
                 )
             },
         }),
@@ -12085,7 +10911,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.d3_psi_d_r_d_z2.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].d3_psi_d_r_d_z2.clone() },
                 )
             },
         }),
@@ -12104,7 +10930,7 @@ Shape = `(n_z, n_r)`",
                     indices,
                     1,
                     lengths_greens_pf_active,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.pf_active.get(at[0])?.d3_psi_d_z3.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D { equilibrium.greens.pf_active[at[0]].d3_psi_d_z3.clone() },
                 )
             },
         }),
@@ -12125,7 +10951,7 @@ static NODES_GREENS_PF_PASSIVE_DOF: &[Node] = &[
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.name.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].name.clone() },
                 )
             },
         }),
@@ -12144,7 +10970,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.psi.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].psi.clone() },
                 )
             },
         }),
@@ -12163,7 +10989,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.br.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].br.clone() },
                 )
             },
         }),
@@ -12182,7 +11008,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.bz.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].bz.clone() },
                 )
             },
         }),
@@ -12201,7 +11027,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.d_br_d_z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].d_br_d_z.clone() },
                 )
             },
         }),
@@ -12220,7 +11046,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.d_bz_d_z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].d_bz_d_z.clone() },
                 )
             },
         }),
@@ -12239,7 +11065,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.d_psi_d_r.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].d_psi_d_r.clone() },
                 )
             },
         }),
@@ -12258,7 +11084,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> { equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.d_psi_d_z.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].d_psi_d_z.clone() },
                 )
             },
         }),
@@ -12277,9 +11103,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.d2_psi_d_r2.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].d2_psi_d_r2.clone() },
                 )
             },
         }),
@@ -12298,9 +11122,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.d2_psi_d_r_d_z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].d2_psi_d_r_d_z.clone() },
                 )
             },
         }),
@@ -12319,9 +11141,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.d2_psi_d_z2.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].d2_psi_d_z2.clone() },
                 )
             },
         }),
@@ -12340,9 +11160,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.d3_psi_d_r2_d_z.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].d3_psi_d_r2_d_z.clone() },
                 )
             },
         }),
@@ -12361,9 +11179,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.d3_psi_d_r_d_z2.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].d3_psi_d_r_d_z2.clone() },
                 )
             },
         }),
@@ -12382,9 +11198,7 @@ Shape = `(n_z * n_r)`",
                     indices,
                     2,
                     lengths_greens_pf_passive_dof,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<FLT_1D> {
-                        equilibrium.greens.pf_passive.get(at[0])?.dof.get(at[1])?.d3_psi_d_z3.clone()
-                    },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.greens.pf_passive[at[0]].dof[at[1]].d3_psi_d_z3.clone() },
                 )
             },
         }),
@@ -12405,7 +11219,7 @@ static NODES_GREENS_PF_PASSIVE: &[Node] = &[
                     indices,
                     1,
                     lengths_greens_pf_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> Option<STR_0D> { equilibrium.greens.pf_passive.get(at[0])?.name.clone() },
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.greens.pf_passive[at[0]].name.clone() },
                 )
             },
         }),
@@ -12428,13 +11242,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.psi.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.psi.clone()
+                })
             },
         }),
     },
@@ -12447,13 +11257,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.br.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.br.clone()
+                })
             },
         }),
     },
@@ -12466,13 +11272,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.bz.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.bz.clone()
+                })
             },
         }),
     },
@@ -12485,13 +11287,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.d_br_d_z.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.d_br_d_z.clone()
+                })
             },
         }),
     },
@@ -12504,13 +11302,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.d_bz_d_z.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.d_bz_d_z.clone()
+                })
             },
         }),
     },
@@ -12523,13 +11317,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.d_psi_d_r.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.d_psi_d_r.clone()
+                })
             },
         }),
     },
@@ -12542,13 +11332,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.d_psi_d_z.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.d_psi_d_z.clone()
+                })
             },
         }),
     },
@@ -12561,13 +11347,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.d2_psi_d_r2.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.d2_psi_d_r2.clone()
+                })
             },
         }),
     },
@@ -12580,13 +11362,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.d2_psi_d_r_d_z.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.d2_psi_d_r_d_z.clone()
+                })
             },
         }),
     },
@@ -12599,13 +11377,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.d2_psi_d_z2.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.d2_psi_d_z2.clone()
+                })
             },
         }),
     },
@@ -12618,13 +11392,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.d3_psi_d_r2_d_z.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.d3_psi_d_r2_d_z.clone()
+                })
             },
         }),
     },
@@ -12637,13 +11407,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.d3_psi_d_r_d_z2.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.d3_psi_d_r_d_z2.clone()
+                })
             },
         }),
     },
@@ -12656,13 +11422,9 @@ Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    0,
-                    no_levels,
-                    |equilibrium: &Equilibrium, _at: &[usize]| -> Option<FLT_2D> { equilibrium.greens.grid_grid.d3_psi_d_z3.clone() },
-                )
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_2D {
+                    equilibrium.greens.grid_grid.d3_psi_d_z3.clone()
+                })
             },
         }),
     },

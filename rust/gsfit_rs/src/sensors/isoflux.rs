@@ -410,13 +410,13 @@ impl Isoflux {
 
         // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
         // because GSFit solves on a single rectangular (R, Z) grid
-        let n_r: usize = plasma_local.equilibrium_ids.code.grid.n_r.unwrap() as usize;
-        let n_z: usize = plasma_local.equilibrium_ids.code.grid.n_z.unwrap() as usize;
+        let n_r: usize = plasma_local.equilibrium_ids.code.grid.n_r as usize;
+        let n_z: usize = plasma_local.equilibrium_ids.code.grid.n_z as usize;
 
         // `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives the
         // flattened grid the Green's tables are indexed by
-        let mesh_r: &Array2<f64> = plasma_local.equilibrium_ids.time_slice(0).profiles_2d(0).r.as_ref().unwrap();
-        let mesh_z: &Array2<f64> = plasma_local.equilibrium_ids.time_slice(0).profiles_2d(0).z.as_ref().unwrap();
+        let mesh_r: &Array2<f64> = &plasma_local.equilibrium_ids.time_slice[0].profiles_2d[0].r;
+        let mesh_z: &Array2<f64> = &plasma_local.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied()); // shape = n_z * n_r
         let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 

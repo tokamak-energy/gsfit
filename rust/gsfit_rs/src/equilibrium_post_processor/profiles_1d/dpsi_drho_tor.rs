@@ -21,14 +21,14 @@ use ndarray::Array1;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_1d/dpsi_drho_tor` is written into it
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    let psi: &Array1<f64> = time_slice.profiles_1d.psi.as_ref().unwrap();
-    let rho_tor: &Array1<f64> = time_slice.profiles_1d.rho_tor.as_ref().unwrap();
+    let psi: &Array1<f64> = &time_slice.profiles_1d.psi;
+    let rho_tor: &Array1<f64> = &time_slice.profiles_1d.rho_tor;
     let n_psi_norm: usize = psi.len();
     assert_eq!(rho_tor.len(), n_psi_norm);
 
     let mut dpsi_drho_tor: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
-    if n_psi_norm == 0 || time_slice.global_quantities.psi_magnetic_axis.unwrap().is_nan() {
-        time_slice.profiles_1d.dpsi_drho_tor = Some(dpsi_drho_tor);
+    if n_psi_norm == 0 || time_slice.global_quantities.psi_magnetic_axis.is_nan() {
+        time_slice.profiles_1d.dpsi_drho_tor = dpsi_drho_tor;
         return;
     }
 
@@ -37,13 +37,13 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     }
 
     if n_psi_norm == 1 {
-        time_slice.profiles_1d.dpsi_drho_tor = Some(dpsi_drho_tor);
+        time_slice.profiles_1d.dpsi_drho_tor = dpsi_drho_tor;
         return;
     }
 
     if n_psi_norm == 2 {
         dpsi_drho_tor[1] = first_derivative_from_two_points(rho_tor[0], rho_tor[1], psi[0], psi[1]).unwrap_or(f64::NAN);
-        time_slice.profiles_1d.dpsi_drho_tor = Some(dpsi_drho_tor);
+        time_slice.profiles_1d.dpsi_drho_tor = dpsi_drho_tor;
         return;
     }
 
@@ -71,7 +71,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     )
     .unwrap_or(f64::NAN);
 
-    time_slice.profiles_1d.dpsi_drho_tor = Some(dpsi_drho_tor);
+    time_slice.profiles_1d.dpsi_drho_tor = dpsi_drho_tor;
 }
 
 fn first_derivative_from_two_points(x_0: f64, x_1: f64, y_0: f64, y_1: f64) -> Option<f64> {
@@ -122,13 +122,13 @@ mod tests {
         let psi: Array1<f64> = rho_tor.mapv(|rho_tor_here| psi_axis + coefficient * rho_tor_here.powi(2));
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.psi_magnetic_axis = Some(psi_axis);
-        time_slice.profiles_1d.psi = Some(psi);
-        time_slice.profiles_1d.rho_tor = Some(rho_tor.clone());
+        time_slice.global_quantities.psi_magnetic_axis = psi_axis;
+        time_slice.profiles_1d.psi = psi;
+        time_slice.profiles_1d.rho_tor = rho_tor.clone();
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        let dpsi_drho_tor: &Array1<f64> = time_slice.profiles_1d.dpsi_drho_tor.as_ref().unwrap();
+        let dpsi_drho_tor: &Array1<f64> = &time_slice.profiles_1d.dpsi_drho_tor;
         for i_psi_norm in 0..rho_tor.len() {
             assert_abs_diff_eq!(dpsi_drho_tor[i_psi_norm], 2.0 * coefficient * rho_tor[i_psi_norm], epsilon = 1e-13);
         }
@@ -137,12 +137,12 @@ mod tests {
     #[test]
     fn failed_slice_is_all_nan() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.psi_magnetic_axis = Some(f64::NAN);
-        time_slice.profiles_1d.psi = Some(array![f64::NAN, f64::NAN, f64::NAN]);
-        time_slice.profiles_1d.rho_tor = Some(array![f64::NAN, f64::NAN, f64::NAN]);
+        time_slice.global_quantities.psi_magnetic_axis = f64::NAN;
+        time_slice.profiles_1d.psi = array![f64::NAN, f64::NAN, f64::NAN];
+        time_slice.profiles_1d.rho_tor = array![f64::NAN, f64::NAN, f64::NAN];
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        assert!(time_slice.profiles_1d.dpsi_drho_tor.as_ref().unwrap().iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.dpsi_drho_tor.iter().all(|value| value.is_nan()));
     }
 }

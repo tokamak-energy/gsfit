@@ -24,9 +24,9 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let i_rod: f64 = constant_values.i_rod;
 
     // A slice which did not converge has no flux surface to integrate around.
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
-        time_slice.global_quantities.q_95 = Some(f64::NAN);
+        time_slice.global_quantities.q_95 = f64::NAN;
         return;
     }
 
@@ -34,7 +34,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let f_95: f64 = profiles_1d::f::value_at_psi_norm(time_slice, ff_prime_source_function, i_rod, Q_95_PSI_NORM);
     let q95: f64 = profiles_1d::q::calculate_on_flux_surface(time_slice, &flux_surface, f_95);
 
-    time_slice.global_quantities.q_95 = Some(q95);
+    time_slice.global_quantities.q_95 = q95;
 }
 
 #[cfg(test)]
@@ -75,25 +75,25 @@ mod tests {
         }
 
         let mut profiles_2d: EquilibriumProfiles2d = EquilibriumProfiles2d::default();
-        profiles_2d.grid.dim1 = Some(r);
-        profiles_2d.grid.dim2 = Some(z);
-        profiles_2d.psi = Some(psi_2d);
-        profiles_2d.d_psi_d_r = Some(d_psi_d_r_2d);
-        profiles_2d.d_psi_d_z = Some(d_psi_d_z_2d);
-        profiles_2d.d2_psi_d_r2 = Some(Array2::from_elem((n_z, n_r), -psi_curvature));
-        profiles_2d.d2_psi_d_r_d_z = Some(Array2::zeros((n_z, n_r)));
-        profiles_2d.d2_psi_d_z2 = Some(Array2::from_elem((n_z, n_r), -psi_curvature));
+        profiles_2d.grid.dim1 = r;
+        profiles_2d.grid.dim2 = z;
+        profiles_2d.psi = psi_2d;
+        profiles_2d.d_psi_d_r = d_psi_d_r_2d;
+        profiles_2d.d_psi_d_z = d_psi_d_z_2d;
+        profiles_2d.d2_psi_d_r2 = Array2::from_elem((n_z, n_r), -psi_curvature);
+        profiles_2d.d2_psi_d_r_d_z = Array2::zeros((n_z, n_r));
+        profiles_2d.d2_psi_d_z2 = Array2::from_elem((n_z, n_r), -psi_curvature);
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.psi_magnetic_axis = Some(0.0);
-        time_slice.global_quantities.magnetic_axis.r = Some(r_axis);
-        time_slice.global_quantities.magnetic_axis.z = Some(z_axis);
-        time_slice.boundary.psi = Some(-0.5 * psi_curvature * boundary_minor_radius.powi(2));
+        time_slice.global_quantities.psi_magnetic_axis = 0.0;
+        time_slice.global_quantities.magnetic_axis.r = r_axis;
+        time_slice.global_quantities.magnetic_axis.z = z_axis;
+        time_slice.boundary.psi = -0.5 * psi_curvature * boundary_minor_radius.powi(2);
         time_slice.profiles_2d = vec![profiles_2d];
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.5, 1.0]);
-        time_slice.profiles_1d.f = Some(Array1::from_elem(3, f64::NAN));
-        time_slice.profiles_1d.q = Some(Array1::from_elem(3, f64::NAN));
-        time_slice.source_functions.ff_prime.coefficients = Some(array![0.0]);
+        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
+        time_slice.profiles_1d.f = Array1::from_elem(3, f64::NAN);
+        time_slice.profiles_1d.q = Array1::from_elem(3, f64::NAN);
+        time_slice.source_functions.ff_prime.coefficients = array![0.0];
 
         let ff_prime_source_function: SharedSourceFunction = Arc::new(EfitPolynomial {
             n_dof: 1,
@@ -109,6 +109,6 @@ mod tests {
 
         let minor_radius_95: f64 = boundary_minor_radius * Q_95_PSI_NORM.sqrt();
         let q_95_expected: f64 = 2.0 * PI * f_95 / (psi_curvature * (r_axis.powi(2) - minor_radius_95.powi(2)).sqrt());
-        assert_abs_diff_eq!(time_slice.global_quantities.q_95.unwrap(), q_95_expected, epsilon = 2e-4);
+        assert_abs_diff_eq!(time_slice.global_quantities.q_95, q_95_expected, epsilon = 2e-4);
     }
 }

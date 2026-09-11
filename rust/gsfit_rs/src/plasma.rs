@@ -201,19 +201,19 @@ impl Plasma {
         // they are the same for every time-slice and hang off the IDS root rather than off
         // `time_slice`
         let greens_grid_grid: EquilibriumGreensGridGrid = EquilibriumGreensGridGrid {
-            psi: Some(g_psi),
-            br: Some(g_br),
-            bz: Some(g_bz),
-            d_br_d_z: Some(g_d_br_d_z),
-            d_bz_d_z: Some(g_d_bz_d_z),
-            d_psi_d_r: Some(g_d_psi_d_r),
-            d_psi_d_z: Some(g_d_psi_d_z),
-            d2_psi_d_r2: Some(g_d2_psi_d_r2),
-            d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z),
-            d2_psi_d_z2: Some(g_d2_psi_d_z2),
-            d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z),
-            d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2),
-            d3_psi_d_z3: Some(g_d3_psi_d_z3),
+            psi: g_psi,
+            br: g_br,
+            bz: g_bz,
+            d_br_d_z: g_d_br_d_z,
+            d_bz_d_z: g_d_bz_d_z,
+            d_psi_d_r: g_d_psi_d_r,
+            d_psi_d_z: g_d_psi_d_z,
+            d2_psi_d_r2: g_d2_psi_d_r2,
+            d2_psi_d_r_d_z: g_d2_psi_d_r_d_z,
+            d2_psi_d_z2: g_d2_psi_d_z2,
+            d3_psi_d_r2_d_z: g_d3_psi_d_r2_d_z,
+            d3_psi_d_r_d_z2: g_d3_psi_d_r_d_z2,
+            d3_psi_d_z3: g_d3_psi_d_z3,
         };
 
         // The equilibrium IDS. `initialise_equilibrium_ids` fills in the time-slices below; what is
@@ -221,26 +221,26 @@ impl Plasma {
         let mut equilibrium_ids: Equilibrium = Equilibrium::default();
 
         // Store values
-        equilibrium_ids.code.grid.n_r = Some(n_r as i32);
-        equilibrium_ids.code.grid.n_z = Some(n_z as i32);
-        equilibrium_ids.code.grid.r_min = Some(r_min);
-        equilibrium_ids.code.grid.r_max = Some(r_max);
-        equilibrium_ids.code.grid.z_min = Some(z_min);
-        equilibrium_ids.code.grid.z_max = Some(z_max);
+        equilibrium_ids.code.grid.n_r = n_r as i32;
+        equilibrium_ids.code.grid.n_z = n_z as i32;
+        equilibrium_ids.code.grid.r_min = r_min;
+        equilibrium_ids.code.grid.r_max = r_max;
+        equilibrium_ids.code.grid.z_min = z_min;
+        equilibrium_ids.code.grid.z_max = z_max;
 
-        equilibrium_ids.code.initial_guess.ip = Some(initial_guess_ip);
-        equilibrium_ids.code.initial_guess.cur_r = Some(initial_guess_cur_r);
-        equilibrium_ids.code.initial_guess.cur_z = Some(initial_guess_cur_z);
-        equilibrium_ids.code.initial_guess.minor_radius = Some(initial_guess_minor_radius);
-        equilibrium_ids.code.initial_guess.elongation = Some(initial_guess_elongation);
+        equilibrium_ids.code.initial_guess.ip = initial_guess_ip;
+        equilibrium_ids.code.initial_guess.cur_r = initial_guess_cur_r;
+        equilibrium_ids.code.initial_guess.cur_z = initial_guess_cur_z;
+        equilibrium_ids.code.initial_guess.minor_radius = initial_guess_minor_radius;
+        equilibrium_ids.code.initial_guess.elongation = initial_guess_elongation;
 
-        equilibrium_ids.code.numerics.iterations.n_max = Some(n_iter_max as i32);
-        equilibrium_ids.code.numerics.iterations.n_min = Some(n_iter_min as i32);
-        equilibrium_ids.code.numerics.iterations.n_no_vertical_feedback = Some(n_iter_no_vertical_feedback as i32);
-        equilibrium_ids.code.numerics.grad_shafranov_deviation_tolerance = Some(gs_error);
+        equilibrium_ids.code.numerics.iterations.n_max = n_iter_max as i32;
+        equilibrium_ids.code.numerics.iterations.n_min = n_iter_min as i32;
+        equilibrium_ids.code.numerics.iterations.n_no_vertical_feedback = n_iter_no_vertical_feedback as i32;
+        equilibrium_ids.code.numerics.grad_shafranov_deviation_tolerance = gs_error;
         // The data dictionary has no boolean base type, so the flag is stored as 0 or 1
-        equilibrium_ids.code.numerics.anderson_mixing.r#use = Some(use_anderson_mixing as i32);
-        equilibrium_ids.code.numerics.anderson_mixing.mixing_from_previous_iter = Some(anderson_mixing_from_previous_iter);
+        equilibrium_ids.code.numerics.anderson_mixing.r#use = use_anderson_mixing as i32;
+        equilibrium_ids.code.numerics.anderson_mixing.mixing_from_previous_iter = anderson_mixing_from_previous_iter;
 
         equilibrium_ids.greens.grid_grid = greens_grid_grid;
 
@@ -266,10 +266,10 @@ impl Plasma {
     ///
     fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
         // Unpack from self
-        let n_r: usize = self.equilibrium_ids.code.grid.n_r.unwrap() as usize;
-        let n_z: usize = self.equilibrium_ids.code.grid.n_z.unwrap() as usize;
-        let mesh_r: &Array2<f64> = self.equilibrium_ids.time_slice(0).profiles_2d(0).r.as_ref().unwrap();
-        let mesh_z: &Array2<f64> = self.equilibrium_ids.time_slice(0).profiles_2d(0).z.as_ref().unwrap();
+        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
+        let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
+        let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let flat_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
@@ -378,20 +378,20 @@ impl Plasma {
 
             // Store in the equilibrium IDS
             greens_pf_active.push(EquilibriumGreensPfActive {
-                name: Some(coil_name.clone()),
-                psi: Some(g_psi),
-                br: Some(g_br),
-                bz: Some(g_bz),
-                d_br_d_z: Some(g_d_br_d_z),
-                d_bz_d_z: Some(g_d_bz_d_z),
-                d_psi_d_r: Some(g_d_psi_d_r),
-                d_psi_d_z: Some(g_d_psi_d_z),
-                d2_psi_d_r2: Some(g_d2_psi_d_r2),
-                d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z),
-                d2_psi_d_z2: Some(g_d2_psi_d_z2),
-                d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z),
-                d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2),
-                d3_psi_d_z3: Some(g_d3_psi_d_z3),
+                name: coil_name.clone(),
+                psi: g_psi,
+                br: g_br,
+                bz: g_bz,
+                d_br_d_z: g_d_br_d_z,
+                d_bz_d_z: g_d_bz_d_z,
+                d_psi_d_r: g_d_psi_d_r,
+                d_psi_d_z: g_d_psi_d_z,
+                d2_psi_d_r2: g_d2_psi_d_r2,
+                d2_psi_d_r_d_z: g_d2_psi_d_r_d_z,
+                d2_psi_d_z2: g_d2_psi_d_z2,
+                d3_psi_d_r2_d_z: g_d3_psi_d_r2_d_z,
+                d3_psi_d_r_d_z2: g_d3_psi_d_r_d_z2,
+                d3_psi_d_z3: g_d3_psi_d_z3,
             });
         }
 
@@ -414,8 +414,8 @@ impl Plasma {
         // Get variables out of self
         // `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives the
         // flattened grid
-        let mesh_r: &Array2<f64> = self.equilibrium_ids.time_slice(0).profiles_2d(0).r.as_ref().unwrap();
-        let mesh_z: &Array2<f64> = self.equilibrium_ids.time_slice(0).profiles_2d(0).z.as_ref().unwrap();
+        let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
+        let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let flat_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
@@ -492,25 +492,25 @@ impl Plasma {
             let mut greens_dof: Vec<EquilibriumGreensPfPassiveDof> = Vec::with_capacity(n_dof);
             for i_dof in 0..n_dof {
                 greens_dof.push(EquilibriumGreensPfPassiveDof {
-                    name: Some(dof_names[i_dof].clone()),
-                    psi: Some(g_psi_with_dof.column(i_dof).to_owned()),
-                    br: Some(g_br_with_dof.column(i_dof).to_owned()),
-                    bz: Some(g_bz_with_dof.column(i_dof).to_owned()),
-                    d_br_d_z: Some(g_d_br_d_z_with_dof.column(i_dof).to_owned()),
-                    d_bz_d_z: Some(g_d_bz_d_z_with_dof.column(i_dof).to_owned()),
-                    d_psi_d_r: Some(g_d_psi_d_r_with_dof.column(i_dof).to_owned()),
-                    d_psi_d_z: Some(g_d_psi_d_z_with_dof.column(i_dof).to_owned()),
-                    d2_psi_d_r2: Some(g_d2_psi_d_r2_with_dof.column(i_dof).to_owned()),
-                    d2_psi_d_r_d_z: Some(g_d2_psi_d_r_d_z_with_dof.column(i_dof).to_owned()),
-                    d2_psi_d_z2: Some(g_d2_psi_d_z2_with_dof.column(i_dof).to_owned()),
-                    d3_psi_d_r2_d_z: Some(g_d3_psi_d_r2_d_z_with_dof.column(i_dof).to_owned()),
-                    d3_psi_d_r_d_z2: Some(g_d3_psi_d_r_d_z2_with_dof.column(i_dof).to_owned()),
-                    d3_psi_d_z3: Some(g_d3_psi_d_z3_with_dof.column(i_dof).to_owned()),
+                    name: dof_names[i_dof].clone(),
+                    psi: g_psi_with_dof.column(i_dof).to_owned(),
+                    br: g_br_with_dof.column(i_dof).to_owned(),
+                    bz: g_bz_with_dof.column(i_dof).to_owned(),
+                    d_br_d_z: g_d_br_d_z_with_dof.column(i_dof).to_owned(),
+                    d_bz_d_z: g_d_bz_d_z_with_dof.column(i_dof).to_owned(),
+                    d_psi_d_r: g_d_psi_d_r_with_dof.column(i_dof).to_owned(),
+                    d_psi_d_z: g_d_psi_d_z_with_dof.column(i_dof).to_owned(),
+                    d2_psi_d_r2: g_d2_psi_d_r2_with_dof.column(i_dof).to_owned(),
+                    d2_psi_d_r_d_z: g_d2_psi_d_r_d_z_with_dof.column(i_dof).to_owned(),
+                    d2_psi_d_z2: g_d2_psi_d_z2_with_dof.column(i_dof).to_owned(),
+                    d3_psi_d_r2_d_z: g_d3_psi_d_r2_d_z_with_dof.column(i_dof).to_owned(),
+                    d3_psi_d_r_d_z2: g_d3_psi_d_r_d_z2_with_dof.column(i_dof).to_owned(),
+                    d3_psi_d_z3: g_d3_psi_d_z3_with_dof.column(i_dof).to_owned(),
                 });
             }
 
             greens_pf_passive.push(EquilibriumGreensPfPassive {
-                name: Some(passive_name),
+                name: passive_name,
                 dof: greens_dof,
             });
         }
@@ -528,8 +528,8 @@ impl Plasma {
         string_output += &format!("║  {:<74} ║\n", "<gsfit_rs.Plasma>");
         string_output += &format!("║  {:<74} ║\n", version);
 
-        let n_r: usize = self.equilibrium_ids.code.grid.n_r.unwrap() as usize;
-        let n_z: usize = self.equilibrium_ids.code.grid.n_z.unwrap() as usize;
+        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
         string_output += &format!("║  {:<74} ║\n", format!(" n_r = {}, n_z = {}", n_r, n_z));
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
@@ -591,19 +591,19 @@ impl Plasma {
 
             // `rectangular` is index 1 of the data dictionary's poloidal plane coordinates
             // enumeration: "Cylindrical R,Z ala eqdsk (R=dim1, Z=dim2)"
-            profiles_2d.grid_type.name = Some("rectangular".to_string());
-            profiles_2d.grid_type.index = Some(1);
-            profiles_2d.grid_type.description = Some("Cylindrical R,Z ala eqdsk (R=dim1, Z=dim2)".to_string());
+            profiles_2d.grid_type.name = "rectangular".to_string();
+            profiles_2d.grid_type.index = 1;
+            profiles_2d.grid_type.description = "Cylindrical R,Z ala eqdsk (R=dim1, Z=dim2)".to_string();
 
-            profiles_2d.grid.dim1 = Some(r.to_owned());
-            profiles_2d.grid.dim2 = Some(z.to_owned());
-            profiles_2d.grid.d_area = Some(d_area);
-            profiles_2d.r = Some(mesh_r.to_owned());
-            profiles_2d.z = Some(mesh_z.to_owned());
+            profiles_2d.grid.dim1 = r.to_owned();
+            profiles_2d.grid.dim2 = z.to_owned();
+            profiles_2d.grid.d_area = d_area;
+            profiles_2d.r = mesh_r.to_owned();
+            profiles_2d.z = mesh_z.to_owned();
             time_slice.profiles_2d = vec![profiles_2d];
 
             // The psi_norm grid the source functions are defined on
-            time_slice.profiles_1d.psi_norm = Some(psi_norm.to_owned());
+            time_slice.profiles_1d.psi_norm = psi_norm.to_owned();
         }
     }
 
@@ -617,18 +617,18 @@ impl Plasma {
     ///
     /// # Returns
     /// * `greens_with_passives` - shape `(n_z * n_r, n_dof_total)`
-    fn greens_passive_grid(&self, select: fn(&EquilibriumGreensPfPassiveDof) -> &Option<Array1<f64>>) -> Array2<f64> {
+    fn greens_passive_grid(&self, select: fn(&EquilibriumGreensPfPassiveDof) -> &Array1<f64>) -> Array2<f64> {
         // Unpack from self
         let n_dof_total: usize = self.equilibrium_ids.greens.pf_passive.iter().map(|pf_passive| pf_passive.dof.len()).sum();
-        let n_r: usize = self.equilibrium_ids.code.grid.n_r.unwrap() as usize;
-        let n_z: usize = self.equilibrium_ids.code.grid.n_z.unwrap() as usize;
+        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
 
         let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
 
         let mut i_dof_total: usize = 0;
         for pf_passive in &self.equilibrium_ids.greens.pf_passive {
             for dof in &pf_passive.dof {
-                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(select(dof).as_ref().unwrap());
+                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(select(dof));
                 i_dof_total += 1;
             }
         }

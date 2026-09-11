@@ -19,15 +19,15 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let r: &Array1<f64> = time_slice.profiles_2d[0].grid.dim1.as_ref().unwrap();
-    let z: &Array1<f64> = time_slice.profiles_2d[0].grid.dim2.as_ref().unwrap();
-    let psi_n_2d: &Array2<f64> = time_slice.profiles_2d[0].psi_norm.as_ref().unwrap();
-    let mask_2d: &Array2<f64> = time_slice.profiles_2d[0].mask.as_ref().unwrap();
+    let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
+    let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
+    let psi_n_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi_norm;
+    let mask_2d: &Array2<f64> = &time_slice.profiles_2d[0].mask;
 
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
-    let psi_b: f64 = time_slice.boundary.psi.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
+    let psi_b: f64 = time_slice.boundary.psi;
 
-    let p_prime_dof_values: &Array1<f64> = time_slice.source_functions.p_prime.coefficients.as_ref().unwrap();
+    let p_prime_dof_values: &Array1<f64> = &time_slice.source_functions.p_prime.coefficients;
 
     let n_r: usize = r.len();
     let n_z: usize = z.len();
@@ -49,6 +49,6 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
         p_profile[i_r] = pressure_local * mask_2d[(i_z_centre, i_r)] * d_psi_d_psi_n;
     }
 
-    time_slice.profiles_1d_r_midplane.r = Some(r.to_owned());
-    time_slice.profiles_1d_r_midplane.pressure = Some(p_profile);
+    time_slice.profiles_1d_r_midplane.r = r.to_owned();
+    time_slice.profiles_1d_r_midplane.pressure = p_profile;
 }

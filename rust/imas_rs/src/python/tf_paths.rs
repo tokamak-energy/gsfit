@@ -39,7 +39,7 @@ fn lengths_coil(tf: &Tf, level: usize, _at: &[usize]) -> Option<usize> {
 fn lengths_coil_conductor(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.coil.len()),
-        1 => return Some(tf.coil.get(at[0])?.conductor.len()),
+        1 => return Some(tf.coil[at[0]].conductor.len()),
         _ => return None,
     }
 }
@@ -48,8 +48,8 @@ fn lengths_coil_conductor(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> 
 fn lengths_coil_conductor_cross_section(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.coil.len()),
-        1 => return Some(tf.coil.get(at[0])?.conductor.len()),
-        2 => return Some(tf.coil.get(at[0])?.conductor.get(at[1])?.cross_section.len()),
+        1 => return Some(tf.coil[at[0]].conductor.len()),
+        2 => return Some(tf.coil[at[0]].conductor[at[1]].cross_section.len()),
         _ => return None,
     }
 }
@@ -66,7 +66,7 @@ fn lengths_field_map(tf: &Tf, level: usize, _at: &[usize]) -> Option<usize> {
 fn lengths_field_map_a_field_r(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.a_field_r.len()),
+        1 => return Some(tf.field_map[at[0]].a_field_r.len()),
         _ => return None,
     }
 }
@@ -75,7 +75,7 @@ fn lengths_field_map_a_field_r(tf: &Tf, level: usize, at: &[usize]) -> Option<us
 fn lengths_field_map_a_field_tor(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.a_field_tor.len()),
+        1 => return Some(tf.field_map[at[0]].a_field_tor.len()),
         _ => return None,
     }
 }
@@ -84,7 +84,7 @@ fn lengths_field_map_a_field_tor(tf: &Tf, level: usize, at: &[usize]) -> Option<
 fn lengths_field_map_a_field_z(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.a_field_z.len()),
+        1 => return Some(tf.field_map[at[0]].a_field_z.len()),
         _ => return None,
     }
 }
@@ -93,7 +93,7 @@ fn lengths_field_map_a_field_z(tf: &Tf, level: usize, at: &[usize]) -> Option<us
 fn lengths_field_map_b_field_r(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.b_field_r.len()),
+        1 => return Some(tf.field_map[at[0]].b_field_r.len()),
         _ => return None,
     }
 }
@@ -102,7 +102,7 @@ fn lengths_field_map_b_field_r(tf: &Tf, level: usize, at: &[usize]) -> Option<us
 fn lengths_field_map_b_field_tor(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.b_field_tor.len()),
+        1 => return Some(tf.field_map[at[0]].b_field_tor.len()),
         _ => return None,
     }
 }
@@ -111,7 +111,7 @@ fn lengths_field_map_b_field_tor(tf: &Tf, level: usize, at: &[usize]) -> Option<
 fn lengths_field_map_b_field_z(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.b_field_z.len()),
+        1 => return Some(tf.field_map[at[0]].b_field_z.len()),
         _ => return None,
     }
 }
@@ -120,7 +120,7 @@ fn lengths_field_map_b_field_z(tf: &Tf, level: usize, at: &[usize]) -> Option<us
 fn lengths_field_map_grid_grid_subset(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.grid.grid_subset.len()),
+        1 => return Some(tf.field_map[at[0]].grid.grid_subset.len()),
         _ => return None,
     }
 }
@@ -129,8 +129,8 @@ fn lengths_field_map_grid_grid_subset(tf: &Tf, level: usize, at: &[usize]) -> Op
 fn lengths_field_map_grid_grid_subset_base(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.grid.grid_subset.len()),
-        2 => return Some(tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.base.len()),
+        1 => return Some(tf.field_map[at[0]].grid.grid_subset.len()),
+        2 => return Some(tf.field_map[at[0]].grid.grid_subset[at[1]].base.len()),
         _ => return None,
     }
 }
@@ -139,9 +139,9 @@ fn lengths_field_map_grid_grid_subset_base(tf: &Tf, level: usize, at: &[usize]) 
 fn lengths_field_map_grid_grid_subset_element_object(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.grid.grid_subset.len()),
-        2 => return Some(tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.element.len()),
-        3 => return Some(tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.element.get(at[2])?.object.len()),
+        1 => return Some(tf.field_map[at[0]].grid.grid_subset.len()),
+        2 => return Some(tf.field_map[at[0]].grid.grid_subset[at[1]].element.len()),
+        3 => return Some(tf.field_map[at[0]].grid.grid_subset[at[1]].element[at[2]].object.len()),
         _ => return None,
     }
 }
@@ -150,7 +150,7 @@ fn lengths_field_map_grid_grid_subset_element_object(tf: &Tf, level: usize, at: 
 fn lengths_field_map_grid_space(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.grid.space.len()),
+        1 => return Some(tf.field_map[at[0]].grid.space.len()),
         _ => return None,
     }
 }
@@ -159,8 +159,8 @@ fn lengths_field_map_grid_space(tf: &Tf, level: usize, at: &[usize]) -> Option<u
 fn lengths_field_map_grid_space_coordinates_type(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.grid.space.len()),
-        2 => return Some(tf.field_map.get(at[0])?.grid.space.get(at[1])?.coordinates_type.len()),
+        1 => return Some(tf.field_map[at[0]].grid.space.len()),
+        2 => return Some(tf.field_map[at[0]].grid.space[at[1]].coordinates_type.len()),
         _ => return None,
     }
 }
@@ -169,8 +169,8 @@ fn lengths_field_map_grid_space_coordinates_type(tf: &Tf, level: usize, at: &[us
 fn lengths_field_map_grid_space_objects_per_dimension(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.grid.space.len()),
-        2 => return Some(tf.field_map.get(at[0])?.grid.space.get(at[1])?.objects_per_dimension.len()),
+        1 => return Some(tf.field_map[at[0]].grid.space.len()),
+        2 => return Some(tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension.len()),
         _ => return None,
     }
 }
@@ -179,9 +179,9 @@ fn lengths_field_map_grid_space_objects_per_dimension(tf: &Tf, level: usize, at:
 fn lengths_field_map_grid_space_objects_per_dimension_object(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.grid.space.len()),
-        2 => return Some(tf.field_map.get(at[0])?.grid.space.get(at[1])?.objects_per_dimension.len()),
-        3 => return Some(tf.field_map.get(at[0])?.grid.space.get(at[1])?.objects_per_dimension.get(at[2])?.object.len()),
+        1 => return Some(tf.field_map[at[0]].grid.space.len()),
+        2 => return Some(tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension.len()),
+        3 => return Some(tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]].object.len()),
         _ => return None,
     }
 }
@@ -190,24 +190,10 @@ fn lengths_field_map_grid_space_objects_per_dimension_object(tf: &Tf, level: usi
 fn lengths_field_map_grid_space_objects_per_dimension_object_boundary(tf: &Tf, level: usize, at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(tf.field_map.len()),
-        1 => return Some(tf.field_map.get(at[0])?.grid.space.len()),
-        2 => return Some(tf.field_map.get(at[0])?.grid.space.get(at[1])?.objects_per_dimension.len()),
-        3 => return Some(tf.field_map.get(at[0])?.grid.space.get(at[1])?.objects_per_dimension.get(at[2])?.object.len()),
-        4 => {
-            return Some(
-                tf.field_map
-                    .get(at[0])?
-                    .grid
-                    .space
-                    .get(at[1])?
-                    .objects_per_dimension
-                    .get(at[2])?
-                    .object
-                    .get(at[3])?
-                    .boundary
-                    .len(),
-            );
-        }
+        1 => return Some(tf.field_map[at[0]].grid.space.len()),
+        2 => return Some(tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension.len()),
+        3 => return Some(tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]].object.len()),
+        4 => return Some(tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]].object[at[3]].boundary.len()),
         _ => return None,
     }
 }
@@ -225,8 +211,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_START_POINTS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.start_points.r.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.start_points.r.clone()
                 })
             },
         }),
@@ -239,8 +225,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_START_POINTS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.start_points.phi.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.start_points.phi.clone()
                 })
             },
         }),
@@ -253,8 +239,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_START_POINTS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.start_points.z.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.start_points.z.clone()
                 })
             },
         }),
@@ -270,8 +256,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_INTERMEDIATE_POINTS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.intermediate_points.r.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.intermediate_points.r.clone()
                 })
             },
         }),
@@ -284,8 +270,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_INTERMEDIATE_POINTS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.intermediate_points.phi.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.intermediate_points.phi.clone()
                 })
             },
         }),
@@ -298,8 +284,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_INTERMEDIATE_POINTS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.intermediate_points.z.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.intermediate_points.z.clone()
                 })
             },
         }),
@@ -315,8 +301,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_END_POINTS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.end_points.r.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.end_points.r.clone()
                 })
             },
         }),
@@ -329,8 +315,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_END_POINTS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.end_points.phi.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.end_points.phi.clone()
                 })
             },
         }),
@@ -343,8 +329,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_END_POINTS: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.end_points.z.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.end_points.z.clone()
                 })
             },
         }),
@@ -360,8 +346,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_CENTRES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.centres.r.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.centres.r.clone()
                 })
             },
         }),
@@ -374,8 +360,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_CENTRES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.centres.phi.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.centres.phi.clone()
                 })
             },
         }),
@@ -388,8 +374,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS_CENTRES: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.centres.z.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.centres.z.clone()
                 })
             },
         }),
@@ -405,8 +391,8 @@ static NODES_COIL_CONDUCTOR_ELEMENTS: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<INT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.elements.types.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> INT_1D {
+                    tf.coil[at[0]].conductor[at[1]].elements.types.clone()
                 })
             },
         }),
@@ -446,15 +432,9 @@ static NODES_COIL_CONDUCTOR_CROSS_SECTION_GEOMETRY_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_coil_conductor_cross_section,
-                    |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                        tf.coil.get(at[0])?.conductor.get(at[1])?.cross_section.get(at[2])?.geometry_type.name.clone()
-                    },
-                )
+                gather(tf, indices, 3, lengths_coil_conductor_cross_section, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.coil[at[0]].conductor[at[1]].cross_section[at[2]].geometry_type.name.clone()
+                })
             },
         }),
     },
@@ -466,15 +446,9 @@ static NODES_COIL_CONDUCTOR_CROSS_SECTION_GEOMETRY_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_coil_conductor_cross_section,
-                    |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                        tf.coil.get(at[0])?.conductor.get(at[1])?.cross_section.get(at[2])?.geometry_type.index.clone()
-                    },
-                )
+                gather(tf, indices, 3, lengths_coil_conductor_cross_section, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.coil[at[0]].conductor[at[1]].cross_section[at[2]].geometry_type.index.clone()
+                })
             },
         }),
     },
@@ -486,23 +460,9 @@ static NODES_COIL_CONDUCTOR_CROSS_SECTION_GEOMETRY_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_coil_conductor_cross_section,
-                    |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                        tf.coil
-                            .get(at[0])?
-                            .conductor
-                            .get(at[1])?
-                            .cross_section
-                            .get(at[2])?
-                            .geometry_type
-                            .description
-                            .clone()
-                    },
-                )
+                gather(tf, indices, 3, lengths_coil_conductor_cross_section, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.coil[at[0]].conductor[at[1]].cross_section[at[2]].geometry_type.description.clone()
+                })
             },
         }),
     },
@@ -517,13 +477,9 @@ static NODES_COIL_CONDUCTOR_CROSS_SECTION_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_coil_conductor_cross_section,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_1D> { tf.coil.get(at[0])?.conductor.get(at[1])?.cross_section.get(at[2])?.outline.normal.clone() },
-                )
+                gather(tf, indices, 3, lengths_coil_conductor_cross_section, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].cross_section[at[2]].outline.normal.clone()
+                })
             },
         }),
     },
@@ -535,13 +491,9 @@ static NODES_COIL_CONDUCTOR_CROSS_SECTION_OUTLINE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_coil_conductor_cross_section,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_1D> { tf.coil.get(at[0])?.conductor.get(at[1])?.cross_section.get(at[2])?.outline.binormal.clone() },
-                )
+                gather(tf, indices, 3, lengths_coil_conductor_cross_section, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].cross_section[at[2]].outline.binormal.clone()
+                })
             },
         }),
     },
@@ -562,13 +514,9 @@ static NODES_COIL_CONDUCTOR_CROSS_SECTION: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_coil_conductor_cross_section,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_0D> { tf.coil.get(at[0])?.conductor.get(at[1])?.cross_section.get(at[2])?.width.clone() },
-                )
+                gather(tf, indices, 3, lengths_coil_conductor_cross_section, |tf: &Tf, at: &[usize]| -> FLT_0D {
+                    tf.coil[at[0]].conductor[at[1]].cross_section[at[2]].width.clone()
+                })
             },
         }),
     },
@@ -580,13 +528,9 @@ static NODES_COIL_CONDUCTOR_CROSS_SECTION: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_coil_conductor_cross_section,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_0D> { tf.coil.get(at[0])?.conductor.get(at[1])?.cross_section.get(at[2])?.height.clone() },
-                )
+                gather(tf, indices, 3, lengths_coil_conductor_cross_section, |tf: &Tf, at: &[usize]| -> FLT_0D {
+                    tf.coil[at[0]].conductor[at[1]].cross_section[at[2]].height.clone()
+                })
             },
         }),
     },
@@ -598,13 +542,9 @@ static NODES_COIL_CONDUCTOR_CROSS_SECTION: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_coil_conductor_cross_section,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_0D> { tf.coil.get(at[0])?.conductor.get(at[1])?.cross_section.get(at[2])?.radius_inner.clone() },
-                )
+                gather(tf, indices, 3, lengths_coil_conductor_cross_section, |tf: &Tf, at: &[usize]| -> FLT_0D {
+                    tf.coil[at[0]].conductor[at[1]].cross_section[at[2]].radius_inner.clone()
+                })
             },
         }),
     },
@@ -622,13 +562,9 @@ static NODES_COIL_CONDUCTOR_CROSS_SECTION: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_coil_conductor_cross_section,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_0D> { tf.coil.get(at[0])?.conductor.get(at[1])?.cross_section.get(at[2])?.area.clone() },
-                )
+                gather(tf, indices, 3, lengths_coil_conductor_cross_section, |tf: &Tf, at: &[usize]| -> FLT_0D {
+                    tf.coil[at[0]].conductor[at[1]].cross_section[at[2]].area.clone()
+                })
             },
         }),
     },
@@ -643,8 +579,8 @@ static NODES_COIL_CONDUCTOR_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.voltage.data.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].voltage.data.clone()
                 })
             },
         }),
@@ -657,8 +593,8 @@ static NODES_COIL_CONDUCTOR_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.voltage.time.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].conductor[at[1]].voltage.time.clone()
                 })
             },
         }),
@@ -686,8 +622,8 @@ static NODES_COIL_CONDUCTOR: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> Option<FLT_0D> {
-                    tf.coil.get(at[0])?.conductor.get(at[1])?.resistance.clone()
+                gather(tf, indices, 2, lengths_coil_conductor, |tf: &Tf, at: &[usize]| -> FLT_0D {
+                    tf.coil[at[0]].conductor[at[1]].resistance.clone()
                 })
             },
         }),
@@ -709,8 +645,8 @@ static NODES_COIL_CURRENT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.current.data.clone()
+                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].current.data.clone()
                 })
             },
         }),
@@ -723,8 +659,8 @@ static NODES_COIL_CURRENT: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.current.time.clone()
+                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].current.time.clone()
                 })
             },
         }),
@@ -740,8 +676,8 @@ static NODES_COIL_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.voltage.data.clone()
+                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].voltage.data.clone()
                 })
             },
         }),
@@ -754,8 +690,8 @@ static NODES_COIL_VOLTAGE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.voltage.time.clone()
+                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].voltage.time.clone()
                 })
             },
         }),
@@ -771,8 +707,8 @@ static NODES_COIL_NEUTRON_FAST_FLUX_INBOARD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.neutron_fast_flux_inboard.data.clone()
+                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].neutron_fast_flux_inboard.data.clone()
                 })
             },
         }),
@@ -785,8 +721,8 @@ static NODES_COIL_NEUTRON_FAST_FLUX_INBOARD: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.coil.get(at[0])?.neutron_fast_flux_inboard.time.clone()
+                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.coil[at[0]].neutron_fast_flux_inboard.time.clone()
                 })
             },
         }),
@@ -802,9 +738,7 @@ static NODES_COIL: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.coil.get(at[0])?.name.clone()
-                })
+                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> STR_0D { tf.coil[at[0]].name.clone() })
             },
         }),
     },
@@ -816,8 +750,8 @@ static NODES_COIL: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.coil.get(at[0])?.description.clone()
+                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.coil[at[0]].description.clone()
                 })
             },
         }),
@@ -836,9 +770,7 @@ static NODES_COIL: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> Option<FLT_0D> {
-                    tf.coil.get(at[0])?.turns.clone()
-                })
+                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> FLT_0D { tf.coil[at[0]].turns.clone() })
             },
         }),
     },
@@ -850,8 +782,8 @@ static NODES_COIL: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> Option<FLT_0D> {
-                    tf.coil.get(at[0])?.resistance.clone()
+                gather(tf, indices, 1, lengths_coil, |tf: &Tf, at: &[usize]| -> FLT_0D {
+                    tf.coil[at[0]].resistance.clone()
                 })
             },
         }),
@@ -885,8 +817,8 @@ static NODES_FIELD_MAP_GRID_IDENTIFIER: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_field_map, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.field_map.get(at[0])?.grid.identifier.name.clone()
+                gather(tf, indices, 1, lengths_field_map, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.field_map[at[0]].grid.identifier.name.clone()
                 })
             },
         }),
@@ -899,8 +831,8 @@ static NODES_FIELD_MAP_GRID_IDENTIFIER: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_field_map, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.grid.identifier.index.clone()
+                gather(tf, indices, 1, lengths_field_map, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].grid.identifier.index.clone()
                 })
             },
         }),
@@ -913,8 +845,8 @@ static NODES_FIELD_MAP_GRID_IDENTIFIER: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_field_map, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.field_map.get(at[0])?.grid.identifier.description.clone()
+                gather(tf, indices, 1, lengths_field_map, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.field_map[at[0]].grid.identifier.description.clone()
                 })
             },
         }),
@@ -930,8 +862,8 @@ static NODES_FIELD_MAP_GRID_SPACE_IDENTIFIER: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.field_map.get(at[0])?.grid.space.get(at[1])?.identifier.name.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.field_map[at[0]].grid.space[at[1]].identifier.name.clone()
                 })
             },
         }),
@@ -944,8 +876,8 @@ static NODES_FIELD_MAP_GRID_SPACE_IDENTIFIER: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.grid.space.get(at[1])?.identifier.index.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].grid.space[at[1]].identifier.index.clone()
                 })
             },
         }),
@@ -958,8 +890,8 @@ static NODES_FIELD_MAP_GRID_SPACE_IDENTIFIER: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.field_map.get(at[0])?.grid.space.get(at[1])?.identifier.description.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.field_map[at[0]].grid.space[at[1]].identifier.description.clone()
                 })
             },
         }),
@@ -975,8 +907,8 @@ static NODES_FIELD_MAP_GRID_SPACE_GEOMETRY_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.field_map.get(at[0])?.grid.space.get(at[1])?.geometry_type.name.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.field_map[at[0]].grid.space[at[1]].geometry_type.name.clone()
                 })
             },
         }),
@@ -989,8 +921,8 @@ static NODES_FIELD_MAP_GRID_SPACE_GEOMETRY_TYPE: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.grid.space.get(at[1])?.geometry_type.index.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].grid.space[at[1]].geometry_type.index.clone()
                 })
             },
         }),
@@ -1003,8 +935,8 @@ static NODES_FIELD_MAP_GRID_SPACE_GEOMETRY_TYPE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.field_map.get(at[0])?.grid.space.get(at[1])?.geometry_type.description.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_space, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.field_map[at[0]].grid.space[at[1]].geometry_type.description.clone()
                 })
             },
         }),
@@ -1025,7 +957,7 @@ static NODES_FIELD_MAP_GRID_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_field_map_grid_space_coordinates_type,
-                    |tf: &Tf, at: &[usize]| -> Option<STR_0D> { tf.field_map.get(at[0])?.grid.space.get(at[1])?.coordinates_type.get(at[2])?.name.clone() },
+                    |tf: &Tf, at: &[usize]| -> STR_0D { tf.field_map[at[0]].grid.space[at[1]].coordinates_type[at[2]].name.clone() },
                 )
             },
         }),
@@ -1043,7 +975,7 @@ static NODES_FIELD_MAP_GRID_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_field_map_grid_space_coordinates_type,
-                    |tf: &Tf, at: &[usize]| -> Option<INT_0D> { tf.field_map.get(at[0])?.grid.space.get(at[1])?.coordinates_type.get(at[2])?.index.clone() },
+                    |tf: &Tf, at: &[usize]| -> INT_0D { tf.field_map[at[0]].grid.space[at[1]].coordinates_type[at[2]].index.clone() },
                 )
             },
         }),
@@ -1061,9 +993,7 @@ static NODES_FIELD_MAP_GRID_SPACE_COORDINATES_TYPE: &[Node] = &[
                     indices,
                     3,
                     lengths_field_map_grid_space_coordinates_type,
-                    |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                        tf.field_map.get(at[0])?.grid.space.get(at[1])?.coordinates_type.get(at[2])?.description.clone()
-                    },
+                    |tf: &Tf, at: &[usize]| -> STR_0D { tf.field_map[at[0]].grid.space[at[1]].coordinates_type[at[2]].description.clone() },
                 )
             },
         }),
@@ -1084,18 +1014,8 @@ static NODES_FIELD_MAP_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDARY: &[Node]
                     indices,
                     5,
                     lengths_field_map_grid_space_objects_per_dimension_object_boundary,
-                    |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .space
-                            .get(at[1])?
-                            .objects_per_dimension
-                            .get(at[2])?
-                            .object
-                            .get(at[3])?
-                            .boundary
-                            .get(at[4])?
+                    |tf: &Tf, at: &[usize]| -> INT_0D {
+                        tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]].object[at[3]].boundary[at[4]]
                             .index
                             .clone()
                     },
@@ -1116,18 +1036,8 @@ static NODES_FIELD_MAP_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT_BOUNDARY: &[Node]
                     indices,
                     5,
                     lengths_field_map_grid_space_objects_per_dimension_object_boundary,
-                    |tf: &Tf, at: &[usize]| -> Option<INT_1D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .space
-                            .get(at[1])?
-                            .objects_per_dimension
-                            .get(at[2])?
-                            .object
-                            .get(at[3])?
-                            .boundary
-                            .get(at[4])?
+                    |tf: &Tf, at: &[usize]| -> INT_1D {
+                        tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]].object[at[3]].boundary[at[4]]
                             .neighbours
                             .clone()
                     },
@@ -1157,16 +1067,8 @@ static NODES_FIELD_MAP_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     4,
                     lengths_field_map_grid_space_objects_per_dimension_object,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .space
-                            .get(at[1])?
-                            .objects_per_dimension
-                            .get(at[2])?
-                            .object
-                            .get(at[3])?
+                    |tf: &Tf, at: &[usize]| -> FLT_1D {
+                        tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]].object[at[3]]
                             .geometry
                             .clone()
                     },
@@ -1187,19 +1089,7 @@ static NODES_FIELD_MAP_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     4,
                     lengths_field_map_grid_space_objects_per_dimension_object,
-                    |tf: &Tf, at: &[usize]| -> Option<INT_1D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .space
-                            .get(at[1])?
-                            .objects_per_dimension
-                            .get(at[2])?
-                            .object
-                            .get(at[3])?
-                            .nodes
-                            .clone()
-                    },
+                    |tf: &Tf, at: &[usize]| -> INT_1D { tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]].object[at[3]].nodes.clone() },
                 )
             },
         }),
@@ -1217,19 +1107,7 @@ static NODES_FIELD_MAP_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     4,
                     lengths_field_map_grid_space_objects_per_dimension_object,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_0D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .space
-                            .get(at[1])?
-                            .objects_per_dimension
-                            .get(at[2])?
-                            .object
-                            .get(at[3])?
-                            .measure
-                            .clone()
-                    },
+                    |tf: &Tf, at: &[usize]| -> FLT_0D { tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]].object[at[3]].measure.clone() },
                 )
             },
         }),
@@ -1247,16 +1125,8 @@ static NODES_FIELD_MAP_GRID_SPACE_OBJECTS_PER_DIMENSION_OBJECT: &[Node] = &[
                     indices,
                     4,
                     lengths_field_map_grid_space_objects_per_dimension_object,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_2D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .space
-                            .get(at[1])?
-                            .objects_per_dimension
-                            .get(at[2])?
-                            .object
-                            .get(at[3])?
+                    |tf: &Tf, at: &[usize]| -> FLT_2D {
+                        tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]].object[at[3]]
                             .geometry_2d
                             .clone()
                     },
@@ -1280,18 +1150,7 @@ static NODES_FIELD_MAP_GRID_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTENT: &[Node
                     indices,
                     3,
                     lengths_field_map_grid_space_objects_per_dimension,
-                    |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .space
-                            .get(at[1])?
-                            .objects_per_dimension
-                            .get(at[2])?
-                            .geometry_content
-                            .name
-                            .clone()
-                    },
+                    |tf: &Tf, at: &[usize]| -> STR_0D { tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]].geometry_content.name.clone() },
                 )
             },
         }),
@@ -1309,14 +1168,8 @@ static NODES_FIELD_MAP_GRID_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTENT: &[Node
                     indices,
                     3,
                     lengths_field_map_grid_space_objects_per_dimension,
-                    |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .space
-                            .get(at[1])?
-                            .objects_per_dimension
-                            .get(at[2])?
+                    |tf: &Tf, at: &[usize]| -> INT_0D {
+                        tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]]
                             .geometry_content
                             .index
                             .clone()
@@ -1338,14 +1191,8 @@ static NODES_FIELD_MAP_GRID_SPACE_OBJECTS_PER_DIMENSION_GEOMETRY_CONTENT: &[Node
                     indices,
                     3,
                     lengths_field_map_grid_space_objects_per_dimension,
-                    |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .space
-                            .get(at[1])?
-                            .objects_per_dimension
-                            .get(at[2])?
+                    |tf: &Tf, at: &[usize]| -> STR_0D {
+                        tf.field_map[at[0]].grid.space[at[1]].objects_per_dimension[at[2]]
                             .geometry_content
                             .description
                             .clone()
@@ -1407,8 +1254,8 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_IDENTIFIER: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.identifier.name.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.field_map[at[0]].grid.grid_subset[at[1]].identifier.name.clone()
                 })
             },
         }),
@@ -1421,8 +1268,8 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_IDENTIFIER: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.identifier.index.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].grid.grid_subset[at[1]].identifier.index.clone()
                 })
             },
         }),
@@ -1435,8 +1282,8 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_IDENTIFIER: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.identifier.description.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.field_map[at[0]].grid.grid_subset[at[1]].identifier.description.clone()
                 })
             },
         }),
@@ -1457,19 +1304,7 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     4,
                     lengths_field_map_grid_grid_subset_element_object,
-                    |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .grid_subset
-                            .get(at[1])?
-                            .element
-                            .get(at[2])?
-                            .object
-                            .get(at[3])?
-                            .space
-                            .clone()
-                    },
+                    |tf: &Tf, at: &[usize]| -> INT_0D { tf.field_map[at[0]].grid.grid_subset[at[1]].element[at[2]].object[at[3]].space.clone() },
                 )
             },
         }),
@@ -1487,19 +1322,7 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     4,
                     lengths_field_map_grid_grid_subset_element_object,
-                    |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .grid_subset
-                            .get(at[1])?
-                            .element
-                            .get(at[2])?
-                            .object
-                            .get(at[3])?
-                            .dimension
-                            .clone()
-                    },
+                    |tf: &Tf, at: &[usize]| -> INT_0D { tf.field_map[at[0]].grid.grid_subset[at[1]].element[at[2]].object[at[3]].dimension.clone() },
                 )
             },
         }),
@@ -1517,19 +1340,7 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_ELEMENT_OBJECT: &[Node] = &[
                     indices,
                     4,
                     lengths_field_map_grid_grid_subset_element_object,
-                    |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .grid_subset
-                            .get(at[1])?
-                            .element
-                            .get(at[2])?
-                            .object
-                            .get(at[3])?
-                            .index
-                            .clone()
-                    },
+                    |tf: &Tf, at: &[usize]| -> INT_0D { tf.field_map[at[0]].grid.grid_subset[at[1]].element[at[2]].object[at[3]].index.clone() },
                 )
             },
         }),
@@ -1552,13 +1363,9 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_BASE: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_field_map_grid_grid_subset_base,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_1D> { tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.base.get(at[2])?.jacobian.clone() },
-                )
+                gather(tf, indices, 3, lengths_field_map_grid_grid_subset_base, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.field_map[at[0]].grid.grid_subset[at[1]].base[at[2]].jacobian.clone()
+                })
             },
         }),
     },
@@ -1570,15 +1377,9 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_BASE: &[Node] = &[
             data_type: "FLT_3D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_field_map_grid_grid_subset_base,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_3D> {
-                        tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.base.get(at[2])?.tensor_covariant.clone()
-                    },
-                )
+                gather(tf, indices, 3, lengths_field_map_grid_grid_subset_base, |tf: &Tf, at: &[usize]| -> FLT_3D {
+                    tf.field_map[at[0]].grid.grid_subset[at[1]].base[at[2]].tensor_covariant.clone()
+                })
             },
         }),
     },
@@ -1590,23 +1391,9 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_BASE: &[Node] = &[
             data_type: "FLT_3D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(
-                    tf,
-                    indices,
-                    3,
-                    lengths_field_map_grid_grid_subset_base,
-                    |tf: &Tf, at: &[usize]| -> Option<FLT_3D> {
-                        tf.field_map
-                            .get(at[0])?
-                            .grid
-                            .grid_subset
-                            .get(at[1])?
-                            .base
-                            .get(at[2])?
-                            .tensor_contravariant
-                            .clone()
-                    },
-                )
+                gather(tf, indices, 3, lengths_field_map_grid_grid_subset_base, |tf: &Tf, at: &[usize]| -> FLT_3D {
+                    tf.field_map[at[0]].grid.grid_subset[at[1]].base[at[2]].tensor_contravariant.clone()
+                })
             },
         }),
     },
@@ -1621,8 +1408,8 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_METRIC: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.metric.jacobian.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.field_map[at[0]].grid.grid_subset[at[1]].metric.jacobian.clone()
                 })
             },
         }),
@@ -1635,8 +1422,8 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_METRIC: &[Node] = &[
             data_type: "FLT_3D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> Option<FLT_3D> {
-                    tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.metric.tensor_covariant.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> FLT_3D {
+                    tf.field_map[at[0]].grid.grid_subset[at[1]].metric.tensor_covariant.clone()
                 })
             },
         }),
@@ -1649,8 +1436,8 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET_METRIC: &[Node] = &[
             data_type: "FLT_3D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> Option<FLT_3D> {
-                    tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.metric.tensor_contravariant.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> FLT_3D {
+                    tf.field_map[at[0]].grid.grid_subset[at[1]].metric.tensor_contravariant.clone()
                 })
             },
         }),
@@ -1672,8 +1459,8 @@ static NODES_FIELD_MAP_GRID_GRID_SUBSET: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.grid.grid_subset.get(at[1])?.dimension.clone()
+                gather(tf, indices, 2, lengths_field_map_grid_grid_subset, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].grid.grid_subset[at[1]].dimension.clone()
                 })
             },
         }),
@@ -1713,8 +1500,8 @@ static NODES_FIELD_MAP_GRID: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_field_map, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.field_map.get(at[0])?.grid.path.clone()
+                gather(tf, indices, 1, lengths_field_map, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.field_map[at[0]].grid.path.clone()
                 })
             },
         }),
@@ -1742,8 +1529,8 @@ static NODES_FIELD_MAP_B_FIELD_R: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_r, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.b_field_r.get(at[1])?.grid_index.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_r, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].b_field_r[at[1]].grid_index.clone()
                 })
             },
         }),
@@ -1756,8 +1543,8 @@ static NODES_FIELD_MAP_B_FIELD_R: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_r, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.b_field_r.get(at[1])?.grid_subset_index.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_r, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].b_field_r[at[1]].grid_subset_index.clone()
                 })
             },
         }),
@@ -1770,8 +1557,8 @@ static NODES_FIELD_MAP_B_FIELD_R: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_r, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.field_map.get(at[0])?.b_field_r.get(at[1])?.values.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_r, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.field_map[at[0]].b_field_r[at[1]].values.clone()
                 })
             },
         }),
@@ -1784,8 +1571,8 @@ static NODES_FIELD_MAP_B_FIELD_R: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_r, |tf: &Tf, at: &[usize]| -> Option<FLT_2D> {
-                    tf.field_map.get(at[0])?.b_field_r.get(at[1])?.coefficients.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_r, |tf: &Tf, at: &[usize]| -> FLT_2D {
+                    tf.field_map[at[0]].b_field_r[at[1]].coefficients.clone()
                 })
             },
         }),
@@ -1801,8 +1588,8 @@ static NODES_FIELD_MAP_B_FIELD_Z: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_z, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.b_field_z.get(at[1])?.grid_index.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_z, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].b_field_z[at[1]].grid_index.clone()
                 })
             },
         }),
@@ -1815,8 +1602,8 @@ static NODES_FIELD_MAP_B_FIELD_Z: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_z, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.b_field_z.get(at[1])?.grid_subset_index.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_z, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].b_field_z[at[1]].grid_subset_index.clone()
                 })
             },
         }),
@@ -1829,8 +1616,8 @@ static NODES_FIELD_MAP_B_FIELD_Z: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_z, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.field_map.get(at[0])?.b_field_z.get(at[1])?.values.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_z, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.field_map[at[0]].b_field_z[at[1]].values.clone()
                 })
             },
         }),
@@ -1843,8 +1630,8 @@ static NODES_FIELD_MAP_B_FIELD_Z: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_z, |tf: &Tf, at: &[usize]| -> Option<FLT_2D> {
-                    tf.field_map.get(at[0])?.b_field_z.get(at[1])?.coefficients.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_z, |tf: &Tf, at: &[usize]| -> FLT_2D {
+                    tf.field_map[at[0]].b_field_z[at[1]].coefficients.clone()
                 })
             },
         }),
@@ -1860,8 +1647,8 @@ static NODES_FIELD_MAP_B_FIELD_TOR: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_tor, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.b_field_tor.get(at[1])?.grid_index.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_tor, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].b_field_tor[at[1]].grid_index.clone()
                 })
             },
         }),
@@ -1874,8 +1661,8 @@ static NODES_FIELD_MAP_B_FIELD_TOR: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_tor, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.b_field_tor.get(at[1])?.grid_subset_index.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_tor, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].b_field_tor[at[1]].grid_subset_index.clone()
                 })
             },
         }),
@@ -1888,8 +1675,8 @@ static NODES_FIELD_MAP_B_FIELD_TOR: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_tor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.field_map.get(at[0])?.b_field_tor.get(at[1])?.values.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_tor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.field_map[at[0]].b_field_tor[at[1]].values.clone()
                 })
             },
         }),
@@ -1902,8 +1689,8 @@ static NODES_FIELD_MAP_B_FIELD_TOR: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_b_field_tor, |tf: &Tf, at: &[usize]| -> Option<FLT_2D> {
-                    tf.field_map.get(at[0])?.b_field_tor.get(at[1])?.coefficients.clone()
+                gather(tf, indices, 2, lengths_field_map_b_field_tor, |tf: &Tf, at: &[usize]| -> FLT_2D {
+                    tf.field_map[at[0]].b_field_tor[at[1]].coefficients.clone()
                 })
             },
         }),
@@ -1919,8 +1706,8 @@ static NODES_FIELD_MAP_A_FIELD_R: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_r, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.a_field_r.get(at[1])?.grid_index.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_r, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].a_field_r[at[1]].grid_index.clone()
                 })
             },
         }),
@@ -1933,8 +1720,8 @@ static NODES_FIELD_MAP_A_FIELD_R: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_r, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.a_field_r.get(at[1])?.grid_subset_index.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_r, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].a_field_r[at[1]].grid_subset_index.clone()
                 })
             },
         }),
@@ -1947,8 +1734,8 @@ static NODES_FIELD_MAP_A_FIELD_R: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_r, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.field_map.get(at[0])?.a_field_r.get(at[1])?.values.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_r, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.field_map[at[0]].a_field_r[at[1]].values.clone()
                 })
             },
         }),
@@ -1961,8 +1748,8 @@ static NODES_FIELD_MAP_A_FIELD_R: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_r, |tf: &Tf, at: &[usize]| -> Option<FLT_2D> {
-                    tf.field_map.get(at[0])?.a_field_r.get(at[1])?.coefficients.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_r, |tf: &Tf, at: &[usize]| -> FLT_2D {
+                    tf.field_map[at[0]].a_field_r[at[1]].coefficients.clone()
                 })
             },
         }),
@@ -1978,8 +1765,8 @@ static NODES_FIELD_MAP_A_FIELD_Z: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_z, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.a_field_z.get(at[1])?.grid_index.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_z, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].a_field_z[at[1]].grid_index.clone()
                 })
             },
         }),
@@ -1992,8 +1779,8 @@ static NODES_FIELD_MAP_A_FIELD_Z: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_z, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.a_field_z.get(at[1])?.grid_subset_index.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_z, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].a_field_z[at[1]].grid_subset_index.clone()
                 })
             },
         }),
@@ -2006,8 +1793,8 @@ static NODES_FIELD_MAP_A_FIELD_Z: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_z, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.field_map.get(at[0])?.a_field_z.get(at[1])?.values.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_z, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.field_map[at[0]].a_field_z[at[1]].values.clone()
                 })
             },
         }),
@@ -2020,8 +1807,8 @@ static NODES_FIELD_MAP_A_FIELD_Z: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_z, |tf: &Tf, at: &[usize]| -> Option<FLT_2D> {
-                    tf.field_map.get(at[0])?.a_field_z.get(at[1])?.coefficients.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_z, |tf: &Tf, at: &[usize]| -> FLT_2D {
+                    tf.field_map[at[0]].a_field_z[at[1]].coefficients.clone()
                 })
             },
         }),
@@ -2037,8 +1824,8 @@ static NODES_FIELD_MAP_A_FIELD_TOR: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_tor, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.a_field_tor.get(at[1])?.grid_index.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_tor, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].a_field_tor[at[1]].grid_index.clone()
                 })
             },
         }),
@@ -2051,8 +1838,8 @@ static NODES_FIELD_MAP_A_FIELD_TOR: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_tor, |tf: &Tf, at: &[usize]| -> Option<INT_0D> {
-                    tf.field_map.get(at[0])?.a_field_tor.get(at[1])?.grid_subset_index.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_tor, |tf: &Tf, at: &[usize]| -> INT_0D {
+                    tf.field_map[at[0]].a_field_tor[at[1]].grid_subset_index.clone()
                 })
             },
         }),
@@ -2065,8 +1852,8 @@ static NODES_FIELD_MAP_A_FIELD_TOR: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_tor, |tf: &Tf, at: &[usize]| -> Option<FLT_1D> {
-                    tf.field_map.get(at[0])?.a_field_tor.get(at[1])?.values.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_tor, |tf: &Tf, at: &[usize]| -> FLT_1D {
+                    tf.field_map[at[0]].a_field_tor[at[1]].values.clone()
                 })
             },
         }),
@@ -2079,8 +1866,8 @@ static NODES_FIELD_MAP_A_FIELD_TOR: &[Node] = &[
             data_type: "FLT_2D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 2, lengths_field_map_a_field_tor, |tf: &Tf, at: &[usize]| -> Option<FLT_2D> {
-                    tf.field_map.get(at[0])?.a_field_tor.get(at[1])?.coefficients.clone()
+                gather(tf, indices, 2, lengths_field_map_a_field_tor, |tf: &Tf, at: &[usize]| -> FLT_2D {
+                    tf.field_map[at[0]].a_field_tor[at[1]].coefficients.clone()
                 })
             },
         }),
@@ -2138,8 +1925,8 @@ static NODES_FIELD_MAP: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_field_map, |tf: &Tf, at: &[usize]| -> Option<FLT_0D> {
-                    tf.field_map.get(at[0])?.time.clone()
+                gather(tf, indices, 1, lengths_field_map, |tf: &Tf, at: &[usize]| -> FLT_0D {
+                    tf.field_map[at[0]].time.clone()
                 })
             },
         }),
@@ -2155,7 +1942,7 @@ static NODES_B_FIELD_PHI_VACUUM_R: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<FLT_1D> {
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> FLT_1D {
                     tf.b_field_phi_vacuum_r.data.clone()
                 })
             },
@@ -2169,7 +1956,7 @@ static NODES_B_FIELD_PHI_VACUUM_R: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<FLT_1D> {
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> FLT_1D {
                     tf.b_field_phi_vacuum_r.time.clone()
                 })
             },
@@ -2186,7 +1973,7 @@ static NODES_DELTA_B_FIELD_PHI_VACUUM_R: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<FLT_1D> {
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> FLT_1D {
                     tf.delta_b_field_phi_vacuum_r.data.clone()
                 })
             },
@@ -2200,7 +1987,7 @@ static NODES_DELTA_B_FIELD_PHI_VACUUM_R: &[Node] = &[
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<FLT_1D> {
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> FLT_1D {
                     tf.delta_b_field_phi_vacuum_r.time.clone()
                 })
             },
@@ -2217,8 +2004,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.code.library.get(at[0])?.name.clone()
+                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.code.library[at[0]].name.clone()
                 })
             },
         }),
@@ -2231,8 +2018,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.code.library.get(at[0])?.description.clone()
+                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.code.library[at[0]].description.clone()
                 })
             },
         }),
@@ -2245,8 +2032,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.code.library.get(at[0])?.commit.clone()
+                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.code.library[at[0]].commit.clone()
                 })
             },
         }),
@@ -2259,8 +2046,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.code.library.get(at[0])?.version.clone()
+                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.code.library[at[0]].version.clone()
                 })
             },
         }),
@@ -2273,8 +2060,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.code.library.get(at[0])?.repository.clone()
+                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.code.library[at[0]].repository.clone()
                 })
             },
         }),
@@ -2287,8 +2074,8 @@ static NODES_CODE_LIBRARY: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> Option<STR_0D> {
-                    tf.code.library.get(at[0])?.parameters.clone()
+                gather(tf, indices, 1, lengths_code_library, |tf: &Tf, at: &[usize]| -> STR_0D {
+                    tf.code.library[at[0]].parameters.clone()
                 })
             },
         }),
@@ -2304,7 +2091,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<STR_0D> { tf.code.name.clone() })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> STR_0D { tf.code.name.clone() })
             },
         }),
     },
@@ -2316,9 +2103,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<STR_0D> {
-                    tf.code.description.clone()
-                })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> STR_0D { tf.code.description.clone() })
             },
         }),
     },
@@ -2330,7 +2115,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<STR_0D> { tf.code.commit.clone() })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> STR_0D { tf.code.commit.clone() })
             },
         }),
     },
@@ -2342,9 +2127,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<STR_0D> {
-                    tf.code.version.clone()
-                })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> STR_0D { tf.code.version.clone() })
             },
         }),
     },
@@ -2356,9 +2139,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<STR_0D> {
-                    tf.code.repository.clone()
-                })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> STR_0D { tf.code.repository.clone() })
             },
         }),
     },
@@ -2370,9 +2151,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "STR_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<STR_0D> {
-                    tf.code.parameters.clone()
-                })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> STR_0D { tf.code.parameters.clone() })
             },
         }),
     },
@@ -2384,9 +2163,7 @@ static NODES_CODE: &[Node] = &[
             data_type: "INT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<INT_1D> {
-                    tf.code.output_flag.clone()
-                })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> INT_1D { tf.code.output_flag.clone() })
             },
         }),
     },
@@ -2407,7 +2184,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<FLT_0D> { tf.r0.clone() })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> FLT_0D { tf.r0.clone() })
             },
         }),
     },
@@ -2419,7 +2196,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<INT_0D> { tf.is_periodic.clone() })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> INT_0D { tf.is_periodic.clone() })
             },
         }),
     },
@@ -2431,7 +2208,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<INT_0D> { tf.coils_n.clone() })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> INT_0D { tf.coils_n.clone() })
             },
         }),
     },
@@ -2467,7 +2244,7 @@ static NODES_ROOT: &[Node] = &[
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let tf: &Tf = ids.downcast_ref().ok_or_else(|| "not a tf IDS".to_string())?;
-                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> Option<FLT_0D> { tf.latency.clone() })
+                gather(tf, indices, 0, no_levels, |tf: &Tf, _at: &[usize]| -> FLT_0D { tf.latency.clone() })
             },
         }),
     },

@@ -20,24 +20,24 @@ use std::f64::consts::PI;
 /// * `time_slice` - the solved time-slice; the `boundary` scalars listed above are written into it
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // A slice which did not converge has no boundary to measure
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
-        time_slice.boundary.minor_radius = Some(f64::NAN);
-        time_slice.boundary.geometric_axis.r = Some(f64::NAN);
-        time_slice.boundary.geometric_axis.z = Some(f64::NAN);
-        time_slice.boundary.elongation = Some(f64::NAN);
-        time_slice.boundary.triangularity = Some(f64::NAN);
-        time_slice.boundary.triangularity_lower = Some(f64::NAN);
-        time_slice.boundary.triangularity_upper = Some(f64::NAN);
-        time_slice.boundary.squareness_lower_inner = Some(f64::NAN);
-        time_slice.boundary.squareness_lower_outer = Some(f64::NAN);
-        time_slice.boundary.squareness_upper_inner = Some(f64::NAN);
-        time_slice.boundary.squareness_upper_outer = Some(f64::NAN);
+        time_slice.boundary.minor_radius = f64::NAN;
+        time_slice.boundary.geometric_axis.r = f64::NAN;
+        time_slice.boundary.geometric_axis.z = f64::NAN;
+        time_slice.boundary.elongation = f64::NAN;
+        time_slice.boundary.triangularity = f64::NAN;
+        time_slice.boundary.triangularity_lower = f64::NAN;
+        time_slice.boundary.triangularity_upper = f64::NAN;
+        time_slice.boundary.squareness_lower_inner = f64::NAN;
+        time_slice.boundary.squareness_lower_outer = f64::NAN;
+        time_slice.boundary.squareness_upper_inner = f64::NAN;
+        time_slice.boundary.squareness_upper_outer = f64::NAN;
         return;
     }
 
-    let boundary_r: &Array1<f64> = time_slice.boundary.outline.r.as_ref().unwrap();
-    let boundary_z: &Array1<f64> = time_slice.boundary.outline.z.as_ref().unwrap();
+    let boundary_r: &Array1<f64> = &time_slice.boundary.outline.r;
+    let boundary_z: &Array1<f64> = &time_slice.boundary.outline.z;
 
     // Minor radius
     let r_minor: f64 = (boundary_r.max().unwrap().to_owned() - boundary_r.min().unwrap().to_owned()) / 2.0;
@@ -50,17 +50,17 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o): (f64, f64, f64, f64, f64, f64, f64, f64) =
         epp_boundary_geometry(boundary_r, boundary_z);
 
-    time_slice.boundary.minor_radius = Some(r_minor);
-    time_slice.boundary.geometric_axis.r = Some(r_geo);
-    time_slice.boundary.geometric_axis.z = Some(z_geo);
-    time_slice.boundary.elongation = Some(elongation);
-    time_slice.boundary.triangularity = Some(triang);
-    time_slice.boundary.triangularity_lower = Some(triang_l);
-    time_slice.boundary.triangularity_upper = Some(triang_u);
-    time_slice.boundary.squareness_lower_inner = Some(square_l_i);
-    time_slice.boundary.squareness_lower_outer = Some(square_l_o);
-    time_slice.boundary.squareness_upper_inner = Some(square_u_i);
-    time_slice.boundary.squareness_upper_outer = Some(square_u_o);
+    time_slice.boundary.minor_radius = r_minor;
+    time_slice.boundary.geometric_axis.r = r_geo;
+    time_slice.boundary.geometric_axis.z = z_geo;
+    time_slice.boundary.elongation = elongation;
+    time_slice.boundary.triangularity = triang;
+    time_slice.boundary.triangularity_lower = triang_l;
+    time_slice.boundary.triangularity_upper = triang_u;
+    time_slice.boundary.squareness_lower_inner = square_l_i;
+    time_slice.boundary.squareness_lower_outer = square_l_o;
+    time_slice.boundary.squareness_upper_inner = square_u_i;
+    time_slice.boundary.squareness_upper_outer = square_u_o;
 }
 
 /// Calculate the shape of a closed poloidal contour, following the IMAS definitions:

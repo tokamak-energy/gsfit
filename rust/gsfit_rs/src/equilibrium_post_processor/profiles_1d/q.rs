@@ -19,19 +19,19 @@ const GAUSS_LEGENDRE_ABSCISSA: f64 = 0.5773502691896258;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
-    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.as_ref().unwrap().len();
+    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.len();
 
     // A slice which did not converge has no flux surfaces to integrate around
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
-        time_slice.profiles_1d.q = Some(Array1::from_elem(n_psi_norm, f64::NAN));
+        time_slice.profiles_1d.q = Array1::from_elem(n_psi_norm, f64::NAN);
         return;
     }
 
-    let f_profile: &Array1<f64> = time_slice.profiles_1d.f.as_ref().unwrap();
+    let f_profile: &Array1<f64> = &time_slice.profiles_1d.f;
     let q_profile: Array1<f64> = epp_q_profile(time_slice, flux_surfaces, f_profile);
 
-    time_slice.profiles_1d.q = Some(q_profile);
+    time_slice.profiles_1d.q = q_profile;
 }
 
 /// Calculate the safety factor profile for an arbitrary `f` profile.
@@ -69,7 +69,7 @@ pub(in crate::equilibrium_post_processor) fn epp_q_profile(
     f_profile: &Array1<f64>,
 ) -> Array1<f64> {
     let n_psi_n: usize = flux_surfaces.len();
-    let psi_norm: &Array1<f64> = time_slice.profiles_1d.psi_norm.as_ref().unwrap();
+    let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
     assert_eq!(psi_norm.len(), n_psi_n);
     assert_eq!(f_profile.len(), n_psi_n);
 
@@ -164,10 +164,10 @@ fn q_integrand_at(r_here: f64, z_here: f64, psi_gradient_interpolator: &PsiGradi
 /// # Returns
 /// * `q_axis` - the safety factor on the magnetic axis [dimensionless]
 fn epp_q_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, psi_gradient_interpolator: &PsiGradientInterpolator) -> f64 {
-    let j_2d: &Array2<f64> = time_slice.profiles_2d[0].j_phi.as_ref().unwrap();
+    let j_2d: &Array2<f64> = &time_slice.profiles_2d[0].j_phi;
 
-    let r_mag: f64 = time_slice.global_quantities.magnetic_axis.r.unwrap();
-    let z_mag: f64 = time_slice.global_quantities.magnetic_axis.z.unwrap();
+    let r_mag: f64 = time_slice.global_quantities.magnetic_axis.r;
+    let z_mag: f64 = time_slice.global_quantities.magnetic_axis.z;
 
     let Some((_hessian_matrix, hessian_determinant, hessian_trace)) = psi_gradient_interpolator.hessian_matrix(r_mag, z_mag) else {
         return f64::NAN;
@@ -244,13 +244,13 @@ struct PsiGradientInterpolator<'a> {
 impl<'a> PsiGradientInterpolator<'a> {
     fn new(time_slice: &'a EquilibriumTimeSlice) -> Self {
         // `profiles_2d[0]` because GSFit solves on one rectangular (R, Z) grid.
-        let r: &Array1<f64> = time_slice.profiles_2d[0].grid.dim1.as_ref().unwrap();
-        let z: &Array1<f64> = time_slice.profiles_2d[0].grid.dim2.as_ref().unwrap();
-        let d_psi_d_r_2d: &Array2<f64> = time_slice.profiles_2d[0].d_psi_d_r.as_ref().unwrap();
-        let d_psi_d_z_2d: &Array2<f64> = time_slice.profiles_2d[0].d_psi_d_z.as_ref().unwrap();
-        let d2_psi_d_r2_2d: &Array2<f64> = time_slice.profiles_2d[0].d2_psi_d_r2.as_ref().unwrap();
-        let d2_psi_d_r_d_z_2d: &Array2<f64> = time_slice.profiles_2d[0].d2_psi_d_r_d_z.as_ref().unwrap();
-        let d2_psi_d_z2_2d: &Array2<f64> = time_slice.profiles_2d[0].d2_psi_d_z2.as_ref().unwrap();
+        let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
+        let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
+        let d_psi_d_r_2d: &Array2<f64> = &time_slice.profiles_2d[0].d_psi_d_r;
+        let d_psi_d_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].d_psi_d_z;
+        let d2_psi_d_r2_2d: &Array2<f64> = &time_slice.profiles_2d[0].d2_psi_d_r2;
+        let d2_psi_d_r_d_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].d2_psi_d_r_d_z;
+        let d2_psi_d_z2_2d: &Array2<f64> = &time_slice.profiles_2d[0].d2_psi_d_z2;
 
         let n_r: usize = r.len();
         let n_z: usize = z.len();
@@ -419,19 +419,19 @@ mod tests {
         }
 
         let mut profiles_2d: EquilibriumProfiles2d = EquilibriumProfiles2d::default();
-        profiles_2d.grid.dim1 = Some(r);
-        profiles_2d.grid.dim2 = Some(z);
-        profiles_2d.d_psi_d_r = Some(d_psi_d_r_2d);
-        profiles_2d.d_psi_d_z = Some(d_psi_d_z_2d);
-        profiles_2d.d2_psi_d_r2 = Some(Array2::from_elem((n_z, n_r), psi_curvature));
-        profiles_2d.d2_psi_d_r_d_z = Some(Array2::zeros((n_z, n_r)));
-        profiles_2d.d2_psi_d_z2 = Some(Array2::from_elem((n_z, n_r), psi_curvature));
-        profiles_2d.j_phi = Some(Array2::from_elem((n_z, n_r), 1.0e6));
+        profiles_2d.grid.dim1 = r;
+        profiles_2d.grid.dim2 = z;
+        profiles_2d.d_psi_d_r = d_psi_d_r_2d;
+        profiles_2d.d_psi_d_z = d_psi_d_z_2d;
+        profiles_2d.d2_psi_d_r2 = Array2::from_elem((n_z, n_r), psi_curvature);
+        profiles_2d.d2_psi_d_r_d_z = Array2::zeros((n_z, n_r));
+        profiles_2d.d2_psi_d_z2 = Array2::from_elem((n_z, n_r), psi_curvature);
+        profiles_2d.j_phi = Array2::from_elem((n_z, n_r), 1.0e6);
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.magnetic_axis.r = Some(r_axis);
-        time_slice.global_quantities.magnetic_axis.z = Some(z_axis);
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.25, 0.5, 1.0]);
+        time_slice.global_quantities.magnetic_axis.r = r_axis;
+        time_slice.global_quantities.magnetic_axis.z = z_axis;
+        time_slice.profiles_1d.psi_norm = array![0.0, 0.25, 0.5, 1.0];
         time_slice.profiles_2d = vec![profiles_2d];
         return time_slice;
     }
@@ -439,8 +439,8 @@ mod tests {
     #[test]
     fn circular_surface_matches_the_analytic_q_and_boundary_is_nan() {
         let time_slice: EquilibriumTimeSlice = time_slice_with_circular_psi();
-        let r_axis: f64 = time_slice.global_quantities.magnetic_axis.r.unwrap();
-        let z_axis: f64 = time_slice.global_quantities.magnetic_axis.z.unwrap();
+        let r_axis: f64 = time_slice.global_quantities.magnetic_axis.r;
+        let z_axis: f64 = time_slice.global_quantities.magnetic_axis.z;
         let minor_radius: f64 = 0.3;
         let psi_curvature: f64 = 2.5;
         let f_here: f64 = 0.8;
@@ -492,19 +492,19 @@ mod tests {
         }
 
         let mut profiles_2d: EquilibriumProfiles2d = EquilibriumProfiles2d::default();
-        profiles_2d.grid.dim1 = Some(r);
-        profiles_2d.grid.dim2 = Some(z);
-        profiles_2d.psi = Some(psi_2d);
-        profiles_2d.d_psi_d_r = Some(d_psi_d_r_2d);
-        profiles_2d.d_psi_d_z = Some(d_psi_d_z_2d);
-        profiles_2d.d2_psi_d_r2 = Some(d2_psi_d_r2_2d);
-        profiles_2d.d2_psi_d_r_d_z = Some(d2_psi_d_r_d_z_2d);
-        profiles_2d.d2_psi_d_z2 = Some(d2_psi_d_z2_2d);
-        profiles_2d.j_phi = Some(Array2::from_elem((n_z, n_r), j_phi_axis));
+        profiles_2d.grid.dim1 = r;
+        profiles_2d.grid.dim2 = z;
+        profiles_2d.psi = psi_2d;
+        profiles_2d.d_psi_d_r = d_psi_d_r_2d;
+        profiles_2d.d_psi_d_z = d_psi_d_z_2d;
+        profiles_2d.d2_psi_d_r2 = d2_psi_d_r2_2d;
+        profiles_2d.d2_psi_d_r_d_z = d2_psi_d_r_d_z_2d;
+        profiles_2d.d2_psi_d_z2 = d2_psi_d_z2_2d;
+        profiles_2d.j_phi = Array2::from_elem((n_z, n_r), j_phi_axis);
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.magnetic_axis.r = Some(mag_r);
-        time_slice.global_quantities.magnetic_axis.z = Some(mag_z);
+        time_slice.global_quantities.magnetic_axis.r = mag_r;
+        time_slice.global_quantities.magnetic_axis.z = mag_z;
         time_slice.profiles_2d = vec![profiles_2d];
 
         let f_profile: Array1<f64> = Array1::from_vec(vec![f_axis]);

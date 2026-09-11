@@ -21,18 +21,18 @@ use ndarray::Array1;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_1d/rho_volume_norm` is written into it
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    let volume: &Array1<f64> = time_slice.profiles_1d.volume.as_ref().unwrap();
+    let volume: &Array1<f64> = &time_slice.profiles_1d.volume;
     let n_psi_norm: usize = volume.len();
     let mut rho_volume_norm: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
 
     if n_psi_norm == 0 {
-        time_slice.profiles_1d.rho_volume_norm = Some(rho_volume_norm);
+        time_slice.profiles_1d.rho_volume_norm = rho_volume_norm;
         return;
     }
 
     let volume_boundary: f64 = volume[n_psi_norm - 1];
     if !volume_boundary.is_finite() || volume_boundary <= 0.0 {
-        time_slice.profiles_1d.rho_volume_norm = Some(rho_volume_norm);
+        time_slice.profiles_1d.rho_volume_norm = rho_volume_norm;
         return;
     }
 
@@ -42,7 +42,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         }
     }
 
-    time_slice.profiles_1d.rho_volume_norm = Some(rho_volume_norm);
+    time_slice.profiles_1d.rho_volume_norm = rho_volume_norm;
 }
 
 #[cfg(test)]
@@ -56,11 +56,11 @@ mod tests {
     #[test]
     fn profile_is_the_normalised_square_root_of_volume() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.volume = Some(array![0.0, 0.25, 1.0, 4.0]);
+        time_slice.profiles_1d.volume = array![0.0, 0.25, 1.0, 4.0];
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        let rho_volume_norm: &Array1<f64> = time_slice.profiles_1d.rho_volume_norm.as_ref().unwrap();
+        let rho_volume_norm: &Array1<f64> = &time_slice.profiles_1d.rho_volume_norm;
         assert_abs_diff_eq!(rho_volume_norm[0], 0.0, epsilon = 1e-15);
         assert_abs_diff_eq!(rho_volume_norm[1], 0.25, epsilon = 1e-15);
         assert_abs_diff_eq!(rho_volume_norm[2], 0.5, epsilon = 1e-15);
@@ -70,11 +70,11 @@ mod tests {
     #[test]
     fn invalid_volumes_remain_nan() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.volume = Some(array![0.0, f64::NAN, -1.0, 4.0]);
+        time_slice.profiles_1d.volume = array![0.0, f64::NAN, -1.0, 4.0];
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        let rho_volume_norm: &Array1<f64> = time_slice.profiles_1d.rho_volume_norm.as_ref().unwrap();
+        let rho_volume_norm: &Array1<f64> = &time_slice.profiles_1d.rho_volume_norm;
         assert_abs_diff_eq!(rho_volume_norm[0], 0.0, epsilon = 1e-15);
         assert!(rho_volume_norm[1].is_nan());
         assert!(rho_volume_norm[2].is_nan());
@@ -84,10 +84,10 @@ mod tests {
     #[test]
     fn invalid_boundary_volume_makes_the_whole_profile_nan() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.volume = Some(array![0.0, 0.25, f64::NAN]);
+        time_slice.profiles_1d.volume = array![0.0, 0.25, f64::NAN];
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        assert!(time_slice.profiles_1d.rho_volume_norm.as_ref().unwrap().iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.rho_volume_norm.iter().all(|value| value.is_nan()));
     }
 }

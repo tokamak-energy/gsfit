@@ -13,7 +13,7 @@ use ndarray::{Array1, Array2};
 /// `1 / b_p`-weighted flux-surface average.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
-    let j_parallel_2d: &Array2<f64> = time_slice.profiles_2d[0].j_parallel.as_ref().unwrap();
+    let j_parallel_2d: &Array2<f64> = &time_slice.profiles_2d[0].j_parallel;
     let j_parallel: Array1<f64> = flux_surface_average::calculate(time_slice, flux_surfaces, j_parallel_2d, |_r_here| 1.0);
-    time_slice.profiles_1d.j_parallel = Some(j_parallel);
+    time_slice.profiles_1d.j_parallel = j_parallel;
 }

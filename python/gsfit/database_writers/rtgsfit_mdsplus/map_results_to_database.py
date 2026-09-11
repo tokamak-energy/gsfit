@@ -89,7 +89,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     g_grid_coil = np.zeros((n_z, n_r, n_psu))
     # The Green's tables are an array of structures, so the coil name is looked up once to give an
     # index to read by
-    pf_active_names: list[str | None] = list(equilibrium_ids.get(ep.greens.pf_active[:].name))  # type: ignore[arg-type]
+    pf_active_names: list[str] = list(equilibrium_ids.get(ep.greens.pf_active[:].name))
     psu_names = []
     for i_psu, power_supply in enumerate(rtgsfit_psus):
         psu_names.append(power_supply["power_supply_name"])

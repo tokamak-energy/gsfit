@@ -70,7 +70,7 @@ pub fn equilibrium_post_processor(
 ) {
     println!("equilibrium_post_processor: starting");
 
-    equilibrium_ids.code.name = Some("gsfit".to_string());
+    equilibrium_ids.code.name = "gsfit".to_string();
 
     let n_time: usize = equilibrium_ids.time_slice.len();
     if n_time == 0 {
@@ -79,9 +79,9 @@ pub fn equilibrium_post_processor(
     }
 
     // Vacuum toroidal field reference radius
-    let r0: f64 = equilibrium_ids.vacuum_toroidal_field.r0.unwrap();
+    let r0: f64 = equilibrium_ids.vacuum_toroidal_field.r0;
     // Vacuum toroidal field at reference radius
-    let b0: &Array1<f64> = equilibrium_ids.vacuum_toroidal_field.b0.as_ref().unwrap();
+    let b0: &Array1<f64> = &equilibrium_ids.vacuum_toroidal_field.b0;
 
     // The calculator table: one row per calculator, in whatever order reads best. The order they
     // run in comes from the `dependencies` column, via `dependency_sorter::sort` below
@@ -178,9 +178,9 @@ pub fn equilibrium_post_processor(
         // Dispatching is all this loop does: `calculators_sorted` is already in dependency order,
         // so running them in that order is enough
         // println!("i_time = {:#?}", i_time);
-        // println!("time = {:#?}", time_slice.time.unwrap());
+        // println!("time = {:#?}", time_slice.time);
         for calculator in &calculators_sorted {
-            let convergence_flag: i32 = time_slice.convergence.result.index.unwrap();
+            let convergence_flag: i32 = time_slice.convergence.result.index;
             if convergence_flag == 1 {
                 // Correctly converged
                 let calculator_function: CalculatorFunction = calculator.calculator_function;

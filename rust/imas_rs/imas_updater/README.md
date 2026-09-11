@@ -58,15 +58,20 @@ repository alone.
 ## Adding another IDS
 
 Add its name to `ids_names` at the bottom of `build_ids.py`, add a `pub mod` line to
-`../src/ids/mod.rs`, then regenerate. The schema directory must exist as
+`../src/ids/mod.rs`, add a `linguist-generated=true` line for the new
+`../src/ids/<ids_name>.rs` to the repository's top-level `.gitattributes`, then regenerate.
+The schema directory must exist as
 `IMAS-Data-Dictionary/schemas/<ids_name>/dd_<ids_name>.xsd`.
 
-To reach it from Python as well, add the name to `ids_names_with_python_paths` too, and in
-`../src/python/mod.rs` add: `mod <ids_name>_paths;`, a `pub use <ids_name>_paths::<IDS_NAME>_ROOT;`,
-a `Py<IdsName>` `#[pyclass]` wrapper modelled on `PyEquilibrium`, and two lines in `register`
-(`add_class` and `add("<ids_name>_paths", ...)`).
+To reach it from Python as well, add the name to `ids_names_with_python_paths` too, then wire
+the generated table in by hand, in two files:
 
-The IDSs currently generated are `equilibrium`, `pf_active`, `pf_passive`, `tf` and `wall`.
+* `../src/python/ids.rs`: a `Py<IdsName>` `#[pyclass]` wrapper modelled on `PyEquilibrium`.
+* `../src/python/mod.rs`: `mod <ids_name>_paths;`, `pub use <ids_name>_paths::<IDS_NAME>_ROOT;`,
+  the wrapper's name in the `pub use ids::{...}` line, and two lines in `register`
+  (`add_class` and `add("<ids_name>_paths", ...)`).
+
+The IDSs currently generated are `equilibrium`, `magnetics`, `pf_active`, `pf_passive`, `tf` and `wall`.
 
 ## Custom (non-IMAS) keys
 

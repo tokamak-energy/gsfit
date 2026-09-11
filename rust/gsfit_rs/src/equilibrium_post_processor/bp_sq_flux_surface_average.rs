@@ -53,12 +53,12 @@ fn calculate_bp_sq_fs_avg(time_slice: &EquilibriumTimeSlice, intermediate_values
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
     // A slice which did not converge has no flux surfaces to average over
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
         return f64::NAN;
     }
 
-    let psi_norm: &Array1<f64> = time_slice.profiles_1d.psi_norm.as_ref().unwrap();
+    let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
     let n_psi_norm: usize = psi_norm.len();
 
     // The last grid surface at or below the requested `psi_norm`
@@ -80,10 +80,10 @@ fn calculate_bp_sq_fs_avg(time_slice: &EquilibriumTimeSlice, intermediate_values
 
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let r: &Array1<f64> = time_slice.profiles_2d[0].grid.dim1.as_ref().unwrap();
-    let z: &Array1<f64> = time_slice.profiles_2d[0].grid.dim2.as_ref().unwrap();
-    let b_field_r_2d: &Array2<f64> = time_slice.profiles_2d[0].b_field_r.as_ref().unwrap();
-    let b_field_z_2d: &Array2<f64> = time_slice.profiles_2d[0].b_field_z.as_ref().unwrap();
+    let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
+    let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
+    let b_field_r_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_r;
+    let b_field_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_z;
 
     // Interpolator for b_p on the (R, Z) grid
     let bp_2d: Array2<f64> = (b_field_r_2d.mapv(|x| x.powi(2)) + b_field_z_2d.mapv(|x| x.powi(2))).mapv(f64::sqrt);

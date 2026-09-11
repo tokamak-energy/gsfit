@@ -9,55 +9,70 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, FLT_0D, FLT_1D, INT_0D, INT_1D, INT_2D, STR_0D, StringAccumulator};
+use crate::dd_base_types::{Accumulator, EMPTY_INT, FLT_0D, FLT_1D, INT_0D, INT_1D, INT_2D, STR_0D, StringAccumulator};
 
 // ============================================================================
 // Complex Types
 // ============================================================================
 
 /// Rogowski coil
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct MagneticsRogowski {
     /// Short string identifier (unique for a given device)
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Description, e.g. “channel viewing the upper divertor”
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Quantity measured by the sensor
     pub measured_quantity: IdentifierStatic,
     /// List of (R,Z,phi) points defining the position of the coil guiding centre. Values defining a single segment must be entered in contiguous order
     pub position: Vec<Rphiz0dStatic>,
     /// Indices (from the rogowski_coil array of structure) of the partial Rogowskis used to build the coumpound signal (sum of the partial Rogowski signals). Can be set to any unique integer value for each section of a compound Rogowski coil. Use only if ../measure_quantity/index = 5, leave empty otherwise
-    pub indices_compound: Option<INT_1D>,
+    pub indices_compound: INT_1D,
     /// Effective area of the loop wrapped around the guiding centre. In case of multiple layers, sum of the areas of each layer
     /// Units: m^2
-    pub area: Option<FLT_0D>,
+    pub area: FLT_0D,
     /// Number of turns per unit length. In case of multiple layers, turns are counted for a single layer
     /// Units: m^-1
-    pub turns_per_metre: Option<FLT_0D>,
+    pub turns_per_metre: FLT_0D,
     /// Measured current inside the Rogowski coil contour. The normal direction to the Rogowski coil is defined by the order of points in the list of guiding centre positions. The current is positive when oriented in the same direction as the normal.
     /// Units: A
     pub current: SignalFlt1dValidity,
 }
 
+impl Default for MagneticsRogowski {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            description: String::new(),
+            measured_quantity: IdentifierStatic::default(),
+            position: Vec::new(),
+            indices_compound: Default::default(),
+            area: f64::NAN,
+            turns_per_metre: f64::NAN,
+            current: SignalFlt1dValidity::default(),
+        }
+    }
+}
+
 /// Flux loops
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct MagneticsFluxLoop {
     /// Short string identifier (unique for a given device)
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Description, e.g. “channel viewing the upper divertor”
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Flux loop type
     pub r#type: IdentifierStatic,
     /// List of (R,phi,Z) points defining the outline of the flux loop. Leave empty if ../type/index = 6 (differential loop)
     pub position: Vec<Rphiz0dStatic>,
     /// Indices (from the flux_loop array of structures) of the two loops used to build a differential measurement: loop(second index) - loop(first index). Use only if ../type/index = 6, leave empty otherwise.
-    pub indices_differential: Option<INT_1D>,
+    pub indices_differential: INT_1D,
     /// Effective area (ratio between flux and average magnetic field over the loop). Leave empty if ../type/index = 6 (differential loop)
     /// Units: m^2
-    pub area: Option<FLT_0D>,
+    pub area: FLT_0D,
     /// Integral of 1/R over the loop area (ratio between flux and magnetic rigidity R0.B0). Use only if ../type/index = 3 to 5, leave empty otherwise.
     /// Units: m
-    pub gm9: Option<FLT_0D>,
+    pub gm9: FLT_0D,
     /// Measured magnetic flux through loop with normal to enclosed surface determined by order of points
     /// Units: Wb
     pub flux: SignalFlt1dValidity,
@@ -66,47 +81,63 @@ pub struct MagneticsFluxLoop {
     pub voltage: SignalFlt1dValidity,
 }
 
+impl Default for MagneticsFluxLoop {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            description: String::new(),
+            r#type: IdentifierStatic::default(),
+            position: Vec::new(),
+            indices_differential: Default::default(),
+            area: f64::NAN,
+            gm9: f64::NAN,
+            flux: SignalFlt1dValidity::default(),
+            voltage: SignalFlt1dValidity::default(),
+        }
+    }
+}
+
 /// Non-linear response of the probe
 #[derive(Debug, Clone, Default)]
 pub struct MagneticsBpolProbeNonLinear {
     /// Array of magnetic field values (corresponding to the assumption of a linear relation between magnetic field and probe coil current), for each of which the probe non-linear response is given in ../b_field_non_linear
     /// Units: T
-    pub b_field_linear: Option<FLT_1D>,
+    pub b_field_linear: FLT_1D,
     /// Magnetic field value taking into account the non-linear response of the probe
     /// Units: T
-    pub b_field_non_linear: Option<FLT_1D>,
+    pub b_field_non_linear: FLT_1D,
 }
 
 /// Poloidal field probes
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct MagneticsBpolProbe {
     /// Short string identifier (unique for a given device)
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Description, e.g. “channel viewing the upper divertor”
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Probe type
     pub r#type: IdentifierStatic,
     /// R, Z, Phi position of the coil centre
     pub position: Rphiz0dStatic,
     /// Angle of the sensor normal vector (vector parallel to the the axis of the coil, n on the diagram) with respect to horizontal plane (clockwise theta-like angle). Zero if sensor normal vector fully in the horizontal plane and oriented towards increasing major radius. Values in [0 , 2Pi]
     /// Units: rad
-    pub poloidal_angle: Option<FLT_0D>,
+    pub poloidal_angle: FLT_0D,
     /// Angle of the projection of the sensor normal vector (n) in the horizontal plane with the increasing R direction (i.e. grad(R)) (angle is counter-clockwise from above). Values should be taken modulo pi with values within (-pi/2,pi/2]. Zero if projected sensor normal is parallel to grad(R), pi/2 if it is parallel to grad(phi).
     /// Units: rad
-    pub toroidal_angle: Option<FLT_0D>,
+    pub toroidal_angle: FLT_0D,
     /// Indices (from the b_field_pol_probe array of structure) of the two probes used to build the field difference field(second index) - field(first index). Use only if ../type/index = 6, leave empty otherwise
-    pub indices_differential: Option<INT_1D>,
+    pub indices_differential: INT_1D,
     /// 3dB bandwith (first index : lower frequency bound, second index : upper frequency bound)
     /// Units: Hz
-    pub bandwidth_3db: Option<FLT_1D>,
+    pub bandwidth_3db: FLT_1D,
     /// Area of each turn of the sensor; becomes effective area when multiplied by the turns
     /// Units: m^2
-    pub area: Option<FLT_0D>,
+    pub area: FLT_0D,
     /// Length of the sensor along it's normal vector (n)
     /// Units: m
-    pub length: Option<FLT_0D>,
+    pub length: FLT_0D,
     /// Turns in the coil, including sign
-    pub turns: Option<INT_0D>,
+    pub turns: INT_0D,
     /// Magnetic field component in direction of sensor normal axis (n) averaged over sensor volume defined by area and length, where n = cos(poloidal_angle)*cos(toroidal_angle)*grad(R) - sin(poloidal_angle)*grad(Z) + cos(poloidal_angle)*sin(toroidal_angle)*grad(Phi)/norm(grad(Phi))
     /// Units: T
     pub field: SignalFlt1dValidity,
@@ -117,11 +148,32 @@ pub struct MagneticsBpolProbe {
     pub non_linear_response: MagneticsBpolProbeNonLinear,
 }
 
+impl Default for MagneticsBpolProbe {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            description: String::new(),
+            r#type: IdentifierStatic::default(),
+            position: Rphiz0dStatic::default(),
+            poloidal_angle: f64::NAN,
+            toroidal_angle: f64::NAN,
+            indices_differential: Default::default(),
+            bandwidth_3db: Default::default(),
+            area: f64::NAN,
+            length: f64::NAN,
+            turns: EMPTY_INT,
+            field: SignalFlt1dValidity::default(),
+            voltage: SignalFlt1dValidity::default(),
+            non_linear_response: MagneticsBpolProbeNonLinear::default(),
+        }
+    }
+}
+
 /// Processed quantities derived from the magnetic measurements, using various methods
 #[derive(Debug, Clone, Default)]
 pub struct MagneticsMethod {
     /// Name of the data processing method
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Plasma current. Positive sign means counter-clockwise when viewed from above.
     /// Units: A
     pub ip: SignalFlt1d,
@@ -131,76 +183,122 @@ pub struct MagneticsMethod {
 #[derive(Debug, Clone, Default)]
 pub struct MagneticsMethodDistinct {
     /// Name of the calculation method
-    pub method_name: Option<STR_0D>,
+    pub method_name: STR_0D,
     /// Data
     /// Units: as_parent
-    pub data: Option<FLT_1D>,
+    pub data: FLT_1D,
     /// Time
     /// Units: s
-    pub time: Option<FLT_1D>,
+    pub time: FLT_1D,
 }
 
 /// Shunt for current measurement (often located in the divertor structure)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct MagneticsShunt {
     /// Short string identifier (unique for a given device)
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Description, e.g. “channel viewing the upper divertor”
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Position of shunt terminals
     pub position: LineOfSight2pointsRz,
     /// Shunt resistance
     /// Units: ohm
-    pub resistance: Option<FLT_0D>,
+    pub resistance: FLT_0D,
     /// Voltage on the shunt terminals (Vfirst_point-Vsecond_point)
     /// Units: V
     pub voltage: SignalFlt1dValidity,
     /// If the shunt is located on a given divertor, index of that divertor in the divertors IDS
-    pub divertor_index: Option<INT_0D>,
+    pub divertor_index: INT_0D,
     /// If the shunt is located on a divertor target, index of that target in the divertors IDS
-    pub target_index: Option<INT_0D>,
+    pub target_index: INT_0D,
     /// If the shunt is located on a divertor tile, index of that tile in the divertors IDS
-    pub tile_index: Option<INT_0D>,
+    pub tile_index: INT_0D,
+}
+
+impl Default for MagneticsShunt {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            description: String::new(),
+            position: LineOfSight2pointsRz::default(),
+            resistance: f64::NAN,
+            voltage: SignalFlt1dValidity::default(),
+            divertor_index: EMPTY_INT,
+            target_index: EMPTY_INT,
+            tile_index: EMPTY_INT,
+        }
+    }
 }
 
 /// Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct IdentifierStatic {
     /// Short string identifier
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
-    pub index: Option<INT_0D>,
+    pub index: INT_0D,
     /// Verbose description
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
+}
+
+impl Default for IdentifierStatic {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            index: EMPTY_INT,
+            description: String::new(),
+        }
+    }
 }
 
 /// Structure for R, Z, Phi positions (0D, static)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Rphiz0dStatic {
     /// Major radius
     /// Units: m
-    pub r: Option<FLT_0D>,
+    pub r: FLT_0D,
     /// Toroidal angle (oriented counter-clockwise when viewed from above)
     /// Units: rad
-    pub phi: Option<FLT_0D>,
+    pub phi: FLT_0D,
     /// Height
     /// Units: m
-    pub z: Option<FLT_0D>,
+    pub z: FLT_0D,
+}
+
+impl Default for Rphiz0dStatic {
+    fn default() -> Self {
+        Self {
+            r: f64::NAN,
+            phi: f64::NAN,
+            z: f64::NAN,
+        }
+    }
 }
 
 /// Signal (FLT_1D) with its time base and validity flags
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct SignalFlt1dValidity {
     /// Data
     /// Units: as_parent
-    pub data: Option<FLT_1D>,
+    pub data: FLT_1D,
     /// Indicator of the validity of the data for each time slice. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)
-    pub validity_timed: Option<INT_1D>,
+    pub validity_timed: INT_1D,
     /// Indicator of the validity of the data for the whole acquisition period. 0: valid from automated processing, 1: valid and certified by the diagnostic RO; - 1 means problem identified in the data processing (request verification by the diagnostic RO), -2: invalid data, should not be used (values lower than -2 have a code-specific meaning detailing the origin of their invalidity)
-    pub validity: Option<INT_0D>,
+    pub validity: INT_0D,
     /// Time
     /// Units: s
-    pub time: Option<FLT_1D>,
+    pub time: FLT_1D,
+}
+
+impl Default for SignalFlt1dValidity {
+    fn default() -> Self {
+        Self {
+            data: Default::default(),
+            validity_timed: Default::default(),
+            validity: EMPTY_INT,
+            time: Default::default(),
+        }
+    }
 }
 
 /// Signal (FLT_1D) with its time base
@@ -208,10 +306,10 @@ pub struct SignalFlt1dValidity {
 pub struct SignalFlt1d {
     /// Data
     /// Units: as_parent
-    pub data: Option<FLT_1D>,
+    pub data: FLT_1D,
     /// Time
     /// Units: s
-    pub time: Option<FLT_1D>,
+    pub time: FLT_1D,
 }
 
 /// Generic description of a line of sight, defined by two points, in R and Z only
@@ -227,49 +325,55 @@ pub struct LineOfSight2pointsRz {
 #[derive(Debug, Clone, Default)]
 pub struct Code {
     /// Name of software generating IDS
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Short description of the software (type, purpose)
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Unique commit reference of software
-    pub commit: Option<STR_0D>,
+    pub commit: STR_0D,
     /// Unique version (tag) of software
-    pub version: Option<STR_0D>,
+    pub version: STR_0D,
     /// URL of software repository
-    pub repository: Option<STR_0D>,
+    pub repository: STR_0D,
     /// List of the code specific parameters in XML format
-    pub parameters: Option<STR_0D>,
+    pub parameters: STR_0D,
     /// Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-    pub output_flag: Option<INT_1D>,
+    pub output_flag: INT_1D,
     /// List of external libraries used by the code that has produced this IDS
     pub library: Vec<Library>,
 }
 
 /// Structure for a single R, Z position (0D, static)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Rz0dStatic {
     /// Major radius
     /// Units: m
-    pub r: Option<FLT_0D>,
+    pub r: FLT_0D,
     /// Height
     /// Units: m
-    pub z: Option<FLT_0D>,
+    pub z: FLT_0D,
+}
+
+impl Default for Rz0dStatic {
+    fn default() -> Self {
+        Self { r: f64::NAN, z: f64::NAN }
+    }
 }
 
 /// Library used by the code that has produced this IDS
 #[derive(Debug, Clone, Default)]
 pub struct Library {
     /// Name of software
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Short description of the software (type, purpose)
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Unique commit reference of software
-    pub commit: Option<STR_0D>,
+    pub commit: STR_0D,
     /// Unique version (tag) of software
-    pub version: Option<STR_0D>,
+    pub version: STR_0D,
     /// URL of software repository
-    pub repository: Option<STR_0D>,
+    pub repository: STR_0D,
     /// List of the code specific parameters in XML format
-    pub parameters: Option<STR_0D>,
+    pub parameters: STR_0D,
 }
 
 // ============================================================================
@@ -277,14 +381,14 @@ pub struct Library {
 // ============================================================================
 
 /// Magnetic diagnostics for equilibrium identification and plasma shape control.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Magnetics {
     /// Flux loops; partial flux loops can be described. In case of differential loops, the geometry of differential flux loops is stored in the flux_loop indices of the primitive loops. Signals may be stored on the primitive loop indices but this is optional if the index of the primitive loop is referenced by a differential loop index
     pub flux_loop: Vec<MagneticsFluxLoop>,
     /// Poloidal field probes
     pub b_field_pol_probe: Vec<MagneticsBpolProbe>,
     /// Indices of equivalent poloidal field probes (from the b_field_pol_probe array) that differ only by their toroidal position and have the same (R,Z) position and the same coil orientation (poloidal and toroidal angles). Sets of equivalent probes (i.e. sets of (R, Z, poloidal_angle and toroidal_angle) values) are grouped by the first coordinate and the coils belonging to a given set are listed along the second coordinate. As an example, if there are N probes in a poloidal cross section that are replicated at the same poloidal positions and with the same orientation at 8 toroidal positions, the matrix will be of size Nx8.
-    pub b_field_pol_probe_equivalent: Option<INT_2D>,
+    pub b_field_pol_probe_equivalent: INT_2D,
     /// Toroidal field probes
     pub b_field_phi_probe: Vec<MagneticsBpolProbe>,
     /// Set of Rogowski coils. If some of the coils form a compound Rogowski sensor, they must be entered in contiguous order
@@ -299,8 +403,25 @@ pub struct Magnetics {
     pub diamagnetic_flux: Vec<MagneticsMethodDistinct>,
     /// Upper bound of the delay between physical information received by the detector and data available on the real-time (RT) network.
     /// Units: s
-    pub latency: Option<FLT_0D>,
+    pub latency: FLT_0D,
     pub code: Code,
+}
+
+impl Default for Magnetics {
+    fn default() -> Self {
+        Self {
+            flux_loop: Vec::new(),
+            b_field_pol_probe: Vec::new(),
+            b_field_pol_probe_equivalent: Default::default(),
+            b_field_phi_probe: Vec::new(),
+            rogowski_coil: Vec::new(),
+            shunt: Vec::new(),
+            ip: Vec::new(),
+            diamagnetic_flux: Vec::new(),
+            latency: f64::NAN,
+            code: Code::default(),
+        }
+    }
 }
 
 // ============================================================================
@@ -321,9 +442,9 @@ impl<'a> Rphiz0dStaticSliceView<'a> {
     pub fn new(data: &'a [Rphiz0dStatic]) -> Self {
         Self {
             data,
-            r: Accumulator::new(data, |item: &Rphiz0dStatic| item.r, "r"),
-            phi: Accumulator::new(data, |item: &Rphiz0dStatic| item.phi, "phi"),
-            z: Accumulator::new(data, |item: &Rphiz0dStatic| item.z, "z"),
+            r: Accumulator::new(data, |item: &Rphiz0dStatic| item.r),
+            phi: Accumulator::new(data, |item: &Rphiz0dStatic| item.phi),
+            z: Accumulator::new(data, |item: &Rphiz0dStatic| item.z),
         }
     }
 
@@ -340,40 +461,10 @@ impl<'a> Rphiz0dStaticSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple Rphiz0dStatic
-pub struct Rphiz0dStaticSliceViewMut<'a> {
-    data: &'a mut [Rphiz0dStatic],
-}
-
-impl<'a> Rphiz0dStaticSliceViewMut<'a> {
-    pub fn new(data: &'a mut [Rphiz0dStatic]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Rphiz0dStatic> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for Rphiz0dStatic - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for Rphiz0dStatic - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait Rphiz0dStaticIndex<'a> {
     type Output;
     fn get(self, data: &'a [Rphiz0dStatic]) -> Self::Output;
-}
-
-impl<'a> Rphiz0dStaticIndex<'a> for usize {
-    type Output = &'a Rphiz0dStatic;
-    fn get(self, data: &'a [Rphiz0dStatic]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> Rphiz0dStaticIndex<'a> for std::ops::Range<usize> {
@@ -418,61 +509,6 @@ impl<'a> Rphiz0dStaticIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for Rphiz0dStatic - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait Rphiz0dStaticMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [Rphiz0dStatic]) -> Self::Output;
-}
-
-impl<'a> Rphiz0dStaticMutIndex<'a> for usize {
-    type Output = &'a mut Rphiz0dStatic;
-    fn get_mut(self, data: &'a mut [Rphiz0dStatic]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> Rphiz0dStaticMutIndex<'a> for std::ops::Range<usize> {
-    type Output = Rphiz0dStaticSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Rphiz0dStatic]) -> Self::Output {
-        Rphiz0dStaticSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> Rphiz0dStaticMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = Rphiz0dStaticSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Rphiz0dStatic]) -> Self::Output {
-        Rphiz0dStaticSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> Rphiz0dStaticMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = Rphiz0dStaticSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Rphiz0dStatic]) -> Self::Output {
-        Rphiz0dStaticSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> Rphiz0dStaticMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = Rphiz0dStaticSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Rphiz0dStatic]) -> Self::Output {
-        Rphiz0dStaticSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> Rphiz0dStaticMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = Rphiz0dStaticSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Rphiz0dStatic]) -> Self::Output {
-        Rphiz0dStaticSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> Rphiz0dStaticMutIndex<'a> for std::ops::RangeFull {
-    type Output = Rphiz0dStaticSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Rphiz0dStatic]) -> Self::Output {
-        Rphiz0dStaticSliceViewMut::new(data)
-    }
-}
-
 // --- Library View Types ---
 
 /// View over multiple Library with field accumulation
@@ -490,12 +526,12 @@ impl<'a> LibrarySliceView<'a> {
     pub fn new(data: &'a [Library]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &Library| item.name.clone(), "name"),
-            description: StringAccumulator::new(data, |item: &Library| item.description.clone(), "description"),
-            commit: StringAccumulator::new(data, |item: &Library| item.commit.clone(), "commit"),
-            version: StringAccumulator::new(data, |item: &Library| item.version.clone(), "version"),
-            repository: StringAccumulator::new(data, |item: &Library| item.repository.clone(), "repository"),
-            parameters: StringAccumulator::new(data, |item: &Library| item.parameters.clone(), "parameters"),
+            name: StringAccumulator::new(data, |item: &Library| item.name.clone()),
+            description: StringAccumulator::new(data, |item: &Library| item.description.clone()),
+            commit: StringAccumulator::new(data, |item: &Library| item.commit.clone()),
+            version: StringAccumulator::new(data, |item: &Library| item.version.clone()),
+            repository: StringAccumulator::new(data, |item: &Library| item.repository.clone()),
+            parameters: StringAccumulator::new(data, |item: &Library| item.parameters.clone()),
         }
     }
 
@@ -512,40 +548,10 @@ impl<'a> LibrarySliceView<'a> {
     }
 }
 
-/// Mutable view over multiple Library
-pub struct LibrarySliceViewMut<'a> {
-    data: &'a mut [Library],
-}
-
-impl<'a> LibrarySliceViewMut<'a> {
-    pub fn new(data: &'a mut [Library]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Library> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for Library - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for Library - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait LibraryIndex<'a> {
     type Output;
     fn get(self, data: &'a [Library]) -> Self::Output;
-}
-
-impl<'a> LibraryIndex<'a> for usize {
-    type Output = &'a Library;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> LibraryIndex<'a> for std::ops::Range<usize> {
@@ -590,61 +596,6 @@ impl<'a> LibraryIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for Library - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait LibraryMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output;
-}
-
-impl<'a> LibraryMutIndex<'a> for usize {
-    type Output = &'a mut Library;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::Range<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeFull {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(data)
-    }
-}
-
 // --- MagneticsFluxLoop View Types ---
 
 /// View over `type` (IdentifierStatic) across multiple MagneticsFluxLoop
@@ -657,9 +608,9 @@ pub struct MagneticsFluxLoopTypeView<'a> {
 impl<'a> MagneticsFluxLoopTypeView<'a> {
     pub fn new(data: &'a [MagneticsFluxLoop]) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &MagneticsFluxLoop| item.r#type.name.clone(), "type.name"),
-            index: Accumulator::new(data, |item: &MagneticsFluxLoop| item.r#type.index, "type.index"),
-            description: StringAccumulator::new(data, |item: &MagneticsFluxLoop| item.r#type.description.clone(), "type.description"),
+            name: StringAccumulator::new(data, |item: &MagneticsFluxLoop| item.r#type.name.clone()),
+            index: Accumulator::new(data, |item: &MagneticsFluxLoop| item.r#type.index),
+            description: StringAccumulator::new(data, |item: &MagneticsFluxLoop| item.r#type.description.clone()),
         }
     }
 }
@@ -672,7 +623,7 @@ pub struct MagneticsFluxLoopFluxView<'a> {
 impl<'a> MagneticsFluxLoopFluxView<'a> {
     pub fn new(data: &'a [MagneticsFluxLoop]) -> Self {
         Self {
-            validity: Accumulator::new(data, |item: &MagneticsFluxLoop| item.flux.validity, "flux.validity"),
+            validity: Accumulator::new(data, |item: &MagneticsFluxLoop| item.flux.validity),
         }
     }
 }
@@ -685,7 +636,7 @@ pub struct MagneticsFluxLoopVoltageView<'a> {
 impl<'a> MagneticsFluxLoopVoltageView<'a> {
     pub fn new(data: &'a [MagneticsFluxLoop]) -> Self {
         Self {
-            validity: Accumulator::new(data, |item: &MagneticsFluxLoop| item.voltage.validity, "voltage.validity"),
+            validity: Accumulator::new(data, |item: &MagneticsFluxLoop| item.voltage.validity),
         }
     }
 }
@@ -706,11 +657,11 @@ impl<'a> MagneticsFluxLoopSliceView<'a> {
     pub fn new(data: &'a [MagneticsFluxLoop]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &MagneticsFluxLoop| item.name.clone(), "name"),
-            description: StringAccumulator::new(data, |item: &MagneticsFluxLoop| item.description.clone(), "description"),
+            name: StringAccumulator::new(data, |item: &MagneticsFluxLoop| item.name.clone()),
+            description: StringAccumulator::new(data, |item: &MagneticsFluxLoop| item.description.clone()),
             r#type: MagneticsFluxLoopTypeView::new(data),
-            area: Accumulator::new(data, |item: &MagneticsFluxLoop| item.area, "area"),
-            gm9: Accumulator::new(data, |item: &MagneticsFluxLoop| item.gm9, "gm9"),
+            area: Accumulator::new(data, |item: &MagneticsFluxLoop| item.area),
+            gm9: Accumulator::new(data, |item: &MagneticsFluxLoop| item.gm9),
             flux: MagneticsFluxLoopFluxView::new(data),
             voltage: MagneticsFluxLoopVoltageView::new(data),
         }
@@ -729,40 +680,10 @@ impl<'a> MagneticsFluxLoopSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple MagneticsFluxLoop
-pub struct MagneticsFluxLoopSliceViewMut<'a> {
-    data: &'a mut [MagneticsFluxLoop],
-}
-
-impl<'a> MagneticsFluxLoopSliceViewMut<'a> {
-    pub fn new(data: &'a mut [MagneticsFluxLoop]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut MagneticsFluxLoop> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for MagneticsFluxLoop - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for MagneticsFluxLoop - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait MagneticsFluxLoopIndex<'a> {
     type Output;
     fn get(self, data: &'a [MagneticsFluxLoop]) -> Self::Output;
-}
-
-impl<'a> MagneticsFluxLoopIndex<'a> for usize {
-    type Output = &'a MagneticsFluxLoop;
-    fn get(self, data: &'a [MagneticsFluxLoop]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> MagneticsFluxLoopIndex<'a> for std::ops::Range<usize> {
@@ -807,61 +728,6 @@ impl<'a> MagneticsFluxLoopIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for MagneticsFluxLoop - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait MagneticsFluxLoopMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [MagneticsFluxLoop]) -> Self::Output;
-}
-
-impl<'a> MagneticsFluxLoopMutIndex<'a> for usize {
-    type Output = &'a mut MagneticsFluxLoop;
-    fn get_mut(self, data: &'a mut [MagneticsFluxLoop]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> MagneticsFluxLoopMutIndex<'a> for std::ops::Range<usize> {
-    type Output = MagneticsFluxLoopSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsFluxLoop]) -> Self::Output {
-        MagneticsFluxLoopSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsFluxLoopMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = MagneticsFluxLoopSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsFluxLoop]) -> Self::Output {
-        MagneticsFluxLoopSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsFluxLoopMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = MagneticsFluxLoopSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsFluxLoop]) -> Self::Output {
-        MagneticsFluxLoopSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsFluxLoopMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = MagneticsFluxLoopSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsFluxLoop]) -> Self::Output {
-        MagneticsFluxLoopSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsFluxLoopMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = MagneticsFluxLoopSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsFluxLoop]) -> Self::Output {
-        MagneticsFluxLoopSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsFluxLoopMutIndex<'a> for std::ops::RangeFull {
-    type Output = MagneticsFluxLoopSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsFluxLoop]) -> Self::Output {
-        MagneticsFluxLoopSliceViewMut::new(data)
-    }
-}
-
 // --- MagneticsBpolProbe View Types ---
 
 /// View over `type` (IdentifierStatic) across multiple MagneticsBpolProbe
@@ -874,9 +740,9 @@ pub struct MagneticsBpolProbeTypeView<'a> {
 impl<'a> MagneticsBpolProbeTypeView<'a> {
     pub fn new(data: &'a [MagneticsBpolProbe]) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &MagneticsBpolProbe| item.r#type.name.clone(), "type.name"),
-            index: Accumulator::new(data, |item: &MagneticsBpolProbe| item.r#type.index, "type.index"),
-            description: StringAccumulator::new(data, |item: &MagneticsBpolProbe| item.r#type.description.clone(), "type.description"),
+            name: StringAccumulator::new(data, |item: &MagneticsBpolProbe| item.r#type.name.clone()),
+            index: Accumulator::new(data, |item: &MagneticsBpolProbe| item.r#type.index),
+            description: StringAccumulator::new(data, |item: &MagneticsBpolProbe| item.r#type.description.clone()),
         }
     }
 }
@@ -891,9 +757,9 @@ pub struct MagneticsBpolProbePositionView<'a> {
 impl<'a> MagneticsBpolProbePositionView<'a> {
     pub fn new(data: &'a [MagneticsBpolProbe]) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &MagneticsBpolProbe| item.position.r, "position.r"),
-            phi: Accumulator::new(data, |item: &MagneticsBpolProbe| item.position.phi, "position.phi"),
-            z: Accumulator::new(data, |item: &MagneticsBpolProbe| item.position.z, "position.z"),
+            r: Accumulator::new(data, |item: &MagneticsBpolProbe| item.position.r),
+            phi: Accumulator::new(data, |item: &MagneticsBpolProbe| item.position.phi),
+            z: Accumulator::new(data, |item: &MagneticsBpolProbe| item.position.z),
         }
     }
 }
@@ -906,7 +772,7 @@ pub struct MagneticsBpolProbeFieldView<'a> {
 impl<'a> MagneticsBpolProbeFieldView<'a> {
     pub fn new(data: &'a [MagneticsBpolProbe]) -> Self {
         Self {
-            validity: Accumulator::new(data, |item: &MagneticsBpolProbe| item.field.validity, "field.validity"),
+            validity: Accumulator::new(data, |item: &MagneticsBpolProbe| item.field.validity),
         }
     }
 }
@@ -919,7 +785,7 @@ pub struct MagneticsBpolProbeVoltageView<'a> {
 impl<'a> MagneticsBpolProbeVoltageView<'a> {
     pub fn new(data: &'a [MagneticsBpolProbe]) -> Self {
         Self {
-            validity: Accumulator::new(data, |item: &MagneticsBpolProbe| item.voltage.validity, "voltage.validity"),
+            validity: Accumulator::new(data, |item: &MagneticsBpolProbe| item.voltage.validity),
         }
     }
 }
@@ -958,15 +824,15 @@ impl<'a> MagneticsBpolProbeSliceView<'a> {
     pub fn new(data: &'a [MagneticsBpolProbe]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &MagneticsBpolProbe| item.name.clone(), "name"),
-            description: StringAccumulator::new(data, |item: &MagneticsBpolProbe| item.description.clone(), "description"),
+            name: StringAccumulator::new(data, |item: &MagneticsBpolProbe| item.name.clone()),
+            description: StringAccumulator::new(data, |item: &MagneticsBpolProbe| item.description.clone()),
             r#type: MagneticsBpolProbeTypeView::new(data),
             position: MagneticsBpolProbePositionView::new(data),
-            poloidal_angle: Accumulator::new(data, |item: &MagneticsBpolProbe| item.poloidal_angle, "poloidal_angle"),
-            toroidal_angle: Accumulator::new(data, |item: &MagneticsBpolProbe| item.toroidal_angle, "toroidal_angle"),
-            area: Accumulator::new(data, |item: &MagneticsBpolProbe| item.area, "area"),
-            length: Accumulator::new(data, |item: &MagneticsBpolProbe| item.length, "length"),
-            turns: Accumulator::new(data, |item: &MagneticsBpolProbe| item.turns, "turns"),
+            poloidal_angle: Accumulator::new(data, |item: &MagneticsBpolProbe| item.poloidal_angle),
+            toroidal_angle: Accumulator::new(data, |item: &MagneticsBpolProbe| item.toroidal_angle),
+            area: Accumulator::new(data, |item: &MagneticsBpolProbe| item.area),
+            length: Accumulator::new(data, |item: &MagneticsBpolProbe| item.length),
+            turns: Accumulator::new(data, |item: &MagneticsBpolProbe| item.turns),
             field: MagneticsBpolProbeFieldView::new(data),
             voltage: MagneticsBpolProbeVoltageView::new(data),
             non_linear_response: MagneticsBpolProbeNonLinearResponseView::new(data),
@@ -986,40 +852,10 @@ impl<'a> MagneticsBpolProbeSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple MagneticsBpolProbe
-pub struct MagneticsBpolProbeSliceViewMut<'a> {
-    data: &'a mut [MagneticsBpolProbe],
-}
-
-impl<'a> MagneticsBpolProbeSliceViewMut<'a> {
-    pub fn new(data: &'a mut [MagneticsBpolProbe]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut MagneticsBpolProbe> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for MagneticsBpolProbe - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for MagneticsBpolProbe - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait MagneticsBpolProbeIndex<'a> {
     type Output;
     fn get(self, data: &'a [MagneticsBpolProbe]) -> Self::Output;
-}
-
-impl<'a> MagneticsBpolProbeIndex<'a> for usize {
-    type Output = &'a MagneticsBpolProbe;
-    fn get(self, data: &'a [MagneticsBpolProbe]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> MagneticsBpolProbeIndex<'a> for std::ops::Range<usize> {
@@ -1064,61 +900,6 @@ impl<'a> MagneticsBpolProbeIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for MagneticsBpolProbe - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait MagneticsBpolProbeMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [MagneticsBpolProbe]) -> Self::Output;
-}
-
-impl<'a> MagneticsBpolProbeMutIndex<'a> for usize {
-    type Output = &'a mut MagneticsBpolProbe;
-    fn get_mut(self, data: &'a mut [MagneticsBpolProbe]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> MagneticsBpolProbeMutIndex<'a> for std::ops::Range<usize> {
-    type Output = MagneticsBpolProbeSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsBpolProbe]) -> Self::Output {
-        MagneticsBpolProbeSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsBpolProbeMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = MagneticsBpolProbeSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsBpolProbe]) -> Self::Output {
-        MagneticsBpolProbeSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsBpolProbeMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = MagneticsBpolProbeSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsBpolProbe]) -> Self::Output {
-        MagneticsBpolProbeSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsBpolProbeMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = MagneticsBpolProbeSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsBpolProbe]) -> Self::Output {
-        MagneticsBpolProbeSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsBpolProbeMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = MagneticsBpolProbeSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsBpolProbe]) -> Self::Output {
-        MagneticsBpolProbeSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsBpolProbeMutIndex<'a> for std::ops::RangeFull {
-    type Output = MagneticsBpolProbeSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsBpolProbe]) -> Self::Output {
-        MagneticsBpolProbeSliceViewMut::new(data)
-    }
-}
-
 // --- MagneticsRogowski View Types ---
 
 /// View over `measured_quantity` (IdentifierStatic) across multiple MagneticsRogowski
@@ -1131,13 +912,9 @@ pub struct MagneticsRogowskiMeasuredQuantityView<'a> {
 impl<'a> MagneticsRogowskiMeasuredQuantityView<'a> {
     pub fn new(data: &'a [MagneticsRogowski]) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &MagneticsRogowski| item.measured_quantity.name.clone(), "measured_quantity.name"),
-            index: Accumulator::new(data, |item: &MagneticsRogowski| item.measured_quantity.index, "measured_quantity.index"),
-            description: StringAccumulator::new(
-                data,
-                |item: &MagneticsRogowski| item.measured_quantity.description.clone(),
-                "measured_quantity.description",
-            ),
+            name: StringAccumulator::new(data, |item: &MagneticsRogowski| item.measured_quantity.name.clone()),
+            index: Accumulator::new(data, |item: &MagneticsRogowski| item.measured_quantity.index),
+            description: StringAccumulator::new(data, |item: &MagneticsRogowski| item.measured_quantity.description.clone()),
         }
     }
 }
@@ -1150,7 +927,7 @@ pub struct MagneticsRogowskiCurrentView<'a> {
 impl<'a> MagneticsRogowskiCurrentView<'a> {
     pub fn new(data: &'a [MagneticsRogowski]) -> Self {
         Self {
-            validity: Accumulator::new(data, |item: &MagneticsRogowski| item.current.validity, "current.validity"),
+            validity: Accumulator::new(data, |item: &MagneticsRogowski| item.current.validity),
         }
     }
 }
@@ -1170,11 +947,11 @@ impl<'a> MagneticsRogowskiSliceView<'a> {
     pub fn new(data: &'a [MagneticsRogowski]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &MagneticsRogowski| item.name.clone(), "name"),
-            description: StringAccumulator::new(data, |item: &MagneticsRogowski| item.description.clone(), "description"),
+            name: StringAccumulator::new(data, |item: &MagneticsRogowski| item.name.clone()),
+            description: StringAccumulator::new(data, |item: &MagneticsRogowski| item.description.clone()),
             measured_quantity: MagneticsRogowskiMeasuredQuantityView::new(data),
-            area: Accumulator::new(data, |item: &MagneticsRogowski| item.area, "area"),
-            turns_per_metre: Accumulator::new(data, |item: &MagneticsRogowski| item.turns_per_metre, "turns_per_metre"),
+            area: Accumulator::new(data, |item: &MagneticsRogowski| item.area),
+            turns_per_metre: Accumulator::new(data, |item: &MagneticsRogowski| item.turns_per_metre),
             current: MagneticsRogowskiCurrentView::new(data),
         }
     }
@@ -1192,40 +969,10 @@ impl<'a> MagneticsRogowskiSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple MagneticsRogowski
-pub struct MagneticsRogowskiSliceViewMut<'a> {
-    data: &'a mut [MagneticsRogowski],
-}
-
-impl<'a> MagneticsRogowskiSliceViewMut<'a> {
-    pub fn new(data: &'a mut [MagneticsRogowski]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut MagneticsRogowski> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for MagneticsRogowski - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for MagneticsRogowski - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait MagneticsRogowskiIndex<'a> {
     type Output;
     fn get(self, data: &'a [MagneticsRogowski]) -> Self::Output;
-}
-
-impl<'a> MagneticsRogowskiIndex<'a> for usize {
-    type Output = &'a MagneticsRogowski;
-    fn get(self, data: &'a [MagneticsRogowski]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> MagneticsRogowskiIndex<'a> for std::ops::Range<usize> {
@@ -1270,61 +1017,6 @@ impl<'a> MagneticsRogowskiIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for MagneticsRogowski - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait MagneticsRogowskiMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [MagneticsRogowski]) -> Self::Output;
-}
-
-impl<'a> MagneticsRogowskiMutIndex<'a> for usize {
-    type Output = &'a mut MagneticsRogowski;
-    fn get_mut(self, data: &'a mut [MagneticsRogowski]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> MagneticsRogowskiMutIndex<'a> for std::ops::Range<usize> {
-    type Output = MagneticsRogowskiSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsRogowski]) -> Self::Output {
-        MagneticsRogowskiSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsRogowskiMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = MagneticsRogowskiSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsRogowski]) -> Self::Output {
-        MagneticsRogowskiSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsRogowskiMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = MagneticsRogowskiSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsRogowski]) -> Self::Output {
-        MagneticsRogowskiSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsRogowskiMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = MagneticsRogowskiSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsRogowski]) -> Self::Output {
-        MagneticsRogowskiSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsRogowskiMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = MagneticsRogowskiSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsRogowski]) -> Self::Output {
-        MagneticsRogowskiSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsRogowskiMutIndex<'a> for std::ops::RangeFull {
-    type Output = MagneticsRogowskiSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsRogowski]) -> Self::Output {
-        MagneticsRogowskiSliceViewMut::new(data)
-    }
-}
-
 // --- MagneticsShunt View Types ---
 
 /// View over `position.first_point` (Rz0dStatic) across multiple MagneticsShunt
@@ -1336,8 +1028,8 @@ pub struct MagneticsShuntPositionFirstPointView<'a> {
 impl<'a> MagneticsShuntPositionFirstPointView<'a> {
     pub fn new(data: &'a [MagneticsShunt]) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &MagneticsShunt| item.position.first_point.r, "position.first_point.r"),
-            z: Accumulator::new(data, |item: &MagneticsShunt| item.position.first_point.z, "position.first_point.z"),
+            r: Accumulator::new(data, |item: &MagneticsShunt| item.position.first_point.r),
+            z: Accumulator::new(data, |item: &MagneticsShunt| item.position.first_point.z),
         }
     }
 }
@@ -1351,8 +1043,8 @@ pub struct MagneticsShuntPositionSecondPointView<'a> {
 impl<'a> MagneticsShuntPositionSecondPointView<'a> {
     pub fn new(data: &'a [MagneticsShunt]) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &MagneticsShunt| item.position.second_point.r, "position.second_point.r"),
-            z: Accumulator::new(data, |item: &MagneticsShunt| item.position.second_point.z, "position.second_point.z"),
+            r: Accumulator::new(data, |item: &MagneticsShunt| item.position.second_point.r),
+            z: Accumulator::new(data, |item: &MagneticsShunt| item.position.second_point.z),
         }
     }
 }
@@ -1380,7 +1072,7 @@ pub struct MagneticsShuntVoltageView<'a> {
 impl<'a> MagneticsShuntVoltageView<'a> {
     pub fn new(data: &'a [MagneticsShunt]) -> Self {
         Self {
-            validity: Accumulator::new(data, |item: &MagneticsShunt| item.voltage.validity, "voltage.validity"),
+            validity: Accumulator::new(data, |item: &MagneticsShunt| item.voltage.validity),
         }
     }
 }
@@ -1402,14 +1094,14 @@ impl<'a> MagneticsShuntSliceView<'a> {
     pub fn new(data: &'a [MagneticsShunt]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &MagneticsShunt| item.name.clone(), "name"),
-            description: StringAccumulator::new(data, |item: &MagneticsShunt| item.description.clone(), "description"),
+            name: StringAccumulator::new(data, |item: &MagneticsShunt| item.name.clone()),
+            description: StringAccumulator::new(data, |item: &MagneticsShunt| item.description.clone()),
             position: MagneticsShuntPositionView::new(data),
-            resistance: Accumulator::new(data, |item: &MagneticsShunt| item.resistance, "resistance"),
+            resistance: Accumulator::new(data, |item: &MagneticsShunt| item.resistance),
             voltage: MagneticsShuntVoltageView::new(data),
-            divertor_index: Accumulator::new(data, |item: &MagneticsShunt| item.divertor_index, "divertor_index"),
-            target_index: Accumulator::new(data, |item: &MagneticsShunt| item.target_index, "target_index"),
-            tile_index: Accumulator::new(data, |item: &MagneticsShunt| item.tile_index, "tile_index"),
+            divertor_index: Accumulator::new(data, |item: &MagneticsShunt| item.divertor_index),
+            target_index: Accumulator::new(data, |item: &MagneticsShunt| item.target_index),
+            tile_index: Accumulator::new(data, |item: &MagneticsShunt| item.tile_index),
         }
     }
 
@@ -1426,40 +1118,10 @@ impl<'a> MagneticsShuntSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple MagneticsShunt
-pub struct MagneticsShuntSliceViewMut<'a> {
-    data: &'a mut [MagneticsShunt],
-}
-
-impl<'a> MagneticsShuntSliceViewMut<'a> {
-    pub fn new(data: &'a mut [MagneticsShunt]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut MagneticsShunt> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for MagneticsShunt - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for MagneticsShunt - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait MagneticsShuntIndex<'a> {
     type Output;
     fn get(self, data: &'a [MagneticsShunt]) -> Self::Output;
-}
-
-impl<'a> MagneticsShuntIndex<'a> for usize {
-    type Output = &'a MagneticsShunt;
-    fn get(self, data: &'a [MagneticsShunt]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> MagneticsShuntIndex<'a> for std::ops::Range<usize> {
@@ -1504,61 +1166,6 @@ impl<'a> MagneticsShuntIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for MagneticsShunt - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait MagneticsShuntMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [MagneticsShunt]) -> Self::Output;
-}
-
-impl<'a> MagneticsShuntMutIndex<'a> for usize {
-    type Output = &'a mut MagneticsShunt;
-    fn get_mut(self, data: &'a mut [MagneticsShunt]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> MagneticsShuntMutIndex<'a> for std::ops::Range<usize> {
-    type Output = MagneticsShuntSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsShunt]) -> Self::Output {
-        MagneticsShuntSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsShuntMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = MagneticsShuntSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsShunt]) -> Self::Output {
-        MagneticsShuntSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsShuntMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = MagneticsShuntSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsShunt]) -> Self::Output {
-        MagneticsShuntSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsShuntMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = MagneticsShuntSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsShunt]) -> Self::Output {
-        MagneticsShuntSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsShuntMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = MagneticsShuntSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsShunt]) -> Self::Output {
-        MagneticsShuntSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsShuntMutIndex<'a> for std::ops::RangeFull {
-    type Output = MagneticsShuntSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsShunt]) -> Self::Output {
-        MagneticsShuntSliceViewMut::new(data)
-    }
-}
-
 // --- MagneticsMethodDistinct View Types ---
 
 /// View over multiple MagneticsMethodDistinct with field accumulation
@@ -1571,7 +1178,7 @@ impl<'a> MagneticsMethodDistinctSliceView<'a> {
     pub fn new(data: &'a [MagneticsMethodDistinct]) -> Self {
         Self {
             data,
-            method_name: StringAccumulator::new(data, |item: &MagneticsMethodDistinct| item.method_name.clone(), "method_name"),
+            method_name: StringAccumulator::new(data, |item: &MagneticsMethodDistinct| item.method_name.clone()),
         }
     }
 
@@ -1588,40 +1195,10 @@ impl<'a> MagneticsMethodDistinctSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple MagneticsMethodDistinct
-pub struct MagneticsMethodDistinctSliceViewMut<'a> {
-    data: &'a mut [MagneticsMethodDistinct],
-}
-
-impl<'a> MagneticsMethodDistinctSliceViewMut<'a> {
-    pub fn new(data: &'a mut [MagneticsMethodDistinct]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut MagneticsMethodDistinct> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for MagneticsMethodDistinct - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for MagneticsMethodDistinct - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait MagneticsMethodDistinctIndex<'a> {
     type Output;
     fn get(self, data: &'a [MagneticsMethodDistinct]) -> Self::Output;
-}
-
-impl<'a> MagneticsMethodDistinctIndex<'a> for usize {
-    type Output = &'a MagneticsMethodDistinct;
-    fn get(self, data: &'a [MagneticsMethodDistinct]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> MagneticsMethodDistinctIndex<'a> for std::ops::Range<usize> {
@@ -1666,76 +1243,15 @@ impl<'a> MagneticsMethodDistinctIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for MagneticsMethodDistinct - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait MagneticsMethodDistinctMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [MagneticsMethodDistinct]) -> Self::Output;
-}
-
-impl<'a> MagneticsMethodDistinctMutIndex<'a> for usize {
-    type Output = &'a mut MagneticsMethodDistinct;
-    fn get_mut(self, data: &'a mut [MagneticsMethodDistinct]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> MagneticsMethodDistinctMutIndex<'a> for std::ops::Range<usize> {
-    type Output = MagneticsMethodDistinctSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsMethodDistinct]) -> Self::Output {
-        MagneticsMethodDistinctSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsMethodDistinctMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = MagneticsMethodDistinctSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsMethodDistinct]) -> Self::Output {
-        MagneticsMethodDistinctSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsMethodDistinctMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = MagneticsMethodDistinctSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsMethodDistinct]) -> Self::Output {
-        MagneticsMethodDistinctSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsMethodDistinctMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = MagneticsMethodDistinctSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsMethodDistinct]) -> Self::Output {
-        MagneticsMethodDistinctSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsMethodDistinctMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = MagneticsMethodDistinctSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsMethodDistinct]) -> Self::Output {
-        MagneticsMethodDistinctSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> MagneticsMethodDistinctMutIndex<'a> for std::ops::RangeFull {
-    type Output = MagneticsMethodDistinctSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [MagneticsMethodDistinct]) -> Self::Output {
-        MagneticsMethodDistinctSliceViewMut::new(data)
-    }
-}
-
 // ============================================================================
 // Struct Impl Blocks for Vec Field Access
 // ============================================================================
 
 impl MagneticsRogowski {
-    /// Access position - use index for single element or range for slice view
-    /// e.g. `.position(0)` returns `&Rphiz0dStatic`, `.position(0..2)` returns `Rphiz0dStaticSliceView`
+    /// The slice view over a range of position, e.g. `.position(0..2)` or `.position(..)`,
+    /// whose leaves gather one value per element. A single element is `.position[i]`.
     pub fn position<'a, I: Rphiz0dStaticIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.position)
-    }
-
-    /// Access position mutably - use index for single element or range for slice view
-    /// e.g. `.position_mut(0)` returns `&mut Rphiz0dStatic`, `.position_mut(0..2)` returns `Rphiz0dStaticSliceViewMut`
-    pub fn position_mut<'a, I: Rphiz0dStaticMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.position)
     }
 
     /// Get the number of position elements
@@ -1745,16 +1261,10 @@ impl MagneticsRogowski {
 }
 
 impl MagneticsFluxLoop {
-    /// Access position - use index for single element or range for slice view
-    /// e.g. `.position(0)` returns `&Rphiz0dStatic`, `.position(0..2)` returns `Rphiz0dStaticSliceView`
+    /// The slice view over a range of position, e.g. `.position(0..2)` or `.position(..)`,
+    /// whose leaves gather one value per element. A single element is `.position[i]`.
     pub fn position<'a, I: Rphiz0dStaticIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.position)
-    }
-
-    /// Access position mutably - use index for single element or range for slice view
-    /// e.g. `.position_mut(0)` returns `&mut Rphiz0dStatic`, `.position_mut(0..2)` returns `Rphiz0dStaticSliceViewMut`
-    pub fn position_mut<'a, I: Rphiz0dStaticMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.position)
     }
 
     /// Get the number of position elements
@@ -1764,16 +1274,10 @@ impl MagneticsFluxLoop {
 }
 
 impl Code {
-    /// Access library - use index for single element or range for slice view
-    /// e.g. `.library(0)` returns `&Library`, `.library(0..2)` returns `LibrarySliceView`
+    /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
+    /// whose leaves gather one value per element. A single element is `.library[i]`.
     pub fn library<'a, I: LibraryIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.library)
-    }
-
-    /// Access library mutably - use index for single element or range for slice view
-    /// e.g. `.library_mut(0)` returns `&mut Library`, `.library_mut(0..2)` returns `LibrarySliceViewMut`
-    pub fn library_mut<'a, I: LibraryMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.library)
     }
 
     /// Get the number of library elements
@@ -1783,16 +1287,10 @@ impl Code {
 }
 
 impl Magnetics {
-    /// Access flux_loop - use index for single element or range for slice view
-    /// e.g. `.flux_loop(0)` returns `&MagneticsFluxLoop`, `.flux_loop(0..2)` returns `MagneticsFluxLoopSliceView`
+    /// The slice view over a range of flux_loop, e.g. `.flux_loop(0..2)` or `.flux_loop(..)`,
+    /// whose leaves gather one value per element. A single element is `.flux_loop[i]`.
     pub fn flux_loop<'a, I: MagneticsFluxLoopIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.flux_loop)
-    }
-
-    /// Access flux_loop mutably - use index for single element or range for slice view
-    /// e.g. `.flux_loop_mut(0)` returns `&mut MagneticsFluxLoop`, `.flux_loop_mut(0..2)` returns `MagneticsFluxLoopSliceViewMut`
-    pub fn flux_loop_mut<'a, I: MagneticsFluxLoopMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.flux_loop)
     }
 
     /// Get the number of flux_loop elements
@@ -1802,16 +1300,10 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// Access b_field_pol_probe - use index for single element or range for slice view
-    /// e.g. `.b_field_pol_probe(0)` returns `&MagneticsBpolProbe`, `.b_field_pol_probe(0..2)` returns `MagneticsBpolProbeSliceView`
+    /// The slice view over a range of b_field_pol_probe, e.g. `.b_field_pol_probe(0..2)` or `.b_field_pol_probe(..)`,
+    /// whose leaves gather one value per element. A single element is `.b_field_pol_probe[i]`.
     pub fn b_field_pol_probe<'a, I: MagneticsBpolProbeIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.b_field_pol_probe)
-    }
-
-    /// Access b_field_pol_probe mutably - use index for single element or range for slice view
-    /// e.g. `.b_field_pol_probe_mut(0)` returns `&mut MagneticsBpolProbe`, `.b_field_pol_probe_mut(0..2)` returns `MagneticsBpolProbeSliceViewMut`
-    pub fn b_field_pol_probe_mut<'a, I: MagneticsBpolProbeMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.b_field_pol_probe)
     }
 
     /// Get the number of b_field_pol_probe elements
@@ -1821,16 +1313,10 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// Access b_field_phi_probe - use index for single element or range for slice view
-    /// e.g. `.b_field_phi_probe(0)` returns `&MagneticsBpolProbe`, `.b_field_phi_probe(0..2)` returns `MagneticsBpolProbeSliceView`
+    /// The slice view over a range of b_field_phi_probe, e.g. `.b_field_phi_probe(0..2)` or `.b_field_phi_probe(..)`,
+    /// whose leaves gather one value per element. A single element is `.b_field_phi_probe[i]`.
     pub fn b_field_phi_probe<'a, I: MagneticsBpolProbeIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.b_field_phi_probe)
-    }
-
-    /// Access b_field_phi_probe mutably - use index for single element or range for slice view
-    /// e.g. `.b_field_phi_probe_mut(0)` returns `&mut MagneticsBpolProbe`, `.b_field_phi_probe_mut(0..2)` returns `MagneticsBpolProbeSliceViewMut`
-    pub fn b_field_phi_probe_mut<'a, I: MagneticsBpolProbeMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.b_field_phi_probe)
     }
 
     /// Get the number of b_field_phi_probe elements
@@ -1840,16 +1326,10 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// Access rogowski_coil - use index for single element or range for slice view
-    /// e.g. `.rogowski_coil(0)` returns `&MagneticsRogowski`, `.rogowski_coil(0..2)` returns `MagneticsRogowskiSliceView`
+    /// The slice view over a range of rogowski_coil, e.g. `.rogowski_coil(0..2)` or `.rogowski_coil(..)`,
+    /// whose leaves gather one value per element. A single element is `.rogowski_coil[i]`.
     pub fn rogowski_coil<'a, I: MagneticsRogowskiIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.rogowski_coil)
-    }
-
-    /// Access rogowski_coil mutably - use index for single element or range for slice view
-    /// e.g. `.rogowski_coil_mut(0)` returns `&mut MagneticsRogowski`, `.rogowski_coil_mut(0..2)` returns `MagneticsRogowskiSliceViewMut`
-    pub fn rogowski_coil_mut<'a, I: MagneticsRogowskiMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.rogowski_coil)
     }
 
     /// Get the number of rogowski_coil elements
@@ -1859,16 +1339,10 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// Access shunt - use index for single element or range for slice view
-    /// e.g. `.shunt(0)` returns `&MagneticsShunt`, `.shunt(0..2)` returns `MagneticsShuntSliceView`
+    /// The slice view over a range of shunt, e.g. `.shunt(0..2)` or `.shunt(..)`,
+    /// whose leaves gather one value per element. A single element is `.shunt[i]`.
     pub fn shunt<'a, I: MagneticsShuntIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.shunt)
-    }
-
-    /// Access shunt mutably - use index for single element or range for slice view
-    /// e.g. `.shunt_mut(0)` returns `&mut MagneticsShunt`, `.shunt_mut(0..2)` returns `MagneticsShuntSliceViewMut`
-    pub fn shunt_mut<'a, I: MagneticsShuntMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.shunt)
     }
 
     /// Get the number of shunt elements
@@ -1878,16 +1352,10 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// Access ip - use index for single element or range for slice view
-    /// e.g. `.ip(0)` returns `&MagneticsMethodDistinct`, `.ip(0..2)` returns `MagneticsMethodDistinctSliceView`
+    /// The slice view over a range of ip, e.g. `.ip(0..2)` or `.ip(..)`,
+    /// whose leaves gather one value per element. A single element is `.ip[i]`.
     pub fn ip<'a, I: MagneticsMethodDistinctIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.ip)
-    }
-
-    /// Access ip mutably - use index for single element or range for slice view
-    /// e.g. `.ip_mut(0)` returns `&mut MagneticsMethodDistinct`, `.ip_mut(0..2)` returns `MagneticsMethodDistinctSliceViewMut`
-    pub fn ip_mut<'a, I: MagneticsMethodDistinctMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.ip)
     }
 
     /// Get the number of ip elements
@@ -1897,16 +1365,10 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// Access diamagnetic_flux - use index for single element or range for slice view
-    /// e.g. `.diamagnetic_flux(0)` returns `&MagneticsMethodDistinct`, `.diamagnetic_flux(0..2)` returns `MagneticsMethodDistinctSliceView`
+    /// The slice view over a range of diamagnetic_flux, e.g. `.diamagnetic_flux(0..2)` or `.diamagnetic_flux(..)`,
+    /// whose leaves gather one value per element. A single element is `.diamagnetic_flux[i]`.
     pub fn diamagnetic_flux<'a, I: MagneticsMethodDistinctIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.diamagnetic_flux)
-    }
-
-    /// Access diamagnetic_flux mutably - use index for single element or range for slice view
-    /// e.g. `.diamagnetic_flux_mut(0)` returns `&mut MagneticsMethodDistinct`, `.diamagnetic_flux_mut(0..2)` returns `MagneticsMethodDistinctSliceViewMut`
-    pub fn diamagnetic_flux_mut<'a, I: MagneticsMethodDistinctMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.diamagnetic_flux)
     }
 
     /// Get the number of diamagnetic_flux elements

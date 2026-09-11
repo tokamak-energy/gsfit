@@ -26,13 +26,13 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; the two `global_quantities` nodes are written into it
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    let w_mhd: f64 = time_slice.global_quantities.energy_mhd.unwrap();
-    let ip: f64 = time_slice.global_quantities.ip.unwrap();
-    let bt_vac_at_r_geo: f64 = time_slice.global_quantities.bt_vac_at_r_geo.unwrap();
-    let r_minor: f64 = time_slice.boundary.minor_radius.unwrap();
+    let w_mhd: f64 = time_slice.global_quantities.energy_mhd;
+    let ip: f64 = time_slice.global_quantities.ip;
+    let bt_vac_at_r_geo: f64 = time_slice.global_quantities.bt_vac_at_r_geo;
+    let r_minor: f64 = time_slice.boundary.minor_radius;
 
     // The plasma volume is the volume enclosed by the last closed flux surface
-    let volume_profile: &Array1<f64> = time_slice.profiles_1d.volume.as_ref().unwrap();
+    let volume_profile: &Array1<f64> = &time_slice.profiles_1d.volume;
     let plasma_volume: f64 = volume_profile.last().unwrap().to_owned();
 
     // w_mhd = (3 / 2) * int(p dV)
@@ -46,6 +46,6 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let beta_tor_percent: f64 = 2.0 * MU_0 * p_vol_avg * 100.0 / bt_vac_at_r_geo.powi(2);
     let beta_tor_norm: f64 = beta_tor_percent * r_minor * bt_vac_at_r_geo / (ip / 1e6);
 
-    time_slice.global_quantities.beta_tor = Some(beta_tor);
-    time_slice.global_quantities.beta_tor_norm = Some(beta_tor_norm);
+    time_slice.global_quantities.beta_tor = beta_tor;
+    time_slice.global_quantities.beta_tor_norm = beta_tor_norm;
 }

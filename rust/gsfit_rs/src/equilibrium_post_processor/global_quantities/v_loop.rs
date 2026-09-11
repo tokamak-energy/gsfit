@@ -21,14 +21,14 @@ pub fn calculate(equilibrium_ids: &mut Equilibrium) {
     // Note: when the time-slice is "user_defined", the time-vecor can have variable time steps
     let n_time: usize = equilibrium_ids.time_slice.len();
 
-    let time: Array1<f64> = equilibrium_ids.time_slice.iter().map(|time_slice| time_slice.time.unwrap()).collect();
-    let psi_b: Array1<f64> = equilibrium_ids.time_slice.iter().map(|time_slice| time_slice.boundary.psi.unwrap()).collect();
+    let time: Array1<f64> = equilibrium_ids.time_slice.iter().map(|time_slice| time_slice.time).collect();
+    let psi_b: Array1<f64> = equilibrium_ids.time_slice.iter().map(|time_slice| time_slice.boundary.psi).collect();
 
     let mut v_loop: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
 
     // Exit if we only have one time-slice
     if n_time == 1 {
-        equilibrium_ids.time_slice[0].global_quantities.v_loop = Some(v_loop[0]);
+        equilibrium_ids.time_slice[0].global_quantities.v_loop = v_loop[0];
         return;
     }
 
@@ -44,6 +44,6 @@ pub fn calculate(equilibrium_ids: &mut Equilibrium) {
     v_loop[n_time - 1] = -(psi_b[n_time - 1] - psi_b[n_time - 2]) / (time[n_time - 1] - time[n_time - 2]);
 
     for i_time in 0..n_time {
-        equilibrium_ids.time_slice[i_time].global_quantities.v_loop = Some(v_loop[i_time]);
+        equilibrium_ids.time_slice[i_time].global_quantities.v_loop = v_loop[i_time];
     }
 }

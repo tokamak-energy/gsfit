@@ -14,7 +14,7 @@ use ndarray::Array1;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `global_quantities/q_axis` is written into it
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    let q_profile: &Array1<f64> = time_slice.profiles_1d.q.as_ref().unwrap();
+    let q_profile: &Array1<f64> = &time_slice.profiles_1d.q;
 
-    time_slice.global_quantities.q_axis = Some(q_profile[0]);
+    time_slice.global_quantities.q_axis = q_profile[0];
 }

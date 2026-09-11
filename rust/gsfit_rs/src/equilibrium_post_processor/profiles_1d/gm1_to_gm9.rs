@@ -74,10 +74,10 @@ const N_GM: usize = 9;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
-    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.as_ref().unwrap().len();
+    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.len();
 
     // A slice which did not converge has no flux surfaces to integrate around
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
         store(time_slice, &vec![Array1::from_elem(n_psi_norm, f64::NAN); N_GM]);
         return;
@@ -85,17 +85,17 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let r: &Array1<f64> = time_slice.profiles_2d[0].grid.dim1.as_ref().unwrap();
-    let z: &Array1<f64> = time_slice.profiles_2d[0].grid.dim2.as_ref().unwrap();
-    let b_field_r_2d: &Array2<f64> = time_slice.profiles_2d[0].b_field_r.as_ref().unwrap();
-    let b_field_z_2d: &Array2<f64> = time_slice.profiles_2d[0].b_field_z.as_ref().unwrap();
+    let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
+    let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
+    let b_field_r_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_r;
+    let b_field_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_z;
 
     let bp_2d: Array2<f64> = (b_field_r_2d.mapv(|x| x.powi(2)) + b_field_z_2d.mapv(|x| x.powi(2))).mapv(f64::sqrt);
     let bp_interpolator = Interp2D::builder(bp_2d).x(z.clone()).y(r.clone()).build().unwrap();
 
-    let f_profile: &Array1<f64> = time_slice.profiles_1d.f.as_ref().unwrap();
-    let psi_profile: &Array1<f64> = time_slice.profiles_1d.psi.as_ref().unwrap();
-    let rho_tor: &Array1<f64> = time_slice.profiles_1d.rho_tor.as_ref().unwrap();
+    let f_profile: &Array1<f64> = &time_slice.profiles_1d.f;
+    let psi_profile: &Array1<f64> = &time_slice.profiles_1d.psi;
+    let rho_tor: &Array1<f64> = &time_slice.profiles_1d.rho_tor;
 
     let d_rho_tor_d_psi: Array1<f64> = epp_d_rho_tor_d_psi(rho_tor, psi_profile);
 
@@ -220,7 +220,7 @@ fn epp_d_rho_tor_d_psi(rho_tor: &Array1<f64>, psi_profile: &Array1<f64>) -> Arra
 /// * `f_profile` - the `f = r * b_phi` profile [tesla * metre]
 /// * `gm_profiles` - the nine profiles, with index 0 still NaN; written into
 fn epp_gm_at_magnetic_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, gm_profiles: &mut [Array1<f64>]) {
-    let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r.unwrap();
+    let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r;
 
     // `b_p = 0` on the magnetic axis, so the total field is the toroidal field alone
     let b_phi_axis: f64 = f_profile[0] / mag_r;
@@ -233,7 +233,7 @@ fn epp_gm_at_magnetic_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1
     gm_profiles[8][0] = 1.0 / mag_r; // gm9
 
     // gm2, gm3, gm6 and gm7, by extrapolation from the first two traced surfaces
-    let psi_norm: &Array1<f64> = time_slice.profiles_1d.psi_norm.as_ref().unwrap();
+    let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
     let n_psi_norm: usize = psi_norm.len();
 
     let mut i_first: Option<usize> = None;
@@ -265,15 +265,15 @@ fn epp_gm_at_magnetic_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1
 
 /// Write the nine profiles into the time-slice, in `gm1` to `gm9` order.
 fn store(time_slice: &mut EquilibriumTimeSlice, gm_profiles: &[Array1<f64>]) {
-    time_slice.profiles_1d.gm1 = Some(gm_profiles[0].to_owned());
-    time_slice.profiles_1d.gm2 = Some(gm_profiles[1].to_owned());
-    time_slice.profiles_1d.gm3 = Some(gm_profiles[2].to_owned());
-    time_slice.profiles_1d.gm4 = Some(gm_profiles[3].to_owned());
-    time_slice.profiles_1d.gm5 = Some(gm_profiles[4].to_owned());
-    time_slice.profiles_1d.gm6 = Some(gm_profiles[5].to_owned());
-    time_slice.profiles_1d.gm7 = Some(gm_profiles[6].to_owned());
-    time_slice.profiles_1d.gm8 = Some(gm_profiles[7].to_owned());
-    time_slice.profiles_1d.gm9 = Some(gm_profiles[8].to_owned());
+    time_slice.profiles_1d.gm1 = gm_profiles[0].to_owned();
+    time_slice.profiles_1d.gm2 = gm_profiles[1].to_owned();
+    time_slice.profiles_1d.gm3 = gm_profiles[2].to_owned();
+    time_slice.profiles_1d.gm4 = gm_profiles[3].to_owned();
+    time_slice.profiles_1d.gm5 = gm_profiles[4].to_owned();
+    time_slice.profiles_1d.gm6 = gm_profiles[5].to_owned();
+    time_slice.profiles_1d.gm7 = gm_profiles[6].to_owned();
+    time_slice.profiles_1d.gm8 = gm_profiles[7].to_owned();
+    time_slice.profiles_1d.gm9 = gm_profiles[8].to_owned();
 }
 
 #[cfg(test)]
@@ -365,8 +365,8 @@ mod tests {
     fn a_slice_with_two_traced_surfaces_extrapolates_the_gradient_quantities() {
         let psi_norm: Array1<f64> = array![0.0, 0.25, 0.5, 0.75, 1.0];
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.psi_norm = Some(psi_norm);
-        time_slice.global_quantities.magnetic_axis.r = Some(0.5);
+        time_slice.profiles_1d.psi_norm = psi_norm;
+        time_slice.global_quantities.magnetic_axis.r = 0.5;
 
         let f_profile: Array1<f64> = Array1::from_elem(5, -0.24);
 

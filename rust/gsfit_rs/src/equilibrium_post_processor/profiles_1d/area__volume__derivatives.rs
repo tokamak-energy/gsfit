@@ -38,26 +38,26 @@ use std::f64::consts::PI;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
-    let psi_norm: &Array1<f64> = time_slice.profiles_1d.psi_norm.as_ref().unwrap();
+    let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
     let n_psi_norm: usize = psi_norm.len();
 
     // A slice which did not converge has no flux surfaces to measure
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
         let nan_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
-        time_slice.profiles_1d.volume = Some(nan_profile.clone());
-        time_slice.profiles_1d.dvolume_dpsi = Some(nan_profile.clone());
-        time_slice.profiles_1d.dvolume_drho_tor = Some(nan_profile.clone());
-        time_slice.profiles_1d.area = Some(nan_profile.clone());
-        time_slice.profiles_1d.darea_dpsi = Some(nan_profile.clone());
-        time_slice.profiles_1d.darea_drho_tor = Some(nan_profile.clone());
-        time_slice.profiles_1d.surface = Some(nan_profile);
+        time_slice.profiles_1d.volume = nan_profile.clone();
+        time_slice.profiles_1d.dvolume_dpsi = nan_profile.clone();
+        time_slice.profiles_1d.dvolume_drho_tor = nan_profile.clone();
+        time_slice.profiles_1d.area = nan_profile.clone();
+        time_slice.profiles_1d.darea_dpsi = nan_profile.clone();
+        time_slice.profiles_1d.darea_drho_tor = nan_profile.clone();
+        time_slice.profiles_1d.surface = nan_profile;
         return;
     }
 
     // The psi grid spacing, taken from the psi profile rather than recomputed, so that it cannot
     // disagree with it
-    let psi_profile: &Array1<f64> = time_slice.profiles_1d.psi.as_ref().unwrap();
+    let psi_profile: &Array1<f64> = &time_slice.profiles_1d.psi;
     let d_psi: f64 = psi_profile[1] - psi_profile[0];
 
     let mut volume_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
@@ -115,17 +115,17 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     area_prime_profile[n_psi_norm - 1] = (area_profile[n_psi_norm - 1] - area_profile[n_psi_norm - 2]) / d_psi;
 
     // The same two derivatives, against the other radial coordinate
-    let rho_tor: &Array1<f64> = time_slice.profiles_1d.rho_tor.as_ref().unwrap();
+    let rho_tor: &Array1<f64> = &time_slice.profiles_1d.rho_tor;
     let volume_prime_rho_tor_profile: Array1<f64> = epp_d_profile_d_rho_tor(&volume_profile, rho_tor);
     let area_prime_rho_tor_profile: Array1<f64> = epp_d_profile_d_rho_tor(&area_profile, rho_tor);
 
-    time_slice.profiles_1d.volume = Some(volume_profile);
-    time_slice.profiles_1d.dvolume_dpsi = Some(volume_prime_profile);
-    time_slice.profiles_1d.dvolume_drho_tor = Some(volume_prime_rho_tor_profile);
-    time_slice.profiles_1d.area = Some(area_profile);
-    time_slice.profiles_1d.darea_dpsi = Some(area_prime_profile);
-    time_slice.profiles_1d.darea_drho_tor = Some(area_prime_rho_tor_profile);
-    time_slice.profiles_1d.surface = Some(surface_profile);
+    time_slice.profiles_1d.volume = volume_profile;
+    time_slice.profiles_1d.dvolume_dpsi = volume_prime_profile;
+    time_slice.profiles_1d.dvolume_drho_tor = volume_prime_rho_tor_profile;
+    time_slice.profiles_1d.area = area_profile;
+    time_slice.profiles_1d.darea_dpsi = area_prime_profile;
+    time_slice.profiles_1d.darea_drho_tor = area_prime_rho_tor_profile;
+    time_slice.profiles_1d.surface = surface_profile;
 }
 
 /// Calculate the area of the surface of revolution swept out by one closed contour.
@@ -239,8 +239,8 @@ mod tests {
     #[test]
     fn a_slice_which_did_not_converge_is_all_nan() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.5, 1.0]);
-        time_slice.global_quantities.psi_magnetic_axis = Some(f64::NAN);
+        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
+        time_slice.global_quantities.psi_magnetic_axis = f64::NAN;
 
         let flux_surface_empty: FluxSurface = FluxSurface {
             r: Array1::from_elem(0, f64::NAN),
@@ -253,8 +253,8 @@ mod tests {
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
 
         // Including the magnetic axis, which is only filled once there is a converged solution
-        assert!(time_slice.profiles_1d.surface.unwrap().iter().all(|value| value.is_nan()));
-        assert!(time_slice.profiles_1d.dvolume_drho_tor.unwrap().iter().all(|value| value.is_nan()));
-        assert!(time_slice.profiles_1d.darea_drho_tor.unwrap().iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.surface.iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.dvolume_drho_tor.iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.darea_drho_tor.iter().all(|value| value.is_nan()));
     }
 }

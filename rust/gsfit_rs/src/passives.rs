@@ -314,19 +314,17 @@ impl Passives {
 
         // Get sizes
         // TODO: BUG: this assumes that time-slice 0 has converged!!
-        let n_dofs: usize = equilibrium_ids.time_slice(0).passive_dof_values.as_ref().unwrap().len();
+        let n_dofs: usize = equilibrium_ids.time_slice[0].passive_dof_values.len();
 
         // Allocate arrays for results
         let mut passive_dof_values: Array2<f64> = Array2::from_elem((n_time, n_dofs), f64::NAN);
 
         // Loop over time, collecting results
         for i_time in 0..n_time {
-            let time_slice: &EquilibriumTimeSlice = equilibrium_ids.time_slice(i_time);
-            if !time_slice.boundary.psi.unwrap().is_nan() {
+            let time_slice: &EquilibriumTimeSlice = &equilibrium_ids.time_slice[i_time];
+            if !time_slice.boundary.psi.is_nan() {
                 // skip non-converged solutions
-                passive_dof_values
-                    .slice_mut(s![i_time, ..])
-                    .assign(time_slice.passive_dof_values.as_ref().unwrap());
+                passive_dof_values.slice_mut(s![i_time, ..]).assign(&time_slice.passive_dof_values);
             }
         }
 

@@ -28,8 +28,8 @@ use ndarray::{Array1, Array2};
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let psi_norm_2d: &Array2<f64> = time_slice.profiles_2d[0].psi_norm.as_ref().unwrap();
-    let mask_2d: &Array2<f64> = time_slice.profiles_2d[0].mask.as_ref().unwrap();
+    let psi_norm_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi_norm;
+    let mask_2d: &Array2<f64> = &time_slice.profiles_2d[0].mask;
 
     // The mid-plane is the middle row of the grid
     let (n_z, n_r): (usize, usize) = psi_norm_2d.dim();
@@ -37,8 +37,8 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let midplane_psi_norm: Array1<f64> = psi_norm_2d.row(i_z_centre).to_owned();
     let midplane_mask: Array1<f64> = mask_2d.row(i_z_centre).to_owned();
 
-    let psi_norm_profile: &Array1<f64> = time_slice.profiles_1d.psi_norm.as_ref().unwrap();
-    let q_profile: &Array1<f64> = time_slice.profiles_1d.q.as_ref().unwrap();
+    let psi_norm_profile: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
+    let q_profile: &Array1<f64> = &time_slice.profiles_1d.q;
 
     let n_psi_norm: usize = psi_norm_profile.len();
     assert!(
@@ -62,7 +62,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         }
     }
 
-    time_slice.profiles_1d_r_midplane.q = Some(midplane_q);
+    time_slice.profiles_1d_r_midplane.q = midplane_q;
 }
 
 #[cfg(test)]
@@ -83,7 +83,7 @@ mod tests {
         // The mid-plane row is `psi_norm = [0.0, 0.25, 0.5, 0.0]` with `mask = [0, 1, 1, 0]`, so the
         // two outside points keep the zeroed `psi_norm` the solver leaves there and must not be
         // read as sitting on the magnetic axis
-        let midplane_q: &Array1<f64> = time_slice.profiles_1d_r_midplane.q.as_ref().unwrap();
+        let midplane_q: &Array1<f64> = &time_slice.profiles_1d_r_midplane.q;
         assert!(midplane_q[0].is_nan());
         assert_abs_diff_eq!(midplane_q[1], 1.5, epsilon = 1e-15);
         assert_abs_diff_eq!(midplane_q[2], 2.0, epsilon = 1e-15);

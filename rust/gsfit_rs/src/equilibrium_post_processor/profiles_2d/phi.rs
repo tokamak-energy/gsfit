@@ -30,21 +30,21 @@ use ndarray::{Array1, Array2};
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let psi_norm_2d: &Array2<f64> = time_slice.profiles_2d[0].psi_norm.as_ref().unwrap();
+    let psi_norm_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi_norm;
     let (n_z, n_r): (usize, usize) = psi_norm_2d.dim();
 
     let mut phi_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
 
     // A slice which did not converge has no plasma, so no toroidal flux is reported for it
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
-        time_slice.profiles_2d[0].phi = Some(phi_2d);
+        time_slice.profiles_2d[0].phi = phi_2d;
         return;
     }
 
-    let mask_2d: &Array2<f64> = time_slice.profiles_2d[0].mask.as_ref().unwrap();
-    let psi_norm_profile: &Array1<f64> = time_slice.profiles_1d.psi_norm.as_ref().unwrap();
-    let phi_profile: &Array1<f64> = time_slice.profiles_1d.phi.as_ref().unwrap();
+    let mask_2d: &Array2<f64> = &time_slice.profiles_2d[0].mask;
+    let psi_norm_profile: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
+    let phi_profile: &Array1<f64> = &time_slice.profiles_1d.phi;
     assert_eq!(mask_2d.dim(), (n_z, n_r), "profiles_2d/phi: `mask` and `psi_norm` grids differ in shape");
 
     // The profile has to be a usable interpolation table: at least two points, finite, and strictly
@@ -81,7 +81,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         }
     }
 
-    time_slice.profiles_2d[0].phi = Some(phi_2d);
+    time_slice.profiles_2d[0].phi = phi_2d;
 }
 
 #[cfg(test)]
@@ -97,13 +97,13 @@ mod tests {
     /// (`phi = 0, 2, 8` at `psi_norm = 0, 0.5, 1`), the given 2-D `psi_norm` and the given mask
     fn time_slice_with(psi_norm_2d: Array2<f64>, mask_2d: Array2<f64>) -> EquilibriumTimeSlice {
         let mut profiles_2d: EquilibriumProfiles2d = EquilibriumProfiles2d::default();
-        profiles_2d.psi_norm = Some(psi_norm_2d);
-        profiles_2d.mask = Some(mask_2d);
+        profiles_2d.psi_norm = psi_norm_2d;
+        profiles_2d.mask = mask_2d;
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.psi_magnetic_axis = Some(-0.1);
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.5, 1.0]);
-        time_slice.profiles_1d.phi = Some(array![0.0, 2.0, 8.0]);
+        time_slice.global_quantities.psi_magnetic_axis = -0.1;
+        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
+        time_slice.profiles_1d.phi = array![0.0, 2.0, 8.0];
         time_slice.profiles_2d = vec![profiles_2d];
         return time_slice;
     }
@@ -117,7 +117,7 @@ mod tests {
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        let phi_2d: &Array2<f64> = time_slice.profiles_2d[0].phi.as_ref().unwrap();
+        let phi_2d: &Array2<f64> = &time_slice.profiles_2d[0].phi;
         assert_abs_diff_eq!(phi_2d[(0, 0)], 0.0, epsilon = 1e-15);
         assert_abs_diff_eq!(phi_2d[(0, 1)], 1.0, epsilon = 1e-15);
         assert_abs_diff_eq!(phi_2d[(0, 2)], 2.0, epsilon = 1e-15);
@@ -135,7 +135,7 @@ mod tests {
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        let phi_2d: &Array2<f64> = time_slice.profiles_2d[0].phi.as_ref().unwrap();
+        let phi_2d: &Array2<f64> = &time_slice.profiles_2d[0].phi;
         assert!(phi_2d.iter().all(|value| value.is_nan()));
     }
 
@@ -148,7 +148,7 @@ mod tests {
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        let phi_2d: &Array2<f64> = time_slice.profiles_2d[0].phi.as_ref().unwrap();
+        let phi_2d: &Array2<f64> = &time_slice.profiles_2d[0].phi;
         assert_abs_diff_eq!(phi_2d[(0, 0)], 0.0, epsilon = 1e-15);
         assert_abs_diff_eq!(phi_2d[(0, 1)], 8.0, epsilon = 1e-15);
         assert_abs_diff_eq!(phi_2d[(1, 0)], 0.0, epsilon = 1e-15);
@@ -158,12 +158,12 @@ mod tests {
     #[test]
     fn failed_slice_is_nan_everywhere() {
         let mut time_slice: EquilibriumTimeSlice = time_slice_with(Array2::from_elem((2, 3), f64::NAN), Array2::zeros((2, 3)));
-        time_slice.global_quantities.psi_magnetic_axis = Some(f64::NAN);
-        time_slice.profiles_1d.phi = Some(array![f64::NAN, f64::NAN, f64::NAN]);
+        time_slice.global_quantities.psi_magnetic_axis = f64::NAN;
+        time_slice.profiles_1d.phi = array![f64::NAN, f64::NAN, f64::NAN];
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        let phi_2d: &Array2<f64> = time_slice.profiles_2d[0].phi.as_ref().unwrap();
+        let phi_2d: &Array2<f64> = &time_slice.profiles_2d[0].phi;
         assert!(phi_2d.iter().all(|value| value.is_nan()));
     }
 
@@ -171,7 +171,7 @@ mod tests {
     #[should_panic(expected = "not strictly increasing")]
     fn a_non_increasing_profile_panics() {
         let mut time_slice: EquilibriumTimeSlice = time_slice_with(Array2::zeros((1, 1)), Array2::ones((1, 1)));
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.5, 0.5]);
+        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 0.5];
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
     }

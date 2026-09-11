@@ -26,8 +26,8 @@ use ndarray::Array1;
 /// the first point. That is the right limit: `q` is even in `rho_tor` about the axis, so
 /// `d(q)/d(rho_tor)` vanishes there too and the product goes to zero from both sides.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    let q_profile: &Array1<f64> = time_slice.profiles_1d.q.as_ref().unwrap();
-    let rho_tor: &Array1<f64> = time_slice.profiles_1d.rho_tor.as_ref().unwrap();
+    let q_profile: &Array1<f64> = &time_slice.profiles_1d.q;
+    let rho_tor: &Array1<f64> = &time_slice.profiles_1d.rho_tor;
     let n_psi_norm: usize = rho_tor.len();
 
     let d_q_d_rho_tor: Array1<f64> = epp_d_q_d_rho_tor(q_profile, rho_tor);
@@ -37,7 +37,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         magnetic_shear[i_psi_norm] = rho_tor[i_psi_norm] * d_q_d_rho_tor[i_psi_norm] / q_profile[i_psi_norm];
     }
 
-    time_slice.profiles_1d.magnetic_shear = Some(magnetic_shear);
+    time_slice.profiles_1d.magnetic_shear = magnetic_shear;
 }
 
 /// Differentiate `q` with respect to `rho_tor`, one value per flux surface.
@@ -92,12 +92,12 @@ mod tests {
         let q_profile: Array1<f64> = rho_tor.mapv(|rho_tor_here| q_axis * (1.0 + k * rho_tor_here.powi(2)));
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.q = Some(q_profile);
-        time_slice.profiles_1d.rho_tor = Some(rho_tor.clone());
+        time_slice.profiles_1d.q = q_profile;
+        time_slice.profiles_1d.rho_tor = rho_tor.clone();
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        let magnetic_shear: Array1<f64> = time_slice.profiles_1d.magnetic_shear.unwrap();
+        let magnetic_shear: Array1<f64> = time_slice.profiles_1d.magnetic_shear;
 
         // Zero on the magnetic axis, exactly
         assert_abs_diff_eq!(magnetic_shear[0], 0.0, epsilon = 1e-15);

@@ -15,11 +15,11 @@ use ndarray::Array1;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; the four `global_quantities` nodes are written
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    let area_profile: &Array1<f64> = time_slice.profiles_1d.area.as_ref().unwrap();
-    let boundary_r: &Array1<f64> = time_slice.boundary.outline.r.as_ref().unwrap();
-    let boundary_z: &Array1<f64> = time_slice.boundary.outline.z.as_ref().unwrap();
-    let surface_profile: &Array1<f64> = time_slice.profiles_1d.surface.as_ref().unwrap();
-    let volume_profile: &Array1<f64> = time_slice.profiles_1d.volume.as_ref().unwrap();
+    let area_profile: &Array1<f64> = &time_slice.profiles_1d.area;
+    let boundary_r: &Array1<f64> = &time_slice.boundary.outline.r;
+    let boundary_z: &Array1<f64> = &time_slice.boundary.outline.z;
+    let surface_profile: &Array1<f64> = &time_slice.profiles_1d.surface;
+    let volume_profile: &Array1<f64> = &time_slice.profiles_1d.volume;
 
     let n_boundary: usize = boundary_r.len();
     assert_eq!(boundary_z.len(), n_boundary);
@@ -31,10 +31,10 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         length_pol += delta_r.hypot(delta_z);
     }
 
-    time_slice.global_quantities.area = area_profile.last().copied();
-    time_slice.global_quantities.length_pol = Some(length_pol);
-    time_slice.global_quantities.surface = surface_profile.last().copied();
-    time_slice.global_quantities.volume = volume_profile.last().copied();
+    time_slice.global_quantities.area = area_profile.last().copied().unwrap_or(f64::NAN);
+    time_slice.global_quantities.length_pol = length_pol;
+    time_slice.global_quantities.surface = surface_profile.last().copied().unwrap_or(f64::NAN);
+    time_slice.global_quantities.volume = volume_profile.last().copied().unwrap_or(f64::NAN);
 }
 
 #[cfg(test)]
@@ -48,17 +48,17 @@ mod tests {
     #[test]
     fn global_geometry_comes_from_the_boundary_and_profile_endpoints() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.boundary.outline.r = Some(array![1.0, 2.0, 2.0, 1.0, 1.0]);
-        time_slice.boundary.outline.z = Some(array![0.0, 0.0, 1.0, 1.0, 0.0]);
-        time_slice.profiles_1d.area = Some(array![0.0, 1.0]);
-        time_slice.profiles_1d.surface = Some(array![0.0, 12.0]);
-        time_slice.profiles_1d.volume = Some(array![0.0, 8.0]);
+        time_slice.boundary.outline.r = array![1.0, 2.0, 2.0, 1.0, 1.0];
+        time_slice.boundary.outline.z = array![0.0, 0.0, 1.0, 1.0, 0.0];
+        time_slice.profiles_1d.area = array![0.0, 1.0];
+        time_slice.profiles_1d.surface = array![0.0, 12.0];
+        time_slice.profiles_1d.volume = array![0.0, 8.0];
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        assert_abs_diff_eq!(time_slice.global_quantities.area.unwrap(), 1.0, epsilon = 1e-15);
-        assert_abs_diff_eq!(time_slice.global_quantities.length_pol.unwrap(), 4.0, epsilon = 1e-15);
-        assert_abs_diff_eq!(time_slice.global_quantities.surface.unwrap(), 12.0, epsilon = 1e-15);
-        assert_abs_diff_eq!(time_slice.global_quantities.volume.unwrap(), 8.0, epsilon = 1e-15);
+        assert_abs_diff_eq!(time_slice.global_quantities.area, 1.0, epsilon = 1e-15);
+        assert_abs_diff_eq!(time_slice.global_quantities.length_pol, 4.0, epsilon = 1e-15);
+        assert_abs_diff_eq!(time_slice.global_quantities.surface, 12.0, epsilon = 1e-15);
+        assert_abs_diff_eq!(time_slice.global_quantities.volume, 8.0, epsilon = 1e-15);
     }
 }

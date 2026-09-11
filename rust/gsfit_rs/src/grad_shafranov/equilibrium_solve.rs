@@ -147,7 +147,7 @@ impl PsiAndDerivativesGreens {
     /// anywhere else, so this cannot be handed a table which disagrees with the grid it was
     /// calculated on.
     pub fn new(greens: &EquilibriumGreens) -> Self {
-        let grid_grid_psi: &Array2<f64> = greens.grid_grid.psi.as_ref().unwrap();
+        let grid_grid_psi: &Array2<f64> = &greens.grid_grid.psi;
         let (n_offset_z_times_n_r, n_r): (usize, usize) = grid_grid_psi.dim();
         if n_r == 0 || n_offset_z_times_n_r % n_r != 0 {
             panic!("PsiAndDerivativesGreens: `greens/grid_grid/psi` has shape ({n_offset_z_times_n_r}, {n_r}), which is not (n_z * n_r, n_r)");
@@ -164,11 +164,11 @@ impl PsiAndDerivativesGreens {
             return g_by_offset;
         };
 
-        let grid_grid = |table: &Option<Array2<f64>>, key: &str| -> Array2<f64> {
-            let g_flat: &Array2<f64> = table
-                .as_ref()
-                .unwrap_or_else(|| panic!("PsiAndDerivativesGreens: `greens/grid_grid/{key}` unset"));
-            return permute_to_by_offset(g_flat);
+        let grid_grid = |table: &Array2<f64>, key: &str| -> Array2<f64> {
+            if table.is_empty() {
+                panic!("PsiAndDerivativesGreens: `greens/grid_grid/{key}` unset");
+            }
+            return permute_to_by_offset(table);
         };
         let g_psi_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.psi, "psi");
         let g_d_psi_d_r_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d_psi_d_r, "d_psi_d_r");
@@ -211,13 +211,14 @@ impl PsiAndDerivativesGreens {
         // PF coils: each table is (n_z, n_r), gathered into one column per coil. The coils keep the
         // order they sit in on the IDS, which is the order the measured currents are in
         let n_pf: usize = greens.pf_active.len();
-        let coils_matrix = |select: fn(&EquilibriumGreensPfActive) -> &Option<Array2<f64>>, key: &str| -> Array2<f64> {
+        let coils_matrix = |select: fn(&EquilibriumGreensPfActive) -> &Array2<f64>, key: &str| -> Array2<f64> {
             let mut g_coils: Array2<f64> = Array2::from_elem((n_z * n_r, n_pf), f64::NAN);
             for i_pf in 0..n_pf {
                 let coil: &EquilibriumGreensPfActive = &greens.pf_active[i_pf];
-                let table: &Array2<f64> = select(coil)
-                    .as_ref()
-                    .unwrap_or_else(|| panic!("PsiAndDerivativesGreens: `greens/pf_active({i_pf})/{key}` unset"));
+                let table: &Array2<f64> = select(coil);
+                if table.is_empty() {
+                    panic!("PsiAndDerivativesGreens: `greens/pf_active({i_pf})/{key}` unset");
+                }
                 let table_flat: Array1<f64> = table
                     .to_shape(n_z * n_r)
                     .unwrap_or_else(|_| panic!("PsiAndDerivativesGreens: `greens/pf_active({i_pf})/{key}` is not (n_z, n_r)"))
@@ -243,16 +244,17 @@ impl PsiAndDerivativesGreens {
         for i_passive in 0..n_passives {
             n_passive_dof += greens.pf_passive[i_passive].dof.len();
         }
-        let passives_matrix = |select: fn(&EquilibriumGreensPfPassiveDof) -> &Option<Array1<f64>>, key: &str| -> Array2<f64> {
+        let passives_matrix = |select: fn(&EquilibriumGreensPfPassiveDof) -> &Array1<f64>, key: &str| -> Array2<f64> {
             let mut g_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_passive_dof), f64::NAN);
             let mut i_dof_total: usize = 0;
             for i_passive in 0..n_passives {
                 let n_dof_this_passive: usize = greens.pf_passive[i_passive].dof.len();
                 for i_dof in 0..n_dof_this_passive {
                     let dof: &EquilibriumGreensPfPassiveDof = &greens.pf_passive[i_passive].dof[i_dof];
-                    let table: &Array1<f64> = select(dof)
-                        .as_ref()
-                        .unwrap_or_else(|| panic!("PsiAndDerivativesGreens: `greens/pf_passive({i_passive})/dof({i_dof})/{key}` unset"));
+                    let table: &Array1<f64> = select(dof);
+                    if table.is_empty() {
+                        panic!("PsiAndDerivativesGreens: `greens/pf_passive({i_passive})/dof({i_dof})/{key}` unset");
+                    }
                     g_passives.slice_mut(s![.., i_dof_total]).assign(table);
                     i_dof_total += 1;
                 }
@@ -412,70 +414,36 @@ impl<'a> EquilibriumSolver<'a> {
             }
         };
         println!("{:?}", error);
-        self.time_slice.convergence.result.name = Some(result_name.to_string());
-        self.time_slice.convergence.result.index = Some(result_index);
-        self.time_slice.convergence.result.description = Some(format!("{:?}", error));
+        self.time_slice.convergence.result.name = result_name.to_string();
+        self.time_slice.convergence.result.index = result_index;
+        self.time_slice.convergence.result.description = format!("{:?}", error);
 
-        self.time_slice.convergence.grad_shafranov_deviation_value = Some(f64::NAN);
-        self.time_slice.source_functions.ff_prime.coefficients = self
-            .time_slice
-            .source_functions
-            .ff_prime
-            .coefficients
-            .as_ref()
-            .map(|ff_prime_dof_values: &Array1<f64>| ff_prime_dof_values * f64::NAN);
-        self.time_slice.source_functions.p_prime.coefficients = self
-            .time_slice
-            .source_functions
-            .p_prime
-            .coefficients
-            .as_ref()
-            .map(|p_prime_dof_values: &Array1<f64>| p_prime_dof_values * f64::NAN);
+        self.time_slice.convergence.grad_shafranov_deviation_value = f64::NAN;
+        self.time_slice.source_functions.ff_prime.coefficients *= f64::NAN;
+        self.time_slice.source_functions.p_prime.coefficients *= f64::NAN;
         self.passive_dof_values = self.passive_dof_values.to_owned() * f64::NAN;
-        self.time_slice.profiles_2d[0].psi = self.time_slice.profiles_2d[0].psi.as_ref().map(|psi_2d: &Array2<f64>| psi_2d * f64::NAN);
-        self.time_slice.profiles_2d[0].d_psi_d_r = self.time_slice.profiles_2d[0]
-            .d_psi_d_r
-            .as_ref()
-            .map(|d_psi_d_r_2d: &Array2<f64>| d_psi_d_r_2d * f64::NAN);
-        self.time_slice.profiles_2d[0].d_psi_d_z = self.time_slice.profiles_2d[0]
-            .d_psi_d_z
-            .as_ref()
-            .map(|d_psi_d_z_2d: &Array2<f64>| d_psi_d_z_2d * f64::NAN);
-        self.time_slice.profiles_2d[0].d2_psi_d_r2 = self.time_slice.profiles_2d[0]
-            .d2_psi_d_r2
-            .as_ref()
-            .map(|d2_psi_d_r2_2d: &Array2<f64>| d2_psi_d_r2_2d * f64::NAN);
-        self.time_slice.profiles_2d[0].d2_psi_d_r_d_z = self.time_slice.profiles_2d[0]
-            .d2_psi_d_r_d_z
-            .as_ref()
-            .map(|d2_psi_d_r_d_z_2d: &Array2<f64>| d2_psi_d_r_d_z_2d * f64::NAN);
-        self.time_slice.profiles_2d[0].d2_psi_d_z2 = self.time_slice.profiles_2d[0]
-            .d2_psi_d_z2
-            .as_ref()
-            .map(|d2_psi_d_z2_2d: &Array2<f64>| d2_psi_d_z2_2d * f64::NAN);
-        self.time_slice.profiles_2d[0].psi_norm = self.time_slice.profiles_2d[0]
-            .psi_norm
-            .as_ref()
-            .map(|psi_norm_2d: &Array2<f64>| psi_norm_2d * f64::NAN);
-        self.time_slice.profiles_2d[0].j_phi = self.time_slice.profiles_2d[0].j_phi.as_ref().map(|j_2d: &Array2<f64>| j_2d * f64::NAN);
-        self.time_slice.profiles_2d[0].mask = self.time_slice.profiles_2d[0].mask.as_ref().map(|mask: &Array2<f64>| mask * f64::NAN);
-        self.time_slice.profiles_2d[0].psi_coils = self.time_slice.profiles_2d[0]
-            .psi_coils
-            .as_ref()
-            .map(|psi_2d_coils: &Array2<f64>| psi_2d_coils * f64::NAN);
-        self.time_slice.boundary.psi = Some(f64::NAN);
-        self.time_slice.global_quantities.psi_magnetic_axis = Some(f64::NAN);
-        self.time_slice.global_quantities.ip = Some(f64::NAN);
-        self.time_slice.boundary.bounding.r = Some(f64::NAN);
-        self.time_slice.boundary.bounding.z = Some(f64::NAN);
-        self.time_slice.convergence.delta_z = Some(f64::NAN);
-        self.time_slice.convergence.iterations_n = Some(EMPTY_INT);
-        self.time_slice.global_quantities.magnetic_axis.r = Some(f64::NAN);
-        self.time_slice.global_quantities.magnetic_axis.z = Some(f64::NAN);
-        // `EMPTY_INT` rather than `None`: a boundary which does not exist is neither limited nor
-        // diverted, and IMAS spells that out with a reserved value, the integer counterpart of the
-        // `NaN` every float above is set to
-        self.time_slice.boundary.r#type = Some(EMPTY_INT);
+        self.time_slice.profiles_2d[0].psi *= f64::NAN;
+        self.time_slice.profiles_2d[0].d_psi_d_r *= f64::NAN;
+        self.time_slice.profiles_2d[0].d_psi_d_z *= f64::NAN;
+        self.time_slice.profiles_2d[0].d2_psi_d_r2 *= f64::NAN;
+        self.time_slice.profiles_2d[0].d2_psi_d_r_d_z *= f64::NAN;
+        self.time_slice.profiles_2d[0].d2_psi_d_z2 *= f64::NAN;
+        self.time_slice.profiles_2d[0].psi_norm *= f64::NAN;
+        self.time_slice.profiles_2d[0].j_phi *= f64::NAN;
+        self.time_slice.profiles_2d[0].mask *= f64::NAN;
+        self.time_slice.profiles_2d[0].psi_coils *= f64::NAN;
+        self.time_slice.boundary.psi = f64::NAN;
+        self.time_slice.global_quantities.psi_magnetic_axis = f64::NAN;
+        self.time_slice.global_quantities.ip = f64::NAN;
+        self.time_slice.boundary.bounding.r = f64::NAN;
+        self.time_slice.boundary.bounding.z = f64::NAN;
+        self.time_slice.convergence.delta_z = f64::NAN;
+        self.time_slice.convergence.iterations_n = EMPTY_INT;
+        self.time_slice.global_quantities.magnetic_axis.r = f64::NAN;
+        self.time_slice.global_quantities.magnetic_axis.z = f64::NAN;
+        // A boundary which does not exist is neither limited nor diverted, and IMAS spells that out
+        // with its reserved value, the integer counterpart of the `NaN` every float above is set to
+        self.time_slice.boundary.r#type = EMPTY_INT;
     }
 
     /// Solve the inverse Grad-Shafranov problem
@@ -505,10 +473,10 @@ impl<'a> EquilibriumSolver<'a> {
         let magnetic_axis_dynamic: &SensorsDynamic = self.magnetic_axis_dynamic;
 
         // Plasma grid
-        let mesh_r: Array2<f64> = self.time_slice.profiles_2d[0].r.clone().unwrap();
-        let r: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim1.clone().unwrap();
-        let z: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim2.clone().unwrap();
-        let d_area: f64 = self.time_slice.profiles_2d[0].grid.d_area.unwrap();
+        let mesh_r: Array2<f64> = self.time_slice.profiles_2d[0].r.clone();
+        let r: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim1.clone();
+        let z: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim2.clone();
+        let d_area: f64 = self.time_slice.profiles_2d[0].grid.d_area;
         let flat_r: Array1<f64> = flatten_grid_r(&r, z.len());
         // Limiter, from the `wall` IDS. `limit_pts` gathers every limiter unit, `vessel` is
         // `unit(0)` alone
@@ -521,10 +489,10 @@ impl<'a> EquilibriumSolver<'a> {
         let n_p_prime_dof: usize = p_prime_source_function.source_function_n_dof();
         let n_ff_prime_dof: usize = ff_prime_source_function.source_function_n_dof();
         // Solver settings, supplied through `equilibrium.code`
-        let n_iter_max: usize = self.equilibrium_code.numerics.iterations.n_max.unwrap() as usize;
-        let n_iter_min: usize = self.equilibrium_code.numerics.iterations.n_min.unwrap() as usize;
-        let n_iter_no_vertical_feedback: usize = self.equilibrium_code.numerics.iterations.n_no_vertical_feedback.unwrap() as usize;
-        let gs_error_tolerance: f64 = self.equilibrium_code.numerics.grad_shafranov_deviation_tolerance.unwrap();
+        let n_iter_max: usize = self.equilibrium_code.numerics.iterations.n_max as usize;
+        let n_iter_min: usize = self.equilibrium_code.numerics.iterations.n_min as usize;
+        let n_iter_no_vertical_feedback: usize = self.equilibrium_code.numerics.iterations.n_no_vertical_feedback as usize;
+        let gs_error_tolerance: f64 = self.equilibrium_code.numerics.grad_shafranov_deviation_tolerance;
 
         // Constraints
         let n_bp: usize = bp_probes_dynamic.measured.len();
@@ -610,7 +578,7 @@ impl<'a> EquilibriumSolver<'a> {
             // println!("");
             // println!("Iteration {i_iter}");
             // From previous iteration
-            let j_2d: Array2<f64> = self.time_slice.profiles_2d[0].j_phi.clone().unwrap();
+            let j_2d: Array2<f64> = self.time_slice.profiles_2d[0].j_phi.clone();
 
             // Updates `psi` and all of its derivatives (including the `delta_z` vertical stability correction);
             // timing: 350ms, with [n_r, n_z]=[81, 321]
@@ -627,12 +595,12 @@ impl<'a> EquilibriumSolver<'a> {
             // full at each site would not compile - the compiler cannot tell two index expressions
             // refer to the same element, so it treats the borrows as overlapping.
             let profiles_2d: &mut EquilibriumProfiles2d = &mut self.time_slice.profiles_2d[0];
-            let psi_2d: &Array2<f64> = profiles_2d.psi.as_ref().unwrap();
-            let d_psi_d_r_2d: &Array2<f64> = profiles_2d.d_psi_d_r.as_ref().unwrap();
-            let d_psi_d_z_2d: &Array2<f64> = profiles_2d.d_psi_d_z.as_ref().unwrap();
-            let d2_psi_d_r2_2d: &Array2<f64> = profiles_2d.d2_psi_d_r2.as_ref().unwrap();
-            let d2_psi_d_r_d_z_2d: &Array2<f64> = profiles_2d.d2_psi_d_r_d_z.as_ref().unwrap();
-            let d2_psi_d_z2_2d: &Array2<f64> = profiles_2d.d2_psi_d_z2.as_ref().unwrap();
+            let psi_2d: &Array2<f64> = &profiles_2d.psi;
+            let d_psi_d_r_2d: &Array2<f64> = &profiles_2d.d_psi_d_r;
+            let d_psi_d_z_2d: &Array2<f64> = &profiles_2d.d_psi_d_z;
+            let d2_psi_d_r2_2d: &Array2<f64> = &profiles_2d.d2_psi_d_r2;
+            let d2_psi_d_r_d_z_2d: &Array2<f64> = &profiles_2d.d2_psi_d_r_d_z;
+            let d2_psi_d_z2_2d: &Array2<f64> = &profiles_2d.d2_psi_d_z2;
 
             // Grid spacing
             let d_r: f64 = r[1] - r[0];
@@ -666,8 +634,8 @@ impl<'a> EquilibriumSolver<'a> {
             // Find the magnetic axis (o-point).
             // The search starts from the magnetic axis found on the previous iteration, which is
             // still what the IDS holds at this point; it is overwritten a few lines below.
-            let mag_r_previous: f64 = self.time_slice.global_quantities.magnetic_axis.r.unwrap();
-            let mag_z_previous: f64 = self.time_slice.global_quantities.magnetic_axis.z.unwrap();
+            let mag_r_previous: f64 = self.time_slice.global_quantities.magnetic_axis.r;
+            let mag_z_previous: f64 = self.time_slice.global_quantities.magnetic_axis.z;
             let magnetic_axis_or_error: Result<MagneticAxis, String> =
                 find_magnetic_axis(&stationary_points, mag_r_previous, mag_z_previous, &vessel_r, &vessel_z);
             // Test if we have found the magnetic axis
@@ -685,9 +653,9 @@ impl<'a> EquilibriumSolver<'a> {
             let mag_r: f64 = magnetic_axis.r;
             let mag_z: f64 = magnetic_axis.z;
             let psi_a: f64 = magnetic_axis.psi;
-            self.time_slice.global_quantities.magnetic_axis.r = Some(mag_r);
-            self.time_slice.global_quantities.magnetic_axis.z = Some(mag_z);
-            self.time_slice.global_quantities.psi_magnetic_axis = Some(psi_a);
+            self.time_slice.global_quantities.magnetic_axis.r = mag_r;
+            self.time_slice.global_quantities.magnetic_axis.z = mag_z;
+            self.time_slice.global_quantities.psi_magnetic_axis = psi_a;
 
             // Find boundary
             let plasma_boundary_or_error: Result<BoundaryContour, plasma_geometry::Error> = find_boundary(
@@ -726,29 +694,29 @@ impl<'a> EquilibriumSolver<'a> {
             }
             // Unwrap and store the plasma boundary
             let plasma_boundary: BoundaryContour = plasma_boundary_or_error.unwrap();
-            profiles_2d.mask = Some(plasma_boundary.mask.unwrap());
-            self.time_slice.boundary.psi = Some(plasma_boundary.bounding_psi);
-            self.time_slice.boundary.bounding.r = Some(plasma_boundary.bounding_r);
-            self.time_slice.boundary.bounding.z = Some(plasma_boundary.bounding_z);
-            let mask: Array2<f64> = profiles_2d.mask.clone().unwrap();
-            let psi_b: f64 = self.time_slice.boundary.psi.unwrap();
+            profiles_2d.mask = plasma_boundary.mask.unwrap();
+            self.time_slice.boundary.psi = plasma_boundary.bounding_psi;
+            self.time_slice.boundary.bounding.r = plasma_boundary.bounding_r;
+            self.time_slice.boundary.bounding.z = plasma_boundary.bounding_z;
+            let mask: Array2<f64> = profiles_2d.mask.clone();
+            let psi_b: f64 = self.time_slice.boundary.psi;
             // "type" is a Rust key word, so we need to use the "raw identifier" = `r#` to access it.
-            self.time_slice.boundary.r#type = Some(plasma_boundary.xpt_diverted as i32);
+            self.time_slice.boundary.r#type = plasma_boundary.xpt_diverted as i32;
 
             // Calculate psi_norm_2d
             let psi_norm_2d: Array2<f64> = &mask * (psi_2d - psi_a) / (psi_b - psi_a);
-            profiles_2d.psi_norm = Some(psi_norm_2d.clone());
+            profiles_2d.psi_norm = psi_norm_2d.clone();
 
             // Calculate GS error
             let gs_error_calculated: f64 = Self::calculate_gs_error(psi_a, psi_b, psi_a_previous);
-            self.time_slice.convergence.grad_shafranov_deviation_value = Some(gs_error_calculated);
+            self.time_slice.convergence.grad_shafranov_deviation_value = gs_error_calculated;
             psi_a_previous = psi_a; // needed to calculate gs-error in next iteration
 
             // Check for convergence
             if gs_error_calculated < gs_error_tolerance && i_iter > n_iter_min {
-                self.time_slice.convergence.iterations_n = Some(i_iter as i32);
-                self.time_slice.convergence.result.name = Some("converged".to_string());
-                self.time_slice.convergence.result.index = Some(CONVERGENCE_STATUS_CONVERGED);
+                self.time_slice.convergence.iterations_n = i_iter as i32;
+                self.time_slice.convergence.result.name = "converged".to_string();
+                self.time_slice.convergence.result.index = CONVERGENCE_STATUS_CONVERGED;
                 break 'iteration_loop; // Exit the iteration loop
             }
 
@@ -1361,11 +1329,11 @@ impl<'a> EquilibriumSolver<'a> {
 
             // Extract p_prime
             let p_prime_dof_values: Array1<f64> = dof_values.slice(s![0..n_p_prime_dof]).to_owned();
-            self.time_slice.source_functions.p_prime.coefficients = Some(p_prime_dof_values.clone());
+            self.time_slice.source_functions.p_prime.coefficients = p_prime_dof_values.clone();
 
             // Extract ff_prime
             let ff_prime_dof_values: Array1<f64> = dof_values.slice(s![n_p_prime_dof..n_p_prime_dof + n_ff_prime_dof]).to_owned();
-            self.time_slice.source_functions.ff_prime.coefficients = Some(ff_prime_dof_values.clone());
+            self.time_slice.source_functions.ff_prime.coefficients = ff_prime_dof_values.clone();
 
             // Extract passive currents
             let passive_dof_values = dof_values
@@ -1380,17 +1348,17 @@ impl<'a> EquilibriumSolver<'a> {
             } else {
                 delta_z = 0.0;
             }
-            self.time_slice.convergence.delta_z = Some(delta_z);
+            self.time_slice.convergence.delta_z = delta_z;
 
             // Calculate j_2d
             self.calculate_j();
-            let j_2d: Array2<f64> = self.time_slice.profiles_2d[0].j_phi.clone().unwrap();
+            let j_2d: Array2<f64> = self.time_slice.profiles_2d[0].j_phi.clone();
 
             // Total plasma current
             // TODO: do we actually need to calculate Ip at every iteration?
             let i_2d: Array2<f64> = &j_2d * d_area;
             let ip: f64 = i_2d.sum();
-            self.time_slice.global_quantities.ip = Some(ip);
+            self.time_slice.global_quantities.ip = ip;
 
             // // Write the time-slice to numpy files for debugging
             // self._write_time_slice_to_file(i_iter);
@@ -1425,13 +1393,15 @@ impl<'a> EquilibriumSolver<'a> {
     /// reorganisation of the convolution over current sources.
     pub fn calculate_psi_and_derivatives(&mut self, greens_tables: &PsiAndDerivativesGreens) {
         // Unpack from self
-        let n_r: usize = self.equilibrium_code.grid.n_r.unwrap() as usize;
-        let n_z: usize = self.equilibrium_code.grid.n_z.unwrap() as usize;
-        let d_area: f64 = self.time_slice.profiles_2d[0].grid.d_area.unwrap();
-        let j_2d: &Array2<f64> = self.time_slice.profiles_2d[0].j_phi.as_ref().unwrap();
+        let n_r: usize = self.equilibrium_code.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_code.grid.n_z as usize;
+        let d_area: f64 = self.time_slice.profiles_2d[0].grid.d_area;
+        let j_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].j_phi;
         let pf_coil_currents: &Array1<f64> = &self.coils_dynamic.measured;
         let passive_dof_values: &Array1<f64> = &self.passive_dof_values;
-        let delta_z: Option<f64> = self.time_slice.convergence.delta_z;
+        // NaN until the first inverse solve has run, which is when the vertical shift starts being
+        // applied
+        let delta_z: f64 = self.time_slice.convergence.delta_z;
 
         // ====================================================================
         // Part 1: the "unshifted" flux and derivatives
@@ -1445,7 +1415,7 @@ impl<'a> EquilibriumSolver<'a> {
         // PF coils
         // `psi` is precomputed (the PF currents are fixed within a time-slice);
         // the other fields are the Greens tables contracted with the PF currents
-        let psi_2d_coils: &Array2<f64> = self.time_slice.profiles_2d[0].psi_coils.as_ref().unwrap();
+        let psi_2d_coils: &Array2<f64> = &self.time_slice.profiles_2d[0].psi_coils;
         let d_psi_d_r_2d_coils: Array2<f64> = contract(&greens_tables.g_d_psi_d_r_coils_matrix, pf_coil_currents);
         let d_psi_d_z_2d_coils: Array2<f64> = contract(&greens_tables.g_d_psi_d_z_coils_matrix, pf_coil_currents);
         let d2_psi_d_r2_2d_coils: Array2<f64> = contract(&greens_tables.g_d2_psi_d_r2_coils_matrix, pf_coil_currents);
@@ -1570,7 +1540,7 @@ impl<'a> EquilibriumSolver<'a> {
         let d2_psi_d_r2_2d: Array2<f64>;
         let d2_psi_d_r_d_z_2d: Array2<f64>;
         let d2_psi_d_z2_2d: Array2<f64>;
-        if delta_z.is_none() {
+        if delta_z.is_nan() {
             psi_2d = psi_2d_unshifted;
             d_psi_d_r_2d = d_psi_d_r_2d_unshifted;
             d_psi_d_z_2d = d_psi_d_z_2d_unshifted;
@@ -1578,7 +1548,6 @@ impl<'a> EquilibriumSolver<'a> {
             d2_psi_d_r_d_z_2d = d2_psi_d_r_d_z_2d_unshifted;
             d2_psi_d_z2_2d = d2_psi_d_z2_2d_unshifted;
         } else {
-            let delta_z: f64 = delta_z.unwrap();
             psi_2d = psi_2d_unshifted + delta_z * &d_psi_d_z_2d_unshifted;
             d_psi_d_r_2d = d_psi_d_r_2d_unshifted + delta_z * &d2_psi_d_r_d_z_2d_unshifted;
             d_psi_d_z_2d = d_psi_d_z_2d_unshifted + delta_z * &d2_psi_d_z2_2d_unshifted;
@@ -1590,47 +1559,47 @@ impl<'a> EquilibriumSolver<'a> {
         // ====================================================================
         // Part 3: store the shifted flux and derivatives in the class
         // ====================================================================
-        self.time_slice.profiles_2d[0].psi = Some(psi_2d);
-        self.time_slice.profiles_2d[0].d_psi_d_r = Some(d_psi_d_r_2d);
-        self.time_slice.profiles_2d[0].d_psi_d_z = Some(d_psi_d_z_2d);
-        self.time_slice.profiles_2d[0].d2_psi_d_r2 = Some(d2_psi_d_r2_2d);
-        self.time_slice.profiles_2d[0].d2_psi_d_r_d_z = Some(d2_psi_d_r_d_z_2d);
-        self.time_slice.profiles_2d[0].d2_psi_d_z2 = Some(d2_psi_d_z2_2d);
+        self.time_slice.profiles_2d[0].psi = psi_2d;
+        self.time_slice.profiles_2d[0].d_psi_d_r = d_psi_d_r_2d;
+        self.time_slice.profiles_2d[0].d_psi_d_z = d_psi_d_z_2d;
+        self.time_slice.profiles_2d[0].d2_psi_d_r2 = d2_psi_d_r2_2d;
+        self.time_slice.profiles_2d[0].d2_psi_d_r_d_z = d2_psi_d_r_d_z_2d;
+        self.time_slice.profiles_2d[0].d2_psi_d_z2 = d2_psi_d_z2_2d;
     }
 
     fn calculate_j(&mut self) {
         // Unpack from self
-        let mesh_r: &Array2<f64> = &self.time_slice.profiles_2d[0].r.clone().unwrap();
-        let psi_norm_2d: Array2<f64> = self.time_slice.profiles_2d[0].psi_norm.clone().unwrap();
-        let n_r: usize = self.equilibrium_code.grid.n_r.unwrap() as usize;
-        let n_z: usize = self.equilibrium_code.grid.n_z.unwrap() as usize;
-        let mask: Array2<f64> = self.time_slice.profiles_2d[0].mask.clone().unwrap();
+        let mesh_r: &Array2<f64> = &self.time_slice.profiles_2d[0].r;
+        let psi_norm_2d: Array2<f64> = self.time_slice.profiles_2d[0].psi_norm.clone();
+        let n_r: usize = self.equilibrium_code.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_code.grid.n_z as usize;
+        let mask: &Array2<f64> = &self.time_slice.profiles_2d[0].mask;
         let p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.p_prime_source_function.clone();
         let ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.ff_prime_source_function.clone();
 
         // Calculate profiles
-        let psi_norm_flat: Array1<f64> = Array1::from_iter(psi_norm_2d.iter().cloned());
+        let psi_norm_flat: Array1<f64> = psi_norm_2d.flatten().to_owned();
 
-        let p_prime_dof_values: Array1<f64> = self.time_slice.source_functions.p_prime.coefficients.clone().unwrap();
-        let ff_prime_dof_values: Array1<f64> = self.time_slice.source_functions.ff_prime.coefficients.clone().unwrap();
+        let p_prime_dof_values: Array1<f64> = self.time_slice.source_functions.p_prime.coefficients.clone();
+        let ff_prime_dof_values: Array1<f64> = self.time_slice.source_functions.ff_prime.coefficients.clone();
 
         let p_prime_2d: Array2<f64> = p_prime_source_function
             .source_function_value(&psi_norm_flat, &p_prime_dof_values)
             .to_shape((n_z, n_r))
             .unwrap()
             .to_owned();
-        let j_2d_p_prime: Array2<f64> = 2.0 * PI * mesh_r * p_prime_2d * &mask;
+        let j_2d_p_prime: Array2<f64> = 2.0 * PI * mesh_r * p_prime_2d * mask;
 
         let ff_prime_2d: Array2<f64> = ff_prime_source_function
             .source_function_value(&psi_norm_flat, &ff_prime_dof_values)
             .to_shape((n_z, n_r))
             .unwrap()
             .to_owned();
-        let j_2d_ff_prime: Array2<f64> = 2.0 * PI * ff_prime_2d * &mask / (MU_0 * mesh_r);
+        let j_2d_ff_prime: Array2<f64> = 2.0 * PI * ff_prime_2d * mask / (MU_0 * mesh_r);
 
         // Calculate j_2d
         let j_2d: Array2<f64> = j_2d_p_prime + j_2d_ff_prime;
-        self.time_slice.profiles_2d[0].j_phi = Some(j_2d.clone());
+        self.time_slice.profiles_2d[0].j_phi = j_2d.clone();
     }
 
     /// Set this time-slice's starting `j_phi`, `psi_coils` and magnetic-axis position.
@@ -1640,8 +1609,8 @@ impl<'a> EquilibriumSolver<'a> {
     /// `psi_coils` *is* per-time-slice, because it depends on this slice's measured PF currents.
     pub fn initialise_plasma_with_quadratic_current_density(&mut self) -> Result<(), String> {
         // Unpack objects
-        let initial_guess_cur_r: f64 = self.equilibrium_code.initial_guess.cur_r.unwrap();
-        let initial_guess_cur_z: f64 = self.equilibrium_code.initial_guess.cur_z.unwrap();
+        let initial_guess_cur_r: f64 = self.equilibrium_code.initial_guess.cur_r;
+        let initial_guess_cur_z: f64 = self.equilibrium_code.initial_guess.cur_z;
         let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
 
         // Extract stuff from Coils
@@ -1650,15 +1619,15 @@ impl<'a> EquilibriumSolver<'a> {
         // Flux from the poloidal field coils, from the Greens tables on the IDS. The coils are
         // summed in IDS order, which is the order the measured currents are in
         let n_pf: usize = self.greens_tables.pf_active.len();
-        let n_r: usize = self.equilibrium_code.grid.n_r.unwrap() as usize;
-        let n_z: usize = self.equilibrium_code.grid.n_z.unwrap() as usize;
+        let n_r: usize = self.equilibrium_code.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_code.grid.n_z as usize;
 
         let mut psi_2d_coils: Array2<f64> = Array2::zeros((n_z, n_r));
         for i_pf in 0..n_pf {
-            let g_psi_coil: &Array2<f64> = self.greens_tables.pf_active[i_pf]
-                .psi
-                .as_ref()
-                .ok_or_else(|| format!("equilibrium_solve: `greens/pf_active({i_pf})/psi` unset"))?;
+            let g_psi_coil: &Array2<f64> = &self.greens_tables.pf_active[i_pf].psi;
+            if g_psi_coil.is_empty() {
+                return Err(format!("equilibrium_solve: `greens/pf_active({i_pf})/psi` unset"));
+            }
             psi_2d_coils = psi_2d_coils + g_psi_coil * pf_currents[i_pf];
         }
 
@@ -1670,10 +1639,10 @@ impl<'a> EquilibriumSolver<'a> {
         };
 
         // Store in self
-        self.time_slice.profiles_2d[0].j_phi = Some(j_2d);
-        self.time_slice.profiles_2d[0].psi_coils = Some(psi_2d_coils);
-        self.time_slice.global_quantities.magnetic_axis.r = Some(initial_guess_cur_r);
-        self.time_slice.global_quantities.magnetic_axis.z = Some(initial_guess_cur_z);
+        self.time_slice.profiles_2d[0].j_phi = j_2d;
+        self.time_slice.profiles_2d[0].psi_coils = psi_2d_coils;
+        self.time_slice.global_quantities.magnetic_axis.r = initial_guess_cur_r;
+        self.time_slice.global_quantities.magnetic_axis.z = initial_guess_cur_z;
         Ok(())
     }
 
@@ -1698,15 +1667,15 @@ impl<'a> EquilibriumSolver<'a> {
     ///
     /// **This function is only used for development**
     fn _calculate_gs_error_numerical(&mut self) {
-        let psi_2d: &Array2<f64> = self.time_slice.profiles_2d[0].psi.as_ref().unwrap();
-        let r: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim1.clone().unwrap();
-        let z: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim2.clone().unwrap();
+        let psi_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].psi;
+        let r: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim1.clone();
+        let z: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim2.clone();
 
         // Define some variables
         let d_r: f64 = r[1] - r[0];
         let d_z: f64 = z[1] - z[0];
-        let n_r: usize = self.equilibrium_code.grid.n_r.unwrap() as usize;
-        let n_z: usize = self.equilibrium_code.grid.n_z.unwrap() as usize;
+        let n_r: usize = self.equilibrium_code.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_code.grid.n_z as usize;
 
         // Laplacian(psi)
         let mut laplacian_psi: Array2<f64> = Array2::zeros((n_z, n_r));
@@ -1719,12 +1688,12 @@ impl<'a> EquilibriumSolver<'a> {
                 laplacian_psi[(i_z, i_r)] = d2_psi_dr2 - r_d_psi_dr + d2_psi_dz2;
             }
         }
-        let mask: Array2<f64> = self.time_slice.profiles_2d[0].mask.clone().unwrap();
+        let mask: Array2<f64> = self.time_slice.profiles_2d[0].mask.clone();
         laplacian_psi = laplacian_psi * mask;
 
         // RHS of Grad-Shafranov equation
         // Eq. 3 in "Tokamak equilibrium reconstruction code LIUQE and its real time implementation", 2015
-        let j_2d: Array2<f64> = self.time_slice.profiles_2d[0].j_phi.clone().unwrap();
+        let j_2d: Array2<f64> = self.time_slice.profiles_2d[0].j_phi.clone();
         let mut gs_rhs: Array2<f64> = Array2::zeros((n_z, n_r));
         for i_r in 0..n_r {
             let tmp: Array1<f64> = -2.0 * PI * MU_0 * r[i_r] * j_2d.slice(s![.., i_r]).to_owned();
@@ -1747,14 +1716,14 @@ impl<'a> EquilibriumSolver<'a> {
         // Equivalent to `mkdir -p tmp`
         std::fs::create_dir_all("tmp").unwrap();
 
-        let psi_2d: &Array2<f64> = self.time_slice.profiles_2d[0].psi.as_ref().unwrap();
-        let d_psi_d_r_2d: &Array2<f64> = self.time_slice.profiles_2d[0].d_psi_d_r.as_ref().unwrap();
-        let d_psi_d_z_2d: &Array2<f64> = self.time_slice.profiles_2d[0].d_psi_d_z.as_ref().unwrap();
-        let psi_b: f64 = self.time_slice.boundary.psi.unwrap();
-        let bounding_r: f64 = self.time_slice.boundary.bounding.r.unwrap();
-        let bounding_z: f64 = self.time_slice.boundary.bounding.z.unwrap();
-        let mag_r: f64 = self.time_slice.global_quantities.magnetic_axis.r.unwrap();
-        let mag_z: f64 = self.time_slice.global_quantities.magnetic_axis.z.unwrap();
+        let psi_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].psi;
+        let d_psi_d_r_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].d_psi_d_r;
+        let d_psi_d_z_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].d_psi_d_z;
+        let psi_b: f64 = self.time_slice.boundary.psi;
+        let bounding_r: f64 = self.time_slice.boundary.bounding.r;
+        let bounding_z: f64 = self.time_slice.boundary.bounding.z;
+        let mag_r: f64 = self.time_slice.global_quantities.magnetic_axis.r;
+        let mag_z: f64 = self.time_slice.global_quantities.magnetic_axis.z;
 
         // Filename has two leading zeros, e.g. i_iter=000, i_iter=001, ...
         npy_reader_and_writer::write_npy_2d(Path::new(&format!("tmp/i_iter={:03}_psi_2d.npy", i_iter)), psi_2d);
@@ -1785,10 +1754,10 @@ impl<'a> EquilibriumSolver<'a> {
                 2
             };
             nodes.push(EquilibriumContourTreeNode {
-                critical_type: Some(critical_type),
-                r: Some(stationary_point.r),
-                z: Some(stationary_point.z),
-                psi: Some(stationary_point.psi),
+                critical_type: critical_type,
+                r: stationary_point.r,
+                z: stationary_point.z,
+                psi: stationary_point.psi,
                 ..Default::default()
             });
         }
@@ -1805,7 +1774,7 @@ impl<'a> EquilibriumSolver<'a> {
         // but the IMAS data structure needs a bit of thought, since our passive degrees of freedom are the
         // eigenmodes! Perhaps we store each filament's current individually?
         // Degrees of freedom
-        self.time_slice.passive_dof_values = Some(self.passive_dof_values.to_owned());
+        self.time_slice.passive_dof_values = self.passive_dof_values.to_owned();
     }
 }
 
@@ -1818,11 +1787,15 @@ impl<'a> EquilibriumSolver<'a> {
 /// `output_flag` is `INT_1D` indexed by time and lives on the IDS rather than the time-slice, so it
 /// is assembled by the caller once every slice has been solved.
 pub fn output_flag(time_slice: &EquilibriumTimeSlice) -> i32 {
-    return match time_slice.convergence.result.index {
-        Some(CONVERGENCE_STATUS_CONVERGED) => 0,
-        Some(convergence_status) => -convergence_status,
-        None => -CONVERGENCE_STATUS_FATAL_ERROR,
-    };
+    let convergence_status: i32 = time_slice.convergence.result.index;
+    if convergence_status == CONVERGENCE_STATUS_CONVERGED {
+        return 0;
+    }
+    if convergence_status == EMPTY_INT {
+        // Never written, so the slice was never solved at all
+        return -CONVERGENCE_STATUS_FATAL_ERROR;
+    }
+    return -convergence_status;
 }
 
 /// Everything the Grad-Shafranov solve needs which is not already in the `Equilibrium` IDS.

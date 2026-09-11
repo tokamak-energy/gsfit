@@ -23,9 +23,9 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let i_rod: f64 = constant_values.i_rod;
 
-    let r_geo: f64 = time_slice.boundary.geometric_axis.r.unwrap();
+    let r_geo: f64 = time_slice.boundary.geometric_axis.r;
 
     let bt_vac_at_r_geo: f64 = MU_0 * i_rod / (2.0 * PI * r_geo);
 
-    time_slice.global_quantities.bt_vac_at_r_geo = Some(bt_vac_at_r_geo);
+    time_slice.global_quantities.bt_vac_at_r_geo = bt_vac_at_r_geo;
 }

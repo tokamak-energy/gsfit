@@ -46,7 +46,10 @@ class Equilibrium:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. Unset floats read back as NaN.
+        gives one value, a slice gathers.
+
+        An unset leaf reads back as the IMAS empty value: NaN for a float,
+        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
         """
     def __len__(self) -> int:
         """The number of time slices held by this IDS."""
@@ -95,27 +98,27 @@ class _EquilibriumCodeItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -144,27 +147,27 @@ class _EquilibriumCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -1019,7 +1022,7 @@ class _EquilibriumConstraints0dItem:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[str | None]:
+    def source(self) -> Path[str]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1068,7 +1071,7 @@ class _EquilibriumConstraints0dMany:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[list[str | None]]:
+    def source(self) -> Path[list[str]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1117,7 +1120,7 @@ class _EquilibriumConstraints0dB0LikeItem:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[str | None]:
+    def source(self) -> Path[str]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1166,7 +1169,7 @@ class _EquilibriumConstraints0dB0LikeMany:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[list[str | None]]:
+    def source(self) -> Path[list[str]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1215,7 +1218,7 @@ class _EquilibriumConstraints0dIpLikeItem:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[str | None]:
+    def source(self) -> Path[str]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1264,7 +1267,7 @@ class _EquilibriumConstraints0dIpLikeMany:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[list[str | None]]:
+    def source(self) -> Path[list[str]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1313,7 +1316,7 @@ class _EquilibriumConstraints0dOneLikeItem:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[str | None]:
+    def source(self) -> Path[str]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1362,7 +1365,7 @@ class _EquilibriumConstraints0dOneLikeMany:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[list[str | None]]:
+    def source(self) -> Path[list[str]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1415,7 +1418,7 @@ class _EquilibriumConstraints0dPositionItem:
         """Position at which this measurement is given
         """
     @property
-    def source(self) -> Path[str | None]:
+    def source(self) -> Path[str]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1468,7 +1471,7 @@ class _EquilibriumConstraints0dPositionMany:
         """Position at which this measurement is given
         """
     @property
-    def source(self) -> Path[list[str | None]]:
+    def source(self) -> Path[list[str]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1549,7 +1552,7 @@ class _EquilibriumConstraintsPurePositionItem:
         """Measured or estimated position
         """
     @property
-    def source(self) -> Path[str | None]:
+    def source(self) -> Path[str]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1600,7 +1603,7 @@ class _EquilibriumConstraintsPurePositionMany:
         """Measured or estimated position
         """
     @property
-    def source(self) -> Path[list[str | None]]:
+    def source(self) -> Path[list[str]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1889,11 +1892,11 @@ class _EquilibriumGapItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. mid-plane gap
         """
     @property
@@ -1926,11 +1929,11 @@ class _EquilibriumGapMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. mid-plane gap
         """
     @property
@@ -2891,7 +2894,7 @@ class _EquilibriumGreensPfActiveItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of the coil, e.g. `"BVL"`
         """
     @property
@@ -2991,7 +2994,7 @@ class _EquilibriumGreensPfActiveMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of the coil, e.g. `"BVL"`
         """
     @property
@@ -3091,7 +3094,7 @@ class _EquilibriumGreensPfPassiveItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of the passive conductor, e.g. `"IVC"`
         """
     @property
@@ -3104,7 +3107,7 @@ class _EquilibriumGreensPfPassiveMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of the passive conductor, e.g. `"IVC"`
         """
     @property
@@ -3117,7 +3120,7 @@ class _EquilibriumGreensPfPassiveDofItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of the degree of freedom, e.g. `"EIG_01"`
         """
     @property
@@ -3217,7 +3220,7 @@ class _EquilibriumGreensPfPassiveDofMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of the degree of freedom, e.g. `"EIG_01"`
         """
     @property
@@ -4683,7 +4686,7 @@ class _EquilibriumGenericGridDynamicItem:
         """Grid identifier
         """
     @property
-    def path(self) -> Path[str | None]:
+    def path(self) -> Path[str]:
         """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
         """
     @property
@@ -4704,7 +4707,7 @@ class _EquilibriumGenericGridDynamicMany:
         """Grid identifier
         """
     @property
-    def path(self) -> Path[list[str | None]]:
+    def path(self) -> Path[list[str]]:
         """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
         """
     @property
@@ -5075,7 +5078,7 @@ class _EquilibriumIdentifierDynamicAos3Item:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier
         """
     @property
@@ -5083,7 +5086,7 @@ class _EquilibriumIdentifierDynamicAos3Item:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Verbose description
         """
 
@@ -5092,7 +5095,7 @@ class _EquilibriumIdentifierDynamicAos3Many:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier
         """
     @property
@@ -5100,7 +5103,7 @@ class _EquilibriumIdentifierDynamicAos3Many:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Verbose description
         """
 
@@ -5109,27 +5112,27 @@ class _EquilibriumLibraryItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
 
@@ -5138,27 +5141,27 @@ class _EquilibriumLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
 
@@ -5648,7 +5651,10 @@ class PfActive:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. Unset floats read back as NaN.
+        gives one value, a slice gathers.
+
+        An unset leaf reads back as the IMAS empty value: NaN for a float,
+        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
         """
     def __len__(self) -> int:
         """The number of time slices held by this IDS."""
@@ -5767,27 +5773,27 @@ class _PfActiveCodeItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -5804,27 +5810,27 @@ class _PfActiveCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -5841,7 +5847,7 @@ class _PfActiveIdentifierStaticItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier
         """
     @property
@@ -5849,7 +5855,7 @@ class _PfActiveIdentifierStaticItem:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Verbose description
         """
 
@@ -5858,7 +5864,7 @@ class _PfActiveIdentifierStaticMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier
         """
     @property
@@ -5866,7 +5872,7 @@ class _PfActiveIdentifierStaticMany:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Verbose description
         """
 
@@ -5875,27 +5881,27 @@ class _PfActiveLibraryItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
 
@@ -5904,27 +5910,27 @@ class _PfActiveLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
 
@@ -6081,15 +6087,15 @@ class _PfActivePfCircuitsItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
-    def type(self) -> Path[str | None]:
+    def type(self) -> Path[str]:
         """Type of the circuit
         """
     @property
@@ -6114,15 +6120,15 @@ class _PfActivePfCircuitsMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
-    def type(self) -> Path[list[str | None]]:
+    def type(self) -> Path[list[str]]:
         """Type of the circuit
         """
     @property
@@ -6147,11 +6153,11 @@ class _PfActivePfCoilsItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -6268,11 +6274,11 @@ class _PfActivePfCoilsMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -6389,11 +6395,11 @@ class _PfActivePfCoilsElementsItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -6418,11 +6424,11 @@ class _PfActivePfCoilsElementsMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -6505,11 +6511,11 @@ class _PfActivePfSuppliesItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -6577,7 +6583,7 @@ class _PfActivePfSuppliesItem:
         Units: J
         """
     @property
-    def nonlinear_model(self) -> Path[str | None]:
+    def nonlinear_model(self) -> Path[str]:
         """Description of the nonlinear transfer function of the supply
         """
     @property
@@ -6598,11 +6604,11 @@ class _PfActivePfSuppliesMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -6670,7 +6676,7 @@ class _PfActivePfSuppliesMany:
         Units: J
         """
     @property
-    def nonlinear_model(self) -> Path[list[str | None]]:
+    def nonlinear_model(self) -> Path[list[str]]:
         """Description of the nonlinear transfer function of the supply
         """
     @property
@@ -6851,7 +6857,7 @@ class _PfActiveTemperatureReferenceItem:
     """
 
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description of how the reference temperature is defined : for which object, at which location, ...
         """
     @property
@@ -6866,7 +6872,7 @@ class _PfActiveTemperatureReferenceMany:
     """
 
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description of how the reference temperature is defined : for which object, at which location, ...
         """
     @property
@@ -7030,7 +7036,10 @@ class PfPassive:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. Unset floats read back as NaN.
+        gives one value, a slice gathers.
+
+        An unset leaf reads back as the IMAS empty value: NaN for a float,
+        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
         """
     def __len__(self) -> int:
         """The number of time slices held by this IDS."""
@@ -7149,27 +7158,27 @@ class _PfPassiveCodeItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -7186,27 +7195,27 @@ class _PfPassiveCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -7223,27 +7232,27 @@ class _PfPassiveLibraryItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
 
@@ -7252,27 +7261,27 @@ class _PfPassiveLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
 
@@ -7429,11 +7438,11 @@ class _PfPassivePfCoilsElementsItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -7458,11 +7467,11 @@ class _PfPassivePfCoilsElementsMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -7487,11 +7496,11 @@ class _PfPassiveLoopsItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -7526,11 +7535,11 @@ class _PfPassiveLoopsMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -7785,7 +7794,10 @@ class Tf:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. Unset floats read back as NaN.
+        gives one value, a slice gathers.
+
+        An unset leaf reads back as the IMAS empty value: NaN for a float,
+        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
         """
     def __len__(self) -> int:
         """The number of time slices held by this IDS."""
@@ -7800,27 +7812,27 @@ class _TfCodeItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -7837,27 +7849,27 @@ class _TfCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -7874,11 +7886,11 @@ class _TfCoilItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “Coil between sector 1 and 2”
         """
     @property
@@ -7921,11 +7933,11 @@ class _TfCoilMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “Coil between sector 1 and 2”
         """
     @property
@@ -8192,7 +8204,7 @@ class _TfGenericGridDynamicItem:
         """Grid identifier
         """
     @property
-    def path(self) -> Path[str | None]:
+    def path(self) -> Path[str]:
         """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
         """
     @property
@@ -8213,7 +8225,7 @@ class _TfGenericGridDynamicMany:
         """Grid identifier
         """
     @property
-    def path(self) -> Path[list[str | None]]:
+    def path(self) -> Path[list[str]]:
         """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
         """
     @property
@@ -8584,7 +8596,7 @@ class _TfIdentifierDynamicAos3Item:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier
         """
     @property
@@ -8592,7 +8604,7 @@ class _TfIdentifierDynamicAos3Item:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Verbose description
         """
 
@@ -8601,7 +8613,7 @@ class _TfIdentifierDynamicAos3Many:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier
         """
     @property
@@ -8609,7 +8621,7 @@ class _TfIdentifierDynamicAos3Many:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Verbose description
         """
 
@@ -8618,7 +8630,7 @@ class _TfIdentifierStaticItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier
         """
     @property
@@ -8626,7 +8638,7 @@ class _TfIdentifierStaticItem:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Verbose description
         """
 
@@ -8635,7 +8647,7 @@ class _TfIdentifierStaticMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier
         """
     @property
@@ -8643,7 +8655,7 @@ class _TfIdentifierStaticMany:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Verbose description
         """
 
@@ -8652,27 +8664,27 @@ class _TfLibraryItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
 
@@ -8681,27 +8693,27 @@ class _TfLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
 
@@ -9104,7 +9116,10 @@ class Wall:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. Unset floats read back as NaN.
+        gives one value, a slice gathers.
+
+        An unset leaf reads back as the IMAS empty value: NaN for a float,
+        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
         """
     def __len__(self) -> int:
         """The number of time slices held by this IDS."""
@@ -9119,27 +9134,27 @@ class _WallCodeItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -9156,27 +9171,27 @@ class _WallCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -9197,7 +9212,7 @@ class _WallGenericGridAos3RootItem:
         """Grid identifier
         """
     @property
-    def path(self) -> Path[str | None]:
+    def path(self) -> Path[str]:
         """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
         """
     @property
@@ -9224,7 +9239,7 @@ class _WallGenericGridAos3RootMany:
         """Grid identifier
         """
     @property
-    def path(self) -> Path[list[str | None]]:
+    def path(self) -> Path[list[str]]:
         """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
         """
     @property
@@ -9817,7 +9832,7 @@ class _WallIdentifierDynamicAos3Item:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier
         """
     @property
@@ -9825,7 +9840,7 @@ class _WallIdentifierDynamicAos3Item:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Verbose description
         """
 
@@ -9834,7 +9849,7 @@ class _WallIdentifierDynamicAos3Many:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier
         """
     @property
@@ -9842,7 +9857,7 @@ class _WallIdentifierDynamicAos3Many:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Verbose description
         """
 
@@ -9868,7 +9883,7 @@ class _WallIdentifierDynamicAos31dMany:
     """
 
     @property
-    def names(self) -> Path[list[list[str] | None]]:
+    def names(self) -> Path[list[list[str]]]:
         """Short string identifiers
         """
     @property
@@ -9876,7 +9891,7 @@ class _WallIdentifierDynamicAos31dMany:
         """Integer identifiers (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def descriptions(self) -> Path[list[list[str] | None]]:
+    def descriptions(self) -> Path[list[list[str]]]:
         """Verbose description
         """
 
@@ -9885,7 +9900,7 @@ class _WallIdentifierStaticItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier
         """
     @property
@@ -9893,7 +9908,7 @@ class _WallIdentifierStaticItem:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Verbose description
         """
 
@@ -9902,7 +9917,7 @@ class _WallIdentifierStaticMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier
         """
     @property
@@ -9910,7 +9925,7 @@ class _WallIdentifierStaticMany:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Verbose description
         """
 
@@ -9919,27 +9934,27 @@ class _WallLibraryItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
 
@@ -9948,27 +9963,27 @@ class _WallLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
 
@@ -10175,7 +10190,7 @@ class _WallTemperatureReferenceItem:
     """
 
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description of how the reference temperature is defined : for which object, at which location, ...
         """
     @property
@@ -10190,7 +10205,7 @@ class _WallTemperatureReferenceMany:
     """
 
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description of how the reference temperature is defined : for which object, at which location, ...
         """
     @property
@@ -10289,7 +10304,7 @@ class _WallVessel2dElementItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of the block element
         """
     @property
@@ -10320,7 +10335,7 @@ class _WallVessel2dElementMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of the block element
         """
     @property
@@ -10351,11 +10366,11 @@ class _WallVessel2dUnitItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -10382,11 +10397,11 @@ class _WallVessel2dUnitMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -10481,11 +10496,11 @@ class _Wall2dLimiterUnitItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -10532,11 +10547,11 @@ class _Wall2dLimiterUnitMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -10609,7 +10624,7 @@ class _Wall2dMobileUnitItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of the mobile unit
         """
     @property
@@ -10634,7 +10649,7 @@ class _Wall2dMobileUnitMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of the mobile unit
         """
     @property
@@ -10786,7 +10801,7 @@ class _WallDescriptionGgdComponentMany:
     """
 
     @property
-    def identifiers(self) -> Path[list[list[str] | None]]:
+    def identifiers(self) -> Path[list[list[str]]]:
         """Identifiers of the components (described in the various grid_subsets). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna
         """
     @property
@@ -10857,7 +10872,7 @@ class _WallDescriptionGgdEnergyIonItem:
         Units: e
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying ion (e.g. H, D, T, He, C, D2, ...)
         """
     @property
@@ -10900,7 +10915,7 @@ class _WallDescriptionGgdEnergyIonMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying ion (e.g. H, D, T, He, C, D2, ...)
         """
     @property
@@ -10945,7 +10960,7 @@ class _WallDescriptionGgdEnergyIonStateItem:
         Units: e
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
         """
     @property
@@ -10955,11 +10970,11 @@ class _WallDescriptionGgdEnergyIonStateItem:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[str | None]:
+    def vibrational_mode(self) -> Path[str]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
-    def electron_configuration(self) -> Path[str | None]:
+    def electron_configuration(self) -> Path[str]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -10992,7 +11007,7 @@ class _WallDescriptionGgdEnergyIonStateMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
         """
     @property
@@ -11002,11 +11017,11 @@ class _WallDescriptionGgdEnergyIonStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str | None]]:
+    def vibrational_mode(self) -> Path[list[str]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
-    def electron_configuration(self) -> Path[list[str | None]]:
+    def electron_configuration(self) -> Path[list[str]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -11031,7 +11046,7 @@ class _WallDescriptionGgdEnergyNeutralItem:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying neutral (e.g. H, D, T, He, C, ...)
         """
     @property
@@ -11068,7 +11083,7 @@ class _WallDescriptionGgdEnergyNeutralMany:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying neutral (e.g. H, D, T, He, C, ...)
         """
     @property
@@ -11101,7 +11116,7 @@ class _WallDescriptionGgdEnergyNeutralStateItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying state
         """
     @property
@@ -11111,7 +11126,7 @@ class _WallDescriptionGgdEnergyNeutralStateItem:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[str | None]:
+    def vibrational_mode(self) -> Path[str]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
@@ -11119,7 +11134,7 @@ class _WallDescriptionGgdEnergyNeutralStateItem:
         """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
         """
     @property
-    def electron_configuration(self) -> Path[str | None]:
+    def electron_configuration(self) -> Path[str]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -11140,7 +11155,7 @@ class _WallDescriptionGgdEnergyNeutralStateMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying state
         """
     @property
@@ -11150,7 +11165,7 @@ class _WallDescriptionGgdEnergyNeutralStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str | None]]:
+    def vibrational_mode(self) -> Path[list[str]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
@@ -11158,7 +11173,7 @@ class _WallDescriptionGgdEnergyNeutralStateMany:
         """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
         """
     @property
-    def electron_configuration(self) -> Path[list[str | None]]:
+    def electron_configuration(self) -> Path[list[str]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -11533,7 +11548,7 @@ class _WallDescriptionGgdParticleIonItem:
         Units: e
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying ion (e.g. H, D, T, He, C, D2, ...)
         """
     @property
@@ -11576,7 +11591,7 @@ class _WallDescriptionGgdParticleIonMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying ion (e.g. H, D, T, He, C, D2, ...)
         """
     @property
@@ -11621,7 +11636,7 @@ class _WallDescriptionGgdParticleIonStateItem:
         Units: e
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
         """
     @property
@@ -11631,11 +11646,11 @@ class _WallDescriptionGgdParticleIonStateItem:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[str | None]:
+    def vibrational_mode(self) -> Path[str]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
-    def electron_configuration(self) -> Path[str | None]:
+    def electron_configuration(self) -> Path[str]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -11668,7 +11683,7 @@ class _WallDescriptionGgdParticleIonStateMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
         """
     @property
@@ -11678,11 +11693,11 @@ class _WallDescriptionGgdParticleIonStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str | None]]:
+    def vibrational_mode(self) -> Path[list[str]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
-    def electron_configuration(self) -> Path[list[str | None]]:
+    def electron_configuration(self) -> Path[list[str]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -11707,7 +11722,7 @@ class _WallDescriptionGgdParticleNeutralItem:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying neutral (e.g. H, D, T, He, C, ...)
         """
     @property
@@ -11744,7 +11759,7 @@ class _WallDescriptionGgdParticleNeutralMany:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying neutral (e.g. H, D, T, He, C, ...)
         """
     @property
@@ -11777,7 +11792,7 @@ class _WallDescriptionGgdParticleNeutralStateItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying state
         """
     @property
@@ -11787,7 +11802,7 @@ class _WallDescriptionGgdParticleNeutralStateItem:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[str | None]:
+    def vibrational_mode(self) -> Path[str]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
@@ -11795,7 +11810,7 @@ class _WallDescriptionGgdParticleNeutralStateItem:
         """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
         """
     @property
-    def electron_configuration(self) -> Path[str | None]:
+    def electron_configuration(self) -> Path[str]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -11816,7 +11831,7 @@ class _WallDescriptionGgdParticleNeutralStateMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying state
         """
     @property
@@ -11826,7 +11841,7 @@ class _WallDescriptionGgdParticleNeutralStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str | None]]:
+    def vibrational_mode(self) -> Path[list[str]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
@@ -11834,7 +11849,7 @@ class _WallDescriptionGgdParticleNeutralStateMany:
         """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
         """
     @property
-    def electron_configuration(self) -> Path[list[str | None]]:
+    def electron_configuration(self) -> Path[list[str]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -11917,7 +11932,7 @@ class _WallDescriptionGgdRecyclingIonItem:
         Units: e
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying ion (e.g. H, D, T, He, C, D2, ...)
         """
     @property
@@ -11954,7 +11969,7 @@ class _WallDescriptionGgdRecyclingIonMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying ion (e.g. H, D, T, He, C, D2, ...)
         """
     @property
@@ -11993,7 +12008,7 @@ class _WallDescriptionGgdRecyclingIonStateItem:
         Units: e
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
         """
     @property
@@ -12003,11 +12018,11 @@ class _WallDescriptionGgdRecyclingIonStateItem:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[str | None]:
+    def vibrational_mode(self) -> Path[str]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
-    def electron_configuration(self) -> Path[str | None]:
+    def electron_configuration(self) -> Path[str]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -12034,7 +12049,7 @@ class _WallDescriptionGgdRecyclingIonStateMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
         """
     @property
@@ -12044,11 +12059,11 @@ class _WallDescriptionGgdRecyclingIonStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str | None]]:
+    def vibrational_mode(self) -> Path[list[str]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
-    def electron_configuration(self) -> Path[list[str | None]]:
+    def electron_configuration(self) -> Path[list[str]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -12067,7 +12082,7 @@ class _WallDescriptionGgdRecyclingNeutralItem:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying neutral (e.g. H, D, T, He, C, ...)
         """
     @property
@@ -12098,7 +12113,7 @@ class _WallDescriptionGgdRecyclingNeutralMany:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying neutral (e.g. H, D, T, He, C, ...)
         """
     @property
@@ -12125,7 +12140,7 @@ class _WallDescriptionGgdRecyclingNeutralStateItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying state
         """
     @property
@@ -12135,7 +12150,7 @@ class _WallDescriptionGgdRecyclingNeutralStateItem:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[str | None]:
+    def vibrational_mode(self) -> Path[str]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
@@ -12143,7 +12158,7 @@ class _WallDescriptionGgdRecyclingNeutralStateItem:
         """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
         """
     @property
-    def electron_configuration(self) -> Path[str | None]:
+    def electron_configuration(self) -> Path[str]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -12158,7 +12173,7 @@ class _WallDescriptionGgdRecyclingNeutralStateMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying state
         """
     @property
@@ -12168,7 +12183,7 @@ class _WallDescriptionGgdRecyclingNeutralStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str | None]]:
+    def vibrational_mode(self) -> Path[list[str]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
@@ -12176,7 +12191,7 @@ class _WallDescriptionGgdRecyclingNeutralStateMany:
         """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
         """
     @property
-    def electron_configuration(self) -> Path[list[str | None]]:
+    def electron_configuration(self) -> Path[list[str]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -12457,7 +12472,7 @@ class _WallGlobalQuantititesNeutralItem:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying the species (e.g. H, D, CD4, ...)
         """
     @property
@@ -12516,7 +12531,7 @@ class _WallGlobalQuantititesNeutralMany:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying the species (e.g. H, D, CD4, ...)
         """
     @property
@@ -12575,7 +12590,7 @@ class _WallGlobalQuantititesNeutralOriginItem:
         """List of elements forming the atom or molecule of the incident species
         """
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """String identifying the incident species (e.g. H, D, CD4, ...)
         """
     @property
@@ -12612,7 +12627,7 @@ class _WallGlobalQuantititesNeutralOriginMany:
         """List of elements forming the atom or molecule of the incident species
         """
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """String identifying the incident species (e.g. H, D, CD4, ...)
         """
     @property
@@ -13199,7 +13214,10 @@ class Magnetics:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers. Unset floats read back as NaN.
+        gives one value, a slice gathers.
+
+        An unset leaf reads back as the IMAS empty value: NaN for a float,
+        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
         """
     def __len__(self) -> int:
         """The number of time slices held by this IDS."""
@@ -13214,27 +13232,27 @@ class _MagneticsCodeItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -13251,27 +13269,27 @@ class _MagneticsCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -13288,7 +13306,7 @@ class _MagneticsIdentifierStaticItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier
         """
     @property
@@ -13296,7 +13314,7 @@ class _MagneticsIdentifierStaticItem:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Verbose description
         """
 
@@ -13305,7 +13323,7 @@ class _MagneticsIdentifierStaticMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier
         """
     @property
@@ -13313,7 +13331,7 @@ class _MagneticsIdentifierStaticMany:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Verbose description
         """
 
@@ -13322,27 +13340,27 @@ class _MagneticsLibraryItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Name of software
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[str | None]:
+    def commit(self) -> Path[str]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[str | None]:
+    def version(self) -> Path[str]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[str | None]:
+    def repository(self) -> Path[str]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[str | None]:
+    def parameters(self) -> Path[str]:
         """List of the code specific parameters in XML format
         """
 
@@ -13351,27 +13369,27 @@ class _MagneticsLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str | None]]:
+    def commit(self) -> Path[list[str]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str | None]]:
+    def version(self) -> Path[list[str]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str | None]]:
+    def repository(self) -> Path[list[str]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str | None]]:
+    def parameters(self) -> Path[list[str]]:
         """List of the code specific parameters in XML format
         """
 
@@ -13406,11 +13424,11 @@ class _MagneticsBpolProbeItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -13481,11 +13499,11 @@ class _MagneticsBpolProbeMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -13590,11 +13608,11 @@ class _MagneticsFluxLoopItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -13639,11 +13657,11 @@ class _MagneticsFluxLoopMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -13688,7 +13706,7 @@ class _MagneticsMethodDistinctItem:
     """
 
     @property
-    def method_name(self) -> Path[str | None]:
+    def method_name(self) -> Path[str]:
         """Name of the calculation method
         """
     @property
@@ -13709,7 +13727,7 @@ class _MagneticsMethodDistinctMany:
     """
 
     @property
-    def method_name(self) -> Path[list[str | None]]:
+    def method_name(self) -> Path[list[str]]:
         """Name of the calculation method
         """
     @property
@@ -13730,11 +13748,11 @@ class _MagneticsRogowskiItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -13773,11 +13791,11 @@ class _MagneticsRogowskiMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -13816,11 +13834,11 @@ class _MagneticsShuntItem:
     """
 
     @property
-    def name(self) -> Path[str | None]:
+    def name(self) -> Path[str]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[str | None]:
+    def description(self) -> Path[str]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -13857,11 +13875,11 @@ class _MagneticsShuntMany:
     """
 
     @property
-    def name(self) -> Path[list[str | None]]:
+    def name(self) -> Path[list[str]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str | None]]:
+    def description(self) -> Path[list[str]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property

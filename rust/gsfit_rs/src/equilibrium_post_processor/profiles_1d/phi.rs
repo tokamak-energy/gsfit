@@ -16,23 +16,23 @@ use ndarray::Array1;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_1d/phi` is written into it
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.as_ref().unwrap().len();
+    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.len();
 
     // A slice which did not converge has no safety factor to integrate. Without this the flux at
     // the magnetic axis would come out as the hard-coded 0.0 rather than NaN
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
-        time_slice.profiles_1d.phi = Some(Array1::from_elem(n_psi_norm, f64::NAN));
+        time_slice.profiles_1d.phi = Array1::from_elem(n_psi_norm, f64::NAN);
         return;
     }
 
-    let q_profile: &Array1<f64> = time_slice.profiles_1d.q.as_ref().unwrap();
-    let psi_profile: &Array1<f64> = time_slice.profiles_1d.psi.as_ref().unwrap();
+    let q_profile: &Array1<f64> = &time_slice.profiles_1d.q;
+    let psi_profile: &Array1<f64> = &time_slice.profiles_1d.psi;
 
-    let boundary_diverted: bool = time_slice.boundary.r#type == Some(1);
+    let boundary_diverted: bool = time_slice.boundary.r#type == 1;
     let flux_toroidal_profile: Array1<f64> = epp_flux_toroidal_profile(q_profile, psi_profile, boundary_diverted);
 
-    time_slice.profiles_1d.phi = Some(flux_toroidal_profile);
+    time_slice.profiles_1d.phi = flux_toroidal_profile;
 }
 
 /// Integrate `q` to give the toroidal flux profile.

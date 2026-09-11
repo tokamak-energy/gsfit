@@ -39,7 +39,7 @@ use ndarray::Array1;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
-    let psi_norm: &Array1<f64> = time_slice.profiles_1d.psi_norm.as_ref().unwrap();
+    let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
     let n_psi_norm: usize = psi_norm.len();
 
     let mut elongation_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
@@ -52,7 +52,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let mut square_u_o_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
 
     // A slice which did not converge has no flux surfaces to measure
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
         store(
             time_slice,
@@ -174,8 +174,8 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 /// * `elongation_axis` - the elongation on the magnetic axis, or NaN when the axis sits on the edge
 ///   of the grid, where the Hessian cannot be differenced [dimensionless]
 fn epp_elongation_at_magnetic_axis(time_slice: &EquilibriumTimeSlice) -> f64 {
-    let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r.unwrap();
-    let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z.unwrap();
+    let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r;
+    let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z;
 
     let Some((hessian_matrix, _hessian_determinant, _hessian_trace)) = epp_hessian_matrix(time_slice, mag_r, mag_z) else {
         return f64::NAN;
@@ -200,14 +200,14 @@ fn store(
     square_u_i_profile: Array1<f64>,
     square_u_o_profile: Array1<f64>,
 ) {
-    time_slice.profiles_1d.elongation = Some(elongation_profile);
-    time_slice.profiles_1d.triangularity = Some(triang_profile);
-    time_slice.profiles_1d.triangularity_lower = Some(triang_l_profile);
-    time_slice.profiles_1d.triangularity_upper = Some(triang_u_profile);
-    time_slice.profiles_1d.squareness_lower_inner = Some(square_l_i_profile);
-    time_slice.profiles_1d.squareness_lower_outer = Some(square_l_o_profile);
-    time_slice.profiles_1d.squareness_upper_inner = Some(square_u_i_profile);
-    time_slice.profiles_1d.squareness_upper_outer = Some(square_u_o_profile);
+    time_slice.profiles_1d.elongation = elongation_profile;
+    time_slice.profiles_1d.triangularity = triang_profile;
+    time_slice.profiles_1d.triangularity_lower = triang_l_profile;
+    time_slice.profiles_1d.triangularity_upper = triang_u_profile;
+    time_slice.profiles_1d.squareness_lower_inner = square_l_i_profile;
+    time_slice.profiles_1d.squareness_lower_outer = square_l_o_profile;
+    time_slice.profiles_1d.squareness_upper_inner = square_u_i_profile;
+    time_slice.profiles_1d.squareness_upper_outer = square_u_o_profile;
 }
 
 #[cfg(test)]
@@ -271,18 +271,18 @@ mod tests {
         }
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.psi_magnetic_axis = Some(0.0);
-        time_slice.global_quantities.magnetic_axis.r = Some(mag_r);
-        time_slice.global_quantities.magnetic_axis.z = Some(mag_z);
+        time_slice.global_quantities.psi_magnetic_axis = 0.0;
+        time_slice.global_quantities.magnetic_axis.r = mag_r;
+        time_slice.global_quantities.magnetic_axis.z = mag_z;
         time_slice.profiles_2d = vec![EquilibriumProfiles2d::default()];
-        time_slice.profiles_2d[0].grid.dim1 = Some(r);
-        time_slice.profiles_2d[0].grid.dim2 = Some(z);
-        time_slice.profiles_2d[0].psi = Some(psi_2d);
-        time_slice.profiles_2d[0].d_psi_d_r = Some(d_psi_d_r_2d);
-        time_slice.profiles_2d[0].d_psi_d_z = Some(d_psi_d_z_2d);
-        time_slice.profiles_2d[0].d2_psi_d_r2 = Some(Array2::from_elem((n_z, n_r), psi_rr));
-        time_slice.profiles_2d[0].d2_psi_d_r_d_z = Some(Array2::from_elem((n_z, n_r), psi_rz));
-        time_slice.profiles_2d[0].d2_psi_d_z2 = Some(Array2::from_elem((n_z, n_r), psi_zz));
+        time_slice.profiles_2d[0].grid.dim1 = r;
+        time_slice.profiles_2d[0].grid.dim2 = z;
+        time_slice.profiles_2d[0].psi = psi_2d;
+        time_slice.profiles_2d[0].d_psi_d_r = d_psi_d_r_2d;
+        time_slice.profiles_2d[0].d_psi_d_z = d_psi_d_z_2d;
+        time_slice.profiles_2d[0].d2_psi_d_r2 = Array2::from_elem((n_z, n_r), psi_rr);
+        time_slice.profiles_2d[0].d2_psi_d_r_d_z = Array2::from_elem((n_z, n_r), psi_rz);
+        time_slice.profiles_2d[0].d2_psi_d_z2 = Array2::from_elem((n_z, n_r), psi_zz);
 
         return time_slice;
     }
@@ -292,7 +292,7 @@ mod tests {
         let kappa: f64 = 1.7;
 
         let mut time_slice: EquilibriumTimeSlice = time_slice_with_quadratic_psi(kappa);
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.5, 1.0]);
+        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
 
         // The magnetic axis, one surface which could not be traced, and one ellipse
         let flux_surfaces: Vec<FluxSurface> = vec![untraced_flux_surface(), untraced_flux_surface(), elliptical_flux_surface(0.5, 0.02, 0.3, kappa)];
@@ -301,9 +301,9 @@ mod tests {
         intermediate_values.flux_surfaces = flux_surfaces;
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
 
-        let elongation_profile: Array1<f64> = time_slice.profiles_1d.elongation.unwrap();
-        let triang_profile: Array1<f64> = time_slice.profiles_1d.triangularity.unwrap();
-        let square_u_o_profile: Array1<f64> = time_slice.profiles_1d.squareness_upper_outer.unwrap();
+        let elongation_profile: Array1<f64> = time_slice.profiles_1d.elongation;
+        let triang_profile: Array1<f64> = time_slice.profiles_1d.triangularity;
+        let square_u_o_profile: Array1<f64> = time_slice.profiles_1d.squareness_upper_outer;
 
         // The magnetic axis is filled with the elliptical limit, and the elongation of that
         // ellipse comes from the curvature of `psi` rather than from any traced contour
@@ -328,7 +328,7 @@ mod tests {
     fn the_axis_elongation_comes_from_the_curvature_of_psi() {
         for kappa_axis in [1.0, 1.5, 2.4] {
             let mut time_slice: EquilibriumTimeSlice = time_slice_with_quadratic_psi(kappa_axis);
-            time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.25, 0.5, 1.0]);
+            time_slice.profiles_1d.psi_norm = array![0.0, 0.25, 0.5, 1.0];
 
             // Deliberately nothing like `kappa_axis`, to show the axis value does not come from here
             let flux_surfaces: Vec<FluxSurface> = vec![
@@ -342,7 +342,7 @@ mod tests {
             intermediate_values.flux_surfaces = flux_surfaces;
             calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
 
-            let elongation_profile: Array1<f64> = time_slice.profiles_1d.elongation.unwrap();
+            let elongation_profile: Array1<f64> = time_slice.profiles_1d.elongation;
 
             // `psi` is exactly quadratic, so the differenced Hessian is exact too
             assert_abs_diff_eq!(elongation_profile[0], kappa_axis, epsilon = 1e-9);
@@ -369,7 +369,7 @@ mod tests {
         };
 
         let mut time_slice: EquilibriumTimeSlice = time_slice_with_quadratic_psi(1.6);
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 1.0]);
+        time_slice.profiles_1d.psi_norm = array![0.0, 1.0];
 
         let flux_surfaces: Vec<FluxSurface> = vec![untraced_flux_surface(), flux_surface];
 
@@ -377,17 +377,17 @@ mod tests {
         intermediate_values.flux_surfaces = flux_surfaces;
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
 
-        assert_abs_diff_eq!(time_slice.profiles_1d.elongation.unwrap()[1], kappa, epsilon = 1e-6);
-        assert_abs_diff_eq!(time_slice.profiles_1d.triangularity.unwrap()[1], delta, epsilon = 1e-6);
-        assert_abs_diff_eq!(time_slice.profiles_1d.triangularity_lower.unwrap()[1], delta, epsilon = 1e-6);
-        assert_abs_diff_eq!(time_slice.profiles_1d.triangularity_upper.unwrap()[1], delta, epsilon = 1e-6);
+        assert_abs_diff_eq!(time_slice.profiles_1d.elongation[1], kappa, epsilon = 1e-6);
+        assert_abs_diff_eq!(time_slice.profiles_1d.triangularity[1], delta, epsilon = 1e-6);
+        assert_abs_diff_eq!(time_slice.profiles_1d.triangularity_lower[1], delta, epsilon = 1e-6);
+        assert_abs_diff_eq!(time_slice.profiles_1d.triangularity_upper[1], delta, epsilon = 1e-6);
     }
 
     #[test]
     fn a_slice_which_did_not_converge_is_all_nan() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.5, 1.0]);
-        time_slice.global_quantities.psi_magnetic_axis = Some(f64::NAN);
+        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
+        time_slice.global_quantities.psi_magnetic_axis = f64::NAN;
 
         let flux_surfaces: Vec<FluxSurface> = vec![untraced_flux_surface(), untraced_flux_surface(), untraced_flux_surface()];
 
@@ -396,8 +396,8 @@ mod tests {
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
 
         // Including the magnetic axis, which is only filled once there is a converged solution
-        assert!(time_slice.profiles_1d.elongation.unwrap().iter().all(|value| value.is_nan()));
-        assert!(time_slice.profiles_1d.triangularity.unwrap().iter().all(|value| value.is_nan()));
-        assert!(time_slice.profiles_1d.squareness_lower_inner.unwrap().iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.elongation.iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.triangularity.iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.squareness_lower_inner.iter().all(|value| value.is_nan()));
     }
 }

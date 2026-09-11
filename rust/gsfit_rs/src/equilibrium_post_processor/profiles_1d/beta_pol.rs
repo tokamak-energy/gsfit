@@ -39,21 +39,21 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let r0: f64 = constant_values.r0;
 
-    let pressure: &Array1<f64> = time_slice.profiles_1d.pressure.as_ref().unwrap();
-    let volume: &Array1<f64> = time_slice.profiles_1d.volume.as_ref().unwrap();
+    let pressure: &Array1<f64> = &time_slice.profiles_1d.pressure;
+    let volume: &Array1<f64> = &time_slice.profiles_1d.volume;
     let n_psi_norm: usize = pressure.len();
     assert_eq!(volume.len(), n_psi_norm);
 
     let mut beta_pol: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
     if n_psi_norm == 0 {
-        time_slice.profiles_1d.beta_pol = Some(beta_pol);
+        time_slice.profiles_1d.beta_pol = beta_pol;
         return;
     }
 
-    let ip: f64 = time_slice.global_quantities.ip.unwrap();
+    let ip: f64 = time_slice.global_quantities.ip;
     let denominator: f64 = r0 * MU_0 * ip.powi(2);
     if !denominator.is_finite() || denominator <= 0.0 || !pressure[0].is_finite() || !volume[0].is_finite() || volume[0] != 0.0 {
-        time_slice.profiles_1d.beta_pol = Some(beta_pol);
+        time_slice.profiles_1d.beta_pol = beta_pol;
         return;
     }
 
@@ -72,7 +72,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
         i_previous_valid = i_psi_norm;
     }
 
-    time_slice.profiles_1d.beta_pol = Some(beta_pol);
+    time_slice.profiles_1d.beta_pol = beta_pol;
 }
 
 #[cfg(test)]
@@ -91,15 +91,15 @@ mod tests {
         let volume: Array1<f64> = array![0.0, 0.4, 1.5, 3.0];
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.ip = Some(ip);
-        time_slice.profiles_1d.pressure = Some(Array1::from_elem(volume.len(), pressure));
-        time_slice.profiles_1d.volume = Some(volume.clone());
+        time_slice.global_quantities.ip = ip;
+        time_slice.profiles_1d.pressure = Array1::from_elem(volume.len(), pressure);
+        time_slice.profiles_1d.volume = volume.clone();
 
         let mut constant_values: ConstantValues = constant_values_for_test();
         constant_values.r0 = r0;
         calculate(&mut time_slice, &constant_values, &mut intermediate_values_for_test());
 
-        let beta_pol: &Array1<f64> = time_slice.profiles_1d.beta_pol.as_ref().unwrap();
+        let beta_pol: &Array1<f64> = &time_slice.profiles_1d.beta_pol;
         for i_psi_norm in 0..volume.len() {
             let beta_pol_expected: f64 = 4.0 * pressure * volume[i_psi_norm] / (r0 * MU_0 * ip.powi(2));
             assert_abs_diff_eq!(beta_pol[i_psi_norm], beta_pol_expected, epsilon = 1e-15);
@@ -113,15 +113,15 @@ mod tests {
         let r0: f64 = 1.0;
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.ip = Some(ip);
-        time_slice.profiles_1d.pressure = Some(array![pressure, f64::NAN, pressure]);
-        time_slice.profiles_1d.volume = Some(array![0.0, f64::NAN, 2.0]);
+        time_slice.global_quantities.ip = ip;
+        time_slice.profiles_1d.pressure = array![pressure, f64::NAN, pressure];
+        time_slice.profiles_1d.volume = array![0.0, f64::NAN, 2.0];
 
         let mut constant_values: ConstantValues = constant_values_for_test();
         constant_values.r0 = r0;
         calculate(&mut time_slice, &constant_values, &mut intermediate_values_for_test());
 
-        let beta_pol: &Array1<f64> = time_slice.profiles_1d.beta_pol.as_ref().unwrap();
+        let beta_pol: &Array1<f64> = &time_slice.profiles_1d.beta_pol;
         let beta_pol_boundary_expected: f64 = 4.0 * pressure * 2.0 / (r0 * MU_0 * ip.powi(2));
         assert_abs_diff_eq!(beta_pol[0], 0.0, epsilon = 1e-15);
         assert!(beta_pol[1].is_nan());
@@ -131,14 +131,14 @@ mod tests {
     #[test]
     fn invalid_normalisation_makes_the_whole_profile_nan() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.ip = Some(0.0);
-        time_slice.profiles_1d.pressure = Some(array![1.0, 0.0]);
-        time_slice.profiles_1d.volume = Some(array![0.0, 1.0]);
+        time_slice.global_quantities.ip = 0.0;
+        time_slice.profiles_1d.pressure = array![1.0, 0.0];
+        time_slice.profiles_1d.volume = array![0.0, 1.0];
 
         let mut constant_values: ConstantValues = constant_values_for_test();
         constant_values.r0 = 1.0;
         calculate(&mut time_slice, &constant_values, &mut intermediate_values_for_test());
 
-        assert!(time_slice.profiles_1d.beta_pol.as_ref().unwrap().iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.beta_pol.iter().all(|value| value.is_nan()));
     }
 }

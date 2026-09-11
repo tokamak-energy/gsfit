@@ -31,19 +31,19 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let psi_norm_2d: &Array2<f64> = time_slice.profiles_2d[0].psi_norm.as_ref().unwrap();
-    let mask_2d: &Array2<f64> = time_slice.profiles_2d[0].mask.as_ref().unwrap();
+    let psi_norm_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi_norm;
+    let mask_2d: &Array2<f64> = &time_slice.profiles_2d[0].mask;
 
     let (n_z, n_r): (usize, usize) = psi_norm_2d.dim();
 
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
-    let psi_b: f64 = time_slice.boundary.psi.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
+    let psi_b: f64 = time_slice.boundary.psi;
 
     // p = (d(psi)/d(psi_norm)) * integral_1^{psi_norm} p'(psi_norm') d(psi_norm'),
     // where d(psi)/d(psi_norm) = psi_b - psi_a
     let d_psi_d_psi_norm: f64 = psi_b - psi_a;
 
-    let p_prime_dof_values: &Array1<f64> = time_slice.source_functions.p_prime.coefficients.as_ref().unwrap();
+    let p_prime_dof_values: &Array1<f64> = &time_slice.source_functions.p_prime.coefficients;
 
     let mut pressure_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
     for i_r in 0..n_r {
@@ -60,5 +60,5 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
         }
     }
 
-    time_slice.profiles_2d[0].pressure = Some(pressure_2d);
+    time_slice.profiles_2d[0].pressure = pressure_2d;
 }

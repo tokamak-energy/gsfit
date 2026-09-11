@@ -41,7 +41,7 @@ pub fn solve_grad_shafranov(
     // The reconstruction times, from the IDS `Plasma::new` allocated one time-slice per. Reading
     // them here rather than taking them as an argument makes it impossible to solve a different
     // set of times than the IDS was built for
-    let times_to_reconstruct: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.unwrap();
+    let times_to_reconstruct: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.to_array();
     let n_time: usize = times_to_reconstruct.len();
 
     if n_time == 0 {
@@ -53,18 +53,11 @@ pub fn solve_grad_shafranov(
     let coils_dynamic: Vec<SensorsDynamic> = coils.split_into_static_and_dynamic(&times_to_reconstruct);
     // The toroidal field, from the `tf` IDS. `b_field_phi_vacuum_r` is stored on the experimental
     // timebase, so it is interpolated onto `times_to_reconstruct` here
-    let b_field_phi_vacuum_r_time: &Array1<f64> = tf
-        .tf_ids
-        .b_field_phi_vacuum_r
-        .time
-        .as_ref()
-        .expect("solve_grad_shafranov: `tf/b_field_phi_vacuum_r/time` is unset");
-    let b_field_phi_vacuum_r_data: &Array1<f64> = tf
-        .tf_ids
-        .b_field_phi_vacuum_r
-        .data
-        .as_ref()
-        .expect("solve_grad_shafranov: `tf/b_field_phi_vacuum_r/data` is unset");
+    let b_field_phi_vacuum_r_time: &Array1<f64> = &tf.tf_ids.b_field_phi_vacuum_r.time;
+    let b_field_phi_vacuum_r_data: &Array1<f64> = &tf.tf_ids.b_field_phi_vacuum_r.data;
+    if b_field_phi_vacuum_r_time.is_empty() || b_field_phi_vacuum_r_data.is_empty() {
+        panic!("solve_grad_shafranov: `tf/b_field_phi_vacuum_r` is unset");
+    }
     let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(b_field_phi_vacuum_r_time.to_owned(), b_field_phi_vacuum_r_data.to_owned())
         .expect("solve_grad_shafranov: cannot build the `tf/b_field_phi_vacuum_r` interpolator");
     let f_vac_vs_time: Array1<f64> = interpolator
@@ -73,7 +66,10 @@ pub fn solve_grad_shafranov(
 
     // The reference major radius the vacuum toroidal field is quoted at, and the same signal
     // expressed the way the equilibrium IDS holds it: `f_vac = r0 * b0`. The sign carries through
-    let vacuum_toroidal_field_r0: f64 = tf.tf_ids.r0.expect("solve_grad_shafranov: `tf/r0` is unset");
+    let vacuum_toroidal_field_r0: f64 = tf.tf_ids.r0;
+    if vacuum_toroidal_field_r0.is_nan() {
+        panic!("solve_grad_shafranov: `tf/r0` is unset");
+    }
     let b0_vs_time: Array1<f64> = f_vac_vs_time / vacuum_toroidal_field_r0;
 
     let (bp_probes_static, bp_probes_dynamic): (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) = bp_probes.split_into_static_and_dynamic(&times_to_reconstruct);
@@ -157,8 +153,8 @@ pub fn solve_grad_shafranov(
     // The data dictionary requires `vacuum_toroidal_field/r0 * b0` to equal the `tf` IDS's
     // `b_field_phi_vacuum_r`, so both are filled from that one signal here. The rod current is not
     // a data dictionary node, so it is recovered from these two wherever it is needed
-    equilibrium_ids.vacuum_toroidal_field.r0 = Some(vacuum_toroidal_field_r0);
-    equilibrium_ids.vacuum_toroidal_field.b0 = Some(b0_vs_time.clone());
+    equilibrium_ids.vacuum_toroidal_field.r0 = vacuum_toroidal_field_r0;
+    equilibrium_ids.vacuum_toroidal_field.b0 = b0_vs_time.clone();
 
     let equilibrium_code: &Code = &equilibrium_ids.code;
     // Geometry only, so the same tables serve every time-slice. Borrowed from a different field
@@ -176,25 +172,17 @@ pub fn solve_grad_shafranov(
     // The `Result` is carried into the solve rather than unwrapped here, so that a bad initial
     // guess still fails every time-slice with the reason it always did
     let initial_j_2d: Result<Array2<f64>, String> = {
-        let grid_r: Array1<f64> = equilibrium_ids.time_slice[0].profiles_2d[0]
-            .grid
-            .dim1
-            .clone()
-            .expect("solve_grad_shafranov: `profiles_2d(0)/grid/dim1` unset");
-        let grid_z: Array1<f64> = equilibrium_ids.time_slice[0].profiles_2d[0]
-            .grid
-            .dim2
-            .clone()
-            .expect("solve_grad_shafranov: `profiles_2d(0)/grid/dim2` unset");
-        let d_area: f64 = equilibrium_ids.time_slice[0].profiles_2d[0]
-            .grid
-            .d_area
-            .expect("solve_grad_shafranov: `profiles_2d(0)/grid/d_area` unset");
-        let initial_guess_ip: f64 = equilibrium_ids.code.initial_guess.ip.unwrap();
-        let initial_guess_cur_r: f64 = equilibrium_ids.code.initial_guess.cur_r.unwrap();
-        let initial_guess_cur_z: f64 = equilibrium_ids.code.initial_guess.cur_z.unwrap();
-        let initial_guess_minor_radius: f64 = equilibrium_ids.code.initial_guess.minor_radius.unwrap();
-        let initial_guess_elongation: f64 = equilibrium_ids.code.initial_guess.elongation.unwrap();
+        let grid_r: Array1<f64> = equilibrium_ids.time_slice[0].profiles_2d[0].grid.dim1.clone();
+        let grid_z: Array1<f64> = equilibrium_ids.time_slice[0].profiles_2d[0].grid.dim2.clone();
+        let d_area: f64 = equilibrium_ids.time_slice[0].profiles_2d[0].grid.d_area;
+        if grid_r.is_empty() || grid_z.is_empty() || d_area.is_nan() {
+            panic!("solve_grad_shafranov: `profiles_2d(0)/grid` is unset");
+        }
+        let initial_guess_ip: f64 = equilibrium_ids.code.initial_guess.ip;
+        let initial_guess_cur_r: f64 = equilibrium_ids.code.initial_guess.cur_r;
+        let initial_guess_cur_z: f64 = equilibrium_ids.code.initial_guess.cur_z;
+        let initial_guess_minor_radius: f64 = equilibrium_ids.code.initial_guess.minor_radius;
+        let initial_guess_elongation: f64 = equilibrium_ids.code.initial_guess.elongation;
 
         // Limiter, from the `wall` IDS. `limiter_points` gathers every limiter unit,
         // `vacuum_vessel_outline` is `unit(0)` alone
@@ -284,16 +272,16 @@ pub fn solve_grad_shafranov(
     // `code/output_flag` is indexed by time, so it is assembled here rather than by the per-slice
     // solver: 0 for a usable slice, negative for one which failed
     let output_flags: Array1<i32> = Array1::from_iter(equilibrium_ids.time_slice.iter().map(output_flag));
-    equilibrium_ids.code.output_flag = Some(output_flags);
+    equilibrium_ids.code.output_flag = output_flags;
 
     for (i_time, time_slice) in equilibrium_ids.time_slice.iter().enumerate() {
-        let solution_found: bool = time_slice.global_quantities.ip.unwrap().is_finite();
+        let solution_found: bool = time_slice.global_quantities.ip.is_finite();
         println!(
             "time={:6.1}ms;  solution_found={};  gs_error={:.18};  n_iter={}",
             times_to_reconstruct[i_time] * 1e3,
             solution_found,
-            time_slice.convergence.grad_shafranov_deviation_value.unwrap(),
-            time_slice.convergence.iterations_n.unwrap(),
+            time_slice.convergence.grad_shafranov_deviation_value,
+            time_slice.convergence.iterations_n,
         );
     }
 
@@ -322,7 +310,7 @@ pub fn solve_grad_shafranov(
     // The same quantity on the IDS. It is calculated here rather than in the post-processor
     // because it needs the sensors, which the post-processor does not see
     for (i_time, time_slice) in plasma.equilibrium_ids.time_slice.iter_mut().enumerate() {
-        time_slice.constraints.chi_squared_reduced = Some(chi_mag[i_time]);
+        time_slice.constraints.chi_squared_reduced = chi_mag[i_time];
     }
 
     // Everything after the parallel loop: the per-slice report lines, the post-processors, and

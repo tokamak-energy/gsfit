@@ -9,76 +9,102 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, FLT_0D, FLT_1D, INT_0D, INT_1D, STR_0D, StringAccumulator};
+use crate::dd_base_types::{Accumulator, EMPTY_INT, FLT_0D, FLT_1D, INT_0D, INT_1D, STR_0D, StringAccumulator};
 
 // ============================================================================
 // Complex Types
 // ============================================================================
 
 /// Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct PfPassiveLoops {
     /// Short string identifier (unique for a given device)
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Description, e.g. “channel viewing the upper divertor”
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Passive loop resistance
     /// Units: ohm
-    pub resistance: Option<FLT_0D>,
+    pub resistance: FLT_0D,
     /// Passive loop resistivity
     /// Units: ohm.m
-    pub resistivity: Option<FLT_0D>,
+    pub resistivity: FLT_0D,
     /// Each loop is comprised of a number of cross-section elements described  individually
     pub element: Vec<PfCoilsElements>,
     /// Passive loop current
-    pub current: Option<FLT_1D>,
+    pub current: FLT_1D,
     /// Timebase for the dynamic nodes of this loop located at this level of the IDS structure
     /// Units: s
-    pub time: Option<FLT_1D>,
+    pub time: FLT_1D,
+}
+
+impl Default for PfPassiveLoops {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            description: String::new(),
+            resistance: f64::NAN,
+            resistivity: f64::NAN,
+            element: Vec::new(),
+            current: Default::default(),
+            time: Default::default(),
+        }
+    }
 }
 
 /// Each PF coil is comprised of a number of cross-section elements described  individually
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct PfCoilsElements {
     /// Short string identifier (unique for a given device)
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Description, e.g. “channel viewing the upper divertor”
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Number of effective turns in the element for calculating the magnetic field from the coil/loop. Should be positive, unless the coil has elements going in opposite directions.
-    pub turns_with_sign: Option<FLT_0D>,
+    pub turns_with_sign: FLT_0D,
     /// Cross-sectional areas of the element
     /// Units: m^2
-    pub area: Option<FLT_0D>,
+    pub area: FLT_0D,
     /// Cross-sectional shape of the element
     pub geometry: Outline2dGeometryStatic,
+}
+
+impl Default for PfCoilsElements {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            description: String::new(),
+            turns_with_sign: f64::NAN,
+            area: f64::NAN,
+            geometry: Outline2dGeometryStatic::default(),
+        }
+    }
 }
 
 /// Generic decription of the code-specific parameters for the code that has produced this IDS
 #[derive(Debug, Clone, Default)]
 pub struct Code {
     /// Name of software generating IDS
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Short description of the software (type, purpose)
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Unique commit reference of software
-    pub commit: Option<STR_0D>,
+    pub commit: STR_0D,
     /// Unique version (tag) of software
-    pub version: Option<STR_0D>,
+    pub version: STR_0D,
     /// URL of software repository
-    pub repository: Option<STR_0D>,
+    pub repository: STR_0D,
     /// List of the code specific parameters in XML format
-    pub parameters: Option<STR_0D>,
+    pub parameters: STR_0D,
     /// Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
-    pub output_flag: Option<INT_1D>,
+    pub output_flag: INT_1D,
     /// List of external libraries used by the code that has produced this IDS
     pub library: Vec<Library>,
 }
 
 /// Description of 2D geometry
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Outline2dGeometryStatic {
     /// Type used to describe the element shape (1:'outline', 2:'rectangle', 3:'oblique', 4:'arcs of circle, 5: 'annulus', 6 : 'thick line')
-    pub geometry_type: Option<INT_0D>,
+    pub geometry_type: INT_0D,
     /// Irregular outline of the element. Repeat the first point since this is a closed contour
     pub outline: Rz1dStatic,
     /// Rectangular description of the element
@@ -93,21 +119,35 @@ pub struct Outline2dGeometryStatic {
     pub thick_line: ThickLineStatic,
 }
 
+impl Default for Outline2dGeometryStatic {
+    fn default() -> Self {
+        Self {
+            geometry_type: EMPTY_INT,
+            outline: Rz1dStatic::default(),
+            rectangle: RectangleStatic::default(),
+            oblique: ObliqueStatic::default(),
+            arcs_of_circle: ArcsOfCircleStatic::default(),
+            annulus: AnnulusStatic::default(),
+            thick_line: ThickLineStatic::default(),
+        }
+    }
+}
+
 /// Library used by the code that has produced this IDS
 #[derive(Debug, Clone, Default)]
 pub struct Library {
     /// Name of software
-    pub name: Option<STR_0D>,
+    pub name: STR_0D,
     /// Short description of the software (type, purpose)
-    pub description: Option<STR_0D>,
+    pub description: STR_0D,
     /// Unique commit reference of software
-    pub commit: Option<STR_0D>,
+    pub commit: STR_0D,
     /// Unique version (tag) of software
-    pub version: Option<STR_0D>,
+    pub version: STR_0D,
     /// URL of software repository
-    pub repository: Option<STR_0D>,
+    pub repository: STR_0D,
     /// List of the code specific parameters in XML format
-    pub parameters: Option<STR_0D>,
+    pub parameters: STR_0D,
 }
 
 /// Structure for list of R, Z positions (1D, constant)
@@ -115,50 +155,74 @@ pub struct Library {
 pub struct Rz1dStatic {
     /// Major radius
     /// Units: m
-    pub r: Option<FLT_1D>,
+    pub r: FLT_1D,
     /// Height
     /// Units: m
-    pub z: Option<FLT_1D>,
+    pub z: FLT_1D,
 }
 
 /// Rectangular description of a 2D object
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct RectangleStatic {
     /// Geometric centre R
     /// Units: m
-    pub r: Option<FLT_0D>,
+    pub r: FLT_0D,
     /// Geometric centre Z
     /// Units: m
-    pub z: Option<FLT_0D>,
+    pub z: FLT_0D,
     /// Horizontal full width
     /// Units: m
-    pub width: Option<FLT_0D>,
+    pub width: FLT_0D,
     /// Vertical full height
     /// Units: m
-    pub height: Option<FLT_0D>,
+    pub height: FLT_0D,
+}
+
+impl Default for RectangleStatic {
+    fn default() -> Self {
+        Self {
+            r: f64::NAN,
+            z: f64::NAN,
+            width: f64::NAN,
+            height: f64::NAN,
+        }
+    }
 }
 
 /// Description of a 2D parallelogram
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ObliqueStatic {
     /// Major radius of the reference point (from which the alpha and beta angles are defined, marked by a + on the diagram)
     /// Units: m
-    pub r: Option<FLT_0D>,
+    pub r: FLT_0D,
     /// Height of the reference point (from which the alpha and beta angles are defined, marked by a + on the diagram)
     /// Units: m
-    pub z: Option<FLT_0D>,
+    pub z: FLT_0D,
     /// Length of the parallelogram side inclined with angle alpha with respect to the major radius axis
     /// Units: m
-    pub length_alpha: Option<FLT_0D>,
+    pub length_alpha: FLT_0D,
     /// Length of the parallelogram side inclined with angle beta with respect to the height axis
     /// Units: m
-    pub length_beta: Option<FLT_0D>,
+    pub length_beta: FLT_0D,
     /// Inclination of first angle measured counter-clockwise from horizontal outwardly directed radial vector (grad R).
     /// Units: rad
-    pub alpha: Option<FLT_0D>,
+    pub alpha: FLT_0D,
     /// Inclination of second angle measured counter-clockwise from vertically upwards directed vector (grad Z). If both alpha and beta are zero (rectangle) then the simpler rectangular elements description should be used.
     /// Units: rad
-    pub beta: Option<FLT_0D>,
+    pub beta: FLT_0D,
+}
+
+impl Default for ObliqueStatic {
+    fn default() -> Self {
+        Self {
+            r: f64::NAN,
+            z: f64::NAN,
+            length_alpha: f64::NAN,
+            length_beta: f64::NAN,
+            alpha: f64::NAN,
+            beta: f64::NAN,
+        }
+    }
 }
 
 /// Arcs of circle description of a 2D contour
@@ -166,34 +230,45 @@ pub struct ObliqueStatic {
 pub struct ArcsOfCircleStatic {
     /// Major radii of the start point of each arc of circle
     /// Units: m
-    pub r: Option<FLT_1D>,
+    pub r: FLT_1D,
     /// Height of the start point of each arc of circle
     /// Units: m
-    pub z: Option<FLT_1D>,
+    pub z: FLT_1D,
     /// Curvature radius of each arc of circle
     /// Units: m
-    pub curvature_radii: Option<FLT_1D>,
+    pub curvature_radii: FLT_1D,
 }
 
 /// Annulus description (2D object)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct AnnulusStatic {
     /// Centre major radius
     /// Units: m
-    pub r: Option<FLT_0D>,
+    pub r: FLT_0D,
     /// Centre height
     /// Units: m
-    pub z: Option<FLT_0D>,
+    pub z: FLT_0D,
     /// Inner radius
     /// Units: m
-    pub radius_inner: Option<FLT_0D>,
+    pub radius_inner: FLT_0D,
     /// Outer radius
     /// Units: m
-    pub radius_outer: Option<FLT_0D>,
+    pub radius_outer: FLT_0D,
+}
+
+impl Default for AnnulusStatic {
+    fn default() -> Self {
+        Self {
+            r: f64::NAN,
+            z: f64::NAN,
+            radius_inner: f64::NAN,
+            radius_outer: f64::NAN,
+        }
+    }
 }
 
 /// 2D contour approximated by two points and a thickness (in the direction perpendicular to the segment) in the poloidal cross-section
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ThickLineStatic {
     /// Position of the first point
     pub first_point: Rz0dStatic,
@@ -201,18 +276,34 @@ pub struct ThickLineStatic {
     pub second_point: Rz0dStatic,
     /// Thickness
     /// Units: m
-    pub thickness: Option<FLT_0D>,
+    pub thickness: FLT_0D,
+}
+
+impl Default for ThickLineStatic {
+    fn default() -> Self {
+        Self {
+            first_point: Rz0dStatic::default(),
+            second_point: Rz0dStatic::default(),
+            thickness: f64::NAN,
+        }
+    }
 }
 
 /// Structure for a single R, Z position (0D, static)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Rz0dStatic {
     /// Major radius
     /// Units: m
-    pub r: Option<FLT_0D>,
+    pub r: FLT_0D,
     /// Height
     /// Units: m
-    pub z: Option<FLT_0D>,
+    pub z: FLT_0D,
+}
+
+impl Default for Rz0dStatic {
+    fn default() -> Self {
+        Self { r: f64::NAN, z: f64::NAN }
+    }
 }
 
 // ============================================================================
@@ -257,10 +348,10 @@ pub struct PfCoilsElementsGeometryRectangleView<'a> {
 impl<'a> PfCoilsElementsGeometryRectangleView<'a> {
     pub fn new(data: &'a [PfCoilsElements]) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.r, "geometry.rectangle.r"),
-            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.z, "geometry.rectangle.z"),
-            width: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.width, "geometry.rectangle.width"),
-            height: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.height, "geometry.rectangle.height"),
+            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.r),
+            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.z),
+            width: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.width),
+            height: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.height),
         }
     }
 }
@@ -278,16 +369,12 @@ pub struct PfCoilsElementsGeometryObliqueView<'a> {
 impl<'a> PfCoilsElementsGeometryObliqueView<'a> {
     pub fn new(data: &'a [PfCoilsElements]) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.r, "geometry.oblique.r"),
-            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.z, "geometry.oblique.z"),
-            length_alpha: Accumulator::new(
-                data,
-                |item: &PfCoilsElements| item.geometry.oblique.length_alpha,
-                "geometry.oblique.length_alpha",
-            ),
-            length_beta: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.length_beta, "geometry.oblique.length_beta"),
-            alpha: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.alpha, "geometry.oblique.alpha"),
-            beta: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.beta, "geometry.oblique.beta"),
+            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.r),
+            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.z),
+            length_alpha: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.length_alpha),
+            length_beta: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.length_beta),
+            alpha: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.alpha),
+            beta: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.beta),
         }
     }
 }
@@ -316,18 +403,10 @@ pub struct PfCoilsElementsGeometryAnnulusView<'a> {
 impl<'a> PfCoilsElementsGeometryAnnulusView<'a> {
     pub fn new(data: &'a [PfCoilsElements]) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.annulus.r, "geometry.annulus.r"),
-            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.annulus.z, "geometry.annulus.z"),
-            radius_inner: Accumulator::new(
-                data,
-                |item: &PfCoilsElements| item.geometry.annulus.radius_inner,
-                "geometry.annulus.radius_inner",
-            ),
-            radius_outer: Accumulator::new(
-                data,
-                |item: &PfCoilsElements| item.geometry.annulus.radius_outer,
-                "geometry.annulus.radius_outer",
-            ),
+            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.annulus.r),
+            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.annulus.z),
+            radius_inner: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.annulus.radius_inner),
+            radius_outer: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.annulus.radius_outer),
         }
     }
 }
@@ -341,16 +420,8 @@ pub struct PfCoilsElementsGeometryThickLineFirstPointView<'a> {
 impl<'a> PfCoilsElementsGeometryThickLineFirstPointView<'a> {
     pub fn new(data: &'a [PfCoilsElements]) -> Self {
         Self {
-            r: Accumulator::new(
-                data,
-                |item: &PfCoilsElements| item.geometry.thick_line.first_point.r,
-                "geometry.thick_line.first_point.r",
-            ),
-            z: Accumulator::new(
-                data,
-                |item: &PfCoilsElements| item.geometry.thick_line.first_point.z,
-                "geometry.thick_line.first_point.z",
-            ),
+            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.thick_line.first_point.r),
+            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.thick_line.first_point.z),
         }
     }
 }
@@ -364,16 +435,8 @@ pub struct PfCoilsElementsGeometryThickLineSecondPointView<'a> {
 impl<'a> PfCoilsElementsGeometryThickLineSecondPointView<'a> {
     pub fn new(data: &'a [PfCoilsElements]) -> Self {
         Self {
-            r: Accumulator::new(
-                data,
-                |item: &PfCoilsElements| item.geometry.thick_line.second_point.r,
-                "geometry.thick_line.second_point.r",
-            ),
-            z: Accumulator::new(
-                data,
-                |item: &PfCoilsElements| item.geometry.thick_line.second_point.z,
-                "geometry.thick_line.second_point.z",
-            ),
+            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.thick_line.second_point.r),
+            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.thick_line.second_point.z),
         }
     }
 }
@@ -390,11 +453,7 @@ impl<'a> PfCoilsElementsGeometryThickLineView<'a> {
         Self {
             first_point: PfCoilsElementsGeometryThickLineFirstPointView::new(data),
             second_point: PfCoilsElementsGeometryThickLineSecondPointView::new(data),
-            thickness: Accumulator::new(
-                data,
-                |item: &PfCoilsElements| item.geometry.thick_line.thickness,
-                "geometry.thick_line.thickness",
-            ),
+            thickness: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.thick_line.thickness),
         }
     }
 }
@@ -413,7 +472,7 @@ pub struct PfCoilsElementsGeometryView<'a> {
 impl<'a> PfCoilsElementsGeometryView<'a> {
     pub fn new(data: &'a [PfCoilsElements]) -> Self {
         Self {
-            geometry_type: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.geometry_type, "geometry.geometry_type"),
+            geometry_type: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.geometry_type),
             outline: PfCoilsElementsGeometryOutlineView::new(data),
             rectangle: PfCoilsElementsGeometryRectangleView::new(data),
             oblique: PfCoilsElementsGeometryObliqueView::new(data),
@@ -438,10 +497,10 @@ impl<'a> PfCoilsElementsSliceView<'a> {
     pub fn new(data: &'a [PfCoilsElements]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &PfCoilsElements| item.name.clone(), "name"),
-            description: StringAccumulator::new(data, |item: &PfCoilsElements| item.description.clone(), "description"),
-            turns_with_sign: Accumulator::new(data, |item: &PfCoilsElements| item.turns_with_sign, "turns_with_sign"),
-            area: Accumulator::new(data, |item: &PfCoilsElements| item.area, "area"),
+            name: StringAccumulator::new(data, |item: &PfCoilsElements| item.name.clone()),
+            description: StringAccumulator::new(data, |item: &PfCoilsElements| item.description.clone()),
+            turns_with_sign: Accumulator::new(data, |item: &PfCoilsElements| item.turns_with_sign),
+            area: Accumulator::new(data, |item: &PfCoilsElements| item.area),
             geometry: PfCoilsElementsGeometryView::new(data),
         }
     }
@@ -459,40 +518,10 @@ impl<'a> PfCoilsElementsSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple PfCoilsElements
-pub struct PfCoilsElementsSliceViewMut<'a> {
-    data: &'a mut [PfCoilsElements],
-}
-
-impl<'a> PfCoilsElementsSliceViewMut<'a> {
-    pub fn new(data: &'a mut [PfCoilsElements]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut PfCoilsElements> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for PfCoilsElements - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for PfCoilsElements - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait PfCoilsElementsIndex<'a> {
     type Output;
     fn get(self, data: &'a [PfCoilsElements]) -> Self::Output;
-}
-
-impl<'a> PfCoilsElementsIndex<'a> for usize {
-    type Output = &'a PfCoilsElements;
-    fn get(self, data: &'a [PfCoilsElements]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> PfCoilsElementsIndex<'a> for std::ops::Range<usize> {
@@ -537,61 +566,6 @@ impl<'a> PfCoilsElementsIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for PfCoilsElements - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait PfCoilsElementsMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [PfCoilsElements]) -> Self::Output;
-}
-
-impl<'a> PfCoilsElementsMutIndex<'a> for usize {
-    type Output = &'a mut PfCoilsElements;
-    fn get_mut(self, data: &'a mut [PfCoilsElements]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> PfCoilsElementsMutIndex<'a> for std::ops::Range<usize> {
-    type Output = PfCoilsElementsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> PfCoilsElementsMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = PfCoilsElementsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> PfCoilsElementsMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = PfCoilsElementsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> PfCoilsElementsMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = PfCoilsElementsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> PfCoilsElementsMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = PfCoilsElementsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> PfCoilsElementsMutIndex<'a> for std::ops::RangeFull {
-    type Output = PfCoilsElementsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceViewMut::new(data)
-    }
-}
-
 // --- Library View Types ---
 
 /// View over multiple Library with field accumulation
@@ -609,12 +583,12 @@ impl<'a> LibrarySliceView<'a> {
     pub fn new(data: &'a [Library]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &Library| item.name.clone(), "name"),
-            description: StringAccumulator::new(data, |item: &Library| item.description.clone(), "description"),
-            commit: StringAccumulator::new(data, |item: &Library| item.commit.clone(), "commit"),
-            version: StringAccumulator::new(data, |item: &Library| item.version.clone(), "version"),
-            repository: StringAccumulator::new(data, |item: &Library| item.repository.clone(), "repository"),
-            parameters: StringAccumulator::new(data, |item: &Library| item.parameters.clone(), "parameters"),
+            name: StringAccumulator::new(data, |item: &Library| item.name.clone()),
+            description: StringAccumulator::new(data, |item: &Library| item.description.clone()),
+            commit: StringAccumulator::new(data, |item: &Library| item.commit.clone()),
+            version: StringAccumulator::new(data, |item: &Library| item.version.clone()),
+            repository: StringAccumulator::new(data, |item: &Library| item.repository.clone()),
+            parameters: StringAccumulator::new(data, |item: &Library| item.parameters.clone()),
         }
     }
 
@@ -631,40 +605,10 @@ impl<'a> LibrarySliceView<'a> {
     }
 }
 
-/// Mutable view over multiple Library
-pub struct LibrarySliceViewMut<'a> {
-    data: &'a mut [Library],
-}
-
-impl<'a> LibrarySliceViewMut<'a> {
-    pub fn new(data: &'a mut [Library]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Library> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for Library - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for Library - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait LibraryIndex<'a> {
     type Output;
     fn get(self, data: &'a [Library]) -> Self::Output;
-}
-
-impl<'a> LibraryIndex<'a> for usize {
-    type Output = &'a Library;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> LibraryIndex<'a> for std::ops::Range<usize> {
@@ -709,61 +653,6 @@ impl<'a> LibraryIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for Library - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait LibraryMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output;
-}
-
-impl<'a> LibraryMutIndex<'a> for usize {
-    type Output = &'a mut Library;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::Range<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> LibraryMutIndex<'a> for std::ops::RangeFull {
-    type Output = LibrarySliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [Library]) -> Self::Output {
-        LibrarySliceViewMut::new(data)
-    }
-}
-
 // --- PfPassiveLoops View Types ---
 
 /// View over multiple PfPassiveLoops with field accumulation
@@ -779,10 +668,10 @@ impl<'a> PfPassiveLoopsSliceView<'a> {
     pub fn new(data: &'a [PfPassiveLoops]) -> Self {
         Self {
             data,
-            name: StringAccumulator::new(data, |item: &PfPassiveLoops| item.name.clone(), "name"),
-            description: StringAccumulator::new(data, |item: &PfPassiveLoops| item.description.clone(), "description"),
-            resistance: Accumulator::new(data, |item: &PfPassiveLoops| item.resistance, "resistance"),
-            resistivity: Accumulator::new(data, |item: &PfPassiveLoops| item.resistivity, "resistivity"),
+            name: StringAccumulator::new(data, |item: &PfPassiveLoops| item.name.clone()),
+            description: StringAccumulator::new(data, |item: &PfPassiveLoops| item.description.clone()),
+            resistance: Accumulator::new(data, |item: &PfPassiveLoops| item.resistance),
+            resistivity: Accumulator::new(data, |item: &PfPassiveLoops| item.resistivity),
         }
     }
 
@@ -799,40 +688,10 @@ impl<'a> PfPassiveLoopsSliceView<'a> {
     }
 }
 
-/// Mutable view over multiple PfPassiveLoops
-pub struct PfPassiveLoopsSliceViewMut<'a> {
-    data: &'a mut [PfPassiveLoops],
-}
-
-impl<'a> PfPassiveLoopsSliceViewMut<'a> {
-    pub fn new(data: &'a mut [PfPassiveLoops]) -> Self {
-        Self { data }
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut PfPassiveLoops> {
-        self.data.iter_mut()
-    }
-}
-
-/// Index trait for PfPassiveLoops - enables .field(0) and .field(0..2) syntax
+/// Range-index trait for PfPassiveLoops - enables the `.field(0..2)` and `.field(..)` slice view
 pub trait PfPassiveLoopsIndex<'a> {
     type Output;
     fn get(self, data: &'a [PfPassiveLoops]) -> Self::Output;
-}
-
-impl<'a> PfPassiveLoopsIndex<'a> for usize {
-    type Output = &'a PfPassiveLoops;
-    fn get(self, data: &'a [PfPassiveLoops]) -> Self::Output {
-        &data[self]
-    }
 }
 
 impl<'a> PfPassiveLoopsIndex<'a> for std::ops::Range<usize> {
@@ -877,76 +736,15 @@ impl<'a> PfPassiveLoopsIndex<'a> for std::ops::RangeFull {
     }
 }
 
-/// Mutable index trait for PfPassiveLoops - enables .field_mut(0) and .field_mut(0..2) syntax
-pub trait PfPassiveLoopsMutIndex<'a> {
-    type Output;
-    fn get_mut(self, data: &'a mut [PfPassiveLoops]) -> Self::Output;
-}
-
-impl<'a> PfPassiveLoopsMutIndex<'a> for usize {
-    type Output = &'a mut PfPassiveLoops;
-    fn get_mut(self, data: &'a mut [PfPassiveLoops]) -> Self::Output {
-        &mut data[self]
-    }
-}
-
-impl<'a> PfPassiveLoopsMutIndex<'a> for std::ops::Range<usize> {
-    type Output = PfPassiveLoopsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfPassiveLoops]) -> Self::Output {
-        PfPassiveLoopsSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> PfPassiveLoopsMutIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = PfPassiveLoopsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfPassiveLoops]) -> Self::Output {
-        PfPassiveLoopsSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> PfPassiveLoopsMutIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = PfPassiveLoopsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfPassiveLoops]) -> Self::Output {
-        PfPassiveLoopsSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> PfPassiveLoopsMutIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = PfPassiveLoopsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfPassiveLoops]) -> Self::Output {
-        PfPassiveLoopsSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> PfPassiveLoopsMutIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = PfPassiveLoopsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfPassiveLoops]) -> Self::Output {
-        PfPassiveLoopsSliceViewMut::new(&mut data[self])
-    }
-}
-
-impl<'a> PfPassiveLoopsMutIndex<'a> for std::ops::RangeFull {
-    type Output = PfPassiveLoopsSliceViewMut<'a>;
-    fn get_mut(self, data: &'a mut [PfPassiveLoops]) -> Self::Output {
-        PfPassiveLoopsSliceViewMut::new(data)
-    }
-}
-
 // ============================================================================
 // Struct Impl Blocks for Vec Field Access
 // ============================================================================
 
 impl PfPassiveLoops {
-    /// Access element - use index for single element or range for slice view
-    /// e.g. `.element(0)` returns `&PfCoilsElements`, `.element(0..2)` returns `PfCoilsElementsSliceView`
+    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
+    /// whose leaves gather one value per element. A single element is `.element[i]`.
     pub fn element<'a, I: PfCoilsElementsIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.element)
-    }
-
-    /// Access element mutably - use index for single element or range for slice view
-    /// e.g. `.element_mut(0)` returns `&mut PfCoilsElements`, `.element_mut(0..2)` returns `PfCoilsElementsSliceViewMut`
-    pub fn element_mut<'a, I: PfCoilsElementsMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.element)
     }
 
     /// Get the number of element elements
@@ -956,16 +754,10 @@ impl PfPassiveLoops {
 }
 
 impl Code {
-    /// Access library - use index for single element or range for slice view
-    /// e.g. `.library(0)` returns `&Library`, `.library(0..2)` returns `LibrarySliceView`
+    /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
+    /// whose leaves gather one value per element. A single element is `.library[i]`.
     pub fn library<'a, I: LibraryIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.library)
-    }
-
-    /// Access library mutably - use index for single element or range for slice view
-    /// e.g. `.library_mut(0)` returns `&mut Library`, `.library_mut(0..2)` returns `LibrarySliceViewMut`
-    pub fn library_mut<'a, I: LibraryMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.library)
     }
 
     /// Get the number of library elements
@@ -975,16 +767,10 @@ impl Code {
 }
 
 impl PfPassive {
-    /// Access r#loop - use index for single element or range for slice view
-    /// e.g. `.r#loop(0)` returns `&PfPassiveLoops`, `.r#loop(0..2)` returns `PfPassiveLoopsSliceView`
+    /// The slice view over a range of r#loop, e.g. `.r#loop(0..2)` or `.r#loop(..)`,
+    /// whose leaves gather one value per element. A single element is `.r#loop[i]`.
     pub fn r#loop<'a, I: PfPassiveLoopsIndex<'a>>(&'a self, index: I) -> I::Output {
         index.get(&self.r#loop)
-    }
-
-    /// Access r#loop mutably - use index for single element or range for slice view
-    /// e.g. `.r#loop_mut(0)` returns `&mut PfPassiveLoops`, `.r#loop_mut(0..2)` returns `PfPassiveLoopsSliceViewMut`
-    pub fn r#loop_mut<'a, I: PfPassiveLoopsMutIndex<'a>>(&'a mut self, index: I) -> I::Output {
-        index.get_mut(&mut self.r#loop)
     }
 
     /// Get the number of r#loop elements

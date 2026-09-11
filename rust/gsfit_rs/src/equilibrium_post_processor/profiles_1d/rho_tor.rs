@@ -34,11 +34,11 @@ use std::f64::consts::PI;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let b0: f64 = constant_values.b0;
 
-    let flux_toroidal_profile: &Array1<f64> = time_slice.profiles_1d.phi.as_ref().unwrap();
+    let flux_toroidal_profile: &Array1<f64> = &time_slice.profiles_1d.phi;
 
     let rho_tor: Array1<f64> = flux_toroidal_profile.mapv(|flux_toroidal| (flux_toroidal / (PI * b0)).abs().sqrt());
 
-    time_slice.profiles_1d.rho_tor = Some(rho_tor);
+    time_slice.profiles_1d.rho_tor = rho_tor;
 }
 
 #[cfg(test)]
@@ -55,13 +55,13 @@ mod tests {
         let flux_toroidal_profile: Array1<f64> = array![0.0, -0.1, -0.4];
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.phi = Some(flux_toroidal_profile);
+        time_slice.profiles_1d.phi = flux_toroidal_profile;
 
         let mut constant_values: ConstantValues = constant_values_for_test();
         constant_values.b0 = b0;
         calculate(&mut time_slice, &constant_values, &mut intermediate_values_for_test());
 
-        let rho_tor: Array1<f64> = time_slice.profiles_1d.rho_tor.unwrap();
+        let rho_tor: Array1<f64> = time_slice.profiles_1d.rho_tor;
 
         // Zero toroidal flux at the magnetic axis, so zero radius
         assert_abs_diff_eq!(rho_tor[0], 0.0, epsilon = 1e-15);

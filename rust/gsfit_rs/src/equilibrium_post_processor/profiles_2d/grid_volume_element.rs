@@ -28,8 +28,8 @@ use std::f64::consts::PI;
 /// * `time_slice` - the time-slice whose `profiles_2d(0)/grid/volume_element` is written [metre ** 3]
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on one rectangular (R, Z) grid.
-    let r: &Array1<f64> = time_slice.profiles_2d[0].grid.dim1.as_ref().unwrap();
-    let z: &Array1<f64> = time_slice.profiles_2d[0].grid.dim2.as_ref().unwrap();
+    let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
+    let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
     let n_r: usize = r.len();
     let n_z: usize = z.len();
     assert!(n_r >= 2);
@@ -46,7 +46,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         }
     }
 
-    time_slice.profiles_2d[0].grid.volume_element = Some(volume_element);
+    time_slice.profiles_2d[0].grid.volume_element = volume_element;
 }
 
 #[cfg(test)]
@@ -65,12 +65,12 @@ mod tests {
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
         time_slice.profiles_2d = vec![EquilibriumProfiles2d::default()];
-        time_slice.profiles_2d[0].grid.dim1 = Some(r);
-        time_slice.profiles_2d[0].grid.dim2 = Some(z);
+        time_slice.profiles_2d[0].grid.dim1 = r;
+        time_slice.profiles_2d[0].grid.dim2 = z;
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        let volume_element: &Array2<f64> = time_slice.profiles_2d[0].grid.volume_element.as_ref().unwrap();
+        let volume_element: &Array2<f64> = &time_slice.profiles_2d[0].grid.volume_element;
         assert_eq!(volume_element.dim(), (2, 2));
         assert_abs_diff_eq!(volume_element[(0, 0)], 6.0 * PI, epsilon = 1e-14);
         assert_abs_diff_eq!(volume_element[(0, 1)], 24.0 * PI, epsilon = 1e-14);

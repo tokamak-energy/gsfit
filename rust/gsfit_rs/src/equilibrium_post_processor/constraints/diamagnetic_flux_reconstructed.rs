@@ -32,24 +32,24 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let i_rod: f64 = constant_values.i_rod;
 
     // A slice which did not converge has no flux surfaces to integrate around
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
-        time_slice.constraints.diamagnetic_flux.reconstructed = Some(f64::NAN);
+        time_slice.constraints.diamagnetic_flux.reconstructed = f64::NAN;
         return;
     }
 
-    let f_profile: &Array1<f64> = time_slice.profiles_1d.f.as_ref().unwrap();
-    let psi_profile: &Array1<f64> = time_slice.profiles_1d.psi.as_ref().unwrap();
-    let flux_tor_profile: &Array1<f64> = time_slice.profiles_1d.phi.as_ref().unwrap();
+    let f_profile: &Array1<f64> = &time_slice.profiles_1d.f;
+    let psi_profile: &Array1<f64> = &time_slice.profiles_1d.psi;
+    let flux_tor_profile: &Array1<f64> = &time_slice.profiles_1d.phi;
 
     // TODO: this is **VERY** hacky, and **SHOULD** be improved!!
     // set f_profile to the vacuum profile, then calculate the vacuum q-profile, then the vacuum toroidal flux
     let f_profile_vacuum: Array1<f64> = 0.0 * f_profile + MU_0 * i_rod / (2.0 * PI);
     let q_profile_vacuum: Array1<f64> = epp_q_profile(time_slice, flux_surfaces, &f_profile_vacuum);
-    let boundary_diverted: bool = time_slice.boundary.r#type == Some(1);
+    let boundary_diverted: bool = time_slice.boundary.r#type == 1;
     let flux_tor_profile_vacuum: Array1<f64> = epp_flux_toroidal_profile(&q_profile_vacuum, psi_profile, boundary_diverted);
 
     let flux_dia: f64 = flux_tor_profile.last().unwrap().to_owned() - flux_tor_profile_vacuum.last().unwrap().to_owned();
 
-    time_slice.constraints.diamagnetic_flux.reconstructed = Some(flux_dia);
+    time_slice.constraints.diamagnetic_flux.reconstructed = flux_dia;
 }

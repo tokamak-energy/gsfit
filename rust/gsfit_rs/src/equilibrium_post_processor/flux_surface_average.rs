@@ -29,20 +29,20 @@ pub(super) fn calculate<F>(time_slice: &EquilibriumTimeSlice, flux_surfaces: &[F
 where
     F: Fn(f64) -> f64,
 {
-    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.as_ref().unwrap().len();
+    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.len();
     assert_eq!(flux_surfaces.len(), n_psi_norm);
 
     let mut values_average: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
 
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
         return values_average;
     }
 
-    let r: &Array1<f64> = time_slice.profiles_2d[0].grid.dim1.as_ref().unwrap();
-    let z: &Array1<f64> = time_slice.profiles_2d[0].grid.dim2.as_ref().unwrap();
-    let b_field_r_2d: &Array2<f64> = time_slice.profiles_2d[0].b_field_r.as_ref().unwrap();
-    let b_field_z_2d: &Array2<f64> = time_slice.profiles_2d[0].b_field_z.as_ref().unwrap();
+    let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
+    let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
+    let b_field_r_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_r;
+    let b_field_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_z;
     let (n_z, n_r): (usize, usize) = values_2d.dim();
     assert_eq!(b_field_r_2d.dim(), (n_z, n_r));
     assert_eq!(b_field_z_2d.dim(), (n_z, n_r));
@@ -54,8 +54,8 @@ where
     let values_interpolator = Interp2D::builder(values_2d.to_owned()).x(z.clone()).y(r.clone()).build().unwrap();
 
     if n_psi_norm > 0 {
-        let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r.unwrap();
-        let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z.unwrap();
+        let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r;
+        let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z;
         values_average[0] = values_interpolator.interp_scalar(mag_z, mag_r).unwrap_or(f64::NAN);
     }
 
@@ -136,10 +136,10 @@ mod tests {
         }
 
         let mut profiles_2d: EquilibriumProfiles2d = EquilibriumProfiles2d::default();
-        profiles_2d.grid.dim1 = Some(r);
-        profiles_2d.grid.dim2 = Some(z);
-        profiles_2d.b_field_r = Some(b_field_r_2d);
-        profiles_2d.b_field_z = Some(b_field_z_2d);
+        profiles_2d.grid.dim1 = r;
+        profiles_2d.grid.dim2 = z;
+        profiles_2d.b_field_r = b_field_r_2d;
+        profiles_2d.b_field_z = b_field_z_2d;
 
         let n_theta: usize = 2001;
         let theta: Array1<f64> = Array1::linspace(0.0, 2.0 * PI, n_theta);
@@ -153,10 +153,10 @@ mod tests {
         };
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.psi_magnetic_axis = Some(0.0);
-        time_slice.global_quantities.magnetic_axis.r = Some(mag_r);
-        time_slice.global_quantities.magnetic_axis.z = Some(mag_z);
-        time_slice.profiles_1d.psi_norm = Some(Array1::from_vec(vec![0.0, 1.0]));
+        time_slice.global_quantities.psi_magnetic_axis = 0.0;
+        time_slice.global_quantities.magnetic_axis.r = mag_r;
+        time_slice.global_quantities.magnetic_axis.z = mag_z;
+        time_slice.profiles_1d.psi_norm = Array1::from_vec(vec![0.0, 1.0]);
         time_slice.profiles_2d = vec![profiles_2d];
 
         let standard_average: Array1<f64> = calculate(&time_slice, &[axis.clone(), flux_surface.clone()], &values_2d, |_r_here| 1.0);

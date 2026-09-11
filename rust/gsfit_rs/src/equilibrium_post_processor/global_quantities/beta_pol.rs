@@ -36,13 +36,13 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let bp_sq_fs_avg: f64 = intermediate_values.bp_sq_fs_avg;
     let r0: f64 = constant_values.r0;
 
-    let w_mhd: f64 = time_slice.global_quantities.energy_mhd.unwrap();
-    let ip: f64 = time_slice.global_quantities.ip.unwrap();
-    let r_mag: f64 = time_slice.global_quantities.magnetic_axis.r.unwrap();
-    let r_geo: f64 = time_slice.boundary.geometric_axis.r.unwrap();
+    let w_mhd: f64 = time_slice.global_quantities.energy_mhd;
+    let ip: f64 = time_slice.global_quantities.ip;
+    let r_mag: f64 = time_slice.global_quantities.magnetic_axis.r;
+    let r_geo: f64 = time_slice.boundary.geometric_axis.r;
 
     // The plasma volume is the volume enclosed by the last closed flux surface
-    let volume_profile: &Array1<f64> = time_slice.profiles_1d.volume.as_ref().unwrap();
+    let volume_profile: &Array1<f64> = &time_slice.profiles_1d.volume;
     let plasma_volume: f64 = volume_profile.last().unwrap().to_owned();
 
     // w_mhd = (3 / 2) * int(p dV)
@@ -58,8 +58,8 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     let beta_pol: f64 = 4.0 * p_vol_int / (MU_0 * ip * ip * r0);
 
-    time_slice.global_quantities.beta_pol = Some(beta_pol);
-    time_slice.global_quantities.beta_pol_1 = Some(beta_p_1);
-    time_slice.global_quantities.beta_pol_2 = Some(beta_p_2);
-    time_slice.global_quantities.beta_pol_3 = Some(beta_p_3);
+    time_slice.global_quantities.beta_pol = beta_pol;
+    time_slice.global_quantities.beta_pol_1 = beta_p_1;
+    time_slice.global_quantities.beta_pol_2 = beta_p_2;
+    time_slice.global_quantities.beta_pol_3 = beta_p_3;
 }

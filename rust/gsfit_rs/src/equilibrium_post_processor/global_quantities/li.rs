@@ -32,21 +32,21 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let bp_sq_fs_avg: f64 = intermediate_values.bp_sq_fs_avg;
 
-    let ip: f64 = time_slice.global_quantities.ip.unwrap();
-    let r_mag: f64 = time_slice.global_quantities.magnetic_axis.r.unwrap();
-    let r_geo: f64 = time_slice.boundary.geometric_axis.r.unwrap();
+    let ip: f64 = time_slice.global_quantities.ip;
+    let r_mag: f64 = time_slice.global_quantities.magnetic_axis.r;
+    let r_geo: f64 = time_slice.boundary.geometric_axis.r;
 
     // The plasma volume is the volume enclosed by the last closed flux surface
-    let volume_profile: &Array1<f64> = time_slice.profiles_1d.volume.as_ref().unwrap();
+    let volume_profile: &Array1<f64> = &time_slice.profiles_1d.volume;
     let plasma_volume: f64 = volume_profile.last().unwrap().to_owned();
 
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let r: &Array1<f64> = time_slice.profiles_2d[0].grid.dim1.as_ref().unwrap();
-    let d_area: f64 = time_slice.profiles_2d[0].grid.d_area.unwrap();
-    let b_r: &Array2<f64> = time_slice.profiles_2d[0].b_field_r.as_ref().unwrap();
-    let b_z: &Array2<f64> = time_slice.profiles_2d[0].b_field_z.as_ref().unwrap();
-    let mask: &Array2<f64> = time_slice.profiles_2d[0].mask.as_ref().unwrap();
+    let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
+    let d_area: f64 = time_slice.profiles_2d[0].grid.d_area;
+    let b_r: &Array2<f64> = &time_slice.profiles_2d[0].b_field_r;
+    let b_z: &Array2<f64> = &time_slice.profiles_2d[0].b_field_z;
+    let mask: &Array2<f64> = &time_slice.profiles_2d[0].mask;
 
     let dims: &[usize] = b_r.shape();
     let n_z: usize = dims[0];
@@ -66,7 +66,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let li_2: f64 = 2.0 * bp_sq_vol_int / (MU_0.powi(2) * ip.powi(2) * r_mag);
     let li_3: f64 = 2.0 * bp_sq_vol_int / (MU_0.powi(2) * ip.powi(2) * r_geo);
 
-    time_slice.global_quantities.li_1 = Some(li_1);
-    time_slice.global_quantities.li_2 = Some(li_2);
-    time_slice.global_quantities.li_3 = Some(li_3);
+    time_slice.global_quantities.li_1 = li_1;
+    time_slice.global_quantities.li_2 = li_2;
+    time_slice.global_quantities.li_3 = li_3;
 }

@@ -26,9 +26,9 @@ use std::f64::consts::PI;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let pressure_2d: &Array2<f64> = time_slice.profiles_2d[0].pressure.as_ref().unwrap();
-    let r: &Array1<f64> = time_slice.profiles_2d[0].grid.dim1.as_ref().unwrap();
-    let d_area: f64 = time_slice.profiles_2d[0].grid.d_area.unwrap();
+    let pressure_2d: &Array2<f64> = &time_slice.profiles_2d[0].pressure;
+    let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
+    let d_area: f64 = time_slice.profiles_2d[0].grid.d_area;
 
     let (n_z, n_r): (usize, usize) = pressure_2d.dim();
 
@@ -39,5 +39,5 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         }
     }
 
-    time_slice.global_quantities.energy_mhd = Some(energy_mhd);
+    time_slice.global_quantities.energy_mhd = energy_mhd;
 }

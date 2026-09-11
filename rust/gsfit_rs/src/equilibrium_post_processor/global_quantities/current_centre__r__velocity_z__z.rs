@@ -33,10 +33,10 @@ use ndarray::{Array1, Array2};
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let j_phi_2d: &Array2<f64> = time_slice.profiles_2d[0].j_phi.as_ref().unwrap();
-    let r: &Array1<f64> = time_slice.profiles_2d[0].grid.dim1.as_ref().unwrap();
-    let z: &Array1<f64> = time_slice.profiles_2d[0].grid.dim2.as_ref().unwrap();
-    let d_area: f64 = time_slice.profiles_2d[0].grid.d_area.unwrap();
+    let j_phi_2d: &Array2<f64> = &time_slice.profiles_2d[0].j_phi;
+    let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
+    let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
+    let d_area: f64 = time_slice.profiles_2d[0].grid.d_area;
 
     let (n_z, n_r): (usize, usize) = j_phi_2d.dim();
 
@@ -53,8 +53,8 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         }
     }
 
-    time_slice.global_quantities.current_centre.r = Some(current_moment_r / ip);
-    time_slice.global_quantities.current_centre.z = Some(current_moment_z / ip);
+    time_slice.global_quantities.current_centre.r = current_moment_r / ip;
+    time_slice.global_quantities.current_centre.z = current_moment_z / ip;
 }
 
 /// Calculate the current centre's vertical velocity, and store it in every time-slice.
@@ -82,19 +82,16 @@ pub fn calculate_velocity_z(equilibrium_ids: &mut Equilibrium) {
     let mut time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
     let mut current_centre_z: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
     for i_time in 0..n_time {
-        time[i_time] = equilibrium_ids.time_slice[i_time].time.unwrap();
-        current_centre_z[i_time] = match equilibrium_ids.time_slice[i_time].global_quantities.current_centre.z {
-            Some(current_centre_z_at_time) => current_centre_z_at_time,
-            // An unconverged time-slice is skipped by the per-slice loop, so `calculate` never
-            // filled it; treat it as `NaN`, which the derivative below already handles
-            None => f64::NAN,
-        };
+        time[i_time] = equilibrium_ids.time_slice[i_time].time;
+        // An unconverged time-slice is skipped by the per-slice loop, so `calculate` never filled
+        // it and it is still `NaN`, which the derivative below already handles
+        current_centre_z[i_time] = equilibrium_ids.time_slice[i_time].global_quantities.current_centre.z;
     }
 
     let velocity_z: Array1<f64> = d_dt(&current_centre_z, &time);
 
     for i_time in 0..n_time {
-        equilibrium_ids.time_slice[i_time].global_quantities.current_centre.velocity_z = Some(velocity_z[i_time]);
+        equilibrium_ids.time_slice[i_time].global_quantities.current_centre.velocity_z = velocity_z[i_time];
     }
 }
 
@@ -132,10 +129,10 @@ mod tests {
         let d_area: f64 = (r[1] - r[0]) * (z[1] - z[0]);
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
         time_slice.profiles_2d = vec![EquilibriumProfiles2d::default()];
-        time_slice.profiles_2d[0].grid.dim1 = Some(r);
-        time_slice.profiles_2d[0].grid.dim2 = Some(z);
-        time_slice.profiles_2d[0].grid.d_area = Some(d_area);
-        time_slice.profiles_2d[0].j_phi = Some(j_phi_2d);
+        time_slice.profiles_2d[0].grid.dim1 = r;
+        time_slice.profiles_2d[0].grid.dim2 = z;
+        time_slice.profiles_2d[0].grid.d_area = d_area;
+        time_slice.profiles_2d[0].j_phi = j_phi_2d;
         return time_slice;
     }
 
@@ -145,8 +142,8 @@ mod tests {
         let mut equilibrium_ids: Equilibrium = Equilibrium::default();
         equilibrium_ids.time_slice = vec![EquilibriumTimeSlice::default(); n_time];
         for i_time in 0..n_time {
-            equilibrium_ids.time_slice[i_time].time = Some(time[i_time]);
-            equilibrium_ids.time_slice[i_time].global_quantities.current_centre.z = Some(current_centre_z[i_time]);
+            equilibrium_ids.time_slice[i_time].time = time[i_time];
+            equilibrium_ids.time_slice[i_time].global_quantities.current_centre.z = current_centre_z[i_time];
         }
         return equilibrium_ids;
     }
@@ -160,9 +157,9 @@ mod tests {
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        assert_abs_diff_eq!(time_slice.global_quantities.current_centre.r.unwrap(), 1.75, epsilon = 1e-14);
-        assert_abs_diff_eq!(time_slice.global_quantities.current_centre.z.unwrap(), 0.0, epsilon = 1e-14);
-        assert!(time_slice.global_quantities.current_centre.velocity_z.is_none());
+        assert_abs_diff_eq!(time_slice.global_quantities.current_centre.r, 1.75, epsilon = 1e-14);
+        assert_abs_diff_eq!(time_slice.global_quantities.current_centre.z, 0.0, epsilon = 1e-14);
+        assert!(time_slice.global_quantities.current_centre.velocity_z.is_nan());
     }
 
     #[test]
@@ -175,8 +172,8 @@ mod tests {
 
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-        assert_abs_diff_eq!(time_slice.global_quantities.current_centre.r.unwrap(), 1.5, epsilon = 1e-14);
-        assert_abs_diff_eq!(time_slice.global_quantities.current_centre.z.unwrap(), 0.3, epsilon = 1e-14);
+        assert_abs_diff_eq!(time_slice.global_quantities.current_centre.r, 1.5, epsilon = 1e-14);
+        assert_abs_diff_eq!(time_slice.global_quantities.current_centre.z, 0.3, epsilon = 1e-14);
     }
 
     #[test]
@@ -193,16 +190,8 @@ mod tests {
 
             calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-            assert_abs_diff_eq!(
-                time_slice.global_quantities.current_centre.r.unwrap(),
-                (1.0 * 1.0 + 3.0 * 2.0) / 4.0,
-                epsilon = 1e-14
-            );
-            assert_abs_diff_eq!(
-                time_slice.global_quantities.current_centre.z.unwrap(),
-                (1.0 * 0.0 + 3.0 * 1.0) / 4.0,
-                epsilon = 1e-14
-            );
+            assert_abs_diff_eq!(time_slice.global_quantities.current_centre.r, (1.0 * 1.0 + 3.0 * 2.0) / 4.0, epsilon = 1e-14);
+            assert_abs_diff_eq!(time_slice.global_quantities.current_centre.z, (1.0 * 0.0 + 3.0 * 1.0) / 4.0, epsilon = 1e-14);
         }
     }
 
@@ -216,8 +205,8 @@ mod tests {
 
             calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
 
-            assert!(time_slice.global_quantities.current_centre.r.unwrap().is_nan());
-            assert!(time_slice.global_quantities.current_centre.z.unwrap().is_nan());
+            assert!(time_slice.global_quantities.current_centre.r.is_nan());
+            assert!(time_slice.global_quantities.current_centre.z.is_nan());
         }
     }
 
@@ -231,11 +220,7 @@ mod tests {
         calculate_velocity_z(&mut equilibrium_ids);
 
         for time_slice in &equilibrium_ids.time_slice {
-            assert_abs_diff_eq!(
-                time_slice.global_quantities.current_centre.velocity_z.unwrap(),
-                velocity_z_expected,
-                epsilon = 1e-12
-            );
+            assert_abs_diff_eq!(time_slice.global_quantities.current_centre.velocity_z, velocity_z_expected, epsilon = 1e-12);
         }
     }
 
@@ -245,7 +230,7 @@ mod tests {
 
         calculate_velocity_z(&mut equilibrium_ids);
 
-        assert!(equilibrium_ids.time_slice[0].global_quantities.current_centre.velocity_z.unwrap().is_nan());
+        assert!(equilibrium_ids.time_slice[0].global_quantities.current_centre.velocity_z.is_nan());
     }
 
     #[test]
@@ -259,7 +244,7 @@ mod tests {
         let velocity_z: Vec<f64> = equilibrium_ids
             .time_slice
             .iter()
-            .map(|time_slice| time_slice.global_quantities.current_centre.velocity_z.unwrap())
+            .map(|time_slice| time_slice.global_quantities.current_centre.velocity_z)
             .collect();
         assert_abs_diff_eq!(velocity_z[0], 10.0, epsilon = 1e-12);
         assert!(velocity_z[1].is_nan());
@@ -275,14 +260,14 @@ mod tests {
         let current_centre_z: Array1<f64> = array![0.0, 0.1, 0.2, 0.3, 0.4];
         let mut equilibrium_ids: Equilibrium = equilibrium_with_centre_z(time, current_centre_z);
         // The per-slice loop skips an unconverged time-slice, so `calculate` never fills its centre
-        equilibrium_ids.time_slice[2].global_quantities.current_centre.z = None;
+        equilibrium_ids.time_slice[2].global_quantities.current_centre.z = f64::NAN;
 
         calculate_velocity_z(&mut equilibrium_ids);
 
         let velocity_z: Vec<f64> = equilibrium_ids
             .time_slice
             .iter()
-            .map(|time_slice| time_slice.global_quantities.current_centre.velocity_z.unwrap())
+            .map(|time_slice| time_slice.global_quantities.current_centre.velocity_z)
             .collect();
         assert_abs_diff_eq!(velocity_z[0], 10.0, epsilon = 1e-12);
         assert!(velocity_z[1].is_nan());

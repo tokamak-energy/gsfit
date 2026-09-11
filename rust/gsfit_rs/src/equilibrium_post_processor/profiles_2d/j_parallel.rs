@@ -47,17 +47,17 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
-    let mesh_r_2d: &Array2<f64> = time_slice.profiles_2d[0].r.as_ref().unwrap();
-    let psi_norm_2d: &Array2<f64> = time_slice.profiles_2d[0].psi_norm.as_ref().unwrap();
-    let mask_2d: &Array2<f64> = time_slice.profiles_2d[0].mask.as_ref().unwrap();
-    let j_phi_2d: &Array2<f64> = time_slice.profiles_2d[0].j_phi.as_ref().unwrap();
-    let b_field_r_2d: &Array2<f64> = time_slice.profiles_2d[0].b_field_r.as_ref().unwrap();
-    let b_field_z_2d: &Array2<f64> = time_slice.profiles_2d[0].b_field_z.as_ref().unwrap();
-    let b_field_phi_2d: &Array2<f64> = time_slice.profiles_2d[0].b_field_phi.as_ref().unwrap();
+    let mesh_r_2d: &Array2<f64> = &time_slice.profiles_2d[0].r;
+    let psi_norm_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi_norm;
+    let mask_2d: &Array2<f64> = &time_slice.profiles_2d[0].mask;
+    let j_phi_2d: &Array2<f64> = &time_slice.profiles_2d[0].j_phi;
+    let b_field_r_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_r;
+    let b_field_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_z;
+    let b_field_phi_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_phi;
 
     let (n_z, n_r): (usize, usize) = psi_norm_2d.dim();
 
-    let ff_prime_dof_values: &Array1<f64> = time_slice.source_functions.ff_prime.coefficients.as_ref().unwrap();
+    let ff_prime_dof_values: &Array1<f64> = &time_slice.source_functions.ff_prime.coefficients;
     let psi_norm_flat: Array1<f64> = Array1::from_iter(psi_norm_2d.iter().cloned());
     let ff_prime_2d: Array2<f64> = ff_prime_source_function
         .source_function_value(&psi_norm_flat, ff_prime_dof_values)
@@ -80,5 +80,5 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
         }
     }
 
-    time_slice.profiles_2d[0].j_parallel = Some(j_parallel_2d);
+    time_slice.profiles_2d[0].j_parallel = j_parallel_2d;
 }

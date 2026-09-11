@@ -38,22 +38,22 @@ use ndarray::Array1;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
-    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.as_ref().unwrap().len();
+    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.len();
 
     let mut geometric_axis_r_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
     let mut geometric_axis_z_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
 
     // A slice which did not converge has no flux surfaces to measure
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis.unwrap();
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     if psi_a.is_nan() {
-        time_slice.profiles_1d.geometric_axis.r = Some(geometric_axis_r_profile);
-        time_slice.profiles_1d.geometric_axis.z = Some(geometric_axis_z_profile);
+        time_slice.profiles_1d.geometric_axis.r = geometric_axis_r_profile;
+        time_slice.profiles_1d.geometric_axis.z = geometric_axis_z_profile;
         return;
     }
 
     // The surfaces shrink onto the magnetic axis; see the note in this function's documentation
-    geometric_axis_r_profile[0] = time_slice.global_quantities.magnetic_axis.r.unwrap();
-    geometric_axis_z_profile[0] = time_slice.global_quantities.magnetic_axis.z.unwrap();
+    geometric_axis_r_profile[0] = time_slice.global_quantities.magnetic_axis.r;
+    geometric_axis_z_profile[0] = time_slice.global_quantities.magnetic_axis.z;
 
     // Don't do the first point
     'psi_norm_loop: for i_psi_norm in 1..n_psi_norm {
@@ -72,8 +72,8 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         geometric_axis_z_profile[i_psi_norm] = (z_min + z_max) / 2.0;
     }
 
-    time_slice.profiles_1d.geometric_axis.r = Some(geometric_axis_r_profile);
-    time_slice.profiles_1d.geometric_axis.z = Some(geometric_axis_z_profile);
+    time_slice.profiles_1d.geometric_axis.r = geometric_axis_r_profile;
+    time_slice.profiles_1d.geometric_axis.z = geometric_axis_z_profile;
 }
 
 /// The smallest and largest value along one coordinate of a contour.
@@ -138,10 +138,10 @@ mod tests {
         let mag_z: f64 = 0.03;
 
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.5, 1.0]);
-        time_slice.global_quantities.psi_magnetic_axis = Some(0.1);
-        time_slice.global_quantities.magnetic_axis.r = Some(mag_r);
-        time_slice.global_quantities.magnetic_axis.z = Some(mag_z);
+        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
+        time_slice.global_quantities.psi_magnetic_axis = 0.1;
+        time_slice.global_quantities.magnetic_axis.r = mag_r;
+        time_slice.global_quantities.magnetic_axis.z = mag_z;
 
         // The magnetic axis, one surface which could not be traced, and one ellipse which is
         // deliberately not centred on the magnetic axis, as a Shafranov-shifted surface is not
@@ -151,8 +151,8 @@ mod tests {
         intermediate_values.flux_surfaces = flux_surfaces;
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
 
-        let geometric_axis_r_profile: Array1<f64> = time_slice.profiles_1d.geometric_axis.r.unwrap();
-        let geometric_axis_z_profile: Array1<f64> = time_slice.profiles_1d.geometric_axis.z.unwrap();
+        let geometric_axis_r_profile: Array1<f64> = time_slice.profiles_1d.geometric_axis.r;
+        let geometric_axis_z_profile: Array1<f64> = time_slice.profiles_1d.geometric_axis.z;
 
         // The surfaces shrink onto the magnetic axis
         assert_abs_diff_eq!(geometric_axis_r_profile[0], mag_r, epsilon = 1e-15);
@@ -171,10 +171,10 @@ mod tests {
     #[test]
     fn the_bounding_box_is_not_the_centroid() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 1.0]);
-        time_slice.global_quantities.psi_magnetic_axis = Some(0.1);
-        time_slice.global_quantities.magnetic_axis.r = Some(0.5);
-        time_slice.global_quantities.magnetic_axis.z = Some(0.0);
+        time_slice.profiles_1d.psi_norm = array![0.0, 1.0];
+        time_slice.global_quantities.psi_magnetic_axis = 0.1;
+        time_slice.global_quantities.magnetic_axis.r = 0.5;
+        time_slice.global_quantities.magnetic_axis.z = 0.0;
 
         // A closed triangle spanning r in [0.2, 0.8] and z in [-0.1, 0.3]. Its centroid is at
         // r = (0.2 + 0.8 + 0.2) / 3 = 0.4, but the centre of its bounding box is 0.5
@@ -188,17 +188,17 @@ mod tests {
         intermediate_values.flux_surfaces = flux_surfaces;
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
 
-        assert_abs_diff_eq!(time_slice.profiles_1d.geometric_axis.r.unwrap()[1], 0.5, epsilon = 1e-15);
-        assert_abs_diff_eq!(time_slice.profiles_1d.geometric_axis.z.unwrap()[1], 0.1, epsilon = 1e-15);
+        assert_abs_diff_eq!(time_slice.profiles_1d.geometric_axis.r[1], 0.5, epsilon = 1e-15);
+        assert_abs_diff_eq!(time_slice.profiles_1d.geometric_axis.z[1], 0.1, epsilon = 1e-15);
     }
 
     #[test]
     fn a_contour_carrying_a_nan_is_not_measured() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 1.0]);
-        time_slice.global_quantities.psi_magnetic_axis = Some(0.1);
-        time_slice.global_quantities.magnetic_axis.r = Some(0.5);
-        time_slice.global_quantities.magnetic_axis.z = Some(0.0);
+        time_slice.profiles_1d.psi_norm = array![0.0, 1.0];
+        time_slice.global_quantities.psi_magnetic_axis = 0.1;
+        time_slice.global_quantities.magnetic_axis.r = 0.5;
+        time_slice.global_quantities.magnetic_axis.z = 0.0;
 
         let flux_surface: FluxSurface = FluxSurface {
             r: array![0.2, 0.8, f64::NAN, 0.2],
@@ -210,14 +210,14 @@ mod tests {
         intermediate_values.flux_surfaces = flux_surfaces;
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
 
-        assert!(time_slice.profiles_1d.geometric_axis.r.unwrap()[1].is_nan());
+        assert!(time_slice.profiles_1d.geometric_axis.r[1].is_nan());
     }
 
     #[test]
     fn a_slice_which_did_not_converge_is_all_nan() {
         let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.psi_norm = Some(array![0.0, 0.5, 1.0]);
-        time_slice.global_quantities.psi_magnetic_axis = Some(f64::NAN);
+        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
+        time_slice.global_quantities.psi_magnetic_axis = f64::NAN;
 
         let flux_surfaces: Vec<FluxSurface> = vec![untraced_flux_surface(); 3];
 
@@ -226,7 +226,7 @@ mod tests {
         calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
 
         // Including the magnetic axis, which is only filled once there is a converged solution
-        assert!(time_slice.profiles_1d.geometric_axis.r.unwrap().iter().all(|value| value.is_nan()));
-        assert!(time_slice.profiles_1d.geometric_axis.z.unwrap().iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.geometric_axis.r.iter().all(|value| value.is_nan()));
+        assert!(time_slice.profiles_1d.geometric_axis.z.iter().all(|value| value.is_nan()));
     }
 }
