@@ -1,9 +1,9 @@
 import typing
 from typing import TYPE_CHECKING
 
-from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium
 import numpy as np
 import numpy.typing as npt
+from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium
 from gsfit_rs import Tf
 from scipy.constants import mu_0
 

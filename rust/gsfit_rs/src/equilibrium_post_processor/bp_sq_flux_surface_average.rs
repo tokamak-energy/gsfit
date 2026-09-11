@@ -106,5 +106,5 @@ fn calculate_bp_sq_fs_avg(time_slice: &EquilibriumTimeSlice, intermediate_values
 
     let bp_sq_fs_avg: f64 = bp_d_ell_integral / d_ell_over_bp_integral;
 
-    return bp_sq_fs_avg;
+    bp_sq_fs_avg
 }

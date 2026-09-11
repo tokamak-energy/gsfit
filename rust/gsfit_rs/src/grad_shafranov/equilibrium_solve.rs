@@ -22,10 +22,11 @@ use faer::{Accum, Par};
 use imas_rs::EMPTY_INT;
 use imas_rs::ids::wall::Wall as WallIds;
 use imas_rs::{
-    Code, EquilibriumContourTreeNode, EquilibriumGreens, EquilibriumGreensPfActive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d, EquilibriumTimeSlice,
+    Code, EquilibriumContourTreeNode, EquilibriumGreens, EquilibriumGreensPfActive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d,
+    EquilibriumProfiles2dGrid, EquilibriumTimeSlice,
 };
 use ndarray::Axis;
-use ndarray::{Array1, Array2, Array3, ArrayView2, concatenate, s};
+use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView2, concatenate, s};
 use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;
 use std::sync::Arc;
@@ -57,7 +58,7 @@ fn flatten_grid_r(r: &Array1<f64>, n_z: usize) -> Array1<f64> {
         }
     }
 
-    return flat_r;
+    flat_r
 }
 
 #[cfg(test)]
@@ -85,6 +86,31 @@ mod tests {
     }
 }
 
+/// Scratch buffers for `calculate_psi_and_derivatives`.
+///
+/// This type holds no state. It exists only so that the two buffers are allocated **once per
+/// time-slice** rather than on every Picard iteration: they are `(n_z, n_z * n_r)`, which is 8.3
+/// million elements - 66 MB each - at [n_r, n_z] = [81, 321], so allocating them per iteration
+/// costs an `mmap`/`munmap` pair and ~16,000 page faults each time round the loop.
+///
+/// `calculate_psi_and_derivatives` overwrites every element of both before it reads any of them,
+/// so whatever they hold on entry is discarded, and nothing is carried from one iteration to the
+/// next. Deleting this type and allocating inside the function would be correct, only slower.
+///
+/// The caller fills them with `NaN` rather than zeros, so that an element which the **first**
+/// iteration fails to write propagates a visible `NaN` into `psi` rather than silently
+/// contributing nothing. On later iterations they hold the previous iteration's values, so this
+/// catches a gap in the fill loop only the first time round.
+///
+/// The read-only counterpart is [`PsiAndDerivativesGreens`]: both are built by the caller and
+/// handed in, for the same reason.
+pub struct PsiAndDerivativesTemporaryStorage {
+    /// Current sources gathered for the even kernels; shape = (n_z, n_z * n_r)
+    w_even: Array2<f64>,
+    /// Current sources gathered for the odd kernels; shape = (n_z, n_z * n_r)
+    w_odd: Array2<f64>,
+}
+
 /// Greens tables reorganised for `calculate_psi_and_derivatives`.
 ///
 /// Precomputed **once per time-slice** (the tables do not change between Picard iterations),
@@ -104,8 +130,8 @@ mod tests {
 /// `j_2d[(i_z + i_offset_z, i_cur_r)]`. Kernels which are **even** in `z - z_current_source`
 /// (`psi`, `d_psi_d_r`, `d2_psi_d_r2`, `d2_psi_d_z2`, `d3_psi_d_r_d_z2`) take the sum of the two
 /// sources; kernels which are **odd** (`d_psi_d_z`, `d2_psi_d_r_d_z`, `d3_psi_d_r2_d_z`,
-/// `d3_psi_d_z3`) take the difference. `w` is built fresh each iteration (it depends on `j_2d`), which is cheap;
-/// the GEMM is done with `faer`.
+/// `d3_psi_d_z3`) take the difference. `w` is filled fresh each iteration (it depends on `j_2d`)
+/// into the buffers of [`PsiAndDerivativesTemporaryStorage`]; the GEMM is done with `faer`.
 ///
 /// The even kernels and the odd kernels are each concatenated column-wise, so the plasma
 /// contribution to all nine fields costs exactly two GEMMs.
@@ -161,14 +187,14 @@ impl PsiAndDerivativesGreens {
             let g_3d: Array3<f64> = g_flat.to_shape((n_z, n_r, n_r)).unwrap().to_owned();
             let g_3d_permuted: Array3<f64> = g_3d.permuted_axes([0, 2, 1]);
             let g_by_offset: Array2<f64> = g_3d_permuted.as_standard_layout().to_shape((n_z * n_r, n_r)).unwrap().to_owned();
-            return g_by_offset;
+            g_by_offset
         };
 
         let grid_grid = |table: &Array2<f64>, key: &str| -> Array2<f64> {
             if table.is_empty() {
                 panic!("PsiAndDerivativesGreens: `greens/grid_grid/{key}` unset");
             }
-            return permute_to_by_offset(table);
+            permute_to_by_offset(table)
         };
         let g_psi_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.psi, "psi");
         let g_d_psi_d_r_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d_psi_d_r, "d_psi_d_r");
@@ -225,7 +251,7 @@ impl PsiAndDerivativesGreens {
                     .to_owned();
                 g_coils.slice_mut(s![.., i_pf]).assign(&table_flat);
             }
-            return g_coils;
+            g_coils
         };
         let g_d_psi_d_r_coils_matrix: Array2<f64> = coils_matrix(|coil| &coil.d_psi_d_r, "d_psi_d_r");
         let g_d_psi_d_z_coils_matrix: Array2<f64> = coils_matrix(|coil| &coil.d_psi_d_z, "d_psi_d_z");
@@ -259,7 +285,7 @@ impl PsiAndDerivativesGreens {
                     i_dof_total += 1;
                 }
             }
-            return g_passives;
+            g_passives
         };
         let g_psi_passives_matrix: Array2<f64> = passives_matrix(|dof| &dof.psi, "psi");
         let g_d_psi_d_r_passives_matrix: Array2<f64> = passives_matrix(|dof| &dof.d_psi_d_r, "d_psi_d_r");
@@ -271,7 +297,7 @@ impl PsiAndDerivativesGreens {
         let g_d3_psi_d_r_d_z2_passives_matrix: Array2<f64> = passives_matrix(|dof| &dof.d3_psi_d_r_d_z2, "d3_psi_d_r_d_z2");
         let g_d3_psi_d_z3_passives_matrix: Array2<f64> = passives_matrix(|dof| &dof.d3_psi_d_z3, "d3_psi_d_z3");
 
-        return Self {
+        Self {
             g_even_plasma_by_offset,
             g_odd_plasma_by_offset,
             g_d_psi_d_r_coils_matrix,
@@ -291,7 +317,7 @@ impl PsiAndDerivativesGreens {
             g_d3_psi_d_r2_d_z_passives_matrix,
             g_d3_psi_d_r_d_z2_passives_matrix,
             g_d3_psi_d_z3_passives_matrix,
-        };
+        }
     }
 }
 
@@ -421,7 +447,7 @@ impl<'a> EquilibriumSolver<'a> {
         self.time_slice.convergence.grad_shafranov_deviation_value = f64::NAN;
         self.time_slice.source_functions.ff_prime.coefficients *= f64::NAN;
         self.time_slice.source_functions.p_prime.coefficients *= f64::NAN;
-        self.passive_dof_values = self.passive_dof_values.to_owned() * f64::NAN;
+        self.passive_dof_values *= f64::NAN;
         self.time_slice.profiles_2d[0].psi *= f64::NAN;
         self.time_slice.profiles_2d[0].d_psi_d_r *= f64::NAN;
         self.time_slice.profiles_2d[0].d_psi_d_z *= f64::NAN;
@@ -472,12 +498,12 @@ impl<'a> EquilibriumSolver<'a> {
         let magnetic_axis_static: &SensorsStatic = self.magnetic_axis_static;
         let magnetic_axis_dynamic: &SensorsDynamic = self.magnetic_axis_dynamic;
 
-        // Plasma grid
-        let mesh_r: Array2<f64> = self.time_slice.profiles_2d[0].r.clone();
-        let r: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim1.clone();
-        let z: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim2.clone();
-        let d_area: f64 = self.time_slice.profiles_2d[0].grid.d_area;
-        let flat_r: Array1<f64> = flatten_grid_r(&r, z.len());
+        // Plasma grid. The grid never changes while the solver runs, so it is read out of the IDS
+        // rather than copied out of it; this borrow ends here, and `r` and `z` are taken again
+        // inside the iteration loop, off the same `&mut profiles_2d[0]` as `psi` and its derivatives
+        let grid: &EquilibriumProfiles2dGrid = &self.time_slice.profiles_2d[0].grid;
+        let d_area: f64 = grid.d_area;
+        let flat_r: Array1<f64> = flatten_grid_r(&grid.dim1, grid.dim2.len());
         // Limiter, from the `wall` IDS. `limit_pts` gathers every limiter unit, `vessel` is
         // `unit(0)` alone
         let (limit_pts_r, limit_pts_z): (Array1<f64>, Array1<f64>) = limiter_points(self.wall).unwrap();
@@ -505,8 +531,7 @@ impl<'a> EquilibriumSolver<'a> {
         let n_magnetic_axis_constraints: usize = magnetic_axis_dynamic.measured.len();
         let n_p_prime_regularisation: usize = p_prime_source_function.source_function_regularisation().shape()[0];
         let n_ff_prime_regularisation: usize = ff_prime_source_function.source_function_regularisation().shape()[0];
-        let passive_regularisations: Array2<f64> = self.passive_regularisations.to_owned();
-        let n_passive_regularisation: usize = passive_regularisations.shape()[0];
+        let n_passive_regularisation: usize = self.passive_regularisations.shape()[0];
         let n_delta_z_regularisation: usize = 0; // initially set to 0 because we don't have previous iteration
         let n_constraints: usize = n_bp
             + n_fl
@@ -573,21 +598,28 @@ impl<'a> EquilibriumSolver<'a> {
         // the geometry, so they are built once by the caller and shared by every time-slice
         let psi_and_derivatives_greens: &PsiAndDerivativesGreens = self.psi_and_derivatives_greens;
 
+        // Scratch space for `calculate_psi_and_derivatives`. Allocated out here purely so that it
+        // is not reallocated on every iteration - it holds no state; see the type. Filled with
+        // `NaN` rather than zeros so that an element the first iteration fails to write shows up as
+        // `NaN` in `psi` instead of silently contributing nothing
+        let n_r: usize = self.equilibrium_code.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_code.grid.n_z as usize;
+        let mut temporary_storage: PsiAndDerivativesTemporaryStorage = PsiAndDerivativesTemporaryStorage {
+            w_even: Array2::from_elem((n_z, n_z * n_r), f64::NAN),
+            w_odd: Array2::from_elem((n_z, n_z * n_r), f64::NAN),
+        };
+
         // Iteration loop
         'iteration_loop: for i_iter in 0..n_iter_max {
             // println!("");
             // println!("Iteration {i_iter}");
-            // From previous iteration
-            let j_2d: Array2<f64> = self.time_slice.profiles_2d[0].j_phi.clone();
-
             // Updates `psi` and all of its derivatives (including the `delta_z` vertical stability correction);
             // timing: 350ms, with [n_r, n_z]=[81, 321]
-            self.calculate_psi_and_derivatives(psi_and_derivatives_greens);
+            self.calculate_psi_and_derivatives(psi_and_derivatives_greens, &mut temporary_storage);
 
-            // Construct pointers to psi and its derivatives, for convenience. These borrow out of
-            // the IDS rather than copying out of it, so no grid is cloned each iteration.
-            // `calculate_psi_and_derivatives` above sets all six, so each `expect` is unreachable.
-            // The names match the parameters of the functions they are passed into.
+            // Construct pointers to the grid, to psi and to psi's derivatives, for convenience.
+            // These borrow out of the IDS rather than copying out of it, so nothing is cloned each
+            // iteration. The names match the parameters of the functions they are passed into.
             //
             // The single `&mut` to `profiles_2d[0]` matters: borrowing each field off it lets the
             // solver hold `psi` while it writes `mask` and `psi_norm` further down, because those
@@ -601,6 +633,11 @@ impl<'a> EquilibriumSolver<'a> {
             let d2_psi_d_r2_2d: &Array2<f64> = &profiles_2d.d2_psi_d_r2;
             let d2_psi_d_r_d_z_2d: &Array2<f64> = &profiles_2d.d2_psi_d_r_d_z;
             let d2_psi_d_z2_2d: &Array2<f64> = &profiles_2d.d2_psi_d_z2;
+            let r: &Array1<f64> = &profiles_2d.grid.dim1;
+            let z: &Array1<f64> = &profiles_2d.grid.dim2;
+            // `j_phi` is the previous iteration's current density: `calculate_psi_and_derivatives`
+            // above reads it but never writes it
+            let j_2d: &Array2<f64> = &profiles_2d.j_phi;
 
             // Grid spacing
             let d_r: f64 = r[1] - r[0];
@@ -659,8 +696,8 @@ impl<'a> EquilibriumSolver<'a> {
 
             // Find boundary
             let plasma_boundary_or_error: Result<BoundaryContour, plasma_geometry::Error> = find_boundary(
-                &r,
-                &z,
+                r,
+                z,
                 psi_2d,
                 d_psi_d_r_2d,
                 d_psi_d_z_2d,
@@ -698,14 +735,14 @@ impl<'a> EquilibriumSolver<'a> {
             self.time_slice.boundary.psi = plasma_boundary.bounding_psi;
             self.time_slice.boundary.bounding.r = plasma_boundary.bounding_r;
             self.time_slice.boundary.bounding.z = plasma_boundary.bounding_z;
-            let mask: Array2<f64> = profiles_2d.mask.clone();
+            let mask: &Array2<f64> = &profiles_2d.mask;
             let psi_b: f64 = self.time_slice.boundary.psi;
             // "type" is a Rust key word, so we need to use the "raw identifier" = `r#` to access it.
             self.time_slice.boundary.r#type = plasma_boundary.xpt_diverted as i32;
 
             // Calculate psi_norm_2d
-            let psi_norm_2d: Array2<f64> = &mask * (psi_2d - psi_a) / (psi_b - psi_a);
-            profiles_2d.psi_norm = psi_norm_2d.clone();
+            profiles_2d.psi_norm = mask * (psi_2d - psi_a) / (psi_b - psi_a);
+            let psi_norm_2d: &Array2<f64> = &profiles_2d.psi_norm;
 
             // Calculate GS error
             let gs_error_calculated: f64 = Self::calculate_gs_error(psi_a, psi_b, psi_a_previous);
@@ -792,7 +829,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_bp_probes_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
+                let tmp: Array1<f64> = &greens_bp_probes_pf.slice(s![.., i_sensor]) * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -844,7 +881,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_flux_loops_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
+                let tmp: Array1<f64> = &greens_flux_loops_pf.slice(s![.., i_sensor]) * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -869,13 +906,13 @@ impl<'a> EquilibriumSolver<'a> {
             // The diamagnetic flux is (Moret Eq. 41):
             //     Phi_t = integral( (f - f_vac) / R ) dA          (over the plasma mask)
             // where, as in `epp_bt_2d`, `f` is reconstructed from the ff' source function:
-            //     f = sqrt( f_vac^2 + 2*(psi_b - psi_a)*G ),   G = sum_i ff'_dof[i]*ff'_integral_i(psi_n)
+            //     f = sqrt( f_vac^2 + 2*(psi_b - psi_a)*G ),   G = sum_i ff'_dof[i]*ff'_integral_i(psi_norm)
             // and f_vac = R0*B_phi0 = MU_0*i_rod/(2*PI).
             //
             // Linearising for small diamagnetism (|f - f_vac| << |f_vac|):
             //     f - f_vac ~= (psi_b - psi_a) * G / f_vac
             // so the response is linear in the ff' degrees of freedom:
-            //     T[i] = ((psi_b - psi_a) / f_vac) * dA * sum_grid [ mask * ff'_integral_i(psi_n) / R ]
+            //     T[i] = ((psi_b - psi_a) / f_vac) * dA * sum_grid [ mask * ff'_integral_i(psi_norm) / R ]
             //
             // Note on sign: this linearisation divides by the *signed* f_vac, so it already
             // preserves the correct sign for a negative TF rod current. Expanding the exact
@@ -941,7 +978,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_rogowski_coils_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
+                let tmp: Array1<f64> = &greens_rogowski_coils_pf.slice(s![.., i_sensor]) * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -994,7 +1031,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_isoflux_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
+                let tmp: Array1<f64> = &greens_isoflux_pf.slice(s![.., i_sensor]) * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -1047,7 +1084,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_isoflux_boundary_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
+                let tmp: Array1<f64> = &greens_isoflux_boundary_pf.slice(s![.., i_sensor]) * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -1062,17 +1099,17 @@ impl<'a> EquilibriumSolver<'a> {
             }
 
             // Add pressure_sensors to fitting matrix
-            // d(psi)/d(psi_n)
-            let d_psi_d_psi_n: f64 = 1.0 / (psi_b - psi_a);
+            // d(psi)/d(psi_norm)
+            let d_psi_d_psi_norm: f64 = 1.0 / (psi_b - psi_a);
 
-            for i_sensor in 0..n_pressure_sensors {
-                // Find the value of psi_n at the location of the pressure sensor
+            'loop_over_pressure_sensors: for i_sensor in 0..n_pressure_sensors {
+                // Find the value of psi_norm at the location of the pressure sensor
                 let sensor_r: f64 = pressure_sensors_static.geometry_r[i_sensor];
                 let sensor_z: f64 = pressure_sensors_static.geometry_z[i_sensor];
 
                 // Find the nearest grid point to the sensor location
-                let i_r_nearest: usize = (&r - sensor_r).abs().argmin().unwrap();
-                let i_z_nearest: usize = (&z - sensor_z).abs().argmin().unwrap();
+                let i_r_nearest: usize = (r - sensor_r).abs().argmin().unwrap();
+                let i_z_nearest: usize = (z - sensor_z).abs().argmin().unwrap();
 
                 // Find the four corner grid points surrounding the pressure sensor
                 let i_r_nearest_left: usize;
@@ -1108,30 +1145,30 @@ impl<'a> EquilibriumSolver<'a> {
                 let y: f64 = (pressure_sensors_static.geometry_z[i_sensor] - z[i_z_nearest_lower]) / d_z;
                 let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);
 
-                let psi_n_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
-                if !(0.0..=1.0).contains(&psi_n_at_sensor) {
+                let psi_norm_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
+                if !(0.0..=1.0).contains(&psi_norm_at_sensor) {
                     println!(
-                        "Warning: pressure sensor {} is outside of the plasma boundary (psi_n = {})",
-                        i_sensor, psi_n_at_sensor
+                        "Warning: pressure sensor {} is outside of the plasma boundary (psi_norm = {})",
+                        i_sensor, psi_norm_at_sensor
                     );
                     // Skip to the next sensor
-                    continue;
+                    continue 'loop_over_pressure_sensors;
                 }
 
-                let psi_n_from_sensor_to_boundary: Array1<f64> = Array1::from_vec(vec![psi_n_at_sensor, 1.0]);
+                let psi_norm_from_sensor_to_boundary: Array1<f64> = Array1::from_vec(vec![psi_norm_at_sensor, 1.0]);
 
                 // p_prime degrees of freedom
                 for i_p_prime_dof in 0..n_p_prime_dof {
                     // Indefinitive integral of p_prime = pressure
                     let indefinite_integral_p_prime: Array1<f64> =
-                        p_prime_source_function.source_function_integral_single_dof(&psi_n_from_sensor_to_boundary, i_p_prime_dof);
+                        p_prime_source_function.source_function_integral_single_dof(&psi_norm_from_sensor_to_boundary, i_p_prime_dof);
 
                     // The constant of integration is zero pressure at the boundary; or this can be thought of as a definite integral from the sensor to the boundary
                     // let definite_integral_p_prime: f64 = indefinite_integral_p_prime[1] - indefinite_integral_p_prime[0];
                     let definite_integral_p_prime: f64 = indefinite_integral_p_prime[0] - indefinite_integral_p_prime[1];
 
                     // Add to fitting matrix
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = definite_integral_p_prime / d_psi_d_psi_n;
+                    fitting_matrix[(i_constraint, i_p_prime_dof)] = definite_integral_p_prime / d_psi_d_psi_norm;
                 }
 
                 // Vertical stability (not for pressure sensors)
@@ -1186,7 +1223,7 @@ impl<'a> EquilibriumSolver<'a> {
                 }
 
                 // PF coil component
-                let tmp: Array1<f64> = greens_magnetic_axis_pf.slice(s![.., i_sensor]).to_owned() * pf_coil_currents;
+                let tmp: Array1<f64> = &greens_magnetic_axis_pf.slice(s![.., i_sensor]) * pf_coil_currents;
                 constraint_values_from_coils[i_constraint] = tmp.sum();
 
                 // Store sensor values
@@ -1201,10 +1238,10 @@ impl<'a> EquilibriumSolver<'a> {
             }
 
             // Pressure sensor:
-            // 1.) Find where the pressure sensors are located in `psi_n`
+            // 1.) Find where the pressure sensors are located in `psi_norm`
             // 2.) Calculate the "sensor" measurement matrix:
-            //     `pressure[psi_n] = pressure_int_dof_01 * d(psi)/d(psi_n) + pressure_int_dof_02 * d(psi)/d(psi_n) + ... = measured_pressure`
-            //     where `pressure_int_dof_xx` = integral from LCFS to psi_n of basis function xx
+            //     `pressure[psi_norm] = pressure_int_dof_01 * d(psi)/d(psi_norm) + pressure_int_dof_02 * d(psi)/d(psi_norm) + ... = measured_pressure`
+            //     where `pressure_int_dof_xx` = integral from LCFS to psi_norm of basis function xx
 
             // Add p_prime_regularisation to fitting matrix
             let p_prime_regularisation: Array2<f64> = p_prime_source_function.source_function_regularisation(); // shape = [n_regularisation, n_dof]
@@ -1235,9 +1272,10 @@ impl<'a> EquilibriumSolver<'a> {
             // // Add passive regularisation to the fitting matrix
             let regularisation_scaling: f64 = 0.001 * PI; // This regularisation_scaling factor need improving and explaining!
 
-            let passive_regularisations_weight: Array1<f64> = self.passive_regularisations_weight.to_owned();
+            let passive_regularisations: &Array2<f64> = &self.passive_regularisations;
+            let passive_regularisations_weight: &Array1<f64> = &self.passive_regularisations_weight;
             for i_regularisation in 0..n_passive_regularisation {
-                let passive_regularisation: Array1<f64> = passive_regularisations.slice(s![i_regularisation, ..]).to_owned();
+                let passive_regularisation: ArrayView1<f64> = passive_regularisations.slice(s![i_regularisation, ..]);
 
                 // Add passive degrees of freedom
                 fitting_matrix
@@ -1258,7 +1296,7 @@ impl<'a> EquilibriumSolver<'a> {
             let a: Array2<f64> = Array2::from_diag(&constraint_weights).dot(&fitting_matrix); // matrix-matrix multiplication
             let b: Array1<f64> = &constraint_weights * &s_measured - &constraint_weights * &constraint_values_from_coils;
 
-            fn l2_norm(v: &Array1<f64>) -> f64 {
+            fn l2_norm(v: ArrayView1<f64>) -> f64 {
                 // Sum of squares of the elements in the vector
                 let sum_of_squares: f64 = v.iter().map(|&x| x * x).sum();
                 // Take the square root to get the L2 norm
@@ -1271,8 +1309,7 @@ impl<'a> EquilibriumSolver<'a> {
             // Compute the L2 norm for each column and fill the diagonal of D
             let mut d: Array2<f64> = Array2::zeros((n_cols, n_cols)); // Initialize a square matrix D with zeros
             for i in 0..n_cols {
-                let column: Array1<f64> = a.column(i).to_owned();
-                let norm = l2_norm(&column);
+                let norm: f64 = l2_norm(a.column(i));
                 // Fill the diagonal of D with the inverse of the norm, or 0.0 if the norm is zero
                 if norm > 0.0 {
                     d[(i, i)] = 1.0 / norm;
@@ -1329,17 +1366,17 @@ impl<'a> EquilibriumSolver<'a> {
 
             // Extract p_prime
             let p_prime_dof_values: Array1<f64> = dof_values.slice(s![0..n_p_prime_dof]).to_owned();
-            self.time_slice.source_functions.p_prime.coefficients = p_prime_dof_values.clone();
+            self.time_slice.source_functions.p_prime.coefficients = p_prime_dof_values;
 
             // Extract ff_prime
             let ff_prime_dof_values: Array1<f64> = dof_values.slice(s![n_p_prime_dof..n_p_prime_dof + n_ff_prime_dof]).to_owned();
-            self.time_slice.source_functions.ff_prime.coefficients = ff_prime_dof_values.clone();
+            self.time_slice.source_functions.ff_prime.coefficients = ff_prime_dof_values;
 
             // Extract passive currents
-            let passive_dof_values = dof_values
+            let passive_dof_values: Array1<f64> = dof_values
                 .slice(s![n_p_prime_dof + n_ff_prime_dof..n_p_prime_dof + n_ff_prime_dof + n_passive_dof])
                 .to_owned();
-            self.passive_dof_values = passive_dof_values.clone();
+            self.passive_dof_values = passive_dof_values;
 
             // Extract vertical stability
             let delta_z: f64;
@@ -1352,11 +1389,11 @@ impl<'a> EquilibriumSolver<'a> {
 
             // Calculate j_2d
             self.calculate_j();
-            let j_2d: Array2<f64> = self.time_slice.profiles_2d[0].j_phi.clone();
+            let j_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].j_phi;
 
             // Total plasma current
             // TODO: do we actually need to calculate Ip at every iteration?
-            let i_2d: Array2<f64> = &j_2d * d_area;
+            let i_2d: Array2<f64> = j_2d * d_area;
             let ip: f64 = i_2d.sum();
             self.time_slice.global_quantities.ip = ip;
 
@@ -1391,7 +1428,10 @@ impl<'a> EquilibriumSolver<'a> {
     ///
     /// The plasma contribution is calculated with two GEMMs; see `PsiAndDerivativesGreens` for the
     /// reorganisation of the convolution over current sources.
-    pub fn calculate_psi_and_derivatives(&mut self, greens_tables: &PsiAndDerivativesGreens) {
+    /// `temporary_storage` is owned by the caller only so that its buffers are not reallocated on
+    /// every iteration; it carries nothing between calls. See
+    /// [`PsiAndDerivativesTemporaryStorage`].
+    pub fn calculate_psi_and_derivatives(&mut self, greens_tables: &PsiAndDerivativesGreens, temporary_storage: &mut PsiAndDerivativesTemporaryStorage) {
         // Unpack from self
         let n_r: usize = self.equilibrium_code.grid.n_r as usize;
         let n_z: usize = self.equilibrium_code.grid.n_z as usize;
@@ -1436,38 +1476,44 @@ impl<'a> EquilibriumSolver<'a> {
         let d3_psi_d_r_d_z2_2d_passives: Array2<f64> = contract(&greens_tables.g_d3_psi_d_r_d_z2_passives_matrix, passive_dof_values);
         let d3_psi_d_z3_2d_passives: Array2<f64> = contract(&greens_tables.g_d3_psi_d_z3_passives_matrix, passive_dof_values);
 
-        // Plasma: two GEMMs over the reorganised tables (see `PsiAndDerivativesGreens`).
-        // `w_even` and `w_odd` gather the current sources by (vertical offset, source radius):
+        // Plasma: two GEMMs over the reorganised tables (see `PsiAndDerivativesGreens`). The two
+        // scratch buffers gather the current sources by (vertical offset, source radius):
         //     w_even[(i_z, i_offset_z * n_r + i_cur_r)] = d_area * (j_below + j_above)
         //     w_odd[(i_z, i_offset_z * n_r + i_cur_r)]  = d_area * (j_below - j_above)
         // where `j_below = j_2d[(i_z - i_offset_z, i_cur_r)]` (a source below the grid point) and
         // `j_above = j_2d[(i_z + i_offset_z, i_cur_r)]` (a source at or above the grid point).
         // The odd kernels (`d_psi_d_z`, `d2_psi_d_r_d_z`) change sign with the source side:
         // sources with `i_z <= i_cur_z` enter with -1
-        let mut w_even: Array2<f64> = Array2::zeros((n_z, n_z * n_r));
-        let mut w_odd: Array2<f64> = Array2::zeros((n_z, n_z * n_r));
+        //
+        // Each element is assigned rather than accumulated into, so that the scratch buffers never
+        // have to be zeroed. They arrive holding the previous iteration's values, and every element
+        // of both is overwritten here before any of it is read
         for i_z in 0..n_z {
             for i_offset_z in 0..n_z {
                 let i_column_start: usize = i_offset_z * n_r;
 
                 // Source below the grid point: i_cur_z = i_z - i_offset_z (excluding i_offset_z = 0)
-                if i_offset_z > 0 && i_z >= i_offset_z {
-                    let i_cur_z: usize = i_z - i_offset_z;
-                    for i_cur_r in 0..n_r {
-                        let j_this: f64 = d_area * j_2d[(i_cur_z, i_cur_r)];
-                        w_even[(i_z, i_column_start + i_cur_r)] += j_this;
-                        w_odd[(i_z, i_column_start + i_cur_r)] += j_this;
-                    }
-                }
+                let i_cur_z_below: Option<usize> = if i_offset_z > 0 && i_z >= i_offset_z { Some(i_z - i_offset_z) } else { None };
 
                 // Source at or above the grid point: i_cur_z = i_z + i_offset_z (including i_offset_z = 0)
-                if i_z + i_offset_z < n_z {
-                    let i_cur_z: usize = i_z + i_offset_z;
-                    for i_cur_r in 0..n_r {
-                        let j_this: f64 = d_area * j_2d[(i_cur_z, i_cur_r)];
-                        w_even[(i_z, i_column_start + i_cur_r)] += j_this;
-                        w_odd[(i_z, i_column_start + i_cur_r)] -= j_this;
-                    }
+                let i_cur_z_above: Option<usize> = if i_z + i_offset_z < n_z { Some(i_z + i_offset_z) } else { None };
+
+                for i_cur_r in 0..n_r {
+                    let j_below: f64 = match i_cur_z_below {
+                        Some(i_cur_z) => d_area * j_2d[(i_cur_z, i_cur_r)],
+                        None => 0.0,
+                    };
+                    let j_above: f64 = match i_cur_z_above {
+                        Some(i_cur_z) => d_area * j_2d[(i_cur_z, i_cur_r)],
+                        None => 0.0,
+                    };
+                    // The leading `0.0 +` is not redundant. It reproduces the zero-initialised
+                    // accumulator these two lines used to start from, which matters because
+                    // `j_phi` holds `-0.0` outside the mask (a negative `p_prime` times a zero
+                    // mask). `0.0 + -0.0` is `+0.0`, so dropping it would flip the sign of those
+                    // zeros and stop this being a bit-for-bit no-op
+                    temporary_storage.w_even[(i_z, i_column_start + i_cur_r)] = 0.0 + j_below + j_above;
+                    temporary_storage.w_odd[(i_z, i_column_start + i_cur_r)] = 0.0 + j_below - j_above;
                 }
             }
         }
@@ -1483,7 +1529,7 @@ impl<'a> EquilibriumSolver<'a> {
         matmul(
             plasma_even.as_mut(),
             Accum::Replace,
-            MatRef::from_row_major_slice(w_even.as_slice().unwrap(), n_z, n_z * n_r),
+            MatRef::from_row_major_slice(temporary_storage.w_even.as_slice().unwrap(), n_z, n_z * n_r),
             MatRef::from_row_major_slice(greens_tables.g_even_plasma_by_offset.as_slice().unwrap(), n_z * n_r, 5 * n_r),
             1.0,
             Par::rayon(0),
@@ -1492,7 +1538,7 @@ impl<'a> EquilibriumSolver<'a> {
         matmul(
             plasma_odd.as_mut(),
             Accum::Replace,
-            MatRef::from_row_major_slice(w_odd.as_slice().unwrap(), n_z, n_z * n_r),
+            MatRef::from_row_major_slice(temporary_storage.w_odd.as_slice().unwrap(), n_z, n_z * n_r),
             MatRef::from_row_major_slice(greens_tables.g_odd_plasma_by_offset.as_slice().unwrap(), n_z * n_r, 4 * n_r),
             1.0,
             Par::rayon(0),
@@ -1570,28 +1616,28 @@ impl<'a> EquilibriumSolver<'a> {
     fn calculate_j(&mut self) {
         // Unpack from self
         let mesh_r: &Array2<f64> = &self.time_slice.profiles_2d[0].r;
-        let psi_norm_2d: Array2<f64> = self.time_slice.profiles_2d[0].psi_norm.clone();
+        let psi_norm_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].psi_norm;
         let n_r: usize = self.equilibrium_code.grid.n_r as usize;
         let n_z: usize = self.equilibrium_code.grid.n_z as usize;
         let mask: &Array2<f64> = &self.time_slice.profiles_2d[0].mask;
-        let p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.p_prime_source_function.clone();
-        let ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.ff_prime_source_function.clone();
+        let p_prime_source_function: &Arc<dyn SourceFunctionTraits + Send + Sync> = &self.p_prime_source_function;
+        let ff_prime_source_function: &Arc<dyn SourceFunctionTraits + Send + Sync> = &self.ff_prime_source_function;
 
         // Calculate profiles
         let psi_norm_flat: Array1<f64> = psi_norm_2d.flatten().to_owned();
 
-        let p_prime_dof_values: Array1<f64> = self.time_slice.source_functions.p_prime.coefficients.clone();
-        let ff_prime_dof_values: Array1<f64> = self.time_slice.source_functions.ff_prime.coefficients.clone();
+        let p_prime_dof_values: &Array1<f64> = &self.time_slice.source_functions.p_prime.coefficients;
+        let ff_prime_dof_values: &Array1<f64> = &self.time_slice.source_functions.ff_prime.coefficients;
 
         let p_prime_2d: Array2<f64> = p_prime_source_function
-            .source_function_value(&psi_norm_flat, &p_prime_dof_values)
+            .source_function_value(&psi_norm_flat, p_prime_dof_values)
             .to_shape((n_z, n_r))
             .unwrap()
             .to_owned();
         let j_2d_p_prime: Array2<f64> = 2.0 * PI * mesh_r * p_prime_2d * mask;
 
         let ff_prime_2d: Array2<f64> = ff_prime_source_function
-            .source_function_value(&psi_norm_flat, &ff_prime_dof_values)
+            .source_function_value(&psi_norm_flat, ff_prime_dof_values)
             .to_shape((n_z, n_r))
             .unwrap()
             .to_owned();
@@ -1599,7 +1645,7 @@ impl<'a> EquilibriumSolver<'a> {
 
         // Calculate j_2d
         let j_2d: Array2<f64> = j_2d_p_prime + j_2d_ff_prime;
-        self.time_slice.profiles_2d[0].j_phi = j_2d.clone();
+        self.time_slice.profiles_2d[0].j_phi = j_2d;
     }
 
     /// Set this time-slice's starting `j_phi`, `psi_coils` and magnetic-axis position.
@@ -1614,7 +1660,7 @@ impl<'a> EquilibriumSolver<'a> {
         let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
 
         // Extract stuff from Coils
-        let pf_currents: Array1<f64> = coils_dynamic.measured.to_owned();
+        let pf_currents: &Array1<f64> = &coils_dynamic.measured;
 
         // Flux from the poloidal field coils, from the Greens tables on the IDS. The coils are
         // summed in IDS order, which is the order the measured currents are in
@@ -1659,7 +1705,7 @@ impl<'a> EquilibriumSolver<'a> {
         // to a residule, since at each iteration the solution changes by the residule
         let gs_error_calculated: f64 = (psi_a - psi_a_previous).abs() / (psi_b - psi_a).abs();
 
-        return gs_error_calculated;
+        gs_error_calculated
     }
 
     /// Calculate the Grad Shafranov error by calcuating the LHS and RHS
@@ -1668,8 +1714,8 @@ impl<'a> EquilibriumSolver<'a> {
     /// **This function is only used for development**
     fn _calculate_gs_error_numerical(&mut self) {
         let psi_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].psi;
-        let r: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim1.clone();
-        let z: Array1<f64> = self.time_slice.profiles_2d[0].grid.dim2.clone();
+        let r: &Array1<f64> = &self.time_slice.profiles_2d[0].grid.dim1;
+        let z: &Array1<f64> = &self.time_slice.profiles_2d[0].grid.dim2;
 
         // Define some variables
         let d_r: f64 = r[1] - r[0];
@@ -1688,12 +1734,12 @@ impl<'a> EquilibriumSolver<'a> {
                 laplacian_psi[(i_z, i_r)] = d2_psi_dr2 - r_d_psi_dr + d2_psi_dz2;
             }
         }
-        let mask: Array2<f64> = self.time_slice.profiles_2d[0].mask.clone();
-        laplacian_psi = laplacian_psi * mask;
+        let mask: &Array2<f64> = &self.time_slice.profiles_2d[0].mask;
+        laplacian_psi *= mask;
 
         // RHS of Grad-Shafranov equation
         // Eq. 3 in "Tokamak equilibrium reconstruction code LIUQE and its real time implementation", 2015
-        let j_2d: Array2<f64> = self.time_slice.profiles_2d[0].j_phi.clone();
+        let j_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].j_phi;
         let mut gs_rhs: Array2<f64> = Array2::zeros((n_z, n_r));
         for i_r in 0..n_r {
             let tmp: Array1<f64> = -2.0 * PI * MU_0 * r[i_r] * j_2d.slice(s![.., i_r]).to_owned();
@@ -1761,7 +1807,7 @@ impl<'a> EquilibriumSolver<'a> {
                 ..Default::default()
             });
         }
-        return nodes;
+        nodes
     }
 
     /// Copy the solution into an IMAS `EquilibriumTimeSlice`.
@@ -1795,7 +1841,7 @@ pub fn output_flag(time_slice: &EquilibriumTimeSlice) -> i32 {
         // Never written, so the slice was never solved at all
         return -CONVERGENCE_STATUS_FATAL_ERROR;
     }
-    return -convergence_status;
+    -convergence_status
 }
 
 /// Everything the Grad-Shafranov solve needs which is not already in the `Equilibrium` IDS.

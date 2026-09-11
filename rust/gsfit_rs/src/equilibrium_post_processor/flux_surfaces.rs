@@ -76,13 +76,13 @@ fn calculate_flux_surfaces(time_slice: &EquilibriumTimeSlice) -> Vec<FluxSurface
     };
     flux_surfaces[n_psi_norm - 1] = flux_surface_last_closed;
 
-    // Loop over psi_n. The last surface is skipped, because it has already been taken from the
+    // Loop over psi_norm. The last surface is skipped, because it has already been taken from the
     // boundary outline, which is the better answer there: it carries the x-point
     for i_psi_norm in 1..n_psi_norm - 1 {
         flux_surfaces[i_psi_norm] = calculate_at_psi_norm(time_slice, psi_norm[i_psi_norm]);
     }
 
-    return flux_surfaces;
+    flux_surfaces
 }
 
 /// Find the closed flux surface at one normalised poloidal flux strictly inside the boundary.
@@ -120,15 +120,15 @@ pub(in crate::equilibrium_post_processor) fn calculate_at_psi_norm(time_slice: &
         return empty_flux_surface();
     }
 
-    return FluxSurface {
+    FluxSurface {
         r: flux_surface_contour.r,
         z: flux_surface_contour.z,
-    };
+    }
 }
 
 fn empty_flux_surface() -> FluxSurface {
-    return FluxSurface {
+    FluxSurface {
         r: Array1::from_elem(0, f64::NAN),
         z: Array1::from_elem(0, f64::NAN),
-    };
+    }
 }

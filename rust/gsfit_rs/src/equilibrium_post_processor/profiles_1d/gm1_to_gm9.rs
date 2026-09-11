@@ -168,7 +168,7 @@ fn gm_quantities_at_point(r_here: f64, bp_here: f64, f_here: f64, d_rho_tor_d_ps
     let grad_rho_tor_here: f64 = d_rho_tor_d_psi_here.abs() * grad_psi_here;
     let grad_rho_tor_sq_here: f64 = grad_rho_tor_here.powi(2);
 
-    return [
+    [
         1.0 / r_here.powi(2),                  // gm1
         grad_rho_tor_sq_here / r_here.powi(2), // gm2
         grad_rho_tor_sq_here,                  // gm3
@@ -178,7 +178,7 @@ fn gm_quantities_at_point(r_here: f64, bp_here: f64, f_here: f64, d_rho_tor_d_ps
         grad_rho_tor_here,                     // gm7
         r_here,                                // gm8
         1.0 / r_here,                          // gm9
-    ];
+    ]
 }
 
 /// Differentiate `rho_tor` with respect to `psi`, one value per flux surface.
@@ -203,7 +203,7 @@ fn epp_d_rho_tor_d_psi(rho_tor: &Array1<f64>, psi_profile: &Array1<f64>) -> Arra
     }
     d_rho_tor_d_psi[n_psi_norm - 1] = (rho_tor[n_psi_norm - 1] - rho_tor[n_psi_norm - 2]) / (psi_profile[n_psi_norm - 1] - psi_profile[n_psi_norm - 2]);
 
-    return d_rho_tor_d_psi;
+    d_rho_tor_d_psi
 }
 
 /// Fill the magnetic axis end of the nine profiles.

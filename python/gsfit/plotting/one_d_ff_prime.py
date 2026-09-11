@@ -1,8 +1,7 @@
 import matplotlib.axes
 import numpy as np
-from scipy.constants import mu_0
-
 from gsfit_rs.imas import equilibrium_paths as ep
+from scipy.constants import mu_0
 
 from ..gsfit import Gsfit
 

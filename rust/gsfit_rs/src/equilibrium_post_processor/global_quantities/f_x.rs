@@ -57,7 +57,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         if !b_field_p.is_finite() || b_field_p == 0.0 {
             return None;
         }
-        return Some(b_field_p);
+        Some(b_field_p)
     };
 
     let Some(b_field_p_omp) = b_field_p_at(r_omp, z_omp) else {

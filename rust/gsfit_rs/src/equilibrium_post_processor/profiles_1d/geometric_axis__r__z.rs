@@ -100,7 +100,7 @@ fn epp_bounding_range(values: &Array1<f64>) -> (f64, f64) {
         value_max = value_max.max(values[i_value]);
     }
 
-    return (value_min, value_max);
+    (value_min, value_max)
 }
 
 #[cfg(test)]

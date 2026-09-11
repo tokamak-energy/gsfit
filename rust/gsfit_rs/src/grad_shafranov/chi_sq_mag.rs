@@ -84,5 +84,5 @@ pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coi
         }
     }
 
-    return chi_sq_mag_result;
+    chi_sq_mag_result
 }

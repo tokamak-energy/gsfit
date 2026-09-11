@@ -49,10 +49,10 @@ impl Default for Dialoop {
 /// In gsfit, `f` is reconstructed from the ff' source function exactly as in `epp_bt_2d`:
 ///
 /// ```text
-///     f = sqrt( f_vac^2 + 2 * (psi_b - psi_a) * G(psi_n) )
+///     f = sqrt( f_vac^2 + 2 * (psi_b - psi_a) * G(psi_norm) )
 /// ```
 ///
-/// where `G(psi_n) = sum_i ff'_dof[i] * ff'_integral_i(psi_n)` is the integral of the ff' source
+/// where `G(psi_norm) = sum_i ff'_dof[i] * ff'_integral_i(psi_norm)` is the integral of the ff' source
 /// function.
 #[pymethods]
 impl Dialoop {
@@ -277,9 +277,9 @@ impl Dialoop {
                 }
 
                 // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid
-                let psi_n_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi_norm;
+                let psi_norm_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi_norm;
                 let mask_2d: &Array2<f64> = &time_slice.profiles_2d[0].mask;
-                let psi_n_flat: Array1<f64> = Array1::from_iter(psi_n_2d.iter().copied());
+                let psi_norm_flat: Array1<f64> = Array1::from_iter(psi_norm_2d.iter().copied());
                 let mask_flat: Array1<f64> = Array1::from_iter(mask_2d.iter().copied());
                 let ff_dof: Array1<f64> = time_slice.source_functions.ff_prime.coefficients.to_owned();
 
@@ -287,13 +287,13 @@ impl Dialoop {
                 let i_rod: f64 = 2.0 * PI * r0 * b0[i_time] / MU_0;
                 let f_vac: f64 = MU_0 * i_rod / (2.0 * PI);
 
-                // G(psi_n) = sum_i ff'_dof[i] * ff'_integral_i(psi_n)
-                let g_integral: Array1<f64> = plasma.ff_prime_source_function.source_function_integral(&psi_n_flat, &ff_dof);
+                // G(psi_norm) = sum_i ff'_dof[i] * ff'_integral_i(psi_norm)
+                let g_integral: Array1<f64> = plasma.ff_prime_source_function.source_function_integral(&psi_norm_flat, &ff_dof);
 
                 // f = sign(f_vac) * sqrt( f_vac^2 + 2*(psi_b - psi_a)*G ), then (f - f_vac)
                 // The sign of f_vac must be preserved so that a negative TF rod current
                 // (f_vac < 0) yields a negative f, matching the vacuum boundary condition
-                // f(psi_n = 1) = f_vac; otherwise the diamagnetic flux gets the wrong sign.
+                // f(psi_norm = 1) = f_vac; otherwise the diamagnetic flux gets the wrong sign.
                 let f_sign: f64 = if f_vac >= 0.0 { 1.0 } else { -1.0 };
                 let d_psi: f64 = time_slice.boundary.psi - time_slice.global_quantities.psi_magnetic_axis;
                 let f_squared: Array1<f64> = 2.0 * d_psi * &g_integral + f_vac * f_vac;

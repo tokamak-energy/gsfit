@@ -7,18 +7,18 @@
 //! Execution order and hidden inter-calculation dependencies are documented in
 //! `equilibrium_post_processor.rs`.
 
+mod boundary;
 mod bp_sq_flux_surface_average;
 mod constant_values;
+mod constraints;
+mod convergence;
 mod dependency_sorter;
 mod equilibrium_post_processor;
 mod flux_surface_average;
 mod flux_surfaces;
+mod global_quantities;
 mod intermediate_values;
 mod interpolate_profile;
-mod boundary;
-mod constraints;
-mod convergence;
-mod global_quantities;
 mod profiles_1d;
 mod profiles_1d_r_midplane;
 mod profiles_2d;

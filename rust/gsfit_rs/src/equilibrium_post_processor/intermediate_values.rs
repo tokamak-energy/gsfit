@@ -23,10 +23,10 @@ pub struct IntermediateValues {
 /// Build an `IntermediateValues` holding only placeholders, as it stands before the first calculator
 /// has run.
 pub fn intermediate_values_placeholders() -> IntermediateValues {
-    return IntermediateValues {
+    IntermediateValues {
         bp_sq_fs_avg: f64::NAN,
         flux_surfaces: Vec::new(),
-    };
+    }
 }
 
 /// Build an `IntermediateValues` whose every field is a placeholder, for a unit test to overwrite the

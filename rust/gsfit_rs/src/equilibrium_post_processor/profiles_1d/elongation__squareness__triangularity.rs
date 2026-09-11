@@ -2,10 +2,10 @@
 //! `.../triangularity_lower`, `.../squareness_upper_inner`, `.../squareness_upper_outer`,
 //! `.../squareness_lower_inner` and `.../squareness_lower_outer`
 
+use super::super::boundary::geometry::epp_boundary_geometry;
 use super::super::constant_values::ConstantValues;
 use super::super::flux_surfaces::FluxSurface;
 use super::super::intermediate_values::IntermediateValues;
-use super::super::boundary::geometry::epp_boundary_geometry;
 use super::q::epp_hessian_matrix;
 use imas_rs::EquilibriumTimeSlice;
 use ndarray::Array1;
@@ -184,7 +184,7 @@ fn epp_elongation_at_magnetic_axis(time_slice: &EquilibriumTimeSlice) -> f64 {
     let psi_rr: f64 = hessian_matrix[(0, 0)];
     let psi_zz: f64 = hessian_matrix[(1, 1)];
 
-    return (psi_rr / psi_zz).sqrt();
+    (psi_rr / psi_zz).sqrt()
 }
 
 /// Write the eight profiles into the time-slice.

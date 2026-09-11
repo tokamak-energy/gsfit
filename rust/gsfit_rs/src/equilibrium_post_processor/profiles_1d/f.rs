@@ -65,7 +65,7 @@ pub(in crate::equilibrium_post_processor) fn value_at_psi_norm(
     let f_vac: f64 = i_rod * MU_0 / (2.0 * PI);
     let d_psi_d_psi_norm: f64 = psi_b - psi_a;
 
-    return value_from_source_function(psi_norm, ff_prime_source_function, ff_prime_dof_values, f_vac, d_psi_d_psi_norm);
+    value_from_source_function(psi_norm, ff_prime_source_function, ff_prime_dof_values, f_vac, d_psi_d_psi_norm)
 }
 
 fn value_from_source_function(
@@ -80,5 +80,5 @@ fn value_from_source_function(
 
     // Preserve the sign of the vacuum boundary condition when taking the square root.
     let f_sign: f64 = if f_vac >= 0.0 { 1.0 } else { -1.0 };
-    return f_sign * (f_vac * f_vac + 2.0 * d_psi_d_psi_norm * ff_prime_integral).sqrt();
+    f_sign * (f_vac * f_vac + 2.0 * d_psi_d_psi_norm * ff_prime_integral).sqrt()
 }

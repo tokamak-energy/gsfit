@@ -274,7 +274,7 @@ pub fn find_stationary_point(
         }
     }
 
-    return Err(last_error);
+    Err(last_error)
 }
 
 /// One Newton solve for `u = 0`, `v = 0`, from a single starting point.
@@ -338,7 +338,7 @@ fn newton_solve_for_common_root(
         }
     }
 
-    return Err(ErrorType::MaxIterationsReached);
+    Err(ErrorType::MaxIterationsReached)
 }
 
 #[test]

@@ -112,7 +112,7 @@ fn d_dt(values: &Array1<f64>, time: &Array1<f64>) -> Array1<f64> {
     }
     derivative[n_time - 1] = (values[n_time - 1] - values[n_time - 2]) / (time[n_time - 1] - time[n_time - 2]);
 
-    return derivative;
+    derivative
 }
 
 #[cfg(test)]

@@ -206,7 +206,7 @@ pub fn flood_fill_mask_at_psi(r: &Array1<f64>, z: &Array1<f64>, psi_2d: &Array2<
 
     let is_blocked_2d: Array2<bool> = Array2::from_elem((n_z, n_r), false);
 
-    return flood_fill_from_seed(psi_2d, psi_level, i_r_nearest_mag, i_z_nearest_mag, &is_blocked_2d);
+    flood_fill_from_seed(psi_2d, psi_level, i_r_nearest_mag, i_z_nearest_mag, &is_blocked_2d)
 }
 
 /// Breadth-first fill of the `psi > psi_level` region connected to the seed grid point.
@@ -270,7 +270,7 @@ fn flood_fill_from_seed(psi_2d: &Array2<f64>, psi_level: f64, i_r_seed: usize, i
         }
     }
 
-    return mask_2d;
+    mask_2d
 }
 
 #[test]

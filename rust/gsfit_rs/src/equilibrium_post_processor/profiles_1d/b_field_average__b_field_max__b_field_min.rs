@@ -91,7 +91,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
             if !b_field_p_here.is_finite() || !b_field_here.is_finite() {
                 return None;
             }
-            return Some((b_field_here, b_field_p_here));
+            Some((b_field_here, b_field_p_here))
         };
 
         let mut average_denominator: f64 = 0.0;

@@ -32,7 +32,7 @@ pub(super) fn interpolate_profile(x_new: f64, x: &Array1<f64>, values: &Array1<f
 
     let i_x_upper: usize = i_x_lower + 1;
     let interval_fraction: f64 = (x_new - x[i_x_lower]) / (x[i_x_upper] - x[i_x_lower]);
-    return values[i_x_lower] * (1.0 - interval_fraction) + values[i_x_upper] * interval_fraction;
+    values[i_x_lower] * (1.0 - interval_fraction) + values[i_x_upper] * interval_fraction
 }
 
 #[cfg(test)]

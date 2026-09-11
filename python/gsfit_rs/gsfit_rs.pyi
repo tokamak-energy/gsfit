@@ -1,7 +1,9 @@
 import numpy as np
 import numpy.typing as npt
 
-from .imas import Equilibrium, Tf as TfIds, Wall as WallIds
+from .imas import Equilibrium
+from .imas import Tf as TfIds
+from .imas import Wall as WallIds
 
 class DataTreeAccessor:
     """Base class providing common data tree access methods for all gsfit_rs classes."""
@@ -406,7 +408,7 @@ class Plasma(DataTreeAccessor):
         r_max: float,
         z_min: float,
         z_max: float,
-        psi_n: npt.NDArray[np.float64],
+        psi_norm: npt.NDArray[np.float64],
         p_prime_source_function: "EfitPolynomial" | "TensionedCubicBSpline",
         ff_prime_source_function: "EfitPolynomial" | "TensionedCubicBSpline",
         initial_guess_ip: float,
@@ -429,7 +431,7 @@ class Plasma(DataTreeAccessor):
         :param r_max: Maximum radius [metre]
         :param z_min: Minimum vertical position [metre]
         :param z_max: Maximum vertical position [metre]
-        :param psi_n: 1D array for `psi_n`, which should go from [0.0, 1.0] [dimensionless]
+        :param psi_norm: 1D array for `psi_norm`, which should go from [0.0, 1.0] [dimensionless]
         :param p_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
         :param ff_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
         :param initial_guess_ip: Initial plasma current [ampere]

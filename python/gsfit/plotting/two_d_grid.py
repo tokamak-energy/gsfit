@@ -1,6 +1,5 @@
 import matplotlib.axes
 import numpy as np
-
 from gsfit_rs.imas import equilibrium_paths as ep
 
 from ..gsfit import Gsfit

@@ -172,5 +172,5 @@ fn d_psi_d_r_at(
     let y: f64 = (z_point - z[i_z_lower]) / d_z;
 
     // `value_and_derivatives` differentiates with respect to the normalised cell coordinate
-    return psi_interpolator.value_and_derivatives(x, y).d_f_d_x / d_r;
+    psi_interpolator.value_and_derivatives(x, y).d_f_d_x / d_r
 }

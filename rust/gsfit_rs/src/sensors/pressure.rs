@@ -452,7 +452,7 @@ impl Pressure {
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
             let mut psi_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
 
-            // Find the value of psi_n at the location of the pressure sensor
+            // Find the value of psi_norm at the location of the pressure sensor
             let sensor_r: f64 = self.results.get(sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(sensor_name).get("geometry").get("z").unwrap_f64();
 
@@ -532,22 +532,22 @@ impl Pressure {
                 let y: f64 = (sensor_z - z[i_z_nearest_lower]) / d_z;
                 let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);
 
-                let psi_n_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
+                let psi_norm_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
 
                 psi_values[i_time] = psi_at_sensor;
 
                 // If sensor is outside the plasma boundary, leave sensor_values[i_time] as NaN
-                if !(0.0..=1.0).contains(&psi_n_at_sensor) {
+                if !(0.0..=1.0).contains(&psi_norm_at_sensor) {
                     continue;
                 }
 
-                // Analytically integrate p'(psi_n) with boundary condition p(psi_n = 1) = 0.
-                // Note: source_function_integral returns an integral from psi_n = 1 to psi_n,
-                // i.e. p(psi_n) = integral_{1}^{psi_n} p'(x) dx, scaled by (psi_b - psi_a).
+                // Analytically integrate p'(psi_norm) with boundary condition p(psi_norm = 1) = 0.
+                // Note: source_function_integral returns an integral from psi_norm = 1 to psi_norm,
+                // i.e. p(psi_norm) = integral_{1}^{psi_norm} p'(x) dx, scaled by (psi_b - psi_a).
                 let p_prime_dof_values: Array1<f64> = time_slice.source_functions.p_prime.coefficients.to_owned();
                 sensor_values[i_time] = plasma
                     .p_prime_source_function
-                    .source_function_integral(&Array1::from_vec(vec![psi_n_at_sensor]), &p_prime_dof_values)[0]
+                    .source_function_integral(&Array1::from_vec(vec![psi_norm_at_sensor]), &p_prime_dof_values)[0]
                     * (psi_b - psi_a);
             }
 

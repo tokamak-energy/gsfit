@@ -4,16 +4,17 @@
 //! *derived* quantity - the profiles, the boundary geometry, the betas, `q`, the flux surfaces and
 //! the scrape-off layer - is calculated afterwards, from that solution.
 
+use super::CalculatorIdentifier as CI;
+use super::boundary;
 use super::bp_sq_flux_surface_average;
 use super::constant_values::ConstantValues;
-use super::dependency_sorter;
-use super::flux_surfaces;
-use super::intermediate_values::IntermediateValues;
-use super::intermediate_values::intermediate_values_placeholders;
-use super::boundary;
 use super::constraints;
 use super::convergence;
+use super::dependency_sorter;
+use super::flux_surfaces;
 use super::global_quantities;
+use super::intermediate_values::IntermediateValues;
+use super::intermediate_values::intermediate_values_placeholders;
 use super::profiles_1d;
 use super::profiles_1d_r_midplane;
 use super::profiles_2d;
@@ -25,7 +26,6 @@ use imas_rs::ids::wall::Wall;
 use ndarray::Array1;
 use rayon::prelude::*;
 use std::f64::consts::PI;
-use super::CalculatorIdentifier as CI;
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
@@ -46,11 +46,11 @@ pub(super) struct CalculatorEntry {
 
 /// Build one row of the calculator table, so that the table reads one calculator per line
 fn entry(identifier: CI, calculator_function: CalculatorFunction, dependencies: &'static [CI]) -> CalculatorEntry {
-    return CalculatorEntry {
+    CalculatorEntry {
         identifier,
         calculator_function,
         dependencies,
-    };
+    }
 }
 
 /// Post-process the reconstruction, reading the solved `equilibrium` IDS.
@@ -155,7 +155,7 @@ pub fn equilibrium_post_processor(
     // nothing about which slice it is, exactly as the solver does. That independence is what
     // lets the slices run in parallel
     equilibrium_ids.time_slice.par_iter_mut().enumerate().for_each(|(i_time, time_slice)| {
-    // equilibrium_ids.time_slice.iter_mut().enumerate().for_each(|(i_time, time_slice)| {
+        // equilibrium_ids.time_slice.iter_mut().enumerate().for_each(|(i_time, time_slice)| {
         // Every calculator takes the same `(time_slice, &constant_values, &mut intermediate_values)`
         // triple, which is what lets them be held in one table and called from one loop
         //
@@ -187,11 +187,8 @@ pub fn equilibrium_post_processor(
                 calculator_function(time_slice, &constant_values, &mut intermediate_values);
             } else {
                 // Unconverged, skip equilibrium post-processing
-                
             }
             // println!("{:?}", calculator.identifier);  // added for debugging
-            
-            
         }
     });
 

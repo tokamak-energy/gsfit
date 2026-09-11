@@ -107,7 +107,7 @@ where
         }
     }
 
-    return values_average;
+    values_average
 }
 
 #[cfg(test)]

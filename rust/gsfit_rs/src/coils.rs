@@ -161,7 +161,7 @@ impl Coils {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 
     /// Python pickling method
@@ -326,6 +326,6 @@ impl Coils {
         }
 
         // Return the dynamic results
-        return results_dynamic;
+        results_dynamic
     }
 }

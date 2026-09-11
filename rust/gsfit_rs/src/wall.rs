@@ -41,7 +41,7 @@ pub struct Wall {
 
 impl Default for Wall {
     fn default() -> Self {
-        return Self::new();
+        Self::new()
     }
 }
 
@@ -65,7 +65,7 @@ impl Wall {
         let mut wall_ids: WallIds = WallIds::default();
         wall_ids.description_2d = vec![description_2d];
 
-        return Self { wall_ids };
+        Self { wall_ids }
     }
 
     /// Append a limiter unit to `wall/description_2d(0)/limiter/unit`.
@@ -109,7 +109,7 @@ impl Wall {
             .ok_or_else(|| PyValueError::new_err("`wall/description_2d` is empty"))?;
         description_2d.limiter.unit.push(limiter_unit);
 
-        return Ok(());
+        Ok(())
     }
 
     /// The wall IDS, for reading with `gsfit_rs.imas.wall_paths`.
@@ -121,7 +121,7 @@ impl Wall {
     /// the Rust side afterwards are not seen by it.
     #[getter]
     fn wall_ids(&self) -> PyWall {
-        return PyWall::new(self.wall_ids.clone());
+        PyWall::new(self.wall_ids.clone())
     }
 
     /// Print to screen, to be used within Python
@@ -148,7 +148,7 @@ impl Wall {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 }
 
@@ -160,7 +160,7 @@ fn limiter_units(wall_ids: &WallIds) -> Result<&Vec<Wall2dLimiterUnit>, String> 
         return Err("`wall/description_2d(0)/limiter/unit` is empty".to_string());
     }
 
-    return Ok(&description_2d.limiter.unit);
+    Ok(&description_2d.limiter.unit)
 }
 
 /// The outline of one limiter unit, checked for the two coordinates being present and the
@@ -183,7 +183,7 @@ fn unit_outline(unit: &Wall2dLimiterUnit, i_unit: usize) -> Result<(&Array1<f64>
         ));
     }
 
-    return Ok((unit_r, unit_z));
+    Ok((unit_r, unit_z))
 }
 
 /// Candidate limit points: every point of every limiter unit, in unit order.
@@ -223,7 +223,7 @@ pub fn limiter_points(wall_ids: &WallIds) -> Result<(Array1<f64>, Array1<f64>), 
         }
     }
 
-    return Ok((limit_pts_r, limit_pts_z));
+    Ok((limit_pts_r, limit_pts_z))
 }
 
 /// The vacuum vessel contour: `wall/description_2d(0)/limiter/unit(0)/outline`.
@@ -242,7 +242,7 @@ pub fn vacuum_vessel_outline(wall_ids: &WallIds) -> Result<(Array1<f64>, Array1<
     let units: &Vec<Wall2dLimiterUnit> = limiter_units(wall_ids)?;
     let (vessel_r, vessel_z): (&Array1<f64>, &Array1<f64>) = unit_outline(&units[0], 0)?;
 
-    return Ok((vessel_r.to_owned(), vessel_z.to_owned()));
+    Ok((vessel_r.to_owned(), vessel_z.to_owned()))
 }
 
 #[cfg(test)]

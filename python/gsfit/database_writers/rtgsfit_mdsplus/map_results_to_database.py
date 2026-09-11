@@ -2,10 +2,10 @@ import copy
 from typing import TYPE_CHECKING
 
 import numpy as np
-from gsfit_rs.imas import equilibrium_paths as ep
-from gsfit_rs.imas import wall_paths as wp
 import numpy.typing as npt
 import shapely.geometry
+from gsfit_rs.imas import equilibrium_paths as ep
+from gsfit_rs.imas import wall_paths as wp
 from scipy.constants import mu_0
 
 from .greens_with_boundary_points import greens_with_boundary_points

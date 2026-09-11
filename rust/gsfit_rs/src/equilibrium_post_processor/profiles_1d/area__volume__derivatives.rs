@@ -152,7 +152,7 @@ fn epp_surface_of_revolution(fs_r: &Array1<f64>, fs_z: &Array1<f64>) -> f64 {
         surface += 2.0 * PI * 0.5 * (fs_r[i_fs] + fs_r[i_fs - 1]) * delta_ell;
     }
 
-    return surface;
+    surface
 }
 
 /// Differentiate a profile with respect to `rho_tor`, one value per flux surface.
@@ -182,7 +182,7 @@ fn epp_d_profile_d_rho_tor(profile: &Array1<f64>, rho_tor: &Array1<f64>) -> Arra
     }
     d_profile_d_rho_tor[n_psi_norm - 1] = (profile[n_psi_norm - 1] - profile[n_psi_norm - 2]) / (rho_tor[n_psi_norm - 1] - rho_tor[n_psi_norm - 2]);
 
-    return d_profile_d_rho_tor;
+    d_profile_d_rho_tor
 }
 
 #[cfg(test)]

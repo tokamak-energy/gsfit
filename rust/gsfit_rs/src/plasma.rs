@@ -36,7 +36,7 @@ impl Plasma {
     /// * `r_max` - maximum radial coordinate, [metre]
     /// * `z_min` - minimum vertical coordinate, [metre]
     /// * `z_max` - maximum vertical coordinate, [metre]
-    /// * `psi_n` - normalized poloidal flux points (1d array), [dimensionless]
+    /// * `psi_norm` - normalized poloidal flux points (1d array), [dimensionless]
     /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
     /// * `ff_prime_source_function` - ff_prime source function (a Rust implementation, initialised in Python)
     /// * `initial_guess_ip` - initial total plasma current, [ampere]
@@ -66,7 +66,7 @@ impl Plasma {
         r_max: f64,
         z_min: f64,
         z_max: f64,
-        psi_n: PyReadonlyArray1<f64>,
+        psi_norm: PyReadonlyArray1<f64>,
         p_prime_source_function: &Bound<'_, PyAny>,  // Any Python object, because Python doesn't know about types
         ff_prime_source_function: &Bound<'_, PyAny>, // Any Python object, because Python doesn't know about types
         initial_guess_ip: f64,
@@ -83,7 +83,7 @@ impl Plasma {
         times_to_reconstruct: PyReadonlyArray1<f64>,
     ) -> Self {
         // Change Python types into Rust types
-        let psi_n_ndarray: Array1<f64> = psi_n.to_owned_array();
+        let psi_norm_ndarray: Array1<f64> = psi_norm.to_owned_array();
 
         // `p_prime_source_function` and `ff_prime_source_function` come into Rust as a Python PyAny type, so we have no idea what type they are.
         // In `extract_source_function` we attempt to convert into a known Rust type and panic if we can't.
@@ -249,9 +249,9 @@ impl Plasma {
 
         // The equilibrium IDS is allocated here, rather than once the solve starts, because the
         // grid it carries is read before then: the Green's tables are built from it
-        plasma.initialise_equilibrium_ids(&times_to_reconstruct.to_owned_array(), &r, &z, &mesh_r, &mesh_z, &psi_n_ndarray, d_area);
+        plasma.initialise_equilibrium_ids(&times_to_reconstruct.to_owned_array(), &r, &z, &mesh_r, &mesh_z, &psi_norm_ndarray, d_area);
 
-        return plasma;
+        plasma
     }
 
     /// Calculate the Greens function with coils
@@ -531,7 +531,7 @@ impl Plasma {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 
     /// The equilibrium IDS, for reading with `gsfit_rs.imas.equilibrium_paths`.
@@ -541,7 +541,7 @@ impl Plasma {
     /// `imas_rs` cannot name `Plasma` without the two crates depending on each other.
     #[getter]
     fn equilibrium_ids(&self) -> PyEquilibrium {
-        return PyEquilibrium::new(self.equilibrium_ids.clone());
+        PyEquilibrium::new(self.equilibrium_ids.clone())
     }
 }
 
@@ -630,7 +630,7 @@ impl Plasma {
             }
         }
 
-        return greens_with_passives;
+        greens_with_passives
     }
 
     /// Green's table for the poloidal flux, for every passive degree of freedom
@@ -638,7 +638,7 @@ impl Plasma {
     /// # Returns
     /// * shape `(n_z * n_r, n_dof_total)`
     pub fn get_greens_passive_grid(&self) -> Array2<f64> {
-        return self.greens_passive_grid(|dof| &dof.psi);
+        self.greens_passive_grid(|dof| &dof.psi)
     }
 
     /// Green's table for the second radial derivative of the poloidal flux, for every passive degree of freedom
@@ -646,7 +646,7 @@ impl Plasma {
     /// # Returns
     /// * shape `(n_z * n_r, n_dof_total)`
     pub fn get_greens_passive_grid_d2_psi_d_r2(&self) -> Array2<f64> {
-        return self.greens_passive_grid(|dof| &dof.d2_psi_d_r2);
+        self.greens_passive_grid(|dof| &dof.d2_psi_d_r2)
     }
 
     /// Green's table for the second vertical derivative of the poloidal flux, for every passive degree of freedom
@@ -654,7 +654,7 @@ impl Plasma {
     /// # Returns
     /// * shape `(n_z * n_r, n_dof_total)`
     pub fn get_greens_passive_grid_d2_psi_d_z2(&self) -> Array2<f64> {
-        return self.greens_passive_grid(|dof| &dof.d2_psi_d_z2);
+        self.greens_passive_grid(|dof| &dof.d2_psi_d_z2)
     }
 
     /// Green's table for the third derivative of the poloidal flux, twice by R and once by Z, for every passive degree of freedom
@@ -662,7 +662,7 @@ impl Plasma {
     /// # Returns
     /// * shape `(n_z * n_r, n_dof_total)`
     pub fn get_greens_passive_grid_d3_psi_d_r2_d_z(&self) -> Array2<f64> {
-        return self.greens_passive_grid(|dof| &dof.d3_psi_d_r2_d_z);
+        self.greens_passive_grid(|dof| &dof.d3_psi_d_r2_d_z)
     }
 
     /// Green's table for the third derivative of the poloidal flux, once by R and twice by Z, for every passive degree of freedom
@@ -670,7 +670,7 @@ impl Plasma {
     /// # Returns
     /// * shape `(n_z * n_r, n_dof_total)`
     pub fn get_greens_passive_grid_d3_psi_d_r_d_z2(&self) -> Array2<f64> {
-        return self.greens_passive_grid(|dof| &dof.d3_psi_d_r_d_z2);
+        self.greens_passive_grid(|dof| &dof.d3_psi_d_r_d_z2)
     }
 
     /// Green's table for the third vertical derivative of the poloidal flux, for every passive degree of freedom
@@ -678,7 +678,7 @@ impl Plasma {
     /// # Returns
     /// * shape `(n_z * n_r, n_dof_total)`
     pub fn get_greens_passive_grid_d3_psi_d_z3(&self) -> Array2<f64> {
-        return self.greens_passive_grid(|dof| &dof.d3_psi_d_z3);
+        self.greens_passive_grid(|dof| &dof.d3_psi_d_z3)
     }
 
     /// Green's table for the radial derivative of the poloidal flux, for every passive degree of freedom
@@ -686,7 +686,7 @@ impl Plasma {
     /// # Returns
     /// * shape `(n_z * n_r, n_dof_total)`
     pub fn get_greens_passive_grid_d_psi_d_r(&self) -> Array2<f64> {
-        return self.greens_passive_grid(|dof| &dof.d_psi_d_r);
+        self.greens_passive_grid(|dof| &dof.d_psi_d_r)
     }
 
     /// Green's table for the vertical derivative of the poloidal flux, for every passive degree of freedom
@@ -694,7 +694,7 @@ impl Plasma {
     /// # Returns
     /// * shape `(n_z * n_r, n_dof_total)`
     pub fn get_greens_passive_grid_d_psi_d_z(&self) -> Array2<f64> {
-        return self.greens_passive_grid(|dof| &dof.d_psi_d_z);
+        self.greens_passive_grid(|dof| &dof.d_psi_d_z)
     }
 
     /// Green's table for the mixed second derivative of the poloidal flux, for every passive degree of freedom
@@ -702,7 +702,7 @@ impl Plasma {
     /// # Returns
     /// * shape `(n_z * n_r, n_dof_total)`
     pub fn get_greens_passive_grid_d2_psi_d_r_d_z(&self) -> Array2<f64> {
-        return self.greens_passive_grid(|dof| &dof.d2_psi_d_r_d_z);
+        self.greens_passive_grid(|dof| &dof.d2_psi_d_r_d_z)
     }
 }
 
@@ -790,5 +790,5 @@ fn apply_current_distributions(greens_filaments: &Array2<f64>, current_distribut
             });
     }
 
-    return greens_with_dof;
+    greens_with_dof
 }

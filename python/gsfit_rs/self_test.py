@@ -1,5 +1,4 @@
 import numpy as np
-from gsfit_rs.imas import equilibrium_paths as ep
 from scipy.constants import mu_0
 
 from gsfit_rs import BpProbes
@@ -17,6 +16,7 @@ from gsfit_rs import StationaryPoint
 from gsfit_rs import Tf
 from gsfit_rs import Wall
 from gsfit_rs import solve_grad_shafranov
+from gsfit_rs.imas import equilibrium_paths as ep
 
 # DOF: 3 dof's
 # 1. p_prime; 1 profile shape
@@ -112,7 +112,7 @@ def run() -> None:
         r_max=11.5,
         z_min=-1.5,
         z_max=1.5,
-        psi_n=np.linspace(0.0, 1.0, 100),
+        psi_norm=np.linspace(0.0, 1.0, 100),
         p_prime_source_function=p_prime_source_function,
         ff_prime_source_function=ff_prime_source_function,
         initial_guess_ip=ip_guess,

@@ -63,28 +63,28 @@ pub(in crate::equilibrium_post_processor) fn epp_flux_toroidal_profile(
     psi_profile: &Array1<f64>,
     boundary_diverted: bool,
 ) -> Array1<f64> {
-    let n_psi_n: usize = psi_profile.len();
-    assert_eq!(q_profile.len(), n_psi_n);
+    let n_psi_norm: usize = psi_profile.len();
+    assert_eq!(q_profile.len(), n_psi_norm);
 
-    let mut flux_toroidal_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-    if n_psi_n == 0 {
+    let mut flux_toroidal_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
+    if n_psi_norm == 0 {
         return flux_toroidal_profile;
     }
 
     flux_toroidal_profile[0] = 0.0; // no toroidal flux at the magnetic axis
-    for i_psi_n in 1..n_psi_n.saturating_sub(1) {
-        let avg_y: f64 = (q_profile[i_psi_n] + q_profile[i_psi_n - 1]) / 2.0;
-        let dx: f64 = psi_profile[i_psi_n] - psi_profile[i_psi_n - 1];
-        flux_toroidal_profile[i_psi_n] = flux_toroidal_profile[i_psi_n - 1] - avg_y * dx;
+    for i_psi_norm in 1..n_psi_norm.saturating_sub(1) {
+        let avg_y: f64 = (q_profile[i_psi_norm] + q_profile[i_psi_norm - 1]) / 2.0;
+        let dx: f64 = psi_profile[i_psi_norm] - psi_profile[i_psi_norm - 1];
+        flux_toroidal_profile[i_psi_norm] = flux_toroidal_profile[i_psi_norm - 1] - avg_y * dx;
     }
 
-    if n_psi_n >= 2 {
-        let i_boundary: usize = n_psi_n - 1;
+    if n_psi_norm >= 2 {
+        let i_boundary: usize = n_psi_norm - 1;
         if q_profile[i_boundary].is_finite() {
             let avg_q: f64 = 0.5 * (q_profile[i_boundary - 1] + q_profile[i_boundary]);
             let delta_psi: f64 = psi_profile[i_boundary] - psi_profile[i_boundary - 1];
             flux_toroidal_profile[i_boundary] = flux_toroidal_profile[i_boundary - 1] - avg_q * delta_psi;
-        } else if n_psi_n >= 3 && flux_toroidal_profile[i_boundary - 1].is_finite() {
+        } else if n_psi_norm >= 3 && flux_toroidal_profile[i_boundary - 1].is_finite() {
             let integral_q_d_psi: Option<f64> = boundary_interval_q_integral(q_profile, psi_profile, boundary_diverted);
             if let Some(integral_q_d_psi) = integral_q_d_psi {
                 flux_toroidal_profile[i_boundary] = flux_toroidal_profile[i_boundary - 1] - integral_q_d_psi;
@@ -92,16 +92,16 @@ pub(in crate::equilibrium_post_processor) fn epp_flux_toroidal_profile(
         }
     }
 
-    return flux_toroidal_profile;
+    flux_toroidal_profile
 }
 
 /// Integrate `q d(psi)` over the final profile interval when `q(psi_norm = 1)` is NaN.
 fn boundary_interval_q_integral(q_profile: &Array1<f64>, psi_profile: &Array1<f64>, boundary_diverted: bool) -> Option<f64> {
-    let n_psi_n: usize = q_profile.len();
-    let i_before: usize = n_psi_n - 2;
-    let i_before_previous: usize = n_psi_n - 3;
+    let n_psi_norm: usize = q_profile.len();
+    let i_before: usize = n_psi_norm - 2;
+    let i_before_previous: usize = n_psi_norm - 3;
 
-    let psi_span: f64 = psi_profile[n_psi_n - 1] - psi_profile[0];
+    let psi_span: f64 = psi_profile[n_psi_norm - 1] - psi_profile[0];
     if psi_span == 0.0 || !psi_span.is_finite() || !q_profile[i_before].is_finite() || !q_profile[i_before_previous].is_finite() {
         return None;
     }
@@ -126,7 +126,7 @@ fn boundary_interval_q_integral(q_profile: &Array1<f64>, psi_profile: &Array1<f6
     }
 
     let integral_q_d_psi: f64 = psi_span * integral_q_d_psi_norm;
-    return integral_q_d_psi.is_finite().then_some(integral_q_d_psi);
+    integral_q_d_psi.is_finite().then_some(integral_q_d_psi)
 }
 
 #[cfg(test)]

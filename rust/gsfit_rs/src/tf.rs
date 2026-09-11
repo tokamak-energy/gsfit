@@ -39,7 +39,7 @@ pub struct Tf {
 
 impl Default for Tf {
     fn default() -> Self {
-        return Self::new();
+        Self::new()
     }
 }
 
@@ -49,7 +49,7 @@ impl Tf {
     /// Construct an empty toroidal field, ready for `set_r0` and `set_b_field_phi_vacuum_r`.
     #[new]
     pub fn new() -> Self {
-        return Self { tf_ids: TfIds::default() };
+        Self { tf_ids: TfIds::default() }
     }
 
     /// Set `tf/r0`, the reference major radius.
@@ -67,7 +67,7 @@ impl Tf {
 
         self.tf_ids.r0 = r0;
 
-        return Ok(());
+        Ok(())
     }
 
     /// Set `tf/b_field_phi_vacuum_r`, the vacuum field times major radius.
@@ -107,7 +107,7 @@ impl Tf {
             time: signal_time,
         };
 
-        return Ok(());
+        Ok(())
     }
 
     /// The tf IDS, for reading with `gsfit_rs.imas.tf_paths`.
@@ -119,7 +119,7 @@ impl Tf {
     /// Rust side afterwards are not seen by it.
     #[getter]
     fn tf_ids(&self) -> PyTf {
-        return PyTf::new(self.tf_ids.clone());
+        PyTf::new(self.tf_ids.clone())
     }
 
     /// Print to screen, to be used within Python
@@ -153,6 +153,6 @@ impl Tf {
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
-        return string_output;
+        string_output
     }
 }

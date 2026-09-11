@@ -96,7 +96,7 @@ pub(super) fn sort(calculators_unsorted: Vec<CalculatorEntry>) -> Vec<Calculator
         }
     }
 
-    return calculators_sorted;
+    calculators_sorted
 }
 
 #[cfg(test)]

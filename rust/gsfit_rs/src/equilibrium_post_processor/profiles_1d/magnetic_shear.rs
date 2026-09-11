@@ -63,7 +63,7 @@ fn epp_d_q_d_rho_tor(q_profile: &Array1<f64>, rho_tor: &Array1<f64>) -> Array1<f
     }
     d_q_d_rho_tor[n_psi_norm - 1] = (q_profile[n_psi_norm - 1] - q_profile[n_psi_norm - 2]) / (rho_tor[n_psi_norm - 1] - rho_tor[n_psi_norm - 2]);
 
-    return d_q_d_rho_tor;
+    d_q_d_rho_tor
 }
 
 #[cfg(test)]

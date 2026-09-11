@@ -1,7 +1,7 @@
 import gsfit_rs
 import numpy as np
-from gsfit_rs.imas import equilibrium_paths as ep
 import numpy.typing as npt
+from gsfit_rs.imas import equilibrium_paths as ep
 
 
 def greens_with_boundary_points(plasma: gsfit_rs.Plasma) -> npt.NDArray[np.float64]:

@@ -1,7 +1,7 @@
 # Note, this example will only run inside Tokamak Energy's network
 
-from gsfit import Gsfit
 import numpy as np
+from gsfit import Gsfit
 
 # Construct the GSFit object
 gsfit_controller = Gsfit(

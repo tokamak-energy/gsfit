@@ -509,11 +509,7 @@ fn classify_quadrant(sign_d_psi_d_z: i8, sign_d_psi_d_r: i8) -> Quadrant {
 
 /// Maps `0.0` to `+1` so corners that lie exactly on an axis still classify into a quadrant.
 fn sign_with_tiebreak(value: f64) -> i8 {
-    if value >= 0.0 {
-        return 1;
-    } else {
-        return -1;
-    }
+    if value >= 0.0 { 1 } else { -1 }
 }
 
 /// Merge the Br=0 and Bz=0 crossings on a single edge into one ordered event sequence

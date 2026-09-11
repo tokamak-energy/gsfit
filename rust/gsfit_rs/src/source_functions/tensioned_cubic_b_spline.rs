@@ -78,16 +78,16 @@ impl TensionedCubicBSpline {
         TensionedCubicBSpline::gamma2(rho, delta, hyperbolic_upper_cutoff, hyperbolic_lower_cutoff, delta_cutoff)
     }
 
-    pub fn source_function_value_single_dof_python(&self, psi_n: f64, i_dof: usize) -> f64 {
+    pub fn source_function_value_single_dof_python(&self, psi_norm: f64, i_dof: usize) -> f64 {
         // convert single value to array of length 1 to reuse existing function
-        let psi_n_array: Array1<f64> = Array1::from_elem(1, psi_n);
-        self.source_function_value_single_dof(&psi_n_array, i_dof)[0]
+        let psi_norm_array: Array1<f64> = Array1::from_elem(1, psi_norm);
+        self.source_function_value_single_dof(&psi_norm_array, i_dof)[0]
     }
 
-    pub fn source_function_integral_single_dof_python(&self, psi_n: f64, i_dof: usize) -> f64 {
+    pub fn source_function_integral_single_dof_python(&self, psi_norm: f64, i_dof: usize) -> f64 {
         // convert single value to array of length 1 to reuse existing function
-        let psi_n_array: Array1<f64> = Array1::from_elem(1, psi_n);
-        self.source_function_integral_single_dof(&psi_n_array, i_dof)[0]
+        let psi_norm_array: Array1<f64> = Array1::from_elem(1, psi_norm);
+        self.source_function_integral_single_dof(&psi_norm_array, i_dof)[0]
     }
 
     pub fn get_array1<'py>(&self, py: Python<'py>, keys: Vec<String>) -> PyResult<Bound<'py, PyArray1<f64>>> {
@@ -733,96 +733,96 @@ impl TensionedCubicBSpline {
 }
 
 impl SourceFunctionTraits for TensionedCubicBSpline {
-    fn source_function_value_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
+    fn source_function_value_single_dof(&self, psi_norm: &Array1<f64>, i_dof: usize) -> Array1<f64> {
         // See equation (2.5) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)
-        let mut value: Array1<f64> = Array1::from_elem(psi_n.len(), f64::NAN);
-        for i_psi_n in 0..psi_n.len() {
-            let x: f64 = psi_n[i_psi_n];
+        let mut value: Array1<f64> = Array1::from_elem(psi_norm.len(), f64::NAN);
+        for i_psi_norm in 0..psi_norm.len() {
+            let x: f64 = psi_norm[i_psi_norm];
             if x < self.knots[i_dof] {
-                value[i_psi_n] = 0.0;
+                value[i_psi_norm] = 0.0;
             } else if x <= self.knots[i_dof + 1] {
-                value[i_psi_n] = self.phi2(i_dof, x);
+                value[i_psi_norm] = self.phi2(i_dof, x);
             } else if x <= self.knots[i_dof + 3] {
-                value[i_psi_n] = self.phi2(i_dof, x) - self.phi2(i_dof + 1, x);
+                value[i_psi_norm] = self.phi2(i_dof, x) - self.phi2(i_dof + 1, x);
             } else if x <= self.knots[i_dof + 4] {
-                value[i_psi_n] = 1.0 - self.phi2(i_dof + 1, x);
+                value[i_psi_norm] = 1.0 - self.phi2(i_dof + 1, x);
             } else {
-                value[i_psi_n] = 0.0;
+                value[i_psi_norm] = 0.0;
             }
         }
         value
     }
 
-    fn source_function_derivative_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
+    fn source_function_derivative_single_dof(&self, psi_norm: &Array1<f64>, i_dof: usize) -> Array1<f64> {
         // This function is not implemented yet
         unimplemented!("Source function is not implemented yet");
     }
 
     /// Integral of a single degree of freedom
     ///
-    /// We take the integral from 1 to `psi_n`, this ensures that the integral is zero at `psi_n = 1`
-    /// Note that the psi2 function above is defined as the integral of phi2 from -infinity to `psi_n`,
+    /// We take the integral from 1 to `psi_norm`, this ensures that the integral is zero at `psi_norm = 1`
+    /// Note that the psi2 function above is defined as the integral of phi2 from -infinity to `psi_norm`,
     /// which is the same as the integral of phi2 from 0 to x since phi2 is zero for x < 0.
     /// Since int_0^x + int_x^1 = int_0^1, we can rearrange this to get int_1^x = int_0^x - int_0^1.
     /// Note that int_0^1 phi2(y) dy = psi2(1) - psi2(0) = psi2(1) since psi2(0) = 0.
     ///
     /// # Arguments
-    /// * `psi_n` - The points at which we want to evaluate the integral
+    /// * `psi_norm` - The points at which we want to evaluate the integral
     /// * `i_dof` - The index of the degree of freedom to evaluate
     ///
     /// # Returns
-    /// An array of the same length as `psi_n` containing the integral of the source function for the specified degree of freedom
+    /// An array of the same length as `psi_norm` containing the integral of the source function for the specified degree of freedom
     ///
-    fn source_function_integral_single_dof(&self, psi_n: &Array1<f64>, i_dof: usize) -> Array1<f64> {
-        let mut value: Array1<f64> = Array1::from_elem(psi_n.len(), f64::NAN);
+    fn source_function_integral_single_dof(&self, psi_norm: &Array1<f64>, i_dof: usize) -> Array1<f64> {
+        let mut value: Array1<f64> = Array1::from_elem(psi_norm.len(), f64::NAN);
         let integration_constant: f64 = self.psi2(i_dof, 1.0) - self.psi2(i_dof + 1, 1.0);
-        let n_psi_n: usize = psi_n.len();
-        for i_psi_n in 0..n_psi_n {
-            let x: f64 = psi_n[i_psi_n];
+        let n_psi_norm: usize = psi_norm.len();
+        for i_psi_norm in 0..n_psi_norm {
+            let x: f64 = psi_norm[i_psi_norm];
             // From equation (2.5) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993) we have
             // int_1^x B3_j(y) dy = int_1^x phi2_j(y) dy + int_1^x phi2_{j+1}(y) dy
             //                    = int_0^x phi2_j(y) dy - int_0^1 phi2_j(y) dy - (int_0^x phi2_{j+1}(y) dy - int_0^1 phi2_{j+1}(y) dy)
             //                    = psi2_j(x) - psi2_{j+1}(x) - (psi2_j(1) - psi2_{j+1}(1))
             //                    = psi2_j(x) - psi2_{j+1}(x) - integration_constant
-            value[i_psi_n] = self.psi2(i_dof, x) - self.psi2(i_dof + 1, x) - integration_constant;
+            value[i_psi_norm] = self.psi2(i_dof, x) - self.psi2(i_dof + 1, x) - integration_constant;
         }
         value
     }
 
-    fn source_function_value(&self, psi_n: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
-        let n_psi_n: usize = psi_n.len();
+    fn source_function_value(&self, psi_norm: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
+        let n_psi_norm: usize = psi_norm.len();
         let n_dof: usize = spline_dof.len();
 
-        let mut value: Array1<f64> = Array1::zeros(n_psi_n);
+        let mut value: Array1<f64> = Array1::zeros(n_psi_norm);
         for i_dof in 0..n_dof {
-            value = value + spline_dof[i_dof] * self.source_function_value_single_dof(psi_n, i_dof);
+            value = value + spline_dof[i_dof] * self.source_function_value_single_dof(psi_norm, i_dof);
         }
 
         value
     }
 
-    fn source_function_derivative(&self, psi_n: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
+    fn source_function_derivative(&self, psi_norm: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
         // This function is not implemented yet
         unimplemented!("Source function is not implemented yet");
     }
 
-    fn source_function_integral(&self, psi_n: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
+    fn source_function_integral(&self, psi_norm: &Array1<f64>, spline_dof: &Array1<f64>) -> Array1<f64> {
         let n_dof: usize = self.n_dof;
-        let n_psi_n: usize = psi_n.len();
+        let n_psi_norm: usize = psi_norm.len();
 
-        let mut integral: Array1<f64> = Array1::zeros(n_psi_n);
+        let mut integral: Array1<f64> = Array1::zeros(n_psi_norm);
         for i_dof in 0..n_dof {
-            integral = integral + spline_dof[i_dof] * self.source_function_integral_single_dof(psi_n, i_dof);
+            integral = integral + spline_dof[i_dof] * self.source_function_integral_single_dof(psi_norm, i_dof);
         }
 
-        // Alex Prok: Don't need to find the constant of integration as we take integral from 1 to psi_n
-        // in source_function_integral_single_dof which ensures that the integral is zero at psi_n = 1.
+        // Alex Prok: Don't need to find the constant of integration as we take integral from 1 to psi_norm
+        // in source_function_integral_single_dof which ensures that the integral is zero at psi_norm = 1.
         // Hence we can just return the integral calculated above without adding any constant of integration.
         // // Find the constant of integration
-        // let psi_n_at_boundary: Array1<f64> = Array1::from_vec(vec![1.0]);
+        // let psi_norm_at_boundary: Array1<f64> = Array1::from_vec(vec![1.0]);
         // let mut integral_at_boundary: f64 = 0.0;
         // for i_dof in 0..n_dof {
-        //     integral_at_boundary += spline_dof[i_dof] * self.source_function_integral_single_dof(&psi_n_at_boundary, i_dof)[0];
+        //     integral_at_boundary += spline_dof[i_dof] * self.source_function_integral_single_dof(&psi_norm_at_boundary, i_dof)[0];
         // }
 
         integral
@@ -842,7 +842,7 @@ impl SourceFunctionTraits for TensionedCubicBSpline {
 }
 
 /// Test that source_function_integral is consistent with numerical integration of source_function_value
-/// using the trapezoidal rule, and that it returns zero at psi_n = 1.0.
+/// using the trapezoidal rule, and that it returns zero at psi_norm = 1.0.
 #[test]
 fn test_source_function_integral() {
     use approx::assert_abs_diff_eq;
@@ -857,7 +857,7 @@ fn test_source_function_integral() {
     //   Full knot vector:   [0, 0, 0, 0,   0.4,   0.7,   1, 1, 1, 1]
     //                        ╰─clamped─╯                 ╰─clamped─╯
     //
-    //   psi_n values:   [0.0,0.4] [0.4,0.7] [0.7,1]
+    //   psi_norm values:   [0.0,0.4] [0.4,0.7] [0.7,1]
     //                       ↓         ↓         ↓
     //   Tension:         [ 1.0,      1.0,      1.0 ]
     //
@@ -888,44 +888,44 @@ fn test_source_function_integral() {
 
     let spline: TensionedCubicBSpline = TensionedCubicBSpline::new(regularisations, interior_knots, interval_tensions);
 
-    // Test 1: `source_function_integral` should be zero at `psi_n = 1.0`
-    let psi_n_boundary: Array1<f64> = array![1.0];
-    let integral_at_boundary: Array1<f64> = spline.source_function_integral(&psi_n_boundary, &spline_dof);
+    // Test 1: `source_function_integral` should be zero at `psi_norm = 1.0`
+    let psi_norm_boundary: Array1<f64> = array![1.0];
+    let integral_at_boundary: Array1<f64> = spline.source_function_integral(&psi_norm_boundary, &spline_dof);
     assert_abs_diff_eq!(integral_at_boundary[0], 0.0, epsilon = 1e-12);
 
     // Test 2: Verify that the numerical derivative of `source_function_integral` equals `source_function_value`
     // using finite differences: d/dx integral(x) ≈ (integral(x + h) - integral(x - h)) / (2h)
     let n_test: usize = 50;
-    let psi_n_test: Array1<f64> = Array1::linspace(0.05, 0.95, n_test);
-    let value: Array1<f64> = spline.source_function_value(&psi_n_test, &spline_dof);
+    let psi_norm_test: Array1<f64> = Array1::linspace(0.05, 0.95, n_test);
+    let value: Array1<f64> = spline.source_function_value(&psi_norm_test, &spline_dof);
 
-    let delta_psi_n: f64 = 1e-7;
-    let mut psi_n_plus: Array1<f64> = Array1::from_elem(1, f64::NAN);
-    let mut psi_n_minus: Array1<f64> = Array1::from_elem(1, f64::NAN);
+    let delta_psi_norm: f64 = 1e-7;
+    let mut psi_norm_plus: Array1<f64> = Array1::from_elem(1, f64::NAN);
+    let mut psi_norm_minus: Array1<f64> = Array1::from_elem(1, f64::NAN);
     for i_test in 0..n_test {
-        psi_n_plus[0] = psi_n_test[i_test] + delta_psi_n;
-        psi_n_minus[0] = psi_n_test[i_test] - delta_psi_n;
-        let integral_plus: Array1<f64> = spline.source_function_integral(&psi_n_plus, &spline_dof);
-        let integral_minus: Array1<f64> = spline.source_function_integral(&psi_n_minus, &spline_dof);
-        let numerical_derivative: f64 = (integral_plus[0] - integral_minus[0]) / (2.0 * delta_psi_n);
+        psi_norm_plus[0] = psi_norm_test[i_test] + delta_psi_norm;
+        psi_norm_minus[0] = psi_norm_test[i_test] - delta_psi_norm;
+        let integral_plus: Array1<f64> = spline.source_function_integral(&psi_norm_plus, &spline_dof);
+        let integral_minus: Array1<f64> = spline.source_function_integral(&psi_norm_minus, &spline_dof);
+        let numerical_derivative: f64 = (integral_plus[0] - integral_minus[0]) / (2.0 * delta_psi_norm);
         assert_abs_diff_eq!(numerical_derivative, value[i_test], epsilon = 1e-5);
     }
 
     // Test 3: Verify that `source_function_integral` matches numerical trapezoidal integration of `source_function_value`
-    // Integrate from 1.0 to psi_n using the trapezoidal rule with a fine grid
+    // Integrate from 1.0 to psi_norm using the trapezoidal rule with a fine grid
     let n_trap: usize = 100_000;
-    let psi_n_eval: f64 = 0.3;
-    let trap_grid: Array1<f64> = Array1::linspace(psi_n_eval, 1.0, n_trap);
+    let psi_norm_eval: f64 = 0.3;
+    let trap_grid: Array1<f64> = Array1::linspace(psi_norm_eval, 1.0, n_trap);
     let trap_values: Array1<f64> = spline.source_function_value(&trap_grid, &spline_dof);
-    let d_psi: f64 = (1.0 - psi_n_eval) / (n_trap as f64 - 1.0);
+    let d_psi: f64 = (1.0 - psi_norm_eval) / (n_trap as f64 - 1.0);
     let mut trap_integral: f64 = 0.0;
     for i_trap in 0..n_trap - 1 {
         trap_integral += 0.5 * (trap_values[i_trap] + trap_values[i_trap + 1]) * d_psi;
     }
-    // `source_function_integral` integrates from 1 to psi_n, so the sign is flipped relative to integrating from psi_n to 1
+    // `source_function_integral` integrates from 1 to psi_norm, so the sign is flipped relative to integrating from psi_norm to 1
     let trap_integral: f64 = -trap_integral;
 
-    let psi_n_single: Array1<f64> = array![psi_n_eval];
-    let analytic_integral: Array1<f64> = spline.source_function_integral(&psi_n_single, &spline_dof);
+    let psi_norm_single: Array1<f64> = array![psi_norm_eval];
+    let analytic_integral: Array1<f64> = spline.source_function_integral(&psi_norm_single, &spline_dof);
     assert_abs_diff_eq!(analytic_integral[0], trap_integral, epsilon = 1e-6);
 }

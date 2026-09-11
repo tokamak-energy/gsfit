@@ -79,7 +79,7 @@ fn first_derivative_from_two_points(x_0: f64, x_1: f64, y_0: f64, y_1: f64) -> O
     if !x_0.is_finite() || !x_1.is_finite() || !y_0.is_finite() || !y_1.is_finite() || delta_x == 0.0 {
         return None;
     }
-    return Some((y_1 - y_0) / delta_x);
+    Some((y_1 - y_0) / delta_x)
 }
 
 /// Differentiate the quadratic through three points at `x_evaluate`.
@@ -103,7 +103,7 @@ fn first_derivative_from_three_points(x_0: f64, x_1: f64, x_2: f64, y_0: f64, y_
     let coefficient_1: f64 = (2.0 * x_evaluate - x_0 - x_2) / ((x_1 - x_0) * (x_1 - x_2));
     let coefficient_2: f64 = (2.0 * x_evaluate - x_0 - x_1) / ((x_2 - x_0) * (x_2 - x_1));
 
-    return Some(coefficient_0 * y_0 + coefficient_1 * y_1 + coefficient_2 * y_2);
+    Some(coefficient_0 * y_0 + coefficient_1 * y_1 + coefficient_2 * y_2)
 }
 
 #[cfg(test)]

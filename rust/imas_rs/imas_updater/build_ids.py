@@ -5,13 +5,13 @@ Generates Rust struct definitions from IMAS Data Dictionary XSD schema files.
 Includes accessor, view, and accumulator types for slicing Vec<T> fields.
 """
 
-from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Optional
+import re
 import subprocess
 import xml.etree.ElementTree as ET
-import re
-
+from dataclasses import dataclass
+from dataclasses import field
+from pathlib import Path
+from typing import Optional
 
 # Location of this script: `rust/imas_rs/imas_updater/`
 IMAS_UPDATER_DIR: Path = Path(__file__).resolve().parent

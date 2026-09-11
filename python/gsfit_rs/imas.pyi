@@ -14,7 +14,9 @@ level has been sliced, so values are gathered into an array. Only one level may 
 sliced, which is why an array reached from a `Many` class only accepts an integer.
 """
 
-from typing import Generic, TypeVar, overload
+from typing import Generic
+from typing import TypeVar
+from typing import overload
 
 import numpy as np
 import numpy.typing as npt

@@ -147,7 +147,7 @@ pub fn quadratic_current_density_seed(
     if j_2d.iter().any(|value| !value.is_finite()) || !relative_error.is_finite() || relative_error > 1.0e-10 {
         return Err("quadratic current initialisation could not produce a finite, normalised current density".to_string());
     }
-    return Ok(j_2d);
+    Ok(j_2d)
 }
 
 #[cfg(test)]

@@ -68,32 +68,32 @@ pub(in crate::equilibrium_post_processor) fn epp_q_profile(
     flux_surfaces: &[FluxSurface],
     f_profile: &Array1<f64>,
 ) -> Array1<f64> {
-    let n_psi_n: usize = flux_surfaces.len();
+    let n_psi_norm: usize = flux_surfaces.len();
     let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
-    assert_eq!(psi_norm.len(), n_psi_n);
-    assert_eq!(f_profile.len(), n_psi_n);
+    assert_eq!(psi_norm.len(), n_psi_norm);
+    assert_eq!(f_profile.len(), n_psi_norm);
 
     let psi_gradient_interpolator: PsiGradientInterpolator = PsiGradientInterpolator::new(time_slice);
-    let mut q_profile: Array1<f64> = Array1::from_elem(n_psi_n, f64::NAN);
-    for i_psi_n in 1..n_psi_n {
-        if psi_norm[i_psi_n] == 1.0 {
+    let mut q_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
+    for i_psi_norm in 1..n_psi_norm {
+        if psi_norm[i_psi_norm] == 1.0 {
             continue;
         }
 
-        q_profile[i_psi_n] = q_on_flux_surface(&flux_surfaces[i_psi_n], f_profile[i_psi_n], &psi_gradient_interpolator).unwrap_or(f64::NAN);
+        q_profile[i_psi_norm] = q_on_flux_surface(&flux_surfaces[i_psi_norm], f_profile[i_psi_norm], &psi_gradient_interpolator).unwrap_or(f64::NAN);
     }
 
-    if n_psi_n > 0 && psi_norm[0] != 1.0 {
+    if n_psi_norm > 0 && psi_norm[0] != 1.0 {
         q_profile[0] = epp_q_axis(time_slice, f_profile, &psi_gradient_interpolator);
     }
 
-    return q_profile;
+    q_profile
 }
 
 /// Calculate the safety factor directly on one supplied flux surface.
 pub(in crate::equilibrium_post_processor) fn calculate_on_flux_surface(time_slice: &EquilibriumTimeSlice, flux_surface: &FluxSurface, f_here: f64) -> f64 {
     let psi_gradient_interpolator: PsiGradientInterpolator = PsiGradientInterpolator::new(time_slice);
-    return q_on_flux_surface(flux_surface, f_here, &psi_gradient_interpolator).unwrap_or(f64::NAN);
+    q_on_flux_surface(flux_surface, f_here, &psi_gradient_interpolator).unwrap_or(f64::NAN)
 }
 
 /// Integrate `q` around one piecewise-linear flux surface.
@@ -136,7 +136,7 @@ fn q_on_flux_surface(flux_surface: &FluxSurface, f_here: f64, psi_gradient_inter
         contour_integral = contour_integral_updated;
     }
 
-    return Some(f_here * contour_integral);
+    Some(f_here * contour_integral)
 }
 
 /// Evaluate `1 / (r * |grad(psi)|)` at one quadrature point.
@@ -147,7 +147,7 @@ fn q_integrand_at(r_here: f64, z_here: f64, psi_gradient_interpolator: &PsiGradi
         return None;
     }
 
-    return Some(1.0 / (r_here * grad_psi));
+    Some(1.0 / (r_here * grad_psi))
 }
 
 /// Calculate the safety factor on the magnetic axis.
@@ -181,7 +181,7 @@ fn epp_q_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, psi_gr
 
     let q_axis: f64 = hessian_trace.abs() / hessian_determinant.sqrt() * f_profile[0] / (MU_0 * r_mag.powi(2) * j_phi);
 
-    return q_axis;
+    q_axis
 }
 
 /// Calculate the Hessian matrix of `psi` at an arbitrary point on the grid.
@@ -267,7 +267,7 @@ impl<'a> PsiGradientInterpolator<'a> {
         let d3_psi_d_r2_d_z_2d: Array2<f64> = derivative_in_z(d2_psi_d_r2_2d, d_z);
         let d3_psi_d_r_d_z2_2d: Array2<f64> = derivative_in_z(d2_psi_d_r_d_z_2d, d_z);
 
-        return Self {
+        Self {
             r,
             z,
             d_psi_d_r_2d,
@@ -279,7 +279,7 @@ impl<'a> PsiGradientInterpolator<'a> {
             d3_psi_d_r_d_z2_2d,
             d_r,
             d_z,
-        };
+        }
     }
 
     fn interpolate(&self, r_point: f64, z_point: f64) -> Option<PsiDerivatives> {
@@ -307,13 +307,13 @@ impl<'a> PsiGradientInterpolator<'a> {
         let d_psi_d_r: BicubicValueAndDerivatives = d_psi_d_r_interpolator.value_and_derivatives(cell.x, cell.y);
         let d_psi_d_z: BicubicValueAndDerivatives = d_psi_d_z_interpolator.value_and_derivatives(cell.x, cell.y);
 
-        return Some(PsiDerivatives {
+        Some(PsiDerivatives {
             d_psi_d_r: d_psi_d_r.f,
             d_psi_d_z: d_psi_d_z.f,
             d2_psi_d_r2: d_psi_d_r.d_f_d_x / self.d_r,
             d2_psi_d_r_d_z: 0.5 * (d_psi_d_r.d_f_d_y / self.d_z + d_psi_d_z.d_f_d_x / self.d_r),
             d2_psi_d_z2: d_psi_d_z.d_f_d_y / self.d_z,
-        });
+        })
     }
 
     fn hessian_matrix(&self, r_point: f64, z_point: f64) -> Option<(Array2<f64>, f64, f64)> {
@@ -326,7 +326,7 @@ impl<'a> PsiGradientInterpolator<'a> {
 
         let (hessian_determinant, hessian_trace): (f64, f64) =
             hessian(psi_derivatives.d2_psi_d_r2, psi_derivatives.d2_psi_d_r_d_z, psi_derivatives.d2_psi_d_z2);
-        return Some((hessian_matrix, hessian_determinant, hessian_trace));
+        Some((hessian_matrix, hessian_determinant, hessian_trace))
     }
 
     fn interpolate_bilinear(&self, values: &Array2<f64>, r_point: f64, z_point: f64) -> Option<f64> {
@@ -336,7 +336,7 @@ impl<'a> PsiGradientInterpolator<'a> {
 
         let value_lower: f64 = (1.0 - cell.x) * values[(i_z_lower, i_r_left)] + cell.x * values[(i_z_lower, i_r_left + 1)];
         let value_upper: f64 = (1.0 - cell.x) * values[(i_z_lower + 1, i_r_left)] + cell.x * values[(i_z_lower + 1, i_r_left + 1)];
-        return Some((1.0 - cell.y) * value_lower + cell.y * value_upper);
+        Some((1.0 - cell.y) * value_lower + cell.y * value_upper)
     }
 
     fn cell_coordinates(&self, r_point: f64, z_point: f64) -> Option<GridCellCoordinates> {
@@ -355,7 +355,7 @@ impl<'a> PsiGradientInterpolator<'a> {
         let x: f64 = ((r_point - self.r[i_r_left]) / self.d_r).clamp(0.0, 1.0);
         let y: f64 = ((z_point - self.z[i_z_lower]) / self.d_z).clamp(0.0, 1.0);
 
-        return Some(GridCellCoordinates { i_r_left, i_z_lower, x, y });
+        Some(GridCellCoordinates { i_r_left, i_z_lower, x, y })
     }
 }
 
@@ -373,7 +373,7 @@ fn derivative_in_z(values: &Array2<f64>, d_z: f64) -> Array2<f64> {
         derivative[(n_z - 1, i_r)] = (3.0 * values[(n_z - 1, i_r)] - 4.0 * values[(n_z - 2, i_r)] + values[(n_z - 3, i_r)]) / (2.0 * d_z);
     }
 
-    return derivative;
+    derivative
 }
 
 #[cfg(test)]

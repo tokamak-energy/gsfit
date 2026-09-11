@@ -147,7 +147,7 @@ pub(in crate::equilibrium_post_processor) fn epp_boundary_geometry(
     let square_l_o: f64 = epp_squareness(boundary_r, boundary_z, r_at_z_min, z_at_r_max, r_max, z_min);
     let square_l_i: f64 = epp_squareness(boundary_r, boundary_z, r_at_z_min, z_at_r_min, r_min, z_min);
 
-    return (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o);
+    (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o)
 }
 
 /// Calculate the squareness of one quadrant of the plasma boundary, using the
@@ -207,7 +207,7 @@ fn epp_squareness(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>, centre_r: 
         let u: f64 = ((boundary_r[i_point] - centre_r) * diag_z - (boundary_z[i_point] - centre_z) * diag_r) / denominator;
 
         // Keep the crossing which is furthest from the quadrant centre
-        if t >= 0.0 && t <= 1.0 && u >= 0.0 && u <= 1.0 && (t_boundary.is_nan() || t > t_boundary) {
+        if (0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u) && (t_boundary.is_nan() || t > t_boundary) {
             t_boundary = t;
         }
     }
@@ -219,7 +219,7 @@ fn epp_squareness(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>, centre_r: 
     // An ellipse through the two extremal points crosses the diagonal at `1 / sqrt(2)` of its length
     let t_ellipse: f64 = std::f64::consts::FRAC_1_SQRT_2;
     let squareness: f64 = (t_boundary - t_ellipse) / (1.0 - t_ellipse);
-    return squareness;
+    squareness
 }
 
 #[test]
