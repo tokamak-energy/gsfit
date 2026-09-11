@@ -1754,7 +1754,7 @@ impl<'a> EquilibriumSolver<'a> {
                 2
             };
             nodes.push(EquilibriumContourTreeNode {
-                critical_type: critical_type,
+                critical_type,
                 r: stationary_point.r,
                 z: stationary_point.z,
                 psi: stationary_point.psi,

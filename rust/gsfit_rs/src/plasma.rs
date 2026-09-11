@@ -4,7 +4,6 @@ use crate::passives::Passives;
 use crate::source_functions::SharedSourceFunction;
 use crate::source_functions::extract_source_function;
 use data_tree::DataTreeAccumulator;
-use imas_rs::EquilibriumProfiles2dGrid;
 use imas_rs::python::PyEquilibrium;
 use imas_rs::{
     Equilibrium, EquilibriumGreensGridGrid, EquilibriumGreensPfActive, EquilibriumGreensPfPassive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d,
@@ -14,8 +13,6 @@ use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
 use pyo3::prelude::*;
 use rayon::prelude::*;
-
-const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
 #[derive(Clone)]
 #[pyclass(skip_from_py_object)]
