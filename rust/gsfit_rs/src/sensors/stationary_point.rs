@@ -13,6 +13,7 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
@@ -133,7 +134,7 @@ impl StationaryPoint {
         let coils_local: &Coils = &coils;
 
         // Run the Rust method
-        self.greens_with_coils_rs(coils_local.to_owned());
+        self.greens_with_coils_rs(coils_local);
     }
 
     /// Greens with passives
@@ -142,7 +143,7 @@ impl StationaryPoint {
         let passives_local: &Passives = &passives;
 
         // Run the Rust method
-        self.greens_with_passives_rs(passives_local.to_owned());
+        self.greens_with_passives_rs(passives_local);
     }
 
     /// Greens with plasma
@@ -151,7 +152,7 @@ impl StationaryPoint {
         let plasma_local: &Plasma = &plasma;
 
         // Run the Rust method
-        self.greens_with_plasma_rs(plasma_local.to_owned());
+        self.greens_with_plasma_rs(plasma_local);
     }
 
     // /// Calculate sensor values
@@ -233,9 +234,9 @@ impl StationaryPoint {
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
     /// For Isoflux sensors the static data is actually time-dependent.
     /// TODO: consider renaming `SensorsStatic`. Perhaps `SensorsGeometry` ?
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         // Define empty data arrays
-        let results_static_empty: SensorsStatic = SensorsStatic {
+        let results_static_empty: Arc<SensorsStatic> = Arc::new(SensorsStatic {
             greens_with_grid: Array2::zeros((0, 0)),
             greens_with_pf: Array2::zeros((0, 0)),
             greens_with_passives: Array2::zeros((0, 0)),
@@ -244,14 +245,14 @@ impl StationaryPoint {
             fit_settings_expected_value: Array1::zeros(0),
             geometry_r: Array1::zeros(0), // not used for StationaryPoint
             geometry_z: Array1::zeros(0), // not used for StationaryPoint
-        };
+        });
         let results_dynamic_empty: SensorsDynamic = SensorsDynamic { measured: Array1::zeros(0) };
 
         // Number of time-slices to reconstruct
         let n_time: usize = times_to_reconstruct.len();
 
         // Create the time-dependent data structures
-        let mut results_static: Vec<SensorsStatic> = Vec::with_capacity(n_time);
+        let mut results_static: Vec<Arc<SensorsStatic>> = Vec::with_capacity(n_time);
         let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);
 
         // Sensor names
@@ -275,7 +276,7 @@ impl StationaryPoint {
 
             // If there are no sensors at this time-slice then we should exit
             if include_indices.is_empty() {
-                results_static.push(results_static_empty.clone());
+                results_static.push(Arc::clone(&results_static_empty));
                 results_dynamic.push(results_dynamic_empty.clone());
                 continue 'time_loop; // Go to next time-slice
             }
@@ -353,7 +354,7 @@ impl StationaryPoint {
                 geometry_r: Array1::zeros(n_sensors), // not used for StationaryPoint
                 geometry_z: Array1::zeros(n_sensors), // not used for StationaryPoint
             };
-            results_static.push(results_static_this_time_slice);
+            results_static.push(Arc::new(results_static_this_time_slice));
 
             // The measured sensor values are = 0.0
             let results_dynamic_this_time_slice: SensorsDynamic = SensorsDynamic {
@@ -366,7 +367,7 @@ impl StationaryPoint {
         (results_static, results_dynamic)
     }
 
-    pub fn greens_with_coils_rs(&mut self, coils: Coils) {
+    pub fn greens_with_coils_rs(&mut self, coils: &Coils) {
         for sensor_name in self.results.keys() {
             // Get time
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("time").unwrap_array1();
@@ -414,11 +415,17 @@ impl StationaryPoint {
         }
     }
 
-    pub fn greens_with_plasma_rs(&mut self, plasma: Plasma) {
-        let plasma_r: Array1<f64> = plasma.results.get("grid").get("flat").get("r").unwrap_array1();
-        let plasma_z: Array1<f64> = plasma.results.get("grid").get("flat").get("z").unwrap_array1();
-        let n_r: usize = plasma.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = plasma.results.get("grid").get("n_z").unwrap_usize();
+    pub fn greens_with_plasma_rs(&mut self, plasma: &Plasma) {
+        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
+        // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the
+        // (R, Z) mesh, so iterating them row-major gives the flattened grid the Green's tables are
+        // indexed by
+        let mesh_r: &Array2<f64> = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].r;
+        let mesh_z: &Array2<f64> = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].z;
+        let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
+        let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
+        let n_r: usize = plasma.equilibrium_ids.code.grid.n_r as usize;
+        let n_z: usize = plasma.equilibrium_ids.code.grid.n_z as usize;
 
         for sensor_name in self.results.keys() {
             // Get time
@@ -465,7 +472,7 @@ impl StationaryPoint {
         }
     }
 
-    pub fn greens_with_passives_rs(&mut self, passives: Passives) {
+    pub fn greens_with_passives_rs(&mut self, passives: &Passives) {
         // Loop over sensors
         for sensor_name in self.results.keys() {
             // Get time

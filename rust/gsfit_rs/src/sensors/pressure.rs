@@ -6,6 +6,7 @@ use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree}
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use imas_rs::{EquilibriumProfiles2dGrid, EquilibriumTimeSlice};
 use ndarray::{Array1, Array2, Array3, ArrayView2, Axis, s};
 use ndarray_stats::QuantileExt;
 use numpy::IntoPyArray; // converting to python data types
@@ -16,6 +17,7 @@ use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use std::f64::consts::PI;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
@@ -176,8 +178,10 @@ impl Pressure {
         // Change Python type into Rust
         let plasma_local: &Plasma = &plasma;
 
-        let n_r: usize = plasma_local.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = plasma_local.results.get("grid").get("n_z").unwrap_usize();
+        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
+        // because GSFit solves on a single rectangular (R, Z) grid
+        let n_r: usize = plasma_local.equilibrium_ids.code.grid.n_r as usize;
+        let n_z: usize = plasma_local.equilibrium_ids.code.grid.n_z as usize;
 
         for sensor_name in &self.results.keys() {
             // Create zero array
@@ -269,7 +273,7 @@ impl Pressure {
     /// This splits the Pressure into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         // Number of time-slices to reconstruct
         let n_time: usize = times_to_reconstruct.len();
 
@@ -312,7 +316,7 @@ impl Pressure {
         }
 
         // Create the time-dependent data structures
-        let mut results_static: Vec<SensorsStatic> = Vec::with_capacity(n_time);
+        let mut results_static: Vec<Arc<SensorsStatic>> = Vec::with_capacity(n_time);
         let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);
 
         'time_loop: for i_time in 0..n_time {
@@ -333,7 +337,7 @@ impl Pressure {
             // If there are no sensors at this time-slice then push empty and continue
             if include_indices.is_empty() {
                 let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
-                results_static.push(static_data_empty);
+                results_static.push(Arc::new(static_data_empty));
                 results_dynamic.push(dynamic_data_empty);
                 continue 'time_loop; // Go to next time-slice
             }
@@ -411,7 +415,7 @@ impl Pressure {
                 geometry_r,
                 geometry_z,
             };
-            results_static.push(results_static_this_time_slice);
+            results_static.push(Arc::new(results_static_this_time_slice));
 
             // Select time-slice and the sensors we use in reconstruction
             let measured_this_time_slice_and_sensors: Array1<f64> = measured.slice(s![.., i_time]).select(Axis(0), &include_indices).to_owned();
@@ -427,21 +431,16 @@ impl Pressure {
 
     /// Calculate the sensor values
     pub fn calculate_sensor_values_rust(&mut self, plasma: &Plasma) {
-        let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
+        let time: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.to_array();
         let n_time: usize = time.len();
 
-        let r: Array1<f64> = plasma.results.get("grid").get("r").unwrap_array1();
-        let z: Array1<f64> = plasma.results.get("grid").get("z").unwrap_array1();
+        // `time_slice[0]` because the grid is the same on every time-slice, and `profiles_2d[0]`
+        // because GSFit solves on a single rectangular (R, Z) grid
+        let grid: &EquilibriumProfiles2dGrid = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].grid;
+        let r: Array1<f64> = grid.dim1.to_owned();
+        let z: Array1<f64> = grid.dim2.to_owned();
         let d_r: f64 = r[1] - r[0];
         let d_z: f64 = z[1] - z[0];
-        let psi_2d_vs_time: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("psi").unwrap_array3();
-        let br_2d_vs_time: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("br").unwrap_array3();
-        let bz_2d_vs_time: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("bz").unwrap_array3();
-        let d_bz_d_z_2d_vs_time: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("d_bz_d_z").unwrap_array3();
-        let p_prime_dof_values_vs_time: Array2<f64> = plasma.results.get("source_functions").get("p_prime").get("coefficients").unwrap_array2();
-
-        let psi_a_vs_time: Array1<f64> = plasma.results.get("global").get("psi_a").unwrap_array1();
-        let psi_b_vs_time: Array1<f64> = plasma.results.get("boundary").get("psi").unwrap_array1();
 
         let sensor_names: Vec<String> = self.results.keys();
         if sensor_names.is_empty() {
@@ -453,7 +452,7 @@ impl Pressure {
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
             let mut psi_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
 
-            // Find the value of psi_n at the location of the pressure sensor
+            // Find the value of psi_norm at the location of the pressure sensor
             let sensor_r: f64 = self.results.get(sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(sensor_name).get("geometry").get("z").unwrap_f64();
 
@@ -492,12 +491,16 @@ impl Pressure {
             }
 
             for i_time in 0..n_time {
-                let psi_a: f64 = psi_a_vs_time[i_time];
-                let psi_b: f64 = psi_b_vs_time[i_time];
-                let psi_2d: Array2<f64> = psi_2d_vs_time.slice(s![i_time, .., ..]).to_owned();
-                let br_2d: Array2<f64> = br_2d_vs_time.slice(s![i_time, .., ..]).to_owned();
-                let bz_2d: Array2<f64> = bz_2d_vs_time.slice(s![i_time, .., ..]).to_owned();
-                let d_bz_d_z_2d: Array2<f64> = d_bz_d_z_2d_vs_time.slice(s![i_time, .., ..]).to_owned();
+                let time_slice: &EquilibriumTimeSlice = &plasma.equilibrium_ids.time_slice[i_time];
+
+                let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
+                let psi_b: f64 = time_slice.boundary.psi;
+
+                // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid
+                let psi_2d: &Array2<f64> = &time_slice.profiles_2d[0].psi;
+                let br_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_r;
+                let bz_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_z;
+                let d_bz_d_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].d_b_field_z_d_z;
 
                 // Bicubic interpolation of psi at the sensor location
                 let f: ArrayView2<f64> = psi_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
@@ -529,22 +532,22 @@ impl Pressure {
                 let y: f64 = (sensor_z - z[i_z_nearest_lower]) / d_z;
                 let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);
 
-                let psi_n_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
+                let psi_norm_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
 
                 psi_values[i_time] = psi_at_sensor;
 
                 // If sensor is outside the plasma boundary, leave sensor_values[i_time] as NaN
-                if !(0.0..=1.0).contains(&psi_n_at_sensor) {
+                if !(0.0..=1.0).contains(&psi_norm_at_sensor) {
                     continue;
                 }
 
-                // Analytically integrate p'(psi_n) with boundary condition p(psi_n = 1) = 0.
-                // Note: source_function_integral returns an integral from psi_n = 1 to psi_n,
-                // i.e. p(psi_n) = integral_{1}^{psi_n} p'(x) dx, scaled by (psi_b - psi_a).
-                let p_prime_dof_values: Array1<f64> = p_prime_dof_values_vs_time.row(i_time).to_owned();
+                // Analytically integrate p'(psi_norm) with boundary condition p(psi_norm = 1) = 0.
+                // Note: source_function_integral returns an integral from psi_norm = 1 to psi_norm,
+                // i.e. p(psi_norm) = integral_{1}^{psi_norm} p'(x) dx, scaled by (psi_b - psi_a).
+                let p_prime_dof_values: Array1<f64> = time_slice.source_functions.p_prime.coefficients.to_owned();
                 sensor_values[i_time] = plasma
                     .p_prime_source_function
-                    .source_function_integral(&Array1::from_vec(vec![psi_n_at_sensor]), &p_prime_dof_values)[0]
+                    .source_function_integral(&Array1::from_vec(vec![psi_norm_at_sensor]), &p_prime_dof_values)[0]
                     * (psi_b - psi_a);
             }
 

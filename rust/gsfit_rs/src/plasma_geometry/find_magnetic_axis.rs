@@ -52,7 +52,7 @@ pub fn find_magnetic_axis(
     // Filter `stationary_points` to keep only those with "turning curvature" (either maximum or minimum)
     stationary_points.retain(|stationary_point| {
         let turning_point_test: bool = stationary_point.hessian_determinant > 0.0;
-        return turning_point_test;
+        turning_point_test
     });
     // Exit if we haven't found any `stationary_points` within the vessel
     if stationary_points.is_empty() {
@@ -76,7 +76,7 @@ pub fn find_magnetic_axis(
     stationary_points.retain(|stationary_point| {
         let test_point: Point = Point::new(stationary_point.r, stationary_point.z);
         let within_vessel_test: bool = vessel_polygon.contains(&test_point);
-        return within_vessel_test;
+        within_vessel_test
     });
     // Exit if we haven't found any `stationary_points` within the vessel
     if stationary_points.is_empty() {

@@ -1,11 +1,12 @@
 // Load modules
-mod epp_chi_sq_mag;
+mod chi_sq_mag;
+mod equilibrium_solve;
 mod grad_shafranov_solver;
-mod gs_solution;
+mod initial_current_seed;
 
 // Expose functions to public
+pub use equilibrium_solve::output_flag;
 pub use grad_shafranov_solver::solve_grad_shafranov;
-pub use gs_solution::GsSolution;
 
 // Define the possible **external** failures this module can produce
 #[derive(Debug)]

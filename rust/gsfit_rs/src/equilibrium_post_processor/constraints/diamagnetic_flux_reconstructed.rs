@@ -1,0 +1,55 @@
+//! `time_slice(itime)/constraints/diamagnetic_flux/reconstructed`
+
+use super::super::constant_values::ConstantValues;
+use super::super::flux_surfaces::FluxSurface;
+use super::super::intermediate_values::IntermediateValues;
+use super::super::profiles_1d::phi::epp_flux_toroidal_profile;
+use super::super::profiles_1d::q::epp_q_profile;
+use imas_rs::EquilibriumTimeSlice;
+use ndarray::Array1;
+use std::f64::consts::PI;
+
+const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
+
+/// Calculate the diamagnetic flux, and store it in the time-slice.
+///
+/// The diamagnetic flux is the difference between the toroidal flux the plasma actually encloses
+/// and the toroidal flux the vacuum toroidal field alone would give through the same flux surfaces,
+/// so it measures how far the plasma has expelled or compressed the toroidal field. It is
+/// calculated by running the safety factor and toroidal flux a second time with `f` set to the
+/// vacuum value `f_vac = mu_0 * i_rod / (2 * pi)` everywhere.
+///
+/// This is the reconstruction's prediction of the diamagnetic loop signal, which is why it lives
+/// under `constraints` rather than `global_quantities`.
+///
+/// # Arguments
+/// * `time_slice` - the solved time-slice; `constraints/diamagnetic_flux/reconstructed` is written
+///   into it
+/// * `flux_surfaces` - the flux surfaces from `flux_surfaces::calculate`, one per `psi_norm`
+/// * `i_rod` - current in the toroidal field coil's central rod [ampere]
+pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
+    let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
+    let i_rod: f64 = constant_values.i_rod;
+
+    // A slice which did not converge has no flux surfaces to integrate around
+    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
+    if psi_a.is_nan() {
+        time_slice.constraints.diamagnetic_flux.reconstructed = f64::NAN;
+        return;
+    }
+
+    let f_profile: &Array1<f64> = &time_slice.profiles_1d.f;
+    let psi_profile: &Array1<f64> = &time_slice.profiles_1d.psi;
+    let flux_tor_profile: &Array1<f64> = &time_slice.profiles_1d.phi;
+
+    // TODO: this is **VERY** hacky, and **SHOULD** be improved!!
+    // set f_profile to the vacuum profile, then calculate the vacuum q-profile, then the vacuum toroidal flux
+    let f_profile_vacuum: Array1<f64> = 0.0 * f_profile + MU_0 * i_rod / (2.0 * PI);
+    let q_profile_vacuum: Array1<f64> = epp_q_profile(time_slice, flux_surfaces, &f_profile_vacuum);
+    let boundary_diverted: bool = time_slice.boundary.r#type == 1;
+    let flux_tor_profile_vacuum: Array1<f64> = epp_flux_toroidal_profile(&q_profile_vacuum, psi_profile, boundary_diverted);
+
+    let flux_dia: f64 = flux_tor_profile.last().unwrap().to_owned() - flux_tor_profile_vacuum.last().unwrap().to_owned();
+
+    time_slice.constraints.diamagnetic_flux.reconstructed = flux_dia;
+}

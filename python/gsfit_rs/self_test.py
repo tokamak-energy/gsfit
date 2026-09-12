@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.constants import mu_0
 
 from gsfit_rs import BpProbes
 from gsfit_rs import Coils
@@ -12,7 +13,10 @@ from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
 from gsfit_rs import StationaryPoint
+from gsfit_rs import Tf
+from gsfit_rs import Wall
 from gsfit_rs import solve_grad_shafranov
+from gsfit_rs.imas import equilibrium_paths as ep
 
 # DOF: 3 dof's
 # 1. p_prime; 1 profile shape
@@ -36,10 +40,6 @@ def run() -> None:
         d_z=np.array([0.0, 0.0]),
         time=np.array([0.0, 1.0]),
         measured=np.array([100.0e3, 100.0e3]),
-    )
-    coils.add_tf_coil(
-        time=np.array([0.0, 1.0]),
-        measured=np.array([2.0e3, 2.0e3]),
     )
 
     limit_pts_r = np.array([10.0, 10.0, 10.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 10.0, 10.0, 10.0])
@@ -112,19 +112,40 @@ def run() -> None:
         r_max=11.5,
         z_min=-1.5,
         z_max=1.5,
-        psi_n=np.linspace(0.0, 1.0, 100),
-        limit_pts_r=limit_pts_r,
-        limit_pts_z=limit_pts_z,
-        vessel_r=limit_pts_r,
-        vessel_z=limit_pts_z,
+        psi_norm=np.linspace(0.0, 1.0, 100),
         p_prime_source_function=p_prime_source_function,
         ff_prime_source_function=ff_prime_source_function,
-        initial_ip=ip_guess,
-        initial_cur_r=10.5,
-        initial_cur_z=0.0,
-        initial_minor_radius=0.5,
-        initial_kappa=2.0,
+        initial_guess_ip=ip_guess,
+        initial_guess_cur_r=10.5,
+        initial_guess_cur_z=0.0,
+        initial_guess_minor_radius=0.5,
+        initial_guess_elongation=2.0,
+        n_iter_max=30,
+        n_iter_min=1,
+        n_iter_no_vertical_feedback=100,
+        gs_error=1.0e5,
+        use_anderson_mixing=False,
+        anderson_mixing_from_previous_iter=0.0,
+        times_to_reconstruct=np.array([0.5]),
     )
+
+    # Toroidal field. `b_field_phi_vacuum_r` is the vacuum poloidal-current function
+    # `f_vac = mu_0 * i_rod / (2 * pi)`, here for a 2 kA rod current. `gsfit_rs` converts it back
+    # to a rod current using its own `mu_0`, which is a different CODATA revision to
+    # `scipy.constants`, so the value it recovers is ~7e-10 different from `i_rod` below. Compare
+    # the two with a tolerance rather than exactly
+    i_rod = 2.0e3  # [ampere]
+    f_vac = mu_0 * i_rod / (2.0 * np.pi)  # [tesla * metre]
+    tf = Tf()
+    tf.set_r0(10.5)
+    tf.set_b_field_phi_vacuum_r(
+        time=np.array([0.0, 1.0]),
+        data=np.array([f_vac, f_vac]),
+    )
+
+    # Wall. `unit(0)` is the vacuum vessel contour; here it is the only limiter unit
+    wall = Wall()
+    wall.add_limiter_unit(name="vacuum_vessel", r=limit_pts_r, z=limit_pts_z)
 
     passives = Passives()
     pressure_sensors = Pressure()
@@ -160,6 +181,8 @@ def run() -> None:
 
     solve_grad_shafranov(
         plasma=plasma,
+        wall=wall,
+        tf=tf,
         coils=coils,
         passives=passives,
         bp_probes=bp_probes,
@@ -170,35 +193,28 @@ def run() -> None:
         pressure_sensors=pressure_sensors,
         stationary_point=stationary_point,
         dialoop=dialoop,
-        times_to_reconstruct=np.array([0.5]),
-        n_iter_max=30,
-        n_iter_min=1,
-        n_iter_no_vertical_feedback=100,
-        gs_error=1.0e5,
-        use_anderson_mixing=False,
-        anderson_mixing_from_previous_iter=0.0,
     )
 
-    r = plasma.get_array1(["grid", "r"])
-    z = plasma.get_array1(["grid", "z"])
-    psi_2d = plasma.get_array3(["profiles_2d", "r_z", "psi"])
+    equilibrium_ids = plasma.equilibrium_ids
+
+    # `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
+    r = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim1)
+    z = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
+    psi_2d = equilibrium_ids.get(ep.time_slice[:].profiles_2d[0].psi)
     import matplotlib.pyplot as plt
 
     plt.figure()
     plt.contour(r, z, psi_2d[0, :, :], 100)
     plt.axis("equal")
     plt.plot(limit_pts_r, limit_pts_z, marker="x", color="black")
-    bounding_r = plasma.get_array1(["boundary", "bounding", "r"])
-    bounding_z = plasma.get_array1(["boundary", "bounding", "z"])
-    boundary_r = plasma.get_array2(["boundary", "outline", "r"])[0, :]
-    boundary_z = plasma.get_array2(["boundary", "outline", "z"])[0, :]
+    bounding_r = equilibrium_ids.get(ep.time_slice[:].boundary.bounding.r)
+    bounding_z = equilibrium_ids.get(ep.time_slice[:].boundary.bounding.z)
+    boundary_r = equilibrium_ids.get(ep.time_slice[0].boundary.outline.r)
+    boundary_z = equilibrium_ids.get(ep.time_slice[0].boundary.outline.z)
     plt.plot(bounding_r, bounding_z, marker="o", color="red")
     plt.plot(boundary_r, boundary_z, color="red")
     plt.plot()
     plt.savefig("self_test_output.png")
-    import pdb
-
-    pdb.set_trace()
 
 
 if __name__ == "__main__":

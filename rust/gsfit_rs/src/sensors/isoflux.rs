@@ -14,7 +14,7 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
-use std::f64::consts::PI;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
@@ -407,11 +407,17 @@ impl Isoflux {
         // Change Python type into Rust
         let plasma_local: &Plasma = &plasma;
 
-        let n_r: usize = plasma_local.results.get("grid").get("n_r").unwrap_usize();
-        let n_z: usize = plasma_local.results.get("grid").get("n_z").unwrap_usize();
+        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
+        // because GSFit solves on a single rectangular (R, Z) grid
+        let n_r: usize = plasma_local.equilibrium_ids.code.grid.n_r as usize;
+        let n_z: usize = plasma_local.equilibrium_ids.code.grid.n_z as usize;
 
-        let plasma_r: Array1<f64> = plasma_local.results.get("grid").get("flat").get("r").unwrap_array1(); // shape = n_z * n_r
-        let plasma_z: Array1<f64> = plasma_local.results.get("grid").get("flat").get("z").unwrap_array1();
+        // `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives the
+        // flattened grid the Green's tables are indexed by
+        let mesh_r: &Array2<f64> = &plasma_local.equilibrium_ids.time_slice[0].profiles_2d[0].r;
+        let mesh_z: &Array2<f64> = &plasma_local.equilibrium_ids.time_slice[0].profiles_2d[0].z;
+        let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied()); // shape = n_z * n_r
+        let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
         for sensor_name in self.results.keys() {
             // Get the isoflux locations
@@ -583,9 +589,9 @@ impl Isoflux {
 impl Isoflux {
     /// For Isoflux sensors the static data is actually time-dependent.
     /// TODO: consider renaming `SensorsStatic`. Perhaps `SensorsGeometric` ?
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         // Define empty data arrays
-        let results_static_empty: SensorsStatic = SensorsStatic {
+        let results_static_empty: Arc<SensorsStatic> = Arc::new(SensorsStatic {
             greens_with_grid: Array2::zeros((0, 0)),       // should be: shape = [n_z * n_r, 0]
             greens_with_pf: Array2::zeros((0, 0)),         // should be: shape = [n_pf, 0]
             greens_with_passives: Array2::zeros((0, 0)),   // should be: shape = [n_dof_total, 0]
@@ -594,14 +600,14 @@ impl Isoflux {
             fit_settings_expected_value: Array1::zeros(0), // there could still be an expected value even if no sensors?
             geometry_r: Array1::zeros(0),                  // not used for Isoflux
             geometry_z: Array1::zeros(0),                  // not used for Isoflux
-        };
+        });
         let results_dynamic_empty: SensorsDynamic = SensorsDynamic { measured: Array1::zeros(0) }; // Correct. Shape should be [0].
 
         // Number of time-slices to reconstruct
         let n_time: usize = times_to_reconstruct.len();
 
         // Create the time-dependent data structures
-        let mut results_static: Vec<SensorsStatic> = Vec::with_capacity(n_time);
+        let mut results_static: Vec<Arc<SensorsStatic>> = Vec::with_capacity(n_time);
         let mut results_dynamic: Vec<SensorsDynamic> = Vec::with_capacity(n_time);
 
         // Sensor names
@@ -625,7 +631,7 @@ impl Isoflux {
 
             // If there are no sensors at this time-slice then we should exit
             if include_indices.is_empty() {
-                results_static.push(results_static_empty.clone());
+                results_static.push(Arc::clone(&results_static_empty));
                 results_dynamic.push(results_dynamic_empty.clone());
                 continue 'time_loop; // Go to next time-slice
             }
@@ -703,7 +709,7 @@ impl Isoflux {
                 geometry_r: Array1::zeros(n_sensors), // not used for Isoflux
                 geometry_z: Array1::zeros(n_sensors), // not used for Isoflux
             };
-            results_static.push(results_static_this_time_slice);
+            results_static.push(Arc::new(results_static_this_time_slice));
 
             // The measured sensor values are = 0.0
             let results_dynamic_this_time_slice: SensorsDynamic = SensorsDynamic {

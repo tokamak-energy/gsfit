@@ -1,6 +1,10 @@
 import numpy as np
 import numpy.typing as npt
 
+from .imas import Equilibrium
+from .imas import Tf as TfIds
+from .imas import Wall as WallIds
+
 class DataTreeAccessor:
     """Base class providing common data tree access methods for all gsfit_rs classes."""
     def get_f64(self, keys: list[str]) -> float:
@@ -59,6 +63,8 @@ class DataTreeAccessor:
 
 def solve_grad_shafranov(
     plasma: Plasma,
+    wall: Wall,
+    tf: Tf,
     coils: Coils,
     passives: Passives,
     bp_probes: BpProbes,
@@ -69,16 +75,11 @@ def solve_grad_shafranov(
     pressure_sensors: Pressure,
     stationary_point: StationaryPoint,
     dialoop: Dialoop,
-    times_to_reconstruct: npt.NDArray[np.float64],
-    n_iter_max: int,
-    n_iter_min: int,
-    n_iter_no_vertical_feedback: int,
-    gs_error: float,
-    use_anderson_mixing: bool,
-    anderson_mixing_from_previous_iter: float,
 ) -> None:
     """
     :param plasma: Plasma object, note this is mutated and contains the solution
+    :param wall: Wall object, supplying the limiter points and the vacuum vessel contour
+    :param tf: Tf object, supplying the reference major radius and the vacuum toroidal field
     :param coils: Coils object
     :param passives: Passives object, note this is mutated and contains the solution
     :param bp_probes: BpProbes object, note this is mutated and contains the solution
@@ -89,13 +90,9 @@ def solve_grad_shafranov(
     :param pressure_sensors: Pressure object, note this is mutated and contains the solution
     :param stationary_point: StationaryPoint object, note this is mutated and contains the solution
     :param dialoop: Dialoop object, note this is mutated and contains the solution
-    :param times_to_reconstruct: Times to reconstruct [second]
-    :param n_iter_max: Maximum number of iterations
-    :param n_iter_min: Minimum number of iterations
-    :param n_iter_no_vertical_feedback: Number of iterations without vertical feedback
-    :param gs_error: GS error
-    :param use_anderson_mixing: Whether to use Anderson mixing
-    :param anderson_mixing_from_previous_iter: Anderson mixing factor from the previous iteration [dimensionless]
+
+    The times to reconstruct are read from `plasma`, which was built with one equilibrium
+    time-slice per time.
     """
     ...
 
@@ -337,16 +334,6 @@ class Coils(DataTreeAccessor):
         :param angle2: Angle of the PF coil from the horizontal ("DIII-D" parallelogram type) [radians]
         """
         ...
-    def add_tf_coil(
-        cls,
-        time: npt.NDArray[np.float64],
-        measured: npt.NDArray[np.float64],
-    ) -> None:
-        """
-        :param time: Experimental time [second]
-        :param measured: Experimental "rod" current [ampere]
-        """
-        ...
     def greens_with_self(
         cls,
     ) -> None:
@@ -421,18 +408,21 @@ class Plasma(DataTreeAccessor):
         r_max: float,
         z_min: float,
         z_max: float,
-        psi_n: npt.NDArray[np.float64],
-        limit_pts_r: npt.NDArray[np.float64],
-        limit_pts_z: npt.NDArray[np.float64],
-        vessel_r: npt.NDArray[np.float64],
-        vessel_z: npt.NDArray[np.float64],
+        psi_norm: npt.NDArray[np.float64],
         p_prime_source_function: "EfitPolynomial" | "TensionedCubicBSpline",
         ff_prime_source_function: "EfitPolynomial" | "TensionedCubicBSpline",
-        initial_ip: float,
-        initial_cur_r: float,
-        initial_cur_z: float,
-        initial_minor_radius: float,
-        initial_kappa: float,
+        initial_guess_ip: float,
+        initial_guess_cur_r: float,
+        initial_guess_cur_z: float,
+        initial_guess_minor_radius: float,
+        initial_guess_elongation: float,
+        n_iter_max: int,
+        n_iter_min: int,
+        n_iter_no_vertical_feedback: int,
+        gs_error: float,
+        use_anderson_mixing: bool,
+        anderson_mixing_from_previous_iter: float,
+        times_to_reconstruct: npt.NDArray[np.float64],
     ) -> Plasma:
         """
         :param n_r: Number of radial poitns [dimensionless]
@@ -441,18 +431,21 @@ class Plasma(DataTreeAccessor):
         :param r_max: Maximum radius [metre]
         :param z_min: Minimum vertical position [metre]
         :param z_max: Maximum vertical position [metre]
-        :param psi_n: 1D array for `psi_n`, which should go from [0.0, 1.0] [dimensionless]
-        :param limit_pts_r: the limiter surfaces [metre]
-        :param limit_pts_z: the limiter surfaces [metre]
-        :param vessel_r: the vacuum vessel chamber, where the plasma can exist [metre]
-        :param vessel_z: the vacuum vessel chamber, where the plasma can exist [metre]
+        :param psi_norm: 1D array for `psi_norm`, which should go from [0.0, 1.0] [dimensionless]
         :param p_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
         :param ff_prime_source_function: `p_prime` source function, needs to be constructed from `gsfit_rs.<source_function_name>`
-        :param initial_ip: Initial plasma current [ampere]
-        :param initial_cur_r: Radial centre of the initial current distribution [metre]
-        :param initial_cur_z: Vertical centre of the initial current distribution [metre]
-        :param initial_minor_radius: Radial semi-axis of the initial current distribution [metre]
-        :param initial_kappa: Elongation of the initial current distribution [dimensionless]
+        :param initial_guess_ip: Initial plasma current [ampere]
+        :param initial_guess_cur_r: Radial centre of the initial current distribution [metre]
+        :param initial_guess_cur_z: Vertical centre of the initial current distribution [metre]
+        :param initial_guess_minor_radius: Radial semi-axis of the initial current distribution [metre]
+        :param initial_guess_elongation: Elongation of the initial current distribution [dimensionless]
+        :param n_iter_max: Maximum number of iterations
+        :param n_iter_min: Minimum number of iterations before the convergence test may pass
+        :param n_iter_no_vertical_feedback: Number of initial iterations with the vertical feedback switched off
+        :param gs_error: Grad-Shafranov deviation below which the solution is taken as converged
+        :param use_anderson_mixing: Whether to use Anderson mixing
+        :param anderson_mixing_from_previous_iter: Anderson mixing factor from the previous iteration [dimensionless]
+        :param times_to_reconstruct: Times the equilibrium will be solved at; one equilibrium time-slice is allocated per time [second]
         """
         ...
     def greens_with_coils(
@@ -463,6 +456,116 @@ class Plasma(DataTreeAccessor):
         cls,
         passives: Passives,
     ) -> None: ...
+    @property
+    def equilibrium_ids(self) -> Equilibrium:
+        """The equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`.
+
+        Empty until the Grad-Shafranov solver has run.
+
+        The IDS is copied into the returned object, so it is a snapshot: changes made on
+        the Rust side afterwards are not seen by it.
+        """
+        ...
+
+class Tf:
+    """The machine's toroidal field, stored as an IMAS `tf` IDS.
+
+    Two nodes are filled: `tf/r0`, the reference major radius, and
+    `tf/b_field_phi_vacuum_r`, the vacuum field times major radius on the experimental
+    timebase.
+
+    `b_field_phi_vacuum_r` is the vacuum poloidal-current function
+    `f_vac = R0 * B_phi0 = mu_0 * i_rod / (2 * pi)`, so the rod current is not stored
+    separately: `solve_grad_shafranov` recovers it as `i_rod = 2 * pi * f_vac / mu_0`.
+
+    It is signed: positive means counter-clockwise viewed from above.
+
+    Read it back through `tf_ids` and a path from `gsfit_rs.imas.tf_paths`.
+    """
+
+    def __new__(cls) -> Tf:
+        """Construct an empty toroidal field, ready for `set_r0` and `set_b_field_phi_vacuum_r`."""
+        ...
+    def set_r0(self, r0: float) -> None:
+        """
+        Set `tf/r0`, the reference major radius.
+
+        :param r0: reference major radius the vacuum toroidal field is quoted at [metre]
+
+        The solver copies this onto `equilibrium/vacuum_toroidal_field/r0`, so that the two
+        IDSs cannot disagree.
+        """
+        ...
+    def set_b_field_phi_vacuum_r(
+        self,
+        time: npt.NDArray[np.float64],
+        data: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        Set `tf/b_field_phi_vacuum_r`, the vacuum field times major radius.
+
+        :param time: the experimental timebase [second]
+        :param data: vacuum toroidal field times major radius [tesla * metre]
+
+        Store the **experimental** signal, not one interpolated onto the reconstruction
+        times: `solve_grad_shafranov` interpolates it itself.
+        """
+        ...
+    @property
+    def tf_ids(self) -> TfIds:
+        """The tf IDS, read with `gsfit_rs.imas.tf_paths`.
+
+        This is the only way to read the data back out: there are no bespoke accessors, so
+        every quantity is reached by its data dictionary path.
+
+        The IDS is copied into the returned object, so it is a snapshot: changes made on
+        the Rust side afterwards are not seen by it.
+        """
+        ...
+
+class Wall:
+    """The machine's wall, stored as an IMAS `wall` IDS.
+
+    Only the limiter is filled so far:
+    `wall/description_2d(0)/limiter/unit(i)/outline/r` and `.../z`.
+
+    The order units are added in is part of the contract: `unit(0)` is the vacuum vessel
+    contour, and the solver uses that one, and only that one, as the region the plasma is
+    allowed to occupy. Every unit contributes candidate limit points.
+
+    Read it back through `wall_ids` and a path from `gsfit_rs.imas.wall_paths`.
+    """
+
+    def __new__(cls) -> Wall:
+        """Construct an empty wall, ready for `add_limiter_unit` to be called."""
+        ...
+    def add_limiter_unit(
+        self,
+        name: str,
+        r: npt.NDArray[np.float64],
+        z: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        Append a limiter unit to `wall/description_2d(0)/limiter/unit`.
+
+        :param name: short identifier for the unit, e.g. `"vacuum_vessel"`
+        :param r: outline radial points [metre]
+        :param z: outline vertical points [metre]
+
+        The **first** unit added is the vacuum vessel contour.
+        """
+        ...
+    @property
+    def wall_ids(self) -> WallIds:
+        """The wall IDS, read with `gsfit_rs.imas.wall_paths`.
+
+        This is the only way to read the data back out: there are no bespoke accessors, so
+        every quantity is reached by its data dictionary path.
+
+        The IDS is copied into the returned object, so it is a snapshot: changes made on
+        the Rust side afterwards are not seen by it.
+        """
+        ...
 
 class BpProbes(DataTreeAccessor):
     def __new__(

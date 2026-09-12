@@ -12,6 +12,7 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 use numpy::borrow::PyReadonlyArray1;
+use std::sync::Arc;
 
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass(module = "gsfit_rs")]
@@ -86,7 +87,7 @@ impl HallProbes {
         let coils_local: &Coils = &coils;
 
         // Run the Rust method
-        self.greens_with_coils_rs(coils_local.to_owned());
+        self.greens_with_coils_rs(coils_local);
     }
 
     /// Greens with passives
@@ -95,7 +96,7 @@ impl HallProbes {
         let passives_local: &Passives = &passives;
 
         // Run the Rust method
-        self.greens_with_passives_rs(passives_local.to_owned());
+        self.greens_with_passives_rs(passives_local);
     }
 
     /// Greens with plasma
@@ -104,7 +105,7 @@ impl HallProbes {
         let plasma_local: &Plasma = &plasma;
 
         // Run the Rust method
-        self.greens_with_plasma_rs(plasma_local.to_owned());
+        self.greens_with_plasma_rs(plasma_local);
     }
 
     /// Calculate sensor values
@@ -141,7 +142,7 @@ impl HallProbes {
     /// This splits the HallProbes into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent ojbects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         // Vector of boolean's to say if we use the sensor or not
         let include: Vec<bool> = self.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
 
@@ -271,7 +272,7 @@ impl HallProbes {
 
         // Return the static and dynamic results
         // nonlinear least squares algorithm (e.g., Levenberg-Marquardt, Gauss-Newton, or similar iterative methods) to minimize the sum of squared residuals for all sensors
-        let results_static_2d: Vec<SensorsStatic> = vec![results_static];
+        let results_static_2d: Vec<Arc<SensorsStatic>> = vec![Arc::new(results_static)];
         
         // Return the static and dynamic results
         (results_static_2d, results_dynamic)
@@ -287,8 +288,9 @@ impl HallProbes {
 
             // Plasma
             let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1(); // shape = [n_z*n_r]
-            let j_2d: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("j").unwrap_array3(); // shape = [n_time, n_z, n_r]
-            let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
+            // `time_slice[0]` because the grid is the same on every time-slice, and `profiles_2d[0]`
+            // because GSFit solves on a single rectangular (R, Z) grid
+            let d_area: f64 = plasma.equilibrium_ids.time_slice[0].profiles_2d[0].grid.d_area;
 
             // Loop over time
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -317,7 +319,9 @@ impl HallProbes {
                 }
 
                 // Plasma
-                let j_2d_flat: Array1<f64> = Array1::from_iter(j_2d.slice(s![i_time, .., ..]).iter().copied());
+                // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid
+                let j_2d: &Array2<f64> = &plasma.equilibrium_ids.time_slice[i_time].profiles_2d[0].j_phi;
+                let j_2d_flat: Array1<f64> = Array1::from_iter(j_2d.iter().copied());
                 let sensor_values_from_plasma: f64 = (&g_with_plasma * j_2d_flat).sum() * d_area;
 
                 // Total
@@ -368,7 +372,7 @@ impl HallProbes {
         self.results.get_or_insert(name).get_or_insert("b").insert("measured_experimental", measured);
     }
 
-    pub fn greens_with_coils_rs(&mut self, coils: Coils) {
+    pub fn greens_with_coils_rs(&mut self, coils: &Coils) {
         for sensor_name in self.results.keys() {
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
@@ -408,9 +412,15 @@ impl HallProbes {
         }
     }
 
-    pub fn greens_with_plasma_rs(&mut self, plasma: Plasma) {
-        let plasma_r: Array1<f64> = plasma.results.get("grid").get("flat").get("r").unwrap_array1();
-        let plasma_z: Array1<f64> = plasma.results.get("grid").get("flat").get("z").unwrap_array1();
+    pub fn greens_with_plasma_rs(&mut self, plasma: &Plasma) {
+        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
+        // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the
+        // (R, Z) mesh, so iterating them row-major gives the flattened grid the Green's tables are
+        // indexed by
+        let mesh_r: &Array2<f64> = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].r;
+        let mesh_z: &Array2<f64> = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].z;
+        let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
+        let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
         for sensor_name in self.results.keys() {
             // Get variables out of self
@@ -464,7 +474,7 @@ impl HallProbes {
         }
     }
 
-    pub fn greens_with_passives_rs(&mut self, passives: Passives) {
+    pub fn greens_with_passives_rs(&mut self, passives: &Passives) {
         // Loop over sensros
         for sensor_name in self.results.keys() {
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();

@@ -113,7 +113,8 @@ for i_config, config in enumerate(scan_configs):
         regularisation_builder["regularisation_scale"] = config["regularisation_scale"]
         regularisation_builder["right_boundary_condition"] = config["right_boundary_condition"]
 
-    gsfit_controller.run()
+    gsfit_controller.write_results_to_database()
+    section_start_time = print_timing(f"[{config['run_name']}] Write results", section_start_time)
 
     config_elapsed_time = time.perf_counter() - config_start_time
     print(f"[TIMING] {config['run_name']} total: {config_elapsed_time:.3f} s")

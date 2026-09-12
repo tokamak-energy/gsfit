@@ -70,10 +70,4 @@ def setup_coils(
             measured=np.array([current, current]),
         )
 
-    # Add TF coil
-    coils.add_tf_coil(
-        time=np.array([0.0, 1.0]),
-        measured=np.array([1.0e6, 1.0e6]),
-    )
-
     return coils

@@ -15,6 +15,7 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, AddDataTreeGetters)]
@@ -138,17 +139,19 @@ impl FluxLoops {
                 let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
 
-                for dof_name in dof_names {
-                    let greens_calculator: Greens = Greens::sensor_to_conductor(
-                        array![sensor_r],
-                        array![sensor_z],
-                        passive_r.clone(),
-                        passive_z.clone(),
-                        passive_r.clone() * 0.0, // TODO: should I set these to NaN?
-                        passive_z.clone() * 0.0,
-                    );
-                    let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, passive_r.len())
+                // This Green's table depends on the sensor and this passive's filament geometry,
+                // not on the degree of freedom, so it is built once and re-used for every one
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
+                    array![sensor_r],
+                    array![sensor_z],
+                    passive_r.clone(),
+                    passive_z.clone(),
+                    passive_r.clone() * 0.0, // TODO: should I set these to NaN?
+                    passive_z.clone() * 0.0,
+                );
+                let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, passive_r.len())
 
+                for dof_name in dof_names {
                     // Current distribution
                     let current_distribution: Array1<f64> = passives_local
                         .results
@@ -158,7 +161,7 @@ impl FluxLoops {
                         .get("current_distribution")
                         .unwrap_array1();
 
-                    let g_with_dof_full: Array2<f64> = g_psi_matrix * &current_distribution; // shape = [n_r * n_z, n_filament]
+                    let g_with_dof_full: Array2<f64> = &g_psi_matrix * &current_distribution; // shape = [n_r * n_z, n_filament]
 
                     // Sum over all filaments
                     let g: f64 = g_with_dof_full.sum(); // shape = [n_r * n_z]
@@ -179,8 +182,14 @@ impl FluxLoops {
         // Change Python type into Rust
         let plasma_local: &Plasma = &plasma;
 
-        let plasma_r: Array1<f64> = plasma_local.results.get("grid").get("flat").get("r").unwrap_array1();
-        let plasma_z: Array1<f64> = plasma_local.results.get("grid").get("flat").get("z").unwrap_array1();
+        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
+        // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the
+        // (R, Z) mesh, so iterating them row-major gives the flattened grid the Green's tables are
+        // indexed by
+        let mesh_r: &Array2<f64> = &plasma_local.equilibrium_ids.time_slice[0].profiles_2d[0].r;
+        let mesh_z: &Array2<f64> = &plasma_local.equilibrium_ids.time_slice[0].profiles_2d[0].z;
+        let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
+        let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
         for sensor_name in self.results.keys() {
             // Get variables out of self
@@ -431,7 +440,7 @@ impl FluxLoops {
     /// This splits the FluxLoops into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
 
         // Vector of boolean's to say if we use the sensor or not
@@ -455,7 +464,7 @@ impl FluxLoops {
         // If there are no sensors selected, return empty data
         if n_sensors == 0 {
             let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
-            let static_data_empty_vs_time: Vec<SensorsStatic> = vec![static_data_empty; n_time];
+            let static_data_empty_vs_time: Vec<Arc<SensorsStatic>> = vec![Arc::new(static_data_empty); n_time];
             let dynamic_data_empty_vs_time: Vec<SensorsDynamic> = vec![dynamic_data_empty; n_time];
             return (static_data_empty_vs_time, dynamic_data_empty_vs_time);
         }
@@ -577,7 +586,9 @@ impl FluxLoops {
             results_dynamic.push(results_dynamic_this_time_slice);
         }
 
-        let results_static_time_dependent: Vec<SensorsStatic> = vec![results_static.clone(); n_time];
+        // These Green's tables are fixed geometry, so every time-slice gets an `Arc` handle
+        // to the same copy rather than 480 identical copies of it
+        let results_static_time_dependent: Vec<Arc<SensorsStatic>> = vec![Arc::new(results_static); n_time];
 
         // Return the static and dynamic results
         (results_static_time_dependent, results_dynamic)
@@ -592,9 +603,10 @@ impl FluxLoops {
 
             // Plasma
             let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1(); // shape = [n_z*n_r]
-            let j_2d: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("j").unwrap_array3(); // shape = [n_time, n_z, n_r]
-            let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
-            let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
+            // `time_slice[0]` because the grid is the same on every time-slice, and `profiles_2d[0]`
+            // because GSFit solves on a single rectangular (R, Z) grid
+            let d_area: f64 = plasma.equilibrium_ids.time_slice[0].profiles_2d[0].grid.d_area;
+            let time: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.to_array();
             let n_time: usize = time.len();
 
             // Loop over time
@@ -624,7 +636,9 @@ impl FluxLoops {
                 }
 
                 // Plasma
-                let j_2d_flat: Array1<f64> = Array1::from_iter(j_2d.slice(s![i_time, .., ..]).iter().copied());
+                // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid
+                let j_2d: &Array2<f64> = &plasma.equilibrium_ids.time_slice[i_time].profiles_2d[0].j_phi;
+                let j_2d_flat: Array1<f64> = Array1::from_iter(j_2d.iter().copied());
                 let sensor_values_from_plasma: f64 = (&g_with_plasma * j_2d_flat).sum() * d_area;
 
                 // Total

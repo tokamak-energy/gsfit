@@ -9,6 +9,9 @@ from diagnostic_and_simulation_base import DiagnosticAndSimulationBase
 from .database_readers import get_database_reader
 from .database_writers import get_database_writer
 
+if typing.TYPE_CHECKING:
+    from imas.ids_toplevel import IDSToplevel
+
 np.set_printoptions(linewidth=200)
 
 
@@ -49,6 +52,12 @@ class Gsfit(DiagnosticAndSimulationBase):
     pressure_sensors: gsfit_rs.Pressure
     stationary_point: gsfit_rs.StationaryPoint
     dialoop: gsfit_rs.Dialoop
+    tf: gsfit_rs.Tf
+    wall: gsfit_rs.Wall
+
+    # Set by `write_results_to_database` when the `imas` database_writer is selected: the
+    # populated IMAS `equilibrium` IDS. `None` for every other writer
+    equilibrium_ids: "IDSToplevel | None" = None
 
     # TODO: move to DiagnosticAndSimulationBase
     def __getitem__(self, key: str) -> typing.Any:
@@ -80,24 +89,36 @@ class Gsfit(DiagnosticAndSimulationBase):
         :param kwargs: Additional arguments to be passed to the database_reader. This is for FreeGS and FreeGNSKE
 
         This will perform the following steps:
-        1. Set the environment variables
-        2. Setup the timeslices to reconstruct
-        3. Read in all the machine settings and initalise the following Rust implementations:
-            `coils`, `passives`, `plasma`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
-        4. Initialise the Greens functions
-        5. Solve the GS equation
-        6. Map the results to the MDSplus database structure and store in `self.results`
-        7. Write the results to MDSplus
+        1. Start creating the MDSplus nodes, in a separate process
+        2. Set the environment variables
+        3. Setup the timeslices to reconstruct
+        4. Read in all the machine settings and initalise the following Rust implementations:
+            `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
+        5. Initialise the Greens functions
+        6. Solve the GS equation
+        7. Map the results to the MDSplus database structure and store in `self.results`
+        8. Wait for the MDSplus nodes, then write the results into them
+
+        Steps 1 and 8 are skipped for the `imas` database_writer, which writes nothing.
         """
 
         self.logger.info(f"Running Gsfit, for pulseNo={self.pulseNo}")
+
+        # Creating the MDSplus nodes needs nothing but the settings, which have already been read,
+        # so start it now and let it run while we read the databases and solve the GS equation.
+        # The settings are the user's to change up to this point, so the values in force now are
+        # the ones the node creation is given; from here on they are fixed.
+        # `write_results_to_database` waits for it, and checks that it worked, before writing
+        if self.writes_to_mdsplus():
+            self.logger.info("Creating the MDSplus nodes in a separate process")
+            self.start_mds_node_creation(workflows=self.get_workflow_names())
 
         self.set_environment_variables()
 
         self.setup_timeslices()
 
         # Read in all the machine settings and initalise the following Rust implementations:
-        # `coils`, `passives`, `plasma`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
+        # `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
         self.setup_objects(**kwargs)
 
         # Calculate the Greens functions for all permutations between current source objects and sensors.
@@ -111,31 +132,73 @@ class Gsfit(DiagnosticAndSimulationBase):
         else:
             raise ValueError(f"Unknown type_of_run={self.settings['GSFIT_code_settings.json']['type_of_run']}")
 
-        self.write_results_to_mdsplus()
+        self.write_results_to_database()
 
-    def write_results_to_mdsplus(self) -> None:
+    def writes_to_mdsplus(self) -> bool:
         """
-        Write the results to MDSplus:
-        1. Results are collected from the Rust objects and stored in `self.results`,which is similar
-           to a nested dictionary, and has a 1:1 mapping to the MDSplus database structure.
-        2. The results are then written to MDSplus.
+        Whether this run will write to MDSplus at all.
+
+        `write_to_mds` is the user's switch, but the `imas` database_writer does not write to
+        MDSplus whatever it is set to: it builds an IMAS `equilibrium` IDS instead. Asking this
+        rather than `write_to_mds` keeps the MDSplus node creation, which starts before anything
+        else in `run`, in step with the writing that happens at the end.
         """
 
-        # Map the results to MDSplus.
-        # `self.results` is a 1:1 mapping to MDSplus
+        database_writer_method = self.settings["GSFIT_code_settings.json"]["database_writer"]["method"]
+
+        return self.write_to_mds and database_writer_method != "imas"
+
+    def write_results_to_database(self) -> None:
+        """
+        Write the results to the database:
+        1. Results are collected from the Rust objects and stored in `self.results`, which is
+           similar to a nested dictionary, and has a 1:1 mapping to the MDSplus database structure.
+        2. We wait for the MDSplus nodes, which `run` started creating in a separate process, and
+           check that the creation did not fail. If `run` was not used, the nodes are created here.
+        3. The results are then written to MDSplus.
+
+        The `imas` database_writer does neither 2 nor 3. It returns an IMAS `equilibrium` IDS,
+        which is kept on `self.equilibrium_ids` for the caller to use, and nothing is written.
+        """
+
+        # Map the results to the database structure.
+        # For the MDSplus writers `self.results` is a 1:1 mapping to MDSplus
         database_writer_method = self.settings["GSFIT_code_settings.json"]["database_writer"]["method"]
         database_writer = get_database_writer(database_writer_method)
-        database_writer.map_results_to_database(self)
+        if database_writer_method != "imas":
+            database_writer.map_results_to_database(self)
+        else:
+            self.equilibrium_ids = database_writer.map_results_to_database(self)
+            self.logger.info("IMAS IDS populated; access it via `self.equilibrium_ids`")
 
         # Do the writing to MDSplus
         self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
-        if self.write_to_mds:
-            self.logger.info("Writing to MDSplus")
-            self._write_to_mds()
-            if self.settings["GSFIT_code_settings.json"]["database_writer"]["method"] == "tokamak_energy_mdsplus_new":
+        if self.writes_to_mdsplus():
+            # The nodes must exist, and must have been created without error, before we write into them
+            self.wait_for_mds_node_creation(workflows=self.get_workflow_names())
+
+            self.logger.info("Writing to database")
+            self._write_data_to_mds()
+            if database_writer_method == "tokamak_energy_mdsplus_new":
                 from .database_writers.tokamak_energy_mdsplus_new.create_mdsplus_links import create_mdsplus_links
 
                 create_mdsplus_links(pulseNo_write=self.pulseNo_write, run_name=self.run_name, tree_name=self.analysis_name)
+
+    def get_workflow_names(self) -> list[str]:
+        """
+        The names of the input codes which will be stored under `INPUT.WORKFLOW`,
+        for example `["elmag", "mag", "psu2coil"]`.
+
+        Which codes these are depends on the `database_reader`, and whether they are stored at all
+        depends on the `database_writer`, so the selected `database_writer` is asked. The answer
+        comes from the settings alone, which means the `INPUT.WORKFLOW` MDSplus nodes can be
+        created before GSFit has read any data.
+        """
+
+        database_writer_method = self.settings["GSFIT_code_settings.json"]["database_writer"]["method"]
+        database_writer = get_database_writer(database_writer_method)
+
+        return database_writer.get_workflow_names(self)
 
     def setup_timeslices(self) -> None:
         """
@@ -180,7 +243,9 @@ class Gsfit(DiagnosticAndSimulationBase):
         """
 
         # Set the number of cores (for Rayon, Rust's parallelisation library)
-        os.environ["RAYON_NUM_THREADS"] = str(self.settings["GSFIT_code_settings.json"]["RAYON_NUM_THREADS"])
+        n_rayon_threads: int = self.settings["GSFIT_code_settings.json"]["RAYON_NUM_THREADS"]
+        os.environ["RAYON_NUM_THREADS"] = str(n_rayon_threads)
+        self.logger.info(msg=f"RAYON_NUM_THREADS = {n_rayon_threads}")
 
     def inverse_solver_rust(self) -> None:
         """
@@ -191,6 +256,8 @@ class Gsfit(DiagnosticAndSimulationBase):
         coils = self.coils
         passives = self.passives
         plasma = self.plasma
+        tf = self.tf
+        wall = self.wall
         bp_probes = self.bp_probes
         flux_loops = self.flux_loops
         rogowski_coils = self.rogowski_coils
@@ -200,13 +267,13 @@ class Gsfit(DiagnosticAndSimulationBase):
         stationary_point = self.stationary_point
         dialoop = self.dialoop
 
-        times_to_reconstruct = self.results["TIME"]
-
         self.logger.info(msg="About to call: `gsfit_rs.solve_grad_shafranov`")
         # Note: the solution to the GS equation is stored inside: `plasma`, `passives`, `bp_probes`, `flux_loops`, and `rogowski_coils`
         tic = time_py.time()
         gsfit_rs.solve_grad_shafranov(
             plasma,
+            wall,
+            tf,
             coils,
             passives,
             bp_probes,
@@ -217,13 +284,6 @@ class Gsfit(DiagnosticAndSimulationBase):
             pressure_sensors,
             stationary_point,
             dialoop,
-            times_to_reconstruct,
-            self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"],
-            self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_min"],
-            self.settings["GSFIT_code_settings.json"]["numerics"]["n_iter_no_vertical_feedback"],
-            self.settings["GSFIT_code_settings.json"]["numerics"]["gs_error"],
-            self.settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["use"],
-            self.settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["mixing_from_previous_iter"],
         )
         toc = time_py.time()
         self.logger.info(msg=f"Finished: `gsfit_rs.solve_inverse_problem` time = {(toc - tic) * 1e3:,.2f}ms")
@@ -286,7 +346,7 @@ class Gsfit(DiagnosticAndSimulationBase):
     def setup_objects(self, **kwargs: dict[str, typing.Any]) -> None:
         """
         Initialises the Rust objects needed to run the GSFit inverse solver:
-        `coils`, `passives`, `plasma`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
+        `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
 
         Different machines will use different data stores (e.g. MDSplus, or FreeGNSKE object).
         New readers for different devices / forward GS solvers can be added to:
@@ -325,11 +385,24 @@ class Gsfit(DiagnosticAndSimulationBase):
         toc = time_py.time()
         self.logger.info(msg=f"`passives` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
+        times_to_reconstruct = self.results["TIME"]
+
         tic = time_py.time()
-        self.plasma = database_reader.setup_plasma(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        self.plasma = database_reader.setup_plasma(
+            pulseNo=self.pulseNo, settings=self.settings, times_to_reconstruct=times_to_reconstruct, **kwargs
+        )
         toc = time_py.time()
         self.logger.info(msg=f"`plasma` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-        times_to_reconstruct = self.results["TIME"]
+
+        tic = time_py.time()
+        self.wall = database_reader.setup_wall(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`wall` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
+        self.tf = database_reader.setup_tf(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`tf` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
         self.isoflux = database_reader.setup_isoflux_sensors(pulseNo=self.pulseNo, settings=self.settings, times_to_reconstruct=times_to_reconstruct, **kwargs)

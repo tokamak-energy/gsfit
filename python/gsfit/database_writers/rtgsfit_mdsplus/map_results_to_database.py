@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 import shapely.geometry
+from gsfit_rs.imas import equilibrium_paths as ep
+from gsfit_rs.imas import wall_paths as wp
 from scipy.constants import mu_0
 
 from .greens_with_boundary_points import greens_with_boundary_points
@@ -46,11 +48,14 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     rogowski_coils = gsfit_controller.rogowski_coils
     results = gsfit_controller.results
 
-    # Geometry
-    r = plasma.get_array1(["grid", "r"])
-    z = plasma.get_array1(["grid", "z"])
-    n_z = plasma.get_usize(["grid", "n_z"])
-    n_r = plasma.get_usize(["grid", "n_r"])
+    equilibrium_ids = plasma.equilibrium_ids
+    wall_ids = gsfit_controller.wall.wall_ids
+
+    # Geometry. `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
+    r = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim1)
+    z = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
+    n_z = len(z)
+    n_r = len(r)
     d_r = np.mean(r[1:] - r[0:-1])
     d_z = np.mean(z[1:] - z[0:-1])
 
@@ -82,12 +87,16 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
     # Collect the greens for "grid-coils"
     g_grid_coil = np.zeros((n_z, n_r, n_psu))
+    # The Green's tables are an array of structures, so the coil name is looked up once to give an
+    # index to read by
+    pf_active_names: list[str] = list(equilibrium_ids.get(ep.greens.pf_active[:].name))
     psu_names = []
     for i_psu, power_supply in enumerate(rtgsfit_psus):
         psu_names.append(power_supply["power_supply_name"])
         coil_names = power_supply["coils"]
         for coil_name in coil_names:
-            g_grid_coil[:, :, i_psu] += plasma.get_array2(["greens", "pf", coil_name, "psi"])
+            i_coil = pf_active_names.index(coil_name)
+            g_grid_coil[:, :, i_psu] += equilibrium_ids.get(ep.greens.pf_active[i_coil].psi)
 
     # Store in MDSplus
     results["PRESHOT"]["GREENS"]["GRID_COIL"] = g_grid_coil.flatten()
@@ -95,11 +104,11 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
     # Get the "included" sensors
     flux_loops_to_include = flux_loops.get_vec_bool(["*", "fit_settings", "include"])
-    n_flux_loops_to_include = np.sum(flux_loops_to_include)
+    n_flux_loops_to_include: int = sum(flux_loops_to_include)
     bp_probes_to_include = bp_probes.get_vec_bool(["*", "fit_settings", "include"])
-    n_bp_probes_to_include = np.sum(bp_probes_to_include)
+    n_bp_probes_to_include: int = sum(bp_probes_to_include)
     rogowski_coils_to_include = rogowski_coils.get_vec_bool(["*", "fit_settings", "include"])
-    n_rogowski_coils_to_include = np.sum(rogowski_coils_to_include)
+    n_rogowski_coils_to_include: int = sum(rogowski_coils_to_include)
 
     # Count the number of passive degrees of freedom, and regularisations
     n_passive_dofs = 0
@@ -137,8 +146,8 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     results["PRESHOT"]["N_REG"] = np.int32(n_regularisations)
 
     # Store number of plasma degrees of freedom
-    _, n_p_prime = plasma.get_array2(["source_functions", "p_prime", "coefficients"]).shape  # TODO: this could be done a bit better
-    _, n_ff_prime = plasma.get_array2(["source_functions", "ff_prime", "coefficients"]).shape
+    n_p_prime = len(equilibrium_ids.get(ep.time_slice[0].source_functions.p_prime.coefficients))
+    n_ff_prime = len(equilibrium_ids.get(ep.time_slice[0].source_functions.ff_prime.coefficients))
     n_delta_z = 1
     n_plasma_dof = n_p_prime + n_ff_prime + n_delta_z
     results["PRESHOT"]["N_PLS"] = np.int32(n_plasma_dof)
@@ -295,12 +304,14 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     # Collect the greens for "grid-vessel"
     g_grid_vessel = np.zeros((n_z * n_r, n_passive_dofs))
     # Loop over all passives
+    # `greens/pf_passive` is in the same order as `passives.keys()`, and each passive's `dof` in the
+    # same order as its own dof keys, because they were built in that order
     i_dof = 0
-    for passive_name in passive_names:
+    for i_passive, passive_name in enumerate(passive_names):
         current_distribution_dof_names = passives.keys([passive_name, "dof"])
         # `current_distribution_dof_names` can be "constant_current_density", "eig_01", "eig_02", etc.
-        for current_distribution_dof_name in current_distribution_dof_names:
-            g_grid_vessel[:, i_dof] = plasma.get_array1(["greens", "passives", passive_name, current_distribution_dof_name, "psi"])
+        for i_passive_dof, _current_distribution_dof_name in enumerate(current_distribution_dof_names):
+            g_grid_vessel[:, i_dof] = equilibrium_ids.get(ep.greens.pf_passive[i_passive].dof[i_passive_dof].psi)
             i_dof += 1
     # Store in MDSplus
     results["PRESHOT"]["GREENS"]["GRID_VESSEL"] = g_grid_vessel.flatten()  # .reshape((n_z * n_r, n_passive_dofs))
@@ -323,8 +334,9 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     results["PRESHOT"]["INITIAL_COND"]["PSI_TOTAL"] = np.array(psi_total).astype(np.float64)
 
     # Vessel
-    vessel_r = plasma.get_array1(["vessel", "r"])
-    vessel_z = plasma.get_array1(["vessel", "z"])
+    # `unit(0)` is the vacuum vessel contour, which is the region the plasma is allowed to occupy
+    vessel_r = wall_ids.get(wp.description_2d[0].limiter.unit[0].outline.r)
+    vessel_z = wall_ids.get(wp.description_2d[0].limiter.unit[0].outline.z)
     vessel_polygon = shapely.geometry.Polygon(np.column_stack((vessel_r, vessel_z)))
 
     # Test if grid-points are inside the vessel polygon
@@ -348,11 +360,10 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
         z: npt.NDArray[np.float64],
         lim_r: npt.NDArray[np.float64],
         lim_z: npt.NDArray[np.float64],
-        n_intrp: np.int32,
-        n_lim: int,
+        n_intrp: int,
     ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float64]]:
-        n_r = len(r)
-        n_lim = len(lim_r)
+        n_r: int = len(r)
+        n_lim: int = len(lim_r)
         limit_idx = np.zeros(n_lim * n_intrp, dtype=int)
         limit_w = np.zeros(n_lim * n_intrp, dtype=float)
 
@@ -378,14 +389,16 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
         return limit_idx, limit_w
 
-    n_intrp = np.int32(rtgsfit_code_settings["n_intrp"])
-    lim_r = plasma.get_array1(["limiter", "limit_pts", "r"])
-    lim_z = plasma.get_array1(["limiter", "limit_pts", "z"])
+    n_intrp: int = int(rtgsfit_code_settings["n_intrp"])
+    # Every limiter unit contributes candidate limit points, so they are concatenated
+    n_limiter_unit = len(np.atleast_1d(wall_ids.get(wp.description_2d[0].limiter.unit[:].outline.r)))
+    lim_r = np.concatenate([wall_ids.get(wp.description_2d[0].limiter.unit[i].outline.r) for i in range(n_limiter_unit)])
+    lim_z = np.concatenate([wall_ids.get(wp.description_2d[0].limiter.unit[i].outline.z) for i in range(n_limiter_unit)])
     # Remove indices where |lim_z| > 0.7 m
     # lim_r = lim_r[np.abs(lim_z) < 0.7]
     # lim_z = lim_z[np.abs(lim_z) < 0.7]
     n_lim = len(lim_r)
-    limit_idx, limit_w = compute_limit_idx_and_weights(r, z, lim_r, lim_z, n_intrp, n_lim)
+    limit_idx, limit_w = compute_limit_idx_and_weights(r, z, lim_r, lim_z, n_intrp)
     results["PRESHOT"]["N_LIMIT"] = np.int32(n_lim)
     results["PRESHOT"]["LIMIT_IDX"] = limit_idx.astype(np.int32)
     results["PRESHOT"]["LIMIT_W"] = limit_w.astype(np.float64)
