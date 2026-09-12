@@ -104,11 +104,11 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
     # Get the "included" sensors
     flux_loops_to_include = flux_loops.get_vec_bool(["*", "fit_settings", "include"])
-    n_flux_loops_to_include = np.sum(flux_loops_to_include)
+    n_flux_loops_to_include: int = sum(flux_loops_to_include)
     bp_probes_to_include = bp_probes.get_vec_bool(["*", "fit_settings", "include"])
-    n_bp_probes_to_include = np.sum(bp_probes_to_include)
+    n_bp_probes_to_include: int = sum(bp_probes_to_include)
     rogowski_coils_to_include = rogowski_coils.get_vec_bool(["*", "fit_settings", "include"])
-    n_rogowski_coils_to_include = np.sum(rogowski_coils_to_include)
+    n_rogowski_coils_to_include: int = sum(rogowski_coils_to_include)
 
     # Count the number of passive degrees of freedom, and regularisations
     n_passive_dofs = 0
@@ -360,11 +360,10 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
         z: npt.NDArray[np.float64],
         lim_r: npt.NDArray[np.float64],
         lim_z: npt.NDArray[np.float64],
-        n_intrp: np.int32,
-        n_lim: int,
+        n_intrp: int,
     ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float64]]:
-        n_r = len(r)
-        n_lim = len(lim_r)
+        n_r: int = len(r)
+        n_lim: int = len(lim_r)
         limit_idx = np.zeros(n_lim * n_intrp, dtype=int)
         limit_w = np.zeros(n_lim * n_intrp, dtype=float)
 
@@ -390,7 +389,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
 
         return limit_idx, limit_w
 
-    n_intrp = np.int32(rtgsfit_code_settings["n_intrp"])
+    n_intrp: int = int(rtgsfit_code_settings["n_intrp"])
     # Every limiter unit contributes candidate limit points, so they are concatenated
     n_limiter_unit = len(np.atleast_1d(wall_ids.get(wp.description_2d[0].limiter.unit[:].outline.r)))
     lim_r = np.concatenate([wall_ids.get(wp.description_2d[0].limiter.unit[i].outline.r) for i in range(n_limiter_unit)])
@@ -399,7 +398,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     # lim_r = lim_r[np.abs(lim_z) < 0.7]
     # lim_z = lim_z[np.abs(lim_z) < 0.7]
     n_lim = len(lim_r)
-    limit_idx, limit_w = compute_limit_idx_and_weights(r, z, lim_r, lim_z, n_intrp, n_lim)
+    limit_idx, limit_w = compute_limit_idx_and_weights(r, z, lim_r, lim_z, n_intrp)
     results["PRESHOT"]["N_LIMIT"] = np.int32(n_lim)
     results["PRESHOT"]["LIMIT_IDX"] = limit_idx.astype(np.int32)
     results["PRESHOT"]["LIMIT_W"] = limit_w.astype(np.float64)

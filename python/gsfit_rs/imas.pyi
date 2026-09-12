@@ -20,8 +20,12 @@ import numpy as np
 import numpy.typing as npt
 
 _T = TypeVar("_T")
+# `Path` is covariant because a path only ever hands a value out, through `get`. So a
+# `Path[list[str]]` is also a `Path[Iterable[str]]`, which is what `mypy` asks for when it
+# infers `_T` from the surrounding context, e.g. `list(ids.get(path))`
+_T_co = TypeVar("_T_co", covariant=True)
 
-class Path(Generic[_T]):
+class Path(Generic[_T_co]):
     """A data dictionary path. Holds no data; pass it to `get`.
 
     A path is a value: it can be stored in a list, printed, and reused against
