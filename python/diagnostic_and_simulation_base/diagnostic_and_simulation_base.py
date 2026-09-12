@@ -348,31 +348,49 @@ class DiagnosticAndSimulationBase:
         platforms the nodes are created here and now instead, which costs the overlap with the
         analysis but is correct everywhere.
 
+        **Why the test is written the way it is.** The obvious spelling - ask
+        `multiprocessing.get_all_start_methods()` whether `fork` is available, and return early
+        when it is not - is wrong twice over. It lists `fork` on macOS, because the kernel has it,
+        so it does not answer the question we actually care about; and type checkers cannot see
+        through it. Typeshed declares the `fork` half of `multiprocessing` under
+        `if sys.platform != "win32"`, so on a Windows run `get_context("fork")` resolves to plain
+        `BaseContext`, which has no `Process`.
+
+        Hence a `sys.platform` test, which every checker narrows on. It is written as a positive
+        `if <fork is usable>: ... else: ...` rather than as an early return for the platforms which
+        cannot, because `mypy --warn-unreachable` suppresses its complaint for a block that is
+        unreachable *because of* a platform check, but reports the code following an early return
+        it knows is always taken. The two spellings behave identically at run time; only this one
+        type-checks cleanly on all three platforms, with no suppressions.
+
+        Note that `sys.platform == "win32" or sys.platform == "darwin"` is deliberate in place of
+        the tidier `sys.platform in ("win32", "darwin")`. `mypy` narrows on `==`, `!=` and
+        `.startswith()` only, not on `in`, so the tuple form silently stops working for it.
+
         :param workflows: see `_mds_node_arguments`.
         """
 
-        if "fork" not in multiprocessing.get_all_start_methods() or sys.platform == "darwin":
+        if sys.platform != "win32" and sys.platform != "darwin":
+            context = multiprocessing.get_context("fork")
+            self._mds_node_creation_connection, connection_child = context.Pipe(duplex=False)
+
+            # `daemon=True`, so that an analysis which fails before it reaches the writing cannot
+            # leave a process behind that nobody is going to wait for
+            self._mds_node_creation_process = context.Process(
+                target=_create_script_nodes_in_child,
+                args=(connection_child,),
+                kwargs=self._mds_node_arguments(workflows),
+                name="mds_node_creation",
+                daemon=True,
+            )
+            self._mds_node_creation_process.start()
+
+            # The child now holds the only sending end. Closing ours means that if the child dies
+            # without sending anything, the pipe reports end-of-file rather than waiting for a
+            # writer which no longer exists
+            connection_child.close()
+        else:
             self._create_mds_nodes(workflows)
-            return
-
-        context = multiprocessing.get_context("fork")
-        self._mds_node_creation_connection, connection_child = context.Pipe(duplex=False)
-
-        # `daemon=True`, so that an analysis which fails before it reaches the writing cannot leave
-        # a process behind that nobody is going to wait for
-        self._mds_node_creation_process = context.Process(
-            target=_create_script_nodes_in_child,
-            args=(connection_child,),
-            kwargs=self._mds_node_arguments(workflows),
-            name="mds_node_creation",
-            daemon=True,
-        )
-        self._mds_node_creation_process.start()
-
-        # The child now holds the only sending end. Closing ours means that if the child dies
-        # without sending anything, the pipe reports end-of-file rather than waiting for a writer
-        # which no longer exists
-        connection_child.close()
 
     def wait_for_mds_node_creation(self, workflows: list[str] | None = None) -> None:
         """Waits for the MDSplus node creation to finish, and raises if it did not succeed.

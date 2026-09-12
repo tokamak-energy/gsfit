@@ -129,7 +129,6 @@ impl BicubicInterpolator {
     ///
     /// # Returns
     /// * `f` - interpolated value at (x, y), [any]
-    #[allow(dead_code)]
     pub fn interpolate(&self, x: f64, y: f64) -> f64 {
         let x_vec: Array1<f64> = array![1.0, x, x.powi(2), x.powi(3)];
         let y_vec: Array1<f64> = array![1.0, y, y.powi(2), y.powi(3)];

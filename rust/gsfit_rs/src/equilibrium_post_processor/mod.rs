@@ -21,6 +21,7 @@ mod intermediate_values;
 mod interpolate_profile;
 mod profiles_1d;
 mod profiles_1d_r_midplane;
+mod profiles_1d_r_midplane_h;
 mod profiles_2d;
 mod sol;
 
@@ -72,6 +73,7 @@ pub enum CalculatorIdentifier {
     profiles_1d__psi,
     profiles_1d__q,
     profiles_1d__r_inboard__r_outboard,
+    profiles_1d__r_inboard_z_0__r_outboard_z_0,
     profiles_1d__rho_pol,
     profiles_1d__rho_tor,
     profiles_1d__rho_tor_norm,
@@ -82,6 +84,7 @@ pub enum CalculatorIdentifier {
     profiles_1d_r_midplane__j_phi,
     profiles_1d_r_midplane__pressure,
     profiles_1d_r_midplane__q,
+    profiles_1d_r_midplane_h__r__psi__psi_norm,
     profiles_2d__b_field_phi,
     profiles_2d__b_field_r__b_field_z,
     profiles_2d__d_b_field_z_d_z,

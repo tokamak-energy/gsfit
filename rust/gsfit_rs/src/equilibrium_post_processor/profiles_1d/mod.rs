@@ -23,6 +23,8 @@ pub(super) mod psi;
 pub(super) mod q;
 #[expect(non_snake_case, reason = "double underscores separate IDS node names")]
 pub(super) mod r_inboard__r_outboard;
+#[expect(non_snake_case, reason = "double underscores separate IDS node names")]
+pub(super) mod r_inboard_z_0__r_outboard_z_0;
 pub(super) mod rho_pol;
 pub(super) mod rho_tor;
 pub(super) mod rho_tor_norm;

@@ -14,9 +14,7 @@ level has been sliced, so values are gathered into an array. Only one level may 
 sliced, which is why an array reached from a `Many` class only accepts an integer.
 """
 
-from typing import Generic
-from typing import TypeVar
-from typing import overload
+from typing import Generic, TypeVar, overload
 
 import numpy as np
 import numpy.typing as npt
@@ -3608,6 +3606,25 @@ class _EquilibriumProfiles1dItem:
         Units: kg.m^-3
         """
     @property
+    def r_inboard_z_0(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
+The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which
+moves between time-slices. This one is measured on the machine's mid-plane instead, so that
+a series of time-slices is a series of radii at one fixed height.
+The two sides are split at the major radius of the magnetic axis, which is the point every
+flux surface encloses. A surface which does not reach `z = 0`, or which does not enclose
+that point, is NaN
+
+        Units: m
+        """
+    @property
+    def r_outboard_z_0(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of each flux surface where it crosses `z = 0`, on the outboard side. The
+outboard counterpart of `r_inboard_z_0`
+
+        Units: m
+        """
+    @property
     def rho_pol(self) -> Path[npt.NDArray[np.float64]]:
         """Normalised poloidal flux radius, `sqrt(psi_norm)`. This is the poloidal counterpart of the
 data dictionary's `rho_tor_norm`, which the data dictionary itself does not define
@@ -3906,6 +3923,25 @@ class _EquilibriumProfiles1dMany:
         Units: kg.m^-3
         """
     @property
+    def r_inboard_z_0(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
+The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which
+moves between time-slices. This one is measured on the machine's mid-plane instead, so that
+a series of time-slices is a series of radii at one fixed height.
+The two sides are split at the major radius of the magnetic axis, which is the point every
+flux surface encloses. A surface which does not reach `z = 0`, or which does not enclose
+that point, is NaN
+
+        Units: m
+        """
+    @property
+    def r_outboard_z_0(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of each flux surface where it crosses `z = 0`, on the outboard side. The
+outboard counterpart of `r_inboard_z_0`
+
+        Units: m
+        """
+    @property
     def rho_pol(self) -> Path[npt.NDArray[np.float64]]:
         """Normalised poloidal flux radius, `sqrt(psi_norm)`. This is the poloidal counterpart of the
 data dictionary's `rho_tor_norm`, which the data dictionary itself does not define
@@ -4015,6 +4051,68 @@ solved current density
     def q(self) -> Path[npt.NDArray[np.float64]]:
         """Safety factor along the mid-plane. NaN outside the plasma boundary, where there is no closed
 flux surface to define it
+
+        Units: dimensionless
+        """
+
+class _EquilibriumProfiles1dRMidplaneHItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of each point along the refined mid-plane. The solved grid's radial axis
+subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of
+these, and the same on every time-slice
+
+        Units: m
+        """
+    @property
+    def psi(self) -> Path[npt.NDArray[np.float64]]:
+        """Poloidal flux along the refined mid-plane, bicubically interpolated from the solved grid.
+NaN on a time-slice which did not converge
+
+        Units: Wb
+        """
+    @property
+    def psi_norm(self) -> Path[npt.NDArray[np.float64]]:
+        """Normalised poloidal flux along the refined mid-plane, `(psi - psi_axis) / (psi_boundary -
+psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.
+Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole
+point of it: it carries on rising past 1 through the scrape-off layer. It is not monotonic
+across the full radial span, having a minimum at the magnetic axis, so inverting it for `R`
+means picking the inboard or outboard branch first
+
+        Units: dimensionless
+        """
+
+class _EquilibriumProfiles1dRMidplaneHMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of each point along the refined mid-plane. The solved grid's radial axis
+subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of
+these, and the same on every time-slice
+
+        Units: m
+        """
+    @property
+    def psi(self) -> Path[npt.NDArray[np.float64]]:
+        """Poloidal flux along the refined mid-plane, bicubically interpolated from the solved grid.
+NaN on a time-slice which did not converge
+
+        Units: Wb
+        """
+    @property
+    def psi_norm(self) -> Path[npt.NDArray[np.float64]]:
+        """Normalised poloidal flux along the refined mid-plane, `(psi - psi_axis) / (psi_boundary -
+psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.
+Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole
+point of it: it carries on rising past 1 through the scrape-off layer. It is not monotonic
+across the full radial span, having a minimum at the magnetic axis, so inverting it for `R`
+means picking the inboard or outboard branch first
 
         Units: dimensionless
         """
@@ -4604,6 +4702,10 @@ class _EquilibriumTimeSliceItem:
         """Profiles along the horizontal line through the middle of the grid
         """
     @property
+    def profiles_1d_r_midplane_h(self) -> _EquilibriumProfiles1dRMidplaneHItem:
+        """Profiles along the horizontal line through the magnetic axis, on a grid refined in `R`
+        """
+    @property
     def sol(self) -> _EquilibriumSolItem:
         """Scrape-off layer: the open field lines outside the last closed flux surface
         """
@@ -4667,6 +4769,10 @@ class _EquilibriumTimeSliceMany:
     @property
     def profiles_1d_r_midplane(self) -> _EquilibriumProfiles1dRMidplaneMany:
         """Profiles along the horizontal line through the middle of the grid
+        """
+    @property
+    def profiles_1d_r_midplane_h(self) -> _EquilibriumProfiles1dRMidplaneHMany:
+        """Profiles along the horizontal line through the magnetic axis, on a grid refined in `R`
         """
     @property
     def sol(self) -> _EquilibriumSolMany:

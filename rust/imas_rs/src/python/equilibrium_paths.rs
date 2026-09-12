@@ -7825,6 +7825,49 @@ static NODES_TIME_SLICE_PROFILES_1D: &[Node] = &[
         }),
     },
     Node {
+        name: "r_inboard_z_0",
+        documentation: "Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
+The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which
+moves between time-slices. This one is measured on the machine's mid-plane instead, so that
+a series of time-slices is a series of radii at one fixed height.
+The two sides are split at the major radius of the magnetic axis, which is the point every
+flux surface encloses. A surface which does not reach `z = 0`, or which does not enclose
+that point, is NaN",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.r_inboard_z_0.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "r_outboard_z_0",
+        documentation: "Major radius of each flux surface where it crosses `z = 0`, on the outboard side. The
+outboard counterpart of `r_inboard_z_0`",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d.r_outboard_z_0.clone() },
+                )
+            },
+        }),
+    },
+    Node {
         name: "rho_pol",
         documentation: "Normalised poloidal flux radius, `sqrt(psi_norm)`. This is the poloidal counterpart of the
 data dictionary's `rho_tor_norm`, which the data dictionary itself does not define",
@@ -9854,6 +9897,71 @@ flux surface to define it",
     },
 ];
 
+static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE_H: &[Node] = &[
+    Node {
+        name: "r",
+        documentation: "Major radius of each point along the refined mid-plane. The solved grid's radial axis
+subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of
+these, and the same on every time-slice",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane_h.r.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi",
+        documentation: "Poloidal flux along the refined mid-plane, bicubically interpolated from the solved grid.
+NaN on a time-slice which did not converge",
+        units: "Wb",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane_h.psi.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "psi_norm",
+        documentation: "Normalised poloidal flux along the refined mid-plane, `(psi - psi_axis) / (psi_boundary -
+psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.
+Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole
+point of it: it carries on rising past 1 through the scrape-off layer. It is not monotonic
+across the full radial span, having a minimum at the magnetic axis, so inverting it for `R`
+means picking the inboard or outboard branch first",
+        units: "dimensionless",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D { equilibrium.time_slice[at[0]].profiles_1d_r_midplane_h.psi_norm.clone() },
+                )
+            },
+        }),
+    },
+];
+
 static NODES_TIME_SLICE_SOL_HFS_CONTOUR: &[Node] = &[
     Node {
         name: "r",
@@ -10139,6 +10247,12 @@ static NODES_TIME_SLICE: &[Node] = &[
         documentation: "Profiles along the horizontal line through the middle of the grid",
         units: "",
         kind: NodeKind::Structure(NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE),
+    },
+    Node {
+        name: "profiles_1d_r_midplane_h",
+        documentation: "Profiles along the horizontal line through the magnetic axis, on a grid refined in `R`",
+        units: "",
+        kind: NodeKind::Structure(NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE_H),
     },
     Node {
         name: "sol",

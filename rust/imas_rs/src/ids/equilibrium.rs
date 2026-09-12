@@ -933,6 +933,19 @@ pub struct EquilibriumProfiles1d {
     /// Mass density
     /// Units: kg.m^-3
     pub mass_density: FLT_1D,
+    /// Major radius of each flux surface where it crosses `z = 0`, on the inboard side.
+    /// The data dictionary's `r_inboard` is measured at the height of the magnetic axis, which
+    /// moves between time-slices. This one is measured on the machine's mid-plane instead, so that
+    /// a series of time-slices is a series of radii at one fixed height.
+    /// The two sides are split at the major radius of the magnetic axis, which is the point every
+    /// flux surface encloses. A surface which does not reach `z = 0`, or which does not enclose
+    /// that point, is NaN
+    /// Units: m
+    pub r_inboard_z_0: FLT_1D,
+    /// Major radius of each flux surface where it crosses `z = 0`, on the outboard side. The
+    /// outboard counterpart of `r_inboard_z_0`
+    /// Units: m
+    pub r_outboard_z_0: FLT_1D,
     /// Normalised poloidal flux radius, `sqrt(psi_norm)`. This is the poloidal counterpart of the
     /// data dictionary's `rho_tor_norm`, which the data dictionary itself does not define
     /// Units: dimensionless
@@ -1092,6 +1105,8 @@ pub struct EquilibriumTimeSlice {
     pub source_functions: EquilibriumSourceFunctions,
     /// Profiles along the horizontal line through the middle of the grid
     pub profiles_1d_r_midplane: EquilibriumProfiles1dRMidplane,
+    /// Profiles along the horizontal line through the magnetic axis, on a grid refined in `R`
+    pub profiles_1d_r_midplane_h: EquilibriumProfiles1dRMidplaneH,
     /// Scrape-off layer: the open field lines outside the last closed flux surface
     pub sol: EquilibriumSol,
     /// Fitted degrees of freedom of the passive structure currents
@@ -1114,6 +1129,7 @@ impl Default for EquilibriumTimeSlice {
             time: f64::NAN,
             source_functions: EquilibriumSourceFunctions::default(),
             profiles_1d_r_midplane: EquilibriumProfiles1dRMidplane::default(),
+            profiles_1d_r_midplane_h: EquilibriumProfiles1dRMidplaneH::default(),
             sol: EquilibriumSol::default(),
             passive_dof_values: Default::default(),
         }
@@ -1525,6 +1541,28 @@ pub struct EquilibriumProfiles1dRMidplane {
     /// flux surface to define it
     /// Units: dimensionless
     pub q: FLT_1D,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumProfiles1dRMidplaneH {
+    /// Major radius of each point along the refined mid-plane. The solved grid's radial axis
+    /// subdivided by `N_R_SUBDIVISIONS_PER_CELL`, so every solved grid point is still one of
+    /// these, and the same on every time-slice
+    /// Units: m
+    pub r: FLT_1D,
+    /// Poloidal flux along the refined mid-plane, bicubically interpolated from the solved grid.
+    /// NaN on a time-slice which did not converge
+    /// Units: Wb
+    pub psi: FLT_1D,
+    /// Normalised poloidal flux along the refined mid-plane, `(psi - psi_axis) / (psi_boundary -
+    /// psi_axis)`, so 0 at the magnetic axis and 1 at the plasma boundary.
+    /// Unlike `profiles_2d/psi_norm` this is **not** masked to the plasma, which is the whole
+    /// point of it: it carries on rising past 1 through the scrape-off layer. It is not monotonic
+    /// across the full radial span, having a minimum at the magnetic axis, so inverting it for `R`
+    /// means picking the inboard or outboard branch first
+    /// Units: dimensionless
+    pub psi_norm: FLT_1D,
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
@@ -5003,6 +5041,19 @@ impl<'a> EquilibriumTimeSliceProfiles1dRMidplaneView<'a> {
     }
 }
 
+/// View over `profiles_1d_r_midplane_h` (EquilibriumProfiles1dRMidplaneH) across multiple EquilibriumTimeSlice
+pub struct EquilibriumTimeSliceProfiles1dRMidplaneHView<'a> {
+    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+}
+
+impl<'a> EquilibriumTimeSliceProfiles1dRMidplaneHView<'a> {
+    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
+        Self {
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
 /// View over `sol.hfs.contour` (EquilibriumSolContour) across multiple EquilibriumTimeSlice
 pub struct EquilibriumTimeSliceSolHfsContourView<'a> {
     _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
@@ -5117,6 +5168,7 @@ pub struct EquilibriumTimeSliceSliceView<'a> {
     pub time: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
     pub source_functions: EquilibriumTimeSliceSourceFunctionsView<'a>,
     pub profiles_1d_r_midplane: EquilibriumTimeSliceProfiles1dRMidplaneView<'a>,
+    pub profiles_1d_r_midplane_h: EquilibriumTimeSliceProfiles1dRMidplaneHView<'a>,
     pub sol: EquilibriumTimeSliceSolView<'a>,
 }
 
@@ -5134,6 +5186,7 @@ impl<'a> EquilibriumTimeSliceSliceView<'a> {
             time: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.time),
             source_functions: EquilibriumTimeSliceSourceFunctionsView::new(data),
             profiles_1d_r_midplane: EquilibriumTimeSliceProfiles1dRMidplaneView::new(data),
+            profiles_1d_r_midplane_h: EquilibriumTimeSliceProfiles1dRMidplaneHView::new(data),
             sol: EquilibriumTimeSliceSolView::new(data),
         }
     }

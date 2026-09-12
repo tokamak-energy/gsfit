@@ -92,6 +92,8 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "PSI_NORM", "RHO_POL"), ep.time_slice[:].profiles_1d.rho_pol),
     (("PROFILES_1D", "PSI_NORM", "R_INBOARD"), ep.time_slice[:].profiles_1d.r_inboard),
     (("PROFILES_1D", "PSI_NORM", "R_OUTBOARD"), ep.time_slice[:].profiles_1d.r_outboard),
+    (("PROFILES_1D", "PSI_NORM", "R_INBOARD_0"), ep.time_slice[:].profiles_1d.r_inboard_z_0),
+    (("PROFILES_1D", "PSI_NORM", "R_OUTBOARD_0"), ep.time_slice[:].profiles_1d.r_outboard_z_0),
     (("PROFILES_1D", "PSI_NORM", "RHO_TOR"), ep.time_slice[:].profiles_1d.rho_tor),
     (("PROFILES_1D", "PSI_NORM", "RHO_TOR_NORM"), ep.time_slice[:].profiles_1d.rho_tor_norm),
     (("PROFILES_1D", "PSI_NORM", "SQUARE_L_I"), ep.time_slice[:].profiles_1d.squareness_lower_inner),
@@ -126,6 +128,9 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "R_MIDPLANE", "J_PHI"), ep.time_slice[:].profiles_1d_r_midplane.j_phi),
     (("PROFILES_1D", "R_MIDPLANE", "PRESSURE"), ep.time_slice[:].profiles_1d_r_midplane.pressure),
     (("PROFILES_1D", "R_MIDPLANE", "Q"), ep.time_slice[:].profiles_1d_r_midplane.q),
+    # SOL
+    (("PROFILES_1D", "R_MIDPLANE_H", "PSI_NORM"), ep.time_slice[:].profiles_1d_r_midplane_h.psi_norm),
+    (("PROFILES_1D", "R_MIDPLANE_H", "PSI"), ep.time_slice[:].profiles_1d_r_midplane_h.psi),
     # Profiles_2d. `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
     (("PROFILES_2D", "R_Z", "B_FIELD_PHI"), ep.time_slice[:].profiles_2d[0].b_field_phi),
     (("PROFILES_2D", "R_Z", "B_FIELD_R"), ep.time_slice[:].profiles_2d[0].b_field_r),
@@ -155,6 +160,7 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
 _TIME_INDEPENDENT_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("PROFILES_1D", "PSI_NORM", "PSI_NORM"), ep.time_slice[:].profiles_1d.psi_norm),
     (("PROFILES_1D", "R_MIDPLANE", "R"), ep.time_slice[:].profiles_1d_r_midplane.r),
+    (("PROFILES_1D", "R_MIDPLANE_H", "R"), ep.time_slice[:].profiles_1d_r_midplane_h.r),
     (("PROFILES_2D", "R_Z", "R"), ep.time_slice[:].profiles_2d[0].grid.dim1),
     (("PROFILES_2D", "R_Z", "Z"), ep.time_slice[:].profiles_2d[0].grid.dim2),
 ]
