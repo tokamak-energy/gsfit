@@ -60,7 +60,7 @@ pub use description::{Leaf, Node, NodeKind};
 pub use gather::{Gatherable, LengthOf, Value, gather, no_levels};
 pub use ids::{PyEquilibrium, PyMagnetics, PyPfActive, PyPfPassive, PyTf, PyWall};
 pub use index::IndexSpec;
-pub use path::{PyPath, Segment};
+pub use path::{PyPath, Segment, read_path};
 
 pub use equilibrium_paths::EQUILIBRIUM_ROOT;
 pub use magnetics_paths::MAGNETICS_ROOT;

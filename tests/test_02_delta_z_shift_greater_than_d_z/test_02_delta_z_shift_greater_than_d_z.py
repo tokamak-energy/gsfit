@@ -93,15 +93,12 @@ def test_02_delta_z_shift_greater_than_d_z() -> None:
     # To fix this we need to add more instrumentation into the Rust code "observability".
     gsfit_controller.run()
 
-    # `plasma.equilibrium_ids` copies the whole IDS out of Rust, so read it once and reuse it
-    equilibrium_ids = gsfit_controller.plasma.equilibrium_ids
-
-    grid_z = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
+    grid_z = gsfit_controller.plasma.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
     d_z = grid_z[1] - grid_z[0]
     print(f"test_02_delta_z_shift_greater_than_d_z:  d_z = {d_z} m")
-    gs_error = equilibrium_ids.get(ep.time_slice[0].convergence.grad_shafranov_deviation_value)
-    r_mag = equilibrium_ids.get(ep.time_slice[0].global_quantities.magnetic_axis.r)
-    z_mag = equilibrium_ids.get(ep.time_slice[0].global_quantities.magnetic_axis.z)
+    gs_error = gsfit_controller.plasma.get(ep.time_slice[0].convergence.grad_shafranov_deviation_value)
+    r_mag = gsfit_controller.plasma.get(ep.time_slice[0].global_quantities.magnetic_axis.r)
+    z_mag = gsfit_controller.plasma.get(ep.time_slice[0].global_quantities.magnetic_axis.z)
 
     assert np.isfinite(gs_error), "GS reconstruction failed, should have converged"
     assert np.isfinite(r_mag) and np.isfinite(z_mag), "magnetic axis position is not finite"

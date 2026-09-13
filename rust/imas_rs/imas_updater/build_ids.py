@@ -24,7 +24,7 @@ DATA_DICTIONARY_DIR: Path = IMAS_UPDATER_DIR / "IMAS-Data-Dictionary"
 # Rust edition of the `imas_rs` crate, needed so that `rustfmt` sorts imports correctly
 RUST_EDITION: str = "2024"
 # Hand-written, non-IMAS keys spliced into the generated structs; see
-# `add_custom_keys_to_equilibrium_ids`. These live here, and not in `src/ids/`, because they
+# `add_custom_keys_to_ids`. These live here, and not in `src/ids/`, because they
 # are an input to this script rather than compiled Rust
 CUSTOM_KEYS_DIR: Path = IMAS_UPDATER_DIR / "custom_keys"
 # The repository root: `rust/` sits directly inside it
@@ -50,19 +50,16 @@ SCALAR_TO_ARRAY = {
     "CPX_0D": ("Complex64", "Array1<Complex64>"),
 }
 
-# The generic accumulator each scalar type uses when gathered across an array of
-# structures. `Accumulator` gathers into `Array1<U>`; `StringAccumulator` gathers
-# into `Vec<String>` because `String` is not `Copy`. Both are hand-written once in
-# `dd_base_types.rs` and parameterised by a projection closure, so the DD field
-# path is emitted exactly once - inside the closure - instead of being baked into
-# a generated per-field struct. `{parent}` is the array-of-structures element type.
-#
-# The bool is whether the projection has to `.clone()` the value out.
-SCALAR_ACCUMULATOR = {
-    "FLT_0D": ("Accumulator<'a, {parent}, FLT_0D>", False),
-    "INT_0D": ("Accumulator<'a, {parent}, INT_0D>", False),
-    "STR_0D": ("StringAccumulator<'a, {parent}>", True),
-    "CPX_0D": ("Accumulator<'a, {parent}, CPX_0D>", False),
+# Whether a scalar's projection has to `.clone()` the value out when it is gathered across an array
+# of structures: a `String` is not `Copy`. Every scalar type gathers through the one generic
+# `Accumulator`, hand-written in `dd_base_types.rs` and parameterised by a projection closure, so
+# the DD field path is emitted exactly once - inside the closure - instead of being baked into a
+# generated per-field struct.
+SCALAR_PROJECTION_NEEDS_CLONE: dict[str, bool] = {
+    "FLT_0D": False,
+    "INT_0D": False,
+    "STR_0D": True,
+    "CPX_0D": False,
 }
 
 
@@ -495,62 +492,93 @@ def scalar_accumulator_field(
         parent_type_name: The array-of-structures element type (e.g. "EquilibriumTimeSlice").
         field_path: Path to the field from the parent (e.g. "global_quantities.magnetic_axis.r").
     """
-    accumulator_type, needs_clone = SCALAR_ACCUMULATOR[f.rust_type]
-    accumulator_type = accumulator_type.format(parent=parent_type_name)
-    accumulator_ctor = accumulator_type.split("<")[0]
-
     projection = f"|item: &{parent_type_name}| item.{sanitize_field_path(field_path)}"
-    if needs_clone:
+    if SCALAR_PROJECTION_NEEDS_CLONE[f.rust_type]:
         projection += ".clone()"
 
-    decl = f"    pub {field_name}: {accumulator_type},"
-    init = f"            {field_name}: {accumulator_ctor}::new(data, {projection}),"
+    decl = f"    pub {field_name}: Accumulator<'a, {parent_type_name}, {f.rust_type}, D>,"
+    init = f"            {field_name}: Accumulator::new(elements.clone(), {projection}),"
     return decl, init
 
 
-def generate_view_for_struct(
-    struct_name: str,
-    struct_ct: ComplexType,
+def nested_slice_method(f: Field, field_name: str, parent_type_name: str, field_path: str) -> list[str]:
+    """Return the method which slices a nested array of structures from inside a view.
+
+    This is what makes `flux_loop(..).greens.pf_active(..)` possible: `greens` is a view over every
+    flux loop, and `pf_active(..)` slices the `pf_active` array under each of them, adding one
+    dimension after the flux loop's: `flux_loop(..).greens.pf_active(..).value` is `(n_flux_loop, n_pf)`.
+
+    Args:
+        f: The array-of-structures field.
+        field_name: The Rust-safe field name.
+        parent_type_name: The array-of-structures element type the view gathers over.
+        field_path: Path to the field from the parent (e.g. "greens.pf_active").
+    """
+    inner_type: str = f.inner_type
+    slice_view_name: str = f"{inner_type}SliceView"
+    return [
+        f"    /// The slice view over a range of `{field_path}` under every element, e.g. `.{field_name}(..)`.",
+        f"    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.",
+        f"    ///",
+        f"    /// # Panics",
+        f"    /// If `range` does not select the same number of elements under every element.",
+        f"    pub fn {field_name}<R>(&self, range: R) -> {slice_view_name}<'a, D::Larger>",
+        f"    where",
+        f"        R: SliceIndex<[{inner_type}], Output = [{inner_type}]> + Clone,",
+        f"    {{",
+        f"        {slice_view_name}::new(self.slice_elements.nest(",
+        f"            {rust_string_literal(field_path)},",
+        f"            |item: &{parent_type_name}| item.{sanitize_field_path(field_path)}.as_slice(),",
+        f"            range,",
+        f"        ))",
+        f"    }}",
+    ]
+
+
+# What every view already uses for itself: the private field holding the elements it gathers
+# over, and the methods of a slice view. A data dictionary node with one of these names would
+# collide with it, so the generator refuses rather than emitting code which does not compile.
+VIEW_RESERVED_NAMES: set[str] = {"slice_elements", "new", "len", "is_empty", "shape", "iter"}
+
+
+def collect_view_members(
+    ct: ComplexType,
     parent_type_name: str,
     field_path_prefix: str,
     type_map: dict[str, ComplexType],
     generated_types: set[str],
-    ancestry: tuple[str, ...] = (),
-) -> tuple[str, list[str]]:
+    ancestry: tuple[str, ...],
+) -> tuple[list[str], list[str], list[list[str]], list[str]]:
+    """Collect the members of one view: (field declarations, field initialisers, methods, nested view code).
+
+    Shared by the slice view over an array of structures and the views over the structures nested
+    inside it, which differ only in their wrapper. Every member reads through the view's
+    `elements`, which are the same elements whichever member is used:
+    * a scalar leaf becomes an `Accumulator`;
+    * a nested structure becomes a nested view, generated recursively;
+    * a nested array of structures becomes a method which slices it under every element, which is
+      what lets `flux_loop(..).greens.pf_active(..)` gather over two levels.
+
+    `ancestry` carries the DD types currently being expanded, so a self-referential schema stops
+    instead of recursing forever.
     """
-    Generate a View struct for a nested struct type.
-    Returns (code, list of field initializers).
-    Uses generated_types to avoid creating duplicate type definitions.
+    field_defs: list[str] = []
+    field_inits: list[str] = []
+    methods: list[list[str]] = []
+    nested_code: list[str] = []
 
-    View names are keyed on the parent Vec element type *and the full field path*
-    (see `view_name_for`), so a DD type reused at several paths gets one view per
-    path rather than one shared view reading a single hard-coded path.
+    for f in ct.fields:
+        field_name: str = sanitize_rust_identifier(f.name)
+        field_path: str = f"{field_path_prefix}.{f.name}" if field_path_prefix else f.name
 
-    `ancestry` carries the DD types currently being expanded, so a self-referential
-    schema stops instead of recursing forever (path-keyed names grow with depth and
-    so cannot terminate the recursion the way type-keyed names accidentally did).
-    """
-    view_name = view_name_for(parent_type_name, field_path_prefix)
-    if view_name in generated_types:
-        return "", []
-
-    generated_types.add(view_name)
-
-    lines = []
-    field_defs = []
-    field_inits = []
-    nested_code = []
-    has_fields = False
-
-    for f in struct_ct.fields:
-        field_name = sanitize_rust_identifier(f.name)
-        field_path = f"{field_path_prefix}.{f.name}" if field_path_prefix else f.name
+        if f.name in VIEW_RESERVED_NAMES:
+            raise ValueError(
+                f"`{parent_type_name}.{field_path}` is named `{f.name}`, which a generated view already uses "
+                f"for itself; rename the view's own member in `VIEW_RESERVED_NAMES` and the code which emits it"
+            )
 
         if f.is_scalar:
-            has_fields = True
-            decl, init = scalar_accumulator_field(
-                f, field_name, parent_type_name, field_path
-            )
+            decl, init = scalar_accumulator_field(f, field_name, parent_type_name, field_path)
             field_defs.append(decl)
             field_inits.append(init)
 
@@ -558,16 +586,12 @@ def generate_view_for_struct(
             if f.rust_type in ancestry:
                 # Self-referential DD type: stop expanding rather than recurse forever.
                 continue
-            has_fields = True
             # Nested struct - one view per field path (not per DD type)
-            nested_view_name = view_name_for(parent_type_name, field_path)
-            field_defs.append(f"    pub {field_name}: {nested_view_name}<'a>,")
-            field_inits.append(
-                f"            {field_name}: {nested_view_name}::new(data),"
-            )
+            nested_view_name: str = view_name_for(parent_type_name, field_path)
+            field_defs.append(f"    pub {field_name}: {nested_view_name}<'a, D>,")
+            field_inits.append(f"            {field_name}: {nested_view_name}::new(elements.clone()),")
 
-            # Recursively generate the nested view
-            nested_struct_code, _ = generate_view_for_struct(
+            nested_struct_code: str = generate_view_for_struct(
                 f.rust_type,
                 type_map[f.rust_type],
                 parent_type_name,
@@ -579,41 +603,85 @@ def generate_view_for_struct(
             if nested_struct_code:
                 nested_code.append(nested_struct_code)
 
-    # If no fields, add PhantomData to use the lifetime
-    if not has_fields:
-        field_defs.append(
-            f"    _phantom: std::marker::PhantomData<&'a {parent_type_name}>,"
-        )
-        field_inits.append(f"            _phantom: std::marker::PhantomData,")
+        elif f.is_array and f.inner_type in type_map:
+            methods.append(nested_slice_method(f, field_name, parent_type_name, field_path))
 
-    # Use _data when data isn't actually used (no scalar or struct fields)
-    data_param = "_data" if not has_fields else "data"
+    return field_defs, field_inits, methods, nested_code
 
-    # Generate the view struct
-    lines.append(
-        f"/// View over `{field_path_prefix}` ({struct_name}) across multiple {parent_type_name}"
-    )
-    lines.append(f"pub struct {view_name}<'a> {{")
+
+def emit_view(
+    view_name: str,
+    documentation: str,
+    parent_type_name: str,
+    field_defs: list[str],
+    field_inits: list[str],
+    methods: list[list[str]],
+) -> list[str]:
+    """Emit a view struct and its `impl`. `D` is the rank of what the view gathers."""
+    lines: list[str] = []
+    lines.append(f"/// {documentation}")
+    lines.append(f"pub struct {view_name}<'a, D> {{")
     lines.extend(field_defs)
-    lines.append(f"}}")
-    lines.append(f"")
-    lines.append(f"impl<'a> {view_name}<'a> {{")
-    lines.append(f"    pub fn new({data_param}: &'a [{parent_type_name}]) -> Self {{")
-    lines.append(f"        Self {{")
-    for init in field_inits:
-        lines.append(init)
-    lines.append(f"        }}")
-    lines.append(f"    }}")
-    lines.append(f"}}")
-    lines.append(f"")
+    lines.append(f"    slice_elements: Elements<'a, {parent_type_name}, D>,")
+    lines.append("}")
+    lines.append("")
+    lines.append(f"impl<'a, D: Dimension> {view_name}<'a, D> {{")
+    lines.append(f"    pub fn new(elements: Elements<'a, {parent_type_name}, D>) -> Self {{")
+    lines.append("        Self {")
+    lines.extend(field_inits)
+    # Last, so that it moves once every other member has taken its clone
+    lines.append("            slice_elements: elements,")
+    lines.append("        }")
+    lines.append("    }")
+    for method in methods:
+        lines.append("")
+        lines.extend(method)
+    lines.append("}")
+    lines.append("")
+    return lines
 
-    # Combine nested code first, then this view
-    all_code = (
-        "\n".join(nested_code) + "\n" + "\n".join(lines)
-        if nested_code
-        else "\n".join(lines)
+
+def generate_view_for_struct(
+    struct_name: str,
+    struct_ct: ComplexType,
+    parent_type_name: str,
+    field_path_prefix: str,
+    type_map: dict[str, ComplexType],
+    generated_types: set[str],
+    ancestry: tuple[str, ...] = (),
+) -> str:
+    """
+    Generate a View struct for a nested struct type, preceded by the views nested inside it.
+    Uses generated_types to avoid creating duplicate type definitions.
+
+    View names are keyed on the parent Vec element type *and the full field path*
+    (see `view_name_for`), so a DD type reused at several paths gets one view per
+    path rather than one shared view reading a single hard-coded path.
+
+    `ancestry` carries the DD types currently being expanded, so a self-referential
+    schema stops instead of recursing forever (path-keyed names grow with depth and
+    so cannot terminate the recursion the way type-keyed names accidentally did).
+    """
+    view_name: str = view_name_for(parent_type_name, field_path_prefix)
+    if view_name in generated_types:
+        return ""
+
+    generated_types.add(view_name)
+
+    field_defs, field_inits, methods, nested_code = collect_view_members(
+        struct_ct, parent_type_name, field_path_prefix, type_map, generated_types, ancestry
     )
-    return all_code, field_inits
+    lines: list[str] = emit_view(
+        view_name,
+        f"View over `{field_path_prefix}` ({struct_name}) across multiple {parent_type_name}",
+        parent_type_name,
+        field_defs,
+        field_inits,
+        methods,
+    )
+
+    # Nested code first, then this view
+    return "\n".join(nested_code + lines)
 
 
 def generate_slice_view(
@@ -623,139 +691,73 @@ def generate_slice_view(
     generated_types: set[str],
 ) -> str:
     """
-    Generate the SliceView for a type used in Vec<T>.
+    Generate the SliceView for a type used in Vec<T>, preceded by the views nested inside it.
     Uses generated_types to avoid creating duplicate type definitions.
     """
-    lines = []
+    field_defs, field_inits, methods, nested_code = collect_view_members(
+        ct, type_name, "", type_map, generated_types, (type_name,)
+    )
 
-    # First generate accumulators and views for all fields
-    view_field_defs = []
-    view_field_inits = []
-    accumulated_code = []
-
-    for f in ct.fields:
-        field_name = sanitize_rust_identifier(f.name)
-
-        if f.is_scalar:
-            decl, init = scalar_accumulator_field(f, field_name, type_name, f.name)
-            view_field_defs.append(decl)
-            view_field_inits.append(init)
-
-        elif f.is_struct and f.rust_type in type_map:
-            # Nested struct - one view per field path (not per DD type)
-            nested_view_name = view_name_for(type_name, f.name)
-            view_field_defs.append(f"    pub {field_name}: {nested_view_name}<'a>,")
-            view_field_inits.append(
-                f"            {field_name}: {nested_view_name}::new(data),"
-            )
-
-            nested_code, _ = generate_view_for_struct(
-                f.rust_type,
-                type_map[f.rust_type],
-                type_name,
-                f.name,
-                type_map,
-                generated_types,  # Pass the shared tracking set
-                (type_name, f.rust_type),
-            )
-            if nested_code:
-                accumulated_code.append(nested_code)
-
-    # Add all accumulated code (accumulators and nested views)
-    lines.extend(accumulated_code)
-
-    # Generate the SliceView struct
-    slice_view_name = f"{type_name}SliceView"
-    lines.append(f"/// View over multiple {type_name} with field accumulation")
-    lines.append(f"pub struct {slice_view_name}<'a> {{")
-    lines.append(f"    data: &'a [{type_name}],")
-    for field_def in view_field_defs:
-        lines.append(field_def)
-    lines.append(f"}}")
-    lines.append(f"")
-    lines.append(f"impl<'a> {slice_view_name}<'a> {{")
-    lines.append(f"    pub fn new(data: &'a [{type_name}]) -> Self {{")
-    lines.append(f"        Self {{")
-    lines.append(f"            data,")
-    for init in view_field_inits:
-        lines.append(init)
-    lines.append(f"        }}")
-    lines.append(f"    }}")
-    lines.append(f"")
-    lines.append(f"    pub fn len(&self) -> usize {{")
-    lines.append(f"        self.data.len()")
-    lines.append(f"    }}")
-    lines.append(f"")
-    lines.append(f"    pub fn is_empty(&self) -> bool {{")
-    lines.append(f"        self.data.is_empty()")
-    lines.append(f"    }}")
-    lines.append(f"")
-    lines.append(f"    pub fn iter(&self) -> impl Iterator<Item = &{type_name}> {{")
-    lines.append(f"        self.data.iter()")
-    lines.append(f"    }}")
-    lines.append(f"}}")
-    lines.append(f"")
-
-    return "\n".join(lines)
-
-
-def generate_index_traits(type_name: str) -> str:
-    """Generate the range-index trait for a Vec<T> element type.
-
-    This is what gives `.field(0..2)` and `.field(..)` their slice view, whose leaves gather one
-    value per element. A single element is reached with ordinary indexing, `.field[i]`, so there
-    is deliberately no `usize` implementation and no mutable counterpart: `Vec` provides both,
-    and a `usize` implementation would only offer a second spelling of the same thing.
-    """
-    slice_view_name = f"{type_name}SliceView"
-    index_trait_name = f"{type_name}Index"
-
-    lines = [
-        f"/// Range-index trait for {type_name} - enables the `.field(0..2)` and `.field(..)` slice view",
-        f"pub trait {index_trait_name}<'a> {{",
-        f"    type Output;",
-        f"    fn get(self, data: &'a [{type_name}]) -> Self::Output;",
-        f"}}",
-        f"",
+    common_methods: list[list[str]] = [
+        [
+            "    /// Total number of elements, across every sliced level",
+            "    pub fn len(&self) -> usize {",
+            "        self.slice_elements.len()",
+            "    }",
+        ],
+        [
+            "    pub fn is_empty(&self) -> bool {",
+            "        self.slice_elements.is_empty()",
+            "    }",
+        ],
+        [
+            "    /// The length of each sliced level, in path order like the gathered arrays",
+            "    pub fn shape(&self) -> Vec<usize> {",
+            "        self.slice_elements.shape()",
+            "    }",
+        ],
+        [
+            "    /// Every element, in path order: the first array of structures on the path varies slowest",
+            f"    pub fn iter(&self) -> impl Iterator<Item = &'a {type_name}> + '_ {{",
+            "        self.slice_elements.iter()",
+            "    }",
+        ],
     ]
-    for range_type, argument in [
-        ("std::ops::Range<usize>", "&data[self]"),
-        ("std::ops::RangeFrom<usize>", "&data[self]"),
-        ("std::ops::RangeTo<usize>", "&data[self]"),
-        ("std::ops::RangeInclusive<usize>", "&data[self]"),
-        ("std::ops::RangeToInclusive<usize>", "&data[self]"),
-        ("std::ops::RangeFull", "data"),
-    ]:
-        lines.extend(
-            [
-                f"impl<'a> {index_trait_name}<'a> for {range_type} {{",
-                f"    type Output = {slice_view_name}<'a>;",
-                f"    fn get(self, data: &'a [{type_name}]) -> Self::Output {{",
-                f"        {slice_view_name}::new({argument})",
-                f"    }}",
-                f"}}",
-                f"",
-            ]
-        )
-    return "\n".join(lines)
+
+    lines: list[str] = emit_view(
+        f"{type_name}SliceView",
+        f"View over multiple {type_name} with field accumulation",
+        type_name,
+        field_defs,
+        field_inits,
+        common_methods + methods,
+    )
+
+    return "\n".join(nested_code + lines)
 
 
 def generate_vec_field_impl(parent_ct: ComplexType, field: Field) -> str:
     """
     Generate the impl block for a Vec<T> field: the `.field(range)` slice view and `.field_len()`.
-    A single element is `.field[i]`, which needs nothing generated.
+
+    A single element is reached with ordinary indexing, `.field[i]`, so nothing is generated for
+    it. The `Output = [T]` bound is what keeps it that way: `usize` indexes a slice to one `T`,
+    so it does not satisfy the bound, and there is no second spelling of `.field[i]`.
     """
-    inner_type = field.inner_type
-    field_name = sanitize_rust_identifier(field.name)
-    index_trait_name = f"{inner_type}Index"
-    parent_name = snake_to_pascal_case(parent_ct.name)
+    inner_type: str = field.inner_type
+    field_name: str = sanitize_rust_identifier(field.name)
+    parent_name: str = snake_to_pascal_case(parent_ct.name)
+    slice_view_name: str = f"{inner_type}SliceView"
 
     lines = [
         f"impl {parent_name} {{",
         f"    /// The slice view over a range of {field_name}, e.g. `.{field_name}(0..2)` or `.{field_name}(..)`,",
         f"    /// whose leaves gather one value per element. A single element is `.{field_name}[i]`.",
-        f"    pub fn {field_name}<'a, I: {index_trait_name}<'a>>(&'a self, index: I) -> I::Output {{",
-        f"        index.get(&self.{field_name})",
+        f"    pub fn {field_name}<R>(&self, range: R) -> {slice_view_name}<'_, Ix1>",
+        f"    where",
+        f"        R: SliceIndex<[{inner_type}], Output = [{inner_type}]>,",
+        f"    {{",
+        f"        {slice_view_name}::new(Elements::from_slice(&self.{field_name}[range]))",
         f"    }}",
         f"",
         f"    /// Get the number of {field_name} elements",
@@ -793,7 +795,6 @@ def generate_all_views_and_accessors(
             lines.append(f"// --- {type_name} View Types ---")
             lines.append("")
             lines.append(generate_slice_view(type_name, ct, type_map, generated_types))
-            lines.append(generate_index_traits(type_name))
 
         # Generate impl blocks for structs with Vec fields
         lines.append("// " + "=" * 76)
@@ -1075,7 +1076,7 @@ def resolve_supporting_types(
     return pulled_type_names
 
 
-def add_custom_keys_to_equilibrium_ids(
+def add_custom_keys_to_ids(
     complex_types: list[ComplexType],
     root_element: Optional[ComplexType],
     path_to_custom_keys_file: Path,
@@ -1213,7 +1214,9 @@ def add_custom_keys_to_equilibrium_ids(
 # The Rust type each data dictionary base type projects to, and the Python type it
 # reads back as. The Python column has two entries: the first is used when every
 # array-of-structures level on the path was indexed with an integer (so one value
-# comes back), the second when one level was sliced (so values are gathered).
+# comes back), the second when at least one level was sliced (so values are gathered).
+# A gathered leaf is always a numpy array, whose rank grows with the number of sliced
+# levels, which is why one type serves every depth; strings included.
 #
 # A base type missing from here is rejected rather than emitted, because the Rust
 # side needs a matching `Gatherable` implementation and a silent omission would
@@ -1227,8 +1230,8 @@ PYTHON_LEAF_TYPES: dict[str, tuple[str, str]] = {
     "INT_0D": ("int", "npt.NDArray[np.int32]"),
     "INT_1D": ("npt.NDArray[np.int32]", "npt.NDArray[np.int32]"),
     "INT_2D": ("npt.NDArray[np.int32]", "npt.NDArray[np.int32]"),
-    "STR_0D": ("str", "list[str]"),
-    "STR_1D": ("list[str]", "list[list[str]]"),
+    "STR_0D": ("str", "npt.NDArray[np.str_]"),
+    "STR_1D": ("list[str]", "npt.NDArray[np.str_]"),
 }
 
 # Names that cannot be written as an attribute in a `.pyi`, which would produce a
@@ -1600,8 +1603,12 @@ def generate_python_stub_preamble() -> str:
     lines.append("")
     lines.append("Classes ending `Item` are reached when every array-of-structures level was indexed")
     lines.append("with an integer, so one value comes back. Classes ending `Many` are reached once a")
-    lines.append("level has been sliced, so values are gathered into an array. Only one level may be")
-    lines.append("sliced, which is why an array reached from a `Many` class only accepts an integer.")
+    lines.append("level has been sliced, so values are gathered into a numpy array.")
+    lines.append("")
+    lines.append("Any number of levels may be sliced. The dimensions are gained from left to right: one")
+    lines.append("per sliced level, in the order they appear on the path, then the leaf's own dimensions.")
+    lines.append("So `flux_loop[:].greens.pf_active[:].value` is `(n_flux_loop, n_pf)` and")
+    lines.append("`time_slice[:].profiles_2d[0].psi` is `(n_time, n_z, n_r)`.")
     lines.append('"""')
     lines.append("")
     lines.append("from typing import Generic, TypeVar, overload")
@@ -1698,7 +1705,10 @@ def generate_python_stub_section(
     lines.append('        """Read the data at `path` out of this IDS.')
     lines.append("")
     lines.append("        The shape of the result follows the shape of the index: an integer index")
-    lines.append("        gives one value, a slice gathers.")
+    lines.append("        gives one value, a slice gathers. The dimensions are gained from left to right:")
+    lines.append("        one per sliced level, in the order they appear on the path, then the leaf's own")
+    lines.append("        dimensions. A sliced level which selects a different number of elements under")
+    lines.append("        different elements above it would be jagged, and raises `IndexError`.")
     lines.append("")
     lines.append("        An unset leaf reads back as the IMAS empty value: NaN for a float,")
     lines.append("        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.")
@@ -1739,9 +1749,9 @@ def generate_python_stub_section(
         lines.append(f"    def __getitem__(self, index: slice | list[int]) -> {class_name(dd_type, True)}: ...")
         lines.append("")
         lines.append(f"class {array_class_name(dd_type, True)}:")
-        lines.append("    # Only one array-of-structures level may be sliced, so once a level above")
-        lines.append("    # has been sliced this one takes an integer only.")
-        lines.append(f"    def __getitem__(self, index: int) -> {class_name(dd_type, True)}: ...")
+        lines.append("    # A level above has already been sliced, so whatever this one is indexed with,")
+        lines.append("    # the values are still gathered.")
+        lines.append(f"    def __getitem__(self, index: int | slice | list[int]) -> {class_name(dd_type, True)}: ...")
         lines.append("")
 
     lines.append("# " + "-" * 74)
@@ -1790,14 +1800,19 @@ def generate_rust_file(
 
     # Imports
     imported = set(used_base_types)
-    for accumulator in ("Accumulator", "StringAccumulator"):
-        if re.search(rf"\b{accumulator}(::|<)", views_code):
-            imported.add(accumulator)
+    for gathering_type in ("Accumulator", "Elements"):
+        if re.search(rf"\b{gathering_type}(::|<)", views_code):
+            imported.add(gathering_type)
     # The generated `Default` impls initialise every integer leaf to `EMPTY_INT`
     if "INT_0D" in imported:
         imported.add("EMPTY_INT")
     if imported:
         lines.append(f"use crate::dd_base_types::{{{', '.join(sorted(imported))}}};")
+    # The views are generic over the rank they gather, and are sliced by any range
+    if views_code:
+        lines.append("use ndarray::{Dimension, Ix1};")
+        lines.append("use std::slice::SliceIndex;")
+    if imported or views_code:
         lines.append("")
 
     # Generate stub types for undefined references
@@ -1892,7 +1907,7 @@ def build_ids(
 
     # Merge in the hand-written, non-IMAS keys before anything is emitted, so that the
     # views and accumulators are generated for them too
-    add_custom_keys_to_equilibrium_ids(
+    add_custom_keys_to_ids(
         complex_types=complex_types,
         root_element=root_element,
         path_to_custom_keys_file=CUSTOM_KEYS_DIR / f"custom_{ids_name}_keys.rs",

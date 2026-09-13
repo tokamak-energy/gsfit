@@ -13,9 +13,9 @@
 //! exactly, then re-run `../build_ids.py`. A `pub struct` whose name is *not* a generated struct
 //! declares a new nested structure instead (e.g. `EquilibriumBoundaryBounding`); it must be
 //! referenced by some key's type, which is what still catches a mistyped struct name. Only the field name, type and `///` comments are
-//! read; everything else here is ignored. Base types are written bare here (`FLT_2D`) and
-//! come out wrapped (`Option<FLT_2D>`), exactly as the data dictionary's own leaves do, so
-//! that an unset key is distinguishable from an empty one.
+//! read; everything else here is ignored. Base types are written bare (`FLT_2D`), exactly as
+//! the data dictionary's own leaves are generated, and an unset key reads as the IMAS empty
+//! value (NaN, `EMPTY_INT`, or empty), just like they do.
 //!
 //! Note that these keys have no IMAS counterpart, so they cannot be written to an IMAS
 //! backend. Anything written out over the standard data dictionary must skip them.

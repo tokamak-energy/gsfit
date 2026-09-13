@@ -6,6 +6,7 @@ mod circuit_equations;
 mod coils;
 mod equilibrium_post_processor;
 mod grad_shafranov;
+mod magnetics;
 mod passives;
 mod plasma;
 mod sensors;
@@ -21,6 +22,7 @@ use greens::{
     greens_d_psi_d_r, greens_d_psi_d_z, greens_d2_psi_d_r_d_z, greens_d2_psi_d_r2, greens_d2_psi_d_z2, greens_d3_psi_d_r_d_z2, greens_d3_psi_d_r2_d_z,
     greens_d3_psi_d_z3, greens_py,
 };
+use magnetics::Magnetics;
 mod material_properties;
 use passives::Passives;
 use plasma::Plasma;
@@ -75,6 +77,7 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<FluxLoops>()?;
     m.add_class::<Isoflux>()?;
     m.add_class::<IsofluxBoundary>()?;
+    m.add_class::<Magnetics>()?;
     m.add_class::<StationaryPoint>()?;
     m.add_class::<RogowskiCoils>()?;
     m.add_class::<Pressure>()?;

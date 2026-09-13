@@ -136,29 +136,26 @@ def map_results_to_database(
     pressure_sensors = gsfit_controller.pressure_sensors
 
     # Everything below comes out of the `equilibrium` IDS through the (MDSplus path, IMAS path)
-    # tables at the top of this file.
-    #
-    # Read once and reused: the `equilibrium_ids` getter copies the whole IDS out of Rust, so
-    # calling it per quantity would copy every 2D profile on every time-slice, once each
-    equilibrium_ids = plasma.equilibrium_ids
+    # tables at the top of this file. `plasma.get` reads in place, so reading quantity by quantity
+    # costs nothing extra
 
     for mdsplus_path, imas_path in _TIME_SERIES_PATH_PAIRS:
-        _assign(results, mdsplus_path, equilibrium_ids.get(imas_path))
+        _assign(results, mdsplus_path, plasma.get(imas_path))
 
     for mdsplus_path, imas_path in _TIME_INDEPENDENT_PATH_PAIRS:
-        _assign(results, mdsplus_path, np.asarray(equilibrium_ids.get(imas_path))[0])
+        _assign(results, mdsplus_path, np.asarray(plasma.get(imas_path))[0])
 
     results["SOL"]["HFS"]["CONTOUR"]["N"] = _n_points_per_time(results["SOL"]["HFS"]["CONTOUR"]["R"])
     results["SOL"]["LFS"]["CONTOUR"]["N"] = _n_points_per_time(results["SOL"]["LFS"]["CONTOUR"]["R"])
 
     # The data dictionary defines `beta_tor` as a fraction, but this MDSplus node has always held a
     # percentage, so the factor of 100 is put back here rather than changing what consumers read
-    results["GLOBAL"]["BETA_T"] = 100.0 * np.asarray(equilibrium_ids.get(ep.time_slice[:].global_quantities.beta_tor))
+    results["GLOBAL"]["BETA_T"] = 100.0 * np.asarray(plasma.get(ep.time_slice[:].global_quantities.beta_tor))
 
     # The rod current is not a data dictionary node. It is recovered from the vacuum toroidal
     # field, `f_vac = r0 * b0 = mu_0 * i_rod / (2 * pi)`
-    r0 = equilibrium_ids.get(ep.vacuum_toroidal_field.r0)
-    b0 = np.asarray(equilibrium_ids.get(ep.vacuum_toroidal_field.b0))
+    r0 = plasma.get(ep.vacuum_toroidal_field.r0)
+    b0 = np.asarray(plasma.get(ep.vacuum_toroidal_field.b0))
     results["GLOBAL"]["I_ROD"] = 2.0 * np.pi * r0 * b0 / mu_0
 
 

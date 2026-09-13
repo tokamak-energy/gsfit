@@ -10,8 +10,12 @@ names and the type that `get` returns.
 
 Classes ending `Item` are reached when every array-of-structures level was indexed
 with an integer, so one value comes back. Classes ending `Many` are reached once a
-level has been sliced, so values are gathered into an array. Only one level may be
-sliced, which is why an array reached from a `Many` class only accepts an integer.
+level has been sliced, so values are gathered into a numpy array.
+
+Any number of levels may be sliced. The dimensions are gained from left to right: one
+per sliced level, in the order they appear on the path, then the leaf's own dimensions.
+So `flux_loop[:].greens.pf_active[:].value` is `(n_flux_loop, n_pf)` and
+`time_slice[:].profiles_2d[0].psi` is `(n_time, n_z, n_r)`.
 """
 
 from typing import Generic, TypeVar, overload
@@ -50,7 +54,10 @@ class Equilibrium:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers.
+        gives one value, a slice gathers. The dimensions are gained from left to right:
+        one per sliced level, in the order they appear on the path, then the leaf's own
+        dimensions. A sliced level which selects a different number of elements under
+        different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -151,27 +158,27 @@ class _EquilibriumCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -1075,7 +1082,7 @@ class _EquilibriumConstraints0dMany:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[list[str]]:
+    def source(self) -> Path[npt.NDArray[np.str_]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1173,7 +1180,7 @@ class _EquilibriumConstraints0dB0LikeMany:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[list[str]]:
+    def source(self) -> Path[npt.NDArray[np.str_]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1271,7 +1278,7 @@ class _EquilibriumConstraints0dIpLikeMany:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[list[str]]:
+    def source(self) -> Path[npt.NDArray[np.str_]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1369,7 +1376,7 @@ class _EquilibriumConstraints0dOneLikeMany:
         Units: as_parent
         """
     @property
-    def source(self) -> Path[list[str]]:
+    def source(self) -> Path[npt.NDArray[np.str_]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1475,7 +1482,7 @@ class _EquilibriumConstraints0dPositionMany:
         """Position at which this measurement is given
         """
     @property
-    def source(self) -> Path[list[str]]:
+    def source(self) -> Path[npt.NDArray[np.str_]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1607,7 +1614,7 @@ class _EquilibriumConstraintsPurePositionMany:
         """Measured or estimated position
         """
     @property
-    def source(self) -> Path[list[str]]:
+    def source(self) -> Path[npt.NDArray[np.str_]]:
         """Path to the source data for this measurement in the IMAS data dictionary
         """
     @property
@@ -1933,11 +1940,11 @@ class _EquilibriumGapMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. mid-plane gap
         """
     @property
@@ -2998,7 +3005,7 @@ class _EquilibriumGreensPfActiveMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the coil, e.g. `"BVL"`
         """
     @property
@@ -3111,7 +3118,7 @@ class _EquilibriumGreensPfPassiveMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the passive conductor, e.g. `"IVC"`
         """
     @property
@@ -3224,7 +3231,7 @@ class _EquilibriumGreensPfPassiveDofMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the degree of freedom, e.g. `"EIG_01"`
         """
     @property
@@ -4819,7 +4826,7 @@ class _EquilibriumGenericGridDynamicMany:
         """Grid identifier
         """
     @property
-    def path(self) -> Path[list[str]]:
+    def path(self) -> Path[npt.NDArray[np.str_]]:
         """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
         """
     @property
@@ -5207,7 +5214,7 @@ class _EquilibriumIdentifierDynamicAos3Many:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier
         """
     @property
@@ -5215,7 +5222,7 @@ class _EquilibriumIdentifierDynamicAos3Many:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Verbose description
         """
 
@@ -5253,27 +5260,27 @@ class _EquilibriumLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
 
@@ -5426,9 +5433,9 @@ class _EquilibriumConstraints0dArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraints0dMany: ...
 
 class _EquilibriumConstraints0dArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumConstraints0dMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dMany: ...
 
 class _EquilibriumConstraints0dIpLikeArrayFromItem:
     @overload
@@ -5437,9 +5444,9 @@ class _EquilibriumConstraints0dIpLikeArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraints0dIpLikeMany: ...
 
 class _EquilibriumConstraints0dIpLikeArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumConstraints0dIpLikeMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dIpLikeMany: ...
 
 class _EquilibriumConstraints0dOneLikeArrayFromItem:
     @overload
@@ -5448,9 +5455,9 @@ class _EquilibriumConstraints0dOneLikeArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraints0dOneLikeMany: ...
 
 class _EquilibriumConstraints0dOneLikeArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumConstraints0dOneLikeMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dOneLikeMany: ...
 
 class _EquilibriumConstraints0dPositionArrayFromItem:
     @overload
@@ -5459,9 +5466,9 @@ class _EquilibriumConstraints0dPositionArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraints0dPositionMany: ...
 
 class _EquilibriumConstraints0dPositionArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumConstraints0dPositionMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dPositionMany: ...
 
 class _EquilibriumConstraintsMagnetizationArrayFromItem:
     @overload
@@ -5470,9 +5477,9 @@ class _EquilibriumConstraintsMagnetizationArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraintsMagnetizationMany: ...
 
 class _EquilibriumConstraintsMagnetizationArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumConstraintsMagnetizationMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraintsMagnetizationMany: ...
 
 class _EquilibriumConstraintsPurePositionArrayFromItem:
     @overload
@@ -5481,9 +5488,9 @@ class _EquilibriumConstraintsPurePositionArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraintsPurePositionMany: ...
 
 class _EquilibriumConstraintsPurePositionArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumConstraintsPurePositionMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraintsPurePositionMany: ...
 
 class _EquilibriumContourTreeNodeArrayFromItem:
     @overload
@@ -5492,9 +5499,9 @@ class _EquilibriumContourTreeNodeArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumContourTreeNodeMany: ...
 
 class _EquilibriumContourTreeNodeArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumContourTreeNodeMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumContourTreeNodeMany: ...
 
 class _EquilibriumGapArrayFromItem:
     @overload
@@ -5503,9 +5510,9 @@ class _EquilibriumGapArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGapMany: ...
 
 class _EquilibriumGapArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGapMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGapMany: ...
 
 class _EquilibriumGgdArrayFromItem:
     @overload
@@ -5514,9 +5521,9 @@ class _EquilibriumGgdArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGgdMany: ...
 
 class _EquilibriumGgdArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGgdMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGgdMany: ...
 
 class _EquilibriumGgdArrayArrayFromItem:
     @overload
@@ -5525,9 +5532,9 @@ class _EquilibriumGgdArrayArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGgdArrayMany: ...
 
 class _EquilibriumGgdArrayArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGgdArrayMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGgdArrayMany: ...
 
 class _EquilibriumGreensPfActiveArrayFromItem:
     @overload
@@ -5536,9 +5543,9 @@ class _EquilibriumGreensPfActiveArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensPfActiveMany: ...
 
 class _EquilibriumGreensPfActiveArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGreensPfActiveMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensPfActiveMany: ...
 
 class _EquilibriumGreensPfPassiveArrayFromItem:
     @overload
@@ -5547,9 +5554,9 @@ class _EquilibriumGreensPfPassiveArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensPfPassiveMany: ...
 
 class _EquilibriumGreensPfPassiveArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGreensPfPassiveMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensPfPassiveMany: ...
 
 class _EquilibriumGreensPfPassiveDofArrayFromItem:
     @overload
@@ -5558,9 +5565,9 @@ class _EquilibriumGreensPfPassiveDofArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensPfPassiveDofMany: ...
 
 class _EquilibriumGreensPfPassiveDofArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGreensPfPassiveDofMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensPfPassiveDofMany: ...
 
 class _EquilibriumProfiles2dArrayFromItem:
     @overload
@@ -5569,9 +5576,9 @@ class _EquilibriumProfiles2dArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumProfiles2dMany: ...
 
 class _EquilibriumProfiles2dArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumProfiles2dMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumProfiles2dMany: ...
 
 class _EquilibriumTimeSliceArrayFromItem:
     @overload
@@ -5580,9 +5587,9 @@ class _EquilibriumTimeSliceArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumTimeSliceMany: ...
 
 class _EquilibriumTimeSliceArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumTimeSliceMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumTimeSliceMany: ...
 
 class _EquilibriumGenericGridDynamicArrayFromItem:
     @overload
@@ -5591,9 +5598,9 @@ class _EquilibriumGenericGridDynamicArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGenericGridDynamicMany: ...
 
 class _EquilibriumGenericGridDynamicArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGenericGridDynamicMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGenericGridDynamicMany: ...
 
 class _EquilibriumGenericGridDynamicGridSubsetArrayFromItem:
     @overload
@@ -5602,9 +5609,9 @@ class _EquilibriumGenericGridDynamicGridSubsetArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGenericGridDynamicGridSubsetMany: ...
 
 class _EquilibriumGenericGridDynamicGridSubsetArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGenericGridDynamicGridSubsetMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGenericGridDynamicGridSubsetMany: ...
 
 class _EquilibriumGenericGridDynamicGridSubsetElementArrayFromItem:
     @overload
@@ -5613,9 +5620,9 @@ class _EquilibriumGenericGridDynamicGridSubsetElementArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGenericGridDynamicGridSubsetElementMany: ...
 
 class _EquilibriumGenericGridDynamicGridSubsetElementArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGenericGridDynamicGridSubsetElementMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGenericGridDynamicGridSubsetElementMany: ...
 
 class _EquilibriumGenericGridDynamicGridSubsetElementObjectArrayFromItem:
     @overload
@@ -5624,9 +5631,9 @@ class _EquilibriumGenericGridDynamicGridSubsetElementObjectArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGenericGridDynamicGridSubsetElementObjectMany: ...
 
 class _EquilibriumGenericGridDynamicGridSubsetElementObjectArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGenericGridDynamicGridSubsetElementObjectMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGenericGridDynamicGridSubsetElementObjectMany: ...
 
 class _EquilibriumGenericGridDynamicGridSubsetMetricArrayFromItem:
     @overload
@@ -5635,9 +5642,9 @@ class _EquilibriumGenericGridDynamicGridSubsetMetricArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGenericGridDynamicGridSubsetMetricMany: ...
 
 class _EquilibriumGenericGridDynamicGridSubsetMetricArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGenericGridDynamicGridSubsetMetricMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGenericGridDynamicGridSubsetMetricMany: ...
 
 class _EquilibriumGenericGridDynamicSpaceArrayFromItem:
     @overload
@@ -5646,9 +5653,9 @@ class _EquilibriumGenericGridDynamicSpaceArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGenericGridDynamicSpaceMany: ...
 
 class _EquilibriumGenericGridDynamicSpaceArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGenericGridDynamicSpaceMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGenericGridDynamicSpaceMany: ...
 
 class _EquilibriumGenericGridDynamicSpaceDimensionArrayFromItem:
     @overload
@@ -5657,9 +5664,9 @@ class _EquilibriumGenericGridDynamicSpaceDimensionArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGenericGridDynamicSpaceDimensionMany: ...
 
 class _EquilibriumGenericGridDynamicSpaceDimensionArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGenericGridDynamicSpaceDimensionMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGenericGridDynamicSpaceDimensionMany: ...
 
 class _EquilibriumGenericGridDynamicSpaceDimensionObjectArrayFromItem:
     @overload
@@ -5668,9 +5675,9 @@ class _EquilibriumGenericGridDynamicSpaceDimensionObjectArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGenericGridDynamicSpaceDimensionObjectMany: ...
 
 class _EquilibriumGenericGridDynamicSpaceDimensionObjectArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGenericGridDynamicSpaceDimensionObjectMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGenericGridDynamicSpaceDimensionObjectMany: ...
 
 class _EquilibriumGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
     @overload
@@ -5679,9 +5686,9 @@ class _EquilibriumGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
 
 class _EquilibriumGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
 
 class _EquilibriumGenericGridScalarArrayFromItem:
     @overload
@@ -5690,9 +5697,9 @@ class _EquilibriumGenericGridScalarArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumGenericGridScalarMany: ...
 
 class _EquilibriumGenericGridScalarArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumGenericGridScalarMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGenericGridScalarMany: ...
 
 class _EquilibriumIdentifierDynamicAos3ArrayFromItem:
     @overload
@@ -5701,9 +5708,9 @@ class _EquilibriumIdentifierDynamicAos3ArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumIdentifierDynamicAos3Many: ...
 
 class _EquilibriumIdentifierDynamicAos3ArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumIdentifierDynamicAos3Many: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumIdentifierDynamicAos3Many: ...
 
 class _EquilibriumLibraryArrayFromItem:
     @overload
@@ -5712,9 +5719,9 @@ class _EquilibriumLibraryArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumLibraryMany: ...
 
 class _EquilibriumLibraryArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumLibraryMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumLibraryMany: ...
 
 class _EquilibriumRz1dDynamicAosArrayFromItem:
     @overload
@@ -5723,9 +5730,9 @@ class _EquilibriumRz1dDynamicAosArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _EquilibriumRz1dDynamicAosMany: ...
 
 class _EquilibriumRz1dDynamicAosArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _EquilibriumRz1dDynamicAosMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumRz1dDynamicAosMany: ...
 
 # --------------------------------------------------------------------------
 # equilibrium root
@@ -5763,7 +5770,10 @@ class PfActive:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers.
+        gives one value, a slice gathers. The dimensions are gained from left to right:
+        one per sliced level, in the order they appear on the path, then the leaf's own
+        dimensions. A sliced level which selects a different number of elements under
+        different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -5922,27 +5932,27 @@ class _PfActiveCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -5976,7 +5986,7 @@ class _PfActiveIdentifierStaticMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier
         """
     @property
@@ -5984,7 +5994,7 @@ class _PfActiveIdentifierStaticMany:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Verbose description
         """
 
@@ -6022,27 +6032,27 @@ class _PfActiveLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
 
@@ -6232,15 +6242,15 @@ class _PfActivePfCircuitsMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
-    def type(self) -> Path[list[str]]:
+    def type(self) -> Path[npt.NDArray[np.str_]]:
         """Type of the circuit
         """
     @property
@@ -6386,11 +6396,11 @@ class _PfActivePfCoilsMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -6536,11 +6546,11 @@ class _PfActivePfCoilsElementsMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -6716,11 +6726,11 @@ class _PfActivePfSuppliesMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -6788,7 +6798,7 @@ class _PfActivePfSuppliesMany:
         Units: J
         """
     @property
-    def nonlinear_model(self) -> Path[list[str]]:
+    def nonlinear_model(self) -> Path[npt.NDArray[np.str_]]:
         """Description of the nonlinear transfer function of the supply
         """
     @property
@@ -6984,7 +6994,7 @@ class _PfActiveTemperatureReferenceMany:
     """
 
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description of how the reference temperature is defined : for which object, at which location, ...
         """
     @property
@@ -7043,9 +7053,9 @@ class _PfActiveIdentifierStaticArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _PfActiveIdentifierStaticMany: ...
 
 class _PfActiveIdentifierStaticArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _PfActiveIdentifierStaticMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PfActiveIdentifierStaticMany: ...
 
 class _PfActiveLibraryArrayFromItem:
     @overload
@@ -7054,9 +7064,9 @@ class _PfActiveLibraryArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _PfActiveLibraryMany: ...
 
 class _PfActiveLibraryArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _PfActiveLibraryMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PfActiveLibraryMany: ...
 
 class _PfActivePfCircuitsArrayFromItem:
     @overload
@@ -7065,9 +7075,9 @@ class _PfActivePfCircuitsArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _PfActivePfCircuitsMany: ...
 
 class _PfActivePfCircuitsArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _PfActivePfCircuitsMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PfActivePfCircuitsMany: ...
 
 class _PfActivePfCoilsArrayFromItem:
     @overload
@@ -7076,9 +7086,9 @@ class _PfActivePfCoilsArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _PfActivePfCoilsMany: ...
 
 class _PfActivePfCoilsArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _PfActivePfCoilsMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PfActivePfCoilsMany: ...
 
 class _PfActivePfCoilsElementsArrayFromItem:
     @overload
@@ -7087,9 +7097,9 @@ class _PfActivePfCoilsElementsArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _PfActivePfCoilsElementsMany: ...
 
 class _PfActivePfCoilsElementsArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _PfActivePfCoilsElementsMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PfActivePfCoilsElementsMany: ...
 
 class _PfActivePfSuppliesArrayFromItem:
     @overload
@@ -7098,9 +7108,9 @@ class _PfActivePfSuppliesArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _PfActivePfSuppliesMany: ...
 
 class _PfActivePfSuppliesArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _PfActivePfSuppliesMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PfActivePfSuppliesMany: ...
 
 # --------------------------------------------------------------------------
 # pf_active root
@@ -7148,7 +7158,10 @@ class PfPassive:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers.
+        gives one value, a slice gathers. The dimensions are gained from left to right:
+        one per sliced level, in the order they appear on the path, then the leaf's own
+        dimensions. A sliced level which selects a different number of elements under
+        different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -7307,27 +7320,27 @@ class _PfPassiveCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -7373,27 +7386,27 @@ class _PfPassiveLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
 
@@ -7579,11 +7592,11 @@ class _PfPassivePfCoilsElementsMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -7647,11 +7660,11 @@ class _PfPassiveLoopsMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -7856,9 +7869,9 @@ class _PfPassiveLibraryArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _PfPassiveLibraryMany: ...
 
 class _PfPassiveLibraryArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _PfPassiveLibraryMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PfPassiveLibraryMany: ...
 
 class _PfPassivePfCoilsElementsArrayFromItem:
     @overload
@@ -7867,9 +7880,9 @@ class _PfPassivePfCoilsElementsArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _PfPassivePfCoilsElementsMany: ...
 
 class _PfPassivePfCoilsElementsArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _PfPassivePfCoilsElementsMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PfPassivePfCoilsElementsMany: ...
 
 class _PfPassiveLoopsArrayFromItem:
     @overload
@@ -7878,9 +7891,9 @@ class _PfPassiveLoopsArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _PfPassiveLoopsMany: ...
 
 class _PfPassiveLoopsArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _PfPassiveLoopsMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PfPassiveLoopsMany: ...
 
 # --------------------------------------------------------------------------
 # pf_passive root
@@ -7906,7 +7919,10 @@ class Tf:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers.
+        gives one value, a slice gathers. The dimensions are gained from left to right:
+        one per sliced level, in the order they appear on the path, then the leaf's own
+        dimensions. A sliced level which selects a different number of elements under
+        different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -7961,27 +7977,27 @@ class _TfCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -8045,11 +8061,11 @@ class _TfCoilMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “Coil between sector 1 and 2”
         """
     @property
@@ -8337,7 +8353,7 @@ class _TfGenericGridDynamicMany:
         """Grid identifier
         """
     @property
-    def path(self) -> Path[list[str]]:
+    def path(self) -> Path[npt.NDArray[np.str_]]:
         """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
         """
     @property
@@ -8725,7 +8741,7 @@ class _TfIdentifierDynamicAos3Many:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier
         """
     @property
@@ -8733,7 +8749,7 @@ class _TfIdentifierDynamicAos3Many:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Verbose description
         """
 
@@ -8759,7 +8775,7 @@ class _TfIdentifierStaticMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier
         """
     @property
@@ -8767,7 +8783,7 @@ class _TfIdentifierStaticMany:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Verbose description
         """
 
@@ -8805,27 +8821,27 @@ class _TfLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
 
@@ -9010,9 +9026,9 @@ class _TfCoilArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfCoilMany: ...
 
 class _TfCoilArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfCoilMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfCoilMany: ...
 
 class _TfCoilConductorArrayFromItem:
     @overload
@@ -9021,9 +9037,9 @@ class _TfCoilConductorArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfCoilConductorMany: ...
 
 class _TfCoilConductorArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfCoilConductorMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfCoilConductorMany: ...
 
 class _TfCoilCrossSectionArrayFromItem:
     @overload
@@ -9032,9 +9048,9 @@ class _TfCoilCrossSectionArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfCoilCrossSectionMany: ...
 
 class _TfCoilCrossSectionArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfCoilCrossSectionMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfCoilCrossSectionMany: ...
 
 class _TfGenericGridDynamicGridSubsetArrayFromItem:
     @overload
@@ -9043,9 +9059,9 @@ class _TfGenericGridDynamicGridSubsetArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicGridSubsetMany: ...
 
 class _TfGenericGridDynamicGridSubsetArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfGenericGridDynamicGridSubsetMany: ...
 
 class _TfGenericGridDynamicGridSubsetElementArrayFromItem:
     @overload
@@ -9054,9 +9070,9 @@ class _TfGenericGridDynamicGridSubsetElementArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicGridSubsetElementMany: ...
 
 class _TfGenericGridDynamicGridSubsetElementArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetElementMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfGenericGridDynamicGridSubsetElementMany: ...
 
 class _TfGenericGridDynamicGridSubsetElementObjectArrayFromItem:
     @overload
@@ -9065,9 +9081,9 @@ class _TfGenericGridDynamicGridSubsetElementObjectArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicGridSubsetElementObjectMany: ...
 
 class _TfGenericGridDynamicGridSubsetElementObjectArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetElementObjectMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfGenericGridDynamicGridSubsetElementObjectMany: ...
 
 class _TfGenericGridDynamicGridSubsetMetricArrayFromItem:
     @overload
@@ -9076,9 +9092,9 @@ class _TfGenericGridDynamicGridSubsetMetricArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicGridSubsetMetricMany: ...
 
 class _TfGenericGridDynamicGridSubsetMetricArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfGenericGridDynamicGridSubsetMetricMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfGenericGridDynamicGridSubsetMetricMany: ...
 
 class _TfGenericGridDynamicSpaceArrayFromItem:
     @overload
@@ -9087,9 +9103,9 @@ class _TfGenericGridDynamicSpaceArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicSpaceMany: ...
 
 class _TfGenericGridDynamicSpaceArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfGenericGridDynamicSpaceMany: ...
 
 class _TfGenericGridDynamicSpaceDimensionArrayFromItem:
     @overload
@@ -9098,9 +9114,9 @@ class _TfGenericGridDynamicSpaceDimensionArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicSpaceDimensionMany: ...
 
 class _TfGenericGridDynamicSpaceDimensionArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceDimensionMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfGenericGridDynamicSpaceDimensionMany: ...
 
 class _TfGenericGridDynamicSpaceDimensionObjectArrayFromItem:
     @overload
@@ -9109,9 +9125,9 @@ class _TfGenericGridDynamicSpaceDimensionObjectArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicSpaceDimensionObjectMany: ...
 
 class _TfGenericGridDynamicSpaceDimensionObjectArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceDimensionObjectMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfGenericGridDynamicSpaceDimensionObjectMany: ...
 
 class _TfGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
     @overload
@@ -9120,9 +9136,9 @@ class _TfGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
 
 class _TfGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
 
 class _TfGenericGridScalarArrayFromItem:
     @overload
@@ -9131,9 +9147,9 @@ class _TfGenericGridScalarArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfGenericGridScalarMany: ...
 
 class _TfGenericGridScalarArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfGenericGridScalarMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfGenericGridScalarMany: ...
 
 class _TfIdentifierDynamicAos3ArrayFromItem:
     @overload
@@ -9142,9 +9158,9 @@ class _TfIdentifierDynamicAos3ArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfIdentifierDynamicAos3Many: ...
 
 class _TfIdentifierDynamicAos3ArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfIdentifierDynamicAos3Many: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfIdentifierDynamicAos3Many: ...
 
 class _TfLibraryArrayFromItem:
     @overload
@@ -9153,9 +9169,9 @@ class _TfLibraryArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfLibraryMany: ...
 
 class _TfLibraryArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfLibraryMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfLibraryMany: ...
 
 class _TfGgdArrayFromItem:
     @overload
@@ -9164,9 +9180,9 @@ class _TfGgdArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _TfGgdMany: ...
 
 class _TfGgdArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _TfGgdMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _TfGgdMany: ...
 
 # --------------------------------------------------------------------------
 # tf root
@@ -9228,7 +9244,10 @@ class Wall:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers.
+        gives one value, a slice gathers. The dimensions are gained from left to right:
+        one per sliced level, in the order they appear on the path, then the leaf's own
+        dimensions. A sliced level which selects a different number of elements under
+        different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -9283,27 +9302,27 @@ class _WallCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -9351,7 +9370,7 @@ class _WallGenericGridAos3RootMany:
         """Grid identifier
         """
     @property
-    def path(self) -> Path[list[str]]:
+    def path(self) -> Path[npt.NDArray[np.str_]]:
         """Path of the grid, including the IDS name, in case of implicit reference to a grid_ggd node described in another IDS. To be filled only if the grid is not described explicitly in this grid_ggd structure. Example syntax: #wall:2/description_ggd(1)/grid_ggd, means that the grid is located in the wall IDS, occurrence 2, with relative path description_ggd(1)/grid_ggd, using Fortran index convention (here : first index of the array)
         """
     @property
@@ -9961,7 +9980,7 @@ class _WallIdentifierDynamicAos3Many:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier
         """
     @property
@@ -9969,7 +9988,7 @@ class _WallIdentifierDynamicAos3Many:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Verbose description
         """
 
@@ -9995,7 +10014,7 @@ class _WallIdentifierDynamicAos31dMany:
     """
 
     @property
-    def names(self) -> Path[list[list[str]]]:
+    def names(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifiers
         """
     @property
@@ -10003,7 +10022,7 @@ class _WallIdentifierDynamicAos31dMany:
         """Integer identifiers (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def descriptions(self) -> Path[list[list[str]]]:
+    def descriptions(self) -> Path[npt.NDArray[np.str_]]:
         """Verbose description
         """
 
@@ -10029,7 +10048,7 @@ class _WallIdentifierStaticMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier
         """
     @property
@@ -10037,7 +10056,7 @@ class _WallIdentifierStaticMany:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Verbose description
         """
 
@@ -10075,27 +10094,27 @@ class _WallLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
 
@@ -10317,7 +10336,7 @@ class _WallTemperatureReferenceMany:
     """
 
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description of how the reference temperature is defined : for which object, at which location, ...
         """
     @property
@@ -10447,7 +10466,7 @@ class _WallVessel2dElementMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the block element
         """
     @property
@@ -10509,11 +10528,11 @@ class _WallVessel2dUnitMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -10659,11 +10678,11 @@ class _Wall2dLimiterUnitMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -10761,7 +10780,7 @@ class _Wall2dMobileUnitMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the mobile unit
         """
     @property
@@ -10913,7 +10932,7 @@ class _WallDescriptionGgdComponentMany:
     """
 
     @property
-    def identifiers(self) -> Path[list[list[str]]]:
+    def identifiers(self) -> Path[npt.NDArray[np.str_]]:
         """Identifiers of the components (described in the various grid_subsets). Although the details may be machine-specific, a tree-like syntax must be followed, listing first top level components, then going down to finer element description. The tree levels are separated by a /, using a number of levels relevant to the granularity of the description. Example : ic_antenna/a1/bumpers refers to the bumpers of the a1 IC antenna
         """
     @property
@@ -11027,7 +11046,7 @@ class _WallDescriptionGgdEnergyIonMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying ion (e.g. H, D, T, He, C, D2, ...)
         """
     @property
@@ -11119,7 +11138,7 @@ class _WallDescriptionGgdEnergyIonStateMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
         """
     @property
@@ -11129,11 +11148,11 @@ class _WallDescriptionGgdEnergyIonStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str]]:
+    def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
-    def electron_configuration(self) -> Path[list[str]]:
+    def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -11195,7 +11214,7 @@ class _WallDescriptionGgdEnergyNeutralMany:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying neutral (e.g. H, D, T, He, C, ...)
         """
     @property
@@ -11267,7 +11286,7 @@ class _WallDescriptionGgdEnergyNeutralStateMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying state
         """
     @property
@@ -11277,7 +11296,7 @@ class _WallDescriptionGgdEnergyNeutralStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str]]:
+    def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
@@ -11285,7 +11304,7 @@ class _WallDescriptionGgdEnergyNeutralStateMany:
         """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
         """
     @property
-    def electron_configuration(self) -> Path[list[str]]:
+    def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -11703,7 +11722,7 @@ class _WallDescriptionGgdParticleIonMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying ion (e.g. H, D, T, He, C, D2, ...)
         """
     @property
@@ -11795,7 +11814,7 @@ class _WallDescriptionGgdParticleIonStateMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
         """
     @property
@@ -11805,11 +11824,11 @@ class _WallDescriptionGgdParticleIonStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str]]:
+    def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
-    def electron_configuration(self) -> Path[list[str]]:
+    def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -11871,7 +11890,7 @@ class _WallDescriptionGgdParticleNeutralMany:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying neutral (e.g. H, D, T, He, C, ...)
         """
     @property
@@ -11943,7 +11962,7 @@ class _WallDescriptionGgdParticleNeutralStateMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying state
         """
     @property
@@ -11953,7 +11972,7 @@ class _WallDescriptionGgdParticleNeutralStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str]]:
+    def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
@@ -11961,7 +11980,7 @@ class _WallDescriptionGgdParticleNeutralStateMany:
         """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
         """
     @property
-    def electron_configuration(self) -> Path[list[str]]:
+    def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -12081,7 +12100,7 @@ class _WallDescriptionGgdRecyclingIonMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying ion (e.g. H, D, T, He, C, D2, ...)
         """
     @property
@@ -12161,7 +12180,7 @@ class _WallDescriptionGgdRecyclingIonStateMany:
         Units: e
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
         """
     @property
@@ -12171,11 +12190,11 @@ class _WallDescriptionGgdRecyclingIonStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str]]:
+    def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
-    def electron_configuration(self) -> Path[list[str]]:
+    def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -12225,7 +12244,7 @@ class _WallDescriptionGgdRecyclingNeutralMany:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying neutral (e.g. H, D, T, He, C, ...)
         """
     @property
@@ -12285,7 +12304,7 @@ class _WallDescriptionGgdRecyclingNeutralStateMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying state
         """
     @property
@@ -12295,7 +12314,7 @@ class _WallDescriptionGgdRecyclingNeutralStateMany:
         Units: e
         """
     @property
-    def vibrational_mode(self) -> Path[list[str]]:
+    def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
         """Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
         """
     @property
@@ -12303,7 +12322,7 @@ class _WallDescriptionGgdRecyclingNeutralStateMany:
         """Neutral type, in terms of energy. ID =1: cold; 2: thermal; 3: fast; 4: NBI
         """
     @property
-    def electron_configuration(self) -> Path[list[str]]:
+    def electron_configuration(self) -> Path[npt.NDArray[np.str_]]:
         """Configuration of atomic orbitals of this state, e.g. 1s2-2s1
         """
     @property
@@ -12643,7 +12662,7 @@ class _WallGlobalQuantititesNeutralMany:
         """List of elements forming the atom or molecule
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying the species (e.g. H, D, CD4, ...)
         """
     @property
@@ -12739,7 +12758,7 @@ class _WallGlobalQuantititesNeutralOriginMany:
         """List of elements forming the atom or molecule of the incident species
         """
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """String identifying the incident species (e.g. H, D, CD4, ...)
         """
     @property
@@ -12778,9 +12797,9 @@ class _WallGenericGridAos3RootArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridAos3RootMany: ...
 
 class _WallGenericGridAos3RootArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridAos3RootMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridAos3RootMany: ...
 
 class _WallGenericGridDynamicGridSubsetArrayFromItem:
     @overload
@@ -12789,9 +12808,9 @@ class _WallGenericGridDynamicGridSubsetArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridDynamicGridSubsetMany: ...
 
 class _WallGenericGridDynamicGridSubsetArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridDynamicGridSubsetMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridDynamicGridSubsetMany: ...
 
 class _WallGenericGridDynamicGridSubsetElementArrayFromItem:
     @overload
@@ -12800,9 +12819,9 @@ class _WallGenericGridDynamicGridSubsetElementArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridDynamicGridSubsetElementMany: ...
 
 class _WallGenericGridDynamicGridSubsetElementArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridDynamicGridSubsetElementMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridDynamicGridSubsetElementMany: ...
 
 class _WallGenericGridDynamicGridSubsetElementObjectArrayFromItem:
     @overload
@@ -12811,9 +12830,9 @@ class _WallGenericGridDynamicGridSubsetElementObjectArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridDynamicGridSubsetElementObjectMany: ...
 
 class _WallGenericGridDynamicGridSubsetElementObjectArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridDynamicGridSubsetElementObjectMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridDynamicGridSubsetElementObjectMany: ...
 
 class _WallGenericGridDynamicGridSubsetMetricArrayFromItem:
     @overload
@@ -12822,9 +12841,9 @@ class _WallGenericGridDynamicGridSubsetMetricArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridDynamicGridSubsetMetricMany: ...
 
 class _WallGenericGridDynamicGridSubsetMetricArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridDynamicGridSubsetMetricMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridDynamicGridSubsetMetricMany: ...
 
 class _WallGenericGridDynamicSpaceArrayFromItem:
     @overload
@@ -12833,9 +12852,9 @@ class _WallGenericGridDynamicSpaceArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridDynamicSpaceMany: ...
 
 class _WallGenericGridDynamicSpaceArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridDynamicSpaceMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridDynamicSpaceMany: ...
 
 class _WallGenericGridDynamicSpaceDimensionArrayFromItem:
     @overload
@@ -12844,9 +12863,9 @@ class _WallGenericGridDynamicSpaceDimensionArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridDynamicSpaceDimensionMany: ...
 
 class _WallGenericGridDynamicSpaceDimensionArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridDynamicSpaceDimensionMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridDynamicSpaceDimensionMany: ...
 
 class _WallGenericGridDynamicSpaceDimensionObjectArrayFromItem:
     @overload
@@ -12855,9 +12874,9 @@ class _WallGenericGridDynamicSpaceDimensionObjectArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridDynamicSpaceDimensionObjectMany: ...
 
 class _WallGenericGridDynamicSpaceDimensionObjectArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridDynamicSpaceDimensionObjectMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridDynamicSpaceDimensionObjectMany: ...
 
 class _WallGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
     @overload
@@ -12866,9 +12885,9 @@ class _WallGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
 
 class _WallGenericGridDynamicSpaceDimensionObjectBoundaryArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridDynamicSpaceDimensionObjectBoundaryMany: ...
 
 class _WallGenericGridIdentifierArrayFromItem:
     @overload
@@ -12877,9 +12896,9 @@ class _WallGenericGridIdentifierArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridIdentifierMany: ...
 
 class _WallGenericGridIdentifierArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridIdentifierMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridIdentifierMany: ...
 
 class _WallGenericGridIdentifierSingleArrayFromItem:
     @overload
@@ -12888,9 +12907,9 @@ class _WallGenericGridIdentifierSingleArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridIdentifierSingleMany: ...
 
 class _WallGenericGridIdentifierSingleArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridIdentifierSingleMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridIdentifierSingleMany: ...
 
 class _WallGenericGridScalarArrayFromItem:
     @overload
@@ -12899,9 +12918,9 @@ class _WallGenericGridScalarArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridScalarMany: ...
 
 class _WallGenericGridScalarArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridScalarMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridScalarMany: ...
 
 class _WallGenericGridVectorArrayFromItem:
     @overload
@@ -12910,9 +12929,9 @@ class _WallGenericGridVectorArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridVectorMany: ...
 
 class _WallGenericGridVectorArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridVectorMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridVectorMany: ...
 
 class _WallGenericGridVectorComponentsRphizArrayFromItem:
     @overload
@@ -12921,9 +12940,9 @@ class _WallGenericGridVectorComponentsRphizArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGenericGridVectorComponentsRphizMany: ...
 
 class _WallGenericGridVectorComponentsRphizArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGenericGridVectorComponentsRphizMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGenericGridVectorComponentsRphizMany: ...
 
 class _WallIdentifierDynamicAos3ArrayFromItem:
     @overload
@@ -12932,9 +12951,9 @@ class _WallIdentifierDynamicAos3ArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallIdentifierDynamicAos3Many: ...
 
 class _WallIdentifierDynamicAos3ArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallIdentifierDynamicAos3Many: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallIdentifierDynamicAos3Many: ...
 
 class _WallIdentifierStaticArrayFromItem:
     @overload
@@ -12943,9 +12962,9 @@ class _WallIdentifierStaticArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallIdentifierStaticMany: ...
 
 class _WallIdentifierStaticArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallIdentifierStaticMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallIdentifierStaticMany: ...
 
 class _WallLibraryArrayFromItem:
     @overload
@@ -12954,9 +12973,9 @@ class _WallLibraryArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallLibraryMany: ...
 
 class _WallLibraryArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallLibraryMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallLibraryMany: ...
 
 class _WallPlasmaCompositionNeutralElementArrayFromItem:
     @overload
@@ -12965,9 +12984,9 @@ class _WallPlasmaCompositionNeutralElementArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallPlasmaCompositionNeutralElementMany: ...
 
 class _WallPlasmaCompositionNeutralElementArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallPlasmaCompositionNeutralElementMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallPlasmaCompositionNeutralElementMany: ...
 
 class _WallPlasmaCompositionNeutralElementConstantArrayFromItem:
     @overload
@@ -12976,9 +12995,9 @@ class _WallPlasmaCompositionNeutralElementConstantArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallPlasmaCompositionNeutralElementConstantMany: ...
 
 class _WallPlasmaCompositionNeutralElementConstantArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallPlasmaCompositionNeutralElementConstantMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallPlasmaCompositionNeutralElementConstantMany: ...
 
 class _WallRz1dDynamicAosTimeArrayFromItem:
     @overload
@@ -12987,9 +13006,9 @@ class _WallRz1dDynamicAosTimeArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallRz1dDynamicAosTimeMany: ...
 
 class _WallRz1dDynamicAosTimeArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallRz1dDynamicAosTimeMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallRz1dDynamicAosTimeMany: ...
 
 class _WallVessel2dElementArrayFromItem:
     @overload
@@ -12998,9 +13017,9 @@ class _WallVessel2dElementArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallVessel2dElementMany: ...
 
 class _WallVessel2dElementArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallVessel2dElementMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallVessel2dElementMany: ...
 
 class _WallVessel2dUnitArrayFromItem:
     @overload
@@ -13009,9 +13028,9 @@ class _WallVessel2dUnitArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallVessel2dUnitMany: ...
 
 class _WallVessel2dUnitArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallVessel2dUnitMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallVessel2dUnitMany: ...
 
 class _Wall2dArrayFromItem:
     @overload
@@ -13020,9 +13039,9 @@ class _Wall2dArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _Wall2dMany: ...
 
 class _Wall2dArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _Wall2dMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _Wall2dMany: ...
 
 class _Wall2dLimiterUnitArrayFromItem:
     @overload
@@ -13031,9 +13050,9 @@ class _Wall2dLimiterUnitArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _Wall2dLimiterUnitMany: ...
 
 class _Wall2dLimiterUnitArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _Wall2dLimiterUnitMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _Wall2dLimiterUnitMany: ...
 
 class _Wall2dMobileUnitArrayFromItem:
     @overload
@@ -13042,9 +13061,9 @@ class _Wall2dMobileUnitArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _Wall2dMobileUnitMany: ...
 
 class _Wall2dMobileUnitArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _Wall2dMobileUnitMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _Wall2dMobileUnitMany: ...
 
 class _WallDescriptionGgdArrayFromItem:
     @overload
@@ -13053,9 +13072,9 @@ class _WallDescriptionGgdArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdMany: ...
 
 class _WallDescriptionGgdArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdMany: ...
 
 class _WallDescriptionGgdBrdfArrayFromItem:
     @overload
@@ -13064,9 +13083,9 @@ class _WallDescriptionGgdBrdfArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdBrdfMany: ...
 
 class _WallDescriptionGgdBrdfArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdBrdfMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdBrdfMany: ...
 
 class _WallDescriptionGgdComponentArrayFromItem:
     @overload
@@ -13075,9 +13094,9 @@ class _WallDescriptionGgdComponentArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdComponentMany: ...
 
 class _WallDescriptionGgdComponentArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdComponentMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdComponentMany: ...
 
 class _WallDescriptionGgdEnergyIonArrayFromItem:
     @overload
@@ -13086,9 +13105,9 @@ class _WallDescriptionGgdEnergyIonArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdEnergyIonMany: ...
 
 class _WallDescriptionGgdEnergyIonArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdEnergyIonMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdEnergyIonMany: ...
 
 class _WallDescriptionGgdEnergyIonStateArrayFromItem:
     @overload
@@ -13097,9 +13116,9 @@ class _WallDescriptionGgdEnergyIonStateArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdEnergyIonStateMany: ...
 
 class _WallDescriptionGgdEnergyIonStateArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdEnergyIonStateMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdEnergyIonStateMany: ...
 
 class _WallDescriptionGgdEnergyNeutralArrayFromItem:
     @overload
@@ -13108,9 +13127,9 @@ class _WallDescriptionGgdEnergyNeutralArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdEnergyNeutralMany: ...
 
 class _WallDescriptionGgdEnergyNeutralArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdEnergyNeutralMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdEnergyNeutralMany: ...
 
 class _WallDescriptionGgdEnergyNeutralStateArrayFromItem:
     @overload
@@ -13119,9 +13138,9 @@ class _WallDescriptionGgdEnergyNeutralStateArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdEnergyNeutralStateMany: ...
 
 class _WallDescriptionGgdEnergyNeutralStateArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdEnergyNeutralStateMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdEnergyNeutralStateMany: ...
 
 class _WallDescriptionGgdGgdArrayFromItem:
     @overload
@@ -13130,9 +13149,9 @@ class _WallDescriptionGgdGgdArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdGgdMany: ...
 
 class _WallDescriptionGgdGgdArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdGgdMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdGgdMany: ...
 
 class _WallDescriptionGgdMaterialArrayFromItem:
     @overload
@@ -13141,9 +13160,9 @@ class _WallDescriptionGgdMaterialArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdMaterialMany: ...
 
 class _WallDescriptionGgdMaterialArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdMaterialMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdMaterialMany: ...
 
 class _WallDescriptionGgdParticleIonArrayFromItem:
     @overload
@@ -13152,9 +13171,9 @@ class _WallDescriptionGgdParticleIonArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdParticleIonMany: ...
 
 class _WallDescriptionGgdParticleIonArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdParticleIonMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdParticleIonMany: ...
 
 class _WallDescriptionGgdParticleIonStateArrayFromItem:
     @overload
@@ -13163,9 +13182,9 @@ class _WallDescriptionGgdParticleIonStateArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdParticleIonStateMany: ...
 
 class _WallDescriptionGgdParticleIonStateArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdParticleIonStateMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdParticleIonStateMany: ...
 
 class _WallDescriptionGgdParticleNeutralArrayFromItem:
     @overload
@@ -13174,9 +13193,9 @@ class _WallDescriptionGgdParticleNeutralArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdParticleNeutralMany: ...
 
 class _WallDescriptionGgdParticleNeutralArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdParticleNeutralMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdParticleNeutralMany: ...
 
 class _WallDescriptionGgdParticleNeutralStateArrayFromItem:
     @overload
@@ -13185,9 +13204,9 @@ class _WallDescriptionGgdParticleNeutralStateArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdParticleNeutralStateMany: ...
 
 class _WallDescriptionGgdParticleNeutralStateArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdParticleNeutralStateMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdParticleNeutralStateMany: ...
 
 class _WallDescriptionGgdRecyclingIonArrayFromItem:
     @overload
@@ -13196,9 +13215,9 @@ class _WallDescriptionGgdRecyclingIonArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdRecyclingIonMany: ...
 
 class _WallDescriptionGgdRecyclingIonArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdRecyclingIonMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdRecyclingIonMany: ...
 
 class _WallDescriptionGgdRecyclingIonStateArrayFromItem:
     @overload
@@ -13207,9 +13226,9 @@ class _WallDescriptionGgdRecyclingIonStateArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdRecyclingIonStateMany: ...
 
 class _WallDescriptionGgdRecyclingIonStateArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdRecyclingIonStateMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdRecyclingIonStateMany: ...
 
 class _WallDescriptionGgdRecyclingNeutralArrayFromItem:
     @overload
@@ -13218,9 +13237,9 @@ class _WallDescriptionGgdRecyclingNeutralArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdRecyclingNeutralMany: ...
 
 class _WallDescriptionGgdRecyclingNeutralArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdRecyclingNeutralMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdRecyclingNeutralMany: ...
 
 class _WallDescriptionGgdRecyclingNeutralStateArrayFromItem:
     @overload
@@ -13229,9 +13248,9 @@ class _WallDescriptionGgdRecyclingNeutralStateArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdRecyclingNeutralStateMany: ...
 
 class _WallDescriptionGgdRecyclingNeutralStateArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdRecyclingNeutralStateMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdRecyclingNeutralStateMany: ...
 
 class _WallDescriptionGgdThicknessArrayFromItem:
     @overload
@@ -13240,9 +13259,9 @@ class _WallDescriptionGgdThicknessArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallDescriptionGgdThicknessMany: ...
 
 class _WallDescriptionGgdThicknessArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallDescriptionGgdThicknessMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallDescriptionGgdThicknessMany: ...
 
 class _WallGlobalQuantititesNeutralArrayFromItem:
     @overload
@@ -13251,9 +13270,9 @@ class _WallGlobalQuantititesNeutralArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGlobalQuantititesNeutralMany: ...
 
 class _WallGlobalQuantititesNeutralArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGlobalQuantititesNeutralMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGlobalQuantititesNeutralMany: ...
 
 class _WallGlobalQuantititesNeutralOriginArrayFromItem:
     @overload
@@ -13262,9 +13281,9 @@ class _WallGlobalQuantititesNeutralOriginArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _WallGlobalQuantititesNeutralOriginMany: ...
 
 class _WallGlobalQuantititesNeutralOriginArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _WallGlobalQuantititesNeutralOriginMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _WallGlobalQuantititesNeutralOriginMany: ...
 
 # --------------------------------------------------------------------------
 # wall root
@@ -13326,7 +13345,10 @@ class Magnetics:
         """Read the data at `path` out of this IDS.
 
         The shape of the result follows the shape of the index: an integer index
-        gives one value, a slice gathers.
+        gives one value, a slice gathers. The dimensions are gained from left to right:
+        one per sliced level, in the order they appear on the path, then the leaf's own
+        dimensions. A sliced level which selects a different number of elements under
+        different elements above it would be jagged, and raises `IndexError`.
 
         An unset leaf reads back as the IMAS empty value: NaN for a float,
         -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
@@ -13381,27 +13403,27 @@ class _MagneticsCodeMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software generating IDS
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
     @property
@@ -13435,7 +13457,7 @@ class _MagneticsIdentifierStaticMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier
         """
     @property
@@ -13443,7 +13465,7 @@ class _MagneticsIdentifierStaticMany:
         """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Verbose description
         """
 
@@ -13481,27 +13503,27 @@ class _MagneticsLibraryMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of software
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Short description of the software (type, purpose)
         """
     @property
-    def commit(self) -> Path[list[str]]:
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
         """Unique commit reference of software
         """
     @property
-    def version(self) -> Path[list[str]]:
+    def version(self) -> Path[npt.NDArray[np.str_]]:
         """Unique version (tag) of software
         """
     @property
-    def repository(self) -> Path[list[str]]:
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
         """URL of software repository
         """
     @property
-    def parameters(self) -> Path[list[str]]:
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
         """List of the code specific parameters in XML format
         """
 
@@ -13611,11 +13633,11 @@ class _MagneticsBpolProbeMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -13763,17 +13785,21 @@ class _MagneticsFluxLoopItem:
 
         Units: V
         """
+    @property
+    def greens(self) -> _MagneticsFluxLoopGreensItem:
+        """Greens tables: the poloidal flux at this flux loop per ampere flowing in each current source
+        """
 
 class _MagneticsFluxLoopMany:
     """Flux loops
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -13812,6 +13838,60 @@ class _MagneticsFluxLoopMany:
 
         Units: V
         """
+    @property
+    def greens(self) -> _MagneticsFluxLoopGreensMany:
+        """Greens tables: the poloidal flux at this flux loop per ampere flowing in each current source
+        """
+
+class _MagneticsFluxLoopGreensItem:
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
+    """
+
+    @property
+    def pf_active(self) -> _MagneticsFluxLoopGreensPfActiveArrayFromItem:
+        """Active poloidal field coils, one entry per coil, in the same order as the `pf_active` IDS
+`coil` array of structures
+        """
+
+class _MagneticsFluxLoopGreensMany:
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
+    """
+
+    @property
+    def pf_active(self) -> _MagneticsFluxLoopGreensPfActiveArrayFromMany:
+        """Active poloidal field coils, one entry per coil, in the same order as the `pf_active` IDS
+`coil` array of structures
+        """
+
+class _MagneticsFluxLoopGreensPfActiveItem:
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Name of the coil, matching `pf_active/coil/name`, e.g. `"BVL"`
+        """
+    @property
+    def value(self) -> Path[float]:
+        """Poloidal flux at the flux loop, per ampere in the coil
+
+        Units: Wb.A^-1
+        """
+
+class _MagneticsFluxLoopGreensPfActiveMany:
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of the coil, matching `pf_active/coil/name`, e.g. `"BVL"`
+        """
+    @property
+    def value(self) -> Path[npt.NDArray[np.float64]]:
+        """Poloidal flux at the flux loop, per ampere in the coil
+
+        Units: Wb.A^-1
+        """
 
 class _MagneticsMethodDistinctItem:
     """Processed quantities derived from the magnetic measurements, using various methods
@@ -13839,7 +13919,7 @@ class _MagneticsMethodDistinctMany:
     """
 
     @property
-    def method_name(self) -> Path[list[str]]:
+    def method_name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of the calculation method
         """
     @property
@@ -13903,11 +13983,11 @@ class _MagneticsRogowskiMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -13987,11 +14067,11 @@ class _MagneticsShuntMany:
     """
 
     @property
-    def name(self) -> Path[list[str]]:
+    def name(self) -> Path[npt.NDArray[np.str_]]:
         """Short string identifier (unique for a given device)
         """
     @property
-    def description(self) -> Path[list[str]]:
+    def description(self) -> Path[npt.NDArray[np.str_]]:
         """Description, e.g. “channel viewing the upper divertor”
         """
     @property
@@ -14164,9 +14244,9 @@ class _MagneticsLibraryArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _MagneticsLibraryMany: ...
 
 class _MagneticsLibraryArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _MagneticsLibraryMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsLibraryMany: ...
 
 class _MagneticsBpolProbeArrayFromItem:
     @overload
@@ -14175,9 +14255,9 @@ class _MagneticsBpolProbeArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _MagneticsBpolProbeMany: ...
 
 class _MagneticsBpolProbeArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _MagneticsBpolProbeMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsBpolProbeMany: ...
 
 class _MagneticsFluxLoopArrayFromItem:
     @overload
@@ -14186,9 +14266,20 @@ class _MagneticsFluxLoopArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _MagneticsFluxLoopMany: ...
 
 class _MagneticsFluxLoopArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _MagneticsFluxLoopMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsFluxLoopMany: ...
+
+class _MagneticsFluxLoopGreensPfActiveArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _MagneticsFluxLoopGreensPfActiveItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _MagneticsFluxLoopGreensPfActiveMany: ...
+
+class _MagneticsFluxLoopGreensPfActiveArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsFluxLoopGreensPfActiveMany: ...
 
 class _MagneticsMethodDistinctArrayFromItem:
     @overload
@@ -14197,9 +14288,9 @@ class _MagneticsMethodDistinctArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _MagneticsMethodDistinctMany: ...
 
 class _MagneticsMethodDistinctArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _MagneticsMethodDistinctMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsMethodDistinctMany: ...
 
 class _MagneticsRogowskiArrayFromItem:
     @overload
@@ -14208,9 +14299,9 @@ class _MagneticsRogowskiArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _MagneticsRogowskiMany: ...
 
 class _MagneticsRogowskiArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _MagneticsRogowskiMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsRogowskiMany: ...
 
 class _MagneticsShuntArrayFromItem:
     @overload
@@ -14219,9 +14310,9 @@ class _MagneticsShuntArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _MagneticsShuntMany: ...
 
 class _MagneticsShuntArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _MagneticsShuntMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsShuntMany: ...
 
 class _MagneticsRphiz0dStaticArrayFromItem:
     @overload
@@ -14230,9 +14321,9 @@ class _MagneticsRphiz0dStaticArrayFromItem:
     def __getitem__(self, index: slice | list[int]) -> _MagneticsRphiz0dStaticMany: ...
 
 class _MagneticsRphiz0dStaticArrayFromMany:
-    # Only one array-of-structures level may be sliced, so once a level above
-    # has been sliced this one takes an integer only.
-    def __getitem__(self, index: int) -> _MagneticsRphiz0dStaticMany: ...
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsRphiz0dStaticMany: ...
 
 # --------------------------------------------------------------------------
 # magnetics root

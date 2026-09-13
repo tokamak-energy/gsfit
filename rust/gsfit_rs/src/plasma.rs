@@ -4,7 +4,7 @@ use crate::passives::Passives;
 use crate::source_functions::SharedSourceFunction;
 use crate::source_functions::extract_source_function;
 use data_tree::DataTreeAccumulator;
-use imas_rs::python::PyEquilibrium;
+use imas_rs::python::{PyEquilibrium, PyPath, read_path};
 use imas_rs::{
     Equilibrium, EquilibriumGreensGridGrid, EquilibriumGreensPfActive, EquilibriumGreensPfPassive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d,
 };
@@ -534,11 +534,21 @@ impl Plasma {
         string_output
     }
 
-    /// The equilibrium IDS, for reading with `gsfit_rs.imas.equilibrium_paths`.
+    /// Read the data at `path`, a path from `gsfit_rs.imas.equilibrium_paths`, straight out of the
+    /// equilibrium IDS.
     ///
-    /// The IDS is copied into the returned object, so it is a snapshot: changes made on the
-    /// Rust side afterwards are not seen by it. A borrow is not possible here, because
-    /// `imas_rs` cannot name `Plasma` without the two crates depending on each other.
+    /// This is how the results are read. A path holds no data, so the IDS is only borrowed for
+    /// the read, never copied. The shape of the result follows the shape of the index; see
+    /// `gsfit_rs.imas.Equilibrium.get`.
+    fn get<'py>(&self, py: Python<'py>, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
+        read_path(py, &self.equilibrium_ids, "equilibrium", path)
+    }
+
+    /// A copy of the whole equilibrium IDS, for reading with `gsfit_rs.imas.equilibrium_paths`.
+    ///
+    /// Read the results with `get` instead. This copies everything, the Greens tables included,
+    /// on every access. It is for when a detached snapshot is wanted: changes made on the Rust
+    /// side afterwards are not seen by it.
     #[getter]
     fn equilibrium_ids(&self) -> PyEquilibrium {
         PyEquilibrium::new(self.equilibrium_ids.clone())

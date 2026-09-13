@@ -9,7 +9,9 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, EMPTY_INT, FLT_0D, FLT_1D, FLT_2D, INT_0D, INT_1D, INT_2D, STR_0D, StringAccumulator};
+use crate::dd_base_types::{Accumulator, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, INT_0D, INT_1D, INT_2D, STR_0D};
+use ndarray::{Dimension, Ix1};
+use std::slice::SliceIndex;
 
 // ============================================================================
 // Complex Types
@@ -563,1033 +565,805 @@ impl Default for PfActive {
 // --- IdentifierStatic View Types ---
 
 /// View over multiple IdentifierStatic with field accumulation
-pub struct IdentifierStaticSliceView<'a> {
-    data: &'a [IdentifierStatic],
-    pub name: StringAccumulator<'a, IdentifierStatic>,
-    pub index: Accumulator<'a, IdentifierStatic, INT_0D>,
-    pub description: StringAccumulator<'a, IdentifierStatic>,
+pub struct IdentifierStaticSliceView<'a, D> {
+    pub name: Accumulator<'a, IdentifierStatic, STR_0D, D>,
+    pub index: Accumulator<'a, IdentifierStatic, INT_0D, D>,
+    pub description: Accumulator<'a, IdentifierStatic, STR_0D, D>,
+    slice_elements: Elements<'a, IdentifierStatic, D>,
 }
 
-impl<'a> IdentifierStaticSliceView<'a> {
-    pub fn new(data: &'a [IdentifierStatic]) -> Self {
+impl<'a, D: Dimension> IdentifierStaticSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, IdentifierStatic, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &IdentifierStatic| item.name.clone()),
-            index: Accumulator::new(data, |item: &IdentifierStatic| item.index),
-            description: StringAccumulator::new(data, |item: &IdentifierStatic| item.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &IdentifierStatic| item.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &IdentifierStatic| item.index),
+            description: Accumulator::new(elements.clone(), |item: &IdentifierStatic| item.description.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &IdentifierStatic> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for IdentifierStatic - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait IdentifierStaticIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output;
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::Range<usize> {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::RangeFull {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a IdentifierStatic> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- PfCoilsElements View Types ---
 
 /// View over `geometry.outline` (Rz1dStatic) across multiple PfCoilsElements
-pub struct PfCoilsElementsGeometryOutlineView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoilsElements>,
+pub struct PfCoilsElementsGeometryOutlineView<'a, D> {
+    slice_elements: Elements<'a, PfCoilsElements, D>,
 }
 
-impl<'a> PfCoilsElementsGeometryOutlineView<'a> {
-    pub fn new(_data: &'a [PfCoilsElements]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsElementsGeometryOutlineView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoilsElements, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `geometry.rectangle` (RectangleStatic) across multiple PfCoilsElements
-pub struct PfCoilsElementsGeometryRectangleView<'a> {
-    pub r: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub z: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub width: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub height: Accumulator<'a, PfCoilsElements, FLT_0D>,
+pub struct PfCoilsElementsGeometryRectangleView<'a, D> {
+    pub r: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub z: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub width: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub height: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoilsElements, D>,
 }
 
-impl<'a> PfCoilsElementsGeometryRectangleView<'a> {
-    pub fn new(data: &'a [PfCoilsElements]) -> Self {
+impl<'a, D: Dimension> PfCoilsElementsGeometryRectangleView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoilsElements, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.r),
-            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.z),
-            width: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.width),
-            height: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.rectangle.height),
+            r: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.rectangle.r),
+            z: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.rectangle.z),
+            width: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.rectangle.width),
+            height: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.rectangle.height),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry.oblique` (ObliqueStatic) across multiple PfCoilsElements
-pub struct PfCoilsElementsGeometryObliqueView<'a> {
-    pub r: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub z: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub length_alpha: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub length_beta: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub alpha: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub beta: Accumulator<'a, PfCoilsElements, FLT_0D>,
+pub struct PfCoilsElementsGeometryObliqueView<'a, D> {
+    pub r: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub z: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub length_alpha: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub length_beta: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub alpha: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub beta: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoilsElements, D>,
 }
 
-impl<'a> PfCoilsElementsGeometryObliqueView<'a> {
-    pub fn new(data: &'a [PfCoilsElements]) -> Self {
+impl<'a, D: Dimension> PfCoilsElementsGeometryObliqueView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoilsElements, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.r),
-            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.z),
-            length_alpha: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.length_alpha),
-            length_beta: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.length_beta),
-            alpha: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.alpha),
-            beta: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.oblique.beta),
+            r: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.oblique.r),
+            z: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.oblique.z),
+            length_alpha: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.oblique.length_alpha),
+            length_beta: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.oblique.length_beta),
+            alpha: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.oblique.alpha),
+            beta: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.oblique.beta),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry.arcs_of_circle` (ArcsOfCircleStatic) across multiple PfCoilsElements
-pub struct PfCoilsElementsGeometryArcsOfCircleView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoilsElements>,
+pub struct PfCoilsElementsGeometryArcsOfCircleView<'a, D> {
+    slice_elements: Elements<'a, PfCoilsElements, D>,
 }
 
-impl<'a> PfCoilsElementsGeometryArcsOfCircleView<'a> {
-    pub fn new(_data: &'a [PfCoilsElements]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsElementsGeometryArcsOfCircleView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoilsElements, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `geometry.annulus` (AnnulusStatic) across multiple PfCoilsElements
-pub struct PfCoilsElementsGeometryAnnulusView<'a> {
-    pub r: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub z: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub radius_inner: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub radius_outer: Accumulator<'a, PfCoilsElements, FLT_0D>,
+pub struct PfCoilsElementsGeometryAnnulusView<'a, D> {
+    pub r: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub z: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub radius_inner: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub radius_outer: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoilsElements, D>,
 }
 
-impl<'a> PfCoilsElementsGeometryAnnulusView<'a> {
-    pub fn new(data: &'a [PfCoilsElements]) -> Self {
+impl<'a, D: Dimension> PfCoilsElementsGeometryAnnulusView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoilsElements, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.annulus.r),
-            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.annulus.z),
-            radius_inner: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.annulus.radius_inner),
-            radius_outer: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.annulus.radius_outer),
+            r: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.annulus.r),
+            z: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.annulus.z),
+            radius_inner: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.annulus.radius_inner),
+            radius_outer: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.annulus.radius_outer),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry.thick_line.first_point` (Rz0dStatic) across multiple PfCoilsElements
-pub struct PfCoilsElementsGeometryThickLineFirstPointView<'a> {
-    pub r: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub z: Accumulator<'a, PfCoilsElements, FLT_0D>,
+pub struct PfCoilsElementsGeometryThickLineFirstPointView<'a, D> {
+    pub r: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub z: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoilsElements, D>,
 }
 
-impl<'a> PfCoilsElementsGeometryThickLineFirstPointView<'a> {
-    pub fn new(data: &'a [PfCoilsElements]) -> Self {
+impl<'a, D: Dimension> PfCoilsElementsGeometryThickLineFirstPointView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoilsElements, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.thick_line.first_point.r),
-            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.thick_line.first_point.z),
+            r: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.thick_line.first_point.r),
+            z: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.thick_line.first_point.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry.thick_line.second_point` (Rz0dStatic) across multiple PfCoilsElements
-pub struct PfCoilsElementsGeometryThickLineSecondPointView<'a> {
-    pub r: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub z: Accumulator<'a, PfCoilsElements, FLT_0D>,
+pub struct PfCoilsElementsGeometryThickLineSecondPointView<'a, D> {
+    pub r: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub z: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoilsElements, D>,
 }
 
-impl<'a> PfCoilsElementsGeometryThickLineSecondPointView<'a> {
-    pub fn new(data: &'a [PfCoilsElements]) -> Self {
+impl<'a, D: Dimension> PfCoilsElementsGeometryThickLineSecondPointView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoilsElements, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.thick_line.second_point.r),
-            z: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.thick_line.second_point.z),
+            r: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.thick_line.second_point.r),
+            z: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.thick_line.second_point.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry.thick_line` (ThickLineStatic) across multiple PfCoilsElements
-pub struct PfCoilsElementsGeometryThickLineView<'a> {
-    pub first_point: PfCoilsElementsGeometryThickLineFirstPointView<'a>,
-    pub second_point: PfCoilsElementsGeometryThickLineSecondPointView<'a>,
-    pub thickness: Accumulator<'a, PfCoilsElements, FLT_0D>,
+pub struct PfCoilsElementsGeometryThickLineView<'a, D> {
+    pub first_point: PfCoilsElementsGeometryThickLineFirstPointView<'a, D>,
+    pub second_point: PfCoilsElementsGeometryThickLineSecondPointView<'a, D>,
+    pub thickness: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoilsElements, D>,
 }
 
-impl<'a> PfCoilsElementsGeometryThickLineView<'a> {
-    pub fn new(data: &'a [PfCoilsElements]) -> Self {
+impl<'a, D: Dimension> PfCoilsElementsGeometryThickLineView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoilsElements, D>) -> Self {
         Self {
-            first_point: PfCoilsElementsGeometryThickLineFirstPointView::new(data),
-            second_point: PfCoilsElementsGeometryThickLineSecondPointView::new(data),
-            thickness: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.thick_line.thickness),
+            first_point: PfCoilsElementsGeometryThickLineFirstPointView::new(elements.clone()),
+            second_point: PfCoilsElementsGeometryThickLineSecondPointView::new(elements.clone()),
+            thickness: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.thick_line.thickness),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry` (Outline2dGeometryStatic) across multiple PfCoilsElements
-pub struct PfCoilsElementsGeometryView<'a> {
-    pub geometry_type: Accumulator<'a, PfCoilsElements, INT_0D>,
-    pub outline: PfCoilsElementsGeometryOutlineView<'a>,
-    pub rectangle: PfCoilsElementsGeometryRectangleView<'a>,
-    pub oblique: PfCoilsElementsGeometryObliqueView<'a>,
-    pub arcs_of_circle: PfCoilsElementsGeometryArcsOfCircleView<'a>,
-    pub annulus: PfCoilsElementsGeometryAnnulusView<'a>,
-    pub thick_line: PfCoilsElementsGeometryThickLineView<'a>,
+pub struct PfCoilsElementsGeometryView<'a, D> {
+    pub geometry_type: Accumulator<'a, PfCoilsElements, INT_0D, D>,
+    pub outline: PfCoilsElementsGeometryOutlineView<'a, D>,
+    pub rectangle: PfCoilsElementsGeometryRectangleView<'a, D>,
+    pub oblique: PfCoilsElementsGeometryObliqueView<'a, D>,
+    pub arcs_of_circle: PfCoilsElementsGeometryArcsOfCircleView<'a, D>,
+    pub annulus: PfCoilsElementsGeometryAnnulusView<'a, D>,
+    pub thick_line: PfCoilsElementsGeometryThickLineView<'a, D>,
+    slice_elements: Elements<'a, PfCoilsElements, D>,
 }
 
-impl<'a> PfCoilsElementsGeometryView<'a> {
-    pub fn new(data: &'a [PfCoilsElements]) -> Self {
+impl<'a, D: Dimension> PfCoilsElementsGeometryView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoilsElements, D>) -> Self {
         Self {
-            geometry_type: Accumulator::new(data, |item: &PfCoilsElements| item.geometry.geometry_type),
-            outline: PfCoilsElementsGeometryOutlineView::new(data),
-            rectangle: PfCoilsElementsGeometryRectangleView::new(data),
-            oblique: PfCoilsElementsGeometryObliqueView::new(data),
-            arcs_of_circle: PfCoilsElementsGeometryArcsOfCircleView::new(data),
-            annulus: PfCoilsElementsGeometryAnnulusView::new(data),
-            thick_line: PfCoilsElementsGeometryThickLineView::new(data),
+            geometry_type: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.geometry.geometry_type),
+            outline: PfCoilsElementsGeometryOutlineView::new(elements.clone()),
+            rectangle: PfCoilsElementsGeometryRectangleView::new(elements.clone()),
+            oblique: PfCoilsElementsGeometryObliqueView::new(elements.clone()),
+            arcs_of_circle: PfCoilsElementsGeometryArcsOfCircleView::new(elements.clone()),
+            annulus: PfCoilsElementsGeometryAnnulusView::new(elements.clone()),
+            thick_line: PfCoilsElementsGeometryThickLineView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple PfCoilsElements with field accumulation
-pub struct PfCoilsElementsSliceView<'a> {
-    data: &'a [PfCoilsElements],
-    pub name: StringAccumulator<'a, PfCoilsElements>,
-    pub description: StringAccumulator<'a, PfCoilsElements>,
-    pub turns_with_sign: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub area: Accumulator<'a, PfCoilsElements, FLT_0D>,
-    pub geometry: PfCoilsElementsGeometryView<'a>,
+pub struct PfCoilsElementsSliceView<'a, D> {
+    pub name: Accumulator<'a, PfCoilsElements, STR_0D, D>,
+    pub description: Accumulator<'a, PfCoilsElements, STR_0D, D>,
+    pub turns_with_sign: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub area: Accumulator<'a, PfCoilsElements, FLT_0D, D>,
+    pub geometry: PfCoilsElementsGeometryView<'a, D>,
+    slice_elements: Elements<'a, PfCoilsElements, D>,
 }
 
-impl<'a> PfCoilsElementsSliceView<'a> {
-    pub fn new(data: &'a [PfCoilsElements]) -> Self {
+impl<'a, D: Dimension> PfCoilsElementsSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoilsElements, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &PfCoilsElements| item.name.clone()),
-            description: StringAccumulator::new(data, |item: &PfCoilsElements| item.description.clone()),
-            turns_with_sign: Accumulator::new(data, |item: &PfCoilsElements| item.turns_with_sign),
-            area: Accumulator::new(data, |item: &PfCoilsElements| item.area),
-            geometry: PfCoilsElementsGeometryView::new(data),
+            name: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.description.clone()),
+            turns_with_sign: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.turns_with_sign),
+            area: Accumulator::new(elements.clone(), |item: &PfCoilsElements| item.area),
+            geometry: PfCoilsElementsGeometryView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &PfCoilsElements> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for PfCoilsElements - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait PfCoilsElementsIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [PfCoilsElements]) -> Self::Output;
-}
-
-impl<'a> PfCoilsElementsIndex<'a> for std::ops::Range<usize> {
-    type Output = PfCoilsElementsSliceView<'a>;
-    fn get(self, data: &'a [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCoilsElementsIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = PfCoilsElementsSliceView<'a>;
-    fn get(self, data: &'a [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCoilsElementsIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = PfCoilsElementsSliceView<'a>;
-    fn get(self, data: &'a [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCoilsElementsIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = PfCoilsElementsSliceView<'a>;
-    fn get(self, data: &'a [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCoilsElementsIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = PfCoilsElementsSliceView<'a>;
-    fn get(self, data: &'a [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCoilsElementsIndex<'a> for std::ops::RangeFull {
-    type Output = PfCoilsElementsSliceView<'a>;
-    fn get(self, data: &'a [PfCoilsElements]) -> Self::Output {
-        PfCoilsElementsSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a PfCoilsElements> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- Library View Types ---
 
 /// View over multiple Library with field accumulation
-pub struct LibrarySliceView<'a> {
-    data: &'a [Library],
-    pub name: StringAccumulator<'a, Library>,
-    pub description: StringAccumulator<'a, Library>,
-    pub commit: StringAccumulator<'a, Library>,
-    pub version: StringAccumulator<'a, Library>,
-    pub repository: StringAccumulator<'a, Library>,
-    pub parameters: StringAccumulator<'a, Library>,
+pub struct LibrarySliceView<'a, D> {
+    pub name: Accumulator<'a, Library, STR_0D, D>,
+    pub description: Accumulator<'a, Library, STR_0D, D>,
+    pub commit: Accumulator<'a, Library, STR_0D, D>,
+    pub version: Accumulator<'a, Library, STR_0D, D>,
+    pub repository: Accumulator<'a, Library, STR_0D, D>,
+    pub parameters: Accumulator<'a, Library, STR_0D, D>,
+    slice_elements: Elements<'a, Library, D>,
 }
 
-impl<'a> LibrarySliceView<'a> {
-    pub fn new(data: &'a [Library]) -> Self {
+impl<'a, D: Dimension> LibrarySliceView<'a, D> {
+    pub fn new(elements: Elements<'a, Library, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &Library| item.name.clone()),
-            description: StringAccumulator::new(data, |item: &Library| item.description.clone()),
-            commit: StringAccumulator::new(data, |item: &Library| item.commit.clone()),
-            version: StringAccumulator::new(data, |item: &Library| item.version.clone()),
-            repository: StringAccumulator::new(data, |item: &Library| item.repository.clone()),
-            parameters: StringAccumulator::new(data, |item: &Library| item.parameters.clone()),
+            name: Accumulator::new(elements.clone(), |item: &Library| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &Library| item.description.clone()),
+            commit: Accumulator::new(elements.clone(), |item: &Library| item.commit.clone()),
+            version: Accumulator::new(elements.clone(), |item: &Library| item.version.clone()),
+            repository: Accumulator::new(elements.clone(), |item: &Library| item.repository.clone()),
+            parameters: Accumulator::new(elements.clone(), |item: &Library| item.parameters.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Library> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for Library - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait LibraryIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [Library]) -> Self::Output;
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::Range<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeFull {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a Library> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- PfCoils View Types ---
 
 /// View over `resistance_additional` (SignalFlt1d) across multiple PfCoils
-pub struct PfCoilsResistanceAdditionalView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsResistanceAdditionalView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsResistanceAdditionalView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsResistanceAdditionalView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `temperature_timed` (SignalFlt1d) across multiple PfCoils
-pub struct PfCoilsTemperatureTimedView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsTemperatureTimedView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsTemperatureTimedView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsTemperatureTimedView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `b_field_max_timed` (SignalFlt1d) across multiple PfCoils
-pub struct PfCoilsBFieldMaxTimedView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsBFieldMaxTimedView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsBFieldMaxTimedView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsBFieldMaxTimedView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `geometry.outline` (Rz1dStatic) across multiple PfCoils
-pub struct PfCoilsGeometryOutlineView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsGeometryOutlineView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsGeometryOutlineView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsGeometryOutlineView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `geometry.rectangle` (RectangleStatic) across multiple PfCoils
-pub struct PfCoilsGeometryRectangleView<'a> {
-    pub r: Accumulator<'a, PfCoils, FLT_0D>,
-    pub z: Accumulator<'a, PfCoils, FLT_0D>,
-    pub width: Accumulator<'a, PfCoils, FLT_0D>,
-    pub height: Accumulator<'a, PfCoils, FLT_0D>,
+pub struct PfCoilsGeometryRectangleView<'a, D> {
+    pub r: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub z: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub width: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub height: Accumulator<'a, PfCoils, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsGeometryRectangleView<'a> {
-    pub fn new(data: &'a [PfCoils]) -> Self {
+impl<'a, D: Dimension> PfCoilsGeometryRectangleView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoils| item.geometry.rectangle.r),
-            z: Accumulator::new(data, |item: &PfCoils| item.geometry.rectangle.z),
-            width: Accumulator::new(data, |item: &PfCoils| item.geometry.rectangle.width),
-            height: Accumulator::new(data, |item: &PfCoils| item.geometry.rectangle.height),
+            r: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.rectangle.r),
+            z: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.rectangle.z),
+            width: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.rectangle.width),
+            height: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.rectangle.height),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry.oblique` (ObliqueStatic) across multiple PfCoils
-pub struct PfCoilsGeometryObliqueView<'a> {
-    pub r: Accumulator<'a, PfCoils, FLT_0D>,
-    pub z: Accumulator<'a, PfCoils, FLT_0D>,
-    pub length_alpha: Accumulator<'a, PfCoils, FLT_0D>,
-    pub length_beta: Accumulator<'a, PfCoils, FLT_0D>,
-    pub alpha: Accumulator<'a, PfCoils, FLT_0D>,
-    pub beta: Accumulator<'a, PfCoils, FLT_0D>,
+pub struct PfCoilsGeometryObliqueView<'a, D> {
+    pub r: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub z: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub length_alpha: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub length_beta: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub alpha: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub beta: Accumulator<'a, PfCoils, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsGeometryObliqueView<'a> {
-    pub fn new(data: &'a [PfCoils]) -> Self {
+impl<'a, D: Dimension> PfCoilsGeometryObliqueView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoils| item.geometry.oblique.r),
-            z: Accumulator::new(data, |item: &PfCoils| item.geometry.oblique.z),
-            length_alpha: Accumulator::new(data, |item: &PfCoils| item.geometry.oblique.length_alpha),
-            length_beta: Accumulator::new(data, |item: &PfCoils| item.geometry.oblique.length_beta),
-            alpha: Accumulator::new(data, |item: &PfCoils| item.geometry.oblique.alpha),
-            beta: Accumulator::new(data, |item: &PfCoils| item.geometry.oblique.beta),
+            r: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.oblique.r),
+            z: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.oblique.z),
+            length_alpha: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.oblique.length_alpha),
+            length_beta: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.oblique.length_beta),
+            alpha: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.oblique.alpha),
+            beta: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.oblique.beta),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry.arcs_of_circle` (ArcsOfCircleStatic) across multiple PfCoils
-pub struct PfCoilsGeometryArcsOfCircleView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsGeometryArcsOfCircleView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsGeometryArcsOfCircleView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsGeometryArcsOfCircleView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `geometry.annulus` (AnnulusStatic) across multiple PfCoils
-pub struct PfCoilsGeometryAnnulusView<'a> {
-    pub r: Accumulator<'a, PfCoils, FLT_0D>,
-    pub z: Accumulator<'a, PfCoils, FLT_0D>,
-    pub radius_inner: Accumulator<'a, PfCoils, FLT_0D>,
-    pub radius_outer: Accumulator<'a, PfCoils, FLT_0D>,
+pub struct PfCoilsGeometryAnnulusView<'a, D> {
+    pub r: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub z: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub radius_inner: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub radius_outer: Accumulator<'a, PfCoils, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsGeometryAnnulusView<'a> {
-    pub fn new(data: &'a [PfCoils]) -> Self {
+impl<'a, D: Dimension> PfCoilsGeometryAnnulusView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoils| item.geometry.annulus.r),
-            z: Accumulator::new(data, |item: &PfCoils| item.geometry.annulus.z),
-            radius_inner: Accumulator::new(data, |item: &PfCoils| item.geometry.annulus.radius_inner),
-            radius_outer: Accumulator::new(data, |item: &PfCoils| item.geometry.annulus.radius_outer),
+            r: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.annulus.r),
+            z: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.annulus.z),
+            radius_inner: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.annulus.radius_inner),
+            radius_outer: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.annulus.radius_outer),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry.thick_line.first_point` (Rz0dStatic) across multiple PfCoils
-pub struct PfCoilsGeometryThickLineFirstPointView<'a> {
-    pub r: Accumulator<'a, PfCoils, FLT_0D>,
-    pub z: Accumulator<'a, PfCoils, FLT_0D>,
+pub struct PfCoilsGeometryThickLineFirstPointView<'a, D> {
+    pub r: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub z: Accumulator<'a, PfCoils, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsGeometryThickLineFirstPointView<'a> {
-    pub fn new(data: &'a [PfCoils]) -> Self {
+impl<'a, D: Dimension> PfCoilsGeometryThickLineFirstPointView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoils| item.geometry.thick_line.first_point.r),
-            z: Accumulator::new(data, |item: &PfCoils| item.geometry.thick_line.first_point.z),
+            r: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.thick_line.first_point.r),
+            z: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.thick_line.first_point.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry.thick_line.second_point` (Rz0dStatic) across multiple PfCoils
-pub struct PfCoilsGeometryThickLineSecondPointView<'a> {
-    pub r: Accumulator<'a, PfCoils, FLT_0D>,
-    pub z: Accumulator<'a, PfCoils, FLT_0D>,
+pub struct PfCoilsGeometryThickLineSecondPointView<'a, D> {
+    pub r: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub z: Accumulator<'a, PfCoils, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsGeometryThickLineSecondPointView<'a> {
-    pub fn new(data: &'a [PfCoils]) -> Self {
+impl<'a, D: Dimension> PfCoilsGeometryThickLineSecondPointView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &PfCoils| item.geometry.thick_line.second_point.r),
-            z: Accumulator::new(data, |item: &PfCoils| item.geometry.thick_line.second_point.z),
+            r: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.thick_line.second_point.r),
+            z: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.thick_line.second_point.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry.thick_line` (ThickLineStatic) across multiple PfCoils
-pub struct PfCoilsGeometryThickLineView<'a> {
-    pub first_point: PfCoilsGeometryThickLineFirstPointView<'a>,
-    pub second_point: PfCoilsGeometryThickLineSecondPointView<'a>,
-    pub thickness: Accumulator<'a, PfCoils, FLT_0D>,
+pub struct PfCoilsGeometryThickLineView<'a, D> {
+    pub first_point: PfCoilsGeometryThickLineFirstPointView<'a, D>,
+    pub second_point: PfCoilsGeometryThickLineSecondPointView<'a, D>,
+    pub thickness: Accumulator<'a, PfCoils, FLT_0D, D>,
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsGeometryThickLineView<'a> {
-    pub fn new(data: &'a [PfCoils]) -> Self {
+impl<'a, D: Dimension> PfCoilsGeometryThickLineView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
         Self {
-            first_point: PfCoilsGeometryThickLineFirstPointView::new(data),
-            second_point: PfCoilsGeometryThickLineSecondPointView::new(data),
-            thickness: Accumulator::new(data, |item: &PfCoils| item.geometry.thick_line.thickness),
+            first_point: PfCoilsGeometryThickLineFirstPointView::new(elements.clone()),
+            second_point: PfCoilsGeometryThickLineSecondPointView::new(elements.clone()),
+            thickness: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.thick_line.thickness),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry` (Outline2dGeometryStatic) across multiple PfCoils
-pub struct PfCoilsGeometryView<'a> {
-    pub geometry_type: Accumulator<'a, PfCoils, INT_0D>,
-    pub outline: PfCoilsGeometryOutlineView<'a>,
-    pub rectangle: PfCoilsGeometryRectangleView<'a>,
-    pub oblique: PfCoilsGeometryObliqueView<'a>,
-    pub arcs_of_circle: PfCoilsGeometryArcsOfCircleView<'a>,
-    pub annulus: PfCoilsGeometryAnnulusView<'a>,
-    pub thick_line: PfCoilsGeometryThickLineView<'a>,
+pub struct PfCoilsGeometryView<'a, D> {
+    pub geometry_type: Accumulator<'a, PfCoils, INT_0D, D>,
+    pub outline: PfCoilsGeometryOutlineView<'a, D>,
+    pub rectangle: PfCoilsGeometryRectangleView<'a, D>,
+    pub oblique: PfCoilsGeometryObliqueView<'a, D>,
+    pub arcs_of_circle: PfCoilsGeometryArcsOfCircleView<'a, D>,
+    pub annulus: PfCoilsGeometryAnnulusView<'a, D>,
+    pub thick_line: PfCoilsGeometryThickLineView<'a, D>,
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsGeometryView<'a> {
-    pub fn new(data: &'a [PfCoils]) -> Self {
+impl<'a, D: Dimension> PfCoilsGeometryView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
         Self {
-            geometry_type: Accumulator::new(data, |item: &PfCoils| item.geometry.geometry_type),
-            outline: PfCoilsGeometryOutlineView::new(data),
-            rectangle: PfCoilsGeometryRectangleView::new(data),
-            oblique: PfCoilsGeometryObliqueView::new(data),
-            arcs_of_circle: PfCoilsGeometryArcsOfCircleView::new(data),
-            annulus: PfCoilsGeometryAnnulusView::new(data),
-            thick_line: PfCoilsGeometryThickLineView::new(data),
+            geometry_type: Accumulator::new(elements.clone(), |item: &PfCoils| item.geometry.geometry_type),
+            outline: PfCoilsGeometryOutlineView::new(elements.clone()),
+            rectangle: PfCoilsGeometryRectangleView::new(elements.clone()),
+            oblique: PfCoilsGeometryObliqueView::new(elements.clone()),
+            arcs_of_circle: PfCoilsGeometryArcsOfCircleView::new(elements.clone()),
+            annulus: PfCoilsGeometryAnnulusView::new(elements.clone()),
+            thick_line: PfCoilsGeometryThickLineView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `current` (SignalFlt1d) across multiple PfCoils
-pub struct PfCoilsCurrentView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsCurrentView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsCurrentView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsCurrentView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `voltage` (SignalFlt1d) across multiple PfCoils
-pub struct PfCoilsVoltageView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsVoltageView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsVoltageView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsVoltageView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `force_radial` (SignalFlt1d) across multiple PfCoils
-pub struct PfCoilsForceRadialView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsForceRadialView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsForceRadialView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsForceRadialView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `force_vertical` (SignalFlt1d) across multiple PfCoils
-pub struct PfCoilsForceVerticalView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsForceVerticalView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsForceVerticalView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsForceVerticalView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `force_radial_crushing` (SignalFlt1d) across multiple PfCoils
-pub struct PfCoilsForceRadialCrushingView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsForceRadialCrushingView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsForceRadialCrushingView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsForceRadialCrushingView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `force_vertical_crushing` (SignalFlt1d) across multiple PfCoils
-pub struct PfCoilsForceVerticalCrushingView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCoils>,
+pub struct PfCoilsForceVerticalCrushingView<'a, D> {
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsForceVerticalCrushingView<'a> {
-    pub fn new(_data: &'a [PfCoils]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCoilsForceVerticalCrushingView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over multiple PfCoils with field accumulation
-pub struct PfCoilsSliceView<'a> {
-    data: &'a [PfCoils],
-    pub name: StringAccumulator<'a, PfCoils>,
-    pub description: StringAccumulator<'a, PfCoils>,
-    pub resistance: Accumulator<'a, PfCoils, FLT_0D>,
-    pub resistance_additional: PfCoilsResistanceAdditionalView<'a>,
-    pub temperature_timed: PfCoilsTemperatureTimedView<'a>,
-    pub inductance: Accumulator<'a, PfCoils, FLT_0D>,
-    pub energy_limit_max: Accumulator<'a, PfCoils, FLT_0D>,
-    pub b_field_max_timed: PfCoilsBFieldMaxTimedView<'a>,
-    pub geometry: PfCoilsGeometryView<'a>,
-    pub current: PfCoilsCurrentView<'a>,
-    pub voltage: PfCoilsVoltageView<'a>,
-    pub force_radial: PfCoilsForceRadialView<'a>,
-    pub force_vertical: PfCoilsForceVerticalView<'a>,
-    pub force_radial_crushing: PfCoilsForceRadialCrushingView<'a>,
-    pub force_vertical_crushing: PfCoilsForceVerticalCrushingView<'a>,
+pub struct PfCoilsSliceView<'a, D> {
+    pub name: Accumulator<'a, PfCoils, STR_0D, D>,
+    pub description: Accumulator<'a, PfCoils, STR_0D, D>,
+    pub resistance: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub resistance_additional: PfCoilsResistanceAdditionalView<'a, D>,
+    pub temperature_timed: PfCoilsTemperatureTimedView<'a, D>,
+    pub inductance: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub energy_limit_max: Accumulator<'a, PfCoils, FLT_0D, D>,
+    pub b_field_max_timed: PfCoilsBFieldMaxTimedView<'a, D>,
+    pub geometry: PfCoilsGeometryView<'a, D>,
+    pub current: PfCoilsCurrentView<'a, D>,
+    pub voltage: PfCoilsVoltageView<'a, D>,
+    pub force_radial: PfCoilsForceRadialView<'a, D>,
+    pub force_vertical: PfCoilsForceVerticalView<'a, D>,
+    pub force_radial_crushing: PfCoilsForceRadialCrushingView<'a, D>,
+    pub force_vertical_crushing: PfCoilsForceVerticalCrushingView<'a, D>,
+    slice_elements: Elements<'a, PfCoils, D>,
 }
 
-impl<'a> PfCoilsSliceView<'a> {
-    pub fn new(data: &'a [PfCoils]) -> Self {
+impl<'a, D: Dimension> PfCoilsSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &PfCoils| item.name.clone()),
-            description: StringAccumulator::new(data, |item: &PfCoils| item.description.clone()),
-            resistance: Accumulator::new(data, |item: &PfCoils| item.resistance),
-            resistance_additional: PfCoilsResistanceAdditionalView::new(data),
-            temperature_timed: PfCoilsTemperatureTimedView::new(data),
-            inductance: Accumulator::new(data, |item: &PfCoils| item.inductance),
-            energy_limit_max: Accumulator::new(data, |item: &PfCoils| item.energy_limit_max),
-            b_field_max_timed: PfCoilsBFieldMaxTimedView::new(data),
-            geometry: PfCoilsGeometryView::new(data),
-            current: PfCoilsCurrentView::new(data),
-            voltage: PfCoilsVoltageView::new(data),
-            force_radial: PfCoilsForceRadialView::new(data),
-            force_vertical: PfCoilsForceVerticalView::new(data),
-            force_radial_crushing: PfCoilsForceRadialCrushingView::new(data),
-            force_vertical_crushing: PfCoilsForceVerticalCrushingView::new(data),
+            name: Accumulator::new(elements.clone(), |item: &PfCoils| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &PfCoils| item.description.clone()),
+            resistance: Accumulator::new(elements.clone(), |item: &PfCoils| item.resistance),
+            resistance_additional: PfCoilsResistanceAdditionalView::new(elements.clone()),
+            temperature_timed: PfCoilsTemperatureTimedView::new(elements.clone()),
+            inductance: Accumulator::new(elements.clone(), |item: &PfCoils| item.inductance),
+            energy_limit_max: Accumulator::new(elements.clone(), |item: &PfCoils| item.energy_limit_max),
+            b_field_max_timed: PfCoilsBFieldMaxTimedView::new(elements.clone()),
+            geometry: PfCoilsGeometryView::new(elements.clone()),
+            current: PfCoilsCurrentView::new(elements.clone()),
+            voltage: PfCoilsVoltageView::new(elements.clone()),
+            force_radial: PfCoilsForceRadialView::new(elements.clone()),
+            force_vertical: PfCoilsForceVerticalView::new(elements.clone()),
+            force_radial_crushing: PfCoilsForceRadialCrushingView::new(elements.clone()),
+            force_vertical_crushing: PfCoilsForceVerticalCrushingView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &PfCoils> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for PfCoils - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait PfCoilsIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [PfCoils]) -> Self::Output;
-}
-
-impl<'a> PfCoilsIndex<'a> for std::ops::Range<usize> {
-    type Output = PfCoilsSliceView<'a>;
-    fn get(self, data: &'a [PfCoils]) -> Self::Output {
-        PfCoilsSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a PfCoils> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> PfCoilsIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = PfCoilsSliceView<'a>;
-    fn get(self, data: &'a [PfCoils]) -> Self::Output {
-        PfCoilsSliceView::new(&data[self])
+    /// The slice view over a range of `function` under every element, e.g. `.function(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn function<R>(&self, range: R) -> IdentifierStaticSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[IdentifierStatic], Output = [IdentifierStatic]> + Clone,
+    {
+        IdentifierStaticSliceView::new(self.slice_elements.nest("function", |item: &PfCoils| item.function.as_slice(), range))
     }
-}
 
-impl<'a> PfCoilsIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = PfCoilsSliceView<'a>;
-    fn get(self, data: &'a [PfCoils]) -> Self::Output {
-        PfCoilsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCoilsIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = PfCoilsSliceView<'a>;
-    fn get(self, data: &'a [PfCoils]) -> Self::Output {
-        PfCoilsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCoilsIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = PfCoilsSliceView<'a>;
-    fn get(self, data: &'a [PfCoils]) -> Self::Output {
-        PfCoilsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCoilsIndex<'a> for std::ops::RangeFull {
-    type Output = PfCoilsSliceView<'a>;
-    fn get(self, data: &'a [PfCoils]) -> Self::Output {
-        PfCoilsSliceView::new(data)
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> PfCoilsElementsSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[PfCoilsElements], Output = [PfCoilsElements]> + Clone,
+    {
+        PfCoilsElementsSliceView::new(self.slice_elements.nest("element", |item: &PfCoils| item.element.as_slice(), range))
     }
 }
 
 // --- PfCircuits View Types ---
 
 /// View over `voltage` (SignalFlt1d) across multiple PfCircuits
-pub struct PfCircuitsVoltageView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCircuits>,
+pub struct PfCircuitsVoltageView<'a, D> {
+    slice_elements: Elements<'a, PfCircuits, D>,
 }
 
-impl<'a> PfCircuitsVoltageView<'a> {
-    pub fn new(_data: &'a [PfCircuits]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCircuitsVoltageView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCircuits, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `current` (SignalFlt1d) across multiple PfCircuits
-pub struct PfCircuitsCurrentView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfCircuits>,
+pub struct PfCircuitsCurrentView<'a, D> {
+    slice_elements: Elements<'a, PfCircuits, D>,
 }
 
-impl<'a> PfCircuitsCurrentView<'a> {
-    pub fn new(_data: &'a [PfCircuits]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfCircuitsCurrentView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCircuits, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over multiple PfCircuits with field accumulation
-pub struct PfCircuitsSliceView<'a> {
-    data: &'a [PfCircuits],
-    pub name: StringAccumulator<'a, PfCircuits>,
-    pub description: StringAccumulator<'a, PfCircuits>,
-    pub r#type: StringAccumulator<'a, PfCircuits>,
-    pub voltage: PfCircuitsVoltageView<'a>,
-    pub current: PfCircuitsCurrentView<'a>,
+pub struct PfCircuitsSliceView<'a, D> {
+    pub name: Accumulator<'a, PfCircuits, STR_0D, D>,
+    pub description: Accumulator<'a, PfCircuits, STR_0D, D>,
+    pub r#type: Accumulator<'a, PfCircuits, STR_0D, D>,
+    pub voltage: PfCircuitsVoltageView<'a, D>,
+    pub current: PfCircuitsCurrentView<'a, D>,
+    slice_elements: Elements<'a, PfCircuits, D>,
 }
 
-impl<'a> PfCircuitsSliceView<'a> {
-    pub fn new(data: &'a [PfCircuits]) -> Self {
+impl<'a, D: Dimension> PfCircuitsSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCircuits, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &PfCircuits| item.name.clone()),
-            description: StringAccumulator::new(data, |item: &PfCircuits| item.description.clone()),
-            r#type: StringAccumulator::new(data, |item: &PfCircuits| item.r#type.clone()),
-            voltage: PfCircuitsVoltageView::new(data),
-            current: PfCircuitsCurrentView::new(data),
+            name: Accumulator::new(elements.clone(), |item: &PfCircuits| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &PfCircuits| item.description.clone()),
+            r#type: Accumulator::new(elements.clone(), |item: &PfCircuits| item.r#type.clone()),
+            voltage: PfCircuitsVoltageView::new(elements.clone()),
+            current: PfCircuitsCurrentView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &PfCircuits> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for PfCircuits - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait PfCircuitsIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [PfCircuits]) -> Self::Output;
-}
-
-impl<'a> PfCircuitsIndex<'a> for std::ops::Range<usize> {
-    type Output = PfCircuitsSliceView<'a>;
-    fn get(self, data: &'a [PfCircuits]) -> Self::Output {
-        PfCircuitsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCircuitsIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = PfCircuitsSliceView<'a>;
-    fn get(self, data: &'a [PfCircuits]) -> Self::Output {
-        PfCircuitsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCircuitsIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = PfCircuitsSliceView<'a>;
-    fn get(self, data: &'a [PfCircuits]) -> Self::Output {
-        PfCircuitsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCircuitsIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = PfCircuitsSliceView<'a>;
-    fn get(self, data: &'a [PfCircuits]) -> Self::Output {
-        PfCircuitsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCircuitsIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = PfCircuitsSliceView<'a>;
-    fn get(self, data: &'a [PfCircuits]) -> Self::Output {
-        PfCircuitsSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfCircuitsIndex<'a> for std::ops::RangeFull {
-    type Output = PfCircuitsSliceView<'a>;
-    fn get(self, data: &'a [PfCircuits]) -> Self::Output {
-        PfCircuitsSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a PfCircuits> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- PfSupplies View Types ---
 
 /// View over `voltage` (SignalFlt1d) across multiple PfSupplies
-pub struct PfSuppliesVoltageView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfSupplies>,
+pub struct PfSuppliesVoltageView<'a, D> {
+    slice_elements: Elements<'a, PfSupplies, D>,
 }
 
-impl<'a> PfSuppliesVoltageView<'a> {
-    pub fn new(_data: &'a [PfSupplies]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfSuppliesVoltageView<'a, D> {
+    pub fn new(elements: Elements<'a, PfSupplies, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `current` (SignalFlt1d) across multiple PfSupplies
-pub struct PfSuppliesCurrentView<'a> {
-    _phantom: std::marker::PhantomData<&'a PfSupplies>,
+pub struct PfSuppliesCurrentView<'a, D> {
+    slice_elements: Elements<'a, PfSupplies, D>,
 }
 
-impl<'a> PfSuppliesCurrentView<'a> {
-    pub fn new(_data: &'a [PfSupplies]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> PfSuppliesCurrentView<'a, D> {
+    pub fn new(elements: Elements<'a, PfSupplies, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over multiple PfSupplies with field accumulation
-pub struct PfSuppliesSliceView<'a> {
-    data: &'a [PfSupplies],
-    pub name: StringAccumulator<'a, PfSupplies>,
-    pub description: StringAccumulator<'a, PfSupplies>,
-    pub r#type: Accumulator<'a, PfSupplies, INT_0D>,
-    pub resistance: Accumulator<'a, PfSupplies, FLT_0D>,
-    pub delay: Accumulator<'a, PfSupplies, FLT_0D>,
-    pub current_limit_max: Accumulator<'a, PfSupplies, FLT_0D>,
-    pub current_limit_min: Accumulator<'a, PfSupplies, FLT_0D>,
-    pub voltage_limit_max: Accumulator<'a, PfSupplies, FLT_0D>,
-    pub voltage_limit_min: Accumulator<'a, PfSupplies, FLT_0D>,
-    pub current_limiter_gain: Accumulator<'a, PfSupplies, FLT_0D>,
-    pub energy_limit_max: Accumulator<'a, PfSupplies, FLT_0D>,
-    pub nonlinear_model: StringAccumulator<'a, PfSupplies>,
-    pub voltage: PfSuppliesVoltageView<'a>,
-    pub current: PfSuppliesCurrentView<'a>,
+pub struct PfSuppliesSliceView<'a, D> {
+    pub name: Accumulator<'a, PfSupplies, STR_0D, D>,
+    pub description: Accumulator<'a, PfSupplies, STR_0D, D>,
+    pub r#type: Accumulator<'a, PfSupplies, INT_0D, D>,
+    pub resistance: Accumulator<'a, PfSupplies, FLT_0D, D>,
+    pub delay: Accumulator<'a, PfSupplies, FLT_0D, D>,
+    pub current_limit_max: Accumulator<'a, PfSupplies, FLT_0D, D>,
+    pub current_limit_min: Accumulator<'a, PfSupplies, FLT_0D, D>,
+    pub voltage_limit_max: Accumulator<'a, PfSupplies, FLT_0D, D>,
+    pub voltage_limit_min: Accumulator<'a, PfSupplies, FLT_0D, D>,
+    pub current_limiter_gain: Accumulator<'a, PfSupplies, FLT_0D, D>,
+    pub energy_limit_max: Accumulator<'a, PfSupplies, FLT_0D, D>,
+    pub nonlinear_model: Accumulator<'a, PfSupplies, STR_0D, D>,
+    pub voltage: PfSuppliesVoltageView<'a, D>,
+    pub current: PfSuppliesCurrentView<'a, D>,
+    slice_elements: Elements<'a, PfSupplies, D>,
 }
 
-impl<'a> PfSuppliesSliceView<'a> {
-    pub fn new(data: &'a [PfSupplies]) -> Self {
+impl<'a, D: Dimension> PfSuppliesSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, PfSupplies, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &PfSupplies| item.name.clone()),
-            description: StringAccumulator::new(data, |item: &PfSupplies| item.description.clone()),
-            r#type: Accumulator::new(data, |item: &PfSupplies| item.r#type),
-            resistance: Accumulator::new(data, |item: &PfSupplies| item.resistance),
-            delay: Accumulator::new(data, |item: &PfSupplies| item.delay),
-            current_limit_max: Accumulator::new(data, |item: &PfSupplies| item.current_limit_max),
-            current_limit_min: Accumulator::new(data, |item: &PfSupplies| item.current_limit_min),
-            voltage_limit_max: Accumulator::new(data, |item: &PfSupplies| item.voltage_limit_max),
-            voltage_limit_min: Accumulator::new(data, |item: &PfSupplies| item.voltage_limit_min),
-            current_limiter_gain: Accumulator::new(data, |item: &PfSupplies| item.current_limiter_gain),
-            energy_limit_max: Accumulator::new(data, |item: &PfSupplies| item.energy_limit_max),
-            nonlinear_model: StringAccumulator::new(data, |item: &PfSupplies| item.nonlinear_model.clone()),
-            voltage: PfSuppliesVoltageView::new(data),
-            current: PfSuppliesCurrentView::new(data),
+            name: Accumulator::new(elements.clone(), |item: &PfSupplies| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &PfSupplies| item.description.clone()),
+            r#type: Accumulator::new(elements.clone(), |item: &PfSupplies| item.r#type),
+            resistance: Accumulator::new(elements.clone(), |item: &PfSupplies| item.resistance),
+            delay: Accumulator::new(elements.clone(), |item: &PfSupplies| item.delay),
+            current_limit_max: Accumulator::new(elements.clone(), |item: &PfSupplies| item.current_limit_max),
+            current_limit_min: Accumulator::new(elements.clone(), |item: &PfSupplies| item.current_limit_min),
+            voltage_limit_max: Accumulator::new(elements.clone(), |item: &PfSupplies| item.voltage_limit_max),
+            voltage_limit_min: Accumulator::new(elements.clone(), |item: &PfSupplies| item.voltage_limit_min),
+            current_limiter_gain: Accumulator::new(elements.clone(), |item: &PfSupplies| item.current_limiter_gain),
+            energy_limit_max: Accumulator::new(elements.clone(), |item: &PfSupplies| item.energy_limit_max),
+            nonlinear_model: Accumulator::new(elements.clone(), |item: &PfSupplies| item.nonlinear_model.clone()),
+            voltage: PfSuppliesVoltageView::new(elements.clone()),
+            current: PfSuppliesCurrentView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &PfSupplies> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for PfSupplies - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait PfSuppliesIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [PfSupplies]) -> Self::Output;
-}
-
-impl<'a> PfSuppliesIndex<'a> for std::ops::Range<usize> {
-    type Output = PfSuppliesSliceView<'a>;
-    fn get(self, data: &'a [PfSupplies]) -> Self::Output {
-        PfSuppliesSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfSuppliesIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = PfSuppliesSliceView<'a>;
-    fn get(self, data: &'a [PfSupplies]) -> Self::Output {
-        PfSuppliesSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfSuppliesIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = PfSuppliesSliceView<'a>;
-    fn get(self, data: &'a [PfSupplies]) -> Self::Output {
-        PfSuppliesSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfSuppliesIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = PfSuppliesSliceView<'a>;
-    fn get(self, data: &'a [PfSupplies]) -> Self::Output {
-        PfSuppliesSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfSuppliesIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = PfSuppliesSliceView<'a>;
-    fn get(self, data: &'a [PfSupplies]) -> Self::Output {
-        PfSuppliesSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PfSuppliesIndex<'a> for std::ops::RangeFull {
-    type Output = PfSuppliesSliceView<'a>;
-    fn get(self, data: &'a [PfSupplies]) -> Self::Output {
-        PfSuppliesSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a PfSupplies> + '_ {
+        self.slice_elements.iter()
     }
 }
 
@@ -1600,8 +1374,11 @@ impl<'a> PfSuppliesIndex<'a> for std::ops::RangeFull {
 impl PfCoils {
     /// The slice view over a range of function, e.g. `.function(0..2)` or `.function(..)`,
     /// whose leaves gather one value per element. A single element is `.function[i]`.
-    pub fn function<'a, I: IdentifierStaticIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.function)
+    pub fn function<R>(&self, range: R) -> IdentifierStaticSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[IdentifierStatic], Output = [IdentifierStatic]>,
+    {
+        IdentifierStaticSliceView::new(Elements::from_slice(&self.function[range]))
     }
 
     /// Get the number of function elements
@@ -1613,8 +1390,11 @@ impl PfCoils {
 impl PfCoils {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: PfCoilsElementsIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> PfCoilsElementsSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PfCoilsElements], Output = [PfCoilsElements]>,
+    {
+        PfCoilsElementsSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -1626,8 +1406,11 @@ impl PfCoils {
 impl Code {
     /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
     /// whose leaves gather one value per element. A single element is `.library[i]`.
-    pub fn library<'a, I: LibraryIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.library)
+    pub fn library<R>(&self, range: R) -> LibrarySliceView<'_, Ix1>
+    where
+        R: SliceIndex<[Library], Output = [Library]>,
+    {
+        LibrarySliceView::new(Elements::from_slice(&self.library[range]))
     }
 
     /// Get the number of library elements
@@ -1639,8 +1422,11 @@ impl Code {
 impl PfActive {
     /// The slice view over a range of coil, e.g. `.coil(0..2)` or `.coil(..)`,
     /// whose leaves gather one value per element. A single element is `.coil[i]`.
-    pub fn coil<'a, I: PfCoilsIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.coil)
+    pub fn coil<R>(&self, range: R) -> PfCoilsSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PfCoils], Output = [PfCoils]>,
+    {
+        PfCoilsSliceView::new(Elements::from_slice(&self.coil[range]))
     }
 
     /// Get the number of coil elements
@@ -1652,8 +1438,11 @@ impl PfActive {
 impl PfActive {
     /// The slice view over a range of circuit, e.g. `.circuit(0..2)` or `.circuit(..)`,
     /// whose leaves gather one value per element. A single element is `.circuit[i]`.
-    pub fn circuit<'a, I: PfCircuitsIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.circuit)
+    pub fn circuit<R>(&self, range: R) -> PfCircuitsSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PfCircuits], Output = [PfCircuits]>,
+    {
+        PfCircuitsSliceView::new(Elements::from_slice(&self.circuit[range]))
     }
 
     /// Get the number of circuit elements
@@ -1665,8 +1454,11 @@ impl PfActive {
 impl PfActive {
     /// The slice view over a range of supply, e.g. `.supply(0..2)` or `.supply(..)`,
     /// whose leaves gather one value per element. A single element is `.supply[i]`.
-    pub fn supply<'a, I: PfSuppliesIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.supply)
+    pub fn supply<R>(&self, range: R) -> PfSuppliesSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PfSupplies], Output = [PfSupplies]>,
+    {
+        PfSuppliesSliceView::new(Elements::from_slice(&self.supply[range]))
     }
 
     /// Get the number of supply elements

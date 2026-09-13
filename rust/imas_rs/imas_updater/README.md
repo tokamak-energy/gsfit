@@ -88,7 +88,9 @@ custom keys.
 Only `../src/ids/*.rs` is generated. Everything else in the crate is hand-written and is
 safe to edit:
 
-* `../src/dd_base_types.rs` — the `FLT_0D`/`INT_0D`/… aliases and the `Accumulator` types.
+* `../src/dd_base_types.rs` — the `FLT_0D`/`INT_0D`/… aliases, and the gathering machinery the
+  generated views are built on: `Elements`, `Accumulator`, and `arrange_left_to_right`, which is
+  the one place the order of gathered dimensions is decided (shared with the Python bindings).
 * `../src/lib.rs`, `../src/ids/mod.rs` — module wiring.
 * The `Equilibrium::with_size` / `Equilibrium::with_time` constructors, which the
   generator emits into `equilibrium.rs`.

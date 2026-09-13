@@ -21,9 +21,8 @@ def greens_with_boundary_points(plasma: gsfit_rs.Plasma) -> npt.NDArray[np.float
     """
 
     # `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
-    equilibrium_ids = plasma.equilibrium_ids
-    r = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim1)
-    z = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
+    r = plasma.get(ep.time_slice[0].profiles_2d[0].grid.dim1)
+    z = plasma.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
     r_min = np.min(r)
     r_max = np.max(r)
     z_min = np.min(z)

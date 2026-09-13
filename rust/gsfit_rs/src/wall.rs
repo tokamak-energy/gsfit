@@ -1,5 +1,5 @@
 use imas_rs::ids::wall::{IdentifierStatic, Rz1dStatic, Wall as WallIds, Wall2d, Wall2dLimiterUnit};
-use imas_rs::python::PyWall;
+use imas_rs::python::{PyPath, PyWall, read_path};
 use ndarray::Array1;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -112,13 +112,20 @@ impl Wall {
         Ok(())
     }
 
-    /// The wall IDS, for reading with `gsfit_rs.imas.wall_paths`.
+    /// Read the data at `path`, a path from `gsfit_rs.imas.wall_paths`, straight out of the wall
+    /// IDS.
     ///
-    /// This is the only way to read the data back out: there are no bespoke accessors, so
-    /// every quantity is reached by its data dictionary path.
+    /// This is how the data is read: there are no bespoke accessors, so every quantity is reached
+    /// by its data dictionary path. A path holds no data, so the IDS is only borrowed for the
+    /// read, never copied.
+    fn get<'py>(&self, py: Python<'py>, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
+        read_path(py, &self.wall_ids, "wall", path)
+    }
+
+    /// A copy of the whole wall IDS, for reading with `gsfit_rs.imas.wall_paths`.
     ///
-    /// The IDS is copied into the returned object, so it is a snapshot: changes made on
-    /// the Rust side afterwards are not seen by it.
+    /// Read the data with `get` instead. This copies the IDS on every access. It is for when a
+    /// detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
     #[getter]
     fn wall_ids(&self) -> PyWall {
         PyWall::new(self.wall_ids.clone())

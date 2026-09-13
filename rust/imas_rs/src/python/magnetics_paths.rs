@@ -59,6 +59,15 @@ fn lengths_flux_loop(magnetics: &Magnetics, level: usize, _at: &[usize]) -> Opti
     }
 }
 
+/// Length of each array-of-structures level along `flux_loop_greens_pf_active`.
+fn lengths_flux_loop_greens_pf_active(magnetics: &Magnetics, level: usize, at: &[usize]) -> Option<usize> {
+    match level {
+        0 => return Some(magnetics.flux_loop.len()),
+        1 => return Some(magnetics.flux_loop[at[0]].greens.pf_active.len()),
+        _ => return None,
+    }
+}
+
 /// Length of each array-of-structures level along `flux_loop_position`.
 fn lengths_flux_loop_position(magnetics: &Magnetics, level: usize, at: &[usize]) -> Option<usize> {
     match level {
@@ -325,6 +334,53 @@ static NODES_FLUX_LOOP_VOLTAGE: &[Node] = &[
     },
 ];
 
+static NODES_FLUX_LOOP_GREENS_PF_ACTIVE: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the coil, matching `pf_active/coil/name`, e.g. `\"BVL\"`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    2,
+                    lengths_flux_loop_greens_pf_active,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.flux_loop[at[0]].greens.pf_active[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "value",
+        documentation: "Poloidal flux at the flux loop, per ampere in the coil",
+        units: "Wb.A^-1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    2,
+                    lengths_flux_loop_greens_pf_active,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.flux_loop[at[0]].greens.pf_active[at[1]].value.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_FLUX_LOOP_GREENS: &[Node] = &[Node {
+    name: "pf_active",
+    documentation: "Active poloidal field coils, one entry per coil, in the same order as the `pf_active` IDS
+`coil` array of structures",
+    units: "",
+    kind: NodeKind::ArrayOfStructures(NODES_FLUX_LOOP_GREENS_PF_ACTIVE),
+}];
+
 static NODES_FLUX_LOOP: &[Node] = &[
     Node {
         name: "name",
@@ -419,6 +475,12 @@ static NODES_FLUX_LOOP: &[Node] = &[
         documentation: "Measured voltage between the loop terminals",
         units: "V",
         kind: NodeKind::Structure(NODES_FLUX_LOOP_VOLTAGE),
+    },
+    Node {
+        name: "greens",
+        documentation: "Greens tables: the poloidal flux at this flux loop per ampere flowing in each current source",
+        units: "",
+        kind: NodeKind::Structure(NODES_FLUX_LOOP_GREENS),
     },
 ];
 

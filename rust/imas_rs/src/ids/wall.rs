@@ -9,7 +9,9 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, EMPTY_INT, FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, INT_1D, STR_0D, STR_1D, StringAccumulator};
+use crate::dd_base_types::{Accumulator, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, INT_1D, STR_0D, STR_1D};
+use ndarray::{Dimension, Ix1};
+use std::slice::SliceIndex;
 
 // ============================================================================
 // Complex Types
@@ -1549,4188 +1551,3701 @@ impl Default for Wall {
 // --- PlasmaCompositionNeutralElementConstant View Types ---
 
 /// View over multiple PlasmaCompositionNeutralElementConstant with field accumulation
-pub struct PlasmaCompositionNeutralElementConstantSliceView<'a> {
-    data: &'a [PlasmaCompositionNeutralElementConstant],
-    pub a: Accumulator<'a, PlasmaCompositionNeutralElementConstant, FLT_0D>,
-    pub z_n: Accumulator<'a, PlasmaCompositionNeutralElementConstant, INT_0D>,
-    pub atoms_n: Accumulator<'a, PlasmaCompositionNeutralElementConstant, INT_0D>,
+pub struct PlasmaCompositionNeutralElementConstantSliceView<'a, D> {
+    pub a: Accumulator<'a, PlasmaCompositionNeutralElementConstant, FLT_0D, D>,
+    pub z_n: Accumulator<'a, PlasmaCompositionNeutralElementConstant, INT_0D, D>,
+    pub atoms_n: Accumulator<'a, PlasmaCompositionNeutralElementConstant, INT_0D, D>,
+    slice_elements: Elements<'a, PlasmaCompositionNeutralElementConstant, D>,
 }
 
-impl<'a> PlasmaCompositionNeutralElementConstantSliceView<'a> {
-    pub fn new(data: &'a [PlasmaCompositionNeutralElementConstant]) -> Self {
+impl<'a, D: Dimension> PlasmaCompositionNeutralElementConstantSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, PlasmaCompositionNeutralElementConstant, D>) -> Self {
         Self {
-            data,
-            a: Accumulator::new(data, |item: &PlasmaCompositionNeutralElementConstant| item.a),
-            z_n: Accumulator::new(data, |item: &PlasmaCompositionNeutralElementConstant| item.z_n),
-            atoms_n: Accumulator::new(data, |item: &PlasmaCompositionNeutralElementConstant| item.atoms_n),
+            a: Accumulator::new(elements.clone(), |item: &PlasmaCompositionNeutralElementConstant| item.a),
+            z_n: Accumulator::new(elements.clone(), |item: &PlasmaCompositionNeutralElementConstant| item.z_n),
+            atoms_n: Accumulator::new(elements.clone(), |item: &PlasmaCompositionNeutralElementConstant| item.atoms_n),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &PlasmaCompositionNeutralElementConstant> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for PlasmaCompositionNeutralElementConstant - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait PlasmaCompositionNeutralElementConstantIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElementConstant]) -> Self::Output;
-}
-
-impl<'a> PlasmaCompositionNeutralElementConstantIndex<'a> for std::ops::Range<usize> {
-    type Output = PlasmaCompositionNeutralElementConstantSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElementConstant]) -> Self::Output {
-        PlasmaCompositionNeutralElementConstantSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PlasmaCompositionNeutralElementConstantIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = PlasmaCompositionNeutralElementConstantSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElementConstant]) -> Self::Output {
-        PlasmaCompositionNeutralElementConstantSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PlasmaCompositionNeutralElementConstantIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = PlasmaCompositionNeutralElementConstantSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElementConstant]) -> Self::Output {
-        PlasmaCompositionNeutralElementConstantSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PlasmaCompositionNeutralElementConstantIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = PlasmaCompositionNeutralElementConstantSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElementConstant]) -> Self::Output {
-        PlasmaCompositionNeutralElementConstantSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PlasmaCompositionNeutralElementConstantIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = PlasmaCompositionNeutralElementConstantSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElementConstant]) -> Self::Output {
-        PlasmaCompositionNeutralElementConstantSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PlasmaCompositionNeutralElementConstantIndex<'a> for std::ops::RangeFull {
-    type Output = PlasmaCompositionNeutralElementConstantSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElementConstant]) -> Self::Output {
-        PlasmaCompositionNeutralElementConstantSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a PlasmaCompositionNeutralElementConstant> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- WallGlobalQuantititesNeutralOrigin View Types ---
 
 /// View over multiple WallGlobalQuantititesNeutralOrigin with field accumulation
-pub struct WallGlobalQuantititesNeutralOriginSliceView<'a> {
-    data: &'a [WallGlobalQuantititesNeutralOrigin],
-    pub name: StringAccumulator<'a, WallGlobalQuantititesNeutralOrigin>,
+pub struct WallGlobalQuantititesNeutralOriginSliceView<'a, D> {
+    pub name: Accumulator<'a, WallGlobalQuantititesNeutralOrigin, STR_0D, D>,
+    slice_elements: Elements<'a, WallGlobalQuantititesNeutralOrigin, D>,
 }
 
-impl<'a> WallGlobalQuantititesNeutralOriginSliceView<'a> {
-    pub fn new(data: &'a [WallGlobalQuantititesNeutralOrigin]) -> Self {
+impl<'a, D: Dimension> WallGlobalQuantititesNeutralOriginSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallGlobalQuantititesNeutralOrigin, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &WallGlobalQuantititesNeutralOrigin| item.name.clone()),
+            name: Accumulator::new(elements.clone(), |item: &WallGlobalQuantititesNeutralOrigin| item.name.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallGlobalQuantititesNeutralOrigin> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallGlobalQuantititesNeutralOrigin - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallGlobalQuantititesNeutralOriginIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutralOrigin]) -> Self::Output;
-}
-
-impl<'a> WallGlobalQuantititesNeutralOriginIndex<'a> for std::ops::Range<usize> {
-    type Output = WallGlobalQuantititesNeutralOriginSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutralOrigin]) -> Self::Output {
-        WallGlobalQuantititesNeutralOriginSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallGlobalQuantititesNeutralOrigin> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallGlobalQuantititesNeutralOriginIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallGlobalQuantititesNeutralOriginSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutralOrigin]) -> Self::Output {
-        WallGlobalQuantititesNeutralOriginSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallGlobalQuantititesNeutralOriginIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallGlobalQuantititesNeutralOriginSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutralOrigin]) -> Self::Output {
-        WallGlobalQuantititesNeutralOriginSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallGlobalQuantititesNeutralOriginIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallGlobalQuantititesNeutralOriginSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutralOrigin]) -> Self::Output {
-        WallGlobalQuantititesNeutralOriginSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallGlobalQuantititesNeutralOriginIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallGlobalQuantititesNeutralOriginSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutralOrigin]) -> Self::Output {
-        WallGlobalQuantititesNeutralOriginSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallGlobalQuantititesNeutralOriginIndex<'a> for std::ops::RangeFull {
-    type Output = WallGlobalQuantititesNeutralOriginSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutralOrigin]) -> Self::Output {
-        WallGlobalQuantititesNeutralOriginSliceView::new(data)
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]> + Clone,
+    {
+        PlasmaCompositionNeutralElementConstantSliceView::new(self.slice_elements.nest(
+            "element",
+            |item: &WallGlobalQuantititesNeutralOrigin| item.element.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- WallGlobalQuantititesNeutral View Types ---
 
 /// View over multiple WallGlobalQuantititesNeutral with field accumulation
-pub struct WallGlobalQuantititesNeutralSliceView<'a> {
-    data: &'a [WallGlobalQuantititesNeutral],
-    pub name: StringAccumulator<'a, WallGlobalQuantititesNeutral>,
+pub struct WallGlobalQuantititesNeutralSliceView<'a, D> {
+    pub name: Accumulator<'a, WallGlobalQuantititesNeutral, STR_0D, D>,
+    slice_elements: Elements<'a, WallGlobalQuantititesNeutral, D>,
 }
 
-impl<'a> WallGlobalQuantititesNeutralSliceView<'a> {
-    pub fn new(data: &'a [WallGlobalQuantititesNeutral]) -> Self {
+impl<'a, D: Dimension> WallGlobalQuantititesNeutralSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallGlobalQuantititesNeutral, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &WallGlobalQuantititesNeutral| item.name.clone()),
+            name: Accumulator::new(elements.clone(), |item: &WallGlobalQuantititesNeutral| item.name.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallGlobalQuantititesNeutral> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallGlobalQuantititesNeutral - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallGlobalQuantititesNeutralIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutral]) -> Self::Output;
-}
-
-impl<'a> WallGlobalQuantititesNeutralIndex<'a> for std::ops::Range<usize> {
-    type Output = WallGlobalQuantititesNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutral]) -> Self::Output {
-        WallGlobalQuantititesNeutralSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallGlobalQuantititesNeutral> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallGlobalQuantititesNeutralIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallGlobalQuantititesNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutral]) -> Self::Output {
-        WallGlobalQuantititesNeutralSliceView::new(&data[self])
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]> + Clone,
+    {
+        PlasmaCompositionNeutralElementConstantSliceView::new(self.slice_elements.nest(
+            "element",
+            |item: &WallGlobalQuantititesNeutral| item.element.as_slice(),
+            range,
+        ))
     }
-}
 
-impl<'a> WallGlobalQuantititesNeutralIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallGlobalQuantititesNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutral]) -> Self::Output {
-        WallGlobalQuantititesNeutralSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallGlobalQuantititesNeutralIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallGlobalQuantititesNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutral]) -> Self::Output {
-        WallGlobalQuantititesNeutralSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallGlobalQuantititesNeutralIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallGlobalQuantititesNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutral]) -> Self::Output {
-        WallGlobalQuantititesNeutralSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallGlobalQuantititesNeutralIndex<'a> for std::ops::RangeFull {
-    type Output = WallGlobalQuantititesNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallGlobalQuantititesNeutral]) -> Self::Output {
-        WallGlobalQuantititesNeutralSliceView::new(data)
+    /// The slice view over a range of `incident_species` under every element, e.g. `.incident_species(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident_species<R>(&self, range: R) -> WallGlobalQuantititesNeutralOriginSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallGlobalQuantititesNeutralOrigin], Output = [WallGlobalQuantititesNeutralOrigin]> + Clone,
+    {
+        WallGlobalQuantititesNeutralOriginSliceView::new(self.slice_elements.nest(
+            "incident_species",
+            |item: &WallGlobalQuantititesNeutral| item.incident_species.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- Wall2dLimiterUnit View Types ---
 
 /// View over `component_type` (IdentifierStatic) across multiple Wall2dLimiterUnit
-pub struct Wall2dLimiterUnitComponentTypeView<'a> {
-    pub name: StringAccumulator<'a, Wall2dLimiterUnit>,
-    pub index: Accumulator<'a, Wall2dLimiterUnit, INT_0D>,
-    pub description: StringAccumulator<'a, Wall2dLimiterUnit>,
+pub struct Wall2dLimiterUnitComponentTypeView<'a, D> {
+    pub name: Accumulator<'a, Wall2dLimiterUnit, STR_0D, D>,
+    pub index: Accumulator<'a, Wall2dLimiterUnit, INT_0D, D>,
+    pub description: Accumulator<'a, Wall2dLimiterUnit, STR_0D, D>,
+    slice_elements: Elements<'a, Wall2dLimiterUnit, D>,
 }
 
-impl<'a> Wall2dLimiterUnitComponentTypeView<'a> {
-    pub fn new(data: &'a [Wall2dLimiterUnit]) -> Self {
+impl<'a, D: Dimension> Wall2dLimiterUnitComponentTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2dLimiterUnit, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &Wall2dLimiterUnit| item.component_type.name.clone()),
-            index: Accumulator::new(data, |item: &Wall2dLimiterUnit| item.component_type.index),
-            description: StringAccumulator::new(data, |item: &Wall2dLimiterUnit| item.component_type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &Wall2dLimiterUnit| item.component_type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &Wall2dLimiterUnit| item.component_type.index),
+            description: Accumulator::new(elements.clone(), |item: &Wall2dLimiterUnit| item.component_type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `outline` (Rz1dStatic) across multiple Wall2dLimiterUnit
-pub struct Wall2dLimiterUnitOutlineView<'a> {
-    _phantom: std::marker::PhantomData<&'a Wall2dLimiterUnit>,
+pub struct Wall2dLimiterUnitOutlineView<'a, D> {
+    slice_elements: Elements<'a, Wall2dLimiterUnit, D>,
 }
 
-impl<'a> Wall2dLimiterUnitOutlineView<'a> {
-    pub fn new(_data: &'a [Wall2dLimiterUnit]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> Wall2dLimiterUnitOutlineView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2dLimiterUnit, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `midplane_power_density_nuclear` (SignalFlt1d) across multiple Wall2dLimiterUnit
-pub struct Wall2dLimiterUnitMidplanePowerDensityNuclearView<'a> {
-    _phantom: std::marker::PhantomData<&'a Wall2dLimiterUnit>,
+pub struct Wall2dLimiterUnitMidplanePowerDensityNuclearView<'a, D> {
+    slice_elements: Elements<'a, Wall2dLimiterUnit, D>,
 }
 
-impl<'a> Wall2dLimiterUnitMidplanePowerDensityNuclearView<'a> {
-    pub fn new(_data: &'a [Wall2dLimiterUnit]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> Wall2dLimiterUnitMidplanePowerDensityNuclearView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2dLimiterUnit, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `power_nuclear` (SignalFlt1d) across multiple Wall2dLimiterUnit
-pub struct Wall2dLimiterUnitPowerNuclearView<'a> {
-    _phantom: std::marker::PhantomData<&'a Wall2dLimiterUnit>,
+pub struct Wall2dLimiterUnitPowerNuclearView<'a, D> {
+    slice_elements: Elements<'a, Wall2dLimiterUnit, D>,
 }
 
-impl<'a> Wall2dLimiterUnitPowerNuclearView<'a> {
-    pub fn new(_data: &'a [Wall2dLimiterUnit]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> Wall2dLimiterUnitPowerNuclearView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2dLimiterUnit, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over multiple Wall2dLimiterUnit with field accumulation
-pub struct Wall2dLimiterUnitSliceView<'a> {
-    data: &'a [Wall2dLimiterUnit],
-    pub name: StringAccumulator<'a, Wall2dLimiterUnit>,
-    pub description: StringAccumulator<'a, Wall2dLimiterUnit>,
-    pub component_type: Wall2dLimiterUnitComponentTypeView<'a>,
-    pub outline: Wall2dLimiterUnitOutlineView<'a>,
-    pub resistivity: Accumulator<'a, Wall2dLimiterUnit, FLT_0D>,
-    pub midplane_thickness: Accumulator<'a, Wall2dLimiterUnit, FLT_0D>,
-    pub midplane_power_density_nuclear: Wall2dLimiterUnitMidplanePowerDensityNuclearView<'a>,
-    pub power_nuclear: Wall2dLimiterUnitPowerNuclearView<'a>,
+pub struct Wall2dLimiterUnitSliceView<'a, D> {
+    pub name: Accumulator<'a, Wall2dLimiterUnit, STR_0D, D>,
+    pub description: Accumulator<'a, Wall2dLimiterUnit, STR_0D, D>,
+    pub component_type: Wall2dLimiterUnitComponentTypeView<'a, D>,
+    pub outline: Wall2dLimiterUnitOutlineView<'a, D>,
+    pub resistivity: Accumulator<'a, Wall2dLimiterUnit, FLT_0D, D>,
+    pub midplane_thickness: Accumulator<'a, Wall2dLimiterUnit, FLT_0D, D>,
+    pub midplane_power_density_nuclear: Wall2dLimiterUnitMidplanePowerDensityNuclearView<'a, D>,
+    pub power_nuclear: Wall2dLimiterUnitPowerNuclearView<'a, D>,
+    slice_elements: Elements<'a, Wall2dLimiterUnit, D>,
 }
 
-impl<'a> Wall2dLimiterUnitSliceView<'a> {
-    pub fn new(data: &'a [Wall2dLimiterUnit]) -> Self {
+impl<'a, D: Dimension> Wall2dLimiterUnitSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2dLimiterUnit, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &Wall2dLimiterUnit| item.name.clone()),
-            description: StringAccumulator::new(data, |item: &Wall2dLimiterUnit| item.description.clone()),
-            component_type: Wall2dLimiterUnitComponentTypeView::new(data),
-            outline: Wall2dLimiterUnitOutlineView::new(data),
-            resistivity: Accumulator::new(data, |item: &Wall2dLimiterUnit| item.resistivity),
-            midplane_thickness: Accumulator::new(data, |item: &Wall2dLimiterUnit| item.midplane_thickness),
-            midplane_power_density_nuclear: Wall2dLimiterUnitMidplanePowerDensityNuclearView::new(data),
-            power_nuclear: Wall2dLimiterUnitPowerNuclearView::new(data),
+            name: Accumulator::new(elements.clone(), |item: &Wall2dLimiterUnit| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &Wall2dLimiterUnit| item.description.clone()),
+            component_type: Wall2dLimiterUnitComponentTypeView::new(elements.clone()),
+            outline: Wall2dLimiterUnitOutlineView::new(elements.clone()),
+            resistivity: Accumulator::new(elements.clone(), |item: &Wall2dLimiterUnit| item.resistivity),
+            midplane_thickness: Accumulator::new(elements.clone(), |item: &Wall2dLimiterUnit| item.midplane_thickness),
+            midplane_power_density_nuclear: Wall2dLimiterUnitMidplanePowerDensityNuclearView::new(elements.clone()),
+            power_nuclear: Wall2dLimiterUnitPowerNuclearView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Wall2dLimiterUnit> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for Wall2dLimiterUnit - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait Wall2dLimiterUnitIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [Wall2dLimiterUnit]) -> Self::Output;
-}
-
-impl<'a> Wall2dLimiterUnitIndex<'a> for std::ops::Range<usize> {
-    type Output = Wall2dLimiterUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dLimiterUnit]) -> Self::Output {
-        Wall2dLimiterUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dLimiterUnitIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = Wall2dLimiterUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dLimiterUnit]) -> Self::Output {
-        Wall2dLimiterUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dLimiterUnitIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = Wall2dLimiterUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dLimiterUnit]) -> Self::Output {
-        Wall2dLimiterUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dLimiterUnitIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = Wall2dLimiterUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dLimiterUnit]) -> Self::Output {
-        Wall2dLimiterUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dLimiterUnitIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = Wall2dLimiterUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dLimiterUnit]) -> Self::Output {
-        Wall2dLimiterUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dLimiterUnitIndex<'a> for std::ops::RangeFull {
-    type Output = Wall2dLimiterUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dLimiterUnit]) -> Self::Output {
-        Wall2dLimiterUnitSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a Wall2dLimiterUnit> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- Rz1dDynamicAosTime View Types ---
 
 /// View over multiple Rz1dDynamicAosTime with field accumulation
-pub struct Rz1dDynamicAosTimeSliceView<'a> {
-    data: &'a [Rz1dDynamicAosTime],
-    pub time: Accumulator<'a, Rz1dDynamicAosTime, FLT_0D>,
+pub struct Rz1dDynamicAosTimeSliceView<'a, D> {
+    pub time: Accumulator<'a, Rz1dDynamicAosTime, FLT_0D, D>,
+    slice_elements: Elements<'a, Rz1dDynamicAosTime, D>,
 }
 
-impl<'a> Rz1dDynamicAosTimeSliceView<'a> {
-    pub fn new(data: &'a [Rz1dDynamicAosTime]) -> Self {
+impl<'a, D: Dimension> Rz1dDynamicAosTimeSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, Rz1dDynamicAosTime, D>) -> Self {
         Self {
-            data,
-            time: Accumulator::new(data, |item: &Rz1dDynamicAosTime| item.time),
+            time: Accumulator::new(elements.clone(), |item: &Rz1dDynamicAosTime| item.time),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Rz1dDynamicAosTime> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for Rz1dDynamicAosTime - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait Rz1dDynamicAosTimeIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [Rz1dDynamicAosTime]) -> Self::Output;
-}
-
-impl<'a> Rz1dDynamicAosTimeIndex<'a> for std::ops::Range<usize> {
-    type Output = Rz1dDynamicAosTimeSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAosTime]) -> Self::Output {
-        Rz1dDynamicAosTimeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Rz1dDynamicAosTimeIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = Rz1dDynamicAosTimeSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAosTime]) -> Self::Output {
-        Rz1dDynamicAosTimeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Rz1dDynamicAosTimeIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = Rz1dDynamicAosTimeSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAosTime]) -> Self::Output {
-        Rz1dDynamicAosTimeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Rz1dDynamicAosTimeIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = Rz1dDynamicAosTimeSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAosTime]) -> Self::Output {
-        Rz1dDynamicAosTimeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Rz1dDynamicAosTimeIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = Rz1dDynamicAosTimeSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAosTime]) -> Self::Output {
-        Rz1dDynamicAosTimeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Rz1dDynamicAosTimeIndex<'a> for std::ops::RangeFull {
-    type Output = Rz1dDynamicAosTimeSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAosTime]) -> Self::Output {
-        Rz1dDynamicAosTimeSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a Rz1dDynamicAosTime> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- Wall2dMobileUnit View Types ---
 
 /// View over multiple Wall2dMobileUnit with field accumulation
-pub struct Wall2dMobileUnitSliceView<'a> {
-    data: &'a [Wall2dMobileUnit],
-    pub name: StringAccumulator<'a, Wall2dMobileUnit>,
-    pub resistivity: Accumulator<'a, Wall2dMobileUnit, FLT_0D>,
+pub struct Wall2dMobileUnitSliceView<'a, D> {
+    pub name: Accumulator<'a, Wall2dMobileUnit, STR_0D, D>,
+    pub resistivity: Accumulator<'a, Wall2dMobileUnit, FLT_0D, D>,
+    slice_elements: Elements<'a, Wall2dMobileUnit, D>,
 }
 
-impl<'a> Wall2dMobileUnitSliceView<'a> {
-    pub fn new(data: &'a [Wall2dMobileUnit]) -> Self {
+impl<'a, D: Dimension> Wall2dMobileUnitSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2dMobileUnit, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &Wall2dMobileUnit| item.name.clone()),
-            resistivity: Accumulator::new(data, |item: &Wall2dMobileUnit| item.resistivity),
+            name: Accumulator::new(elements.clone(), |item: &Wall2dMobileUnit| item.name.clone()),
+            resistivity: Accumulator::new(elements.clone(), |item: &Wall2dMobileUnit| item.resistivity),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Wall2dMobileUnit> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for Wall2dMobileUnit - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait Wall2dMobileUnitIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [Wall2dMobileUnit]) -> Self::Output;
-}
-
-impl<'a> Wall2dMobileUnitIndex<'a> for std::ops::Range<usize> {
-    type Output = Wall2dMobileUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dMobileUnit]) -> Self::Output {
-        Wall2dMobileUnitSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a Wall2dMobileUnit> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> Wall2dMobileUnitIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = Wall2dMobileUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dMobileUnit]) -> Self::Output {
-        Wall2dMobileUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dMobileUnitIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = Wall2dMobileUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dMobileUnit]) -> Self::Output {
-        Wall2dMobileUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dMobileUnitIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = Wall2dMobileUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dMobileUnit]) -> Self::Output {
-        Wall2dMobileUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dMobileUnitIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = Wall2dMobileUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dMobileUnit]) -> Self::Output {
-        Wall2dMobileUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dMobileUnitIndex<'a> for std::ops::RangeFull {
-    type Output = Wall2dMobileUnitSliceView<'a>;
-    fn get(self, data: &'a [Wall2dMobileUnit]) -> Self::Output {
-        Wall2dMobileUnitSliceView::new(data)
+    /// The slice view over a range of `outline` under every element, e.g. `.outline(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn outline<R>(&self, range: R) -> Rz1dDynamicAosTimeSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[Rz1dDynamicAosTime], Output = [Rz1dDynamicAosTime]> + Clone,
+    {
+        Rz1dDynamicAosTimeSliceView::new(self.slice_elements.nest("outline", |item: &Wall2dMobileUnit| item.outline.as_slice(), range))
     }
 }
 
 // --- GenericGridScalar View Types ---
 
 /// View over multiple GenericGridScalar with field accumulation
-pub struct GenericGridScalarSliceView<'a> {
-    data: &'a [GenericGridScalar],
-    pub grid_index: Accumulator<'a, GenericGridScalar, INT_0D>,
-    pub grid_subset_index: Accumulator<'a, GenericGridScalar, INT_0D>,
+pub struct GenericGridScalarSliceView<'a, D> {
+    pub grid_index: Accumulator<'a, GenericGridScalar, INT_0D, D>,
+    pub grid_subset_index: Accumulator<'a, GenericGridScalar, INT_0D, D>,
+    slice_elements: Elements<'a, GenericGridScalar, D>,
 }
 
-impl<'a> GenericGridScalarSliceView<'a> {
-    pub fn new(data: &'a [GenericGridScalar]) -> Self {
+impl<'a, D: Dimension> GenericGridScalarSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridScalar, D>) -> Self {
         Self {
-            data,
-            grid_index: Accumulator::new(data, |item: &GenericGridScalar| item.grid_index),
-            grid_subset_index: Accumulator::new(data, |item: &GenericGridScalar| item.grid_subset_index),
+            grid_index: Accumulator::new(elements.clone(), |item: &GenericGridScalar| item.grid_index),
+            grid_subset_index: Accumulator::new(elements.clone(), |item: &GenericGridScalar| item.grid_subset_index),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridScalar> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridScalar - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridScalarIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output;
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridScalar> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- PlasmaCompositionNeutralElement View Types ---
 
 /// View over multiple PlasmaCompositionNeutralElement with field accumulation
-pub struct PlasmaCompositionNeutralElementSliceView<'a> {
-    data: &'a [PlasmaCompositionNeutralElement],
-    pub a: Accumulator<'a, PlasmaCompositionNeutralElement, FLT_0D>,
-    pub z_n: Accumulator<'a, PlasmaCompositionNeutralElement, INT_0D>,
-    pub atoms_n: Accumulator<'a, PlasmaCompositionNeutralElement, INT_0D>,
+pub struct PlasmaCompositionNeutralElementSliceView<'a, D> {
+    pub a: Accumulator<'a, PlasmaCompositionNeutralElement, FLT_0D, D>,
+    pub z_n: Accumulator<'a, PlasmaCompositionNeutralElement, INT_0D, D>,
+    pub atoms_n: Accumulator<'a, PlasmaCompositionNeutralElement, INT_0D, D>,
+    slice_elements: Elements<'a, PlasmaCompositionNeutralElement, D>,
 }
 
-impl<'a> PlasmaCompositionNeutralElementSliceView<'a> {
-    pub fn new(data: &'a [PlasmaCompositionNeutralElement]) -> Self {
+impl<'a, D: Dimension> PlasmaCompositionNeutralElementSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, PlasmaCompositionNeutralElement, D>) -> Self {
         Self {
-            data,
-            a: Accumulator::new(data, |item: &PlasmaCompositionNeutralElement| item.a),
-            z_n: Accumulator::new(data, |item: &PlasmaCompositionNeutralElement| item.z_n),
-            atoms_n: Accumulator::new(data, |item: &PlasmaCompositionNeutralElement| item.atoms_n),
+            a: Accumulator::new(elements.clone(), |item: &PlasmaCompositionNeutralElement| item.a),
+            z_n: Accumulator::new(elements.clone(), |item: &PlasmaCompositionNeutralElement| item.z_n),
+            atoms_n: Accumulator::new(elements.clone(), |item: &PlasmaCompositionNeutralElement| item.atoms_n),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &PlasmaCompositionNeutralElement> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for PlasmaCompositionNeutralElement - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait PlasmaCompositionNeutralElementIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElement]) -> Self::Output;
-}
-
-impl<'a> PlasmaCompositionNeutralElementIndex<'a> for std::ops::Range<usize> {
-    type Output = PlasmaCompositionNeutralElementSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElement]) -> Self::Output {
-        PlasmaCompositionNeutralElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PlasmaCompositionNeutralElementIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = PlasmaCompositionNeutralElementSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElement]) -> Self::Output {
-        PlasmaCompositionNeutralElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PlasmaCompositionNeutralElementIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = PlasmaCompositionNeutralElementSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElement]) -> Self::Output {
-        PlasmaCompositionNeutralElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PlasmaCompositionNeutralElementIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = PlasmaCompositionNeutralElementSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElement]) -> Self::Output {
-        PlasmaCompositionNeutralElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PlasmaCompositionNeutralElementIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = PlasmaCompositionNeutralElementSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElement]) -> Self::Output {
-        PlasmaCompositionNeutralElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> PlasmaCompositionNeutralElementIndex<'a> for std::ops::RangeFull {
-    type Output = PlasmaCompositionNeutralElementSliceView<'a>;
-    fn get(self, data: &'a [PlasmaCompositionNeutralElement]) -> Self::Output {
-        PlasmaCompositionNeutralElementSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a PlasmaCompositionNeutralElement> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- WallDescriptionGgdEnergyNeutralState View Types ---
 
 /// View over `neutral_type` (IdentifierDynamicAos3) across multiple WallDescriptionGgdEnergyNeutralState
-pub struct WallDescriptionGgdEnergyNeutralStateNeutralTypeView<'a> {
-    pub name: StringAccumulator<'a, WallDescriptionGgdEnergyNeutralState>,
-    pub index: Accumulator<'a, WallDescriptionGgdEnergyNeutralState, INT_0D>,
-    pub description: StringAccumulator<'a, WallDescriptionGgdEnergyNeutralState>,
+pub struct WallDescriptionGgdEnergyNeutralStateNeutralTypeView<'a, D> {
+    pub name: Accumulator<'a, WallDescriptionGgdEnergyNeutralState, STR_0D, D>,
+    pub index: Accumulator<'a, WallDescriptionGgdEnergyNeutralState, INT_0D, D>,
+    pub description: Accumulator<'a, WallDescriptionGgdEnergyNeutralState, STR_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdEnergyNeutralState, D>,
 }
 
-impl<'a> WallDescriptionGgdEnergyNeutralStateNeutralTypeView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdEnergyNeutralState]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdEnergyNeutralStateNeutralTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdEnergyNeutralState, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdEnergyNeutralState| item.neutral_type.name.clone()),
-            index: Accumulator::new(data, |item: &WallDescriptionGgdEnergyNeutralState| item.neutral_type.index),
-            description: StringAccumulator::new(data, |item: &WallDescriptionGgdEnergyNeutralState| item.neutral_type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyNeutralState| item.neutral_type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyNeutralState| item.neutral_type.index),
+            description: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyNeutralState| {
+                item.neutral_type.description.clone()
+            }),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple WallDescriptionGgdEnergyNeutralState with field accumulation
-pub struct WallDescriptionGgdEnergyNeutralStateSliceView<'a> {
-    data: &'a [WallDescriptionGgdEnergyNeutralState],
-    pub name: StringAccumulator<'a, WallDescriptionGgdEnergyNeutralState>,
-    pub vibrational_level: Accumulator<'a, WallDescriptionGgdEnergyNeutralState, FLT_0D>,
-    pub vibrational_mode: StringAccumulator<'a, WallDescriptionGgdEnergyNeutralState>,
-    pub neutral_type: WallDescriptionGgdEnergyNeutralStateNeutralTypeView<'a>,
-    pub electron_configuration: StringAccumulator<'a, WallDescriptionGgdEnergyNeutralState>,
+pub struct WallDescriptionGgdEnergyNeutralStateSliceView<'a, D> {
+    pub name: Accumulator<'a, WallDescriptionGgdEnergyNeutralState, STR_0D, D>,
+    pub vibrational_level: Accumulator<'a, WallDescriptionGgdEnergyNeutralState, FLT_0D, D>,
+    pub vibrational_mode: Accumulator<'a, WallDescriptionGgdEnergyNeutralState, STR_0D, D>,
+    pub neutral_type: WallDescriptionGgdEnergyNeutralStateNeutralTypeView<'a, D>,
+    pub electron_configuration: Accumulator<'a, WallDescriptionGgdEnergyNeutralState, STR_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdEnergyNeutralState, D>,
 }
 
-impl<'a> WallDescriptionGgdEnergyNeutralStateSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdEnergyNeutralState]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdEnergyNeutralStateSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdEnergyNeutralState, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdEnergyNeutralState| item.name.clone()),
-            vibrational_level: Accumulator::new(data, |item: &WallDescriptionGgdEnergyNeutralState| item.vibrational_level),
-            vibrational_mode: StringAccumulator::new(data, |item: &WallDescriptionGgdEnergyNeutralState| item.vibrational_mode.clone()),
-            neutral_type: WallDescriptionGgdEnergyNeutralStateNeutralTypeView::new(data),
-            electron_configuration: StringAccumulator::new(data, |item: &WallDescriptionGgdEnergyNeutralState| item.electron_configuration.clone()),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyNeutralState| item.name.clone()),
+            vibrational_level: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyNeutralState| item.vibrational_level),
+            vibrational_mode: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyNeutralState| item.vibrational_mode.clone()),
+            neutral_type: WallDescriptionGgdEnergyNeutralStateNeutralTypeView::new(elements.clone()),
+            electron_configuration: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyNeutralState| {
+                item.electron_configuration.clone()
+            }),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdEnergyNeutralState> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdEnergyNeutralState - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdEnergyNeutralStateIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutralState]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdEnergyNeutralStateIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdEnergyNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutralState]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralStateSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdEnergyNeutralState> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyNeutralStateIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdEnergyNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutralState]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralStateSliceView::new(&data[self])
+    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("incident", |item: &WallDescriptionGgdEnergyNeutralState| item.incident.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyNeutralStateIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdEnergyNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutralState]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdEnergyNeutralStateIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdEnergyNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutralState]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdEnergyNeutralStateIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdEnergyNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutralState]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdEnergyNeutralStateIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdEnergyNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutralState]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralStateSliceView::new(data)
+    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("emitted", |item: &WallDescriptionGgdEnergyNeutralState| item.emitted.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdEnergyIonState View Types ---
 
 /// View over multiple WallDescriptionGgdEnergyIonState with field accumulation
-pub struct WallDescriptionGgdEnergyIonStateSliceView<'a> {
-    data: &'a [WallDescriptionGgdEnergyIonState],
-    pub z_min: Accumulator<'a, WallDescriptionGgdEnergyIonState, FLT_0D>,
-    pub z_max: Accumulator<'a, WallDescriptionGgdEnergyIonState, FLT_0D>,
-    pub name: StringAccumulator<'a, WallDescriptionGgdEnergyIonState>,
-    pub vibrational_level: Accumulator<'a, WallDescriptionGgdEnergyIonState, FLT_0D>,
-    pub vibrational_mode: StringAccumulator<'a, WallDescriptionGgdEnergyIonState>,
-    pub electron_configuration: StringAccumulator<'a, WallDescriptionGgdEnergyIonState>,
+pub struct WallDescriptionGgdEnergyIonStateSliceView<'a, D> {
+    pub z_min: Accumulator<'a, WallDescriptionGgdEnergyIonState, FLT_0D, D>,
+    pub z_max: Accumulator<'a, WallDescriptionGgdEnergyIonState, FLT_0D, D>,
+    pub name: Accumulator<'a, WallDescriptionGgdEnergyIonState, STR_0D, D>,
+    pub vibrational_level: Accumulator<'a, WallDescriptionGgdEnergyIonState, FLT_0D, D>,
+    pub vibrational_mode: Accumulator<'a, WallDescriptionGgdEnergyIonState, STR_0D, D>,
+    pub electron_configuration: Accumulator<'a, WallDescriptionGgdEnergyIonState, STR_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdEnergyIonState, D>,
 }
 
-impl<'a> WallDescriptionGgdEnergyIonStateSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdEnergyIonState]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdEnergyIonStateSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdEnergyIonState, D>) -> Self {
         Self {
-            data,
-            z_min: Accumulator::new(data, |item: &WallDescriptionGgdEnergyIonState| item.z_min),
-            z_max: Accumulator::new(data, |item: &WallDescriptionGgdEnergyIonState| item.z_max),
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdEnergyIonState| item.name.clone()),
-            vibrational_level: Accumulator::new(data, |item: &WallDescriptionGgdEnergyIonState| item.vibrational_level),
-            vibrational_mode: StringAccumulator::new(data, |item: &WallDescriptionGgdEnergyIonState| item.vibrational_mode.clone()),
-            electron_configuration: StringAccumulator::new(data, |item: &WallDescriptionGgdEnergyIonState| item.electron_configuration.clone()),
+            z_min: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyIonState| item.z_min),
+            z_max: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyIonState| item.z_max),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyIonState| item.name.clone()),
+            vibrational_level: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyIonState| item.vibrational_level),
+            vibrational_mode: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyIonState| item.vibrational_mode.clone()),
+            electron_configuration: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyIonState| item.electron_configuration.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdEnergyIonState> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdEnergyIonState - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdEnergyIonStateIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIonState]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdEnergyIonStateIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdEnergyIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIonState]) -> Self::Output {
-        WallDescriptionGgdEnergyIonStateSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdEnergyIonState> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyIonStateIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdEnergyIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIonState]) -> Self::Output {
-        WallDescriptionGgdEnergyIonStateSliceView::new(&data[self])
+    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("incident", |item: &WallDescriptionGgdEnergyIonState| item.incident.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyIonStateIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdEnergyIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIonState]) -> Self::Output {
-        WallDescriptionGgdEnergyIonStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdEnergyIonStateIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdEnergyIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIonState]) -> Self::Output {
-        WallDescriptionGgdEnergyIonStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdEnergyIonStateIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdEnergyIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIonState]) -> Self::Output {
-        WallDescriptionGgdEnergyIonStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdEnergyIonStateIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdEnergyIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIonState]) -> Self::Output {
-        WallDescriptionGgdEnergyIonStateSliceView::new(data)
+    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("emitted", |item: &WallDescriptionGgdEnergyIonState| item.emitted.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdEnergyIon View Types ---
 
 /// View over multiple WallDescriptionGgdEnergyIon with field accumulation
-pub struct WallDescriptionGgdEnergyIonSliceView<'a> {
-    data: &'a [WallDescriptionGgdEnergyIon],
-    pub z_ion: Accumulator<'a, WallDescriptionGgdEnergyIon, FLT_0D>,
-    pub name: StringAccumulator<'a, WallDescriptionGgdEnergyIon>,
-    pub neutral_index: Accumulator<'a, WallDescriptionGgdEnergyIon, INT_0D>,
-    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdEnergyIon, INT_0D>,
+pub struct WallDescriptionGgdEnergyIonSliceView<'a, D> {
+    pub z_ion: Accumulator<'a, WallDescriptionGgdEnergyIon, FLT_0D, D>,
+    pub name: Accumulator<'a, WallDescriptionGgdEnergyIon, STR_0D, D>,
+    pub neutral_index: Accumulator<'a, WallDescriptionGgdEnergyIon, INT_0D, D>,
+    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdEnergyIon, INT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdEnergyIon, D>,
 }
 
-impl<'a> WallDescriptionGgdEnergyIonSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdEnergyIon]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdEnergyIonSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdEnergyIon, D>) -> Self {
         Self {
-            data,
-            z_ion: Accumulator::new(data, |item: &WallDescriptionGgdEnergyIon| item.z_ion),
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdEnergyIon| item.name.clone()),
-            neutral_index: Accumulator::new(data, |item: &WallDescriptionGgdEnergyIon| item.neutral_index),
-            multiple_states_flag: Accumulator::new(data, |item: &WallDescriptionGgdEnergyIon| item.multiple_states_flag),
+            z_ion: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyIon| item.z_ion),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyIon| item.name.clone()),
+            neutral_index: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyIon| item.neutral_index),
+            multiple_states_flag: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyIon| item.multiple_states_flag),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdEnergyIon> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdEnergyIon - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdEnergyIonIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIon]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdEnergyIonIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdEnergyIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIon]) -> Self::Output {
-        WallDescriptionGgdEnergyIonSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdEnergyIon> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyIonIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdEnergyIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIon]) -> Self::Output {
-        WallDescriptionGgdEnergyIonSliceView::new(&data[self])
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(
+            self.slice_elements
+                .nest("element", |item: &WallDescriptionGgdEnergyIon| item.element.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyIonIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdEnergyIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIon]) -> Self::Output {
-        WallDescriptionGgdEnergyIonSliceView::new(&data[self])
+    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("incident", |item: &WallDescriptionGgdEnergyIon| item.incident.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyIonIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdEnergyIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIon]) -> Self::Output {
-        WallDescriptionGgdEnergyIonSliceView::new(&data[self])
+    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("emitted", |item: &WallDescriptionGgdEnergyIon| item.emitted.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyIonIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdEnergyIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIon]) -> Self::Output {
-        WallDescriptionGgdEnergyIonSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdEnergyIonIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdEnergyIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyIon]) -> Self::Output {
-        WallDescriptionGgdEnergyIonSliceView::new(data)
+    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdEnergyIonStateSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyIonState], Output = [WallDescriptionGgdEnergyIonState]> + Clone,
+    {
+        WallDescriptionGgdEnergyIonStateSliceView::new(
+            self.slice_elements
+                .nest("state", |item: &WallDescriptionGgdEnergyIon| item.state.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdEnergyNeutral View Types ---
 
 /// View over multiple WallDescriptionGgdEnergyNeutral with field accumulation
-pub struct WallDescriptionGgdEnergyNeutralSliceView<'a> {
-    data: &'a [WallDescriptionGgdEnergyNeutral],
-    pub name: StringAccumulator<'a, WallDescriptionGgdEnergyNeutral>,
-    pub ion_index: Accumulator<'a, WallDescriptionGgdEnergyNeutral, INT_0D>,
-    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdEnergyNeutral, INT_0D>,
+pub struct WallDescriptionGgdEnergyNeutralSliceView<'a, D> {
+    pub name: Accumulator<'a, WallDescriptionGgdEnergyNeutral, STR_0D, D>,
+    pub ion_index: Accumulator<'a, WallDescriptionGgdEnergyNeutral, INT_0D, D>,
+    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdEnergyNeutral, INT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdEnergyNeutral, D>,
 }
 
-impl<'a> WallDescriptionGgdEnergyNeutralSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdEnergyNeutral]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdEnergyNeutralSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdEnergyNeutral, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdEnergyNeutral| item.name.clone()),
-            ion_index: Accumulator::new(data, |item: &WallDescriptionGgdEnergyNeutral| item.ion_index),
-            multiple_states_flag: Accumulator::new(data, |item: &WallDescriptionGgdEnergyNeutral| item.multiple_states_flag),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyNeutral| item.name.clone()),
+            ion_index: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyNeutral| item.ion_index),
+            multiple_states_flag: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdEnergyNeutral| item.multiple_states_flag),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdEnergyNeutral> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdEnergyNeutral - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdEnergyNeutralIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutral]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdEnergyNeutralIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdEnergyNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutral]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdEnergyNeutral> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyNeutralIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdEnergyNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutral]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralSliceView::new(&data[self])
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(self.slice_elements.nest(
+            "element",
+            |item: &WallDescriptionGgdEnergyNeutral| item.element.as_slice(),
+            range,
+        ))
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyNeutralIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdEnergyNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutral]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralSliceView::new(&data[self])
+    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("incident", |item: &WallDescriptionGgdEnergyNeutral| item.incident.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyNeutralIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdEnergyNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutral]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralSliceView::new(&data[self])
+    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("emitted", |item: &WallDescriptionGgdEnergyNeutral| item.emitted.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdEnergyNeutralIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdEnergyNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutral]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdEnergyNeutralIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdEnergyNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdEnergyNeutral]) -> Self::Output {
-        WallDescriptionGgdEnergyNeutralSliceView::new(data)
+    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralStateSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyNeutralState], Output = [WallDescriptionGgdEnergyNeutralState]> + Clone,
+    {
+        WallDescriptionGgdEnergyNeutralStateSliceView::new(self.slice_elements.nest(
+            "state",
+            |item: &WallDescriptionGgdEnergyNeutral| item.state.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- WallDescriptionGgdParticleNeutralState View Types ---
 
 /// View over `neutral_type` (IdentifierDynamicAos3) across multiple WallDescriptionGgdParticleNeutralState
-pub struct WallDescriptionGgdParticleNeutralStateNeutralTypeView<'a> {
-    pub name: StringAccumulator<'a, WallDescriptionGgdParticleNeutralState>,
-    pub index: Accumulator<'a, WallDescriptionGgdParticleNeutralState, INT_0D>,
-    pub description: StringAccumulator<'a, WallDescriptionGgdParticleNeutralState>,
+pub struct WallDescriptionGgdParticleNeutralStateNeutralTypeView<'a, D> {
+    pub name: Accumulator<'a, WallDescriptionGgdParticleNeutralState, STR_0D, D>,
+    pub index: Accumulator<'a, WallDescriptionGgdParticleNeutralState, INT_0D, D>,
+    pub description: Accumulator<'a, WallDescriptionGgdParticleNeutralState, STR_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdParticleNeutralState, D>,
 }
 
-impl<'a> WallDescriptionGgdParticleNeutralStateNeutralTypeView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdParticleNeutralState]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdParticleNeutralStateNeutralTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdParticleNeutralState, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdParticleNeutralState| item.neutral_type.name.clone()),
-            index: Accumulator::new(data, |item: &WallDescriptionGgdParticleNeutralState| item.neutral_type.index),
-            description: StringAccumulator::new(data, |item: &WallDescriptionGgdParticleNeutralState| item.neutral_type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleNeutralState| item.neutral_type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleNeutralState| item.neutral_type.index),
+            description: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleNeutralState| {
+                item.neutral_type.description.clone()
+            }),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple WallDescriptionGgdParticleNeutralState with field accumulation
-pub struct WallDescriptionGgdParticleNeutralStateSliceView<'a> {
-    data: &'a [WallDescriptionGgdParticleNeutralState],
-    pub name: StringAccumulator<'a, WallDescriptionGgdParticleNeutralState>,
-    pub vibrational_level: Accumulator<'a, WallDescriptionGgdParticleNeutralState, FLT_0D>,
-    pub vibrational_mode: StringAccumulator<'a, WallDescriptionGgdParticleNeutralState>,
-    pub neutral_type: WallDescriptionGgdParticleNeutralStateNeutralTypeView<'a>,
-    pub electron_configuration: StringAccumulator<'a, WallDescriptionGgdParticleNeutralState>,
+pub struct WallDescriptionGgdParticleNeutralStateSliceView<'a, D> {
+    pub name: Accumulator<'a, WallDescriptionGgdParticleNeutralState, STR_0D, D>,
+    pub vibrational_level: Accumulator<'a, WallDescriptionGgdParticleNeutralState, FLT_0D, D>,
+    pub vibrational_mode: Accumulator<'a, WallDescriptionGgdParticleNeutralState, STR_0D, D>,
+    pub neutral_type: WallDescriptionGgdParticleNeutralStateNeutralTypeView<'a, D>,
+    pub electron_configuration: Accumulator<'a, WallDescriptionGgdParticleNeutralState, STR_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdParticleNeutralState, D>,
 }
 
-impl<'a> WallDescriptionGgdParticleNeutralStateSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdParticleNeutralState]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdParticleNeutralStateSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdParticleNeutralState, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdParticleNeutralState| item.name.clone()),
-            vibrational_level: Accumulator::new(data, |item: &WallDescriptionGgdParticleNeutralState| item.vibrational_level),
-            vibrational_mode: StringAccumulator::new(data, |item: &WallDescriptionGgdParticleNeutralState| item.vibrational_mode.clone()),
-            neutral_type: WallDescriptionGgdParticleNeutralStateNeutralTypeView::new(data),
-            electron_configuration: StringAccumulator::new(data, |item: &WallDescriptionGgdParticleNeutralState| item.electron_configuration.clone()),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleNeutralState| item.name.clone()),
+            vibrational_level: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleNeutralState| item.vibrational_level),
+            vibrational_mode: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleNeutralState| item.vibrational_mode.clone()),
+            neutral_type: WallDescriptionGgdParticleNeutralStateNeutralTypeView::new(elements.clone()),
+            electron_configuration: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleNeutralState| {
+                item.electron_configuration.clone()
+            }),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdParticleNeutralState> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdParticleNeutralState - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdParticleNeutralStateIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutralState]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdParticleNeutralStateIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdParticleNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutralState]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralStateSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdParticleNeutralState> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdParticleNeutralStateIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdParticleNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutralState]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralStateSliceView::new(&data[self])
+    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("incident", |item: &WallDescriptionGgdParticleNeutralState| item.incident.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdParticleNeutralStateIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdParticleNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutralState]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdParticleNeutralStateIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdParticleNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutralState]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdParticleNeutralStateIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdParticleNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutralState]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdParticleNeutralStateIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdParticleNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutralState]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralStateSliceView::new(data)
+    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("emitted", |item: &WallDescriptionGgdParticleNeutralState| item.emitted.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdParticleIonState View Types ---
 
 /// View over multiple WallDescriptionGgdParticleIonState with field accumulation
-pub struct WallDescriptionGgdParticleIonStateSliceView<'a> {
-    data: &'a [WallDescriptionGgdParticleIonState],
-    pub z_min: Accumulator<'a, WallDescriptionGgdParticleIonState, FLT_0D>,
-    pub z_max: Accumulator<'a, WallDescriptionGgdParticleIonState, FLT_0D>,
-    pub name: StringAccumulator<'a, WallDescriptionGgdParticleIonState>,
-    pub vibrational_level: Accumulator<'a, WallDescriptionGgdParticleIonState, FLT_0D>,
-    pub vibrational_mode: StringAccumulator<'a, WallDescriptionGgdParticleIonState>,
-    pub electron_configuration: StringAccumulator<'a, WallDescriptionGgdParticleIonState>,
+pub struct WallDescriptionGgdParticleIonStateSliceView<'a, D> {
+    pub z_min: Accumulator<'a, WallDescriptionGgdParticleIonState, FLT_0D, D>,
+    pub z_max: Accumulator<'a, WallDescriptionGgdParticleIonState, FLT_0D, D>,
+    pub name: Accumulator<'a, WallDescriptionGgdParticleIonState, STR_0D, D>,
+    pub vibrational_level: Accumulator<'a, WallDescriptionGgdParticleIonState, FLT_0D, D>,
+    pub vibrational_mode: Accumulator<'a, WallDescriptionGgdParticleIonState, STR_0D, D>,
+    pub electron_configuration: Accumulator<'a, WallDescriptionGgdParticleIonState, STR_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdParticleIonState, D>,
 }
 
-impl<'a> WallDescriptionGgdParticleIonStateSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdParticleIonState]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdParticleIonStateSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdParticleIonState, D>) -> Self {
         Self {
-            data,
-            z_min: Accumulator::new(data, |item: &WallDescriptionGgdParticleIonState| item.z_min),
-            z_max: Accumulator::new(data, |item: &WallDescriptionGgdParticleIonState| item.z_max),
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdParticleIonState| item.name.clone()),
-            vibrational_level: Accumulator::new(data, |item: &WallDescriptionGgdParticleIonState| item.vibrational_level),
-            vibrational_mode: StringAccumulator::new(data, |item: &WallDescriptionGgdParticleIonState| item.vibrational_mode.clone()),
-            electron_configuration: StringAccumulator::new(data, |item: &WallDescriptionGgdParticleIonState| item.electron_configuration.clone()),
+            z_min: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleIonState| item.z_min),
+            z_max: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleIonState| item.z_max),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleIonState| item.name.clone()),
+            vibrational_level: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleIonState| item.vibrational_level),
+            vibrational_mode: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleIonState| item.vibrational_mode.clone()),
+            electron_configuration: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleIonState| {
+                item.electron_configuration.clone()
+            }),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdParticleIonState> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdParticleIonState - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdParticleIonStateIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIonState]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdParticleIonStateIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdParticleIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIonState]) -> Self::Output {
-        WallDescriptionGgdParticleIonStateSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdParticleIonState> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdParticleIonStateIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdParticleIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIonState]) -> Self::Output {
-        WallDescriptionGgdParticleIonStateSliceView::new(&data[self])
+    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("incident", |item: &WallDescriptionGgdParticleIonState| item.incident.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdParticleIonStateIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdParticleIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIonState]) -> Self::Output {
-        WallDescriptionGgdParticleIonStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdParticleIonStateIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdParticleIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIonState]) -> Self::Output {
-        WallDescriptionGgdParticleIonStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdParticleIonStateIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdParticleIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIonState]) -> Self::Output {
-        WallDescriptionGgdParticleIonStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdParticleIonStateIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdParticleIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIonState]) -> Self::Output {
-        WallDescriptionGgdParticleIonStateSliceView::new(data)
+    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("emitted", |item: &WallDescriptionGgdParticleIonState| item.emitted.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdParticleIon View Types ---
 
 /// View over multiple WallDescriptionGgdParticleIon with field accumulation
-pub struct WallDescriptionGgdParticleIonSliceView<'a> {
-    data: &'a [WallDescriptionGgdParticleIon],
-    pub z_ion: Accumulator<'a, WallDescriptionGgdParticleIon, FLT_0D>,
-    pub name: StringAccumulator<'a, WallDescriptionGgdParticleIon>,
-    pub neutral_index: Accumulator<'a, WallDescriptionGgdParticleIon, INT_0D>,
-    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdParticleIon, INT_0D>,
+pub struct WallDescriptionGgdParticleIonSliceView<'a, D> {
+    pub z_ion: Accumulator<'a, WallDescriptionGgdParticleIon, FLT_0D, D>,
+    pub name: Accumulator<'a, WallDescriptionGgdParticleIon, STR_0D, D>,
+    pub neutral_index: Accumulator<'a, WallDescriptionGgdParticleIon, INT_0D, D>,
+    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdParticleIon, INT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdParticleIon, D>,
 }
 
-impl<'a> WallDescriptionGgdParticleIonSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdParticleIon]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdParticleIonSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdParticleIon, D>) -> Self {
         Self {
-            data,
-            z_ion: Accumulator::new(data, |item: &WallDescriptionGgdParticleIon| item.z_ion),
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdParticleIon| item.name.clone()),
-            neutral_index: Accumulator::new(data, |item: &WallDescriptionGgdParticleIon| item.neutral_index),
-            multiple_states_flag: Accumulator::new(data, |item: &WallDescriptionGgdParticleIon| item.multiple_states_flag),
+            z_ion: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleIon| item.z_ion),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleIon| item.name.clone()),
+            neutral_index: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleIon| item.neutral_index),
+            multiple_states_flag: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleIon| item.multiple_states_flag),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdParticleIon> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdParticleIon - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdParticleIonIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIon]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdParticleIonIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdParticleIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIon]) -> Self::Output {
-        WallDescriptionGgdParticleIonSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdParticleIon> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdParticleIonIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdParticleIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIon]) -> Self::Output {
-        WallDescriptionGgdParticleIonSliceView::new(&data[self])
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(self.slice_elements.nest(
+            "element",
+            |item: &WallDescriptionGgdParticleIon| item.element.as_slice(),
+            range,
+        ))
     }
-}
 
-impl<'a> WallDescriptionGgdParticleIonIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdParticleIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIon]) -> Self::Output {
-        WallDescriptionGgdParticleIonSliceView::new(&data[self])
+    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("incident", |item: &WallDescriptionGgdParticleIon| item.incident.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdParticleIonIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdParticleIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIon]) -> Self::Output {
-        WallDescriptionGgdParticleIonSliceView::new(&data[self])
+    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("emitted", |item: &WallDescriptionGgdParticleIon| item.emitted.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdParticleIonIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdParticleIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIon]) -> Self::Output {
-        WallDescriptionGgdParticleIonSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdParticleIonIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdParticleIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleIon]) -> Self::Output {
-        WallDescriptionGgdParticleIonSliceView::new(data)
+    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdParticleIonStateSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdParticleIonState], Output = [WallDescriptionGgdParticleIonState]> + Clone,
+    {
+        WallDescriptionGgdParticleIonStateSliceView::new(
+            self.slice_elements
+                .nest("state", |item: &WallDescriptionGgdParticleIon| item.state.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdParticleNeutral View Types ---
 
 /// View over multiple WallDescriptionGgdParticleNeutral with field accumulation
-pub struct WallDescriptionGgdParticleNeutralSliceView<'a> {
-    data: &'a [WallDescriptionGgdParticleNeutral],
-    pub name: StringAccumulator<'a, WallDescriptionGgdParticleNeutral>,
-    pub ion_index: Accumulator<'a, WallDescriptionGgdParticleNeutral, INT_0D>,
-    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdParticleNeutral, INT_0D>,
+pub struct WallDescriptionGgdParticleNeutralSliceView<'a, D> {
+    pub name: Accumulator<'a, WallDescriptionGgdParticleNeutral, STR_0D, D>,
+    pub ion_index: Accumulator<'a, WallDescriptionGgdParticleNeutral, INT_0D, D>,
+    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdParticleNeutral, INT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdParticleNeutral, D>,
 }
 
-impl<'a> WallDescriptionGgdParticleNeutralSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdParticleNeutral]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdParticleNeutralSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdParticleNeutral, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdParticleNeutral| item.name.clone()),
-            ion_index: Accumulator::new(data, |item: &WallDescriptionGgdParticleNeutral| item.ion_index),
-            multiple_states_flag: Accumulator::new(data, |item: &WallDescriptionGgdParticleNeutral| item.multiple_states_flag),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleNeutral| item.name.clone()),
+            ion_index: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleNeutral| item.ion_index),
+            multiple_states_flag: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdParticleNeutral| item.multiple_states_flag),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdParticleNeutral> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdParticleNeutral - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdParticleNeutralIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutral]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdParticleNeutralIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdParticleNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutral]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdParticleNeutral> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdParticleNeutralIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdParticleNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutral]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralSliceView::new(&data[self])
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(self.slice_elements.nest(
+            "element",
+            |item: &WallDescriptionGgdParticleNeutral| item.element.as_slice(),
+            range,
+        ))
     }
-}
 
-impl<'a> WallDescriptionGgdParticleNeutralIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdParticleNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutral]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralSliceView::new(&data[self])
+    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("incident", |item: &WallDescriptionGgdParticleNeutral| item.incident.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdParticleNeutralIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdParticleNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutral]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralSliceView::new(&data[self])
+    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("emitted", |item: &WallDescriptionGgdParticleNeutral| item.emitted.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdParticleNeutralIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdParticleNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutral]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdParticleNeutralIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdParticleNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdParticleNeutral]) -> Self::Output {
-        WallDescriptionGgdParticleNeutralSliceView::new(data)
+    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdParticleNeutralStateSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdParticleNeutralState], Output = [WallDescriptionGgdParticleNeutralState]> + Clone,
+    {
+        WallDescriptionGgdParticleNeutralStateSliceView::new(self.slice_elements.nest(
+            "state",
+            |item: &WallDescriptionGgdParticleNeutral| item.state.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- WallDescriptionGgdRecyclingNeutralState View Types ---
 
 /// View over `neutral_type` (IdentifierDynamicAos3) across multiple WallDescriptionGgdRecyclingNeutralState
-pub struct WallDescriptionGgdRecyclingNeutralStateNeutralTypeView<'a> {
-    pub name: StringAccumulator<'a, WallDescriptionGgdRecyclingNeutralState>,
-    pub index: Accumulator<'a, WallDescriptionGgdRecyclingNeutralState, INT_0D>,
-    pub description: StringAccumulator<'a, WallDescriptionGgdRecyclingNeutralState>,
+pub struct WallDescriptionGgdRecyclingNeutralStateNeutralTypeView<'a, D> {
+    pub name: Accumulator<'a, WallDescriptionGgdRecyclingNeutralState, STR_0D, D>,
+    pub index: Accumulator<'a, WallDescriptionGgdRecyclingNeutralState, INT_0D, D>,
+    pub description: Accumulator<'a, WallDescriptionGgdRecyclingNeutralState, STR_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdRecyclingNeutralState, D>,
 }
 
-impl<'a> WallDescriptionGgdRecyclingNeutralStateNeutralTypeView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdRecyclingNeutralState]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdRecyclingNeutralStateNeutralTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdRecyclingNeutralState, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdRecyclingNeutralState| item.neutral_type.name.clone()),
-            index: Accumulator::new(data, |item: &WallDescriptionGgdRecyclingNeutralState| item.neutral_type.index),
-            description: StringAccumulator::new(data, |item: &WallDescriptionGgdRecyclingNeutralState| item.neutral_type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingNeutralState| {
+                item.neutral_type.name.clone()
+            }),
+            index: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingNeutralState| item.neutral_type.index),
+            description: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingNeutralState| {
+                item.neutral_type.description.clone()
+            }),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple WallDescriptionGgdRecyclingNeutralState with field accumulation
-pub struct WallDescriptionGgdRecyclingNeutralStateSliceView<'a> {
-    data: &'a [WallDescriptionGgdRecyclingNeutralState],
-    pub name: StringAccumulator<'a, WallDescriptionGgdRecyclingNeutralState>,
-    pub vibrational_level: Accumulator<'a, WallDescriptionGgdRecyclingNeutralState, FLT_0D>,
-    pub vibrational_mode: StringAccumulator<'a, WallDescriptionGgdRecyclingNeutralState>,
-    pub neutral_type: WallDescriptionGgdRecyclingNeutralStateNeutralTypeView<'a>,
-    pub electron_configuration: StringAccumulator<'a, WallDescriptionGgdRecyclingNeutralState>,
+pub struct WallDescriptionGgdRecyclingNeutralStateSliceView<'a, D> {
+    pub name: Accumulator<'a, WallDescriptionGgdRecyclingNeutralState, STR_0D, D>,
+    pub vibrational_level: Accumulator<'a, WallDescriptionGgdRecyclingNeutralState, FLT_0D, D>,
+    pub vibrational_mode: Accumulator<'a, WallDescriptionGgdRecyclingNeutralState, STR_0D, D>,
+    pub neutral_type: WallDescriptionGgdRecyclingNeutralStateNeutralTypeView<'a, D>,
+    pub electron_configuration: Accumulator<'a, WallDescriptionGgdRecyclingNeutralState, STR_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdRecyclingNeutralState, D>,
 }
 
-impl<'a> WallDescriptionGgdRecyclingNeutralStateSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdRecyclingNeutralState]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdRecyclingNeutralStateSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdRecyclingNeutralState, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdRecyclingNeutralState| item.name.clone()),
-            vibrational_level: Accumulator::new(data, |item: &WallDescriptionGgdRecyclingNeutralState| item.vibrational_level),
-            vibrational_mode: StringAccumulator::new(data, |item: &WallDescriptionGgdRecyclingNeutralState| item.vibrational_mode.clone()),
-            neutral_type: WallDescriptionGgdRecyclingNeutralStateNeutralTypeView::new(data),
-            electron_configuration: StringAccumulator::new(data, |item: &WallDescriptionGgdRecyclingNeutralState| item.electron_configuration.clone()),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingNeutralState| item.name.clone()),
+            vibrational_level: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingNeutralState| item.vibrational_level),
+            vibrational_mode: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingNeutralState| item.vibrational_mode.clone()),
+            neutral_type: WallDescriptionGgdRecyclingNeutralStateNeutralTypeView::new(elements.clone()),
+            electron_configuration: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingNeutralState| {
+                item.electron_configuration.clone()
+            }),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdRecyclingNeutralState> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdRecyclingNeutralState - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdRecyclingNeutralStateIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutralState]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdRecyclingNeutralStateIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdRecyclingNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutralState]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralStateSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdRecyclingNeutralState> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdRecyclingNeutralStateIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdRecyclingNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutralState]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingNeutralStateIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdRecyclingNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutralState]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingNeutralStateIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdRecyclingNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutralState]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingNeutralStateIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdRecyclingNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutralState]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingNeutralStateIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdRecyclingNeutralStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutralState]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralStateSliceView::new(data)
+    /// The slice view over a range of `coefficient` under every element, e.g. `.coefficient(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest(
+            "coefficient",
+            |item: &WallDescriptionGgdRecyclingNeutralState| item.coefficient.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- WallDescriptionGgdRecyclingIonState View Types ---
 
 /// View over multiple WallDescriptionGgdRecyclingIonState with field accumulation
-pub struct WallDescriptionGgdRecyclingIonStateSliceView<'a> {
-    data: &'a [WallDescriptionGgdRecyclingIonState],
-    pub z_min: Accumulator<'a, WallDescriptionGgdRecyclingIonState, FLT_0D>,
-    pub z_max: Accumulator<'a, WallDescriptionGgdRecyclingIonState, FLT_0D>,
-    pub name: StringAccumulator<'a, WallDescriptionGgdRecyclingIonState>,
-    pub vibrational_level: Accumulator<'a, WallDescriptionGgdRecyclingIonState, FLT_0D>,
-    pub vibrational_mode: StringAccumulator<'a, WallDescriptionGgdRecyclingIonState>,
-    pub electron_configuration: StringAccumulator<'a, WallDescriptionGgdRecyclingIonState>,
+pub struct WallDescriptionGgdRecyclingIonStateSliceView<'a, D> {
+    pub z_min: Accumulator<'a, WallDescriptionGgdRecyclingIonState, FLT_0D, D>,
+    pub z_max: Accumulator<'a, WallDescriptionGgdRecyclingIonState, FLT_0D, D>,
+    pub name: Accumulator<'a, WallDescriptionGgdRecyclingIonState, STR_0D, D>,
+    pub vibrational_level: Accumulator<'a, WallDescriptionGgdRecyclingIonState, FLT_0D, D>,
+    pub vibrational_mode: Accumulator<'a, WallDescriptionGgdRecyclingIonState, STR_0D, D>,
+    pub electron_configuration: Accumulator<'a, WallDescriptionGgdRecyclingIonState, STR_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdRecyclingIonState, D>,
 }
 
-impl<'a> WallDescriptionGgdRecyclingIonStateSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdRecyclingIonState]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdRecyclingIonStateSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdRecyclingIonState, D>) -> Self {
         Self {
-            data,
-            z_min: Accumulator::new(data, |item: &WallDescriptionGgdRecyclingIonState| item.z_min),
-            z_max: Accumulator::new(data, |item: &WallDescriptionGgdRecyclingIonState| item.z_max),
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdRecyclingIonState| item.name.clone()),
-            vibrational_level: Accumulator::new(data, |item: &WallDescriptionGgdRecyclingIonState| item.vibrational_level),
-            vibrational_mode: StringAccumulator::new(data, |item: &WallDescriptionGgdRecyclingIonState| item.vibrational_mode.clone()),
-            electron_configuration: StringAccumulator::new(data, |item: &WallDescriptionGgdRecyclingIonState| item.electron_configuration.clone()),
+            z_min: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingIonState| item.z_min),
+            z_max: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingIonState| item.z_max),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingIonState| item.name.clone()),
+            vibrational_level: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingIonState| item.vibrational_level),
+            vibrational_mode: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingIonState| item.vibrational_mode.clone()),
+            electron_configuration: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingIonState| {
+                item.electron_configuration.clone()
+            }),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdRecyclingIonState> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdRecyclingIonState - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdRecyclingIonStateIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIonState]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdRecyclingIonStateIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdRecyclingIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIonState]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonStateSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdRecyclingIonState> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdRecyclingIonStateIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdRecyclingIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIonState]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingIonStateIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdRecyclingIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIonState]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingIonStateIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdRecyclingIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIonState]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingIonStateIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdRecyclingIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIonState]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonStateSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingIonStateIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdRecyclingIonStateSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIonState]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonStateSliceView::new(data)
+    /// The slice view over a range of `coefficient` under every element, e.g. `.coefficient(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest(
+            "coefficient",
+            |item: &WallDescriptionGgdRecyclingIonState| item.coefficient.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- WallDescriptionGgdRecyclingIon View Types ---
 
 /// View over multiple WallDescriptionGgdRecyclingIon with field accumulation
-pub struct WallDescriptionGgdRecyclingIonSliceView<'a> {
-    data: &'a [WallDescriptionGgdRecyclingIon],
-    pub z_ion: Accumulator<'a, WallDescriptionGgdRecyclingIon, FLT_0D>,
-    pub name: StringAccumulator<'a, WallDescriptionGgdRecyclingIon>,
-    pub neutral_index: Accumulator<'a, WallDescriptionGgdRecyclingIon, INT_0D>,
-    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdRecyclingIon, INT_0D>,
+pub struct WallDescriptionGgdRecyclingIonSliceView<'a, D> {
+    pub z_ion: Accumulator<'a, WallDescriptionGgdRecyclingIon, FLT_0D, D>,
+    pub name: Accumulator<'a, WallDescriptionGgdRecyclingIon, STR_0D, D>,
+    pub neutral_index: Accumulator<'a, WallDescriptionGgdRecyclingIon, INT_0D, D>,
+    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdRecyclingIon, INT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdRecyclingIon, D>,
 }
 
-impl<'a> WallDescriptionGgdRecyclingIonSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdRecyclingIon]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdRecyclingIonSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdRecyclingIon, D>) -> Self {
         Self {
-            data,
-            z_ion: Accumulator::new(data, |item: &WallDescriptionGgdRecyclingIon| item.z_ion),
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdRecyclingIon| item.name.clone()),
-            neutral_index: Accumulator::new(data, |item: &WallDescriptionGgdRecyclingIon| item.neutral_index),
-            multiple_states_flag: Accumulator::new(data, |item: &WallDescriptionGgdRecyclingIon| item.multiple_states_flag),
+            z_ion: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingIon| item.z_ion),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingIon| item.name.clone()),
+            neutral_index: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingIon| item.neutral_index),
+            multiple_states_flag: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingIon| item.multiple_states_flag),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdRecyclingIon> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdRecyclingIon - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdRecyclingIonIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIon]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdRecyclingIonIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdRecyclingIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIon]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdRecyclingIon> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdRecyclingIonIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdRecyclingIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIon]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonSliceView::new(&data[self])
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(self.slice_elements.nest(
+            "element",
+            |item: &WallDescriptionGgdRecyclingIon| item.element.as_slice(),
+            range,
+        ))
     }
-}
 
-impl<'a> WallDescriptionGgdRecyclingIonIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdRecyclingIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIon]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonSliceView::new(&data[self])
+    /// The slice view over a range of `coefficient` under every element, e.g. `.coefficient(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("coefficient", |item: &WallDescriptionGgdRecyclingIon| item.coefficient.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdRecyclingIonIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdRecyclingIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIon]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingIonIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdRecyclingIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIon]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingIonIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdRecyclingIonSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingIon]) -> Self::Output {
-        WallDescriptionGgdRecyclingIonSliceView::new(data)
+    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdRecyclingIonStateSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdRecyclingIonState], Output = [WallDescriptionGgdRecyclingIonState]> + Clone,
+    {
+        WallDescriptionGgdRecyclingIonStateSliceView::new(self.slice_elements.nest(
+            "state",
+            |item: &WallDescriptionGgdRecyclingIon| item.state.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- WallDescriptionGgdRecyclingNeutral View Types ---
 
 /// View over multiple WallDescriptionGgdRecyclingNeutral with field accumulation
-pub struct WallDescriptionGgdRecyclingNeutralSliceView<'a> {
-    data: &'a [WallDescriptionGgdRecyclingNeutral],
-    pub name: StringAccumulator<'a, WallDescriptionGgdRecyclingNeutral>,
-    pub ion_index: Accumulator<'a, WallDescriptionGgdRecyclingNeutral, INT_0D>,
-    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdRecyclingNeutral, INT_0D>,
+pub struct WallDescriptionGgdRecyclingNeutralSliceView<'a, D> {
+    pub name: Accumulator<'a, WallDescriptionGgdRecyclingNeutral, STR_0D, D>,
+    pub ion_index: Accumulator<'a, WallDescriptionGgdRecyclingNeutral, INT_0D, D>,
+    pub multiple_states_flag: Accumulator<'a, WallDescriptionGgdRecyclingNeutral, INT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdRecyclingNeutral, D>,
 }
 
-impl<'a> WallDescriptionGgdRecyclingNeutralSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdRecyclingNeutral]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdRecyclingNeutralSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdRecyclingNeutral, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgdRecyclingNeutral| item.name.clone()),
-            ion_index: Accumulator::new(data, |item: &WallDescriptionGgdRecyclingNeutral| item.ion_index),
-            multiple_states_flag: Accumulator::new(data, |item: &WallDescriptionGgdRecyclingNeutral| item.multiple_states_flag),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingNeutral| item.name.clone()),
+            ion_index: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingNeutral| item.ion_index),
+            multiple_states_flag: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdRecyclingNeutral| item.multiple_states_flag),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdRecyclingNeutral> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdRecyclingNeutral - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdRecyclingNeutralIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutral]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdRecyclingNeutralIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdRecyclingNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutral]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdRecyclingNeutral> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdRecyclingNeutralIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdRecyclingNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutral]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralSliceView::new(&data[self])
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(self.slice_elements.nest(
+            "element",
+            |item: &WallDescriptionGgdRecyclingNeutral| item.element.as_slice(),
+            range,
+        ))
     }
-}
 
-impl<'a> WallDescriptionGgdRecyclingNeutralIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdRecyclingNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutral]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralSliceView::new(&data[self])
+    /// The slice view over a range of `coefficient` under every element, e.g. `.coefficient(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("coefficient", |item: &WallDescriptionGgdRecyclingNeutral| item.coefficient.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdRecyclingNeutralIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdRecyclingNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutral]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingNeutralIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdRecyclingNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutral]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdRecyclingNeutralIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdRecyclingNeutralSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdRecyclingNeutral]) -> Self::Output {
-        WallDescriptionGgdRecyclingNeutralSliceView::new(data)
+    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdRecyclingNeutralStateSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdRecyclingNeutralState], Output = [WallDescriptionGgdRecyclingNeutralState]> + Clone,
+    {
+        WallDescriptionGgdRecyclingNeutralStateSliceView::new(self.slice_elements.nest(
+            "state",
+            |item: &WallDescriptionGgdRecyclingNeutral| item.state.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- GenericGridVectorComponentsRphiz View Types ---
 
 /// View over multiple GenericGridVectorComponentsRphiz with field accumulation
-pub struct GenericGridVectorComponentsRphizSliceView<'a> {
-    data: &'a [GenericGridVectorComponentsRphiz],
-    pub grid_index: Accumulator<'a, GenericGridVectorComponentsRphiz, INT_0D>,
-    pub grid_subset_index: Accumulator<'a, GenericGridVectorComponentsRphiz, INT_0D>,
+pub struct GenericGridVectorComponentsRphizSliceView<'a, D> {
+    pub grid_index: Accumulator<'a, GenericGridVectorComponentsRphiz, INT_0D, D>,
+    pub grid_subset_index: Accumulator<'a, GenericGridVectorComponentsRphiz, INT_0D, D>,
+    slice_elements: Elements<'a, GenericGridVectorComponentsRphiz, D>,
 }
 
-impl<'a> GenericGridVectorComponentsRphizSliceView<'a> {
-    pub fn new(data: &'a [GenericGridVectorComponentsRphiz]) -> Self {
+impl<'a, D: Dimension> GenericGridVectorComponentsRphizSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridVectorComponentsRphiz, D>) -> Self {
         Self {
-            data,
-            grid_index: Accumulator::new(data, |item: &GenericGridVectorComponentsRphiz| item.grid_index),
-            grid_subset_index: Accumulator::new(data, |item: &GenericGridVectorComponentsRphiz| item.grid_subset_index),
+            grid_index: Accumulator::new(elements.clone(), |item: &GenericGridVectorComponentsRphiz| item.grid_index),
+            grid_subset_index: Accumulator::new(elements.clone(), |item: &GenericGridVectorComponentsRphiz| item.grid_subset_index),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridVectorComponentsRphiz> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridVectorComponentsRphiz - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridVectorComponentsRphizIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridVectorComponentsRphiz]) -> Self::Output;
-}
-
-impl<'a> GenericGridVectorComponentsRphizIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridVectorComponentsRphizSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVectorComponentsRphiz]) -> Self::Output {
-        GenericGridVectorComponentsRphizSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridVectorComponentsRphizIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridVectorComponentsRphizSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVectorComponentsRphiz]) -> Self::Output {
-        GenericGridVectorComponentsRphizSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridVectorComponentsRphizIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridVectorComponentsRphizSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVectorComponentsRphiz]) -> Self::Output {
-        GenericGridVectorComponentsRphizSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridVectorComponentsRphizIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridVectorComponentsRphizSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVectorComponentsRphiz]) -> Self::Output {
-        GenericGridVectorComponentsRphizSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridVectorComponentsRphizIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridVectorComponentsRphizSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVectorComponentsRphiz]) -> Self::Output {
-        GenericGridVectorComponentsRphizSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridVectorComponentsRphizIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridVectorComponentsRphizSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVectorComponentsRphiz]) -> Self::Output {
-        GenericGridVectorComponentsRphizSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridVectorComponentsRphiz> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridIdentifier View Types ---
 
 /// View over `identifiers` (IdentifierDynamicAos31d) across multiple GenericGridIdentifier
-pub struct GenericGridIdentifierIdentifiersView<'a> {
-    _phantom: std::marker::PhantomData<&'a GenericGridIdentifier>,
+pub struct GenericGridIdentifierIdentifiersView<'a, D> {
+    slice_elements: Elements<'a, GenericGridIdentifier, D>,
 }
 
-impl<'a> GenericGridIdentifierIdentifiersView<'a> {
-    pub fn new(_data: &'a [GenericGridIdentifier]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> GenericGridIdentifierIdentifiersView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridIdentifier, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over multiple GenericGridIdentifier with field accumulation
-pub struct GenericGridIdentifierSliceView<'a> {
-    data: &'a [GenericGridIdentifier],
-    pub grid_index: Accumulator<'a, GenericGridIdentifier, INT_0D>,
-    pub grid_subset_index: Accumulator<'a, GenericGridIdentifier, INT_0D>,
-    pub identifiers: GenericGridIdentifierIdentifiersView<'a>,
+pub struct GenericGridIdentifierSliceView<'a, D> {
+    pub grid_index: Accumulator<'a, GenericGridIdentifier, INT_0D, D>,
+    pub grid_subset_index: Accumulator<'a, GenericGridIdentifier, INT_0D, D>,
+    pub identifiers: GenericGridIdentifierIdentifiersView<'a, D>,
+    slice_elements: Elements<'a, GenericGridIdentifier, D>,
 }
 
-impl<'a> GenericGridIdentifierSliceView<'a> {
-    pub fn new(data: &'a [GenericGridIdentifier]) -> Self {
+impl<'a, D: Dimension> GenericGridIdentifierSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridIdentifier, D>) -> Self {
         Self {
-            data,
-            grid_index: Accumulator::new(data, |item: &GenericGridIdentifier| item.grid_index),
-            grid_subset_index: Accumulator::new(data, |item: &GenericGridIdentifier| item.grid_subset_index),
-            identifiers: GenericGridIdentifierIdentifiersView::new(data),
+            grid_index: Accumulator::new(elements.clone(), |item: &GenericGridIdentifier| item.grid_index),
+            grid_subset_index: Accumulator::new(elements.clone(), |item: &GenericGridIdentifier| item.grid_subset_index),
+            identifiers: GenericGridIdentifierIdentifiersView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridIdentifier> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridIdentifier - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridIdentifierIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridIdentifier]) -> Self::Output;
-}
-
-impl<'a> GenericGridIdentifierIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridIdentifierSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifier]) -> Self::Output {
-        GenericGridIdentifierSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridIdentifierIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridIdentifierSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifier]) -> Self::Output {
-        GenericGridIdentifierSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridIdentifierIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridIdentifierSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifier]) -> Self::Output {
-        GenericGridIdentifierSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridIdentifierIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridIdentifierSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifier]) -> Self::Output {
-        GenericGridIdentifierSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridIdentifierIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridIdentifierSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifier]) -> Self::Output {
-        GenericGridIdentifierSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridIdentifierIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridIdentifierSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifier]) -> Self::Output {
-        GenericGridIdentifierSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridIdentifier> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridVector View Types ---
 
 /// View over multiple GenericGridVector with field accumulation
-pub struct GenericGridVectorSliceView<'a> {
-    data: &'a [GenericGridVector],
-    pub grid_index: Accumulator<'a, GenericGridVector, INT_0D>,
-    pub grid_subset_index: Accumulator<'a, GenericGridVector, INT_0D>,
+pub struct GenericGridVectorSliceView<'a, D> {
+    pub grid_index: Accumulator<'a, GenericGridVector, INT_0D, D>,
+    pub grid_subset_index: Accumulator<'a, GenericGridVector, INT_0D, D>,
+    slice_elements: Elements<'a, GenericGridVector, D>,
 }
 
-impl<'a> GenericGridVectorSliceView<'a> {
-    pub fn new(data: &'a [GenericGridVector]) -> Self {
+impl<'a, D: Dimension> GenericGridVectorSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridVector, D>) -> Self {
         Self {
-            data,
-            grid_index: Accumulator::new(data, |item: &GenericGridVector| item.grid_index),
-            grid_subset_index: Accumulator::new(data, |item: &GenericGridVector| item.grid_subset_index),
+            grid_index: Accumulator::new(elements.clone(), |item: &GenericGridVector| item.grid_index),
+            grid_subset_index: Accumulator::new(elements.clone(), |item: &GenericGridVector| item.grid_subset_index),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridVector> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridVector - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridVectorIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridVector]) -> Self::Output;
-}
-
-impl<'a> GenericGridVectorIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridVectorSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVector]) -> Self::Output {
-        GenericGridVectorSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridVectorIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridVectorSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVector]) -> Self::Output {
-        GenericGridVectorSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridVectorIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridVectorSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVector]) -> Self::Output {
-        GenericGridVectorSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridVectorIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridVectorSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVector]) -> Self::Output {
-        GenericGridVectorSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridVectorIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridVectorSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVector]) -> Self::Output {
-        GenericGridVectorSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridVectorIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridVectorSliceView<'a>;
-    fn get(self, data: &'a [GenericGridVector]) -> Self::Output {
-        GenericGridVectorSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridVector> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridIdentifierSingle View Types ---
 
 /// View over `identifier` (IdentifierDynamicAos3) across multiple GenericGridIdentifierSingle
-pub struct GenericGridIdentifierSingleIdentifierView<'a> {
-    pub name: StringAccumulator<'a, GenericGridIdentifierSingle>,
-    pub index: Accumulator<'a, GenericGridIdentifierSingle, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridIdentifierSingle>,
+pub struct GenericGridIdentifierSingleIdentifierView<'a, D> {
+    pub name: Accumulator<'a, GenericGridIdentifierSingle, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridIdentifierSingle, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridIdentifierSingle, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridIdentifierSingle, D>,
 }
 
-impl<'a> GenericGridIdentifierSingleIdentifierView<'a> {
-    pub fn new(data: &'a [GenericGridIdentifierSingle]) -> Self {
+impl<'a, D: Dimension> GenericGridIdentifierSingleIdentifierView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridIdentifierSingle, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridIdentifierSingle| item.identifier.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridIdentifierSingle| item.identifier.index),
-            description: StringAccumulator::new(data, |item: &GenericGridIdentifierSingle| item.identifier.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridIdentifierSingle| item.identifier.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridIdentifierSingle| item.identifier.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridIdentifierSingle| item.identifier.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple GenericGridIdentifierSingle with field accumulation
-pub struct GenericGridIdentifierSingleSliceView<'a> {
-    data: &'a [GenericGridIdentifierSingle],
-    pub grid_index: Accumulator<'a, GenericGridIdentifierSingle, INT_0D>,
-    pub grid_subset_index: Accumulator<'a, GenericGridIdentifierSingle, INT_0D>,
-    pub identifier: GenericGridIdentifierSingleIdentifierView<'a>,
+pub struct GenericGridIdentifierSingleSliceView<'a, D> {
+    pub grid_index: Accumulator<'a, GenericGridIdentifierSingle, INT_0D, D>,
+    pub grid_subset_index: Accumulator<'a, GenericGridIdentifierSingle, INT_0D, D>,
+    pub identifier: GenericGridIdentifierSingleIdentifierView<'a, D>,
+    slice_elements: Elements<'a, GenericGridIdentifierSingle, D>,
 }
 
-impl<'a> GenericGridIdentifierSingleSliceView<'a> {
-    pub fn new(data: &'a [GenericGridIdentifierSingle]) -> Self {
+impl<'a, D: Dimension> GenericGridIdentifierSingleSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridIdentifierSingle, D>) -> Self {
         Self {
-            data,
-            grid_index: Accumulator::new(data, |item: &GenericGridIdentifierSingle| item.grid_index),
-            grid_subset_index: Accumulator::new(data, |item: &GenericGridIdentifierSingle| item.grid_subset_index),
-            identifier: GenericGridIdentifierSingleIdentifierView::new(data),
+            grid_index: Accumulator::new(elements.clone(), |item: &GenericGridIdentifierSingle| item.grid_index),
+            grid_subset_index: Accumulator::new(elements.clone(), |item: &GenericGridIdentifierSingle| item.grid_subset_index),
+            identifier: GenericGridIdentifierSingleIdentifierView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridIdentifierSingle> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridIdentifierSingle - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridIdentifierSingleIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridIdentifierSingle]) -> Self::Output;
-}
-
-impl<'a> GenericGridIdentifierSingleIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridIdentifierSingleSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifierSingle]) -> Self::Output {
-        GenericGridIdentifierSingleSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridIdentifierSingleIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridIdentifierSingleSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifierSingle]) -> Self::Output {
-        GenericGridIdentifierSingleSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridIdentifierSingleIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridIdentifierSingleSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifierSingle]) -> Self::Output {
-        GenericGridIdentifierSingleSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridIdentifierSingleIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridIdentifierSingleSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifierSingle]) -> Self::Output {
-        GenericGridIdentifierSingleSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridIdentifierSingleIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridIdentifierSingleSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifierSingle]) -> Self::Output {
-        GenericGridIdentifierSingleSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridIdentifierSingleIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridIdentifierSingleSliceView<'a>;
-    fn get(self, data: &'a [GenericGridIdentifierSingle]) -> Self::Output {
-        GenericGridIdentifierSingleSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridIdentifierSingle> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridAos3Root View Types ---
 
 /// View over `identifier` (IdentifierDynamicAos3) across multiple GenericGridAos3Root
-pub struct GenericGridAos3RootIdentifierView<'a> {
-    pub name: StringAccumulator<'a, GenericGridAos3Root>,
-    pub index: Accumulator<'a, GenericGridAos3Root, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridAos3Root>,
+pub struct GenericGridAos3RootIdentifierView<'a, D> {
+    pub name: Accumulator<'a, GenericGridAos3Root, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridAos3Root, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridAos3Root, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridAos3Root, D>,
 }
 
-impl<'a> GenericGridAos3RootIdentifierView<'a> {
-    pub fn new(data: &'a [GenericGridAos3Root]) -> Self {
+impl<'a, D: Dimension> GenericGridAos3RootIdentifierView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridAos3Root, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridAos3Root| item.identifier.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridAos3Root| item.identifier.index),
-            description: StringAccumulator::new(data, |item: &GenericGridAos3Root| item.identifier.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridAos3Root| item.identifier.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridAos3Root| item.identifier.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridAos3Root| item.identifier.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple GenericGridAos3Root with field accumulation
-pub struct GenericGridAos3RootSliceView<'a> {
-    data: &'a [GenericGridAos3Root],
-    pub identifier: GenericGridAos3RootIdentifierView<'a>,
-    pub path: StringAccumulator<'a, GenericGridAos3Root>,
-    pub time: Accumulator<'a, GenericGridAos3Root, FLT_0D>,
+pub struct GenericGridAos3RootSliceView<'a, D> {
+    pub identifier: GenericGridAos3RootIdentifierView<'a, D>,
+    pub path: Accumulator<'a, GenericGridAos3Root, STR_0D, D>,
+    pub time: Accumulator<'a, GenericGridAos3Root, FLT_0D, D>,
+    slice_elements: Elements<'a, GenericGridAos3Root, D>,
 }
 
-impl<'a> GenericGridAos3RootSliceView<'a> {
-    pub fn new(data: &'a [GenericGridAos3Root]) -> Self {
+impl<'a, D: Dimension> GenericGridAos3RootSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridAos3Root, D>) -> Self {
         Self {
-            data,
-            identifier: GenericGridAos3RootIdentifierView::new(data),
-            path: StringAccumulator::new(data, |item: &GenericGridAos3Root| item.path.clone()),
-            time: Accumulator::new(data, |item: &GenericGridAos3Root| item.time),
+            identifier: GenericGridAos3RootIdentifierView::new(elements.clone()),
+            path: Accumulator::new(elements.clone(), |item: &GenericGridAos3Root| item.path.clone()),
+            time: Accumulator::new(elements.clone(), |item: &GenericGridAos3Root| item.time),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridAos3Root> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridAos3Root - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridAos3RootIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridAos3Root]) -> Self::Output;
-}
-
-impl<'a> GenericGridAos3RootIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridAos3RootSliceView<'a>;
-    fn get(self, data: &'a [GenericGridAos3Root]) -> Self::Output {
-        GenericGridAos3RootSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridAos3Root> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridAos3RootIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridAos3RootSliceView<'a>;
-    fn get(self, data: &'a [GenericGridAos3Root]) -> Self::Output {
-        GenericGridAos3RootSliceView::new(&data[self])
+    /// The slice view over a range of `space` under every element, e.g. `.space(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn space<R>(&self, range: R) -> GenericGridDynamicSpaceSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicSpace], Output = [GenericGridDynamicSpace]> + Clone,
+    {
+        GenericGridDynamicSpaceSliceView::new(self.slice_elements.nest("space", |item: &GenericGridAos3Root| item.space.as_slice(), range))
     }
-}
 
-impl<'a> GenericGridAos3RootIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridAos3RootSliceView<'a>;
-    fn get(self, data: &'a [GenericGridAos3Root]) -> Self::Output {
-        GenericGridAos3RootSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridAos3RootIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridAos3RootSliceView<'a>;
-    fn get(self, data: &'a [GenericGridAos3Root]) -> Self::Output {
-        GenericGridAos3RootSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridAos3RootIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridAos3RootSliceView<'a>;
-    fn get(self, data: &'a [GenericGridAos3Root]) -> Self::Output {
-        GenericGridAos3RootSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridAos3RootIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridAos3RootSliceView<'a>;
-    fn get(self, data: &'a [GenericGridAos3Root]) -> Self::Output {
-        GenericGridAos3RootSliceView::new(data)
+    /// The slice view over a range of `grid_subset` under every element, e.g. `.grid_subset(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn grid_subset<R>(&self, range: R) -> GenericGridDynamicGridSubsetSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubset], Output = [GenericGridDynamicGridSubset]> + Clone,
+    {
+        GenericGridDynamicGridSubsetSliceView::new(
+            self.slice_elements
+                .nest("grid_subset", |item: &GenericGridAos3Root| item.grid_subset.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdMaterial View Types ---
 
 /// View over multiple WallDescriptionGgdMaterial with field accumulation
-pub struct WallDescriptionGgdMaterialSliceView<'a> {
-    data: &'a [WallDescriptionGgdMaterial],
-    pub time: Accumulator<'a, WallDescriptionGgdMaterial, FLT_0D>,
+pub struct WallDescriptionGgdMaterialSliceView<'a, D> {
+    pub time: Accumulator<'a, WallDescriptionGgdMaterial, FLT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdMaterial, D>,
 }
 
-impl<'a> WallDescriptionGgdMaterialSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdMaterial]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdMaterialSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdMaterial, D>) -> Self {
         Self {
-            data,
-            time: Accumulator::new(data, |item: &WallDescriptionGgdMaterial| item.time),
+            time: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdMaterial| item.time),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdMaterial> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdMaterial - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdMaterialIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdMaterial]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdMaterialIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdMaterialSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdMaterial]) -> Self::Output {
-        WallDescriptionGgdMaterialSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdMaterial> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdMaterialIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdMaterialSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdMaterial]) -> Self::Output {
-        WallDescriptionGgdMaterialSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdMaterialIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdMaterialSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdMaterial]) -> Self::Output {
-        WallDescriptionGgdMaterialSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdMaterialIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdMaterialSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdMaterial]) -> Self::Output {
-        WallDescriptionGgdMaterialSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdMaterialIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdMaterialSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdMaterial]) -> Self::Output {
-        WallDescriptionGgdMaterialSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdMaterialIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdMaterialSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdMaterial]) -> Self::Output {
-        WallDescriptionGgdMaterialSliceView::new(data)
+    /// The slice view over a range of `grid_subset` under every element, e.g. `.grid_subset(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn grid_subset<R>(&self, range: R) -> GenericGridIdentifierSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridIdentifier], Output = [GenericGridIdentifier]> + Clone,
+    {
+        GenericGridIdentifierSliceView::new(
+            self.slice_elements
+                .nest("grid_subset", |item: &WallDescriptionGgdMaterial| item.grid_subset.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdComponent View Types ---
 
 /// View over multiple WallDescriptionGgdComponent with field accumulation
-pub struct WallDescriptionGgdComponentSliceView<'a> {
-    data: &'a [WallDescriptionGgdComponent],
-    pub time: Accumulator<'a, WallDescriptionGgdComponent, FLT_0D>,
+pub struct WallDescriptionGgdComponentSliceView<'a, D> {
+    pub time: Accumulator<'a, WallDescriptionGgdComponent, FLT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdComponent, D>,
 }
 
-impl<'a> WallDescriptionGgdComponentSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdComponent]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdComponentSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdComponent, D>) -> Self {
         Self {
-            data,
-            time: Accumulator::new(data, |item: &WallDescriptionGgdComponent| item.time),
+            time: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdComponent| item.time),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdComponent> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdComponent - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdComponentIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdComponent]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdComponentIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdComponentSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdComponent]) -> Self::Output {
-        WallDescriptionGgdComponentSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdComponent> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdComponentIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdComponentSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdComponent]) -> Self::Output {
-        WallDescriptionGgdComponentSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdComponentIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdComponentSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdComponent]) -> Self::Output {
-        WallDescriptionGgdComponentSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdComponentIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdComponentSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdComponent]) -> Self::Output {
-        WallDescriptionGgdComponentSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdComponentIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdComponentSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdComponent]) -> Self::Output {
-        WallDescriptionGgdComponentSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdComponentIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdComponentSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdComponent]) -> Self::Output {
-        WallDescriptionGgdComponentSliceView::new(data)
+    /// The slice view over a range of `type` under every element, e.g. `.r#type(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn r#type<R>(&self, range: R) -> GenericGridIdentifierSingleSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridIdentifierSingle], Output = [GenericGridIdentifierSingle]> + Clone,
+    {
+        GenericGridIdentifierSingleSliceView::new(
+            self.slice_elements
+                .nest("type", |item: &WallDescriptionGgdComponent| item.r#type.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdThickness View Types ---
 
 /// View over multiple WallDescriptionGgdThickness with field accumulation
-pub struct WallDescriptionGgdThicknessSliceView<'a> {
-    data: &'a [WallDescriptionGgdThickness],
-    pub time: Accumulator<'a, WallDescriptionGgdThickness, FLT_0D>,
+pub struct WallDescriptionGgdThicknessSliceView<'a, D> {
+    pub time: Accumulator<'a, WallDescriptionGgdThickness, FLT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdThickness, D>,
 }
 
-impl<'a> WallDescriptionGgdThicknessSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdThickness]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdThicknessSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdThickness, D>) -> Self {
         Self {
-            data,
-            time: Accumulator::new(data, |item: &WallDescriptionGgdThickness| item.time),
+            time: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdThickness| item.time),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdThickness> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdThickness - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdThicknessIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdThickness]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdThicknessIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdThicknessSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdThickness]) -> Self::Output {
-        WallDescriptionGgdThicknessSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdThickness> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdThicknessIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdThicknessSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdThickness]) -> Self::Output {
-        WallDescriptionGgdThicknessSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdThicknessIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdThicknessSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdThickness]) -> Self::Output {
-        WallDescriptionGgdThicknessSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdThicknessIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdThicknessSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdThickness]) -> Self::Output {
-        WallDescriptionGgdThicknessSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdThicknessIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdThicknessSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdThickness]) -> Self::Output {
-        WallDescriptionGgdThicknessSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdThicknessIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdThicknessSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdThickness]) -> Self::Output {
-        WallDescriptionGgdThicknessSliceView::new(data)
+    /// The slice view over a range of `grid_subset` under every element, e.g. `.grid_subset(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn grid_subset<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("grid_subset", |item: &WallDescriptionGgdThickness| item.grid_subset.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdBrdf View Types ---
 
 /// View over multiple WallDescriptionGgdBrdf with field accumulation
-pub struct WallDescriptionGgdBrdfSliceView<'a> {
-    data: &'a [WallDescriptionGgdBrdf],
-    pub time: Accumulator<'a, WallDescriptionGgdBrdf, FLT_0D>,
+pub struct WallDescriptionGgdBrdfSliceView<'a, D> {
+    pub time: Accumulator<'a, WallDescriptionGgdBrdf, FLT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdBrdf, D>,
 }
 
-impl<'a> WallDescriptionGgdBrdfSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdBrdf]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdBrdfSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdBrdf, D>) -> Self {
         Self {
-            data,
-            time: Accumulator::new(data, |item: &WallDescriptionGgdBrdf| item.time),
+            time: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdBrdf| item.time),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdBrdf> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdBrdf - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdBrdfIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdBrdf]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdBrdfIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdBrdfSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdBrdf]) -> Self::Output {
-        WallDescriptionGgdBrdfSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdBrdf> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdBrdfIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdBrdfSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdBrdf]) -> Self::Output {
-        WallDescriptionGgdBrdfSliceView::new(&data[self])
+    /// The slice view over a range of `type` under every element, e.g. `.r#type(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn r#type<R>(&self, range: R) -> GenericGridIdentifierSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridIdentifier], Output = [GenericGridIdentifier]> + Clone,
+    {
+        GenericGridIdentifierSliceView::new(self.slice_elements.nest("type", |item: &WallDescriptionGgdBrdf| item.r#type.as_slice(), range))
     }
-}
 
-impl<'a> WallDescriptionGgdBrdfIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdBrdfSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdBrdf]) -> Self::Output {
-        WallDescriptionGgdBrdfSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdBrdfIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdBrdfSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdBrdf]) -> Self::Output {
-        WallDescriptionGgdBrdfSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdBrdfIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdBrdfSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdBrdf]) -> Self::Output {
-        WallDescriptionGgdBrdfSliceView::new(&data[self])
-    }
-}
-
-impl<'a> WallDescriptionGgdBrdfIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdBrdfSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdBrdf]) -> Self::Output {
-        WallDescriptionGgdBrdfSliceView::new(data)
+    /// The slice view over a range of `parameters` under every element, e.g. `.parameters(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn parameters<R>(&self, range: R) -> GenericGridVectorSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridVector], Output = [GenericGridVector]> + Clone,
+    {
+        GenericGridVectorSliceView::new(
+            self.slice_elements
+                .nest("parameters", |item: &WallDescriptionGgdBrdf| item.parameters.as_slice(), range),
+        )
     }
 }
 
 // --- WallDescriptionGgdGgd View Types ---
 
 /// View over `recycling` (WallDescriptionGgdRecycling) across multiple WallDescriptionGgdGgd
-pub struct WallDescriptionGgdGgdRecyclingView<'a> {
-    _phantom: std::marker::PhantomData<&'a WallDescriptionGgdGgd>,
+pub struct WallDescriptionGgdGgdRecyclingView<'a, D> {
+    slice_elements: Elements<'a, WallDescriptionGgdGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdGgdRecyclingView<'a> {
-    pub fn new(_data: &'a [WallDescriptionGgdGgd]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> WallDescriptionGgdGgdRecyclingView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdGgd, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+
+    /// The slice view over a range of `recycling.ion` under every element, e.g. `.ion(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdRecyclingIonSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdRecyclingIon], Output = [WallDescriptionGgdRecyclingIon]> + Clone,
+    {
+        WallDescriptionGgdRecyclingIonSliceView::new(self.slice_elements.nest(
+            "recycling.ion",
+            |item: &WallDescriptionGgdGgd| item.recycling.ion.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `recycling.neutral` under every element, e.g. `.neutral(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdRecyclingNeutralSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdRecyclingNeutral], Output = [WallDescriptionGgdRecyclingNeutral]> + Clone,
+    {
+        WallDescriptionGgdRecyclingNeutralSliceView::new(self.slice_elements.nest(
+            "recycling.neutral",
+            |item: &WallDescriptionGgdGgd| item.recycling.neutral.as_slice(),
+            range,
+        ))
     }
 }
 
 /// View over `particle_fluxes.electrons` (WallDescriptionGgdParticleEl) across multiple WallDescriptionGgdGgd
-pub struct WallDescriptionGgdGgdParticleFluxesElectronsView<'a> {
-    _phantom: std::marker::PhantomData<&'a WallDescriptionGgdGgd>,
+pub struct WallDescriptionGgdGgdParticleFluxesElectronsView<'a, D> {
+    slice_elements: Elements<'a, WallDescriptionGgdGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdGgdParticleFluxesElectronsView<'a> {
-    pub fn new(_data: &'a [WallDescriptionGgdGgd]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> WallDescriptionGgdGgdParticleFluxesElectronsView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdGgd, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+
+    /// The slice view over a range of `particle_fluxes.electrons.incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest(
+            "particle_fluxes.electrons.incident",
+            |item: &WallDescriptionGgdGgd| item.particle_fluxes.electrons.incident.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `particle_fluxes.electrons.emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest(
+            "particle_fluxes.electrons.emitted",
+            |item: &WallDescriptionGgdGgd| item.particle_fluxes.electrons.emitted.as_slice(),
+            range,
+        ))
     }
 }
 
 /// View over `particle_fluxes` (WallDescriptionGgdParticle) across multiple WallDescriptionGgdGgd
-pub struct WallDescriptionGgdGgdParticleFluxesView<'a> {
-    pub electrons: WallDescriptionGgdGgdParticleFluxesElectronsView<'a>,
+pub struct WallDescriptionGgdGgdParticleFluxesView<'a, D> {
+    pub electrons: WallDescriptionGgdGgdParticleFluxesElectronsView<'a, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdGgdParticleFluxesView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdGgd]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdGgdParticleFluxesView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdGgd, D>) -> Self {
         Self {
-            electrons: WallDescriptionGgdGgdParticleFluxesElectronsView::new(data),
+            electrons: WallDescriptionGgdGgdParticleFluxesElectronsView::new(elements.clone()),
+            slice_elements: elements,
         }
+    }
+
+    /// The slice view over a range of `particle_fluxes.ion` under every element, e.g. `.ion(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdParticleIonSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdParticleIon], Output = [WallDescriptionGgdParticleIon]> + Clone,
+    {
+        WallDescriptionGgdParticleIonSliceView::new(self.slice_elements.nest(
+            "particle_fluxes.ion",
+            |item: &WallDescriptionGgdGgd| item.particle_fluxes.ion.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `particle_fluxes.neutral` under every element, e.g. `.neutral(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdParticleNeutralSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdParticleNeutral], Output = [WallDescriptionGgdParticleNeutral]> + Clone,
+    {
+        WallDescriptionGgdParticleNeutralSliceView::new(self.slice_elements.nest(
+            "particle_fluxes.neutral",
+            |item: &WallDescriptionGgdGgd| item.particle_fluxes.neutral.as_slice(),
+            range,
+        ))
     }
 }
 
 /// View over `energy_fluxes.radiation` (WallDescriptionGgdEnergySimple) across multiple WallDescriptionGgdGgd
-pub struct WallDescriptionGgdGgdEnergyFluxesRadiationView<'a> {
-    _phantom: std::marker::PhantomData<&'a WallDescriptionGgdGgd>,
+pub struct WallDescriptionGgdGgdEnergyFluxesRadiationView<'a, D> {
+    slice_elements: Elements<'a, WallDescriptionGgdGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdGgdEnergyFluxesRadiationView<'a> {
-    pub fn new(_data: &'a [WallDescriptionGgdGgd]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesRadiationView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdGgd, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+
+    /// The slice view over a range of `energy_fluxes.radiation.incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest(
+            "energy_fluxes.radiation.incident",
+            |item: &WallDescriptionGgdGgd| item.energy_fluxes.radiation.incident.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `energy_fluxes.radiation.emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest(
+            "energy_fluxes.radiation.emitted",
+            |item: &WallDescriptionGgdGgd| item.energy_fluxes.radiation.emitted.as_slice(),
+            range,
+        ))
     }
 }
 
 /// View over `energy_fluxes.current` (WallDescriptionGgdEnergySimple) across multiple WallDescriptionGgdGgd
-pub struct WallDescriptionGgdGgdEnergyFluxesCurrentView<'a> {
-    _phantom: std::marker::PhantomData<&'a WallDescriptionGgdGgd>,
+pub struct WallDescriptionGgdGgdEnergyFluxesCurrentView<'a, D> {
+    slice_elements: Elements<'a, WallDescriptionGgdGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdGgdEnergyFluxesCurrentView<'a> {
-    pub fn new(_data: &'a [WallDescriptionGgdGgd]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesCurrentView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdGgd, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+
+    /// The slice view over a range of `energy_fluxes.current.incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest(
+            "energy_fluxes.current.incident",
+            |item: &WallDescriptionGgdGgd| item.energy_fluxes.current.incident.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `energy_fluxes.current.emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest(
+            "energy_fluxes.current.emitted",
+            |item: &WallDescriptionGgdGgd| item.energy_fluxes.current.emitted.as_slice(),
+            range,
+        ))
     }
 }
 
 /// View over `energy_fluxes.recombination` (WallDescriptionGgdRecombination) across multiple WallDescriptionGgdGgd
-pub struct WallDescriptionGgdGgdEnergyFluxesRecombinationView<'a> {
-    _phantom: std::marker::PhantomData<&'a WallDescriptionGgdGgd>,
+pub struct WallDescriptionGgdGgdEnergyFluxesRecombinationView<'a, D> {
+    slice_elements: Elements<'a, WallDescriptionGgdGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdGgdEnergyFluxesRecombinationView<'a> {
-    pub fn new(_data: &'a [WallDescriptionGgdGgd]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesRecombinationView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdGgd, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+
+    /// The slice view over a range of `energy_fluxes.recombination.ion` under every element, e.g. `.ion(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdEnergyIonSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyIon], Output = [WallDescriptionGgdEnergyIon]> + Clone,
+    {
+        WallDescriptionGgdEnergyIonSliceView::new(self.slice_elements.nest(
+            "energy_fluxes.recombination.ion",
+            |item: &WallDescriptionGgdGgd| item.energy_fluxes.recombination.ion.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `energy_fluxes.recombination.neutral` under every element, e.g. `.neutral(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyNeutral], Output = [WallDescriptionGgdEnergyNeutral]> + Clone,
+    {
+        WallDescriptionGgdEnergyNeutralSliceView::new(self.slice_elements.nest(
+            "energy_fluxes.recombination.neutral",
+            |item: &WallDescriptionGgdGgd| item.energy_fluxes.recombination.neutral.as_slice(),
+            range,
+        ))
     }
 }
 
 /// View over `energy_fluxes.kinetic.electrons` (WallDescriptionGgdEnergySimple) across multiple WallDescriptionGgdGgd
-pub struct WallDescriptionGgdGgdEnergyFluxesKineticElectronsView<'a> {
-    _phantom: std::marker::PhantomData<&'a WallDescriptionGgdGgd>,
+pub struct WallDescriptionGgdGgdEnergyFluxesKineticElectronsView<'a, D> {
+    slice_elements: Elements<'a, WallDescriptionGgdGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdGgdEnergyFluxesKineticElectronsView<'a> {
-    pub fn new(_data: &'a [WallDescriptionGgdGgd]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesKineticElectronsView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdGgd, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+
+    /// The slice view over a range of `energy_fluxes.kinetic.electrons.incident` under every element, e.g. `.incident(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest(
+            "energy_fluxes.kinetic.electrons.incident",
+            |item: &WallDescriptionGgdGgd| item.energy_fluxes.kinetic.electrons.incident.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `energy_fluxes.kinetic.electrons.emitted` under every element, e.g. `.emitted(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest(
+            "energy_fluxes.kinetic.electrons.emitted",
+            |item: &WallDescriptionGgdGgd| item.energy_fluxes.kinetic.electrons.emitted.as_slice(),
+            range,
+        ))
     }
 }
 
 /// View over `energy_fluxes.kinetic` (WallDescriptionGgdKinetic) across multiple WallDescriptionGgdGgd
-pub struct WallDescriptionGgdGgdEnergyFluxesKineticView<'a> {
-    pub electrons: WallDescriptionGgdGgdEnergyFluxesKineticElectronsView<'a>,
+pub struct WallDescriptionGgdGgdEnergyFluxesKineticView<'a, D> {
+    pub electrons: WallDescriptionGgdGgdEnergyFluxesKineticElectronsView<'a, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdGgdEnergyFluxesKineticView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdGgd]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesKineticView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdGgd, D>) -> Self {
         Self {
-            electrons: WallDescriptionGgdGgdEnergyFluxesKineticElectronsView::new(data),
+            electrons: WallDescriptionGgdGgdEnergyFluxesKineticElectronsView::new(elements.clone()),
+            slice_elements: elements,
         }
+    }
+
+    /// The slice view over a range of `energy_fluxes.kinetic.ion` under every element, e.g. `.ion(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdEnergyIonSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyIon], Output = [WallDescriptionGgdEnergyIon]> + Clone,
+    {
+        WallDescriptionGgdEnergyIonSliceView::new(self.slice_elements.nest(
+            "energy_fluxes.kinetic.ion",
+            |item: &WallDescriptionGgdGgd| item.energy_fluxes.kinetic.ion.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `energy_fluxes.kinetic.neutral` under every element, e.g. `.neutral(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyNeutral], Output = [WallDescriptionGgdEnergyNeutral]> + Clone,
+    {
+        WallDescriptionGgdEnergyNeutralSliceView::new(self.slice_elements.nest(
+            "energy_fluxes.kinetic.neutral",
+            |item: &WallDescriptionGgdGgd| item.energy_fluxes.kinetic.neutral.as_slice(),
+            range,
+        ))
     }
 }
 
 /// View over `energy_fluxes` (WallDescriptionGgdEnergy) across multiple WallDescriptionGgdGgd
-pub struct WallDescriptionGgdGgdEnergyFluxesView<'a> {
-    pub radiation: WallDescriptionGgdGgdEnergyFluxesRadiationView<'a>,
-    pub current: WallDescriptionGgdGgdEnergyFluxesCurrentView<'a>,
-    pub recombination: WallDescriptionGgdGgdEnergyFluxesRecombinationView<'a>,
-    pub kinetic: WallDescriptionGgdGgdEnergyFluxesKineticView<'a>,
+pub struct WallDescriptionGgdGgdEnergyFluxesView<'a, D> {
+    pub radiation: WallDescriptionGgdGgdEnergyFluxesRadiationView<'a, D>,
+    pub current: WallDescriptionGgdGgdEnergyFluxesCurrentView<'a, D>,
+    pub recombination: WallDescriptionGgdGgdEnergyFluxesRecombinationView<'a, D>,
+    pub kinetic: WallDescriptionGgdGgdEnergyFluxesKineticView<'a, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdGgdEnergyFluxesView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdGgd]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdGgd, D>) -> Self {
         Self {
-            radiation: WallDescriptionGgdGgdEnergyFluxesRadiationView::new(data),
-            current: WallDescriptionGgdGgdEnergyFluxesCurrentView::new(data),
-            recombination: WallDescriptionGgdGgdEnergyFluxesRecombinationView::new(data),
-            kinetic: WallDescriptionGgdGgdEnergyFluxesKineticView::new(data),
+            radiation: WallDescriptionGgdGgdEnergyFluxesRadiationView::new(elements.clone()),
+            current: WallDescriptionGgdGgdEnergyFluxesCurrentView::new(elements.clone()),
+            recombination: WallDescriptionGgdGgdEnergyFluxesRecombinationView::new(elements.clone()),
+            kinetic: WallDescriptionGgdGgdEnergyFluxesKineticView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple WallDescriptionGgdGgd with field accumulation
-pub struct WallDescriptionGgdGgdSliceView<'a> {
-    data: &'a [WallDescriptionGgdGgd],
-    pub recycling: WallDescriptionGgdGgdRecyclingView<'a>,
-    pub particle_fluxes: WallDescriptionGgdGgdParticleFluxesView<'a>,
-    pub energy_fluxes: WallDescriptionGgdGgdEnergyFluxesView<'a>,
-    pub time: Accumulator<'a, WallDescriptionGgdGgd, FLT_0D>,
+pub struct WallDescriptionGgdGgdSliceView<'a, D> {
+    pub recycling: WallDescriptionGgdGgdRecyclingView<'a, D>,
+    pub particle_fluxes: WallDescriptionGgdGgdParticleFluxesView<'a, D>,
+    pub energy_fluxes: WallDescriptionGgdGgdEnergyFluxesView<'a, D>,
+    pub time: Accumulator<'a, WallDescriptionGgdGgd, FLT_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgdGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdGgdSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgdGgd]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdGgdSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgdGgd, D>) -> Self {
         Self {
-            data,
-            recycling: WallDescriptionGgdGgdRecyclingView::new(data),
-            particle_fluxes: WallDescriptionGgdGgdParticleFluxesView::new(data),
-            energy_fluxes: WallDescriptionGgdGgdEnergyFluxesView::new(data),
-            time: Accumulator::new(data, |item: &WallDescriptionGgdGgd| item.time),
+            recycling: WallDescriptionGgdGgdRecyclingView::new(elements.clone()),
+            particle_fluxes: WallDescriptionGgdGgdParticleFluxesView::new(elements.clone()),
+            energy_fluxes: WallDescriptionGgdGgdEnergyFluxesView::new(elements.clone()),
+            time: Accumulator::new(elements.clone(), |item: &WallDescriptionGgdGgd| item.time),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgdGgd> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgdGgd - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdGgdIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgdGgd]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdGgdIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdGgd]) -> Self::Output {
-        WallDescriptionGgdGgdSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgdGgd> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdGgdIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdGgd]) -> Self::Output {
-        WallDescriptionGgdGgdSliceView::new(&data[self])
+    /// The slice view over a range of `power_density` under every element, e.g. `.power_density(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn power_density<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("power_density", |item: &WallDescriptionGgdGgd| item.power_density.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdGgdIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdGgd]) -> Self::Output {
-        WallDescriptionGgdGgdSliceView::new(&data[self])
+    /// The slice view over a range of `temperature` under every element, e.g. `.temperature(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn temperature<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("temperature", |item: &WallDescriptionGgdGgd| item.temperature.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdGgdIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdGgd]) -> Self::Output {
-        WallDescriptionGgdGgdSliceView::new(&data[self])
+    /// The slice view over a range of `v_biasing` under every element, e.g. `.v_biasing(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn v_biasing<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("v_biasing", |item: &WallDescriptionGgdGgd| item.v_biasing.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdGgdIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdGgd]) -> Self::Output {
-        WallDescriptionGgdGgdSliceView::new(&data[self])
+    /// The slice view over a range of `j_total` under every element, e.g. `.j_total(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn j_total<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]> + Clone,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(
+            self.slice_elements
+                .nest("j_total", |item: &WallDescriptionGgdGgd| item.j_total.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdGgdIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgdGgd]) -> Self::Output {
-        WallDescriptionGgdGgdSliceView::new(data)
+    /// The slice view over a range of `b_field` under every element, e.g. `.b_field(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn b_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]> + Clone,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(
+            self.slice_elements
+                .nest("b_field", |item: &WallDescriptionGgdGgd| item.b_field.as_slice(), range),
+        )
+    }
+
+    /// The slice view over a range of `em_force_density` under every element, e.g. `.em_force_density(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn em_force_density<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]> + Clone,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(self.slice_elements.nest(
+            "em_force_density",
+            |item: &WallDescriptionGgdGgd| item.em_force_density.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `e_field` under every element, e.g. `.e_field(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn e_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]> + Clone,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(
+            self.slice_elements
+                .nest("e_field", |item: &WallDescriptionGgdGgd| item.e_field.as_slice(), range),
+        )
+    }
+
+    /// The slice view over a range of `a_field` under every element, e.g. `.a_field(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn a_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]> + Clone,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(
+            self.slice_elements
+                .nest("a_field", |item: &WallDescriptionGgdGgd| item.a_field.as_slice(), range),
+        )
+    }
+
+    /// The slice view over a range of `psi` under every element, e.g. `.psi(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn psi<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest("psi", |item: &WallDescriptionGgdGgd| item.psi.as_slice(), range))
+    }
+
+    /// The slice view over a range of `phi_potential` under every element, e.g. `.phi_potential(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn phi_potential<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("phi_potential", |item: &WallDescriptionGgdGgd| item.phi_potential.as_slice(), range),
+        )
+    }
+
+    /// The slice view over a range of `resistivity` under every element, e.g. `.resistivity(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn resistivity<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("resistivity", |item: &WallDescriptionGgdGgd| item.resistivity.as_slice(), range),
+        )
     }
 }
 
 // --- Vessel2dUnit View Types ---
 
 /// View over `annular.outline_inner` (Rz1dStatic) across multiple Vessel2dUnit
-pub struct Vessel2dUnitAnnularOutlineInnerView<'a> {
-    _phantom: std::marker::PhantomData<&'a Vessel2dUnit>,
+pub struct Vessel2dUnitAnnularOutlineInnerView<'a, D> {
+    slice_elements: Elements<'a, Vessel2dUnit, D>,
 }
 
-impl<'a> Vessel2dUnitAnnularOutlineInnerView<'a> {
-    pub fn new(_data: &'a [Vessel2dUnit]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> Vessel2dUnitAnnularOutlineInnerView<'a, D> {
+    pub fn new(elements: Elements<'a, Vessel2dUnit, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `annular.outline_outer` (Rz1dStatic) across multiple Vessel2dUnit
-pub struct Vessel2dUnitAnnularOutlineOuterView<'a> {
-    _phantom: std::marker::PhantomData<&'a Vessel2dUnit>,
+pub struct Vessel2dUnitAnnularOutlineOuterView<'a, D> {
+    slice_elements: Elements<'a, Vessel2dUnit, D>,
 }
 
-impl<'a> Vessel2dUnitAnnularOutlineOuterView<'a> {
-    pub fn new(_data: &'a [Vessel2dUnit]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> Vessel2dUnitAnnularOutlineOuterView<'a, D> {
+    pub fn new(elements: Elements<'a, Vessel2dUnit, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `annular.centreline` (Rz1dStatic) across multiple Vessel2dUnit
-pub struct Vessel2dUnitAnnularCentrelineView<'a> {
-    _phantom: std::marker::PhantomData<&'a Vessel2dUnit>,
+pub struct Vessel2dUnitAnnularCentrelineView<'a, D> {
+    slice_elements: Elements<'a, Vessel2dUnit, D>,
 }
 
-impl<'a> Vessel2dUnitAnnularCentrelineView<'a> {
-    pub fn new(_data: &'a [Vessel2dUnit]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> Vessel2dUnitAnnularCentrelineView<'a, D> {
+    pub fn new(elements: Elements<'a, Vessel2dUnit, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `annular` (Vessel2dAnnular) across multiple Vessel2dUnit
-pub struct Vessel2dUnitAnnularView<'a> {
-    pub outline_inner: Vessel2dUnitAnnularOutlineInnerView<'a>,
-    pub outline_outer: Vessel2dUnitAnnularOutlineOuterView<'a>,
-    pub centreline: Vessel2dUnitAnnularCentrelineView<'a>,
-    pub resistivity: Accumulator<'a, Vessel2dUnit, FLT_0D>,
+pub struct Vessel2dUnitAnnularView<'a, D> {
+    pub outline_inner: Vessel2dUnitAnnularOutlineInnerView<'a, D>,
+    pub outline_outer: Vessel2dUnitAnnularOutlineOuterView<'a, D>,
+    pub centreline: Vessel2dUnitAnnularCentrelineView<'a, D>,
+    pub resistivity: Accumulator<'a, Vessel2dUnit, FLT_0D, D>,
+    slice_elements: Elements<'a, Vessel2dUnit, D>,
 }
 
-impl<'a> Vessel2dUnitAnnularView<'a> {
-    pub fn new(data: &'a [Vessel2dUnit]) -> Self {
+impl<'a, D: Dimension> Vessel2dUnitAnnularView<'a, D> {
+    pub fn new(elements: Elements<'a, Vessel2dUnit, D>) -> Self {
         Self {
-            outline_inner: Vessel2dUnitAnnularOutlineInnerView::new(data),
-            outline_outer: Vessel2dUnitAnnularOutlineOuterView::new(data),
-            centreline: Vessel2dUnitAnnularCentrelineView::new(data),
-            resistivity: Accumulator::new(data, |item: &Vessel2dUnit| item.annular.resistivity),
+            outline_inner: Vessel2dUnitAnnularOutlineInnerView::new(elements.clone()),
+            outline_outer: Vessel2dUnitAnnularOutlineOuterView::new(elements.clone()),
+            centreline: Vessel2dUnitAnnularCentrelineView::new(elements.clone()),
+            resistivity: Accumulator::new(elements.clone(), |item: &Vessel2dUnit| item.annular.resistivity),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple Vessel2dUnit with field accumulation
-pub struct Vessel2dUnitSliceView<'a> {
-    data: &'a [Vessel2dUnit],
-    pub name: StringAccumulator<'a, Vessel2dUnit>,
-    pub description: StringAccumulator<'a, Vessel2dUnit>,
-    pub annular: Vessel2dUnitAnnularView<'a>,
+pub struct Vessel2dUnitSliceView<'a, D> {
+    pub name: Accumulator<'a, Vessel2dUnit, STR_0D, D>,
+    pub description: Accumulator<'a, Vessel2dUnit, STR_0D, D>,
+    pub annular: Vessel2dUnitAnnularView<'a, D>,
+    slice_elements: Elements<'a, Vessel2dUnit, D>,
 }
 
-impl<'a> Vessel2dUnitSliceView<'a> {
-    pub fn new(data: &'a [Vessel2dUnit]) -> Self {
+impl<'a, D: Dimension> Vessel2dUnitSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, Vessel2dUnit, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &Vessel2dUnit| item.name.clone()),
-            description: StringAccumulator::new(data, |item: &Vessel2dUnit| item.description.clone()),
-            annular: Vessel2dUnitAnnularView::new(data),
+            name: Accumulator::new(elements.clone(), |item: &Vessel2dUnit| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &Vessel2dUnit| item.description.clone()),
+            annular: Vessel2dUnitAnnularView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Vessel2dUnit> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for Vessel2dUnit - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait Vessel2dUnitIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [Vessel2dUnit]) -> Self::Output;
-}
-
-impl<'a> Vessel2dUnitIndex<'a> for std::ops::Range<usize> {
-    type Output = Vessel2dUnitSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dUnit]) -> Self::Output {
-        Vessel2dUnitSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a Vessel2dUnit> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> Vessel2dUnitIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = Vessel2dUnitSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dUnit]) -> Self::Output {
-        Vessel2dUnitSliceView::new(&data[self])
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> Vessel2dElementSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[Vessel2dElement], Output = [Vessel2dElement]> + Clone,
+    {
+        Vessel2dElementSliceView::new(self.slice_elements.nest("element", |item: &Vessel2dUnit| item.element.as_slice(), range))
     }
-}
 
-impl<'a> Vessel2dUnitIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = Vessel2dUnitSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dUnit]) -> Self::Output {
-        Vessel2dUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Vessel2dUnitIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = Vessel2dUnitSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dUnit]) -> Self::Output {
-        Vessel2dUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Vessel2dUnitIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = Vessel2dUnitSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dUnit]) -> Self::Output {
-        Vessel2dUnitSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Vessel2dUnitIndex<'a> for std::ops::RangeFull {
-    type Output = Vessel2dUnitSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dUnit]) -> Self::Output {
-        Vessel2dUnitSliceView::new(data)
+    /// The slice view over a range of `material` under every element, e.g. `.material(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn material<R>(&self, range: R) -> IdentifierStaticSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[IdentifierStatic], Output = [IdentifierStatic]> + Clone,
+    {
+        IdentifierStaticSliceView::new(self.slice_elements.nest("material", |item: &Vessel2dUnit| item.material.as_slice(), range))
     }
 }
 
 // --- GenericGridDynamicSpace View Types ---
 
 /// View over `identifier` (IdentifierDynamicAos3) across multiple GenericGridDynamicSpace
-pub struct GenericGridDynamicSpaceIdentifierView<'a> {
-    pub name: StringAccumulator<'a, GenericGridDynamicSpace>,
-    pub index: Accumulator<'a, GenericGridDynamicSpace, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridDynamicSpace>,
+pub struct GenericGridDynamicSpaceIdentifierView<'a, D> {
+    pub name: Accumulator<'a, GenericGridDynamicSpace, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamicSpace, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridDynamicSpace, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpace, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceIdentifierView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpace]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceIdentifierView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpace, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.index),
-            description: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.identifier.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.identifier.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.identifier.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry_type` (IdentifierDynamicAos3) across multiple GenericGridDynamicSpace
-pub struct GenericGridDynamicSpaceGeometryTypeView<'a> {
-    pub name: StringAccumulator<'a, GenericGridDynamicSpace>,
-    pub index: Accumulator<'a, GenericGridDynamicSpace, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridDynamicSpace>,
+pub struct GenericGridDynamicSpaceGeometryTypeView<'a, D> {
+    pub name: Accumulator<'a, GenericGridDynamicSpace, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamicSpace, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridDynamicSpace, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpace, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceGeometryTypeView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpace]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceGeometryTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpace, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.index),
-            description: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.geometry_type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.geometry_type.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.geometry_type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple GenericGridDynamicSpace with field accumulation
-pub struct GenericGridDynamicSpaceSliceView<'a> {
-    data: &'a [GenericGridDynamicSpace],
-    pub identifier: GenericGridDynamicSpaceIdentifierView<'a>,
-    pub geometry_type: GenericGridDynamicSpaceGeometryTypeView<'a>,
+pub struct GenericGridDynamicSpaceSliceView<'a, D> {
+    pub identifier: GenericGridDynamicSpaceIdentifierView<'a, D>,
+    pub geometry_type: GenericGridDynamicSpaceGeometryTypeView<'a, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpace, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpace]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpace, D>) -> Self {
         Self {
-            data,
-            identifier: GenericGridDynamicSpaceIdentifierView::new(data),
-            geometry_type: GenericGridDynamicSpaceGeometryTypeView::new(data),
+            identifier: GenericGridDynamicSpaceIdentifierView::new(elements.clone()),
+            geometry_type: GenericGridDynamicSpaceGeometryTypeView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicSpace> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicSpace - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicSpaceIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpace> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(&data[self])
+    /// The slice view over a range of `coordinates_type` under every element, e.g. `.coordinates_type(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn coordinates_type<R>(&self, range: R) -> IdentifierDynamicAos3SliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[IdentifierDynamicAos3], Output = [IdentifierDynamicAos3]> + Clone,
+    {
+        IdentifierDynamicAos3SliceView::new(self.slice_elements.nest(
+            "coordinates_type",
+            |item: &GenericGridDynamicSpace| item.coordinates_type.as_slice(),
+            range,
+        ))
     }
-}
 
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(data)
+    /// The slice view over a range of `objects_per_dimension` under every element, e.g. `.objects_per_dimension(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn objects_per_dimension<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimension], Output = [GenericGridDynamicSpaceDimension]> + Clone,
+    {
+        GenericGridDynamicSpaceDimensionSliceView::new(self.slice_elements.nest(
+            "objects_per_dimension",
+            |item: &GenericGridDynamicSpace| item.objects_per_dimension.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- GenericGridDynamicGridSubset View Types ---
 
 /// View over `identifier` (IdentifierDynamicAos3) across multiple GenericGridDynamicGridSubset
-pub struct GenericGridDynamicGridSubsetIdentifierView<'a> {
-    pub name: StringAccumulator<'a, GenericGridDynamicGridSubset>,
-    pub index: Accumulator<'a, GenericGridDynamicGridSubset, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridDynamicGridSubset>,
+pub struct GenericGridDynamicGridSubsetIdentifierView<'a, D> {
+    pub name: Accumulator<'a, GenericGridDynamicGridSubset, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamicGridSubset, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridDynamicGridSubset, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicGridSubset, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetIdentifierView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicGridSubset]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetIdentifierView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubset, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.index),
-            description: StringAccumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubset| item.identifier.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubset| item.identifier.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubset| item.identifier.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `metric` (GenericGridDynamicGridSubsetMetric) across multiple GenericGridDynamicGridSubset
-pub struct GenericGridDynamicGridSubsetMetricView<'a> {
-    _phantom: std::marker::PhantomData<&'a GenericGridDynamicGridSubset>,
+pub struct GenericGridDynamicGridSubsetMetricView<'a, D> {
+    slice_elements: Elements<'a, GenericGridDynamicGridSubset, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetMetricView<'a> {
-    pub fn new(_data: &'a [GenericGridDynamicGridSubset]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetMetricView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubset, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over multiple GenericGridDynamicGridSubset with field accumulation
-pub struct GenericGridDynamicGridSubsetSliceView<'a> {
-    data: &'a [GenericGridDynamicGridSubset],
-    pub identifier: GenericGridDynamicGridSubsetIdentifierView<'a>,
-    pub dimension: Accumulator<'a, GenericGridDynamicGridSubset, INT_0D>,
-    pub metric: GenericGridDynamicGridSubsetMetricView<'a>,
+pub struct GenericGridDynamicGridSubsetSliceView<'a, D> {
+    pub identifier: GenericGridDynamicGridSubsetIdentifierView<'a, D>,
+    pub dimension: Accumulator<'a, GenericGridDynamicGridSubset, INT_0D, D>,
+    pub metric: GenericGridDynamicGridSubsetMetricView<'a, D>,
+    slice_elements: Elements<'a, GenericGridDynamicGridSubset, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicGridSubset]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubset, D>) -> Self {
         Self {
-            data,
-            identifier: GenericGridDynamicGridSubsetIdentifierView::new(data),
-            dimension: Accumulator::new(data, |item: &GenericGridDynamicGridSubset| item.dimension),
-            metric: GenericGridDynamicGridSubsetMetricView::new(data),
+            identifier: GenericGridDynamicGridSubsetIdentifierView::new(elements.clone()),
+            dimension: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubset| item.dimension),
+            metric: GenericGridDynamicGridSubsetMetricView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicGridSubset> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicGridSubset - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicGridSubsetIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubset> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(&data[self])
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetElement], Output = [GenericGridDynamicGridSubsetElement]> + Clone,
+    {
+        GenericGridDynamicGridSubsetElementSliceView::new(self.slice_elements.nest(
+            "element",
+            |item: &GenericGridDynamicGridSubset| item.element.as_slice(),
+            range,
+        ))
     }
-}
 
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(data)
+    /// The slice view over a range of `base` under every element, e.g. `.base(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn base<R>(&self, range: R) -> GenericGridDynamicGridSubsetMetricSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetMetric], Output = [GenericGridDynamicGridSubsetMetric]> + Clone,
+    {
+        GenericGridDynamicGridSubsetMetricSliceView::new(
+            self.slice_elements
+                .nest("base", |item: &GenericGridDynamicGridSubset| item.base.as_slice(), range),
+        )
     }
 }
 
 // --- Library View Types ---
 
 /// View over multiple Library with field accumulation
-pub struct LibrarySliceView<'a> {
-    data: &'a [Library],
-    pub name: StringAccumulator<'a, Library>,
-    pub description: StringAccumulator<'a, Library>,
-    pub commit: StringAccumulator<'a, Library>,
-    pub version: StringAccumulator<'a, Library>,
-    pub repository: StringAccumulator<'a, Library>,
-    pub parameters: StringAccumulator<'a, Library>,
+pub struct LibrarySliceView<'a, D> {
+    pub name: Accumulator<'a, Library, STR_0D, D>,
+    pub description: Accumulator<'a, Library, STR_0D, D>,
+    pub commit: Accumulator<'a, Library, STR_0D, D>,
+    pub version: Accumulator<'a, Library, STR_0D, D>,
+    pub repository: Accumulator<'a, Library, STR_0D, D>,
+    pub parameters: Accumulator<'a, Library, STR_0D, D>,
+    slice_elements: Elements<'a, Library, D>,
 }
 
-impl<'a> LibrarySliceView<'a> {
-    pub fn new(data: &'a [Library]) -> Self {
+impl<'a, D: Dimension> LibrarySliceView<'a, D> {
+    pub fn new(elements: Elements<'a, Library, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &Library| item.name.clone()),
-            description: StringAccumulator::new(data, |item: &Library| item.description.clone()),
-            commit: StringAccumulator::new(data, |item: &Library| item.commit.clone()),
-            version: StringAccumulator::new(data, |item: &Library| item.version.clone()),
-            repository: StringAccumulator::new(data, |item: &Library| item.repository.clone()),
-            parameters: StringAccumulator::new(data, |item: &Library| item.parameters.clone()),
+            name: Accumulator::new(elements.clone(), |item: &Library| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &Library| item.description.clone()),
+            commit: Accumulator::new(elements.clone(), |item: &Library| item.commit.clone()),
+            version: Accumulator::new(elements.clone(), |item: &Library| item.version.clone()),
+            repository: Accumulator::new(elements.clone(), |item: &Library| item.repository.clone()),
+            parameters: Accumulator::new(elements.clone(), |item: &Library| item.parameters.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Library> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for Library - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait LibraryIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [Library]) -> Self::Output;
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::Range<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeFull {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a Library> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- Vessel2dElement View Types ---
 
 /// View over `outline` (Rz1dStatic) across multiple Vessel2dElement
-pub struct Vessel2dElementOutlineView<'a> {
-    _phantom: std::marker::PhantomData<&'a Vessel2dElement>,
+pub struct Vessel2dElementOutlineView<'a, D> {
+    slice_elements: Elements<'a, Vessel2dElement, D>,
 }
 
-impl<'a> Vessel2dElementOutlineView<'a> {
-    pub fn new(_data: &'a [Vessel2dElement]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> Vessel2dElementOutlineView<'a, D> {
+    pub fn new(elements: Elements<'a, Vessel2dElement, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over multiple Vessel2dElement with field accumulation
-pub struct Vessel2dElementSliceView<'a> {
-    data: &'a [Vessel2dElement],
-    pub name: StringAccumulator<'a, Vessel2dElement>,
-    pub outline: Vessel2dElementOutlineView<'a>,
-    pub midplane_thickness: Accumulator<'a, Vessel2dElement, FLT_0D>,
-    pub resistivity: Accumulator<'a, Vessel2dElement, FLT_0D>,
-    pub resistance: Accumulator<'a, Vessel2dElement, FLT_0D>,
+pub struct Vessel2dElementSliceView<'a, D> {
+    pub name: Accumulator<'a, Vessel2dElement, STR_0D, D>,
+    pub outline: Vessel2dElementOutlineView<'a, D>,
+    pub midplane_thickness: Accumulator<'a, Vessel2dElement, FLT_0D, D>,
+    pub resistivity: Accumulator<'a, Vessel2dElement, FLT_0D, D>,
+    pub resistance: Accumulator<'a, Vessel2dElement, FLT_0D, D>,
+    slice_elements: Elements<'a, Vessel2dElement, D>,
 }
 
-impl<'a> Vessel2dElementSliceView<'a> {
-    pub fn new(data: &'a [Vessel2dElement]) -> Self {
+impl<'a, D: Dimension> Vessel2dElementSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, Vessel2dElement, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &Vessel2dElement| item.name.clone()),
-            outline: Vessel2dElementOutlineView::new(data),
-            midplane_thickness: Accumulator::new(data, |item: &Vessel2dElement| item.midplane_thickness),
-            resistivity: Accumulator::new(data, |item: &Vessel2dElement| item.resistivity),
-            resistance: Accumulator::new(data, |item: &Vessel2dElement| item.resistance),
+            name: Accumulator::new(elements.clone(), |item: &Vessel2dElement| item.name.clone()),
+            outline: Vessel2dElementOutlineView::new(elements.clone()),
+            midplane_thickness: Accumulator::new(elements.clone(), |item: &Vessel2dElement| item.midplane_thickness),
+            resistivity: Accumulator::new(elements.clone(), |item: &Vessel2dElement| item.resistivity),
+            resistance: Accumulator::new(elements.clone(), |item: &Vessel2dElement| item.resistance),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Vessel2dElement> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for Vessel2dElement - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait Vessel2dElementIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [Vessel2dElement]) -> Self::Output;
-}
-
-impl<'a> Vessel2dElementIndex<'a> for std::ops::Range<usize> {
-    type Output = Vessel2dElementSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dElement]) -> Self::Output {
-        Vessel2dElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Vessel2dElementIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = Vessel2dElementSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dElement]) -> Self::Output {
-        Vessel2dElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Vessel2dElementIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = Vessel2dElementSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dElement]) -> Self::Output {
-        Vessel2dElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Vessel2dElementIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = Vessel2dElementSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dElement]) -> Self::Output {
-        Vessel2dElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Vessel2dElementIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = Vessel2dElementSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dElement]) -> Self::Output {
-        Vessel2dElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Vessel2dElementIndex<'a> for std::ops::RangeFull {
-    type Output = Vessel2dElementSliceView<'a>;
-    fn get(self, data: &'a [Vessel2dElement]) -> Self::Output {
-        Vessel2dElementSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a Vessel2dElement> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- IdentifierStatic View Types ---
 
 /// View over multiple IdentifierStatic with field accumulation
-pub struct IdentifierStaticSliceView<'a> {
-    data: &'a [IdentifierStatic],
-    pub name: StringAccumulator<'a, IdentifierStatic>,
-    pub index: Accumulator<'a, IdentifierStatic, INT_0D>,
-    pub description: StringAccumulator<'a, IdentifierStatic>,
+pub struct IdentifierStaticSliceView<'a, D> {
+    pub name: Accumulator<'a, IdentifierStatic, STR_0D, D>,
+    pub index: Accumulator<'a, IdentifierStatic, INT_0D, D>,
+    pub description: Accumulator<'a, IdentifierStatic, STR_0D, D>,
+    slice_elements: Elements<'a, IdentifierStatic, D>,
 }
 
-impl<'a> IdentifierStaticSliceView<'a> {
-    pub fn new(data: &'a [IdentifierStatic]) -> Self {
+impl<'a, D: Dimension> IdentifierStaticSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, IdentifierStatic, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &IdentifierStatic| item.name.clone()),
-            index: Accumulator::new(data, |item: &IdentifierStatic| item.index),
-            description: StringAccumulator::new(data, |item: &IdentifierStatic| item.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &IdentifierStatic| item.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &IdentifierStatic| item.index),
+            description: Accumulator::new(elements.clone(), |item: &IdentifierStatic| item.description.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &IdentifierStatic> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for IdentifierStatic - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait IdentifierStaticIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output;
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::Range<usize> {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierStaticIndex<'a> for std::ops::RangeFull {
-    type Output = IdentifierStaticSliceView<'a>;
-    fn get(self, data: &'a [IdentifierStatic]) -> Self::Output {
-        IdentifierStaticSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a IdentifierStatic> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- IdentifierDynamicAos3 View Types ---
 
 /// View over multiple IdentifierDynamicAos3 with field accumulation
-pub struct IdentifierDynamicAos3SliceView<'a> {
-    data: &'a [IdentifierDynamicAos3],
-    pub name: StringAccumulator<'a, IdentifierDynamicAos3>,
-    pub index: Accumulator<'a, IdentifierDynamicAos3, INT_0D>,
-    pub description: StringAccumulator<'a, IdentifierDynamicAos3>,
+pub struct IdentifierDynamicAos3SliceView<'a, D> {
+    pub name: Accumulator<'a, IdentifierDynamicAos3, STR_0D, D>,
+    pub index: Accumulator<'a, IdentifierDynamicAos3, INT_0D, D>,
+    pub description: Accumulator<'a, IdentifierDynamicAos3, STR_0D, D>,
+    slice_elements: Elements<'a, IdentifierDynamicAos3, D>,
 }
 
-impl<'a> IdentifierDynamicAos3SliceView<'a> {
-    pub fn new(data: &'a [IdentifierDynamicAos3]) -> Self {
+impl<'a, D: Dimension> IdentifierDynamicAos3SliceView<'a, D> {
+    pub fn new(elements: Elements<'a, IdentifierDynamicAos3, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &IdentifierDynamicAos3| item.name.clone()),
-            index: Accumulator::new(data, |item: &IdentifierDynamicAos3| item.index),
-            description: StringAccumulator::new(data, |item: &IdentifierDynamicAos3| item.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &IdentifierDynamicAos3| item.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &IdentifierDynamicAos3| item.index),
+            description: Accumulator::new(elements.clone(), |item: &IdentifierDynamicAos3| item.description.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &IdentifierDynamicAos3> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for IdentifierDynamicAos3 - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait IdentifierDynamicAos3Index<'a> {
-    type Output;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output;
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::Range<usize> {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeFrom<usize> {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeTo<usize> {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeInclusive<usize> {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeFull {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a IdentifierDynamicAos3> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridDynamicSpaceDimension View Types ---
 
 /// View over `geometry_content` (IdentifierDynamicAos3) across multiple GenericGridDynamicSpaceDimension
-pub struct GenericGridDynamicSpaceDimensionGeometryContentView<'a> {
-    pub name: StringAccumulator<'a, GenericGridDynamicSpaceDimension>,
-    pub index: Accumulator<'a, GenericGridDynamicSpaceDimension, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridDynamicSpaceDimension>,
+pub struct GenericGridDynamicSpaceDimensionGeometryContentView<'a, D> {
+    pub name: Accumulator<'a, GenericGridDynamicSpaceDimension, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamicSpaceDimension, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridDynamicSpaceDimension, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpaceDimension, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceDimensionGeometryContentView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpaceDimension]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionGeometryContentView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpaceDimension, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpaceDimension| item.geometry_content.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimension| item.geometry_content.index),
-            description: StringAccumulator::new(data, |item: &GenericGridDynamicSpaceDimension| item.geometry_content.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpaceDimension| item.geometry_content.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpaceDimension| item.geometry_content.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpaceDimension| {
+                item.geometry_content.description.clone()
+            }),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple GenericGridDynamicSpaceDimension with field accumulation
-pub struct GenericGridDynamicSpaceDimensionSliceView<'a> {
-    data: &'a [GenericGridDynamicSpaceDimension],
-    pub geometry_content: GenericGridDynamicSpaceDimensionGeometryContentView<'a>,
+pub struct GenericGridDynamicSpaceDimensionSliceView<'a, D> {
+    pub geometry_content: GenericGridDynamicSpaceDimensionGeometryContentView<'a, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpaceDimension, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceDimensionSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpaceDimension]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpaceDimension, D>) -> Self {
         Self {
-            data,
-            geometry_content: GenericGridDynamicSpaceDimensionGeometryContentView::new(data),
+            geometry_content: GenericGridDynamicSpaceDimensionGeometryContentView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicSpaceDimension> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicSpaceDimension - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicSpaceDimensionIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpaceDimension> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(data)
+    /// The slice view over a range of `object` under every element, e.g. `.object(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn object<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimensionObject], Output = [GenericGridDynamicSpaceDimensionObject]> + Clone,
+    {
+        GenericGridDynamicSpaceDimensionObjectSliceView::new(self.slice_elements.nest(
+            "object",
+            |item: &GenericGridDynamicSpaceDimension| item.object.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- GenericGridDynamicGridSubsetElement View Types ---
 
 /// View over multiple GenericGridDynamicGridSubsetElement with field accumulation
-pub struct GenericGridDynamicGridSubsetElementSliceView<'a> {
-    data: &'a [GenericGridDynamicGridSubsetElement],
+pub struct GenericGridDynamicGridSubsetElementSliceView<'a, D> {
+    slice_elements: Elements<'a, GenericGridDynamicGridSubsetElement, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetElementSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicGridSubsetElement]) -> Self {
-        Self { data }
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetElementSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubsetElement, D>) -> Self {
+        Self { slice_elements: elements }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicGridSubsetElement> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicGridSubsetElement - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicGridSubsetElementIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubsetElement> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(data)
+    /// The slice view over a range of `object` under every element, e.g. `.object(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn object<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementObjectSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetElementObject], Output = [GenericGridDynamicGridSubsetElementObject]> + Clone,
+    {
+        GenericGridDynamicGridSubsetElementObjectSliceView::new(self.slice_elements.nest(
+            "object",
+            |item: &GenericGridDynamicGridSubsetElement| item.object.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- GenericGridDynamicGridSubsetMetric View Types ---
 
 /// View over multiple GenericGridDynamicGridSubsetMetric with field accumulation
-pub struct GenericGridDynamicGridSubsetMetricSliceView<'a> {
-    data: &'a [GenericGridDynamicGridSubsetMetric],
+pub struct GenericGridDynamicGridSubsetMetricSliceView<'a, D> {
+    slice_elements: Elements<'a, GenericGridDynamicGridSubsetMetric, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetMetricSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self {
-        Self { data }
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetMetricSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubsetMetric, D>) -> Self {
+        Self { slice_elements: elements }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicGridSubsetMetric> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicGridSubsetMetric - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicGridSubsetMetricIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubsetMetric> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridDynamicSpaceDimensionObject View Types ---
 
 /// View over multiple GenericGridDynamicSpaceDimensionObject with field accumulation
-pub struct GenericGridDynamicSpaceDimensionObjectSliceView<'a> {
-    data: &'a [GenericGridDynamicSpaceDimensionObject],
-    pub measure: Accumulator<'a, GenericGridDynamicSpaceDimensionObject, FLT_0D>,
+pub struct GenericGridDynamicSpaceDimensionObjectSliceView<'a, D> {
+    pub measure: Accumulator<'a, GenericGridDynamicSpaceDimensionObject, FLT_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpaceDimensionObject, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceDimensionObjectSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionObjectSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpaceDimensionObject, D>) -> Self {
         Self {
-            data,
-            measure: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimensionObject| item.measure),
+            measure: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpaceDimensionObject| item.measure),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicSpaceDimensionObject> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicSpaceDimensionObject - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicSpaceDimensionObjectIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpaceDimensionObject> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(data)
+    /// The slice view over a range of `boundary` under every element, e.g. `.boundary(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn boundary<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimensionObjectBoundary], Output = [GenericGridDynamicSpaceDimensionObjectBoundary]> + Clone,
+    {
+        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(self.slice_elements.nest(
+            "boundary",
+            |item: &GenericGridDynamicSpaceDimensionObject| item.boundary.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- GenericGridDynamicGridSubsetElementObject View Types ---
 
 /// View over multiple GenericGridDynamicGridSubsetElementObject with field accumulation
-pub struct GenericGridDynamicGridSubsetElementObjectSliceView<'a> {
-    data: &'a [GenericGridDynamicGridSubsetElementObject],
-    pub space: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D>,
-    pub dimension: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D>,
-    pub index: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D>,
+pub struct GenericGridDynamicGridSubsetElementObjectSliceView<'a, D> {
+    pub space: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D, D>,
+    pub dimension: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicGridSubsetElementObject, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetElementObjectSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetElementObjectSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubsetElementObject, D>) -> Self {
         Self {
-            data,
-            space: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.space),
-            dimension: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.dimension),
-            index: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.index),
+            space: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubsetElementObject| item.space),
+            dimension: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubsetElementObject| item.dimension),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubsetElementObject| item.index),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicGridSubsetElementObject> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicGridSubsetElementObject - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicGridSubsetElementObjectIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubsetElementObject> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridDynamicSpaceDimensionObjectBoundary View Types ---
 
 /// View over multiple GenericGridDynamicSpaceDimensionObjectBoundary with field accumulation
-pub struct GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a> {
-    data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary],
-    pub index: Accumulator<'a, GenericGridDynamicSpaceDimensionObjectBoundary, INT_0D>,
+pub struct GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D> {
+    pub index: Accumulator<'a, GenericGridDynamicSpaceDimensionObjectBoundary, INT_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpaceDimensionObjectBoundary, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpaceDimensionObjectBoundary, D>) -> Self {
         Self {
-            data,
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimensionObjectBoundary| item.index),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpaceDimensionObjectBoundary| item.index),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicSpaceDimensionObjectBoundary> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicSpaceDimensionObjectBoundary - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpaceDimensionObjectBoundary> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- Wall2d View Types ---
 
 /// View over `type` (IdentifierStatic) across multiple Wall2d
-pub struct Wall2dTypeView<'a> {
-    pub name: StringAccumulator<'a, Wall2d>,
-    pub index: Accumulator<'a, Wall2d, INT_0D>,
-    pub description: StringAccumulator<'a, Wall2d>,
+pub struct Wall2dTypeView<'a, D> {
+    pub name: Accumulator<'a, Wall2d, STR_0D, D>,
+    pub index: Accumulator<'a, Wall2d, INT_0D, D>,
+    pub description: Accumulator<'a, Wall2d, STR_0D, D>,
+    slice_elements: Elements<'a, Wall2d, D>,
 }
 
-impl<'a> Wall2dTypeView<'a> {
-    pub fn new(data: &'a [Wall2d]) -> Self {
+impl<'a, D: Dimension> Wall2dTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2d, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &Wall2d| item.r#type.name.clone()),
-            index: Accumulator::new(data, |item: &Wall2d| item.r#type.index),
-            description: StringAccumulator::new(data, |item: &Wall2d| item.r#type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &Wall2d| item.r#type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &Wall2d| item.r#type.index),
+            description: Accumulator::new(elements.clone(), |item: &Wall2d| item.r#type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `limiter.type` (IdentifierStatic) across multiple Wall2d
-pub struct Wall2dLimiterTypeView<'a> {
-    pub name: StringAccumulator<'a, Wall2d>,
-    pub index: Accumulator<'a, Wall2d, INT_0D>,
-    pub description: StringAccumulator<'a, Wall2d>,
+pub struct Wall2dLimiterTypeView<'a, D> {
+    pub name: Accumulator<'a, Wall2d, STR_0D, D>,
+    pub index: Accumulator<'a, Wall2d, INT_0D, D>,
+    pub description: Accumulator<'a, Wall2d, STR_0D, D>,
+    slice_elements: Elements<'a, Wall2d, D>,
 }
 
-impl<'a> Wall2dLimiterTypeView<'a> {
-    pub fn new(data: &'a [Wall2d]) -> Self {
+impl<'a, D: Dimension> Wall2dLimiterTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2d, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &Wall2d| item.limiter.r#type.name.clone()),
-            index: Accumulator::new(data, |item: &Wall2d| item.limiter.r#type.index),
-            description: StringAccumulator::new(data, |item: &Wall2d| item.limiter.r#type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &Wall2d| item.limiter.r#type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &Wall2d| item.limiter.r#type.index),
+            description: Accumulator::new(elements.clone(), |item: &Wall2d| item.limiter.r#type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `limiter` (Wall2dLimiter) across multiple Wall2d
-pub struct Wall2dLimiterView<'a> {
-    pub r#type: Wall2dLimiterTypeView<'a>,
+pub struct Wall2dLimiterView<'a, D> {
+    pub r#type: Wall2dLimiterTypeView<'a, D>,
+    slice_elements: Elements<'a, Wall2d, D>,
 }
 
-impl<'a> Wall2dLimiterView<'a> {
-    pub fn new(data: &'a [Wall2d]) -> Self {
+impl<'a, D: Dimension> Wall2dLimiterView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2d, D>) -> Self {
         Self {
-            r#type: Wall2dLimiterTypeView::new(data),
+            r#type: Wall2dLimiterTypeView::new(elements.clone()),
+            slice_elements: elements,
         }
+    }
+
+    /// The slice view over a range of `limiter.unit` under every element, e.g. `.unit(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn unit<R>(&self, range: R) -> Wall2dLimiterUnitSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[Wall2dLimiterUnit], Output = [Wall2dLimiterUnit]> + Clone,
+    {
+        Wall2dLimiterUnitSliceView::new(self.slice_elements.nest("limiter.unit", |item: &Wall2d| item.limiter.unit.as_slice(), range))
     }
 }
 
 /// View over `mobile.type` (IdentifierStatic) across multiple Wall2d
-pub struct Wall2dMobileTypeView<'a> {
-    pub name: StringAccumulator<'a, Wall2d>,
-    pub index: Accumulator<'a, Wall2d, INT_0D>,
-    pub description: StringAccumulator<'a, Wall2d>,
+pub struct Wall2dMobileTypeView<'a, D> {
+    pub name: Accumulator<'a, Wall2d, STR_0D, D>,
+    pub index: Accumulator<'a, Wall2d, INT_0D, D>,
+    pub description: Accumulator<'a, Wall2d, STR_0D, D>,
+    slice_elements: Elements<'a, Wall2d, D>,
 }
 
-impl<'a> Wall2dMobileTypeView<'a> {
-    pub fn new(data: &'a [Wall2d]) -> Self {
+impl<'a, D: Dimension> Wall2dMobileTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2d, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &Wall2d| item.mobile.r#type.name.clone()),
-            index: Accumulator::new(data, |item: &Wall2d| item.mobile.r#type.index),
-            description: StringAccumulator::new(data, |item: &Wall2d| item.mobile.r#type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &Wall2d| item.mobile.r#type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &Wall2d| item.mobile.r#type.index),
+            description: Accumulator::new(elements.clone(), |item: &Wall2d| item.mobile.r#type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `mobile` (Wall2dMobile) across multiple Wall2d
-pub struct Wall2dMobileView<'a> {
-    pub r#type: Wall2dMobileTypeView<'a>,
+pub struct Wall2dMobileView<'a, D> {
+    pub r#type: Wall2dMobileTypeView<'a, D>,
+    slice_elements: Elements<'a, Wall2d, D>,
 }
 
-impl<'a> Wall2dMobileView<'a> {
-    pub fn new(data: &'a [Wall2d]) -> Self {
+impl<'a, D: Dimension> Wall2dMobileView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2d, D>) -> Self {
         Self {
-            r#type: Wall2dMobileTypeView::new(data),
+            r#type: Wall2dMobileTypeView::new(elements.clone()),
+            slice_elements: elements,
         }
+    }
+
+    /// The slice view over a range of `mobile.unit` under every element, e.g. `.unit(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn unit<R>(&self, range: R) -> Wall2dMobileUnitSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[Wall2dMobileUnit], Output = [Wall2dMobileUnit]> + Clone,
+    {
+        Wall2dMobileUnitSliceView::new(self.slice_elements.nest("mobile.unit", |item: &Wall2d| item.mobile.unit.as_slice(), range))
     }
 }
 
 /// View over `vessel.type` (IdentifierStatic) across multiple Wall2d
-pub struct Wall2dVesselTypeView<'a> {
-    pub name: StringAccumulator<'a, Wall2d>,
-    pub index: Accumulator<'a, Wall2d, INT_0D>,
-    pub description: StringAccumulator<'a, Wall2d>,
+pub struct Wall2dVesselTypeView<'a, D> {
+    pub name: Accumulator<'a, Wall2d, STR_0D, D>,
+    pub index: Accumulator<'a, Wall2d, INT_0D, D>,
+    pub description: Accumulator<'a, Wall2d, STR_0D, D>,
+    slice_elements: Elements<'a, Wall2d, D>,
 }
 
-impl<'a> Wall2dVesselTypeView<'a> {
-    pub fn new(data: &'a [Wall2d]) -> Self {
+impl<'a, D: Dimension> Wall2dVesselTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2d, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &Wall2d| item.vessel.r#type.name.clone()),
-            index: Accumulator::new(data, |item: &Wall2d| item.vessel.r#type.index),
-            description: StringAccumulator::new(data, |item: &Wall2d| item.vessel.r#type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &Wall2d| item.vessel.r#type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &Wall2d| item.vessel.r#type.index),
+            description: Accumulator::new(elements.clone(), |item: &Wall2d| item.vessel.r#type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `vessel` (Vessel2d) across multiple Wall2d
-pub struct Wall2dVesselView<'a> {
-    pub r#type: Wall2dVesselTypeView<'a>,
+pub struct Wall2dVesselView<'a, D> {
+    pub r#type: Wall2dVesselTypeView<'a, D>,
+    slice_elements: Elements<'a, Wall2d, D>,
 }
 
-impl<'a> Wall2dVesselView<'a> {
-    pub fn new(data: &'a [Wall2d]) -> Self {
+impl<'a, D: Dimension> Wall2dVesselView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2d, D>) -> Self {
         Self {
-            r#type: Wall2dVesselTypeView::new(data),
+            r#type: Wall2dVesselTypeView::new(elements.clone()),
+            slice_elements: elements,
         }
+    }
+
+    /// The slice view over a range of `vessel.unit` under every element, e.g. `.unit(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn unit<R>(&self, range: R) -> Vessel2dUnitSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[Vessel2dUnit], Output = [Vessel2dUnit]> + Clone,
+    {
+        Vessel2dUnitSliceView::new(self.slice_elements.nest("vessel.unit", |item: &Wall2d| item.vessel.unit.as_slice(), range))
     }
 }
 
 /// View over multiple Wall2d with field accumulation
-pub struct Wall2dSliceView<'a> {
-    data: &'a [Wall2d],
-    pub r#type: Wall2dTypeView<'a>,
-    pub limiter: Wall2dLimiterView<'a>,
-    pub mobile: Wall2dMobileView<'a>,
-    pub vessel: Wall2dVesselView<'a>,
+pub struct Wall2dSliceView<'a, D> {
+    pub r#type: Wall2dTypeView<'a, D>,
+    pub limiter: Wall2dLimiterView<'a, D>,
+    pub mobile: Wall2dMobileView<'a, D>,
+    pub vessel: Wall2dVesselView<'a, D>,
+    slice_elements: Elements<'a, Wall2d, D>,
 }
 
-impl<'a> Wall2dSliceView<'a> {
-    pub fn new(data: &'a [Wall2d]) -> Self {
+impl<'a, D: Dimension> Wall2dSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, Wall2d, D>) -> Self {
         Self {
-            data,
-            r#type: Wall2dTypeView::new(data),
-            limiter: Wall2dLimiterView::new(data),
-            mobile: Wall2dMobileView::new(data),
-            vessel: Wall2dVesselView::new(data),
+            r#type: Wall2dTypeView::new(elements.clone()),
+            limiter: Wall2dLimiterView::new(elements.clone()),
+            mobile: Wall2dMobileView::new(elements.clone()),
+            vessel: Wall2dVesselView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Wall2d> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for Wall2d - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait Wall2dIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [Wall2d]) -> Self::Output;
-}
-
-impl<'a> Wall2dIndex<'a> for std::ops::Range<usize> {
-    type Output = Wall2dSliceView<'a>;
-    fn get(self, data: &'a [Wall2d]) -> Self::Output {
-        Wall2dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = Wall2dSliceView<'a>;
-    fn get(self, data: &'a [Wall2d]) -> Self::Output {
-        Wall2dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = Wall2dSliceView<'a>;
-    fn get(self, data: &'a [Wall2d]) -> Self::Output {
-        Wall2dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = Wall2dSliceView<'a>;
-    fn get(self, data: &'a [Wall2d]) -> Self::Output {
-        Wall2dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = Wall2dSliceView<'a>;
-    fn get(self, data: &'a [Wall2d]) -> Self::Output {
-        Wall2dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Wall2dIndex<'a> for std::ops::RangeFull {
-    type Output = Wall2dSliceView<'a>;
-    fn get(self, data: &'a [Wall2d]) -> Self::Output {
-        Wall2dSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a Wall2d> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- WallDescriptionGgd View Types ---
 
 /// View over `type` (IdentifierStatic) across multiple WallDescriptionGgd
-pub struct WallDescriptionGgdTypeView<'a> {
-    pub name: StringAccumulator<'a, WallDescriptionGgd>,
-    pub index: Accumulator<'a, WallDescriptionGgd, INT_0D>,
-    pub description: StringAccumulator<'a, WallDescriptionGgd>,
+pub struct WallDescriptionGgdTypeView<'a, D> {
+    pub name: Accumulator<'a, WallDescriptionGgd, STR_0D, D>,
+    pub index: Accumulator<'a, WallDescriptionGgd, INT_0D, D>,
+    pub description: Accumulator<'a, WallDescriptionGgd, STR_0D, D>,
+    slice_elements: Elements<'a, WallDescriptionGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdTypeView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgd]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgd, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &WallDescriptionGgd| item.r#type.name.clone()),
-            index: Accumulator::new(data, |item: &WallDescriptionGgd| item.r#type.index),
-            description: StringAccumulator::new(data, |item: &WallDescriptionGgd| item.r#type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &WallDescriptionGgd| item.r#type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &WallDescriptionGgd| item.r#type.index),
+            description: Accumulator::new(elements.clone(), |item: &WallDescriptionGgd| item.r#type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple WallDescriptionGgd with field accumulation
-pub struct WallDescriptionGgdSliceView<'a> {
-    data: &'a [WallDescriptionGgd],
-    pub r#type: WallDescriptionGgdTypeView<'a>,
+pub struct WallDescriptionGgdSliceView<'a, D> {
+    pub r#type: WallDescriptionGgdTypeView<'a, D>,
+    slice_elements: Elements<'a, WallDescriptionGgd, D>,
 }
 
-impl<'a> WallDescriptionGgdSliceView<'a> {
-    pub fn new(data: &'a [WallDescriptionGgd]) -> Self {
+impl<'a, D: Dimension> WallDescriptionGgdSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, WallDescriptionGgd, D>) -> Self {
         Self {
-            data,
-            r#type: WallDescriptionGgdTypeView::new(data),
+            r#type: WallDescriptionGgdTypeView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &WallDescriptionGgd> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for WallDescriptionGgd - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait WallDescriptionGgdIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [WallDescriptionGgd]) -> Self::Output;
-}
-
-impl<'a> WallDescriptionGgdIndex<'a> for std::ops::Range<usize> {
-    type Output = WallDescriptionGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgd]) -> Self::Output {
-        WallDescriptionGgdSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a WallDescriptionGgd> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> WallDescriptionGgdIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = WallDescriptionGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgd]) -> Self::Output {
-        WallDescriptionGgdSliceView::new(&data[self])
+    /// The slice view over a range of `grid_ggd` under every element, e.g. `.grid_ggd(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn grid_ggd<R>(&self, range: R) -> GenericGridAos3RootSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridAos3Root], Output = [GenericGridAos3Root]> + Clone,
+    {
+        GenericGridAos3RootSliceView::new(
+            self.slice_elements
+                .nest("grid_ggd", |item: &WallDescriptionGgd| item.grid_ggd.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = WallDescriptionGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgd]) -> Self::Output {
-        WallDescriptionGgdSliceView::new(&data[self])
+    /// The slice view over a range of `material` under every element, e.g. `.material(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn material<R>(&self, range: R) -> WallDescriptionGgdMaterialSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdMaterial], Output = [WallDescriptionGgdMaterial]> + Clone,
+    {
+        WallDescriptionGgdMaterialSliceView::new(
+            self.slice_elements
+                .nest("material", |item: &WallDescriptionGgd| item.material.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = WallDescriptionGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgd]) -> Self::Output {
-        WallDescriptionGgdSliceView::new(&data[self])
+    /// The slice view over a range of `component` under every element, e.g. `.component(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn component<R>(&self, range: R) -> WallDescriptionGgdComponentSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdComponent], Output = [WallDescriptionGgdComponent]> + Clone,
+    {
+        WallDescriptionGgdComponentSliceView::new(
+            self.slice_elements
+                .nest("component", |item: &WallDescriptionGgd| item.component.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = WallDescriptionGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgd]) -> Self::Output {
-        WallDescriptionGgdSliceView::new(&data[self])
+    /// The slice view over a range of `thickness` under every element, e.g. `.thickness(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn thickness<R>(&self, range: R) -> WallDescriptionGgdThicknessSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdThickness], Output = [WallDescriptionGgdThickness]> + Clone,
+    {
+        WallDescriptionGgdThicknessSliceView::new(
+            self.slice_elements
+                .nest("thickness", |item: &WallDescriptionGgd| item.thickness.as_slice(), range),
+        )
     }
-}
 
-impl<'a> WallDescriptionGgdIndex<'a> for std::ops::RangeFull {
-    type Output = WallDescriptionGgdSliceView<'a>;
-    fn get(self, data: &'a [WallDescriptionGgd]) -> Self::Output {
-        WallDescriptionGgdSliceView::new(data)
+    /// The slice view over a range of `brdf` under every element, e.g. `.brdf(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn brdf<R>(&self, range: R) -> WallDescriptionGgdBrdfSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdBrdf], Output = [WallDescriptionGgdBrdf]> + Clone,
+    {
+        WallDescriptionGgdBrdfSliceView::new(self.slice_elements.nest("brdf", |item: &WallDescriptionGgd| item.brdf.as_slice(), range))
+    }
+
+    /// The slice view over a range of `ggd` under every element, e.g. `.ggd(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn ggd<R>(&self, range: R) -> WallDescriptionGgdGgdSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[WallDescriptionGgdGgd], Output = [WallDescriptionGgdGgd]> + Clone,
+    {
+        WallDescriptionGgdGgdSliceView::new(self.slice_elements.nest("ggd", |item: &WallDescriptionGgd| item.ggd.as_slice(), range))
     }
 }
 
@@ -5741,8 +5256,11 @@ impl<'a> WallDescriptionGgdIndex<'a> for std::ops::RangeFull {
 impl WallGlobalQuantititesNeutralOrigin {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: PlasmaCompositionNeutralElementConstantIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]>,
+    {
+        PlasmaCompositionNeutralElementConstantSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -5754,8 +5272,11 @@ impl WallGlobalQuantititesNeutralOrigin {
 impl WallGlobalQuantititesNeutral {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: PlasmaCompositionNeutralElementConstantIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]>,
+    {
+        PlasmaCompositionNeutralElementConstantSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -5767,8 +5288,11 @@ impl WallGlobalQuantititesNeutral {
 impl WallGlobalQuantititesNeutral {
     /// The slice view over a range of incident_species, e.g. `.incident_species(0..2)` or `.incident_species(..)`,
     /// whose leaves gather one value per element. A single element is `.incident_species[i]`.
-    pub fn incident_species<'a, I: WallGlobalQuantititesNeutralOriginIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident_species)
+    pub fn incident_species<R>(&self, range: R) -> WallGlobalQuantititesNeutralOriginSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallGlobalQuantititesNeutralOrigin], Output = [WallGlobalQuantititesNeutralOrigin]>,
+    {
+        WallGlobalQuantititesNeutralOriginSliceView::new(Elements::from_slice(&self.incident_species[range]))
     }
 
     /// Get the number of incident_species elements
@@ -5780,8 +5304,11 @@ impl WallGlobalQuantititesNeutral {
 impl WallGlobalQuantitites {
     /// The slice view over a range of neutral, e.g. `.neutral(0..2)` or `.neutral(..)`,
     /// whose leaves gather one value per element. A single element is `.neutral[i]`.
-    pub fn neutral<'a, I: WallGlobalQuantititesNeutralIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.neutral)
+    pub fn neutral<R>(&self, range: R) -> WallGlobalQuantititesNeutralSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallGlobalQuantititesNeutral], Output = [WallGlobalQuantititesNeutral]>,
+    {
+        WallGlobalQuantititesNeutralSliceView::new(Elements::from_slice(&self.neutral[range]))
     }
 
     /// Get the number of neutral elements
@@ -5793,8 +5320,11 @@ impl WallGlobalQuantitites {
 impl Wall2dLimiter {
     /// The slice view over a range of unit, e.g. `.unit(0..2)` or `.unit(..)`,
     /// whose leaves gather one value per element. A single element is `.unit[i]`.
-    pub fn unit<'a, I: Wall2dLimiterUnitIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.unit)
+    pub fn unit<R>(&self, range: R) -> Wall2dLimiterUnitSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[Wall2dLimiterUnit], Output = [Wall2dLimiterUnit]>,
+    {
+        Wall2dLimiterUnitSliceView::new(Elements::from_slice(&self.unit[range]))
     }
 
     /// Get the number of unit elements
@@ -5806,8 +5336,11 @@ impl Wall2dLimiter {
 impl Wall2dMobileUnit {
     /// The slice view over a range of outline, e.g. `.outline(0..2)` or `.outline(..)`,
     /// whose leaves gather one value per element. A single element is `.outline[i]`.
-    pub fn outline<'a, I: Rz1dDynamicAosTimeIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.outline)
+    pub fn outline<R>(&self, range: R) -> Rz1dDynamicAosTimeSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[Rz1dDynamicAosTime], Output = [Rz1dDynamicAosTime]>,
+    {
+        Rz1dDynamicAosTimeSliceView::new(Elements::from_slice(&self.outline[range]))
     }
 
     /// Get the number of outline elements
@@ -5819,8 +5352,11 @@ impl Wall2dMobileUnit {
 impl Wall2dMobile {
     /// The slice view over a range of unit, e.g. `.unit(0..2)` or `.unit(..)`,
     /// whose leaves gather one value per element. A single element is `.unit[i]`.
-    pub fn unit<'a, I: Wall2dMobileUnitIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.unit)
+    pub fn unit<R>(&self, range: R) -> Wall2dMobileUnitSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[Wall2dMobileUnit], Output = [Wall2dMobileUnit]>,
+    {
+        Wall2dMobileUnitSliceView::new(Elements::from_slice(&self.unit[range]))
     }
 
     /// Get the number of unit elements
@@ -5832,8 +5368,11 @@ impl Wall2dMobile {
 impl WallDescriptionGgdEnergySimple {
     /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
     /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident)
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
     }
 
     /// Get the number of incident elements
@@ -5845,8 +5384,11 @@ impl WallDescriptionGgdEnergySimple {
 impl WallDescriptionGgdEnergySimple {
     /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
     /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.emitted)
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
     }
 
     /// Get the number of emitted elements
@@ -5858,8 +5400,11 @@ impl WallDescriptionGgdEnergySimple {
 impl WallDescriptionGgdEnergyNeutralState {
     /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
     /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident)
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
     }
 
     /// Get the number of incident elements
@@ -5871,8 +5416,11 @@ impl WallDescriptionGgdEnergyNeutralState {
 impl WallDescriptionGgdEnergyNeutralState {
     /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
     /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.emitted)
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
     }
 
     /// Get the number of emitted elements
@@ -5884,8 +5432,11 @@ impl WallDescriptionGgdEnergyNeutralState {
 impl WallDescriptionGgdEnergyNeutral {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: PlasmaCompositionNeutralElementIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -5897,8 +5448,11 @@ impl WallDescriptionGgdEnergyNeutral {
 impl WallDescriptionGgdEnergyNeutral {
     /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
     /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident)
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
     }
 
     /// Get the number of incident elements
@@ -5910,8 +5464,11 @@ impl WallDescriptionGgdEnergyNeutral {
 impl WallDescriptionGgdEnergyNeutral {
     /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
     /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.emitted)
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
     }
 
     /// Get the number of emitted elements
@@ -5923,8 +5480,11 @@ impl WallDescriptionGgdEnergyNeutral {
 impl WallDescriptionGgdEnergyNeutral {
     /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
     /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<'a, I: WallDescriptionGgdEnergyNeutralStateIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.state)
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralStateSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyNeutralState], Output = [WallDescriptionGgdEnergyNeutralState]>,
+    {
+        WallDescriptionGgdEnergyNeutralStateSliceView::new(Elements::from_slice(&self.state[range]))
     }
 
     /// Get the number of state elements
@@ -5936,8 +5496,11 @@ impl WallDescriptionGgdEnergyNeutral {
 impl WallDescriptionGgdEnergyIonState {
     /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
     /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident)
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
     }
 
     /// Get the number of incident elements
@@ -5949,8 +5512,11 @@ impl WallDescriptionGgdEnergyIonState {
 impl WallDescriptionGgdEnergyIonState {
     /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
     /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.emitted)
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
     }
 
     /// Get the number of emitted elements
@@ -5962,8 +5528,11 @@ impl WallDescriptionGgdEnergyIonState {
 impl WallDescriptionGgdEnergyIon {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: PlasmaCompositionNeutralElementIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -5975,8 +5544,11 @@ impl WallDescriptionGgdEnergyIon {
 impl WallDescriptionGgdEnergyIon {
     /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
     /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident)
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
     }
 
     /// Get the number of incident elements
@@ -5988,8 +5560,11 @@ impl WallDescriptionGgdEnergyIon {
 impl WallDescriptionGgdEnergyIon {
     /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
     /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.emitted)
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
     }
 
     /// Get the number of emitted elements
@@ -6001,8 +5576,11 @@ impl WallDescriptionGgdEnergyIon {
 impl WallDescriptionGgdEnergyIon {
     /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
     /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<'a, I: WallDescriptionGgdEnergyIonStateIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.state)
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdEnergyIonStateSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyIonState], Output = [WallDescriptionGgdEnergyIonState]>,
+    {
+        WallDescriptionGgdEnergyIonStateSliceView::new(Elements::from_slice(&self.state[range]))
     }
 
     /// Get the number of state elements
@@ -6014,8 +5592,11 @@ impl WallDescriptionGgdEnergyIon {
 impl WallDescriptionGgdKinetic {
     /// The slice view over a range of ion, e.g. `.ion(0..2)` or `.ion(..)`,
     /// whose leaves gather one value per element. A single element is `.ion[i]`.
-    pub fn ion<'a, I: WallDescriptionGgdEnergyIonIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.ion)
+    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdEnergyIonSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyIon], Output = [WallDescriptionGgdEnergyIon]>,
+    {
+        WallDescriptionGgdEnergyIonSliceView::new(Elements::from_slice(&self.ion[range]))
     }
 
     /// Get the number of ion elements
@@ -6027,8 +5608,11 @@ impl WallDescriptionGgdKinetic {
 impl WallDescriptionGgdKinetic {
     /// The slice view over a range of neutral, e.g. `.neutral(0..2)` or `.neutral(..)`,
     /// whose leaves gather one value per element. A single element is `.neutral[i]`.
-    pub fn neutral<'a, I: WallDescriptionGgdEnergyNeutralIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.neutral)
+    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyNeutral], Output = [WallDescriptionGgdEnergyNeutral]>,
+    {
+        WallDescriptionGgdEnergyNeutralSliceView::new(Elements::from_slice(&self.neutral[range]))
     }
 
     /// Get the number of neutral elements
@@ -6040,8 +5624,11 @@ impl WallDescriptionGgdKinetic {
 impl WallDescriptionGgdRecombination {
     /// The slice view over a range of ion, e.g. `.ion(0..2)` or `.ion(..)`,
     /// whose leaves gather one value per element. A single element is `.ion[i]`.
-    pub fn ion<'a, I: WallDescriptionGgdEnergyIonIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.ion)
+    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdEnergyIonSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyIon], Output = [WallDescriptionGgdEnergyIon]>,
+    {
+        WallDescriptionGgdEnergyIonSliceView::new(Elements::from_slice(&self.ion[range]))
     }
 
     /// Get the number of ion elements
@@ -6053,8 +5640,11 @@ impl WallDescriptionGgdRecombination {
 impl WallDescriptionGgdRecombination {
     /// The slice view over a range of neutral, e.g. `.neutral(0..2)` or `.neutral(..)`,
     /// whose leaves gather one value per element. A single element is `.neutral[i]`.
-    pub fn neutral<'a, I: WallDescriptionGgdEnergyNeutralIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.neutral)
+    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdEnergyNeutral], Output = [WallDescriptionGgdEnergyNeutral]>,
+    {
+        WallDescriptionGgdEnergyNeutralSliceView::new(Elements::from_slice(&self.neutral[range]))
     }
 
     /// Get the number of neutral elements
@@ -6066,8 +5656,11 @@ impl WallDescriptionGgdRecombination {
 impl WallDescriptionGgdParticleNeutralState {
     /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
     /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident)
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
     }
 
     /// Get the number of incident elements
@@ -6079,8 +5672,11 @@ impl WallDescriptionGgdParticleNeutralState {
 impl WallDescriptionGgdParticleNeutralState {
     /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
     /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.emitted)
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
     }
 
     /// Get the number of emitted elements
@@ -6092,8 +5688,11 @@ impl WallDescriptionGgdParticleNeutralState {
 impl WallDescriptionGgdParticleNeutral {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: PlasmaCompositionNeutralElementIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -6105,8 +5704,11 @@ impl WallDescriptionGgdParticleNeutral {
 impl WallDescriptionGgdParticleNeutral {
     /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
     /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident)
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
     }
 
     /// Get the number of incident elements
@@ -6118,8 +5720,11 @@ impl WallDescriptionGgdParticleNeutral {
 impl WallDescriptionGgdParticleNeutral {
     /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
     /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.emitted)
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
     }
 
     /// Get the number of emitted elements
@@ -6131,8 +5736,11 @@ impl WallDescriptionGgdParticleNeutral {
 impl WallDescriptionGgdParticleNeutral {
     /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
     /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<'a, I: WallDescriptionGgdParticleNeutralStateIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.state)
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdParticleNeutralStateSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdParticleNeutralState], Output = [WallDescriptionGgdParticleNeutralState]>,
+    {
+        WallDescriptionGgdParticleNeutralStateSliceView::new(Elements::from_slice(&self.state[range]))
     }
 
     /// Get the number of state elements
@@ -6144,8 +5752,11 @@ impl WallDescriptionGgdParticleNeutral {
 impl WallDescriptionGgdParticleIonState {
     /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
     /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident)
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
     }
 
     /// Get the number of incident elements
@@ -6157,8 +5768,11 @@ impl WallDescriptionGgdParticleIonState {
 impl WallDescriptionGgdParticleIonState {
     /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
     /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.emitted)
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
     }
 
     /// Get the number of emitted elements
@@ -6170,8 +5784,11 @@ impl WallDescriptionGgdParticleIonState {
 impl WallDescriptionGgdParticleIon {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: PlasmaCompositionNeutralElementIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -6183,8 +5800,11 @@ impl WallDescriptionGgdParticleIon {
 impl WallDescriptionGgdParticleIon {
     /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
     /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident)
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
     }
 
     /// Get the number of incident elements
@@ -6196,8 +5816,11 @@ impl WallDescriptionGgdParticleIon {
 impl WallDescriptionGgdParticleIon {
     /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
     /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.emitted)
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
     }
 
     /// Get the number of emitted elements
@@ -6209,8 +5832,11 @@ impl WallDescriptionGgdParticleIon {
 impl WallDescriptionGgdParticleIon {
     /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
     /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<'a, I: WallDescriptionGgdParticleIonStateIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.state)
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdParticleIonStateSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdParticleIonState], Output = [WallDescriptionGgdParticleIonState]>,
+    {
+        WallDescriptionGgdParticleIonStateSliceView::new(Elements::from_slice(&self.state[range]))
     }
 
     /// Get the number of state elements
@@ -6222,8 +5848,11 @@ impl WallDescriptionGgdParticleIon {
 impl WallDescriptionGgdParticleEl {
     /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
     /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.incident)
+    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
     }
 
     /// Get the number of incident elements
@@ -6235,8 +5864,11 @@ impl WallDescriptionGgdParticleEl {
 impl WallDescriptionGgdParticleEl {
     /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
     /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.emitted)
+    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
     }
 
     /// Get the number of emitted elements
@@ -6248,8 +5880,11 @@ impl WallDescriptionGgdParticleEl {
 impl WallDescriptionGgdParticle {
     /// The slice view over a range of ion, e.g. `.ion(0..2)` or `.ion(..)`,
     /// whose leaves gather one value per element. A single element is `.ion[i]`.
-    pub fn ion<'a, I: WallDescriptionGgdParticleIonIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.ion)
+    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdParticleIonSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdParticleIon], Output = [WallDescriptionGgdParticleIon]>,
+    {
+        WallDescriptionGgdParticleIonSliceView::new(Elements::from_slice(&self.ion[range]))
     }
 
     /// Get the number of ion elements
@@ -6261,8 +5896,11 @@ impl WallDescriptionGgdParticle {
 impl WallDescriptionGgdParticle {
     /// The slice view over a range of neutral, e.g. `.neutral(0..2)` or `.neutral(..)`,
     /// whose leaves gather one value per element. A single element is `.neutral[i]`.
-    pub fn neutral<'a, I: WallDescriptionGgdParticleNeutralIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.neutral)
+    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdParticleNeutralSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdParticleNeutral], Output = [WallDescriptionGgdParticleNeutral]>,
+    {
+        WallDescriptionGgdParticleNeutralSliceView::new(Elements::from_slice(&self.neutral[range]))
     }
 
     /// Get the number of neutral elements
@@ -6274,8 +5912,11 @@ impl WallDescriptionGgdParticle {
 impl WallDescriptionGgdRecyclingNeutralState {
     /// The slice view over a range of coefficient, e.g. `.coefficient(0..2)` or `.coefficient(..)`,
     /// whose leaves gather one value per element. A single element is `.coefficient[i]`.
-    pub fn coefficient<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.coefficient)
+    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.coefficient[range]))
     }
 
     /// Get the number of coefficient elements
@@ -6287,8 +5928,11 @@ impl WallDescriptionGgdRecyclingNeutralState {
 impl WallDescriptionGgdRecyclingNeutral {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: PlasmaCompositionNeutralElementIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -6300,8 +5944,11 @@ impl WallDescriptionGgdRecyclingNeutral {
 impl WallDescriptionGgdRecyclingNeutral {
     /// The slice view over a range of coefficient, e.g. `.coefficient(0..2)` or `.coefficient(..)`,
     /// whose leaves gather one value per element. A single element is `.coefficient[i]`.
-    pub fn coefficient<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.coefficient)
+    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.coefficient[range]))
     }
 
     /// Get the number of coefficient elements
@@ -6313,8 +5960,11 @@ impl WallDescriptionGgdRecyclingNeutral {
 impl WallDescriptionGgdRecyclingNeutral {
     /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
     /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<'a, I: WallDescriptionGgdRecyclingNeutralStateIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.state)
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdRecyclingNeutralStateSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdRecyclingNeutralState], Output = [WallDescriptionGgdRecyclingNeutralState]>,
+    {
+        WallDescriptionGgdRecyclingNeutralStateSliceView::new(Elements::from_slice(&self.state[range]))
     }
 
     /// Get the number of state elements
@@ -6326,8 +5976,11 @@ impl WallDescriptionGgdRecyclingNeutral {
 impl WallDescriptionGgdRecyclingIonState {
     /// The slice view over a range of coefficient, e.g. `.coefficient(0..2)` or `.coefficient(..)`,
     /// whose leaves gather one value per element. A single element is `.coefficient[i]`.
-    pub fn coefficient<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.coefficient)
+    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.coefficient[range]))
     }
 
     /// Get the number of coefficient elements
@@ -6339,8 +5992,11 @@ impl WallDescriptionGgdRecyclingIonState {
 impl WallDescriptionGgdRecyclingIon {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: PlasmaCompositionNeutralElementIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -6352,8 +6008,11 @@ impl WallDescriptionGgdRecyclingIon {
 impl WallDescriptionGgdRecyclingIon {
     /// The slice view over a range of coefficient, e.g. `.coefficient(0..2)` or `.coefficient(..)`,
     /// whose leaves gather one value per element. A single element is `.coefficient[i]`.
-    pub fn coefficient<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.coefficient)
+    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.coefficient[range]))
     }
 
     /// Get the number of coefficient elements
@@ -6365,8 +6024,11 @@ impl WallDescriptionGgdRecyclingIon {
 impl WallDescriptionGgdRecyclingIon {
     /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
     /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<'a, I: WallDescriptionGgdRecyclingIonStateIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.state)
+    pub fn state<R>(&self, range: R) -> WallDescriptionGgdRecyclingIonStateSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdRecyclingIonState], Output = [WallDescriptionGgdRecyclingIonState]>,
+    {
+        WallDescriptionGgdRecyclingIonStateSliceView::new(Elements::from_slice(&self.state[range]))
     }
 
     /// Get the number of state elements
@@ -6378,8 +6040,11 @@ impl WallDescriptionGgdRecyclingIon {
 impl WallDescriptionGgdRecycling {
     /// The slice view over a range of ion, e.g. `.ion(0..2)` or `.ion(..)`,
     /// whose leaves gather one value per element. A single element is `.ion[i]`.
-    pub fn ion<'a, I: WallDescriptionGgdRecyclingIonIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.ion)
+    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdRecyclingIonSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdRecyclingIon], Output = [WallDescriptionGgdRecyclingIon]>,
+    {
+        WallDescriptionGgdRecyclingIonSliceView::new(Elements::from_slice(&self.ion[range]))
     }
 
     /// Get the number of ion elements
@@ -6391,8 +6056,11 @@ impl WallDescriptionGgdRecycling {
 impl WallDescriptionGgdRecycling {
     /// The slice view over a range of neutral, e.g. `.neutral(0..2)` or `.neutral(..)`,
     /// whose leaves gather one value per element. A single element is `.neutral[i]`.
-    pub fn neutral<'a, I: WallDescriptionGgdRecyclingNeutralIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.neutral)
+    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdRecyclingNeutralSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdRecyclingNeutral], Output = [WallDescriptionGgdRecyclingNeutral]>,
+    {
+        WallDescriptionGgdRecyclingNeutralSliceView::new(Elements::from_slice(&self.neutral[range]))
     }
 
     /// Get the number of neutral elements
@@ -6404,8 +6072,11 @@ impl WallDescriptionGgdRecycling {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of power_density, e.g. `.power_density(0..2)` or `.power_density(..)`,
     /// whose leaves gather one value per element. A single element is `.power_density[i]`.
-    pub fn power_density<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.power_density)
+    pub fn power_density<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.power_density[range]))
     }
 
     /// Get the number of power_density elements
@@ -6417,8 +6088,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of temperature, e.g. `.temperature(0..2)` or `.temperature(..)`,
     /// whose leaves gather one value per element. A single element is `.temperature[i]`.
-    pub fn temperature<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.temperature)
+    pub fn temperature<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.temperature[range]))
     }
 
     /// Get the number of temperature elements
@@ -6430,8 +6104,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of v_biasing, e.g. `.v_biasing(0..2)` or `.v_biasing(..)`,
     /// whose leaves gather one value per element. A single element is `.v_biasing[i]`.
-    pub fn v_biasing<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.v_biasing)
+    pub fn v_biasing<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.v_biasing[range]))
     }
 
     /// Get the number of v_biasing elements
@@ -6443,8 +6120,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of j_total, e.g. `.j_total(0..2)` or `.j_total(..)`,
     /// whose leaves gather one value per element. A single element is `.j_total[i]`.
-    pub fn j_total<'a, I: GenericGridVectorComponentsRphizIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.j_total)
+    pub fn j_total<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]>,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(Elements::from_slice(&self.j_total[range]))
     }
 
     /// Get the number of j_total elements
@@ -6456,8 +6136,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of b_field, e.g. `.b_field(0..2)` or `.b_field(..)`,
     /// whose leaves gather one value per element. A single element is `.b_field[i]`.
-    pub fn b_field<'a, I: GenericGridVectorComponentsRphizIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.b_field)
+    pub fn b_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]>,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(Elements::from_slice(&self.b_field[range]))
     }
 
     /// Get the number of b_field elements
@@ -6469,8 +6152,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of em_force_density, e.g. `.em_force_density(0..2)` or `.em_force_density(..)`,
     /// whose leaves gather one value per element. A single element is `.em_force_density[i]`.
-    pub fn em_force_density<'a, I: GenericGridVectorComponentsRphizIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.em_force_density)
+    pub fn em_force_density<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]>,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(Elements::from_slice(&self.em_force_density[range]))
     }
 
     /// Get the number of em_force_density elements
@@ -6482,8 +6168,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of e_field, e.g. `.e_field(0..2)` or `.e_field(..)`,
     /// whose leaves gather one value per element. A single element is `.e_field[i]`.
-    pub fn e_field<'a, I: GenericGridVectorComponentsRphizIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.e_field)
+    pub fn e_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]>,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(Elements::from_slice(&self.e_field[range]))
     }
 
     /// Get the number of e_field elements
@@ -6495,8 +6184,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of a_field, e.g. `.a_field(0..2)` or `.a_field(..)`,
     /// whose leaves gather one value per element. A single element is `.a_field[i]`.
-    pub fn a_field<'a, I: GenericGridVectorComponentsRphizIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.a_field)
+    pub fn a_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]>,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(Elements::from_slice(&self.a_field[range]))
     }
 
     /// Get the number of a_field elements
@@ -6508,8 +6200,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of psi, e.g. `.psi(0..2)` or `.psi(..)`,
     /// whose leaves gather one value per element. A single element is `.psi[i]`.
-    pub fn psi<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.psi)
+    pub fn psi<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.psi[range]))
     }
 
     /// Get the number of psi elements
@@ -6521,8 +6216,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of phi_potential, e.g. `.phi_potential(0..2)` or `.phi_potential(..)`,
     /// whose leaves gather one value per element. A single element is `.phi_potential[i]`.
-    pub fn phi_potential<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.phi_potential)
+    pub fn phi_potential<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.phi_potential[range]))
     }
 
     /// Get the number of phi_potential elements
@@ -6534,8 +6232,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdGgd {
     /// The slice view over a range of resistivity, e.g. `.resistivity(0..2)` or `.resistivity(..)`,
     /// whose leaves gather one value per element. A single element is `.resistivity[i]`.
-    pub fn resistivity<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.resistivity)
+    pub fn resistivity<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.resistivity[range]))
     }
 
     /// Get the number of resistivity elements
@@ -6547,8 +6248,11 @@ impl WallDescriptionGgdGgd {
 impl WallDescriptionGgdThickness {
     /// The slice view over a range of grid_subset, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`,
     /// whose leaves gather one value per element. A single element is `.grid_subset[i]`.
-    pub fn grid_subset<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.grid_subset)
+    pub fn grid_subset<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.grid_subset[range]))
     }
 
     /// Get the number of grid_subset elements
@@ -6560,8 +6264,11 @@ impl WallDescriptionGgdThickness {
 impl WallDescriptionGgdBrdf {
     /// The slice view over a range of r#type, e.g. `.r#type(0..2)` or `.r#type(..)`,
     /// whose leaves gather one value per element. A single element is `.r#type[i]`.
-    pub fn r#type<'a, I: GenericGridIdentifierIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.r#type)
+    pub fn r#type<R>(&self, range: R) -> GenericGridIdentifierSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridIdentifier], Output = [GenericGridIdentifier]>,
+    {
+        GenericGridIdentifierSliceView::new(Elements::from_slice(&self.r#type[range]))
     }
 
     /// Get the number of r#type elements
@@ -6573,8 +6280,11 @@ impl WallDescriptionGgdBrdf {
 impl WallDescriptionGgdBrdf {
     /// The slice view over a range of parameters, e.g. `.parameters(0..2)` or `.parameters(..)`,
     /// whose leaves gather one value per element. A single element is `.parameters[i]`.
-    pub fn parameters<'a, I: GenericGridVectorIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.parameters)
+    pub fn parameters<R>(&self, range: R) -> GenericGridVectorSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridVector], Output = [GenericGridVector]>,
+    {
+        GenericGridVectorSliceView::new(Elements::from_slice(&self.parameters[range]))
     }
 
     /// Get the number of parameters elements
@@ -6586,8 +6296,11 @@ impl WallDescriptionGgdBrdf {
 impl WallDescriptionGgdMaterial {
     /// The slice view over a range of grid_subset, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`,
     /// whose leaves gather one value per element. A single element is `.grid_subset[i]`.
-    pub fn grid_subset<'a, I: GenericGridIdentifierIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.grid_subset)
+    pub fn grid_subset<R>(&self, range: R) -> GenericGridIdentifierSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridIdentifier], Output = [GenericGridIdentifier]>,
+    {
+        GenericGridIdentifierSliceView::new(Elements::from_slice(&self.grid_subset[range]))
     }
 
     /// Get the number of grid_subset elements
@@ -6599,8 +6312,11 @@ impl WallDescriptionGgdMaterial {
 impl WallDescriptionGgdComponent {
     /// The slice view over a range of r#type, e.g. `.r#type(0..2)` or `.r#type(..)`,
     /// whose leaves gather one value per element. A single element is `.r#type[i]`.
-    pub fn r#type<'a, I: GenericGridIdentifierSingleIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.r#type)
+    pub fn r#type<R>(&self, range: R) -> GenericGridIdentifierSingleSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridIdentifierSingle], Output = [GenericGridIdentifierSingle]>,
+    {
+        GenericGridIdentifierSingleSliceView::new(Elements::from_slice(&self.r#type[range]))
     }
 
     /// Get the number of r#type elements
@@ -6612,8 +6328,11 @@ impl WallDescriptionGgdComponent {
 impl WallDescriptionGgd {
     /// The slice view over a range of grid_ggd, e.g. `.grid_ggd(0..2)` or `.grid_ggd(..)`,
     /// whose leaves gather one value per element. A single element is `.grid_ggd[i]`.
-    pub fn grid_ggd<'a, I: GenericGridAos3RootIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.grid_ggd)
+    pub fn grid_ggd<R>(&self, range: R) -> GenericGridAos3RootSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridAos3Root], Output = [GenericGridAos3Root]>,
+    {
+        GenericGridAos3RootSliceView::new(Elements::from_slice(&self.grid_ggd[range]))
     }
 
     /// Get the number of grid_ggd elements
@@ -6625,8 +6344,11 @@ impl WallDescriptionGgd {
 impl WallDescriptionGgd {
     /// The slice view over a range of material, e.g. `.material(0..2)` or `.material(..)`,
     /// whose leaves gather one value per element. A single element is `.material[i]`.
-    pub fn material<'a, I: WallDescriptionGgdMaterialIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.material)
+    pub fn material<R>(&self, range: R) -> WallDescriptionGgdMaterialSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdMaterial], Output = [WallDescriptionGgdMaterial]>,
+    {
+        WallDescriptionGgdMaterialSliceView::new(Elements::from_slice(&self.material[range]))
     }
 
     /// Get the number of material elements
@@ -6638,8 +6360,11 @@ impl WallDescriptionGgd {
 impl WallDescriptionGgd {
     /// The slice view over a range of component, e.g. `.component(0..2)` or `.component(..)`,
     /// whose leaves gather one value per element. A single element is `.component[i]`.
-    pub fn component<'a, I: WallDescriptionGgdComponentIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.component)
+    pub fn component<R>(&self, range: R) -> WallDescriptionGgdComponentSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdComponent], Output = [WallDescriptionGgdComponent]>,
+    {
+        WallDescriptionGgdComponentSliceView::new(Elements::from_slice(&self.component[range]))
     }
 
     /// Get the number of component elements
@@ -6651,8 +6376,11 @@ impl WallDescriptionGgd {
 impl WallDescriptionGgd {
     /// The slice view over a range of thickness, e.g. `.thickness(0..2)` or `.thickness(..)`,
     /// whose leaves gather one value per element. A single element is `.thickness[i]`.
-    pub fn thickness<'a, I: WallDescriptionGgdThicknessIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.thickness)
+    pub fn thickness<R>(&self, range: R) -> WallDescriptionGgdThicknessSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdThickness], Output = [WallDescriptionGgdThickness]>,
+    {
+        WallDescriptionGgdThicknessSliceView::new(Elements::from_slice(&self.thickness[range]))
     }
 
     /// Get the number of thickness elements
@@ -6664,8 +6392,11 @@ impl WallDescriptionGgd {
 impl WallDescriptionGgd {
     /// The slice view over a range of brdf, e.g. `.brdf(0..2)` or `.brdf(..)`,
     /// whose leaves gather one value per element. A single element is `.brdf[i]`.
-    pub fn brdf<'a, I: WallDescriptionGgdBrdfIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.brdf)
+    pub fn brdf<R>(&self, range: R) -> WallDescriptionGgdBrdfSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdBrdf], Output = [WallDescriptionGgdBrdf]>,
+    {
+        WallDescriptionGgdBrdfSliceView::new(Elements::from_slice(&self.brdf[range]))
     }
 
     /// Get the number of brdf elements
@@ -6677,8 +6408,11 @@ impl WallDescriptionGgd {
 impl WallDescriptionGgd {
     /// The slice view over a range of ggd, e.g. `.ggd(0..2)` or `.ggd(..)`,
     /// whose leaves gather one value per element. A single element is `.ggd[i]`.
-    pub fn ggd<'a, I: WallDescriptionGgdGgdIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.ggd)
+    pub fn ggd<R>(&self, range: R) -> WallDescriptionGgdGgdSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgdGgd], Output = [WallDescriptionGgdGgd]>,
+    {
+        WallDescriptionGgdGgdSliceView::new(Elements::from_slice(&self.ggd[range]))
     }
 
     /// Get the number of ggd elements
@@ -6690,8 +6424,11 @@ impl WallDescriptionGgd {
 impl Vessel2d {
     /// The slice view over a range of unit, e.g. `.unit(0..2)` or `.unit(..)`,
     /// whose leaves gather one value per element. A single element is `.unit[i]`.
-    pub fn unit<'a, I: Vessel2dUnitIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.unit)
+    pub fn unit<R>(&self, range: R) -> Vessel2dUnitSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[Vessel2dUnit], Output = [Vessel2dUnit]>,
+    {
+        Vessel2dUnitSliceView::new(Elements::from_slice(&self.unit[range]))
     }
 
     /// Get the number of unit elements
@@ -6703,8 +6440,11 @@ impl Vessel2d {
 impl GenericGridAos3Root {
     /// The slice view over a range of space, e.g. `.space(0..2)` or `.space(..)`,
     /// whose leaves gather one value per element. A single element is `.space[i]`.
-    pub fn space<'a, I: GenericGridDynamicSpaceIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.space)
+    pub fn space<R>(&self, range: R) -> GenericGridDynamicSpaceSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicSpace], Output = [GenericGridDynamicSpace]>,
+    {
+        GenericGridDynamicSpaceSliceView::new(Elements::from_slice(&self.space[range]))
     }
 
     /// Get the number of space elements
@@ -6716,8 +6456,11 @@ impl GenericGridAos3Root {
 impl GenericGridAos3Root {
     /// The slice view over a range of grid_subset, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`,
     /// whose leaves gather one value per element. A single element is `.grid_subset[i]`.
-    pub fn grid_subset<'a, I: GenericGridDynamicGridSubsetIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.grid_subset)
+    pub fn grid_subset<R>(&self, range: R) -> GenericGridDynamicGridSubsetSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubset], Output = [GenericGridDynamicGridSubset]>,
+    {
+        GenericGridDynamicGridSubsetSliceView::new(Elements::from_slice(&self.grid_subset[range]))
     }
 
     /// Get the number of grid_subset elements
@@ -6729,8 +6472,11 @@ impl GenericGridAos3Root {
 impl Code {
     /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
     /// whose leaves gather one value per element. A single element is `.library[i]`.
-    pub fn library<'a, I: LibraryIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.library)
+    pub fn library<R>(&self, range: R) -> LibrarySliceView<'_, Ix1>
+    where
+        R: SliceIndex<[Library], Output = [Library]>,
+    {
+        LibrarySliceView::new(Elements::from_slice(&self.library[range]))
     }
 
     /// Get the number of library elements
@@ -6742,8 +6488,11 @@ impl Code {
 impl Vessel2dUnit {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: Vessel2dElementIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> Vessel2dElementSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[Vessel2dElement], Output = [Vessel2dElement]>,
+    {
+        Vessel2dElementSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -6755,8 +6504,11 @@ impl Vessel2dUnit {
 impl Vessel2dUnit {
     /// The slice view over a range of material, e.g. `.material(0..2)` or `.material(..)`,
     /// whose leaves gather one value per element. A single element is `.material[i]`.
-    pub fn material<'a, I: IdentifierStaticIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.material)
+    pub fn material<R>(&self, range: R) -> IdentifierStaticSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[IdentifierStatic], Output = [IdentifierStatic]>,
+    {
+        IdentifierStaticSliceView::new(Elements::from_slice(&self.material[range]))
     }
 
     /// Get the number of material elements
@@ -6768,8 +6520,11 @@ impl Vessel2dUnit {
 impl GenericGridDynamicSpace {
     /// The slice view over a range of coordinates_type, e.g. `.coordinates_type(0..2)` or `.coordinates_type(..)`,
     /// whose leaves gather one value per element. A single element is `.coordinates_type[i]`.
-    pub fn coordinates_type<'a, I: IdentifierDynamicAos3Index<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.coordinates_type)
+    pub fn coordinates_type<R>(&self, range: R) -> IdentifierDynamicAos3SliceView<'_, Ix1>
+    where
+        R: SliceIndex<[IdentifierDynamicAos3], Output = [IdentifierDynamicAos3]>,
+    {
+        IdentifierDynamicAos3SliceView::new(Elements::from_slice(&self.coordinates_type[range]))
     }
 
     /// Get the number of coordinates_type elements
@@ -6781,8 +6536,11 @@ impl GenericGridDynamicSpace {
 impl GenericGridDynamicSpace {
     /// The slice view over a range of objects_per_dimension, e.g. `.objects_per_dimension(0..2)` or `.objects_per_dimension(..)`,
     /// whose leaves gather one value per element. A single element is `.objects_per_dimension[i]`.
-    pub fn objects_per_dimension<'a, I: GenericGridDynamicSpaceDimensionIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.objects_per_dimension)
+    pub fn objects_per_dimension<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimension], Output = [GenericGridDynamicSpaceDimension]>,
+    {
+        GenericGridDynamicSpaceDimensionSliceView::new(Elements::from_slice(&self.objects_per_dimension[range]))
     }
 
     /// Get the number of objects_per_dimension elements
@@ -6794,8 +6552,11 @@ impl GenericGridDynamicSpace {
 impl GenericGridDynamicGridSubset {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: GenericGridDynamicGridSubsetElementIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetElement], Output = [GenericGridDynamicGridSubsetElement]>,
+    {
+        GenericGridDynamicGridSubsetElementSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -6807,8 +6568,11 @@ impl GenericGridDynamicGridSubset {
 impl GenericGridDynamicGridSubset {
     /// The slice view over a range of base, e.g. `.base(0..2)` or `.base(..)`,
     /// whose leaves gather one value per element. A single element is `.base[i]`.
-    pub fn base<'a, I: GenericGridDynamicGridSubsetMetricIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.base)
+    pub fn base<R>(&self, range: R) -> GenericGridDynamicGridSubsetMetricSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetMetric], Output = [GenericGridDynamicGridSubsetMetric]>,
+    {
+        GenericGridDynamicGridSubsetMetricSliceView::new(Elements::from_slice(&self.base[range]))
     }
 
     /// Get the number of base elements
@@ -6820,8 +6584,11 @@ impl GenericGridDynamicGridSubset {
 impl GenericGridDynamicSpaceDimension {
     /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
     /// whose leaves gather one value per element. A single element is `.object[i]`.
-    pub fn object<'a, I: GenericGridDynamicSpaceDimensionObjectIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.object)
+    pub fn object<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimensionObject], Output = [GenericGridDynamicSpaceDimensionObject]>,
+    {
+        GenericGridDynamicSpaceDimensionObjectSliceView::new(Elements::from_slice(&self.object[range]))
     }
 
     /// Get the number of object elements
@@ -6833,8 +6600,11 @@ impl GenericGridDynamicSpaceDimension {
 impl GenericGridDynamicGridSubsetElement {
     /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
     /// whose leaves gather one value per element. A single element is `.object[i]`.
-    pub fn object<'a, I: GenericGridDynamicGridSubsetElementObjectIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.object)
+    pub fn object<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementObjectSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetElementObject], Output = [GenericGridDynamicGridSubsetElementObject]>,
+    {
+        GenericGridDynamicGridSubsetElementObjectSliceView::new(Elements::from_slice(&self.object[range]))
     }
 
     /// Get the number of object elements
@@ -6846,8 +6616,11 @@ impl GenericGridDynamicGridSubsetElement {
 impl GenericGridDynamicSpaceDimensionObject {
     /// The slice view over a range of boundary, e.g. `.boundary(0..2)` or `.boundary(..)`,
     /// whose leaves gather one value per element. A single element is `.boundary[i]`.
-    pub fn boundary<'a, I: GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.boundary)
+    pub fn boundary<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimensionObjectBoundary], Output = [GenericGridDynamicSpaceDimensionObjectBoundary]>,
+    {
+        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(Elements::from_slice(&self.boundary[range]))
     }
 
     /// Get the number of boundary elements
@@ -6859,8 +6632,11 @@ impl GenericGridDynamicSpaceDimensionObject {
 impl Wall {
     /// The slice view over a range of description_2d, e.g. `.description_2d(0..2)` or `.description_2d(..)`,
     /// whose leaves gather one value per element. A single element is `.description_2d[i]`.
-    pub fn description_2d<'a, I: Wall2dIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.description_2d)
+    pub fn description_2d<R>(&self, range: R) -> Wall2dSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[Wall2d], Output = [Wall2d]>,
+    {
+        Wall2dSliceView::new(Elements::from_slice(&self.description_2d[range]))
     }
 
     /// Get the number of description_2d elements
@@ -6872,8 +6648,11 @@ impl Wall {
 impl Wall {
     /// The slice view over a range of description_ggd, e.g. `.description_ggd(0..2)` or `.description_ggd(..)`,
     /// whose leaves gather one value per element. A single element is `.description_ggd[i]`.
-    pub fn description_ggd<'a, I: WallDescriptionGgdIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.description_ggd)
+    pub fn description_ggd<R>(&self, range: R) -> WallDescriptionGgdSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[WallDescriptionGgd], Output = [WallDescriptionGgd]>,
+    {
+        WallDescriptionGgdSliceView::new(Elements::from_slice(&self.description_ggd[range]))
     }
 
     /// Get the number of description_ggd elements

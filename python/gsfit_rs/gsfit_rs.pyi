@@ -1,9 +1,15 @@
+from typing import TypeVar
+
 import numpy as np
 import numpy.typing as npt
 
 from .imas import Equilibrium
+from .imas import Magnetics as MagneticsIds
+from .imas import Path
 from .imas import Tf as TfIds
 from .imas import Wall as WallIds
+
+_T = TypeVar("_T")
 
 class DataTreeAccessor:
     """Base class providing common data tree access methods for all gsfit_rs classes."""
@@ -456,14 +462,22 @@ class Plasma(DataTreeAccessor):
         cls,
         passives: Passives,
     ) -> None: ...
-    @property
-    def equilibrium_ids(self) -> Equilibrium:
-        """The equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`.
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path`, from `gsfit_rs.imas.equilibrium_paths`, straight out of the equilibrium IDS.
 
         Empty until the Grad-Shafranov solver has run.
 
-        The IDS is copied into the returned object, so it is a snapshot: changes made on
-        the Rust side afterwards are not seen by it.
+        This is how the data is read: a path holds no data, so the IDS is only borrowed for the
+        read, never copied. The shape of the result follows the shape of the index; see
+        `gsfit_rs.imas.Equilibrium.get`.
+        """
+        ...
+    @property
+    def equilibrium_ids(self) -> Equilibrium:
+        """A copy of the whole equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`.
+
+        Read the data with `get` instead: this copies the IDS on every access. It is for when a
+        detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
         """
         ...
 
@@ -511,15 +525,20 @@ class Tf:
         times: `solve_grad_shafranov` interpolates it itself.
         """
         ...
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path`, from `gsfit_rs.imas.tf_paths`, straight out of the tf IDS.
+
+        This is how the data is read: a path holds no data, so the IDS is only borrowed for the
+        read, never copied. The shape of the result follows the shape of the index; see
+        `gsfit_rs.imas.Tf.get`.
+        """
+        ...
     @property
     def tf_ids(self) -> TfIds:
-        """The tf IDS, read with `gsfit_rs.imas.tf_paths`.
+        """A copy of the whole tf IDS, read with `gsfit_rs.imas.tf_paths`.
 
-        This is the only way to read the data back out: there are no bespoke accessors, so
-        every quantity is reached by its data dictionary path.
-
-        The IDS is copied into the returned object, so it is a snapshot: changes made on
-        the Rust side afterwards are not seen by it.
+        Read the data with `get` instead: this copies the IDS on every access. It is for when a
+        detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
         """
         ...
 
@@ -555,15 +574,48 @@ class Wall:
         The **first** unit added is the vacuum vessel contour.
         """
         ...
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path`, from `gsfit_rs.imas.wall_paths`, straight out of the wall IDS.
+
+        This is how the data is read: a path holds no data, so the IDS is only borrowed for the
+        read, never copied. The shape of the result follows the shape of the index; see
+        `gsfit_rs.imas.Wall.get`.
+        """
+        ...
     @property
     def wall_ids(self) -> WallIds:
-        """The wall IDS, read with `gsfit_rs.imas.wall_paths`.
+        """A copy of the whole wall IDS, read with `gsfit_rs.imas.wall_paths`.
 
-        This is the only way to read the data back out: there are no bespoke accessors, so
-        every quantity is reached by its data dictionary path.
+        Read the data with `get` instead: this copies the IDS on every access. It is for when a
+        detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
+        """
+        ...
 
-        The IDS is copied into the returned object, so it is a snapshot: changes made on
-        the Rust side afterwards are not seen by it.
+class Magnetics:
+    """The machine's magnetic sensors, stored as an IMAS `magnetics` IDS.
+
+    Nothing is filled yet: this is constructed empty.
+
+    Read it back through `magnetics_ids` and a path from `gsfit_rs.imas.magnetics_paths`.
+    """
+
+    def __new__(cls) -> Magnetics:
+        """Construct an empty set of magnetic sensors."""
+        ...
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path`, from `gsfit_rs.imas.magnetics_paths`, straight out of the magnetics IDS.
+
+        This is how the data is read: a path holds no data, so the IDS is only borrowed for the
+        read, never copied. The shape of the result follows the shape of the index; see
+        `gsfit_rs.imas.Magnetics.get`.
+        """
+        ...
+    @property
+    def magnetics_ids(self) -> MagneticsIds:
+        """A copy of the whole magnetics IDS, read with `gsfit_rs.imas.magnetics_paths`.
+
+        Read the data with `get` instead: this copies the IDS on every access. It is for when a
+        detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
         """
         ...
 

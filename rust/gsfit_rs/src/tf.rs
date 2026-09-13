@@ -1,5 +1,5 @@
 use imas_rs::ids::tf::{SignalFlt1d, Tf as TfIds};
-use imas_rs::python::PyTf;
+use imas_rs::python::{PyPath, PyTf, read_path};
 use ndarray::Array1;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -110,13 +110,19 @@ impl Tf {
         Ok(())
     }
 
-    /// The tf IDS, for reading with `gsfit_rs.imas.tf_paths`.
+    /// Read the data at `path`, a path from `gsfit_rs.imas.tf_paths`, straight out of the tf IDS.
     ///
-    /// This is the only way to read the data back out: there are no bespoke accessors, so
-    /// every quantity is reached by its data dictionary path.
+    /// This is how the data is read: there are no bespoke accessors, so every quantity is reached
+    /// by its data dictionary path. A path holds no data, so the IDS is only borrowed for the
+    /// read, never copied.
+    fn get<'py>(&self, py: Python<'py>, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
+        read_path(py, &self.tf_ids, "tf", path)
+    }
+
+    /// A copy of the whole tf IDS, for reading with `gsfit_rs.imas.tf_paths`.
     ///
-    /// The IDS is copied into the returned object, so it is a snapshot: changes made on the
-    /// Rust side afterwards are not seen by it.
+    /// Read the data with `get` instead. This copies the IDS on every access. It is for when a
+    /// detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
     #[getter]
     fn tf_ids(&self) -> PyTf {
         PyTf::new(self.tf_ids.clone())

@@ -226,11 +226,15 @@ impl PyPath {
     }
 }
 
-/// Read `path` out of `ids`. Shared by every IDS wrapper in `ids.rs`.
+/// Read `path` out of `ids`, which is named `ids_name` (e.g. `"equilibrium"`).
+///
+/// Shared by every IDS wrapper in `ids.rs`, and by the `gsfit_rs` objects which own an IDS, so
+/// that those can be read in place: a path holds no data, so reading one needs only a borrow of
+/// the IDS, never a copy of it.
 ///
 /// It lives here rather than with the wrappers because it needs the private parts of the
 /// path: which IDS it was built from, and the index selections along it.
-pub(super) fn read_path<'py, I: Any>(py: Python<'py>, ids: &I, ids_name: &str, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
+pub fn read_path<'py, I: Any>(py: Python<'py>, ids: &I, ids_name: &str, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
     if path.root != ids_name {
         return Err(PyTypeError::new_err(format!(
             "this is a `{ids_name}` IDS but `{}` starts at `{}`; use `{ids_name}_paths`",

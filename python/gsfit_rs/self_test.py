@@ -195,22 +195,20 @@ def run() -> None:
         dialoop=dialoop,
     )
 
-    equilibrium_ids = plasma.equilibrium_ids
-
     # `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
-    r = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim1)
-    z = equilibrium_ids.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
-    psi_2d = equilibrium_ids.get(ep.time_slice[:].profiles_2d[0].psi)
+    r = plasma.get(ep.time_slice[0].profiles_2d[0].grid.dim1)
+    z = plasma.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
+    psi_2d = plasma.get(ep.time_slice[:].profiles_2d[0].psi)  # shape = (n_time, n_z, n_r)
     import matplotlib.pyplot as plt
 
     plt.figure()
     plt.contour(r, z, psi_2d[0, :, :], 100)
     plt.axis("equal")
     plt.plot(limit_pts_r, limit_pts_z, marker="x", color="black")
-    bounding_r = equilibrium_ids.get(ep.time_slice[:].boundary.bounding.r)
-    bounding_z = equilibrium_ids.get(ep.time_slice[:].boundary.bounding.z)
-    boundary_r = equilibrium_ids.get(ep.time_slice[0].boundary.outline.r)
-    boundary_z = equilibrium_ids.get(ep.time_slice[0].boundary.outline.z)
+    bounding_r = plasma.get(ep.time_slice[:].boundary.bounding.r)
+    bounding_z = plasma.get(ep.time_slice[:].boundary.bounding.z)
+    boundary_r = plasma.get(ep.time_slice[0].boundary.outline.r)
+    boundary_z = plasma.get(ep.time_slice[0].boundary.outline.z)
     plt.plot(bounding_r, bounding_z, marker="o", color="red")
     plt.plot(boundary_r, boundary_z, color="red")
     plt.plot()

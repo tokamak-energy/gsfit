@@ -3,8 +3,8 @@ Translate the GSFit results into an IMAS `equilibrium` IDS, using the official `
 package.
 
 **How it works.** Since the IMAS migration, GSFit already stores its equilibrium results in the
-IMAS data model: `plasma.equilibrium_ids` is an `equilibrium` IDS on the Rust side, and
-`gsfit_rs.imas.equilibrium_paths` is a path builder over the same schema. So this module does not
+IMAS data model: `plasma` holds an `equilibrium` IDS on the Rust side, read in place with `plasma.get`,
+and `gsfit_rs.imas.equilibrium_paths` is a path builder over the same schema. So this module does not
 hand-map several hundred leaves. It **walks the Rust schema and copies each leaf into the node of
 the same name** in the official IDS.
 
@@ -92,6 +92,7 @@ import numpy.typing as npt
 from diagnostic_and_simulation_base import version_storage
 
 if TYPE_CHECKING:
+    import gsfit_rs
     from imas.ids_toplevel import IDSToplevel
 
     from ...gsfit import Gsfit
@@ -121,8 +122,8 @@ def _is_array_of_structures(path: typing.Any) -> bool:
     return not [name for name in dir(path) if not name.startswith("_")] and not _is_leaf(path)
 
 
-def _read_leaf(equilibrium_ids: typing.Any, path: typing.Any) -> typing.Any:
-    """Read one leaf out of the Rust IDS, or `None` if it cannot be gathered.
+def _read_leaf(plasma: "gsfit_rs.Plasma", path: typing.Any) -> typing.Any:
+    """Read one leaf out of the Rust IDS held by `plasma`, or `None` if it cannot be gathered.
 
     A leaf GSFit never set reads back as its IMAS empty value - `NaN`, `EMPTY_INT`, an empty
     string or an empty array - and `_write_leaf` leaves such a node unset in the output. The read
@@ -131,7 +132,7 @@ def _read_leaf(equilibrium_ids: typing.Any, path: typing.Any) -> typing.Any:
     """
 
     try:
-        return equilibrium_ids.get(path)
+        return plasma.get(path)
     except (IndexError, TypeError):
         return None
 
@@ -185,7 +186,7 @@ def _write_leaf(destination: typing.Any, name: str, values: typing.Any, data_typ
 def _copy_time_slice_branch(
     source: typing.Any,
     destination: typing.Any,
-    equilibrium_ids: typing.Any,
+    plasma: "gsfit_rs.Plasma",
     i_time: int,
     path: str,
     skipped: set[str],
@@ -193,8 +194,9 @@ def _copy_time_slice_branch(
     """Copy one branch of `time_slice[i_time]` from the Rust IDS into the official IDS.
 
     `source` is a path over `time_slice[:]`, so every leaf read returns the whole time series at
-    once and `i_time` selects the slice. Reading per-slice instead would copy the IDS out of Rust
-    once per leaf per slice.
+    once, with time as its first dimension, and `[i_time]` selects the slice. Reading the whole
+    series, rather than `time_slice[i_time]`, is what lets `_read_leaf` skip a node which cannot be
+    gathered for every slice alike, instead of writing it for some slices and not others.
     """
 
     for name in sorted(n for n in dir(source) if not n.startswith("_")):
@@ -215,22 +217,22 @@ def _copy_time_slice_branch(
             # and the rest (`boundary/gap`, `contour_tree/node`, `ggd`) GSFit does not store. None
             # of them is a schema mismatch, so none is reported as one
             if name == "profiles_2d":
-                _copy_profiles_2d(source_child, destination_child, equilibrium_ids, i_time, child_path, skipped)
+                _copy_profiles_2d(source_child, destination_child, plasma, i_time, child_path, skipped)
             continue
 
         if _is_leaf(source_child):
-            values = _read_leaf(equilibrium_ids, source_child)
+            values = _read_leaf(plasma, source_child)
             if values is not None:
                 _write_leaf(destination, name, np.asarray(values)[i_time], source_child.data_type)
             continue
 
-        _copy_time_slice_branch(source_child, destination_child, equilibrium_ids, i_time, child_path, skipped)
+        _copy_time_slice_branch(source_child, destination_child, plasma, i_time, child_path, skipped)
 
 
 def _copy_profiles_2d(
     source: typing.Any,
     destination: typing.Any,
-    equilibrium_ids: typing.Any,
+    plasma: "gsfit_rs.Plasma",
     i_time: int,
     path: str,
     skipped: set[str],
@@ -241,8 +243,8 @@ def _copy_profiles_2d(
     source_entry = source[0]
     destination_entry = destination[0]
 
-    dim1 = np.asarray(_read_leaf(equilibrium_ids, source_entry.grid.dim1))[i_time]
-    dim2 = np.asarray(_read_leaf(equilibrium_ids, source_entry.grid.dim2))[i_time]
+    dim1 = np.asarray(_read_leaf(plasma, source_entry.grid.dim1))[i_time]
+    dim2 = np.asarray(_read_leaf(plasma, source_entry.grid.dim2))[i_time]
     n_dim1 = int(np.isfinite(dim1).sum())
     n_dim2 = int(np.isfinite(dim2).sum())
 
@@ -260,11 +262,11 @@ def _copy_profiles_2d(
             if _is_array_of_structures(source_child):
                 continue
             _copy_time_slice_branch(
-                source_child, getattr(destination_entry, name), equilibrium_ids, i_time, child_path, skipped
+                source_child, getattr(destination_entry, name), plasma, i_time, child_path, skipped
             )
             continue
 
-        raw = _read_leaf(equilibrium_ids, source_child)
+        raw = _read_leaf(plasma, source_child)
         if raw is None:
             continue
         values = np.asarray(raw)[i_time]
@@ -287,7 +289,7 @@ def _copy_profiles_2d(
 def _copy_time_independent(
     source: typing.Any,
     destination: typing.Any,
-    equilibrium_ids: typing.Any,
+    plasma: "gsfit_rs.Plasma",
     path: str,
     skipped: set[str],
 ) -> None:
@@ -307,12 +309,12 @@ def _copy_time_independent(
             continue
 
         if _is_leaf(source_child):
-            values = _read_leaf(equilibrium_ids, source_child)
+            values = _read_leaf(plasma, source_child)
             if values is not None:
                 _write_leaf(destination, name, values, source_child.data_type)
             continue
 
-        _copy_time_independent(source_child, getattr(destination, name), equilibrium_ids, child_path, skipped)
+        _copy_time_independent(source_child, getattr(destination, name), plasma, child_path, skipped)
 
 
 def _sensor_series(sensor_object: typing.Any, sensor_name: str, quantity: str) -> dict[str, typing.Any]:
@@ -363,9 +365,6 @@ def map_results_to_database(
     time: npt.NDArray[np.float64] = np.asarray(gsfit_controller.results["TIME"], dtype=np.float64)  # [second]
     n_time: int = len(time)
 
-    # Read once: the `equilibrium_ids` getter copies the whole IDS out of Rust, so fetching it per
-    # quantity would copy every 2D map on every time-slice, once each
-    equilibrium_ids = plasma.equilibrium_ids
 
     equilibrium = imas.IDSFactory().equilibrium()
 
@@ -392,7 +391,7 @@ def map_results_to_database(
         _copy_time_slice_branch(
             equilibrium_paths.time_slice[:],
             equilibrium.time_slice[i_time],
-            equilibrium_ids,
+            plasma,
             i_time,
             "",
             skipped,
@@ -401,11 +400,11 @@ def map_results_to_database(
     _copy_time_independent(
         equilibrium_paths.vacuum_toroidal_field,
         equilibrium.vacuum_toroidal_field,
-        equilibrium_ids,
+        plasma,
         "vacuum_toroidal_field",
         skipped,
     )
-    _copy_time_independent(equilibrium_paths.code, equilibrium.code, equilibrium_ids, "code", skipped)
+    _copy_time_independent(equilibrium_paths.code, equilibrium.code, plasma, "code", skipped)
 
     # GSFit stores some things the data dictionary has no home for. Which ones depends on the
     # dictionary in use, so they are reported from the run rather than listed in the source

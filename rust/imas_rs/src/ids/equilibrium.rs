@@ -9,7 +9,9 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, EMPTY_INT, FLT_0D, FLT_1D, FLT_2D, FLT_3D, FLT_4D, INT_0D, INT_1D, INT_2D, STR_0D, StringAccumulator};
+use crate::dd_base_types::{Accumulator, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, FLT_3D, FLT_4D, INT_0D, INT_1D, INT_2D, STR_0D};
+use ndarray::{Dimension, Ix1};
+use std::slice::SliceIndex;
 
 // ============================================================================
 // Complex Types
@@ -2037,3218 +2039,2775 @@ impl Equilibrium {
 // --- Rz1dDynamicAos View Types ---
 
 /// View over multiple Rz1dDynamicAos with field accumulation
-pub struct Rz1dDynamicAosSliceView<'a> {
-    data: &'a [Rz1dDynamicAos],
+pub struct Rz1dDynamicAosSliceView<'a, D> {
+    slice_elements: Elements<'a, Rz1dDynamicAos, D>,
 }
 
-impl<'a> Rz1dDynamicAosSliceView<'a> {
-    pub fn new(data: &'a [Rz1dDynamicAos]) -> Self {
-        Self { data }
+impl<'a, D: Dimension> Rz1dDynamicAosSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, Rz1dDynamicAos, D>) -> Self {
+        Self { slice_elements: elements }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Rz1dDynamicAos> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for Rz1dDynamicAos - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait Rz1dDynamicAosIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [Rz1dDynamicAos]) -> Self::Output;
-}
-
-impl<'a> Rz1dDynamicAosIndex<'a> for std::ops::Range<usize> {
-    type Output = Rz1dDynamicAosSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAos]) -> Self::Output {
-        Rz1dDynamicAosSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Rz1dDynamicAosIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = Rz1dDynamicAosSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAos]) -> Self::Output {
-        Rz1dDynamicAosSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Rz1dDynamicAosIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = Rz1dDynamicAosSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAos]) -> Self::Output {
-        Rz1dDynamicAosSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Rz1dDynamicAosIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = Rz1dDynamicAosSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAos]) -> Self::Output {
-        Rz1dDynamicAosSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Rz1dDynamicAosIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = Rz1dDynamicAosSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAos]) -> Self::Output {
-        Rz1dDynamicAosSliceView::new(&data[self])
-    }
-}
-
-impl<'a> Rz1dDynamicAosIndex<'a> for std::ops::RangeFull {
-    type Output = Rz1dDynamicAosSliceView<'a>;
-    fn get(self, data: &'a [Rz1dDynamicAos]) -> Self::Output {
-        Rz1dDynamicAosSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a Rz1dDynamicAos> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumContourTreeNode View Types ---
 
 /// View over `node_type` (IdentifierDynamicAos3) across multiple EquilibriumContourTreeNode
-pub struct EquilibriumContourTreeNodeNodeTypeView<'a> {
-    pub name: StringAccumulator<'a, EquilibriumContourTreeNode>,
-    pub index: Accumulator<'a, EquilibriumContourTreeNode, INT_0D>,
-    pub description: StringAccumulator<'a, EquilibriumContourTreeNode>,
+pub struct EquilibriumContourTreeNodeNodeTypeView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumContourTreeNode, STR_0D, D>,
+    pub index: Accumulator<'a, EquilibriumContourTreeNode, INT_0D, D>,
+    pub description: Accumulator<'a, EquilibriumContourTreeNode, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumContourTreeNode, D>,
 }
 
-impl<'a> EquilibriumContourTreeNodeNodeTypeView<'a> {
-    pub fn new(data: &'a [EquilibriumContourTreeNode]) -> Self {
+impl<'a, D: Dimension> EquilibriumContourTreeNodeNodeTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumContourTreeNode, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &EquilibriumContourTreeNode| item.node_type.name.clone()),
-            index: Accumulator::new(data, |item: &EquilibriumContourTreeNode| item.node_type.index),
-            description: StringAccumulator::new(data, |item: &EquilibriumContourTreeNode| item.node_type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumContourTreeNode| item.node_type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &EquilibriumContourTreeNode| item.node_type.index),
+            description: Accumulator::new(elements.clone(), |item: &EquilibriumContourTreeNode| item.node_type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple EquilibriumContourTreeNode with field accumulation
-pub struct EquilibriumContourTreeNodeSliceView<'a> {
-    data: &'a [EquilibriumContourTreeNode],
-    pub critical_type: Accumulator<'a, EquilibriumContourTreeNode, INT_0D>,
-    pub node_type: EquilibriumContourTreeNodeNodeTypeView<'a>,
-    pub r: Accumulator<'a, EquilibriumContourTreeNode, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumContourTreeNode, FLT_0D>,
-    pub psi: Accumulator<'a, EquilibriumContourTreeNode, FLT_0D>,
+pub struct EquilibriumContourTreeNodeSliceView<'a, D> {
+    pub critical_type: Accumulator<'a, EquilibriumContourTreeNode, INT_0D, D>,
+    pub node_type: EquilibriumContourTreeNodeNodeTypeView<'a, D>,
+    pub r: Accumulator<'a, EquilibriumContourTreeNode, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumContourTreeNode, FLT_0D, D>,
+    pub psi: Accumulator<'a, EquilibriumContourTreeNode, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumContourTreeNode, D>,
 }
 
-impl<'a> EquilibriumContourTreeNodeSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumContourTreeNode]) -> Self {
+impl<'a, D: Dimension> EquilibriumContourTreeNodeSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumContourTreeNode, D>) -> Self {
         Self {
-            data,
-            critical_type: Accumulator::new(data, |item: &EquilibriumContourTreeNode| item.critical_type),
-            node_type: EquilibriumContourTreeNodeNodeTypeView::new(data),
-            r: Accumulator::new(data, |item: &EquilibriumContourTreeNode| item.r),
-            z: Accumulator::new(data, |item: &EquilibriumContourTreeNode| item.z),
-            psi: Accumulator::new(data, |item: &EquilibriumContourTreeNode| item.psi),
+            critical_type: Accumulator::new(elements.clone(), |item: &EquilibriumContourTreeNode| item.critical_type),
+            node_type: EquilibriumContourTreeNodeNodeTypeView::new(elements.clone()),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumContourTreeNode| item.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumContourTreeNode| item.z),
+            psi: Accumulator::new(elements.clone(), |item: &EquilibriumContourTreeNode| item.psi),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumContourTreeNode> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumContourTreeNode - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumContourTreeNodeIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumContourTreeNode]) -> Self::Output;
-}
-
-impl<'a> EquilibriumContourTreeNodeIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumContourTreeNodeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumContourTreeNode]) -> Self::Output {
-        EquilibriumContourTreeNodeSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumContourTreeNode> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> EquilibriumContourTreeNodeIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumContourTreeNodeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumContourTreeNode]) -> Self::Output {
-        EquilibriumContourTreeNodeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumContourTreeNodeIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumContourTreeNodeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumContourTreeNode]) -> Self::Output {
-        EquilibriumContourTreeNodeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumContourTreeNodeIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumContourTreeNodeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumContourTreeNode]) -> Self::Output {
-        EquilibriumContourTreeNodeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumContourTreeNodeIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumContourTreeNodeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumContourTreeNode]) -> Self::Output {
-        EquilibriumContourTreeNodeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumContourTreeNodeIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumContourTreeNodeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumContourTreeNode]) -> Self::Output {
-        EquilibriumContourTreeNodeSliceView::new(data)
+    /// The slice view over a range of `levelset` under every element, e.g. `.levelset(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn levelset<R>(&self, range: R) -> Rz1dDynamicAosSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[Rz1dDynamicAos], Output = [Rz1dDynamicAos]> + Clone,
+    {
+        Rz1dDynamicAosSliceView::new(
+            self.slice_elements
+                .nest("levelset", |item: &EquilibriumContourTreeNode| item.levelset.as_slice(), range),
+        )
     }
 }
 
 // --- EquilibriumGap View Types ---
 
 /// View over multiple EquilibriumGap with field accumulation
-pub struct EquilibriumGapSliceView<'a> {
-    data: &'a [EquilibriumGap],
-    pub name: StringAccumulator<'a, EquilibriumGap>,
-    pub description: StringAccumulator<'a, EquilibriumGap>,
-    pub r: Accumulator<'a, EquilibriumGap, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumGap, FLT_0D>,
-    pub angle: Accumulator<'a, EquilibriumGap, FLT_0D>,
-    pub value: Accumulator<'a, EquilibriumGap, FLT_0D>,
+pub struct EquilibriumGapSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumGap, STR_0D, D>,
+    pub description: Accumulator<'a, EquilibriumGap, STR_0D, D>,
+    pub r: Accumulator<'a, EquilibriumGap, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumGap, FLT_0D, D>,
+    pub angle: Accumulator<'a, EquilibriumGap, FLT_0D, D>,
+    pub value: Accumulator<'a, EquilibriumGap, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGap, D>,
 }
 
-impl<'a> EquilibriumGapSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumGap]) -> Self {
+impl<'a, D: Dimension> EquilibriumGapSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGap, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &EquilibriumGap| item.name.clone()),
-            description: StringAccumulator::new(data, |item: &EquilibriumGap| item.description.clone()),
-            r: Accumulator::new(data, |item: &EquilibriumGap| item.r),
-            z: Accumulator::new(data, |item: &EquilibriumGap| item.z),
-            angle: Accumulator::new(data, |item: &EquilibriumGap| item.angle),
-            value: Accumulator::new(data, |item: &EquilibriumGap| item.value),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumGap| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &EquilibriumGap| item.description.clone()),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumGap| item.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumGap| item.z),
+            angle: Accumulator::new(elements.clone(), |item: &EquilibriumGap| item.angle),
+            value: Accumulator::new(elements.clone(), |item: &EquilibriumGap| item.value),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumGap> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumGap - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumGapIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumGap]) -> Self::Output;
-}
-
-impl<'a> EquilibriumGapIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumGapSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGap]) -> Self::Output {
-        EquilibriumGapSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGapIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumGapSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGap]) -> Self::Output {
-        EquilibriumGapSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGapIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumGapSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGap]) -> Self::Output {
-        EquilibriumGapSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGapIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumGapSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGap]) -> Self::Output {
-        EquilibriumGapSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGapIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumGapSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGap]) -> Self::Output {
-        EquilibriumGapSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGapIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumGapSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGap]) -> Self::Output {
-        EquilibriumGapSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGap> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumConstraints0dOneLike View Types ---
 
 /// View over multiple EquilibriumConstraints0dOneLike with field accumulation
-pub struct EquilibriumConstraints0dOneLikeSliceView<'a> {
-    data: &'a [EquilibriumConstraints0dOneLike],
-    pub measured: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D>,
-    pub source: StringAccumulator<'a, EquilibriumConstraints0dOneLike>,
-    pub time_measurement: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D>,
-    pub exact: Accumulator<'a, EquilibriumConstraints0dOneLike, INT_0D>,
-    pub weight: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D>,
-    pub sigma: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D>,
-    pub reconstructed: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D>,
-    pub chi_squared: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D>,
+pub struct EquilibriumConstraints0dOneLikeSliceView<'a, D> {
+    pub measured: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D, D>,
+    pub source: Accumulator<'a, EquilibriumConstraints0dOneLike, STR_0D, D>,
+    pub time_measurement: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D, D>,
+    pub exact: Accumulator<'a, EquilibriumConstraints0dOneLike, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D, D>,
+    pub sigma: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D, D>,
+    pub reconstructed: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D, D>,
+    pub chi_squared: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraints0dOneLike, D>,
 }
 
-impl<'a> EquilibriumConstraints0dOneLikeSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraints0dOneLike]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraints0dOneLikeSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraints0dOneLike, D>) -> Self {
         Self {
-            data,
-            measured: Accumulator::new(data, |item: &EquilibriumConstraints0dOneLike| item.measured),
-            source: StringAccumulator::new(data, |item: &EquilibriumConstraints0dOneLike| item.source.clone()),
-            time_measurement: Accumulator::new(data, |item: &EquilibriumConstraints0dOneLike| item.time_measurement),
-            exact: Accumulator::new(data, |item: &EquilibriumConstraints0dOneLike| item.exact),
-            weight: Accumulator::new(data, |item: &EquilibriumConstraints0dOneLike| item.weight),
-            sigma: Accumulator::new(data, |item: &EquilibriumConstraints0dOneLike| item.sigma),
-            reconstructed: Accumulator::new(data, |item: &EquilibriumConstraints0dOneLike| item.reconstructed),
-            chi_squared: Accumulator::new(data, |item: &EquilibriumConstraints0dOneLike| item.chi_squared),
+            measured: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.measured),
+            source: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.source.clone()),
+            time_measurement: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.time_measurement),
+            exact: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.exact),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.weight),
+            sigma: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.sigma),
+            reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.reconstructed),
+            chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.chi_squared),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumConstraints0dOneLike> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumConstraints0dOneLike - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumConstraints0dOneLikeIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumConstraints0dOneLike]) -> Self::Output;
-}
-
-impl<'a> EquilibriumConstraints0dOneLikeIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumConstraints0dOneLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dOneLike]) -> Self::Output {
-        EquilibriumConstraints0dOneLikeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dOneLikeIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumConstraints0dOneLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dOneLike]) -> Self::Output {
-        EquilibriumConstraints0dOneLikeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dOneLikeIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumConstraints0dOneLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dOneLike]) -> Self::Output {
-        EquilibriumConstraints0dOneLikeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dOneLikeIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumConstraints0dOneLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dOneLike]) -> Self::Output {
-        EquilibriumConstraints0dOneLikeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dOneLikeIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumConstraints0dOneLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dOneLike]) -> Self::Output {
-        EquilibriumConstraints0dOneLikeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dOneLikeIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumConstraints0dOneLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dOneLike]) -> Self::Output {
-        EquilibriumConstraints0dOneLikeSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumConstraints0dOneLike> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumConstraints0d View Types ---
 
 /// View over multiple EquilibriumConstraints0d with field accumulation
-pub struct EquilibriumConstraints0dSliceView<'a> {
-    data: &'a [EquilibriumConstraints0d],
-    pub measured: Accumulator<'a, EquilibriumConstraints0d, FLT_0D>,
-    pub source: StringAccumulator<'a, EquilibriumConstraints0d>,
-    pub time_measurement: Accumulator<'a, EquilibriumConstraints0d, FLT_0D>,
-    pub exact: Accumulator<'a, EquilibriumConstraints0d, INT_0D>,
-    pub weight: Accumulator<'a, EquilibriumConstraints0d, FLT_0D>,
-    pub sigma: Accumulator<'a, EquilibriumConstraints0d, FLT_0D>,
-    pub reconstructed: Accumulator<'a, EquilibriumConstraints0d, FLT_0D>,
-    pub chi_squared: Accumulator<'a, EquilibriumConstraints0d, FLT_0D>,
+pub struct EquilibriumConstraints0dSliceView<'a, D> {
+    pub measured: Accumulator<'a, EquilibriumConstraints0d, FLT_0D, D>,
+    pub source: Accumulator<'a, EquilibriumConstraints0d, STR_0D, D>,
+    pub time_measurement: Accumulator<'a, EquilibriumConstraints0d, FLT_0D, D>,
+    pub exact: Accumulator<'a, EquilibriumConstraints0d, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumConstraints0d, FLT_0D, D>,
+    pub sigma: Accumulator<'a, EquilibriumConstraints0d, FLT_0D, D>,
+    pub reconstructed: Accumulator<'a, EquilibriumConstraints0d, FLT_0D, D>,
+    pub chi_squared: Accumulator<'a, EquilibriumConstraints0d, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraints0d, D>,
 }
 
-impl<'a> EquilibriumConstraints0dSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraints0d]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraints0dSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraints0d, D>) -> Self {
         Self {
-            data,
-            measured: Accumulator::new(data, |item: &EquilibriumConstraints0d| item.measured),
-            source: StringAccumulator::new(data, |item: &EquilibriumConstraints0d| item.source.clone()),
-            time_measurement: Accumulator::new(data, |item: &EquilibriumConstraints0d| item.time_measurement),
-            exact: Accumulator::new(data, |item: &EquilibriumConstraints0d| item.exact),
-            weight: Accumulator::new(data, |item: &EquilibriumConstraints0d| item.weight),
-            sigma: Accumulator::new(data, |item: &EquilibriumConstraints0d| item.sigma),
-            reconstructed: Accumulator::new(data, |item: &EquilibriumConstraints0d| item.reconstructed),
-            chi_squared: Accumulator::new(data, |item: &EquilibriumConstraints0d| item.chi_squared),
+            measured: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.measured),
+            source: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.source.clone()),
+            time_measurement: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.time_measurement),
+            exact: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.exact),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.weight),
+            sigma: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.sigma),
+            reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.reconstructed),
+            chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.chi_squared),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumConstraints0d> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumConstraints0d - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumConstraints0dIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumConstraints0d]) -> Self::Output;
-}
-
-impl<'a> EquilibriumConstraints0dIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumConstraints0dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0d]) -> Self::Output {
-        EquilibriumConstraints0dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumConstraints0dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0d]) -> Self::Output {
-        EquilibriumConstraints0dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumConstraints0dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0d]) -> Self::Output {
-        EquilibriumConstraints0dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumConstraints0dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0d]) -> Self::Output {
-        EquilibriumConstraints0dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumConstraints0dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0d]) -> Self::Output {
-        EquilibriumConstraints0dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumConstraints0dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0d]) -> Self::Output {
-        EquilibriumConstraints0dSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumConstraints0d> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumConstraintsMagnetization View Types ---
 
 /// View over `magnetization_r` (EquilibriumConstraints0d) across multiple EquilibriumConstraintsMagnetization
-pub struct EquilibriumConstraintsMagnetizationMagnetizationRView<'a> {
-    pub measured: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
-    pub source: StringAccumulator<'a, EquilibriumConstraintsMagnetization>,
-    pub time_measurement: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
-    pub exact: Accumulator<'a, EquilibriumConstraintsMagnetization, INT_0D>,
-    pub weight: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
-    pub sigma: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
-    pub reconstructed: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
-    pub chi_squared: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
+pub struct EquilibriumConstraintsMagnetizationMagnetizationRView<'a, D> {
+    pub measured: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub source: Accumulator<'a, EquilibriumConstraintsMagnetization, STR_0D, D>,
+    pub time_measurement: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub exact: Accumulator<'a, EquilibriumConstraintsMagnetization, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub sigma: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub reconstructed: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub chi_squared: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraintsMagnetization, D>,
 }
 
-impl<'a> EquilibriumConstraintsMagnetizationMagnetizationRView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraintsMagnetization]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraintsMagnetizationMagnetizationRView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraintsMagnetization, D>) -> Self {
         Self {
-            measured: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.measured),
-            source: StringAccumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.source.clone()),
-            time_measurement: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.time_measurement),
-            exact: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.exact),
-            weight: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.weight),
-            sigma: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.sigma),
-            reconstructed: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.reconstructed),
-            chi_squared: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.chi_squared),
+            measured: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.measured),
+            source: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| {
+                item.magnetization_r.source.clone()
+            }),
+            time_measurement: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| {
+                item.magnetization_r.time_measurement
+            }),
+            exact: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.exact),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.weight),
+            sigma: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.sigma),
+            reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| {
+                item.magnetization_r.reconstructed
+            }),
+            chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.chi_squared),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `magnetization_z` (EquilibriumConstraints0d) across multiple EquilibriumConstraintsMagnetization
-pub struct EquilibriumConstraintsMagnetizationMagnetizationZView<'a> {
-    pub measured: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
-    pub source: StringAccumulator<'a, EquilibriumConstraintsMagnetization>,
-    pub time_measurement: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
-    pub exact: Accumulator<'a, EquilibriumConstraintsMagnetization, INT_0D>,
-    pub weight: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
-    pub sigma: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
-    pub reconstructed: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
-    pub chi_squared: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D>,
+pub struct EquilibriumConstraintsMagnetizationMagnetizationZView<'a, D> {
+    pub measured: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub source: Accumulator<'a, EquilibriumConstraintsMagnetization, STR_0D, D>,
+    pub time_measurement: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub exact: Accumulator<'a, EquilibriumConstraintsMagnetization, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub sigma: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub reconstructed: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub chi_squared: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraintsMagnetization, D>,
 }
 
-impl<'a> EquilibriumConstraintsMagnetizationMagnetizationZView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraintsMagnetization]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraintsMagnetizationMagnetizationZView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraintsMagnetization, D>) -> Self {
         Self {
-            measured: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.measured),
-            source: StringAccumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.source.clone()),
-            time_measurement: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.time_measurement),
-            exact: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.exact),
-            weight: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.weight),
-            sigma: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.sigma),
-            reconstructed: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.reconstructed),
-            chi_squared: Accumulator::new(data, |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.chi_squared),
+            measured: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.measured),
+            source: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| {
+                item.magnetization_z.source.clone()
+            }),
+            time_measurement: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| {
+                item.magnetization_z.time_measurement
+            }),
+            exact: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.exact),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.weight),
+            sigma: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.sigma),
+            reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| {
+                item.magnetization_z.reconstructed
+            }),
+            chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.chi_squared),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple EquilibriumConstraintsMagnetization with field accumulation
-pub struct EquilibriumConstraintsMagnetizationSliceView<'a> {
-    data: &'a [EquilibriumConstraintsMagnetization],
-    pub magnetization_r: EquilibriumConstraintsMagnetizationMagnetizationRView<'a>,
-    pub magnetization_z: EquilibriumConstraintsMagnetizationMagnetizationZView<'a>,
+pub struct EquilibriumConstraintsMagnetizationSliceView<'a, D> {
+    pub magnetization_r: EquilibriumConstraintsMagnetizationMagnetizationRView<'a, D>,
+    pub magnetization_z: EquilibriumConstraintsMagnetizationMagnetizationZView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumConstraintsMagnetization, D>,
 }
 
-impl<'a> EquilibriumConstraintsMagnetizationSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraintsMagnetization]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraintsMagnetizationSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraintsMagnetization, D>) -> Self {
         Self {
-            data,
-            magnetization_r: EquilibriumConstraintsMagnetizationMagnetizationRView::new(data),
-            magnetization_z: EquilibriumConstraintsMagnetizationMagnetizationZView::new(data),
+            magnetization_r: EquilibriumConstraintsMagnetizationMagnetizationRView::new(elements.clone()),
+            magnetization_z: EquilibriumConstraintsMagnetizationMagnetizationZView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumConstraintsMagnetization> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumConstraintsMagnetization - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumConstraintsMagnetizationIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumConstraintsMagnetization]) -> Self::Output;
-}
-
-impl<'a> EquilibriumConstraintsMagnetizationIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumConstraintsMagnetizationSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsMagnetization]) -> Self::Output {
-        EquilibriumConstraintsMagnetizationSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraintsMagnetizationIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumConstraintsMagnetizationSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsMagnetization]) -> Self::Output {
-        EquilibriumConstraintsMagnetizationSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraintsMagnetizationIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumConstraintsMagnetizationSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsMagnetization]) -> Self::Output {
-        EquilibriumConstraintsMagnetizationSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraintsMagnetizationIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumConstraintsMagnetizationSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsMagnetization]) -> Self::Output {
-        EquilibriumConstraintsMagnetizationSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraintsMagnetizationIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumConstraintsMagnetizationSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsMagnetization]) -> Self::Output {
-        EquilibriumConstraintsMagnetizationSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraintsMagnetizationIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumConstraintsMagnetizationSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsMagnetization]) -> Self::Output {
-        EquilibriumConstraintsMagnetizationSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumConstraintsMagnetization> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumConstraints0dPosition View Types ---
 
 /// View over `position` (Rphizpsirho0dDynamicAos3) across multiple EquilibriumConstraints0dPosition
-pub struct EquilibriumConstraints0dPositionPositionView<'a> {
-    pub r: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
-    pub phi: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
-    pub rho_tor_norm: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
-    pub psi: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
+pub struct EquilibriumConstraints0dPositionPositionView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub phi: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub rho_tor_norm: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub psi: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraints0dPosition, D>,
 }
 
-impl<'a> EquilibriumConstraints0dPositionPositionView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraints0dPosition]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraints0dPositionPositionView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraints0dPosition, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.position.r),
-            phi: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.position.phi),
-            z: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.position.z),
-            rho_tor_norm: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.position.rho_tor_norm),
-            psi: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.position.psi),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.position.r),
+            phi: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.position.phi),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.position.z),
+            rho_tor_norm: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.position.rho_tor_norm),
+            psi: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.position.psi),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple EquilibriumConstraints0dPosition with field accumulation
-pub struct EquilibriumConstraints0dPositionSliceView<'a> {
-    data: &'a [EquilibriumConstraints0dPosition],
-    pub measured: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
-    pub position: EquilibriumConstraints0dPositionPositionView<'a>,
-    pub source: StringAccumulator<'a, EquilibriumConstraints0dPosition>,
-    pub time_measurement: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
-    pub exact: Accumulator<'a, EquilibriumConstraints0dPosition, INT_0D>,
-    pub weight: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
-    pub sigma: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
-    pub reconstructed: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
-    pub chi_squared: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D>,
+pub struct EquilibriumConstraints0dPositionSliceView<'a, D> {
+    pub measured: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub position: EquilibriumConstraints0dPositionPositionView<'a, D>,
+    pub source: Accumulator<'a, EquilibriumConstraints0dPosition, STR_0D, D>,
+    pub time_measurement: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub exact: Accumulator<'a, EquilibriumConstraints0dPosition, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub sigma: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub reconstructed: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    pub chi_squared: Accumulator<'a, EquilibriumConstraints0dPosition, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraints0dPosition, D>,
 }
 
-impl<'a> EquilibriumConstraints0dPositionSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraints0dPosition]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraints0dPositionSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraints0dPosition, D>) -> Self {
         Self {
-            data,
-            measured: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.measured),
-            position: EquilibriumConstraints0dPositionPositionView::new(data),
-            source: StringAccumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.source.clone()),
-            time_measurement: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.time_measurement),
-            exact: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.exact),
-            weight: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.weight),
-            sigma: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.sigma),
-            reconstructed: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.reconstructed),
-            chi_squared: Accumulator::new(data, |item: &EquilibriumConstraints0dPosition| item.chi_squared),
+            measured: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.measured),
+            position: EquilibriumConstraints0dPositionPositionView::new(elements.clone()),
+            source: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.source.clone()),
+            time_measurement: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.time_measurement),
+            exact: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.exact),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.weight),
+            sigma: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.sigma),
+            reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.reconstructed),
+            chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dPosition| item.chi_squared),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumConstraints0dPosition> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumConstraints0dPosition - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumConstraints0dPositionIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumConstraints0dPosition]) -> Self::Output;
-}
-
-impl<'a> EquilibriumConstraints0dPositionIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumConstraints0dPositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dPosition]) -> Self::Output {
-        EquilibriumConstraints0dPositionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dPositionIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumConstraints0dPositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dPosition]) -> Self::Output {
-        EquilibriumConstraints0dPositionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dPositionIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumConstraints0dPositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dPosition]) -> Self::Output {
-        EquilibriumConstraints0dPositionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dPositionIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumConstraints0dPositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dPosition]) -> Self::Output {
-        EquilibriumConstraints0dPositionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dPositionIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumConstraints0dPositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dPosition]) -> Self::Output {
-        EquilibriumConstraints0dPositionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dPositionIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumConstraints0dPositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dPosition]) -> Self::Output {
-        EquilibriumConstraints0dPositionSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumConstraints0dPosition> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumConstraints0dIpLike View Types ---
 
 /// View over multiple EquilibriumConstraints0dIpLike with field accumulation
-pub struct EquilibriumConstraints0dIpLikeSliceView<'a> {
-    data: &'a [EquilibriumConstraints0dIpLike],
-    pub measured: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D>,
-    pub source: StringAccumulator<'a, EquilibriumConstraints0dIpLike>,
-    pub time_measurement: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D>,
-    pub exact: Accumulator<'a, EquilibriumConstraints0dIpLike, INT_0D>,
-    pub weight: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D>,
-    pub sigma: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D>,
-    pub reconstructed: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D>,
-    pub chi_squared: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D>,
+pub struct EquilibriumConstraints0dIpLikeSliceView<'a, D> {
+    pub measured: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D, D>,
+    pub source: Accumulator<'a, EquilibriumConstraints0dIpLike, STR_0D, D>,
+    pub time_measurement: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D, D>,
+    pub exact: Accumulator<'a, EquilibriumConstraints0dIpLike, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D, D>,
+    pub sigma: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D, D>,
+    pub reconstructed: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D, D>,
+    pub chi_squared: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraints0dIpLike, D>,
 }
 
-impl<'a> EquilibriumConstraints0dIpLikeSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraints0dIpLike]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraints0dIpLikeSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraints0dIpLike, D>) -> Self {
         Self {
-            data,
-            measured: Accumulator::new(data, |item: &EquilibriumConstraints0dIpLike| item.measured),
-            source: StringAccumulator::new(data, |item: &EquilibriumConstraints0dIpLike| item.source.clone()),
-            time_measurement: Accumulator::new(data, |item: &EquilibriumConstraints0dIpLike| item.time_measurement),
-            exact: Accumulator::new(data, |item: &EquilibriumConstraints0dIpLike| item.exact),
-            weight: Accumulator::new(data, |item: &EquilibriumConstraints0dIpLike| item.weight),
-            sigma: Accumulator::new(data, |item: &EquilibriumConstraints0dIpLike| item.sigma),
-            reconstructed: Accumulator::new(data, |item: &EquilibriumConstraints0dIpLike| item.reconstructed),
-            chi_squared: Accumulator::new(data, |item: &EquilibriumConstraints0dIpLike| item.chi_squared),
+            measured: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.measured),
+            source: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.source.clone()),
+            time_measurement: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.time_measurement),
+            exact: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.exact),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.weight),
+            sigma: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.sigma),
+            reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.reconstructed),
+            chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.chi_squared),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumConstraints0dIpLike> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumConstraints0dIpLike - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumConstraints0dIpLikeIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumConstraints0dIpLike]) -> Self::Output;
-}
-
-impl<'a> EquilibriumConstraints0dIpLikeIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumConstraints0dIpLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dIpLike]) -> Self::Output {
-        EquilibriumConstraints0dIpLikeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dIpLikeIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumConstraints0dIpLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dIpLike]) -> Self::Output {
-        EquilibriumConstraints0dIpLikeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dIpLikeIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumConstraints0dIpLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dIpLike]) -> Self::Output {
-        EquilibriumConstraints0dIpLikeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dIpLikeIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumConstraints0dIpLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dIpLike]) -> Self::Output {
-        EquilibriumConstraints0dIpLikeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dIpLikeIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumConstraints0dIpLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dIpLike]) -> Self::Output {
-        EquilibriumConstraints0dIpLikeSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraints0dIpLikeIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumConstraints0dIpLikeSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraints0dIpLike]) -> Self::Output {
-        EquilibriumConstraints0dIpLikeSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumConstraints0dIpLike> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumConstraintsPurePosition View Types ---
 
 /// View over `position_measured` (Rz0dDynamicAos) across multiple EquilibriumConstraintsPurePosition
-pub struct EquilibriumConstraintsPurePositionPositionMeasuredView<'a> {
-    pub r: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D>,
+pub struct EquilibriumConstraintsPurePositionPositionMeasuredView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraintsPurePosition, D>,
 }
 
-impl<'a> EquilibriumConstraintsPurePositionPositionMeasuredView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraintsPurePosition]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraintsPurePositionPositionMeasuredView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraintsPurePosition, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.position_measured.r),
-            z: Accumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.position_measured.z),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.position_measured.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.position_measured.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `position_reconstructed` (Rz0dDynamicAos) across multiple EquilibriumConstraintsPurePosition
-pub struct EquilibriumConstraintsPurePositionPositionReconstructedView<'a> {
-    pub r: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D>,
+pub struct EquilibriumConstraintsPurePositionPositionReconstructedView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraintsPurePosition, D>,
 }
 
-impl<'a> EquilibriumConstraintsPurePositionPositionReconstructedView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraintsPurePosition]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraintsPurePositionPositionReconstructedView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraintsPurePosition, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.position_reconstructed.r),
-            z: Accumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.position_reconstructed.z),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.position_reconstructed.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.position_reconstructed.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple EquilibriumConstraintsPurePosition with field accumulation
-pub struct EquilibriumConstraintsPurePositionSliceView<'a> {
-    data: &'a [EquilibriumConstraintsPurePosition],
-    pub position_measured: EquilibriumConstraintsPurePositionPositionMeasuredView<'a>,
-    pub source: StringAccumulator<'a, EquilibriumConstraintsPurePosition>,
-    pub time_measurement: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D>,
-    pub exact: Accumulator<'a, EquilibriumConstraintsPurePosition, INT_0D>,
-    pub weight: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D>,
-    pub sigma: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D>,
-    pub position_reconstructed: EquilibriumConstraintsPurePositionPositionReconstructedView<'a>,
-    pub chi_squared_r: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D>,
-    pub chi_squared_z: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D>,
+pub struct EquilibriumConstraintsPurePositionSliceView<'a, D> {
+    pub position_measured: EquilibriumConstraintsPurePositionPositionMeasuredView<'a, D>,
+    pub source: Accumulator<'a, EquilibriumConstraintsPurePosition, STR_0D, D>,
+    pub time_measurement: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D, D>,
+    pub exact: Accumulator<'a, EquilibriumConstraintsPurePosition, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D, D>,
+    pub sigma: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D, D>,
+    pub position_reconstructed: EquilibriumConstraintsPurePositionPositionReconstructedView<'a, D>,
+    pub chi_squared_r: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D, D>,
+    pub chi_squared_z: Accumulator<'a, EquilibriumConstraintsPurePosition, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraintsPurePosition, D>,
 }
 
-impl<'a> EquilibriumConstraintsPurePositionSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumConstraintsPurePosition]) -> Self {
+impl<'a, D: Dimension> EquilibriumConstraintsPurePositionSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraintsPurePosition, D>) -> Self {
         Self {
-            data,
-            position_measured: EquilibriumConstraintsPurePositionPositionMeasuredView::new(data),
-            source: StringAccumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.source.clone()),
-            time_measurement: Accumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.time_measurement),
-            exact: Accumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.exact),
-            weight: Accumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.weight),
-            sigma: Accumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.sigma),
-            position_reconstructed: EquilibriumConstraintsPurePositionPositionReconstructedView::new(data),
-            chi_squared_r: Accumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.chi_squared_r),
-            chi_squared_z: Accumulator::new(data, |item: &EquilibriumConstraintsPurePosition| item.chi_squared_z),
+            position_measured: EquilibriumConstraintsPurePositionPositionMeasuredView::new(elements.clone()),
+            source: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.source.clone()),
+            time_measurement: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.time_measurement),
+            exact: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.exact),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.weight),
+            sigma: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.sigma),
+            position_reconstructed: EquilibriumConstraintsPurePositionPositionReconstructedView::new(elements.clone()),
+            chi_squared_r: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.chi_squared_r),
+            chi_squared_z: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsPurePosition| item.chi_squared_z),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumConstraintsPurePosition> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumConstraintsPurePosition - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumConstraintsPurePositionIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumConstraintsPurePosition]) -> Self::Output;
-}
-
-impl<'a> EquilibriumConstraintsPurePositionIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumConstraintsPurePositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsPurePosition]) -> Self::Output {
-        EquilibriumConstraintsPurePositionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraintsPurePositionIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumConstraintsPurePositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsPurePosition]) -> Self::Output {
-        EquilibriumConstraintsPurePositionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraintsPurePositionIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumConstraintsPurePositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsPurePosition]) -> Self::Output {
-        EquilibriumConstraintsPurePositionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraintsPurePositionIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumConstraintsPurePositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsPurePosition]) -> Self::Output {
-        EquilibriumConstraintsPurePositionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraintsPurePositionIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumConstraintsPurePositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsPurePosition]) -> Self::Output {
-        EquilibriumConstraintsPurePositionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumConstraintsPurePositionIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumConstraintsPurePositionSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumConstraintsPurePosition]) -> Self::Output {
-        EquilibriumConstraintsPurePositionSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumConstraintsPurePosition> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridScalar View Types ---
 
 /// View over multiple GenericGridScalar with field accumulation
-pub struct GenericGridScalarSliceView<'a> {
-    data: &'a [GenericGridScalar],
-    pub grid_index: Accumulator<'a, GenericGridScalar, INT_0D>,
-    pub grid_subset_index: Accumulator<'a, GenericGridScalar, INT_0D>,
+pub struct GenericGridScalarSliceView<'a, D> {
+    pub grid_index: Accumulator<'a, GenericGridScalar, INT_0D, D>,
+    pub grid_subset_index: Accumulator<'a, GenericGridScalar, INT_0D, D>,
+    slice_elements: Elements<'a, GenericGridScalar, D>,
 }
 
-impl<'a> GenericGridScalarSliceView<'a> {
-    pub fn new(data: &'a [GenericGridScalar]) -> Self {
+impl<'a, D: Dimension> GenericGridScalarSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridScalar, D>) -> Self {
         Self {
-            data,
-            grid_index: Accumulator::new(data, |item: &GenericGridScalar| item.grid_index),
-            grid_subset_index: Accumulator::new(data, |item: &GenericGridScalar| item.grid_subset_index),
+            grid_index: Accumulator::new(elements.clone(), |item: &GenericGridScalar| item.grid_index),
+            grid_subset_index: Accumulator::new(elements.clone(), |item: &GenericGridScalar| item.grid_subset_index),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridScalar> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridScalar - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridScalarIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output;
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridScalarIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridScalarSliceView<'a>;
-    fn get(self, data: &'a [GenericGridScalar]) -> Self::Output {
-        GenericGridScalarSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridScalar> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridDynamic View Types ---
 
 /// View over `identifier` (IdentifierDynamicAos3) across multiple GenericGridDynamic
-pub struct GenericGridDynamicIdentifierView<'a> {
-    pub name: StringAccumulator<'a, GenericGridDynamic>,
-    pub index: Accumulator<'a, GenericGridDynamic, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridDynamic>,
+pub struct GenericGridDynamicIdentifierView<'a, D> {
+    pub name: Accumulator<'a, GenericGridDynamic, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamic, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridDynamic, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamic, D>,
 }
 
-impl<'a> GenericGridDynamicIdentifierView<'a> {
-    pub fn new(data: &'a [GenericGridDynamic]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicIdentifierView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamic, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamic| item.identifier.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridDynamic| item.identifier.index),
-            description: StringAccumulator::new(data, |item: &GenericGridDynamic| item.identifier.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridDynamic| item.identifier.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamic| item.identifier.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridDynamic| item.identifier.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple GenericGridDynamic with field accumulation
-pub struct GenericGridDynamicSliceView<'a> {
-    data: &'a [GenericGridDynamic],
-    pub identifier: GenericGridDynamicIdentifierView<'a>,
-    pub path: StringAccumulator<'a, GenericGridDynamic>,
+pub struct GenericGridDynamicSliceView<'a, D> {
+    pub identifier: GenericGridDynamicIdentifierView<'a, D>,
+    pub path: Accumulator<'a, GenericGridDynamic, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamic, D>,
 }
 
-impl<'a> GenericGridDynamicSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamic]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamic, D>) -> Self {
         Self {
-            data,
-            identifier: GenericGridDynamicIdentifierView::new(data),
-            path: StringAccumulator::new(data, |item: &GenericGridDynamic| item.path.clone()),
+            identifier: GenericGridDynamicIdentifierView::new(elements.clone()),
+            path: Accumulator::new(elements.clone(), |item: &GenericGridDynamic| item.path.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamic> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamic - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamic]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamic]) -> Self::Output {
-        GenericGridDynamicSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamic> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamic]) -> Self::Output {
-        GenericGridDynamicSliceView::new(&data[self])
+    /// The slice view over a range of `space` under every element, e.g. `.space(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn space<R>(&self, range: R) -> GenericGridDynamicSpaceSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicSpace], Output = [GenericGridDynamicSpace]> + Clone,
+    {
+        GenericGridDynamicSpaceSliceView::new(self.slice_elements.nest("space", |item: &GenericGridDynamic| item.space.as_slice(), range))
     }
-}
 
-impl<'a> GenericGridDynamicIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamic]) -> Self::Output {
-        GenericGridDynamicSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamic]) -> Self::Output {
-        GenericGridDynamicSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamic]) -> Self::Output {
-        GenericGridDynamicSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamic]) -> Self::Output {
-        GenericGridDynamicSliceView::new(data)
+    /// The slice view over a range of `grid_subset` under every element, e.g. `.grid_subset(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn grid_subset<R>(&self, range: R) -> GenericGridDynamicGridSubsetSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubset], Output = [GenericGridDynamicGridSubset]> + Clone,
+    {
+        GenericGridDynamicGridSubsetSliceView::new(
+            self.slice_elements
+                .nest("grid_subset", |item: &GenericGridDynamic| item.grid_subset.as_slice(), range),
+        )
     }
 }
 
 // --- EquilibriumProfiles2d View Types ---
 
 /// View over `type` (IdentifierDynamicAos3) across multiple EquilibriumProfiles2d
-pub struct EquilibriumProfiles2dTypeView<'a> {
-    pub name: StringAccumulator<'a, EquilibriumProfiles2d>,
-    pub index: Accumulator<'a, EquilibriumProfiles2d, INT_0D>,
-    pub description: StringAccumulator<'a, EquilibriumProfiles2d>,
+pub struct EquilibriumProfiles2dTypeView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumProfiles2d, STR_0D, D>,
+    pub index: Accumulator<'a, EquilibriumProfiles2d, INT_0D, D>,
+    pub description: Accumulator<'a, EquilibriumProfiles2d, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumProfiles2d, D>,
 }
 
-impl<'a> EquilibriumProfiles2dTypeView<'a> {
-    pub fn new(data: &'a [EquilibriumProfiles2d]) -> Self {
+impl<'a, D: Dimension> EquilibriumProfiles2dTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumProfiles2d, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &EquilibriumProfiles2d| item.r#type.name.clone()),
-            index: Accumulator::new(data, |item: &EquilibriumProfiles2d| item.r#type.index),
-            description: StringAccumulator::new(data, |item: &EquilibriumProfiles2d| item.r#type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumProfiles2d| item.r#type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &EquilibriumProfiles2d| item.r#type.index),
+            description: Accumulator::new(elements.clone(), |item: &EquilibriumProfiles2d| item.r#type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `grid_type` (IdentifierDynamicAos3) across multiple EquilibriumProfiles2d
-pub struct EquilibriumProfiles2dGridTypeView<'a> {
-    pub name: StringAccumulator<'a, EquilibriumProfiles2d>,
-    pub index: Accumulator<'a, EquilibriumProfiles2d, INT_0D>,
-    pub description: StringAccumulator<'a, EquilibriumProfiles2d>,
+pub struct EquilibriumProfiles2dGridTypeView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumProfiles2d, STR_0D, D>,
+    pub index: Accumulator<'a, EquilibriumProfiles2d, INT_0D, D>,
+    pub description: Accumulator<'a, EquilibriumProfiles2d, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumProfiles2d, D>,
 }
 
-impl<'a> EquilibriumProfiles2dGridTypeView<'a> {
-    pub fn new(data: &'a [EquilibriumProfiles2d]) -> Self {
+impl<'a, D: Dimension> EquilibriumProfiles2dGridTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumProfiles2d, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &EquilibriumProfiles2d| item.grid_type.name.clone()),
-            index: Accumulator::new(data, |item: &EquilibriumProfiles2d| item.grid_type.index),
-            description: StringAccumulator::new(data, |item: &EquilibriumProfiles2d| item.grid_type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumProfiles2d| item.grid_type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &EquilibriumProfiles2d| item.grid_type.index),
+            description: Accumulator::new(elements.clone(), |item: &EquilibriumProfiles2d| item.grid_type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `grid` (EquilibriumProfiles2dGrid) across multiple EquilibriumProfiles2d
-pub struct EquilibriumProfiles2dGridView<'a> {
-    pub d_area: Accumulator<'a, EquilibriumProfiles2d, FLT_0D>,
+pub struct EquilibriumProfiles2dGridView<'a, D> {
+    pub d_area: Accumulator<'a, EquilibriumProfiles2d, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumProfiles2d, D>,
 }
 
-impl<'a> EquilibriumProfiles2dGridView<'a> {
-    pub fn new(data: &'a [EquilibriumProfiles2d]) -> Self {
+impl<'a, D: Dimension> EquilibriumProfiles2dGridView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumProfiles2d, D>) -> Self {
         Self {
-            d_area: Accumulator::new(data, |item: &EquilibriumProfiles2d| item.grid.d_area),
+            d_area: Accumulator::new(elements.clone(), |item: &EquilibriumProfiles2d| item.grid.d_area),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple EquilibriumProfiles2d with field accumulation
-pub struct EquilibriumProfiles2dSliceView<'a> {
-    data: &'a [EquilibriumProfiles2d],
-    pub r#type: EquilibriumProfiles2dTypeView<'a>,
-    pub grid_type: EquilibriumProfiles2dGridTypeView<'a>,
-    pub grid: EquilibriumProfiles2dGridView<'a>,
+pub struct EquilibriumProfiles2dSliceView<'a, D> {
+    pub r#type: EquilibriumProfiles2dTypeView<'a, D>,
+    pub grid_type: EquilibriumProfiles2dGridTypeView<'a, D>,
+    pub grid: EquilibriumProfiles2dGridView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumProfiles2d, D>,
 }
 
-impl<'a> EquilibriumProfiles2dSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumProfiles2d]) -> Self {
+impl<'a, D: Dimension> EquilibriumProfiles2dSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumProfiles2d, D>) -> Self {
         Self {
-            data,
-            r#type: EquilibriumProfiles2dTypeView::new(data),
-            grid_type: EquilibriumProfiles2dGridTypeView::new(data),
-            grid: EquilibriumProfiles2dGridView::new(data),
+            r#type: EquilibriumProfiles2dTypeView::new(elements.clone()),
+            grid_type: EquilibriumProfiles2dGridTypeView::new(elements.clone()),
+            grid: EquilibriumProfiles2dGridView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumProfiles2d> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumProfiles2d - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumProfiles2dIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumProfiles2d]) -> Self::Output;
-}
-
-impl<'a> EquilibriumProfiles2dIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumProfiles2dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumProfiles2d]) -> Self::Output {
-        EquilibriumProfiles2dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumProfiles2dIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumProfiles2dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumProfiles2d]) -> Self::Output {
-        EquilibriumProfiles2dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumProfiles2dIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumProfiles2dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumProfiles2d]) -> Self::Output {
-        EquilibriumProfiles2dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumProfiles2dIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumProfiles2dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumProfiles2d]) -> Self::Output {
-        EquilibriumProfiles2dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumProfiles2dIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumProfiles2dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumProfiles2d]) -> Self::Output {
-        EquilibriumProfiles2dSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumProfiles2dIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumProfiles2dSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumProfiles2d]) -> Self::Output {
-        EquilibriumProfiles2dSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumProfiles2d> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumGgd View Types ---
 
 /// View over multiple EquilibriumGgd with field accumulation
-pub struct EquilibriumGgdSliceView<'a> {
-    data: &'a [EquilibriumGgd],
+pub struct EquilibriumGgdSliceView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumGgd, D>,
 }
 
-impl<'a> EquilibriumGgdSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumGgd]) -> Self {
-        Self { data }
+impl<'a, D: Dimension> EquilibriumGgdSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGgd, D>) -> Self {
+        Self { slice_elements: elements }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumGgd> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumGgd - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumGgdIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumGgd]) -> Self::Output;
-}
-
-impl<'a> EquilibriumGgdIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumGgdSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgd]) -> Self::Output {
-        EquilibriumGgdSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGgd> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> EquilibriumGgdIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumGgdSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgd]) -> Self::Output {
-        EquilibriumGgdSliceView::new(&data[self])
+    /// The slice view over a range of `r` under every element, e.g. `.r(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn r<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest("r", |item: &EquilibriumGgd| item.r.as_slice(), range))
     }
-}
 
-impl<'a> EquilibriumGgdIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumGgdSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgd]) -> Self::Output {
-        EquilibriumGgdSliceView::new(&data[self])
+    /// The slice view over a range of `z` under every element, e.g. `.z(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn z<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest("z", |item: &EquilibriumGgd| item.z.as_slice(), range))
     }
-}
 
-impl<'a> EquilibriumGgdIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumGgdSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgd]) -> Self::Output {
-        EquilibriumGgdSliceView::new(&data[self])
+    /// The slice view over a range of `psi` under every element, e.g. `.psi(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn psi<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest("psi", |item: &EquilibriumGgd| item.psi.as_slice(), range))
     }
-}
 
-impl<'a> EquilibriumGgdIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumGgdSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgd]) -> Self::Output {
-        EquilibriumGgdSliceView::new(&data[self])
+    /// The slice view over a range of `phi` under every element, e.g. `.phi(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn phi<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest("phi", |item: &EquilibriumGgd| item.phi.as_slice(), range))
     }
-}
 
-impl<'a> EquilibriumGgdIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumGgdSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgd]) -> Self::Output {
-        EquilibriumGgdSliceView::new(data)
+    /// The slice view over a range of `theta` under every element, e.g. `.theta(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn theta<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest("theta", |item: &EquilibriumGgd| item.theta.as_slice(), range))
+    }
+
+    /// The slice view over a range of `j_phi` under every element, e.g. `.j_phi(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn j_phi<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest("j_phi", |item: &EquilibriumGgd| item.j_phi.as_slice(), range))
+    }
+
+    /// The slice view over a range of `j_parallel` under every element, e.g. `.j_parallel(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn j_parallel<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("j_parallel", |item: &EquilibriumGgd| item.j_parallel.as_slice(), range),
+        )
+    }
+
+    /// The slice view over a range of `b_field_r` under every element, e.g. `.b_field_r(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn b_field_r<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest("b_field_r", |item: &EquilibriumGgd| item.b_field_r.as_slice(), range))
+    }
+
+    /// The slice view over a range of `b_field_phi` under every element, e.g. `.b_field_phi(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn b_field_phi<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(
+            self.slice_elements
+                .nest("b_field_phi", |item: &EquilibriumGgd| item.b_field_phi.as_slice(), range),
+        )
+    }
+
+    /// The slice view over a range of `b_field_z` under every element, e.g. `.b_field_z(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn b_field_z<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+    {
+        GenericGridScalarSliceView::new(self.slice_elements.nest("b_field_z", |item: &EquilibriumGgd| item.b_field_z.as_slice(), range))
     }
 }
 
 // --- GenericGridDynamicSpace View Types ---
 
 /// View over `identifier` (IdentifierDynamicAos3) across multiple GenericGridDynamicSpace
-pub struct GenericGridDynamicSpaceIdentifierView<'a> {
-    pub name: StringAccumulator<'a, GenericGridDynamicSpace>,
-    pub index: Accumulator<'a, GenericGridDynamicSpace, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridDynamicSpace>,
+pub struct GenericGridDynamicSpaceIdentifierView<'a, D> {
+    pub name: Accumulator<'a, GenericGridDynamicSpace, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamicSpace, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridDynamicSpace, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpace, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceIdentifierView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpace]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceIdentifierView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpace, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.index),
-            description: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.identifier.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.identifier.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.identifier.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.identifier.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `geometry_type` (IdentifierDynamicAos3) across multiple GenericGridDynamicSpace
-pub struct GenericGridDynamicSpaceGeometryTypeView<'a> {
-    pub name: StringAccumulator<'a, GenericGridDynamicSpace>,
-    pub index: Accumulator<'a, GenericGridDynamicSpace, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridDynamicSpace>,
+pub struct GenericGridDynamicSpaceGeometryTypeView<'a, D> {
+    pub name: Accumulator<'a, GenericGridDynamicSpace, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamicSpace, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridDynamicSpace, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpace, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceGeometryTypeView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpace]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceGeometryTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpace, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.index),
-            description: StringAccumulator::new(data, |item: &GenericGridDynamicSpace| item.geometry_type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.geometry_type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.geometry_type.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpace| item.geometry_type.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple GenericGridDynamicSpace with field accumulation
-pub struct GenericGridDynamicSpaceSliceView<'a> {
-    data: &'a [GenericGridDynamicSpace],
-    pub identifier: GenericGridDynamicSpaceIdentifierView<'a>,
-    pub geometry_type: GenericGridDynamicSpaceGeometryTypeView<'a>,
+pub struct GenericGridDynamicSpaceSliceView<'a, D> {
+    pub identifier: GenericGridDynamicSpaceIdentifierView<'a, D>,
+    pub geometry_type: GenericGridDynamicSpaceGeometryTypeView<'a, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpace, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpace]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpace, D>) -> Self {
         Self {
-            data,
-            identifier: GenericGridDynamicSpaceIdentifierView::new(data),
-            geometry_type: GenericGridDynamicSpaceGeometryTypeView::new(data),
+            identifier: GenericGridDynamicSpaceIdentifierView::new(elements.clone()),
+            geometry_type: GenericGridDynamicSpaceGeometryTypeView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicSpace> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicSpace - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicSpaceIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpace> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(&data[self])
+    /// The slice view over a range of `coordinates_type` under every element, e.g. `.coordinates_type(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn coordinates_type<R>(&self, range: R) -> IdentifierDynamicAos3SliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[IdentifierDynamicAos3], Output = [IdentifierDynamicAos3]> + Clone,
+    {
+        IdentifierDynamicAos3SliceView::new(self.slice_elements.nest(
+            "coordinates_type",
+            |item: &GenericGridDynamicSpace| item.coordinates_type.as_slice(),
+            range,
+        ))
     }
-}
 
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpace]) -> Self::Output {
-        GenericGridDynamicSpaceSliceView::new(data)
+    /// The slice view over a range of `objects_per_dimension` under every element, e.g. `.objects_per_dimension(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn objects_per_dimension<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimension], Output = [GenericGridDynamicSpaceDimension]> + Clone,
+    {
+        GenericGridDynamicSpaceDimensionSliceView::new(self.slice_elements.nest(
+            "objects_per_dimension",
+            |item: &GenericGridDynamicSpace| item.objects_per_dimension.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- GenericGridDynamicGridSubset View Types ---
 
 /// View over `identifier` (IdentifierDynamicAos3) across multiple GenericGridDynamicGridSubset
-pub struct GenericGridDynamicGridSubsetIdentifierView<'a> {
-    pub name: StringAccumulator<'a, GenericGridDynamicGridSubset>,
-    pub index: Accumulator<'a, GenericGridDynamicGridSubset, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridDynamicGridSubset>,
+pub struct GenericGridDynamicGridSubsetIdentifierView<'a, D> {
+    pub name: Accumulator<'a, GenericGridDynamicGridSubset, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamicGridSubset, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridDynamicGridSubset, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicGridSubset, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetIdentifierView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicGridSubset]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetIdentifierView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubset, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.index),
-            description: StringAccumulator::new(data, |item: &GenericGridDynamicGridSubset| item.identifier.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubset| item.identifier.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubset| item.identifier.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubset| item.identifier.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `metric` (GenericGridDynamicGridSubsetMetric) across multiple GenericGridDynamicGridSubset
-pub struct GenericGridDynamicGridSubsetMetricView<'a> {
-    _phantom: std::marker::PhantomData<&'a GenericGridDynamicGridSubset>,
+pub struct GenericGridDynamicGridSubsetMetricView<'a, D> {
+    slice_elements: Elements<'a, GenericGridDynamicGridSubset, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetMetricView<'a> {
-    pub fn new(_data: &'a [GenericGridDynamicGridSubset]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetMetricView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubset, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over multiple GenericGridDynamicGridSubset with field accumulation
-pub struct GenericGridDynamicGridSubsetSliceView<'a> {
-    data: &'a [GenericGridDynamicGridSubset],
-    pub identifier: GenericGridDynamicGridSubsetIdentifierView<'a>,
-    pub dimension: Accumulator<'a, GenericGridDynamicGridSubset, INT_0D>,
-    pub metric: GenericGridDynamicGridSubsetMetricView<'a>,
+pub struct GenericGridDynamicGridSubsetSliceView<'a, D> {
+    pub identifier: GenericGridDynamicGridSubsetIdentifierView<'a, D>,
+    pub dimension: Accumulator<'a, GenericGridDynamicGridSubset, INT_0D, D>,
+    pub metric: GenericGridDynamicGridSubsetMetricView<'a, D>,
+    slice_elements: Elements<'a, GenericGridDynamicGridSubset, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicGridSubset]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubset, D>) -> Self {
         Self {
-            data,
-            identifier: GenericGridDynamicGridSubsetIdentifierView::new(data),
-            dimension: Accumulator::new(data, |item: &GenericGridDynamicGridSubset| item.dimension),
-            metric: GenericGridDynamicGridSubsetMetricView::new(data),
+            identifier: GenericGridDynamicGridSubsetIdentifierView::new(elements.clone()),
+            dimension: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubset| item.dimension),
+            metric: GenericGridDynamicGridSubsetMetricView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicGridSubset> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicGridSubset - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicGridSubsetIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubset> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(&data[self])
+    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn element<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetElement], Output = [GenericGridDynamicGridSubsetElement]> + Clone,
+    {
+        GenericGridDynamicGridSubsetElementSliceView::new(self.slice_elements.nest(
+            "element",
+            |item: &GenericGridDynamicGridSubset| item.element.as_slice(),
+            range,
+        ))
     }
-}
 
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubset]) -> Self::Output {
-        GenericGridDynamicGridSubsetSliceView::new(data)
+    /// The slice view over a range of `base` under every element, e.g. `.base(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn base<R>(&self, range: R) -> GenericGridDynamicGridSubsetMetricSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetMetric], Output = [GenericGridDynamicGridSubsetMetric]> + Clone,
+    {
+        GenericGridDynamicGridSubsetMetricSliceView::new(
+            self.slice_elements
+                .nest("base", |item: &GenericGridDynamicGridSubset| item.base.as_slice(), range),
+        )
     }
 }
 
 // --- Library View Types ---
 
 /// View over multiple Library with field accumulation
-pub struct LibrarySliceView<'a> {
-    data: &'a [Library],
-    pub name: StringAccumulator<'a, Library>,
-    pub description: StringAccumulator<'a, Library>,
-    pub commit: StringAccumulator<'a, Library>,
-    pub version: StringAccumulator<'a, Library>,
-    pub repository: StringAccumulator<'a, Library>,
-    pub parameters: StringAccumulator<'a, Library>,
+pub struct LibrarySliceView<'a, D> {
+    pub name: Accumulator<'a, Library, STR_0D, D>,
+    pub description: Accumulator<'a, Library, STR_0D, D>,
+    pub commit: Accumulator<'a, Library, STR_0D, D>,
+    pub version: Accumulator<'a, Library, STR_0D, D>,
+    pub repository: Accumulator<'a, Library, STR_0D, D>,
+    pub parameters: Accumulator<'a, Library, STR_0D, D>,
+    slice_elements: Elements<'a, Library, D>,
 }
 
-impl<'a> LibrarySliceView<'a> {
-    pub fn new(data: &'a [Library]) -> Self {
+impl<'a, D: Dimension> LibrarySliceView<'a, D> {
+    pub fn new(elements: Elements<'a, Library, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &Library| item.name.clone()),
-            description: StringAccumulator::new(data, |item: &Library| item.description.clone()),
-            commit: StringAccumulator::new(data, |item: &Library| item.commit.clone()),
-            version: StringAccumulator::new(data, |item: &Library| item.version.clone()),
-            repository: StringAccumulator::new(data, |item: &Library| item.repository.clone()),
-            parameters: StringAccumulator::new(data, |item: &Library| item.parameters.clone()),
+            name: Accumulator::new(elements.clone(), |item: &Library| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &Library| item.description.clone()),
+            commit: Accumulator::new(elements.clone(), |item: &Library| item.commit.clone()),
+            version: Accumulator::new(elements.clone(), |item: &Library| item.version.clone()),
+            repository: Accumulator::new(elements.clone(), |item: &Library| item.repository.clone()),
+            parameters: Accumulator::new(elements.clone(), |item: &Library| item.parameters.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Library> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for Library - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait LibraryIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [Library]) -> Self::Output;
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::Range<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> LibraryIndex<'a> for std::ops::RangeFull {
-    type Output = LibrarySliceView<'a>;
-    fn get(self, data: &'a [Library]) -> Self::Output {
-        LibrarySliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a Library> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- IdentifierDynamicAos3 View Types ---
 
 /// View over multiple IdentifierDynamicAos3 with field accumulation
-pub struct IdentifierDynamicAos3SliceView<'a> {
-    data: &'a [IdentifierDynamicAos3],
-    pub name: StringAccumulator<'a, IdentifierDynamicAos3>,
-    pub index: Accumulator<'a, IdentifierDynamicAos3, INT_0D>,
-    pub description: StringAccumulator<'a, IdentifierDynamicAos3>,
+pub struct IdentifierDynamicAos3SliceView<'a, D> {
+    pub name: Accumulator<'a, IdentifierDynamicAos3, STR_0D, D>,
+    pub index: Accumulator<'a, IdentifierDynamicAos3, INT_0D, D>,
+    pub description: Accumulator<'a, IdentifierDynamicAos3, STR_0D, D>,
+    slice_elements: Elements<'a, IdentifierDynamicAos3, D>,
 }
 
-impl<'a> IdentifierDynamicAos3SliceView<'a> {
-    pub fn new(data: &'a [IdentifierDynamicAos3]) -> Self {
+impl<'a, D: Dimension> IdentifierDynamicAos3SliceView<'a, D> {
+    pub fn new(elements: Elements<'a, IdentifierDynamicAos3, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &IdentifierDynamicAos3| item.name.clone()),
-            index: Accumulator::new(data, |item: &IdentifierDynamicAos3| item.index),
-            description: StringAccumulator::new(data, |item: &IdentifierDynamicAos3| item.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &IdentifierDynamicAos3| item.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &IdentifierDynamicAos3| item.index),
+            description: Accumulator::new(elements.clone(), |item: &IdentifierDynamicAos3| item.description.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &IdentifierDynamicAos3> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for IdentifierDynamicAos3 - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait IdentifierDynamicAos3Index<'a> {
-    type Output;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output;
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::Range<usize> {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeFrom<usize> {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeTo<usize> {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeInclusive<usize> {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(&data[self])
-    }
-}
-
-impl<'a> IdentifierDynamicAos3Index<'a> for std::ops::RangeFull {
-    type Output = IdentifierDynamicAos3SliceView<'a>;
-    fn get(self, data: &'a [IdentifierDynamicAos3]) -> Self::Output {
-        IdentifierDynamicAos3SliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a IdentifierDynamicAos3> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridDynamicSpaceDimension View Types ---
 
 /// View over `geometry_content` (IdentifierDynamicAos3) across multiple GenericGridDynamicSpaceDimension
-pub struct GenericGridDynamicSpaceDimensionGeometryContentView<'a> {
-    pub name: StringAccumulator<'a, GenericGridDynamicSpaceDimension>,
-    pub index: Accumulator<'a, GenericGridDynamicSpaceDimension, INT_0D>,
-    pub description: StringAccumulator<'a, GenericGridDynamicSpaceDimension>,
+pub struct GenericGridDynamicSpaceDimensionGeometryContentView<'a, D> {
+    pub name: Accumulator<'a, GenericGridDynamicSpaceDimension, STR_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamicSpaceDimension, INT_0D, D>,
+    pub description: Accumulator<'a, GenericGridDynamicSpaceDimension, STR_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpaceDimension, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceDimensionGeometryContentView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpaceDimension]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionGeometryContentView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpaceDimension, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &GenericGridDynamicSpaceDimension| item.geometry_content.name.clone()),
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimension| item.geometry_content.index),
-            description: StringAccumulator::new(data, |item: &GenericGridDynamicSpaceDimension| item.geometry_content.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpaceDimension| item.geometry_content.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpaceDimension| item.geometry_content.index),
+            description: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpaceDimension| {
+                item.geometry_content.description.clone()
+            }),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple GenericGridDynamicSpaceDimension with field accumulation
-pub struct GenericGridDynamicSpaceDimensionSliceView<'a> {
-    data: &'a [GenericGridDynamicSpaceDimension],
-    pub geometry_content: GenericGridDynamicSpaceDimensionGeometryContentView<'a>,
+pub struct GenericGridDynamicSpaceDimensionSliceView<'a, D> {
+    pub geometry_content: GenericGridDynamicSpaceDimensionGeometryContentView<'a, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpaceDimension, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceDimensionSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpaceDimension]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpaceDimension, D>) -> Self {
         Self {
-            data,
-            geometry_content: GenericGridDynamicSpaceDimensionGeometryContentView::new(data),
+            geometry_content: GenericGridDynamicSpaceDimensionGeometryContentView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicSpaceDimension> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicSpaceDimension - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicSpaceDimensionIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpaceDimension> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceDimensionSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimension]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionSliceView::new(data)
+    /// The slice view over a range of `object` under every element, e.g. `.object(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn object<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimensionObject], Output = [GenericGridDynamicSpaceDimensionObject]> + Clone,
+    {
+        GenericGridDynamicSpaceDimensionObjectSliceView::new(self.slice_elements.nest(
+            "object",
+            |item: &GenericGridDynamicSpaceDimension| item.object.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- GenericGridDynamicGridSubsetElement View Types ---
 
 /// View over multiple GenericGridDynamicGridSubsetElement with field accumulation
-pub struct GenericGridDynamicGridSubsetElementSliceView<'a> {
-    data: &'a [GenericGridDynamicGridSubsetElement],
+pub struct GenericGridDynamicGridSubsetElementSliceView<'a, D> {
+    slice_elements: Elements<'a, GenericGridDynamicGridSubsetElement, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetElementSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicGridSubsetElement]) -> Self {
-        Self { data }
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetElementSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubsetElement, D>) -> Self {
+        Self { slice_elements: elements }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicGridSubsetElement> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicGridSubsetElement - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicGridSubsetElementIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubsetElement> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetElementSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElement]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementSliceView::new(data)
+    /// The slice view over a range of `object` under every element, e.g. `.object(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn object<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementObjectSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetElementObject], Output = [GenericGridDynamicGridSubsetElementObject]> + Clone,
+    {
+        GenericGridDynamicGridSubsetElementObjectSliceView::new(self.slice_elements.nest(
+            "object",
+            |item: &GenericGridDynamicGridSubsetElement| item.object.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- GenericGridDynamicGridSubsetMetric View Types ---
 
 /// View over multiple GenericGridDynamicGridSubsetMetric with field accumulation
-pub struct GenericGridDynamicGridSubsetMetricSliceView<'a> {
-    data: &'a [GenericGridDynamicGridSubsetMetric],
+pub struct GenericGridDynamicGridSubsetMetricSliceView<'a, D> {
+    slice_elements: Elements<'a, GenericGridDynamicGridSubsetMetric, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetMetricSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self {
-        Self { data }
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetMetricSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubsetMetric, D>) -> Self {
+        Self { slice_elements: elements }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicGridSubsetMetric> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicGridSubsetMetric - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicGridSubsetMetricIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetMetricIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetMetricSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetMetric]) -> Self::Output {
-        GenericGridDynamicGridSubsetMetricSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubsetMetric> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridDynamicSpaceDimensionObject View Types ---
 
 /// View over multiple GenericGridDynamicSpaceDimensionObject with field accumulation
-pub struct GenericGridDynamicSpaceDimensionObjectSliceView<'a> {
-    data: &'a [GenericGridDynamicSpaceDimensionObject],
-    pub measure: Accumulator<'a, GenericGridDynamicSpaceDimensionObject, FLT_0D>,
+pub struct GenericGridDynamicSpaceDimensionObjectSliceView<'a, D> {
+    pub measure: Accumulator<'a, GenericGridDynamicSpaceDimensionObject, FLT_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpaceDimensionObject, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceDimensionObjectSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionObjectSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpaceDimensionObject, D>) -> Self {
         Self {
-            data,
-            measure: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimensionObject| item.measure),
+            measure: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpaceDimensionObject| item.measure),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicSpaceDimensionObject> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicSpaceDimensionObject - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicSpaceDimensionObjectIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpaceDimensionObject> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceDimensionObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObject]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(data)
+    /// The slice view over a range of `boundary` under every element, e.g. `.boundary(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn boundary<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimensionObjectBoundary], Output = [GenericGridDynamicSpaceDimensionObjectBoundary]> + Clone,
+    {
+        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(self.slice_elements.nest(
+            "boundary",
+            |item: &GenericGridDynamicSpaceDimensionObject| item.boundary.as_slice(),
+            range,
+        ))
     }
 }
 
 // --- GenericGridDynamicGridSubsetElementObject View Types ---
 
 /// View over multiple GenericGridDynamicGridSubsetElementObject with field accumulation
-pub struct GenericGridDynamicGridSubsetElementObjectSliceView<'a> {
-    data: &'a [GenericGridDynamicGridSubsetElementObject],
-    pub space: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D>,
-    pub dimension: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D>,
-    pub index: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D>,
+pub struct GenericGridDynamicGridSubsetElementObjectSliceView<'a, D> {
+    pub space: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D, D>,
+    pub dimension: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D, D>,
+    pub index: Accumulator<'a, GenericGridDynamicGridSubsetElementObject, INT_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicGridSubsetElementObject, D>,
 }
 
-impl<'a> GenericGridDynamicGridSubsetElementObjectSliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicGridSubsetElementObjectSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicGridSubsetElementObject, D>) -> Self {
         Self {
-            data,
-            space: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.space),
-            dimension: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.dimension),
-            index: Accumulator::new(data, |item: &GenericGridDynamicGridSubsetElementObject| item.index),
+            space: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubsetElementObject| item.space),
+            dimension: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubsetElementObject| item.dimension),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicGridSubsetElementObject| item.index),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicGridSubsetElementObject> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicGridSubsetElementObject - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicGridSubsetElementObjectIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicGridSubsetElementObjectIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicGridSubsetElementObjectSliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicGridSubsetElementObject]) -> Self::Output {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubsetElementObject> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- GenericGridDynamicSpaceDimensionObjectBoundary View Types ---
 
 /// View over multiple GenericGridDynamicSpaceDimensionObjectBoundary with field accumulation
-pub struct GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a> {
-    data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary],
-    pub index: Accumulator<'a, GenericGridDynamicSpaceDimensionObjectBoundary, INT_0D>,
+pub struct GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D> {
+    pub index: Accumulator<'a, GenericGridDynamicSpaceDimensionObjectBoundary, INT_0D, D>,
+    slice_elements: Elements<'a, GenericGridDynamicSpaceDimensionObjectBoundary, D>,
 }
 
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a> {
-    pub fn new(data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self {
+impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D> {
+    pub fn new(elements: Elements<'a, GenericGridDynamicSpaceDimensionObjectBoundary, D>) -> Self {
         Self {
-            data,
-            index: Accumulator::new(data, |item: &GenericGridDynamicSpaceDimensionObjectBoundary| item.index),
+            index: Accumulator::new(elements.clone(), |item: &GenericGridDynamicSpaceDimensionObjectBoundary| item.index),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &GenericGridDynamicSpaceDimensionObjectBoundary> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for GenericGridDynamicSpaceDimensionObjectBoundary - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output;
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::Range<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(&data[self])
-    }
-}
-
-impl<'a> GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a> for std::ops::RangeFull {
-    type Output = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a>;
-    fn get(self, data: &'a [GenericGridDynamicSpaceDimensionObjectBoundary]) -> Self::Output {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpaceDimensionObjectBoundary> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumGreensPfActive View Types ---
 
 /// View over multiple EquilibriumGreensPfActive with field accumulation
-pub struct EquilibriumGreensPfActiveSliceView<'a> {
-    data: &'a [EquilibriumGreensPfActive],
-    pub name: StringAccumulator<'a, EquilibriumGreensPfActive>,
+pub struct EquilibriumGreensPfActiveSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumGreensPfActive, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGreensPfActive, D>,
 }
 
-impl<'a> EquilibriumGreensPfActiveSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumGreensPfActive]) -> Self {
+impl<'a, D: Dimension> EquilibriumGreensPfActiveSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGreensPfActive, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &EquilibriumGreensPfActive| item.name.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensPfActive| item.name.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumGreensPfActive> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumGreensPfActive - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumGreensPfActiveIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output;
-}
-
-impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumGreensPfActiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
-        EquilibriumGreensPfActiveSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumGreensPfActiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
-        EquilibriumGreensPfActiveSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumGreensPfActiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
-        EquilibriumGreensPfActiveSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumGreensPfActiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
-        EquilibriumGreensPfActiveSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumGreensPfActiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
-        EquilibriumGreensPfActiveSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfActiveIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumGreensPfActiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfActive]) -> Self::Output {
-        EquilibriumGreensPfActiveSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensPfActive> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumGreensPfPassive View Types ---
 
 /// View over multiple EquilibriumGreensPfPassive with field accumulation
-pub struct EquilibriumGreensPfPassiveSliceView<'a> {
-    data: &'a [EquilibriumGreensPfPassive],
-    pub name: StringAccumulator<'a, EquilibriumGreensPfPassive>,
+pub struct EquilibriumGreensPfPassiveSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumGreensPfPassive, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGreensPfPassive, D>,
 }
 
-impl<'a> EquilibriumGreensPfPassiveSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumGreensPfPassive]) -> Self {
+impl<'a, D: Dimension> EquilibriumGreensPfPassiveSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGreensPfPassive, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &EquilibriumGreensPfPassive| item.name.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensPfPassive| item.name.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumGreensPfPassive> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumGreensPfPassive - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumGreensPfPassiveIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output;
-}
-
-impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
-        EquilibriumGreensPfPassiveSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensPfPassive> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
-        EquilibriumGreensPfPassiveSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
-        EquilibriumGreensPfPassiveSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
-        EquilibriumGreensPfPassiveSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
-        EquilibriumGreensPfPassiveSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfPassiveIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumGreensPfPassiveSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassive]) -> Self::Output {
-        EquilibriumGreensPfPassiveSliceView::new(data)
+    /// The slice view over a range of `dof` under every element, e.g. `.dof(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn dof<R>(&self, range: R) -> EquilibriumGreensPfPassiveDofSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumGreensPfPassiveDof], Output = [EquilibriumGreensPfPassiveDof]> + Clone,
+    {
+        EquilibriumGreensPfPassiveDofSliceView::new(self.slice_elements.nest("dof", |item: &EquilibriumGreensPfPassive| item.dof.as_slice(), range))
     }
 }
 
 // --- EquilibriumGreensPfPassiveDof View Types ---
 
 /// View over multiple EquilibriumGreensPfPassiveDof with field accumulation
-pub struct EquilibriumGreensPfPassiveDofSliceView<'a> {
-    data: &'a [EquilibriumGreensPfPassiveDof],
-    pub name: StringAccumulator<'a, EquilibriumGreensPfPassiveDof>,
+pub struct EquilibriumGreensPfPassiveDofSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumGreensPfPassiveDof, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGreensPfPassiveDof, D>,
 }
 
-impl<'a> EquilibriumGreensPfPassiveDofSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumGreensPfPassiveDof]) -> Self {
+impl<'a, D: Dimension> EquilibriumGreensPfPassiveDofSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGreensPfPassiveDof, D>) -> Self {
         Self {
-            data,
-            name: StringAccumulator::new(data, |item: &EquilibriumGreensPfPassiveDof| item.name.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensPfPassiveDof| item.name.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumGreensPfPassiveDof> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumGreensPfPassiveDof - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumGreensPfPassiveDofIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output;
-}
-
-impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
-        EquilibriumGreensPfPassiveDofSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
-        EquilibriumGreensPfPassiveDofSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
-        EquilibriumGreensPfPassiveDofSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
-        EquilibriumGreensPfPassiveDofSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
-        EquilibriumGreensPfPassiveDofSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGreensPfPassiveDofIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumGreensPfPassiveDofSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGreensPfPassiveDof]) -> Self::Output {
-        EquilibriumGreensPfPassiveDofSliceView::new(data)
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensPfPassiveDof> + '_ {
+        self.slice_elements.iter()
     }
 }
 
 // --- EquilibriumGgdArray View Types ---
 
 /// View over multiple EquilibriumGgdArray with field accumulation
-pub struct EquilibriumGgdArraySliceView<'a> {
-    data: &'a [EquilibriumGgdArray],
-    pub time: Accumulator<'a, EquilibriumGgdArray, FLT_0D>,
+pub struct EquilibriumGgdArraySliceView<'a, D> {
+    pub time: Accumulator<'a, EquilibriumGgdArray, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGgdArray, D>,
 }
 
-impl<'a> EquilibriumGgdArraySliceView<'a> {
-    pub fn new(data: &'a [EquilibriumGgdArray]) -> Self {
+impl<'a, D: Dimension> EquilibriumGgdArraySliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGgdArray, D>) -> Self {
         Self {
-            data,
-            time: Accumulator::new(data, |item: &EquilibriumGgdArray| item.time),
+            time: Accumulator::new(elements.clone(), |item: &EquilibriumGgdArray| item.time),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumGgdArray> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumGgdArray - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumGgdArrayIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumGgdArray]) -> Self::Output;
-}
-
-impl<'a> EquilibriumGgdArrayIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumGgdArraySliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgdArray]) -> Self::Output {
-        EquilibriumGgdArraySliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGgdArray> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> EquilibriumGgdArrayIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumGgdArraySliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgdArray]) -> Self::Output {
-        EquilibriumGgdArraySliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGgdArrayIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumGgdArraySliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgdArray]) -> Self::Output {
-        EquilibriumGgdArraySliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGgdArrayIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumGgdArraySliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgdArray]) -> Self::Output {
-        EquilibriumGgdArraySliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGgdArrayIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumGgdArraySliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgdArray]) -> Self::Output {
-        EquilibriumGgdArraySliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumGgdArrayIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumGgdArraySliceView<'a>;
-    fn get(self, data: &'a [EquilibriumGgdArray]) -> Self::Output {
-        EquilibriumGgdArraySliceView::new(data)
+    /// The slice view over a range of `grid` under every element, e.g. `.grid(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn grid<R>(&self, range: R) -> GenericGridDynamicSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[GenericGridDynamic], Output = [GenericGridDynamic]> + Clone,
+    {
+        GenericGridDynamicSliceView::new(self.slice_elements.nest("grid", |item: &EquilibriumGgdArray| item.grid.as_slice(), range))
     }
 }
 
 // --- EquilibriumTimeSlice View Types ---
 
 /// View over `boundary.outline` (Rz1dDynamicAos) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceBoundaryOutlineView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceBoundaryOutlineView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceBoundaryOutlineView<'a> {
-    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> EquilibriumTimeSliceBoundaryOutlineView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `boundary.geometric_axis` (Rz0dDynamicAos) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceBoundaryGeometricAxisView<'a> {
-    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceBoundaryGeometricAxisView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceBoundaryGeometricAxisView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceBoundaryGeometricAxisView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.geometric_axis.r),
-            z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.geometric_axis.z),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.geometric_axis.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.geometric_axis.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `boundary.closest_wall_point` (EquilibriumBoundaryClosest) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceBoundaryClosestWallPointView<'a> {
-    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub distance: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceBoundaryClosestWallPointView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub distance: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceBoundaryClosestWallPointView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceBoundaryClosestWallPointView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.closest_wall_point.r),
-            z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.closest_wall_point.z),
-            distance: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.closest_wall_point.distance),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.closest_wall_point.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.closest_wall_point.z),
+            distance: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.closest_wall_point.distance),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `boundary.dr_dz_zero_point` (Rz0dDynamicAos) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceBoundaryDrDzZeroPointView<'a> {
-    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceBoundaryDrDzZeroPointView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceBoundaryDrDzZeroPointView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceBoundaryDrDzZeroPointView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.dr_dz_zero_point.r),
-            z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.dr_dz_zero_point.z),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.dr_dz_zero_point.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.dr_dz_zero_point.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `boundary.bounding` (EquilibriumBoundaryBounding) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceBoundaryBoundingView<'a> {
-    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceBoundaryBoundingView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceBoundaryBoundingView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceBoundaryBoundingView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.bounding.r),
-            z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.bounding.z),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.bounding.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.bounding.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `boundary` (EquilibriumBoundary) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceBoundaryView<'a> {
-    pub r#type: Accumulator<'a, EquilibriumTimeSlice, INT_0D>,
-    pub outline: EquilibriumTimeSliceBoundaryOutlineView<'a>,
-    pub psi_norm: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub psi: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub geometric_axis: EquilibriumTimeSliceBoundaryGeometricAxisView<'a>,
-    pub minor_radius: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub elongation: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub triangularity: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub triangularity_upper: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub triangularity_lower: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub squareness_upper_inner: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub squareness_upper_outer: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub squareness_lower_inner: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub squareness_lower_outer: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub closest_wall_point: EquilibriumTimeSliceBoundaryClosestWallPointView<'a>,
-    pub dr_dz_zero_point: EquilibriumTimeSliceBoundaryDrDzZeroPointView<'a>,
-    pub rho_tor: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub phi: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub phi_poloidal_current: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub bounding: EquilibriumTimeSliceBoundaryBoundingView<'a>,
+pub struct EquilibriumTimeSliceBoundaryView<'a, D> {
+    pub r#type: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
+    pub outline: EquilibriumTimeSliceBoundaryOutlineView<'a, D>,
+    pub psi_norm: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub psi: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub geometric_axis: EquilibriumTimeSliceBoundaryGeometricAxisView<'a, D>,
+    pub minor_radius: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub elongation: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub triangularity: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub triangularity_upper: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub triangularity_lower: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub squareness_upper_inner: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub squareness_upper_outer: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub squareness_lower_inner: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub squareness_lower_outer: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub closest_wall_point: EquilibriumTimeSliceBoundaryClosestWallPointView<'a, D>,
+    pub dr_dz_zero_point: EquilibriumTimeSliceBoundaryDrDzZeroPointView<'a, D>,
+    pub rho_tor: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub phi: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub phi_poloidal_current: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub bounding: EquilibriumTimeSliceBoundaryBoundingView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceBoundaryView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceBoundaryView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            r#type: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.r#type),
-            outline: EquilibriumTimeSliceBoundaryOutlineView::new(data),
-            psi_norm: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.psi_norm),
-            psi: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.psi),
-            geometric_axis: EquilibriumTimeSliceBoundaryGeometricAxisView::new(data),
-            minor_radius: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.minor_radius),
-            elongation: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.elongation),
-            triangularity: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.triangularity),
-            triangularity_upper: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.triangularity_upper),
-            triangularity_lower: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.triangularity_lower),
-            squareness_upper_inner: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.squareness_upper_inner),
-            squareness_upper_outer: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.squareness_upper_outer),
-            squareness_lower_inner: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.squareness_lower_inner),
-            squareness_lower_outer: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.squareness_lower_outer),
-            closest_wall_point: EquilibriumTimeSliceBoundaryClosestWallPointView::new(data),
-            dr_dz_zero_point: EquilibriumTimeSliceBoundaryDrDzZeroPointView::new(data),
-            rho_tor: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.rho_tor),
-            phi: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.phi),
-            phi_poloidal_current: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.boundary.phi_poloidal_current),
-            bounding: EquilibriumTimeSliceBoundaryBoundingView::new(data),
+            r#type: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.r#type),
+            outline: EquilibriumTimeSliceBoundaryOutlineView::new(elements.clone()),
+            psi_norm: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.psi_norm),
+            psi: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.psi),
+            geometric_axis: EquilibriumTimeSliceBoundaryGeometricAxisView::new(elements.clone()),
+            minor_radius: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.minor_radius),
+            elongation: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.elongation),
+            triangularity: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.triangularity),
+            triangularity_upper: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.triangularity_upper),
+            triangularity_lower: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.triangularity_lower),
+            squareness_upper_inner: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.squareness_upper_inner),
+            squareness_upper_outer: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.squareness_upper_outer),
+            squareness_lower_inner: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.squareness_lower_inner),
+            squareness_lower_outer: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.squareness_lower_outer),
+            closest_wall_point: EquilibriumTimeSliceBoundaryClosestWallPointView::new(elements.clone()),
+            dr_dz_zero_point: EquilibriumTimeSliceBoundaryDrDzZeroPointView::new(elements.clone()),
+            rho_tor: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.rho_tor),
+            phi: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.phi),
+            phi_poloidal_current: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.boundary.phi_poloidal_current),
+            bounding: EquilibriumTimeSliceBoundaryBoundingView::new(elements.clone()),
+            slice_elements: elements,
         }
+    }
+
+    /// The slice view over a range of `boundary.gap` under every element, e.g. `.gap(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn gap<R>(&self, range: R) -> EquilibriumGapSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumGap], Output = [EquilibriumGap]> + Clone,
+    {
+        EquilibriumGapSliceView::new(
+            self.slice_elements
+                .nest("boundary.gap", |item: &EquilibriumTimeSlice| item.boundary.gap.as_slice(), range),
+        )
     }
 }
 
 /// View over `contour_tree` (EquilibriumContourTree) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceContourTreeView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceContourTreeView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceContourTreeView<'a> {
-    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> EquilibriumTimeSliceContourTreeView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+
+    /// The slice view over a range of `contour_tree.node` under every element, e.g. `.node(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn node<R>(&self, range: R) -> EquilibriumContourTreeNodeSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumContourTreeNode], Output = [EquilibriumContourTreeNode]> + Clone,
+    {
+        EquilibriumContourTreeNodeSliceView::new(self.slice_elements.nest(
+            "contour_tree.node",
+            |item: &EquilibriumTimeSlice| item.contour_tree.node.as_slice(),
+            range,
+        ))
     }
 }
 
 /// View over `constraints.b_field_tor_vacuum_r` (EquilibriumConstraints0d) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceConstraintsBFieldTorVacuumRView<'a> {
-    pub measured: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub source: StringAccumulator<'a, EquilibriumTimeSlice>,
-    pub time_measurement: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub exact: Accumulator<'a, EquilibriumTimeSlice, INT_0D>,
-    pub weight: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub sigma: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub reconstructed: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub chi_squared: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceConstraintsBFieldTorVacuumRView<'a, D> {
+    pub measured: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub source: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
+    pub time_measurement: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub exact: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub sigma: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub reconstructed: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub chi_squared: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceConstraintsBFieldTorVacuumRView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsBFieldTorVacuumRView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            measured: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.measured),
-            source: StringAccumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.source.clone()),
-            time_measurement: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.time_measurement),
-            exact: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.exact),
-            weight: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.weight),
-            sigma: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.sigma),
-            reconstructed: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.reconstructed),
-            chi_squared: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.chi_squared),
+            measured: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.measured),
+            source: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
+                item.constraints.b_field_tor_vacuum_r.source.clone()
+            }),
+            time_measurement: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
+                item.constraints.b_field_tor_vacuum_r.time_measurement
+            }),
+            exact: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.exact),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.weight),
+            sigma: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.b_field_tor_vacuum_r.sigma),
+            reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
+                item.constraints.b_field_tor_vacuum_r.reconstructed
+            }),
+            chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
+                item.constraints.b_field_tor_vacuum_r.chi_squared
+            }),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `constraints.diamagnetic_flux` (EquilibriumConstraints0dB0Like) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceConstraintsDiamagneticFluxView<'a> {
-    pub measured: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub source: StringAccumulator<'a, EquilibriumTimeSlice>,
-    pub time_measurement: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub exact: Accumulator<'a, EquilibriumTimeSlice, INT_0D>,
-    pub weight: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub sigma: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub reconstructed: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub chi_squared: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceConstraintsDiamagneticFluxView<'a, D> {
+    pub measured: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub source: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
+    pub time_measurement: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub exact: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub sigma: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub reconstructed: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub chi_squared: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceConstraintsDiamagneticFluxView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsDiamagneticFluxView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            measured: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.measured),
-            source: StringAccumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.source.clone()),
-            time_measurement: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.time_measurement),
-            exact: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.exact),
-            weight: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.weight),
-            sigma: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.sigma),
-            reconstructed: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.reconstructed),
-            chi_squared: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.chi_squared),
+            measured: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.measured),
+            source: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.source.clone()),
+            time_measurement: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
+                item.constraints.diamagnetic_flux.time_measurement
+            }),
+            exact: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.exact),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.weight),
+            sigma: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.sigma),
+            reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.reconstructed),
+            chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.chi_squared),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `constraints.ip` (EquilibriumConstraints0dIpLike) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceConstraintsIpView<'a> {
-    pub measured: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub source: StringAccumulator<'a, EquilibriumTimeSlice>,
-    pub time_measurement: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub exact: Accumulator<'a, EquilibriumTimeSlice, INT_0D>,
-    pub weight: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub sigma: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub reconstructed: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub chi_squared: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceConstraintsIpView<'a, D> {
+    pub measured: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub source: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
+    pub time_measurement: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub exact: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub sigma: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub reconstructed: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub chi_squared: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceConstraintsIpView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsIpView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            measured: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.ip.measured),
-            source: StringAccumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.ip.source.clone()),
-            time_measurement: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.ip.time_measurement),
-            exact: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.ip.exact),
-            weight: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.ip.weight),
-            sigma: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.ip.sigma),
-            reconstructed: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.ip.reconstructed),
-            chi_squared: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.ip.chi_squared),
+            measured: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.measured),
+            source: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.source.clone()),
+            time_measurement: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.time_measurement),
+            exact: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.exact),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.weight),
+            sigma: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.sigma),
+            reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.reconstructed),
+            chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.chi_squared),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `constraints` (EquilibriumConstraints) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceConstraintsView<'a> {
-    pub b_field_tor_vacuum_r: EquilibriumTimeSliceConstraintsBFieldTorVacuumRView<'a>,
-    pub diamagnetic_flux: EquilibriumTimeSliceConstraintsDiamagneticFluxView<'a>,
-    pub ip: EquilibriumTimeSliceConstraintsIpView<'a>,
-    pub chi_squared_reduced: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub freedom_degrees_n: Accumulator<'a, EquilibriumTimeSlice, INT_0D>,
-    pub constraints_n: Accumulator<'a, EquilibriumTimeSlice, INT_0D>,
+pub struct EquilibriumTimeSliceConstraintsView<'a, D> {
+    pub b_field_tor_vacuum_r: EquilibriumTimeSliceConstraintsBFieldTorVacuumRView<'a, D>,
+    pub diamagnetic_flux: EquilibriumTimeSliceConstraintsDiamagneticFluxView<'a, D>,
+    pub ip: EquilibriumTimeSliceConstraintsIpView<'a, D>,
+    pub chi_squared_reduced: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub freedom_degrees_n: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
+    pub constraints_n: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceConstraintsView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            b_field_tor_vacuum_r: EquilibriumTimeSliceConstraintsBFieldTorVacuumRView::new(data),
-            diamagnetic_flux: EquilibriumTimeSliceConstraintsDiamagneticFluxView::new(data),
-            ip: EquilibriumTimeSliceConstraintsIpView::new(data),
-            chi_squared_reduced: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.chi_squared_reduced),
-            freedom_degrees_n: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.freedom_degrees_n),
-            constraints_n: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.constraints.constraints_n),
+            b_field_tor_vacuum_r: EquilibriumTimeSliceConstraintsBFieldTorVacuumRView::new(elements.clone()),
+            diamagnetic_flux: EquilibriumTimeSliceConstraintsDiamagneticFluxView::new(elements.clone()),
+            ip: EquilibriumTimeSliceConstraintsIpView::new(elements.clone()),
+            chi_squared_reduced: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.chi_squared_reduced),
+            freedom_degrees_n: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.freedom_degrees_n),
+            constraints_n: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.constraints_n),
+            slice_elements: elements,
         }
+    }
+
+    /// The slice view over a range of `constraints.b_field_pol_probe` under every element, e.g. `.b_field_pol_probe(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn b_field_pol_probe<R>(&self, range: R) -> EquilibriumConstraints0dOneLikeSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dOneLike], Output = [EquilibriumConstraints0dOneLike]> + Clone,
+    {
+        EquilibriumConstraints0dOneLikeSliceView::new(self.slice_elements.nest(
+            "constraints.b_field_pol_probe",
+            |item: &EquilibriumTimeSlice| item.constraints.b_field_pol_probe.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.faraday_angle` under every element, e.g. `.faraday_angle(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn faraday_angle<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]> + Clone,
+    {
+        EquilibriumConstraints0dSliceView::new(self.slice_elements.nest(
+            "constraints.faraday_angle",
+            |item: &EquilibriumTimeSlice| item.constraints.faraday_angle.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.mse_polarization_angle` under every element, e.g. `.mse_polarization_angle(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn mse_polarization_angle<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]> + Clone,
+    {
+        EquilibriumConstraints0dSliceView::new(self.slice_elements.nest(
+            "constraints.mse_polarization_angle",
+            |item: &EquilibriumTimeSlice| item.constraints.mse_polarization_angle.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.flux_loop` under every element, e.g. `.flux_loop(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn flux_loop<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]> + Clone,
+    {
+        EquilibriumConstraints0dSliceView::new(self.slice_elements.nest(
+            "constraints.flux_loop",
+            |item: &EquilibriumTimeSlice| item.constraints.flux_loop.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.iron_core_segment` under every element, e.g. `.iron_core_segment(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn iron_core_segment<R>(&self, range: R) -> EquilibriumConstraintsMagnetizationSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraintsMagnetization], Output = [EquilibriumConstraintsMagnetization]> + Clone,
+    {
+        EquilibriumConstraintsMagnetizationSliceView::new(self.slice_elements.nest(
+            "constraints.iron_core_segment",
+            |item: &EquilibriumTimeSlice| item.constraints.iron_core_segment.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.n_e` under every element, e.g. `.n_e(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn n_e<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
+            "constraints.n_e",
+            |item: &EquilibriumTimeSlice| item.constraints.n_e.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.n_e_line` under every element, e.g. `.n_e_line(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn n_e_line<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]> + Clone,
+    {
+        EquilibriumConstraints0dSliceView::new(self.slice_elements.nest(
+            "constraints.n_e_line",
+            |item: &EquilibriumTimeSlice| item.constraints.n_e_line.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.pf_current` under every element, e.g. `.pf_current(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn pf_current<R>(&self, range: R) -> EquilibriumConstraints0dIpLikeSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dIpLike], Output = [EquilibriumConstraints0dIpLike]> + Clone,
+    {
+        EquilibriumConstraints0dIpLikeSliceView::new(self.slice_elements.nest(
+            "constraints.pf_current",
+            |item: &EquilibriumTimeSlice| item.constraints.pf_current.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.pf_passive_current` under every element, e.g. `.pf_passive_current(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn pf_passive_current<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]> + Clone,
+    {
+        EquilibriumConstraints0dSliceView::new(self.slice_elements.nest(
+            "constraints.pf_passive_current",
+            |item: &EquilibriumTimeSlice| item.constraints.pf_passive_current.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.pressure` under every element, e.g. `.pressure(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn pressure<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
+            "constraints.pressure",
+            |item: &EquilibriumTimeSlice| item.constraints.pressure.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.pressure_rotational` under every element, e.g. `.pressure_rotational(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn pressure_rotational<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
+            "constraints.pressure_rotational",
+            |item: &EquilibriumTimeSlice| item.constraints.pressure_rotational.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.q` under every element, e.g. `.q(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn q<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
+            "constraints.q",
+            |item: &EquilibriumTimeSlice| item.constraints.q.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.j_phi` under every element, e.g. `.j_phi(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn j_phi<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
+            "constraints.j_phi",
+            |item: &EquilibriumTimeSlice| item.constraints.j_phi.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.j_parallel` under every element, e.g. `.j_parallel(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn j_parallel<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
+            "constraints.j_parallel",
+            |item: &EquilibriumTimeSlice| item.constraints.j_parallel.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.x_point` under every element, e.g. `.x_point(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn x_point<R>(&self, range: R) -> EquilibriumConstraintsPurePositionSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraintsPurePosition], Output = [EquilibriumConstraintsPurePosition]> + Clone,
+    {
+        EquilibriumConstraintsPurePositionSliceView::new(self.slice_elements.nest(
+            "constraints.x_point",
+            |item: &EquilibriumTimeSlice| item.constraints.x_point.as_slice(),
+            range,
+        ))
+    }
+
+    /// The slice view over a range of `constraints.strike_point` under every element, e.g. `.strike_point(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn strike_point<R>(&self, range: R) -> EquilibriumConstraintsPurePositionSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumConstraintsPurePosition], Output = [EquilibriumConstraintsPurePosition]> + Clone,
+    {
+        EquilibriumConstraintsPurePositionSliceView::new(self.slice_elements.nest(
+            "constraints.strike_point",
+            |item: &EquilibriumTimeSlice| item.constraints.strike_point.as_slice(),
+            range,
+        ))
     }
 }
 
 /// View over `global_quantities.magnetic_axis` (EquilibriumGlobalQuantitiesMagneticAxis) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceGlobalQuantitiesMagneticAxisView<'a> {
-    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub b_field_phi: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceGlobalQuantitiesMagneticAxisView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub b_field_phi: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceGlobalQuantitiesMagneticAxisView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceGlobalQuantitiesMagneticAxisView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.magnetic_axis.r),
-            z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.magnetic_axis.z),
-            b_field_phi: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.magnetic_axis.b_field_phi),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.magnetic_axis.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.magnetic_axis.z),
+            b_field_phi: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.magnetic_axis.b_field_phi),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `global_quantities.current_centre` (EquilibriumGlobalQuantitiesCurrentCentre) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceGlobalQuantitiesCurrentCentreView<'a> {
-    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub velocity_z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceGlobalQuantitiesCurrentCentreView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub velocity_z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceGlobalQuantitiesCurrentCentreView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceGlobalQuantitiesCurrentCentreView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.current_centre.r),
-            z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.current_centre.z),
-            velocity_z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.current_centre.velocity_z),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.current_centre.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.current_centre.z),
+            velocity_z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.current_centre.velocity_z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `global_quantities.q_min` (EquilibriumGlobalQuantitiesQmin) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceGlobalQuantitiesQMinView<'a> {
-    pub value: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub rho_tor_norm: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub psi_norm: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub psi: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceGlobalQuantitiesQMinView<'a, D> {
+    pub value: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub rho_tor_norm: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub psi_norm: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub psi: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceGlobalQuantitiesQMinView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceGlobalQuantitiesQMinView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            value: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.q_min.value),
-            rho_tor_norm: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.q_min.rho_tor_norm),
-            psi_norm: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.q_min.psi_norm),
-            psi: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.q_min.psi),
+            value: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.q_min.value),
+            rho_tor_norm: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.q_min.rho_tor_norm),
+            psi_norm: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.q_min.psi_norm),
+            psi: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.q_min.psi),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `global_quantities` (EquilibriumGlobalQuantities) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceGlobalQuantitiesView<'a> {
-    pub beta_pol: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub beta_tor: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub beta_tor_norm: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub ip: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub li_3: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub volume: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub area: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub surface: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub length_pol: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub psi_magnetic_axis: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub magnetic_axis: EquilibriumTimeSliceGlobalQuantitiesMagneticAxisView<'a>,
-    pub current_centre: EquilibriumTimeSliceGlobalQuantitiesCurrentCentreView<'a>,
-    pub q_axis: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub q_95: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub q_min: EquilibriumTimeSliceGlobalQuantitiesQMinView<'a>,
-    pub energy_mhd: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub psi_external_average: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub v_external: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub plasma_inductance: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub plasma_resistance: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub beta_pol_1: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub beta_pol_2: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub beta_pol_3: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub bt_vac_at_r_geo: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub li_1: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub li_2: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub delta_r_sep: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub f_x: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub v_loop: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceGlobalQuantitiesView<'a, D> {
+    pub beta_pol: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub beta_tor: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub beta_tor_norm: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub ip: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub li_3: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub volume: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub area: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub surface: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub length_pol: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub psi_magnetic_axis: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub magnetic_axis: EquilibriumTimeSliceGlobalQuantitiesMagneticAxisView<'a, D>,
+    pub current_centre: EquilibriumTimeSliceGlobalQuantitiesCurrentCentreView<'a, D>,
+    pub q_axis: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub q_95: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub q_min: EquilibriumTimeSliceGlobalQuantitiesQMinView<'a, D>,
+    pub energy_mhd: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub psi_external_average: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub v_external: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub plasma_inductance: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub plasma_resistance: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub beta_pol_1: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub beta_pol_2: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub beta_pol_3: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub bt_vac_at_r_geo: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub li_1: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub li_2: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub delta_r_sep: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub f_x: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub v_loop: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceGlobalQuantitiesView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceGlobalQuantitiesView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            beta_pol: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol),
-            beta_tor: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.beta_tor),
-            beta_tor_norm: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.beta_tor_norm),
-            ip: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.ip),
-            li_3: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.li_3),
-            volume: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.volume),
-            area: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.area),
-            surface: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.surface),
-            length_pol: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.length_pol),
-            psi_magnetic_axis: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.psi_magnetic_axis),
-            magnetic_axis: EquilibriumTimeSliceGlobalQuantitiesMagneticAxisView::new(data),
-            current_centre: EquilibriumTimeSliceGlobalQuantitiesCurrentCentreView::new(data),
-            q_axis: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.q_axis),
-            q_95: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.q_95),
-            q_min: EquilibriumTimeSliceGlobalQuantitiesQMinView::new(data),
-            energy_mhd: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.energy_mhd),
-            psi_external_average: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.psi_external_average),
-            v_external: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.v_external),
-            plasma_inductance: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.plasma_inductance),
-            plasma_resistance: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.plasma_resistance),
-            beta_pol_1: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_1),
-            beta_pol_2: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_2),
-            beta_pol_3: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_3),
-            bt_vac_at_r_geo: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.bt_vac_at_r_geo),
-            li_1: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.li_1),
-            li_2: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.li_2),
-            delta_r_sep: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.delta_r_sep),
-            f_x: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.f_x),
-            v_loop: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.global_quantities.v_loop),
+            beta_pol: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol),
+            beta_tor: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.beta_tor),
+            beta_tor_norm: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.beta_tor_norm),
+            ip: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.ip),
+            li_3: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.li_3),
+            volume: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.volume),
+            area: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.area),
+            surface: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.surface),
+            length_pol: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.length_pol),
+            psi_magnetic_axis: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.psi_magnetic_axis),
+            magnetic_axis: EquilibriumTimeSliceGlobalQuantitiesMagneticAxisView::new(elements.clone()),
+            current_centre: EquilibriumTimeSliceGlobalQuantitiesCurrentCentreView::new(elements.clone()),
+            q_axis: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.q_axis),
+            q_95: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.q_95),
+            q_min: EquilibriumTimeSliceGlobalQuantitiesQMinView::new(elements.clone()),
+            energy_mhd: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.energy_mhd),
+            psi_external_average: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.psi_external_average),
+            v_external: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.v_external),
+            plasma_inductance: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.plasma_inductance),
+            plasma_resistance: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.plasma_resistance),
+            beta_pol_1: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_1),
+            beta_pol_2: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_2),
+            beta_pol_3: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_3),
+            bt_vac_at_r_geo: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.bt_vac_at_r_geo),
+            li_1: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.li_1),
+            li_2: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.li_2),
+            delta_r_sep: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.delta_r_sep),
+            f_x: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.f_x),
+            v_loop: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.v_loop),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `profiles_1d.geometric_axis` (EquilibriumProfiles1dRz1dDynamicAos) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceProfiles1dGeometricAxisView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceProfiles1dGeometricAxisView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceProfiles1dGeometricAxisView<'a> {
-    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> EquilibriumTimeSliceProfiles1dGeometricAxisView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `profiles_1d` (EquilibriumProfiles1d) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceProfiles1dView<'a> {
-    pub geometric_axis: EquilibriumTimeSliceProfiles1dGeometricAxisView<'a>,
+pub struct EquilibriumTimeSliceProfiles1dView<'a, D> {
+    pub geometric_axis: EquilibriumTimeSliceProfiles1dGeometricAxisView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceProfiles1dView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceProfiles1dView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            geometric_axis: EquilibriumTimeSliceProfiles1dGeometricAxisView::new(data),
+            geometric_axis: EquilibriumTimeSliceProfiles1dGeometricAxisView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `coordinate_system.grid_type` (IdentifierDynamicAos3) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceCoordinateSystemGridTypeView<'a> {
-    pub name: StringAccumulator<'a, EquilibriumTimeSlice>,
-    pub index: Accumulator<'a, EquilibriumTimeSlice, INT_0D>,
-    pub description: StringAccumulator<'a, EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceCoordinateSystemGridTypeView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
+    pub index: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
+    pub description: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceCoordinateSystemGridTypeView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceCoordinateSystemGridTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &EquilibriumTimeSlice| item.coordinate_system.grid_type.name.clone()),
-            index: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.coordinate_system.grid_type.index),
-            description: StringAccumulator::new(data, |item: &EquilibriumTimeSlice| item.coordinate_system.grid_type.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.coordinate_system.grid_type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.coordinate_system.grid_type.index),
+            description: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
+                item.coordinate_system.grid_type.description.clone()
+            }),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `coordinate_system.grid` (EquilibriumProfiles2dGrid) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceCoordinateSystemGridView<'a> {
-    pub d_area: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceCoordinateSystemGridView<'a, D> {
+    pub d_area: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceCoordinateSystemGridView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceCoordinateSystemGridView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            d_area: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.coordinate_system.grid.d_area),
+            d_area: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.coordinate_system.grid.d_area),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `coordinate_system` (EquilibriumCoordinateSystem) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceCoordinateSystemView<'a> {
-    pub grid_type: EquilibriumTimeSliceCoordinateSystemGridTypeView<'a>,
-    pub grid: EquilibriumTimeSliceCoordinateSystemGridView<'a>,
+pub struct EquilibriumTimeSliceCoordinateSystemView<'a, D> {
+    pub grid_type: EquilibriumTimeSliceCoordinateSystemGridTypeView<'a, D>,
+    pub grid: EquilibriumTimeSliceCoordinateSystemGridView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceCoordinateSystemView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceCoordinateSystemView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            grid_type: EquilibriumTimeSliceCoordinateSystemGridTypeView::new(data),
-            grid: EquilibriumTimeSliceCoordinateSystemGridView::new(data),
+            grid_type: EquilibriumTimeSliceCoordinateSystemGridTypeView::new(elements.clone()),
+            grid: EquilibriumTimeSliceCoordinateSystemGridView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `convergence.grad_shafranov_deviation_expression` (IdentifierDynamicAos3) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceConvergenceGradShafranovDeviationExpressionView<'a> {
-    pub name: StringAccumulator<'a, EquilibriumTimeSlice>,
-    pub index: Accumulator<'a, EquilibriumTimeSlice, INT_0D>,
-    pub description: StringAccumulator<'a, EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceConvergenceGradShafranovDeviationExpressionView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
+    pub index: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
+    pub description: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceConvergenceGradShafranovDeviationExpressionView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceConvergenceGradShafranovDeviationExpressionView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &EquilibriumTimeSlice| {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
                 item.convergence.grad_shafranov_deviation_expression.name.clone()
             }),
-            index: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.convergence.grad_shafranov_deviation_expression.index),
-            description: StringAccumulator::new(data, |item: &EquilibriumTimeSlice| {
+            index: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
+                item.convergence.grad_shafranov_deviation_expression.index
+            }),
+            description: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
                 item.convergence.grad_shafranov_deviation_expression.description.clone()
             }),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `convergence.result` (IdentifierDynamicAos3) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceConvergenceResultView<'a> {
-    pub name: StringAccumulator<'a, EquilibriumTimeSlice>,
-    pub index: Accumulator<'a, EquilibriumTimeSlice, INT_0D>,
-    pub description: StringAccumulator<'a, EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceConvergenceResultView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
+    pub index: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
+    pub description: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceConvergenceResultView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceConvergenceResultView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            name: StringAccumulator::new(data, |item: &EquilibriumTimeSlice| item.convergence.result.name.clone()),
-            index: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.convergence.result.index),
-            description: StringAccumulator::new(data, |item: &EquilibriumTimeSlice| item.convergence.result.description.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.convergence.result.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.convergence.result.index),
+            description: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.convergence.result.description.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `convergence` (EquilibriumConvergence) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceConvergenceView<'a> {
-    pub iterations_n: Accumulator<'a, EquilibriumTimeSlice, INT_0D>,
-    pub grad_shafranov_deviation_expression: EquilibriumTimeSliceConvergenceGradShafranovDeviationExpressionView<'a>,
-    pub grad_shafranov_deviation_value: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub result: EquilibriumTimeSliceConvergenceResultView<'a>,
-    pub delta_z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceConvergenceView<'a, D> {
+    pub iterations_n: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
+    pub grad_shafranov_deviation_expression: EquilibriumTimeSliceConvergenceGradShafranovDeviationExpressionView<'a, D>,
+    pub grad_shafranov_deviation_value: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub result: EquilibriumTimeSliceConvergenceResultView<'a, D>,
+    pub delta_z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceConvergenceView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceConvergenceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            iterations_n: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.convergence.iterations_n),
-            grad_shafranov_deviation_expression: EquilibriumTimeSliceConvergenceGradShafranovDeviationExpressionView::new(data),
-            grad_shafranov_deviation_value: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.convergence.grad_shafranov_deviation_value),
-            result: EquilibriumTimeSliceConvergenceResultView::new(data),
-            delta_z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.convergence.delta_z),
+            iterations_n: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.convergence.iterations_n),
+            grad_shafranov_deviation_expression: EquilibriumTimeSliceConvergenceGradShafranovDeviationExpressionView::new(elements.clone()),
+            grad_shafranov_deviation_value: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.convergence.grad_shafranov_deviation_value),
+            result: EquilibriumTimeSliceConvergenceResultView::new(elements.clone()),
+            delta_z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.convergence.delta_z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `source_functions.p_prime` (EquilibriumSourceFunction) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceSourceFunctionsPPrimeView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceSourceFunctionsPPrimeView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSourceFunctionsPPrimeView<'a> {
-    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> EquilibriumTimeSliceSourceFunctionsPPrimeView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `source_functions.ff_prime` (EquilibriumSourceFunction) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a> {
-    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `source_functions` (EquilibriumSourceFunctions) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceSourceFunctionsView<'a> {
-    pub p_prime: EquilibriumTimeSliceSourceFunctionsPPrimeView<'a>,
-    pub ff_prime: EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a>,
+pub struct EquilibriumTimeSliceSourceFunctionsView<'a, D> {
+    pub p_prime: EquilibriumTimeSliceSourceFunctionsPPrimeView<'a, D>,
+    pub ff_prime: EquilibriumTimeSliceSourceFunctionsFfPrimeView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSourceFunctionsView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceSourceFunctionsView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            p_prime: EquilibriumTimeSliceSourceFunctionsPPrimeView::new(data),
-            ff_prime: EquilibriumTimeSliceSourceFunctionsFfPrimeView::new(data),
+            p_prime: EquilibriumTimeSliceSourceFunctionsPPrimeView::new(elements.clone()),
+            ff_prime: EquilibriumTimeSliceSourceFunctionsFfPrimeView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `profiles_1d_r_midplane` (EquilibriumProfiles1dRMidplane) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceProfiles1dRMidplaneView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceProfiles1dRMidplaneView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceProfiles1dRMidplaneView<'a> {
-    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> EquilibriumTimeSliceProfiles1dRMidplaneView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `profiles_1d_r_midplane_h` (EquilibriumProfiles1dRMidplaneH) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceProfiles1dRMidplaneHView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceProfiles1dRMidplaneHView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceProfiles1dRMidplaneHView<'a> {
-    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> EquilibriumTimeSliceProfiles1dRMidplaneHView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `sol.hfs.contour` (EquilibriumSolContour) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceSolHfsContourView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceSolHfsContourView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSolHfsContourView<'a> {
-    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> EquilibriumTimeSliceSolHfsContourView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `sol.hfs.strike_point` (EquilibriumSolStrikePoint) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceSolHfsStrikePointView<'a> {
-    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceSolHfsStrikePointView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSolHfsStrikePointView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceSolHfsStrikePointView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.sol.hfs.strike_point.r),
-            z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.sol.hfs.strike_point.z),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.sol.hfs.strike_point.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.sol.hfs.strike_point.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `sol.hfs` (EquilibriumSolLeg) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceSolHfsView<'a> {
-    pub contour: EquilibriumTimeSliceSolHfsContourView<'a>,
-    pub strike_point: EquilibriumTimeSliceSolHfsStrikePointView<'a>,
+pub struct EquilibriumTimeSliceSolHfsView<'a, D> {
+    pub contour: EquilibriumTimeSliceSolHfsContourView<'a, D>,
+    pub strike_point: EquilibriumTimeSliceSolHfsStrikePointView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSolHfsView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceSolHfsView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            contour: EquilibriumTimeSliceSolHfsContourView::new(data),
-            strike_point: EquilibriumTimeSliceSolHfsStrikePointView::new(data),
+            contour: EquilibriumTimeSliceSolHfsContourView::new(elements.clone()),
+            strike_point: EquilibriumTimeSliceSolHfsStrikePointView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `sol.lfs.contour` (EquilibriumSolContour) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceSolLfsContourView<'a> {
-    _phantom: std::marker::PhantomData<&'a EquilibriumTimeSlice>,
+pub struct EquilibriumTimeSliceSolLfsContourView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSolLfsContourView<'a> {
-    pub fn new(_data: &'a [EquilibriumTimeSlice]) -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+impl<'a, D: Dimension> EquilibriumTimeSliceSolLfsContourView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
+        Self { slice_elements: elements }
     }
 }
 
 /// View over `sol.lfs.strike_point` (EquilibriumSolStrikePoint) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceSolLfsStrikePointView<'a> {
-    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
+pub struct EquilibriumTimeSliceSolLfsStrikePointView<'a, D> {
+    pub r: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSolLfsStrikePointView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceSolLfsStrikePointView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            r: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.sol.lfs.strike_point.r),
-            z: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.sol.lfs.strike_point.z),
+            r: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.sol.lfs.strike_point.r),
+            z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.sol.lfs.strike_point.z),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `sol.lfs` (EquilibriumSolLeg) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceSolLfsView<'a> {
-    pub contour: EquilibriumTimeSliceSolLfsContourView<'a>,
-    pub strike_point: EquilibriumTimeSliceSolLfsStrikePointView<'a>,
+pub struct EquilibriumTimeSliceSolLfsView<'a, D> {
+    pub contour: EquilibriumTimeSliceSolLfsContourView<'a, D>,
+    pub strike_point: EquilibriumTimeSliceSolLfsStrikePointView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSolLfsView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceSolLfsView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            contour: EquilibriumTimeSliceSolLfsContourView::new(data),
-            strike_point: EquilibriumTimeSliceSolLfsStrikePointView::new(data),
+            contour: EquilibriumTimeSliceSolLfsContourView::new(elements.clone()),
+            strike_point: EquilibriumTimeSliceSolLfsStrikePointView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over `sol` (EquilibriumSol) across multiple EquilibriumTimeSlice
-pub struct EquilibriumTimeSliceSolView<'a> {
-    pub hfs: EquilibriumTimeSliceSolHfsView<'a>,
-    pub lfs: EquilibriumTimeSliceSolLfsView<'a>,
+pub struct EquilibriumTimeSliceSolView<'a, D> {
+    pub hfs: EquilibriumTimeSliceSolHfsView<'a, D>,
+    pub lfs: EquilibriumTimeSliceSolLfsView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSolView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceSolView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            hfs: EquilibriumTimeSliceSolHfsView::new(data),
-            lfs: EquilibriumTimeSliceSolLfsView::new(data),
+            hfs: EquilibriumTimeSliceSolHfsView::new(elements.clone()),
+            lfs: EquilibriumTimeSliceSolLfsView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 }
 
 /// View over multiple EquilibriumTimeSlice with field accumulation
-pub struct EquilibriumTimeSliceSliceView<'a> {
-    data: &'a [EquilibriumTimeSlice],
-    pub boundary: EquilibriumTimeSliceBoundaryView<'a>,
-    pub contour_tree: EquilibriumTimeSliceContourTreeView<'a>,
-    pub constraints: EquilibriumTimeSliceConstraintsView<'a>,
-    pub global_quantities: EquilibriumTimeSliceGlobalQuantitiesView<'a>,
-    pub profiles_1d: EquilibriumTimeSliceProfiles1dView<'a>,
-    pub coordinate_system: EquilibriumTimeSliceCoordinateSystemView<'a>,
-    pub convergence: EquilibriumTimeSliceConvergenceView<'a>,
-    pub time: Accumulator<'a, EquilibriumTimeSlice, FLT_0D>,
-    pub source_functions: EquilibriumTimeSliceSourceFunctionsView<'a>,
-    pub profiles_1d_r_midplane: EquilibriumTimeSliceProfiles1dRMidplaneView<'a>,
-    pub profiles_1d_r_midplane_h: EquilibriumTimeSliceProfiles1dRMidplaneHView<'a>,
-    pub sol: EquilibriumTimeSliceSolView<'a>,
+pub struct EquilibriumTimeSliceSliceView<'a, D> {
+    pub boundary: EquilibriumTimeSliceBoundaryView<'a, D>,
+    pub contour_tree: EquilibriumTimeSliceContourTreeView<'a, D>,
+    pub constraints: EquilibriumTimeSliceConstraintsView<'a, D>,
+    pub global_quantities: EquilibriumTimeSliceGlobalQuantitiesView<'a, D>,
+    pub profiles_1d: EquilibriumTimeSliceProfiles1dView<'a, D>,
+    pub coordinate_system: EquilibriumTimeSliceCoordinateSystemView<'a, D>,
+    pub convergence: EquilibriumTimeSliceConvergenceView<'a, D>,
+    pub time: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub source_functions: EquilibriumTimeSliceSourceFunctionsView<'a, D>,
+    pub profiles_1d_r_midplane: EquilibriumTimeSliceProfiles1dRMidplaneView<'a, D>,
+    pub profiles_1d_r_midplane_h: EquilibriumTimeSliceProfiles1dRMidplaneHView<'a, D>,
+    pub sol: EquilibriumTimeSliceSolView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
-impl<'a> EquilibriumTimeSliceSliceView<'a> {
-    pub fn new(data: &'a [EquilibriumTimeSlice]) -> Self {
+impl<'a, D: Dimension> EquilibriumTimeSliceSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumTimeSlice, D>) -> Self {
         Self {
-            data,
-            boundary: EquilibriumTimeSliceBoundaryView::new(data),
-            contour_tree: EquilibriumTimeSliceContourTreeView::new(data),
-            constraints: EquilibriumTimeSliceConstraintsView::new(data),
-            global_quantities: EquilibriumTimeSliceGlobalQuantitiesView::new(data),
-            profiles_1d: EquilibriumTimeSliceProfiles1dView::new(data),
-            coordinate_system: EquilibriumTimeSliceCoordinateSystemView::new(data),
-            convergence: EquilibriumTimeSliceConvergenceView::new(data),
-            time: Accumulator::new(data, |item: &EquilibriumTimeSlice| item.time),
-            source_functions: EquilibriumTimeSliceSourceFunctionsView::new(data),
-            profiles_1d_r_midplane: EquilibriumTimeSliceProfiles1dRMidplaneView::new(data),
-            profiles_1d_r_midplane_h: EquilibriumTimeSliceProfiles1dRMidplaneHView::new(data),
-            sol: EquilibriumTimeSliceSolView::new(data),
+            boundary: EquilibriumTimeSliceBoundaryView::new(elements.clone()),
+            contour_tree: EquilibriumTimeSliceContourTreeView::new(elements.clone()),
+            constraints: EquilibriumTimeSliceConstraintsView::new(elements.clone()),
+            global_quantities: EquilibriumTimeSliceGlobalQuantitiesView::new(elements.clone()),
+            profiles_1d: EquilibriumTimeSliceProfiles1dView::new(elements.clone()),
+            coordinate_system: EquilibriumTimeSliceCoordinateSystemView::new(elements.clone()),
+            convergence: EquilibriumTimeSliceConvergenceView::new(elements.clone()),
+            time: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.time),
+            source_functions: EquilibriumTimeSliceSourceFunctionsView::new(elements.clone()),
+            profiles_1d_r_midplane: EquilibriumTimeSliceProfiles1dRMidplaneView::new(elements.clone()),
+            profiles_1d_r_midplane_h: EquilibriumTimeSliceProfiles1dRMidplaneHView::new(elements.clone()),
+            sol: EquilibriumTimeSliceSolView::new(elements.clone()),
+            slice_elements: elements,
         }
     }
 
+    /// Total number of elements, across every sliced level
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.slice_elements.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+        self.slice_elements.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &EquilibriumTimeSlice> {
-        self.data.iter()
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
     }
-}
 
-/// Range-index trait for EquilibriumTimeSlice - enables the `.field(0..2)` and `.field(..)` slice view
-pub trait EquilibriumTimeSliceIndex<'a> {
-    type Output;
-    fn get(self, data: &'a [EquilibriumTimeSlice]) -> Self::Output;
-}
-
-impl<'a> EquilibriumTimeSliceIndex<'a> for std::ops::Range<usize> {
-    type Output = EquilibriumTimeSliceSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumTimeSlice]) -> Self::Output {
-        EquilibriumTimeSliceSliceView::new(&data[self])
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumTimeSlice> + '_ {
+        self.slice_elements.iter()
     }
-}
 
-impl<'a> EquilibriumTimeSliceIndex<'a> for std::ops::RangeFrom<usize> {
-    type Output = EquilibriumTimeSliceSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumTimeSlice]) -> Self::Output {
-        EquilibriumTimeSliceSliceView::new(&data[self])
+    /// The slice view over a range of `profiles_2d` under every element, e.g. `.profiles_2d(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn profiles_2d<R>(&self, range: R) -> EquilibriumProfiles2dSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumProfiles2d], Output = [EquilibriumProfiles2d]> + Clone,
+    {
+        EquilibriumProfiles2dSliceView::new(
+            self.slice_elements
+                .nest("profiles_2d", |item: &EquilibriumTimeSlice| item.profiles_2d.as_slice(), range),
+        )
     }
-}
 
-impl<'a> EquilibriumTimeSliceIndex<'a> for std::ops::RangeTo<usize> {
-    type Output = EquilibriumTimeSliceSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumTimeSlice]) -> Self::Output {
-        EquilibriumTimeSliceSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumTimeSliceIndex<'a> for std::ops::RangeInclusive<usize> {
-    type Output = EquilibriumTimeSliceSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumTimeSlice]) -> Self::Output {
-        EquilibriumTimeSliceSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumTimeSliceIndex<'a> for std::ops::RangeToInclusive<usize> {
-    type Output = EquilibriumTimeSliceSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumTimeSlice]) -> Self::Output {
-        EquilibriumTimeSliceSliceView::new(&data[self])
-    }
-}
-
-impl<'a> EquilibriumTimeSliceIndex<'a> for std::ops::RangeFull {
-    type Output = EquilibriumTimeSliceSliceView<'a>;
-    fn get(self, data: &'a [EquilibriumTimeSlice]) -> Self::Output {
-        EquilibriumTimeSliceSliceView::new(data)
+    /// The slice view over a range of `ggd` under every element, e.g. `.ggd(..)`.
+    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If `range` does not select the same number of elements under every element.
+    pub fn ggd<R>(&self, range: R) -> EquilibriumGgdSliceView<'a, D::Larger>
+    where
+        R: SliceIndex<[EquilibriumGgd], Output = [EquilibriumGgd]> + Clone,
+    {
+        EquilibriumGgdSliceView::new(self.slice_elements.nest("ggd", |item: &EquilibriumTimeSlice| item.ggd.as_slice(), range))
     }
 }
 
@@ -5259,8 +4818,11 @@ impl<'a> EquilibriumTimeSliceIndex<'a> for std::ops::RangeFull {
 impl EquilibriumContourTreeNode {
     /// The slice view over a range of levelset, e.g. `.levelset(0..2)` or `.levelset(..)`,
     /// whose leaves gather one value per element. A single element is `.levelset[i]`.
-    pub fn levelset<'a, I: Rz1dDynamicAosIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.levelset)
+    pub fn levelset<R>(&self, range: R) -> Rz1dDynamicAosSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[Rz1dDynamicAos], Output = [Rz1dDynamicAos]>,
+    {
+        Rz1dDynamicAosSliceView::new(Elements::from_slice(&self.levelset[range]))
     }
 
     /// Get the number of levelset elements
@@ -5272,8 +4834,11 @@ impl EquilibriumContourTreeNode {
 impl EquilibriumContourTree {
     /// The slice view over a range of node, e.g. `.node(0..2)` or `.node(..)`,
     /// whose leaves gather one value per element. A single element is `.node[i]`.
-    pub fn node<'a, I: EquilibriumContourTreeNodeIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.node)
+    pub fn node<R>(&self, range: R) -> EquilibriumContourTreeNodeSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumContourTreeNode], Output = [EquilibriumContourTreeNode]>,
+    {
+        EquilibriumContourTreeNodeSliceView::new(Elements::from_slice(&self.node[range]))
     }
 
     /// Get the number of node elements
@@ -5285,8 +4850,11 @@ impl EquilibriumContourTree {
 impl EquilibriumBoundary {
     /// The slice view over a range of gap, e.g. `.gap(0..2)` or `.gap(..)`,
     /// whose leaves gather one value per element. A single element is `.gap[i]`.
-    pub fn gap<'a, I: EquilibriumGapIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.gap)
+    pub fn gap<R>(&self, range: R) -> EquilibriumGapSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumGap], Output = [EquilibriumGap]>,
+    {
+        EquilibriumGapSliceView::new(Elements::from_slice(&self.gap[range]))
     }
 
     /// Get the number of gap elements
@@ -5298,8 +4866,11 @@ impl EquilibriumBoundary {
 impl EquilibriumConstraints {
     /// The slice view over a range of b_field_pol_probe, e.g. `.b_field_pol_probe(0..2)` or `.b_field_pol_probe(..)`,
     /// whose leaves gather one value per element. A single element is `.b_field_pol_probe[i]`.
-    pub fn b_field_pol_probe<'a, I: EquilibriumConstraints0dOneLikeIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.b_field_pol_probe)
+    pub fn b_field_pol_probe<R>(&self, range: R) -> EquilibriumConstraints0dOneLikeSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dOneLike], Output = [EquilibriumConstraints0dOneLike]>,
+    {
+        EquilibriumConstraints0dOneLikeSliceView::new(Elements::from_slice(&self.b_field_pol_probe[range]))
     }
 
     /// Get the number of b_field_pol_probe elements
@@ -5311,8 +4882,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of faraday_angle, e.g. `.faraday_angle(0..2)` or `.faraday_angle(..)`,
     /// whose leaves gather one value per element. A single element is `.faraday_angle[i]`.
-    pub fn faraday_angle<'a, I: EquilibriumConstraints0dIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.faraday_angle)
+    pub fn faraday_angle<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]>,
+    {
+        EquilibriumConstraints0dSliceView::new(Elements::from_slice(&self.faraday_angle[range]))
     }
 
     /// Get the number of faraday_angle elements
@@ -5324,8 +4898,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of mse_polarization_angle, e.g. `.mse_polarization_angle(0..2)` or `.mse_polarization_angle(..)`,
     /// whose leaves gather one value per element. A single element is `.mse_polarization_angle[i]`.
-    pub fn mse_polarization_angle<'a, I: EquilibriumConstraints0dIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.mse_polarization_angle)
+    pub fn mse_polarization_angle<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]>,
+    {
+        EquilibriumConstraints0dSliceView::new(Elements::from_slice(&self.mse_polarization_angle[range]))
     }
 
     /// Get the number of mse_polarization_angle elements
@@ -5337,8 +4914,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of flux_loop, e.g. `.flux_loop(0..2)` or `.flux_loop(..)`,
     /// whose leaves gather one value per element. A single element is `.flux_loop[i]`.
-    pub fn flux_loop<'a, I: EquilibriumConstraints0dIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.flux_loop)
+    pub fn flux_loop<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]>,
+    {
+        EquilibriumConstraints0dSliceView::new(Elements::from_slice(&self.flux_loop[range]))
     }
 
     /// Get the number of flux_loop elements
@@ -5350,8 +4930,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of iron_core_segment, e.g. `.iron_core_segment(0..2)` or `.iron_core_segment(..)`,
     /// whose leaves gather one value per element. A single element is `.iron_core_segment[i]`.
-    pub fn iron_core_segment<'a, I: EquilibriumConstraintsMagnetizationIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.iron_core_segment)
+    pub fn iron_core_segment<R>(&self, range: R) -> EquilibriumConstraintsMagnetizationSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraintsMagnetization], Output = [EquilibriumConstraintsMagnetization]>,
+    {
+        EquilibriumConstraintsMagnetizationSliceView::new(Elements::from_slice(&self.iron_core_segment[range]))
     }
 
     /// Get the number of iron_core_segment elements
@@ -5363,8 +4946,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of n_e, e.g. `.n_e(0..2)` or `.n_e(..)`,
     /// whose leaves gather one value per element. A single element is `.n_e[i]`.
-    pub fn n_e<'a, I: EquilibriumConstraints0dPositionIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.n_e)
+    pub fn n_e<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.n_e[range]))
     }
 
     /// Get the number of n_e elements
@@ -5376,8 +4962,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of n_e_line, e.g. `.n_e_line(0..2)` or `.n_e_line(..)`,
     /// whose leaves gather one value per element. A single element is `.n_e_line[i]`.
-    pub fn n_e_line<'a, I: EquilibriumConstraints0dIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.n_e_line)
+    pub fn n_e_line<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]>,
+    {
+        EquilibriumConstraints0dSliceView::new(Elements::from_slice(&self.n_e_line[range]))
     }
 
     /// Get the number of n_e_line elements
@@ -5389,8 +4978,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of pf_current, e.g. `.pf_current(0..2)` or `.pf_current(..)`,
     /// whose leaves gather one value per element. A single element is `.pf_current[i]`.
-    pub fn pf_current<'a, I: EquilibriumConstraints0dIpLikeIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.pf_current)
+    pub fn pf_current<R>(&self, range: R) -> EquilibriumConstraints0dIpLikeSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dIpLike], Output = [EquilibriumConstraints0dIpLike]>,
+    {
+        EquilibriumConstraints0dIpLikeSliceView::new(Elements::from_slice(&self.pf_current[range]))
     }
 
     /// Get the number of pf_current elements
@@ -5402,8 +4994,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of pf_passive_current, e.g. `.pf_passive_current(0..2)` or `.pf_passive_current(..)`,
     /// whose leaves gather one value per element. A single element is `.pf_passive_current[i]`.
-    pub fn pf_passive_current<'a, I: EquilibriumConstraints0dIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.pf_passive_current)
+    pub fn pf_passive_current<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]>,
+    {
+        EquilibriumConstraints0dSliceView::new(Elements::from_slice(&self.pf_passive_current[range]))
     }
 
     /// Get the number of pf_passive_current elements
@@ -5415,8 +5010,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of pressure, e.g. `.pressure(0..2)` or `.pressure(..)`,
     /// whose leaves gather one value per element. A single element is `.pressure[i]`.
-    pub fn pressure<'a, I: EquilibriumConstraints0dPositionIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.pressure)
+    pub fn pressure<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.pressure[range]))
     }
 
     /// Get the number of pressure elements
@@ -5428,8 +5026,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of pressure_rotational, e.g. `.pressure_rotational(0..2)` or `.pressure_rotational(..)`,
     /// whose leaves gather one value per element. A single element is `.pressure_rotational[i]`.
-    pub fn pressure_rotational<'a, I: EquilibriumConstraints0dPositionIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.pressure_rotational)
+    pub fn pressure_rotational<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.pressure_rotational[range]))
     }
 
     /// Get the number of pressure_rotational elements
@@ -5441,8 +5042,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of q, e.g. `.q(0..2)` or `.q(..)`,
     /// whose leaves gather one value per element. A single element is `.q[i]`.
-    pub fn q<'a, I: EquilibriumConstraints0dPositionIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.q)
+    pub fn q<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.q[range]))
     }
 
     /// Get the number of q elements
@@ -5454,8 +5058,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of j_phi, e.g. `.j_phi(0..2)` or `.j_phi(..)`,
     /// whose leaves gather one value per element. A single element is `.j_phi[i]`.
-    pub fn j_phi<'a, I: EquilibriumConstraints0dPositionIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.j_phi)
+    pub fn j_phi<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.j_phi[range]))
     }
 
     /// Get the number of j_phi elements
@@ -5467,8 +5074,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of j_parallel, e.g. `.j_parallel(0..2)` or `.j_parallel(..)`,
     /// whose leaves gather one value per element. A single element is `.j_parallel[i]`.
-    pub fn j_parallel<'a, I: EquilibriumConstraints0dPositionIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.j_parallel)
+    pub fn j_parallel<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.j_parallel[range]))
     }
 
     /// Get the number of j_parallel elements
@@ -5480,8 +5090,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of x_point, e.g. `.x_point(0..2)` or `.x_point(..)`,
     /// whose leaves gather one value per element. A single element is `.x_point[i]`.
-    pub fn x_point<'a, I: EquilibriumConstraintsPurePositionIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.x_point)
+    pub fn x_point<R>(&self, range: R) -> EquilibriumConstraintsPurePositionSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraintsPurePosition], Output = [EquilibriumConstraintsPurePosition]>,
+    {
+        EquilibriumConstraintsPurePositionSliceView::new(Elements::from_slice(&self.x_point[range]))
     }
 
     /// Get the number of x_point elements
@@ -5493,8 +5106,11 @@ impl EquilibriumConstraints {
 impl EquilibriumConstraints {
     /// The slice view over a range of strike_point, e.g. `.strike_point(0..2)` or `.strike_point(..)`,
     /// whose leaves gather one value per element. A single element is `.strike_point[i]`.
-    pub fn strike_point<'a, I: EquilibriumConstraintsPurePositionIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.strike_point)
+    pub fn strike_point<R>(&self, range: R) -> EquilibriumConstraintsPurePositionSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumConstraintsPurePosition], Output = [EquilibriumConstraintsPurePosition]>,
+    {
+        EquilibriumConstraintsPurePositionSliceView::new(Elements::from_slice(&self.strike_point[range]))
     }
 
     /// Get the number of strike_point elements
@@ -5506,8 +5122,11 @@ impl EquilibriumConstraints {
 impl EquilibriumGgd {
     /// The slice view over a range of r, e.g. `.r(0..2)` or `.r(..)`,
     /// whose leaves gather one value per element. A single element is `.r[i]`.
-    pub fn r<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.r)
+    pub fn r<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.r[range]))
     }
 
     /// Get the number of r elements
@@ -5519,8 +5138,11 @@ impl EquilibriumGgd {
 impl EquilibriumGgd {
     /// The slice view over a range of z, e.g. `.z(0..2)` or `.z(..)`,
     /// whose leaves gather one value per element. A single element is `.z[i]`.
-    pub fn z<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.z)
+    pub fn z<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.z[range]))
     }
 
     /// Get the number of z elements
@@ -5532,8 +5154,11 @@ impl EquilibriumGgd {
 impl EquilibriumGgd {
     /// The slice view over a range of psi, e.g. `.psi(0..2)` or `.psi(..)`,
     /// whose leaves gather one value per element. A single element is `.psi[i]`.
-    pub fn psi<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.psi)
+    pub fn psi<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.psi[range]))
     }
 
     /// Get the number of psi elements
@@ -5545,8 +5170,11 @@ impl EquilibriumGgd {
 impl EquilibriumGgd {
     /// The slice view over a range of phi, e.g. `.phi(0..2)` or `.phi(..)`,
     /// whose leaves gather one value per element. A single element is `.phi[i]`.
-    pub fn phi<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.phi)
+    pub fn phi<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.phi[range]))
     }
 
     /// Get the number of phi elements
@@ -5558,8 +5186,11 @@ impl EquilibriumGgd {
 impl EquilibriumGgd {
     /// The slice view over a range of theta, e.g. `.theta(0..2)` or `.theta(..)`,
     /// whose leaves gather one value per element. A single element is `.theta[i]`.
-    pub fn theta<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.theta)
+    pub fn theta<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.theta[range]))
     }
 
     /// Get the number of theta elements
@@ -5571,8 +5202,11 @@ impl EquilibriumGgd {
 impl EquilibriumGgd {
     /// The slice view over a range of j_phi, e.g. `.j_phi(0..2)` or `.j_phi(..)`,
     /// whose leaves gather one value per element. A single element is `.j_phi[i]`.
-    pub fn j_phi<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.j_phi)
+    pub fn j_phi<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.j_phi[range]))
     }
 
     /// Get the number of j_phi elements
@@ -5584,8 +5218,11 @@ impl EquilibriumGgd {
 impl EquilibriumGgd {
     /// The slice view over a range of j_parallel, e.g. `.j_parallel(0..2)` or `.j_parallel(..)`,
     /// whose leaves gather one value per element. A single element is `.j_parallel[i]`.
-    pub fn j_parallel<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.j_parallel)
+    pub fn j_parallel<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.j_parallel[range]))
     }
 
     /// Get the number of j_parallel elements
@@ -5597,8 +5234,11 @@ impl EquilibriumGgd {
 impl EquilibriumGgd {
     /// The slice view over a range of b_field_r, e.g. `.b_field_r(0..2)` or `.b_field_r(..)`,
     /// whose leaves gather one value per element. A single element is `.b_field_r[i]`.
-    pub fn b_field_r<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.b_field_r)
+    pub fn b_field_r<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.b_field_r[range]))
     }
 
     /// Get the number of b_field_r elements
@@ -5610,8 +5250,11 @@ impl EquilibriumGgd {
 impl EquilibriumGgd {
     /// The slice view over a range of b_field_phi, e.g. `.b_field_phi(0..2)` or `.b_field_phi(..)`,
     /// whose leaves gather one value per element. A single element is `.b_field_phi[i]`.
-    pub fn b_field_phi<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.b_field_phi)
+    pub fn b_field_phi<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.b_field_phi[range]))
     }
 
     /// Get the number of b_field_phi elements
@@ -5623,8 +5266,11 @@ impl EquilibriumGgd {
 impl EquilibriumGgd {
     /// The slice view over a range of b_field_z, e.g. `.b_field_z(0..2)` or `.b_field_z(..)`,
     /// whose leaves gather one value per element. A single element is `.b_field_z[i]`.
-    pub fn b_field_z<'a, I: GenericGridScalarIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.b_field_z)
+    pub fn b_field_z<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
+    {
+        GenericGridScalarSliceView::new(Elements::from_slice(&self.b_field_z[range]))
     }
 
     /// Get the number of b_field_z elements
@@ -5636,8 +5282,11 @@ impl EquilibriumGgd {
 impl EquilibriumGgdArray {
     /// The slice view over a range of grid, e.g. `.grid(0..2)` or `.grid(..)`,
     /// whose leaves gather one value per element. A single element is `.grid[i]`.
-    pub fn grid<'a, I: GenericGridDynamicIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.grid)
+    pub fn grid<R>(&self, range: R) -> GenericGridDynamicSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamic], Output = [GenericGridDynamic]>,
+    {
+        GenericGridDynamicSliceView::new(Elements::from_slice(&self.grid[range]))
     }
 
     /// Get the number of grid elements
@@ -5649,8 +5298,11 @@ impl EquilibriumGgdArray {
 impl EquilibriumTimeSlice {
     /// The slice view over a range of profiles_2d, e.g. `.profiles_2d(0..2)` or `.profiles_2d(..)`,
     /// whose leaves gather one value per element. A single element is `.profiles_2d[i]`.
-    pub fn profiles_2d<'a, I: EquilibriumProfiles2dIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.profiles_2d)
+    pub fn profiles_2d<R>(&self, range: R) -> EquilibriumProfiles2dSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumProfiles2d], Output = [EquilibriumProfiles2d]>,
+    {
+        EquilibriumProfiles2dSliceView::new(Elements::from_slice(&self.profiles_2d[range]))
     }
 
     /// Get the number of profiles_2d elements
@@ -5662,8 +5314,11 @@ impl EquilibriumTimeSlice {
 impl EquilibriumTimeSlice {
     /// The slice view over a range of ggd, e.g. `.ggd(0..2)` or `.ggd(..)`,
     /// whose leaves gather one value per element. A single element is `.ggd[i]`.
-    pub fn ggd<'a, I: EquilibriumGgdIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.ggd)
+    pub fn ggd<R>(&self, range: R) -> EquilibriumGgdSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumGgd], Output = [EquilibriumGgd]>,
+    {
+        EquilibriumGgdSliceView::new(Elements::from_slice(&self.ggd[range]))
     }
 
     /// Get the number of ggd elements
@@ -5675,8 +5330,11 @@ impl EquilibriumTimeSlice {
 impl GenericGridDynamic {
     /// The slice view over a range of space, e.g. `.space(0..2)` or `.space(..)`,
     /// whose leaves gather one value per element. A single element is `.space[i]`.
-    pub fn space<'a, I: GenericGridDynamicSpaceIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.space)
+    pub fn space<R>(&self, range: R) -> GenericGridDynamicSpaceSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicSpace], Output = [GenericGridDynamicSpace]>,
+    {
+        GenericGridDynamicSpaceSliceView::new(Elements::from_slice(&self.space[range]))
     }
 
     /// Get the number of space elements
@@ -5688,8 +5346,11 @@ impl GenericGridDynamic {
 impl GenericGridDynamic {
     /// The slice view over a range of grid_subset, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`,
     /// whose leaves gather one value per element. A single element is `.grid_subset[i]`.
-    pub fn grid_subset<'a, I: GenericGridDynamicGridSubsetIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.grid_subset)
+    pub fn grid_subset<R>(&self, range: R) -> GenericGridDynamicGridSubsetSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubset], Output = [GenericGridDynamicGridSubset]>,
+    {
+        GenericGridDynamicGridSubsetSliceView::new(Elements::from_slice(&self.grid_subset[range]))
     }
 
     /// Get the number of grid_subset elements
@@ -5701,8 +5362,11 @@ impl GenericGridDynamic {
 impl Code {
     /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
     /// whose leaves gather one value per element. A single element is `.library[i]`.
-    pub fn library<'a, I: LibraryIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.library)
+    pub fn library<R>(&self, range: R) -> LibrarySliceView<'_, Ix1>
+    where
+        R: SliceIndex<[Library], Output = [Library]>,
+    {
+        LibrarySliceView::new(Elements::from_slice(&self.library[range]))
     }
 
     /// Get the number of library elements
@@ -5714,8 +5378,11 @@ impl Code {
 impl GenericGridDynamicSpace {
     /// The slice view over a range of coordinates_type, e.g. `.coordinates_type(0..2)` or `.coordinates_type(..)`,
     /// whose leaves gather one value per element. A single element is `.coordinates_type[i]`.
-    pub fn coordinates_type<'a, I: IdentifierDynamicAos3Index<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.coordinates_type)
+    pub fn coordinates_type<R>(&self, range: R) -> IdentifierDynamicAos3SliceView<'_, Ix1>
+    where
+        R: SliceIndex<[IdentifierDynamicAos3], Output = [IdentifierDynamicAos3]>,
+    {
+        IdentifierDynamicAos3SliceView::new(Elements::from_slice(&self.coordinates_type[range]))
     }
 
     /// Get the number of coordinates_type elements
@@ -5727,8 +5394,11 @@ impl GenericGridDynamicSpace {
 impl GenericGridDynamicSpace {
     /// The slice view over a range of objects_per_dimension, e.g. `.objects_per_dimension(0..2)` or `.objects_per_dimension(..)`,
     /// whose leaves gather one value per element. A single element is `.objects_per_dimension[i]`.
-    pub fn objects_per_dimension<'a, I: GenericGridDynamicSpaceDimensionIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.objects_per_dimension)
+    pub fn objects_per_dimension<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimension], Output = [GenericGridDynamicSpaceDimension]>,
+    {
+        GenericGridDynamicSpaceDimensionSliceView::new(Elements::from_slice(&self.objects_per_dimension[range]))
     }
 
     /// Get the number of objects_per_dimension elements
@@ -5740,8 +5410,11 @@ impl GenericGridDynamicSpace {
 impl GenericGridDynamicGridSubset {
     /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
     /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<'a, I: GenericGridDynamicGridSubsetElementIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.element)
+    pub fn element<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetElement], Output = [GenericGridDynamicGridSubsetElement]>,
+    {
+        GenericGridDynamicGridSubsetElementSliceView::new(Elements::from_slice(&self.element[range]))
     }
 
     /// Get the number of element elements
@@ -5753,8 +5426,11 @@ impl GenericGridDynamicGridSubset {
 impl GenericGridDynamicGridSubset {
     /// The slice view over a range of base, e.g. `.base(0..2)` or `.base(..)`,
     /// whose leaves gather one value per element. A single element is `.base[i]`.
-    pub fn base<'a, I: GenericGridDynamicGridSubsetMetricIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.base)
+    pub fn base<R>(&self, range: R) -> GenericGridDynamicGridSubsetMetricSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetMetric], Output = [GenericGridDynamicGridSubsetMetric]>,
+    {
+        GenericGridDynamicGridSubsetMetricSliceView::new(Elements::from_slice(&self.base[range]))
     }
 
     /// Get the number of base elements
@@ -5766,8 +5442,11 @@ impl GenericGridDynamicGridSubset {
 impl GenericGridDynamicSpaceDimension {
     /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
     /// whose leaves gather one value per element. A single element is `.object[i]`.
-    pub fn object<'a, I: GenericGridDynamicSpaceDimensionObjectIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.object)
+    pub fn object<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimensionObject], Output = [GenericGridDynamicSpaceDimensionObject]>,
+    {
+        GenericGridDynamicSpaceDimensionObjectSliceView::new(Elements::from_slice(&self.object[range]))
     }
 
     /// Get the number of object elements
@@ -5779,8 +5458,11 @@ impl GenericGridDynamicSpaceDimension {
 impl GenericGridDynamicGridSubsetElement {
     /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
     /// whose leaves gather one value per element. A single element is `.object[i]`.
-    pub fn object<'a, I: GenericGridDynamicGridSubsetElementObjectIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.object)
+    pub fn object<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementObjectSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicGridSubsetElementObject], Output = [GenericGridDynamicGridSubsetElementObject]>,
+    {
+        GenericGridDynamicGridSubsetElementObjectSliceView::new(Elements::from_slice(&self.object[range]))
     }
 
     /// Get the number of object elements
@@ -5792,8 +5474,11 @@ impl GenericGridDynamicGridSubsetElement {
 impl GenericGridDynamicSpaceDimensionObject {
     /// The slice view over a range of boundary, e.g. `.boundary(0..2)` or `.boundary(..)`,
     /// whose leaves gather one value per element. A single element is `.boundary[i]`.
-    pub fn boundary<'a, I: GenericGridDynamicSpaceDimensionObjectBoundaryIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.boundary)
+    pub fn boundary<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'_, Ix1>
+    where
+        R: SliceIndex<[GenericGridDynamicSpaceDimensionObjectBoundary], Output = [GenericGridDynamicSpaceDimensionObjectBoundary]>,
+    {
+        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(Elements::from_slice(&self.boundary[range]))
     }
 
     /// Get the number of boundary elements
@@ -5805,8 +5490,11 @@ impl GenericGridDynamicSpaceDimensionObject {
 impl EquilibriumGreens {
     /// The slice view over a range of pf_active, e.g. `.pf_active(0..2)` or `.pf_active(..)`,
     /// whose leaves gather one value per element. A single element is `.pf_active[i]`.
-    pub fn pf_active<'a, I: EquilibriumGreensPfActiveIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.pf_active)
+    pub fn pf_active<R>(&self, range: R) -> EquilibriumGreensPfActiveSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumGreensPfActive], Output = [EquilibriumGreensPfActive]>,
+    {
+        EquilibriumGreensPfActiveSliceView::new(Elements::from_slice(&self.pf_active[range]))
     }
 
     /// Get the number of pf_active elements
@@ -5818,8 +5506,11 @@ impl EquilibriumGreens {
 impl EquilibriumGreens {
     /// The slice view over a range of pf_passive, e.g. `.pf_passive(0..2)` or `.pf_passive(..)`,
     /// whose leaves gather one value per element. A single element is `.pf_passive[i]`.
-    pub fn pf_passive<'a, I: EquilibriumGreensPfPassiveIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.pf_passive)
+    pub fn pf_passive<R>(&self, range: R) -> EquilibriumGreensPfPassiveSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumGreensPfPassive], Output = [EquilibriumGreensPfPassive]>,
+    {
+        EquilibriumGreensPfPassiveSliceView::new(Elements::from_slice(&self.pf_passive[range]))
     }
 
     /// Get the number of pf_passive elements
@@ -5831,8 +5522,11 @@ impl EquilibriumGreens {
 impl EquilibriumGreensPfPassive {
     /// The slice view over a range of dof, e.g. `.dof(0..2)` or `.dof(..)`,
     /// whose leaves gather one value per element. A single element is `.dof[i]`.
-    pub fn dof<'a, I: EquilibriumGreensPfPassiveDofIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.dof)
+    pub fn dof<R>(&self, range: R) -> EquilibriumGreensPfPassiveDofSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumGreensPfPassiveDof], Output = [EquilibriumGreensPfPassiveDof]>,
+    {
+        EquilibriumGreensPfPassiveDofSliceView::new(Elements::from_slice(&self.dof[range]))
     }
 
     /// Get the number of dof elements
@@ -5844,8 +5538,11 @@ impl EquilibriumGreensPfPassive {
 impl Equilibrium {
     /// The slice view over a range of grids_ggd, e.g. `.grids_ggd(0..2)` or `.grids_ggd(..)`,
     /// whose leaves gather one value per element. A single element is `.grids_ggd[i]`.
-    pub fn grids_ggd<'a, I: EquilibriumGgdArrayIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.grids_ggd)
+    pub fn grids_ggd<R>(&self, range: R) -> EquilibriumGgdArraySliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumGgdArray], Output = [EquilibriumGgdArray]>,
+    {
+        EquilibriumGgdArraySliceView::new(Elements::from_slice(&self.grids_ggd[range]))
     }
 
     /// Get the number of grids_ggd elements
@@ -5857,8 +5554,11 @@ impl Equilibrium {
 impl Equilibrium {
     /// The slice view over a range of time_slice, e.g. `.time_slice(0..2)` or `.time_slice(..)`,
     /// whose leaves gather one value per element. A single element is `.time_slice[i]`.
-    pub fn time_slice<'a, I: EquilibriumTimeSliceIndex<'a>>(&'a self, index: I) -> I::Output {
-        index.get(&self.time_slice)
+    pub fn time_slice<R>(&self, range: R) -> EquilibriumTimeSliceSliceView<'_, Ix1>
+    where
+        R: SliceIndex<[EquilibriumTimeSlice], Output = [EquilibriumTimeSlice]>,
+    {
+        EquilibriumTimeSliceSliceView::new(Elements::from_slice(&self.time_slice[range]))
     }
 
     /// Get the number of time_slice elements
