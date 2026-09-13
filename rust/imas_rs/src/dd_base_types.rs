@@ -339,6 +339,16 @@ fn unravel(flat: usize, gathered_shape: &[usize]) -> Vec<usize> {
 /// `T` is the array-of-structures element type (e.g. `EquilibriumTimeSlice`), `U` the leaf's type
 /// (`f64`, `i32`, `String`, `Complex64`), and `D` the rank of the gathered result. An unset element
 /// gathers as its unset value (`NaN`, `EMPTY_INT`, an empty string), like any other.
+///
+/// What a leaf gathers into depends on its type:
+/// * a numeric leaf gathers with `to_array`, into an `ndarray` of any rank, or with `to_vec` for a
+///   single sliced level;
+/// * a string leaf gathers with `to_vec`, into a `Vec<String>`, for a single sliced level only. An
+///   `ndarray` of strings supports none of the operations an array is for, while a `Vec<String>` is
+///   what names are handled as everywhere else.
+///
+/// The split is made by the `Copy` bound on `to_array`: every numeric leaf is `Copy` and `String`
+/// is not, so `.name.to_array()` is a compile error rather than an `Array1<String>`.
 pub struct Accumulator<'a, T, U, D> {
     elements: Elements<'a, T, D>,
     project: fn(&T) -> U,
@@ -359,17 +369,21 @@ impl<'a, T, U, D> Accumulator<'a, T, U, D> {
     }
 }
 
-impl<T, U: Clone, D: Dimension> Accumulator<'_, T, U, D> {
-    /// Gather every value into an array whose dimensions are gained from left to right, e.g.
-    /// `flux_loop(..).greens.pf_active(..).value.to_array()` is `(n_flux_loop, n_pf)`.
+impl<T, U: Copy, D: Dimension> Accumulator<'_, T, U, D> {
+    /// Gather every value of a numeric leaf into an array whose dimensions are gained from left to
+    /// right, e.g. `flux_loop(..).greens.pf_active(..).value.to_array()` is `(n_flux_loop, n_pf)`.
+    ///
+    /// A string leaf gathers with `to_vec` instead; see [`Accumulator`].
     pub fn to_array(&self) -> Array<U, D> {
         self.elements.gather(self.project)
     }
 }
 
 impl<T, U> Accumulator<'_, T, U, Ix1> {
-    /// Gather every value into a `Vec`. Only offered for a single sliced level, where there is no
-    /// question of which order the values come in.
+    /// Gather every value into a `Vec`, e.g. `flux_loop(..).name.to_vec()` is a `Vec<String>`.
+    ///
+    /// This is how a string leaf is gathered. Only offered for a single sliced level, where there is
+    /// no question of which order the values come in.
     pub fn to_vec(&self) -> Vec<U> {
         let n_items: usize = self.elements.items.len();
         let mut values: Vec<U> = Vec::with_capacity(n_items);
@@ -431,14 +445,13 @@ mod tests {
             }
         }
 
-        // Strings gather the same way
-        let names: Array2<String> = magnetics.flux_loop(..).greens.pf_active(..).name.to_array();
-        assert_eq!(names.dim(), (n_flux_loop, n_pf));
-        assert_eq!(names[[2, 1]], "PF1");
+        // Strings gather into a `Vec<String>`, over a single sliced level
+        let pf_names: Vec<String> = magnetics.flux_loop[2].greens.pf_active(..).name.to_vec();
+        assert_eq!(pf_names, vec!["PF0".to_string(), "PF1".to_string()]);
 
         // A leaf above the second level is still gathered over the first level only
-        let flux_loop_names: Array1<String> = magnetics.flux_loop(..).name.to_array();
-        assert_eq!(flux_loop_names, array!["L000".to_string(), "L001".to_string(), "L002".to_string()]);
+        let flux_loop_names: Vec<String> = magnetics.flux_loop(..).name.to_vec();
+        assert_eq!(flux_loop_names, vec!["L000".to_string(), "L001".to_string(), "L002".to_string()]);
 
         assert_eq!(magnetics.flux_loop(..).greens.pf_active(..).shape(), vec![n_flux_loop, n_pf]);
         assert_eq!(magnetics.flux_loop(..).greens.pf_active(..).len(), n_flux_loop * n_pf);
@@ -493,9 +506,11 @@ mod tests {
             }
         }
 
-        let names: Array2<String> = equilibrium.greens.pf_passive(..).dof(..).name.to_array(); // shape = (n_passive, n_dof)
-        assert_eq!(names.dim(), (n_passive, n_dof));
-        assert_eq!(names[[1, 2]], "P1_EIG_02");
+        // `dof` has no numeric scalar leaf to gather, so the two-level view is checked by its shape
+        assert_eq!(equilibrium.greens.pf_passive(..).dof(..).shape(), vec![n_passive, n_dof]);
+
+        let dof_names: Vec<String> = equilibrium.greens.pf_passive[1].dof(..).name.to_vec();
+        assert_eq!(dof_names, vec!["P1_EIG_00".to_string(), "P1_EIG_01".to_string(), "P1_EIG_02".to_string()]);
     }
 
     /// One sliced level is unchanged: a scalar leaf gathers into an `Array1`.
