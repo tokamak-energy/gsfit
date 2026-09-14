@@ -181,7 +181,11 @@ fn r_at_psi(
         }
         MidplaneSide::Inboard => {
             'inboard_cell_loop: for i_r_left in (0..=i_r_axis).rev() {
-                let psi_near: f64 = if i_r_left == i_r_axis { psi_at_mag_r } else { psi_at_grid_lines[i_r_left + 1] };
+                let psi_near: f64 = if i_r_left == i_r_axis {
+                    psi_at_mag_r
+                } else {
+                    psi_at_grid_lines[i_r_left + 1]
+                };
                 if !brackets(psi_near, psi_at_grid_lines[i_r_left], psi_target) {
                     continue 'inboard_cell_loop;
                 }

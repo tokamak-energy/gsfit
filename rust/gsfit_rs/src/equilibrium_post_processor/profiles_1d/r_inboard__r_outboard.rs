@@ -118,7 +118,15 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 
             let psi_target: f64 = psi_a + psi_norm[i_psi_norm] * (psi_b - psi_a);
             r_inboard_profile[i_psi_norm] = r_at_psi(r, &psi_at_grid_lines, &d_psi_d_r_at_grid_lines, mag_r, psi_a, psi_target, MidplaneSide::Inboard);
-            r_outboard_profile[i_psi_norm] = r_at_psi(r, &psi_at_grid_lines, &d_psi_d_r_at_grid_lines, mag_r, psi_a, psi_target, MidplaneSide::Outboard);
+            r_outboard_profile[i_psi_norm] = r_at_psi(
+                r,
+                &psi_at_grid_lines,
+                &d_psi_d_r_at_grid_lines,
+                mag_r,
+                psi_a,
+                psi_target,
+                MidplaneSide::Outboard,
+            );
         }
     }
 
@@ -160,7 +168,6 @@ fn r_at_psi(
     // The cell holding the magnetic axis, clamped so that an axis on the last grid line uses the
     // last cell. The walk starts here, in the cell the axis is inside, rather than at a grid line
     let i_r_axis: usize = (((mag_r - r[0]) / d_r).floor() as usize).min(n_r - 2);
-
 
     match side {
         MidplaneSide::Outboard => {
