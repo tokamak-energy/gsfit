@@ -7,8 +7,6 @@ from gsfit_rs import EfitPolynomial
 from gsfit_rs import Plasma
 from gsfit_rs import TensionedCubicBSpline
 
-from .mock_get_data import MockGetData
-
 if TYPE_CHECKING:
     from . import DatabaseReader
 
@@ -17,12 +15,14 @@ def setup_plasma(
     self: "DatabaseReader",
     pulseNo: int,
     settings: dict[str, typing.Any],
+    times_to_reconstruct: npt.NDArray[np.float64],
 ) -> Plasma:
     """
     This method initialises the Rust `Plasma` class.
 
     :param pulseNo: Pulse number, used to select which mocked MDSplus tree to read
     :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    :param times_to_reconstruct: Times the equilibrium will be solved at [second]
 
     **This method is specific to a mock of ST40's experimental MDSplus database.**
 
@@ -30,11 +30,19 @@ def setup_plasma(
     """
 
     # Initial plasma conditions
-    initial_ip = settings["GSFIT_code_settings.json"]["initial_guess"]["ip"]
-    initial_cur_r = settings["GSFIT_code_settings.json"]["initial_guess"]["r_cur"]
-    initial_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["z_cur"]
-    initial_minor_radius = settings["GSFIT_code_settings.json"]["initial_guess"]["minor_radius"]
-    initial_kappa = settings["GSFIT_code_settings.json"]["initial_guess"]["kappa"]
+    initial_guess_ip = settings["GSFIT_code_settings.json"]["initial_guess"]["ip"]
+    initial_guess_cur_r = settings["GSFIT_code_settings.json"]["initial_guess"]["cur_r"]
+    initial_guess_cur_z = settings["GSFIT_code_settings.json"]["initial_guess"]["cur_z"]
+    initial_guess_minor_radius = settings["GSFIT_code_settings.json"]["initial_guess"]["minor_radius"]
+    initial_guess_elongation = settings["GSFIT_code_settings.json"]["initial_guess"]["elongation"]
+
+    # Numerical settings the Grad-Shafranov solve is run with
+    n_iter_max = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"]
+    n_iter_min = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_min"]
+    n_iter_no_vertical_feedback = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_no_vertical_feedback"]
+    gs_error = settings["GSFIT_code_settings.json"]["numerics"]["gs_error"]
+    use_anderson_mixing = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["use"]
+    anderson_mixing_from_previous_iter = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["mixing_from_previous_iter"]
 
     # Set the source functions types
     p_prime_source_function = build_source_function(settings["source_function_p_prime.json"])
@@ -52,22 +60,6 @@ def setup_plasma(
     n_psi_n = settings["GSFIT_code_settings.json"]["n_psi_n"]
     psi_n = np.linspace(0.0, 1.0, n_psi_n).astype(np.float64)
 
-    # Limiter
-    elmag = MockGetData.from_workflow(settings, pulseNo, "elmag")
-    limit_pts_r = typing.cast(npt.NDArray[np.float64], elmag.get("LIMITER.LIMIT_PTS.R"))
-    limit_pts_z = typing.cast(npt.NDArray[np.float64], elmag.get("LIMITER.LIMIT_PTS.Z"))
-
-    # Vacuum vessel where the plasma is allowed to be
-    vessel_r = limit_pts_r
-    vessel_z = limit_pts_z
-
-    # Add lower MC tiles
-    limit_pts_r = np.append(limit_pts_r, 0.7103)
-    limit_pts_z = np.append(limit_pts_z, -0.3131)
-    # Add upper MC tiles
-    limit_pts_r = np.append(limit_pts_r, 0.7103)
-    limit_pts_z = np.append(limit_pts_z, 0.3031)
-
     # Initialise the Plasma Rust class
     plasma = Plasma(
         n_r,
@@ -77,17 +69,20 @@ def setup_plasma(
         z_min,
         z_max,
         psi_n,
-        limit_pts_r,
-        limit_pts_z,
-        vessel_r,
-        vessel_z,
         p_prime_source_function,
         ff_prime_source_function,
-        initial_ip,
-        initial_cur_r,
-        initial_cur_z,
-        initial_minor_radius,
-        initial_kappa,
+        initial_guess_ip,
+        initial_guess_cur_r,
+        initial_guess_cur_z,
+        initial_guess_minor_radius,
+        initial_guess_elongation,
+        n_iter_max,
+        n_iter_min,
+        n_iter_no_vertical_feedback,
+        gs_error,
+        use_anderson_mixing,
+        anderson_mixing_from_previous_iter,
+        times_to_reconstruct,
     )
 
     return plasma

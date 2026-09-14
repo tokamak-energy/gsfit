@@ -29,5 +29,9 @@ def get_database_writer(method: str) -> DatabaseWriterProtocol:
             from .rtgsfit_mdsplus import DatabaseWriterRTGSFitMDSplus
 
             return DatabaseWriterRTGSFitMDSplus()
+        case "imas":
+            from .imas import DatabaseWriterIMAS
+
+            return DatabaseWriterIMAS()
         case _:
             raise ValueError(f"Unknown database writer method: {method}")

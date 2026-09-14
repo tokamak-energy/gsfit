@@ -551,7 +551,7 @@ impl CircuitEquationModel {
             initial_states.fill(0.0);
         }
 
-        return initial_states_function;
+        initial_states_function
     }
 }
 

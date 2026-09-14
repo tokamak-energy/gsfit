@@ -14,13 +14,15 @@ from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
 from gsfit_rs import StationaryPoint
+from gsfit_rs import Tf
+from gsfit_rs import Wall
 
 
 class DatabaseReaderProtocol(Protocol):
     """
     Protocol for reading experimental data.
     Each method is responsible for initialising one of the Rust objects:
-    `bp_probes`, `coils`, `dialoop`, `flux_loops`, `isoflux`, `isoflux_boundary`, `stationary_point`, `passives`, `plasma`, and `rogowski_coils`.
+    `bp_probes`, `coils`, `dialoop`, `flux_loops`, `isoflux`, `isoflux_boundary`, `stationary_point`, `passives`, `plasma`, `rogowski_coils`, `tf`, and `wall`.
 
     The Protocol defines the inputs and outputs of each method.
     New database readers should be implemented **all** methods.
@@ -98,12 +100,6 @@ class DatabaseReaderProtocol(Protocol):
                 time=...,       # read from a database
                 measured=...,   # read from a database
             )
-
-        # Add TF coil
-        coils.add_tf_coil(
-            time=...,   # read from a database
-            i_rod=...,  # read from a database
-        )
 
         return coils
         ```
@@ -359,7 +355,9 @@ class DatabaseReaderProtocol(Protocol):
         """
         ...
 
-    def setup_plasma(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> Plasma:
+    def setup_plasma(
+        self, pulseNo: int, settings: dict[str, typing.Any], times_to_reconstruct: npt.NDArray[np.float64], **kwargs: dict[str, typing.Any]
+    ) -> Plasma:
         """
         This method initialises the Rust `Plasma` class.
 
@@ -368,7 +366,7 @@ class DatabaseReaderProtocol(Protocol):
         :param kwargs: Additional objects, such as FreeGNSKE object
 
         Initialising requires reading data from three locations:
-        1. `GSFIT_code_settings.json`: Which contains the plasma grid size and the maximum number of iterations
+        1. `GSFIT_code_settings.json`: Which contains the plasma grid size and the numerical settings the solve is run with
         2. `source_function_p_prime.json`: Which contains the number of degrees of freedom for p_prime, and regularisation
         3. `source_function_ff_prime.json`: Which contains the number of degrees of freedom for ff_prime, and regularisation
 
@@ -397,20 +395,117 @@ class DatabaseReaderProtocol(Protocol):
             z_min=...,                                          # read from `GSFIT_code_settings.json` file
             z_max=...,                                          # read from `GSFIT_code_settings.json` file
             psi_n=...,                                          # read from `GSFIT_code_settings.json` file
-            limit_pts_r=...,                                    # read from `GSFIT_code_settings.json` file
-            limit_pts_z=...,                                    # read from `GSFIT_code_settings.json` file
-            vessel_r=...,                                       # read from `GSFIT_code_settings.json` file
-            vessel_z=...,                                       # read from `GSFIT_code_settings.json` file
             p_prime_source_function=p_prime_source_function,    # built above
             ff_prime_source_function=ff_prime_source_function,  # built above
-            initial_ip=...,                                     # read from `GSFIT_code_settings.json` file
-            initial_cur_r=...,                                  # read from `GSFIT_code_settings.json` file
-            initial_cur_z=...,                                  # read from `GSFIT_code_settings.json` file
-            initial_minor_radius=...,                            # read from `GSFIT_code_settings.json` file
-            initial_kappa=...,                                  # read from `GSFIT_code_settings.json` file
+            initial_guess_ip=...,                              # read from `GSFIT_code_settings.json` file
+            initial_guess_cur_r=...,                           # read from `GSFIT_code_settings.json` file
+            initial_guess_cur_z=...,                           # read from `GSFIT_code_settings.json` file
+            initial_guess_minor_radius=...,                    # read from `GSFIT_code_settings.json` file
+            initial_guess_elongation=...,                      # read from `GSFIT_code_settings.json` file
+            n_iter_max=...,                                    # read from `GSFIT_code_settings.json` file
+            n_iter_min=...,                                    # read from `GSFIT_code_settings.json` file
+            n_iter_no_vertical_feedback=...,                   # read from `GSFIT_code_settings.json` file
+            gs_error=...,                                      # read from `GSFIT_code_settings.json` file
+            use_anderson_mixing=...,                           # read from `GSFIT_code_settings.json` file
+            anderson_mixing_from_previous_iter=...,            # read from `GSFIT_code_settings.json` file
+            times_to_reconstruct=times_to_reconstruct,         # passed in, from `setup_timeslices`
         )
 
         return plasma
+        ```
+        """
+        ...
+
+    def setup_tf(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> Tf:
+        """
+        This method initialises the Rust `Tf` class, which holds an IMAS `tf` IDS.
+
+        :param pulseNo: Pulse number, used to read from the database
+        :param settings: Dictionary containing the JSON settings read from the `settings` directory
+        :param kwargs: Additional objects, such as FreeGNSKE object
+
+        Initialising requires reading data from:
+        1. Database reading (e.g. MDSplus, or FreeGSNKE object): Which contains the toroidal field measurement
+
+        Two nodes are filled. `tf/r0` is the machine's reference major radius, which the solver
+        copies onto `equilibrium/vacuum_toroidal_field/r0` so that the two IDSs cannot disagree.
+        `tf/b_field_phi_vacuum_r` is the vacuum field times major radius, which is the vacuum
+        poloidal-current function `f_vac = R0 * B_phi0 = mu_0 * i_rod / (2 * pi)`. The rod current
+        is not stored separately: the solver recovers it as `i_rod = 2 * pi * f_vac / mu_0`.
+
+        **Store the experimental signal**, on its own timebase, not one interpolated onto the
+        reconstruction times. `solve_grad_shafranov` interpolates it itself.
+
+        **`b_field_phi_vacuum_r` is signed**: positive means counter-clockwise viewed from above.
+        A reader which passes a magnitude will silently reverse the toroidal field, and with it
+        `f`, `q`, `profiles_2d/b_field_phi` and the diamagnetic flux constraint.
+
+        Different machines will use different data stores for the toroidal field.
+        This Protocol allows different database readers to be selected.
+        The output of this method must always be a `Tf` object.
+
+        At a minimum this method should look like this:
+        ```python
+        # Initialise the Tf Rust class
+        tf = Tf()
+
+        tf.set_r0(...)  # read from `GSFIT_code_settings.json` file
+
+        # A machine holding a rod current converts it; one holding `R * B_phi` passes it straight
+        tf.set_b_field_phi_vacuum_r(
+            time=...,  # read from a database
+            data=...,  # read from a database
+        )
+
+        return tf
+        ```
+        """
+        ...
+
+    def setup_wall(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> Wall:
+        """
+        This method initialises the Rust `Wall` class, which holds an IMAS `wall` IDS.
+
+        :param pulseNo: Pulse number, used to read from the database
+        :param settings: Dictionary containing the JSON settings read from the `settings` directory
+        :param kwargs: Additional objects, such as FreeGNSKE object
+
+        Initialising requires reading data from:
+        1. Database reading (e.g. MDSplus, or FreeGSNKE object): Which contains the limiter geometry
+
+        Only `wall/description_2d(0)/limiter` is filled. Each limiter unit is a plasma facing
+        component, and every point of every unit is a candidate limit point.
+
+        **The order the units are added in is part of the contract**: `unit(0)` is the vacuum
+        vessel contour, and the solver uses that one, and only that one, as the region the
+        plasma is allowed to occupy. Later units are components which protrude inside it, such
+        as tiles.
+
+        Different machines will use different data stores for the limiter geometry.
+        This Protocol allows different database readers to be selected.
+        The output of this method must always be a `Wall` object.
+
+        At a minimum this method should look like this:
+        ```python
+        # Initialise the Wall Rust class
+        wall = Wall()
+
+        # The vacuum vessel contour must be added first
+        wall.add_limiter_unit(
+            name="vacuum_vessel",  # a short identifier for the unit
+            r=...,                 # read from a database
+            z=...,                 # read from a database
+        )
+
+        # Any other plasma facing components follow
+        for i_unit in range(n_units):
+            wall.add_limiter_unit(
+                name=...,  # a short identifier for the unit
+                r=...,     # read from a database
+                z=...,     # read from a database
+            )
+
+        return wall
         ```
         """
         ...

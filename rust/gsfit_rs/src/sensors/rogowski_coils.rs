@@ -15,7 +15,9 @@ use numpy::{PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use std::collections::HashMap;
 use std::f64::consts::PI;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
@@ -237,8 +239,8 @@ impl RogowskiCoils {
                         self.construct_virtual_bp_probes(&sensor_name, &gap_name);
 
                     // Calculate Greens betwen the virtual bp-probes and the coils
-                    virtual_b_r_probes.greens_with_coils_rs(coils.clone());
-                    virtual_b_z_probes.greens_with_coils_rs(coils.clone());
+                    virtual_b_r_probes.greens_with_coils_rs(&coils);
+                    virtual_b_z_probes.greens_with_coils_rs(&coils);
 
                     let g_gaps_b_r: Array1<f64> = virtual_b_r_probes.results.get("*").get("greens").get("pf").get(&pf_coil_name).unwrap_array1(); // shape = [n_virtual_bp_probes]
                     let g_gaps_b_z: Array1<f64> = virtual_b_z_probes.results.get("*").get("greens").get("pf").get(&pf_coil_name).unwrap_array1();
@@ -294,6 +296,59 @@ impl RogowskiCoils {
                 vec![], // No holes
             );
 
+            // The virtual bp-probes which span each gap, and their Green's tables, depend only on the
+            // Rogowski coil and the gap - not on which passive or which degree of freedom we are
+            // working on. They used to be rebuilt inside the degree-of-freedom loop, which for ST40's
+            // 8 passives and 22 degrees of freedom meant building the same tables 176 times over.
+            // They are now built once per gap and looked up below.
+            //
+            // For any one (passive, degree of freedom) the contributions are still added in the same
+            // order - gap by gap, and within a gap probe by probe - so `g_gap` is unchanged bit for bit.
+            let mut g_gap_all: HashMap<(String, String), f64> = HashMap::new();
+            for gap_name in &gap_names {
+                // Construct virtual bp probes
+                let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
+                    self.construct_virtual_bp_probes(&sensor_name, gap_name);
+
+                // Calculate Greens between the virtual bp-probes and the passives
+                virtual_b_r_probes.greens_with_passives_rs(passives_local);
+                virtual_b_z_probes.greens_with_passives_rs(passives_local);
+
+                let n_virtual_bp_probes: usize = virtual_b_z_probes.results.keys().len();
+
+                for passive_name in passives_local.results.keys() {
+                    let dof_accumulator: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
+                    let dof_names: Vec<String> = dof_accumulator.keys();
+
+                    for dof_name in dof_names {
+                        let g_gaps_b_r: Array1<f64> = virtual_b_r_probes
+                            .results
+                            .get("*")
+                            .get("greens")
+                            .get("passives")
+                            .get(&passive_name)
+                            .get(&dof_name)
+                            .unwrap_array1(); // shape = [n_virtual_bp_probes]
+                        let g_gaps_b_z: Array1<f64> = virtual_b_z_probes
+                            .results
+                            .get("*")
+                            .get("greens")
+                            .get("passives")
+                            .get(&passive_name)
+                            .get(&dof_name)
+                            .unwrap_array1(); // shape = [n_virtual_bp_probes]
+
+                        let g_gap: &mut f64 = g_gap_all.entry((passive_name.clone(), dof_name.clone())).or_insert(0.0);
+
+                        *g_gap += g_gaps_b_r[0] * 0.5 * gap_virtual_d_r + g_gaps_b_z[0] * 0.5 * gap_virtual_d_z;
+                        for i_virtual_bp_probe in 1..n_virtual_bp_probes - 1 {
+                            *g_gap += g_gaps_b_r[i_virtual_bp_probe] * gap_virtual_d_r + g_gaps_b_z[i_virtual_bp_probe] * gap_virtual_d_z;
+                        }
+                        *g_gap += g_gaps_b_r[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_r + g_gaps_b_z[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_z;
+                    }
+                }
+            }
+
             // Calculate Greens with each passive degree of freedom
             for passive_name in passives_local.results.keys() {
                 let _tmp: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
@@ -324,44 +379,9 @@ impl RogowskiCoils {
 
                     let g_all: Array1<f64> = &inside_vec * current_distribution;
 
-                    // Calculate the greens for the gaps (needed for later)
-                    // TODO: this is wasteful as we are re-calculating the same thing
-                    // (at least there are not many PF coils. but still not good...)
-                    let mut g_gap: f64 = 0.0;
-                    for gap_name in &gap_names {
-                        // Construct virtual bp probes
-                        let (mut virtual_b_r_probes, mut virtual_b_z_probes, gap_virtual_d_r, gap_virtual_d_z) =
-                            self.construct_virtual_bp_probes(&sensor_name, gap_name);
-
-                        // Calculate Greens betwen the virtual bp-probes and the coils
-                        virtual_b_r_probes.greens_with_passives_rs(passives_local.clone());
-                        virtual_b_z_probes.greens_with_passives_rs(passives_local.clone());
-
-                        let g_gaps_b_r: Array1<f64> = virtual_b_r_probes
-                            .results
-                            .get("*")
-                            .get("greens")
-                            .get("passives")
-                            .get(&passive_name)
-                            .get(&dof_name)
-                            .unwrap_array1(); // shape = [n_virtual_bp_probes]
-                        let g_gaps_b_z: Array1<f64> = virtual_b_z_probes
-                            .results
-                            .get("*")
-                            .get("greens")
-                            .get("passives")
-                            .get(&passive_name)
-                            .get(&dof_name)
-                            .unwrap_array1(); // shape = [n_virtual_bp_probes]
-
-                        let n_virtual_bp_probes: usize = virtual_b_z_probes.results.keys().len();
-
-                        g_gap += g_gaps_b_r[0] * 0.5 * gap_virtual_d_r + g_gaps_b_z[0] * 0.5 * gap_virtual_d_z;
-                        for i_virtual_bp_probe in 1..n_virtual_bp_probes - 1 {
-                            g_gap += g_gaps_b_r[i_virtual_bp_probe] * gap_virtual_d_r + g_gaps_b_z[i_virtual_bp_probe] * gap_virtual_d_z;
-                        }
-                        g_gap += g_gaps_b_r[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_r + g_gaps_b_z[n_virtual_bp_probes - 1] * 0.5 * gap_virtual_d_z;
-                    }
+                    // The gap correction, summed over all of this Rogowski coil's gaps above.
+                    // A Rogowski coil with no gaps has no correction
+                    let g_gap: f64 = *g_gap_all.get(&(passive_name.clone(), dof_name.clone())).unwrap_or(&0.0);
 
                     // Sum over all pasive filaments
                     let g_with_passives: f64 = g_all.sum() - g_gap / MU_0;
@@ -382,8 +402,14 @@ impl RogowskiCoils {
         // Change Python type into Rust
         let plasma_local: &Plasma = &plasma;
 
-        let plasma_r: Array1<f64> = plasma_local.results.get("grid").get("flat").get("r").unwrap_array1();
-        let plasma_z: Array1<f64> = plasma_local.results.get("grid").get("flat").get("z").unwrap_array1();
+        // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
+        // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the
+        // (R, Z) mesh, so iterating them row-major gives the flattened grid the Green's tables are
+        // indexed by
+        let mesh_r: &Array2<f64> = &plasma_local.equilibrium_ids.time_slice[0].profiles_2d[0].r;
+        let mesh_z: &Array2<f64> = &plasma_local.equilibrium_ids.time_slice[0].profiles_2d[0].z;
+        let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
+        let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
         let n_rz: usize = plasma_r.len();
 
         for sensor_name in self.results.keys() {
@@ -430,8 +456,8 @@ impl RogowskiCoils {
                     self.construct_virtual_bp_probes(&sensor_name, gap_name);
 
                 // Calculate Greens betwen the virtual bp-probes and the coils
-                virtual_b_r_probes.greens_with_plasma_rs(plasma.clone());
-                virtual_b_z_probes.greens_with_plasma_rs(plasma.clone());
+                virtual_b_r_probes.greens_with_plasma_rs(&plasma);
+                virtual_b_z_probes.greens_with_plasma_rs(&plasma);
 
                 let g_gaps_b_r: Array2<f64> = virtual_b_r_probes.results.get("*").get("greens").get("plasma").unwrap_array2(); // shape = [n_z * n_r, n_virtual_bp_probes]
                 let g_gaps_b_z: Array2<f64> = virtual_b_z_probes.results.get("*").get("greens").get("plasma").unwrap_array2();
@@ -656,7 +682,7 @@ impl RogowskiCoils {
     /// This splits the RogowskiCoils into:
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<SensorsStatic>, Vec<SensorsDynamic>) {
+    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
 
         // Vector of boolean's to say if we use the sensor or not
@@ -680,7 +706,7 @@ impl RogowskiCoils {
         // If there are no sensors selected, return empty data
         if n_sensors == 0 {
             let (static_data_empty, dynamic_data_empty): (SensorsStatic, SensorsDynamic) = create_empty_sensor_data();
-            let static_data_empty_vs_time: Vec<SensorsStatic> = vec![static_data_empty; n_time];
+            let static_data_empty_vs_time: Vec<Arc<SensorsStatic>> = vec![Arc::new(static_data_empty); n_time];
             let dynamic_data_empty_vs_time: Vec<SensorsDynamic> = vec![dynamic_data_empty; n_time];
             return (static_data_empty_vs_time, dynamic_data_empty_vs_time);
         }
@@ -801,7 +827,9 @@ impl RogowskiCoils {
             results_dynamic.push(results_dynamic_this_time_slice);
         }
 
-        let results_static_time_dependent: Vec<SensorsStatic> = vec![results_static.clone(); n_time];
+        // These Green's tables are fixed geometry, so every time-slice gets an `Arc` handle
+        // to the same copy rather than 480 identical copies of it
+        let results_static_time_dependent: Vec<Arc<SensorsStatic>> = vec![Arc::new(results_static); n_time];
 
         // Return the static and dynamic results
         (results_static_time_dependent, results_dynamic)
@@ -816,9 +844,10 @@ impl RogowskiCoils {
 
             // Plasma
             let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1(); // shape = [n_z * n_r]
-            let j_2d: Array3<f64> = plasma.results.get("profiles_2d").get("r_z").get("j").unwrap_array3(); // shape = [n_time, n_z, n_r]
-            let d_area: f64 = plasma.results.get("grid").get("d_area").unwrap_f64();
-            let time: Array1<f64> = plasma.results.get("time").unwrap_array1();
+            // `time_slice[0]` because the grid is the same on every time-slice, and `profiles_2d[0]`
+            // because GSFit solves on a single rectangular (R, Z) grid
+            let d_area: f64 = plasma.equilibrium_ids.time_slice[0].profiles_2d[0].grid.d_area;
+            let time: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.to_array();
             let n_time: usize = time.len();
 
             // Loop over time
@@ -848,7 +877,9 @@ impl RogowskiCoils {
                 }
 
                 // Plasma
-                let j_2d_flat: Array1<f64> = Array1::from_iter(j_2d.slice(s![i_time, .., ..]).iter().copied());
+                // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid
+                let j_2d: &Array2<f64> = &plasma.equilibrium_ids.time_slice[i_time].profiles_2d[0].j_phi;
+                let j_2d_flat: Array1<f64> = Array1::from_iter(j_2d.iter().copied());
                 let sensor_values_from_plasma: f64 = (&g_with_plasma * j_2d_flat).sum() * d_area;
 
                 // Total

@@ -1,0 +1,5 @@
+# Local clone of the IMAS Data Dictionary, used only to regenerate `../src/ids/*.rs`.
+# Not committed: it is ~32 MB, is owned by ITER under its own licences, and the
+# version we generate from is pinned in `README.md` instead.
+# (no trailing slash, so this also covers a symlink to a clone elsewhere)
+IMAS-Data-Dictionary
