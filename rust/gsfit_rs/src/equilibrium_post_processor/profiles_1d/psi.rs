@@ -9,9 +9,6 @@ use ndarray::Array1;
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_1d/psi` is written into it
-///
-/// A time-slice which failed to converge carries `NaN` in `boundary/psi` and
-/// `global_quantities/psi_magnetic_axis`, so `psi` comes out `NaN` without needing a special case.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
 

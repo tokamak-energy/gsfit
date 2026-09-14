@@ -8,8 +8,7 @@ use ndarray::Array1;
 /// Store the normalized poloidal flux and toroidal flux coordinate at the plasma boundary.
 ///
 /// The selected boundary is the final surface in `profiles_1d`, so both quantities are the final
-/// values of their corresponding profiles. A time-slice which failed to converge carries `NaN` at
-/// those endpoints, which is propagated without a special case.
+/// values of their corresponding profiles.
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `boundary/psi_norm` and `boundary/rho_tor` are written

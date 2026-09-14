@@ -76,13 +76,6 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 
     let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.len();
 
-    // A slice which did not converge has no flux surfaces to integrate around
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        store(time_slice, &vec![Array1::from_elem(n_psi_norm, f64::NAN); N_GM]);
-        return;
-    }
-
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
     let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
@@ -97,7 +90,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let psi_profile: &Array1<f64> = &time_slice.profiles_1d.psi;
     let rho_tor: &Array1<f64> = &time_slice.profiles_1d.rho_tor;
 
-    let d_rho_tor_d_psi: Array1<f64> = epp_d_rho_tor_d_psi(rho_tor, psi_profile);
+    let d_rho_tor_d_psi: Array1<f64> = d_rho_tor_d_psi(rho_tor, psi_profile);
 
     let mut gm_profiles: Vec<Array1<f64>> = vec![Array1::from_elem(n_psi_norm, f64::NAN); N_GM];
 
@@ -142,7 +135,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         }
     }
 
-    epp_gm_at_magnetic_axis(time_slice, f_profile, &mut gm_profiles);
+    gm_at_magnetic_axis(time_slice, f_profile, &mut gm_profiles);
 
     store(time_slice, &gm_profiles);
 }
@@ -193,7 +186,7 @@ fn gm_quantities_at_point(r_here: f64, bp_here: f64, f_here: f64, d_rho_tor_d_ps
 /// `psi_profile` runs in increasing index order from the magnetic axis outwards, so the numerators
 /// do too: a forward difference at the first point, central differences in the interior, and a
 /// backward difference at the last point.
-fn epp_d_rho_tor_d_psi(rho_tor: &Array1<f64>, psi_profile: &Array1<f64>) -> Array1<f64> {
+fn d_rho_tor_d_psi(rho_tor: &Array1<f64>, psi_profile: &Array1<f64>) -> Array1<f64> {
     let n_psi_norm: usize = psi_profile.len();
 
     let mut d_rho_tor_d_psi: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
@@ -219,7 +212,7 @@ fn epp_d_rho_tor_d_psi(rho_tor: &Array1<f64>, psi_profile: &Array1<f64>) -> Arra
 /// * `time_slice` - the solved time-slice, read only
 /// * `f_profile` - the `f = r * b_phi` profile [tesla * metre]
 /// * `gm_profiles` - the nine profiles, with index 0 still NaN; written into
-fn epp_gm_at_magnetic_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, gm_profiles: &mut [Array1<f64>]) {
+fn gm_at_magnetic_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, gm_profiles: &mut [Array1<f64>]) {
     let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r;
 
     // `b_p = 0` on the magnetic axis, so the total field is the toroidal field alone
@@ -352,7 +345,7 @@ mod tests {
         let psi_profile: Array1<f64> = Array1::linspace(0.0, 1.0, 501);
         let rho_tor: Array1<f64> = psi_profile.mapv(|psi| k * psi.sqrt());
 
-        let d_rho_tor_d_psi: Array1<f64> = epp_d_rho_tor_d_psi(&rho_tor, &psi_profile);
+        let d_rho_tor_d_psi: Array1<f64> = d_rho_tor_d_psi(&rho_tor, &psi_profile);
 
         let i_check: usize = 250;
         let psi_check: f64 = psi_profile[i_check];
@@ -375,7 +368,7 @@ mod tests {
         gm_profiles[2][1] = 3.0;
         gm_profiles[2][2] = 5.0;
 
-        epp_gm_at_magnetic_axis(&time_slice, &f_profile, &mut gm_profiles);
+        gm_at_magnetic_axis(&time_slice, &f_profile, &mut gm_profiles);
 
         // The exact point values
         assert_abs_diff_eq!(gm_profiles[7][0], 0.5, epsilon = 1e-15); // gm8 = r_axis

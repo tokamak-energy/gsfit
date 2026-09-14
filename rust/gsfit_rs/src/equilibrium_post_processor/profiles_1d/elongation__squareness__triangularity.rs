@@ -2,18 +2,18 @@
 //! `.../triangularity_lower`, `.../squareness_upper_inner`, `.../squareness_upper_outer`,
 //! `.../squareness_lower_inner` and `.../squareness_lower_outer`
 
-use super::super::boundary::geometry::epp_boundary_geometry;
+use super::super::boundary::geometry::boundary_geometry;
 use super::super::constant_values::ConstantValues;
 use super::super::flux_surfaces::FluxSurface;
 use super::super::intermediate_values::IntermediateValues;
-use super::q::epp_hessian_matrix;
+use super::q::hessian_matrix;
 use imas_rs::EquilibriumTimeSlice;
 use ndarray::Array1;
 
 /// Calculate the elongation, triangularity and squareness of every flux surface, and store them in
 /// the time-slice.
 ///
-/// Each surface is measured exactly as the plasma boundary is - the same `epp_boundary_geometry` is
+/// Each surface is measured exactly as the plasma boundary is - the same `boundary_geometry` is
 /// called on each contour in turn - so the last point of each profile is the corresponding
 /// `boundary` scalar, by construction rather than by coincidence.
 ///
@@ -35,7 +35,7 @@ use ndarray::Array1;
 ///
 /// The elongation of that limiting ellipse is not zero: it is finite, and set by the curvature of
 /// `psi` at the axis, so it is taken from that curvature rather than from a contour. See
-/// `epp_elongation_at_magnetic_axis`.
+/// `elongation_at_magnetic_axis`.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
@@ -50,23 +50,6 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let mut square_l_o_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
     let mut square_u_i_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
     let mut square_u_o_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
-
-    // A slice which did not converge has no flux surfaces to measure
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        store(
-            time_slice,
-            elongation_profile,
-            triang_profile,
-            triang_l_profile,
-            triang_u_profile,
-            square_l_i_profile,
-            square_l_o_profile,
-            square_u_i_profile,
-            square_u_o_profile,
-        );
-        return;
-    }
 
     // The surfaces tend to ellipses at the magnetic axis; see the note in this function's
     // documentation. The elongation is filled after the loop, because it is extrapolated from the
@@ -85,9 +68,9 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         let fs_z: &Array1<f64> = &flux_surfaces[i_psi_norm].z;
 
         // A flux surface which could not be found is stored with zero points, which
-        // `epp_boundary_geometry` returns NaN for
+        // `boundary_geometry` returns NaN for
         let (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o): (f64, f64, f64, f64, f64, f64, f64, f64) =
-            epp_boundary_geometry(fs_r, fs_z);
+            boundary_geometry(fs_r, fs_z);
 
         elongation_profile[i_psi_norm] = elongation;
         triang_profile[i_psi_norm] = triang;
@@ -99,7 +82,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         square_u_o_profile[i_psi_norm] = square_u_o;
     }
 
-    elongation_profile[0] = epp_elongation_at_magnetic_axis(time_slice);
+    elongation_profile[0] = elongation_at_magnetic_axis(time_slice);
 
     store(
         time_slice,
@@ -150,7 +133,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 ///
 /// # Consistency with `q` on the axis
 ///
-/// `epp_q_axis` solves the same problem - the flux surface degenerates to a point, so the quantity
+/// `q_axis` solves the same problem - the flux surface degenerates to a point, so the quantity
 /// has to come from the local shape of `psi` - and it uses the same Hessian. The two agree by
 /// construction: substituting `psi_rr = elongation ** 2 * psi_zz` into what it computes gives
 ///
@@ -173,11 +156,11 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 /// # Returns
 /// * `elongation_axis` - the elongation on the magnetic axis, or NaN when the axis sits on the edge
 ///   of the grid, where the Hessian cannot be differenced [dimensionless]
-fn epp_elongation_at_magnetic_axis(time_slice: &EquilibriumTimeSlice) -> f64 {
+fn elongation_at_magnetic_axis(time_slice: &EquilibriumTimeSlice) -> f64 {
     let mag_r: f64 = time_slice.global_quantities.magnetic_axis.r;
     let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z;
 
-    let Some((hessian_matrix, _hessian_determinant, _hessian_trace)) = epp_hessian_matrix(time_slice, mag_r, mag_z) else {
+    let Some((hessian_matrix, _hessian_determinant, _hessian_trace)) = hessian_matrix(time_slice, mag_r, mag_z) else {
         return f64::NAN;
     };
 
@@ -381,23 +364,5 @@ mod tests {
         assert_abs_diff_eq!(time_slice.profiles_1d.triangularity[1], delta, epsilon = 1e-6);
         assert_abs_diff_eq!(time_slice.profiles_1d.triangularity_lower[1], delta, epsilon = 1e-6);
         assert_abs_diff_eq!(time_slice.profiles_1d.triangularity_upper[1], delta, epsilon = 1e-6);
-    }
-
-    #[test]
-    fn a_slice_which_did_not_converge_is_all_nan() {
-        let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
-        time_slice.global_quantities.psi_magnetic_axis = f64::NAN;
-
-        let flux_surfaces: Vec<FluxSurface> = vec![untraced_flux_surface(), untraced_flux_surface(), untraced_flux_surface()];
-
-        let mut intermediate_values: IntermediateValues = intermediate_values_for_test();
-        intermediate_values.flux_surfaces = flux_surfaces;
-        calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
-
-        // Including the magnetic axis, which is only filled once there is a converged solution
-        assert!(time_slice.profiles_1d.elongation.iter().all(|value| value.is_nan()));
-        assert!(time_slice.profiles_1d.triangularity.iter().all(|value| value.is_nan()));
-        assert!(time_slice.profiles_1d.squareness_lower_inner.iter().all(|value| value.is_nan()));
     }
 }

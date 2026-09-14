@@ -22,10 +22,6 @@ use ndarray::{Array1, Array2, array};
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_2d(0)/pressure` is written into it
 /// * `constant_values` - the constant values; `p_prime_source_function` is read
-///
-/// A time-slice which failed to converge carries `NaN` in `psi_norm`, `mask`, `boundary/psi` and
-/// `global_quantities/psi_magnetic_axis`, so the arithmetic below fills `pressure` with `NaN`
-/// without needing a special case.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let p_prime_source_function: &SharedSourceFunction = constant_values.p_prime_source_function;
 

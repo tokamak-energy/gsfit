@@ -11,9 +11,6 @@ use ndarray::Array1;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_1d/f_df_dpsi` is written into it
 /// * `constant_values` - the constant values; `ff_prime_source_function` is read
-///
-/// A time-slice which failed to converge carries `NaN` coefficients, so `f_df_dpsi` comes out `NaN`
-/// without needing a special case.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let ff_prime_source_function: &SharedSourceFunction = constant_values.ff_prime_source_function;
 

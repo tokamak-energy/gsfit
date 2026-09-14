@@ -25,8 +25,6 @@ use ndarray::{Array1, Array2};
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_2d(0)/phi` is written into it
-///
-/// A time-slice which failed to converge gets `NaN` everywhere.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
@@ -34,13 +32,6 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let (n_z, n_r): (usize, usize) = psi_norm_2d.dim();
 
     let mut phi_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
-
-    // A slice which did not converge has no plasma, so no toroidal flux is reported for it
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        time_slice.profiles_2d[0].phi = phi_2d;
-        return;
-    }
 
     let mask_2d: &Array2<f64> = &time_slice.profiles_2d[0].mask;
     let psi_norm_profile: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
@@ -153,18 +144,6 @@ mod tests {
         assert_abs_diff_eq!(phi_2d[(0, 1)], 8.0, epsilon = 1e-15);
         assert_abs_diff_eq!(phi_2d[(1, 0)], 0.0, epsilon = 1e-15);
         assert_abs_diff_eq!(phi_2d[(1, 1)], 2.0, epsilon = 1e-15);
-    }
-
-    #[test]
-    fn failed_slice_is_nan_everywhere() {
-        let mut time_slice: EquilibriumTimeSlice = time_slice_with(Array2::from_elem((2, 3), f64::NAN), Array2::zeros((2, 3)));
-        time_slice.global_quantities.psi_magnetic_axis = f64::NAN;
-        time_slice.profiles_1d.phi = array![f64::NAN, f64::NAN, f64::NAN];
-
-        calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
-
-        let phi_2d: &Array2<f64> = &time_slice.profiles_2d[0].phi;
-        assert!(phi_2d.iter().all(|value| value.is_nan()));
     }
 
     #[test]

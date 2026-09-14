@@ -13,7 +13,7 @@ use ndarray::{Array1, Array2, array};
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; the two `profiles_1d_r_midplane` nodes are written into it
-/// * `p_prime_source_function` - the p' source function the reconstruction was run with
+/// * `constant_values` - the constant values; `p_prime_source_function` is read
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let p_prime_source_function: &SharedSourceFunction = constant_values.p_prime_source_function;
 

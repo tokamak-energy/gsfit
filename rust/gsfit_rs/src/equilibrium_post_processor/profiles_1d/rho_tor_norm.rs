@@ -20,9 +20,6 @@ use ndarray::Array1;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_1d/rho_tor_norm` is written into it
 ///
-/// A slice which did not converge carries NaN in `rho_tor`, so the profile comes out NaN without
-/// needing a special case.
-///
 /// Note: the boundary value is taken from the last point of the profile rather than from the
 /// largest, because `rho_tor` increases outwards by construction and the last point is the boundary
 /// by definition. Taking the largest would divide by zero for a profile which runs the other way.

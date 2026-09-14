@@ -16,9 +16,6 @@ use ndarray::{Array1, Array2};
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_1d_r_midplane/j_phi` is written into it
-///
-/// A time-slice which failed to converge carries a `NaN` current density, so the profile comes out
-/// `NaN` without needing a special case.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures

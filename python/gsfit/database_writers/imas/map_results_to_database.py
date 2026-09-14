@@ -8,6 +8,11 @@ and `gsfit_rs.imas.equilibrium_paths` is a path builder over the same schema. So
 hand-map several hundred leaves. It **walks the Rust schema and copies each leaf into the node of
 the same name** in the official IDS.
 
+Each time-slice is traversed on its own, reading `time_slice[i_time]` rather than the accumulator
+`time_slice[:]`. So every leaf comes back exactly as that time-slice stores it: a leaf whose length
+differs between time-slices, such as the boundary outline, keeps its own length, and there is no
+padding to remove.
+
 That matters for maintenance: a leaf added on the Rust side appears in the output automatically,
 and a leaf the official data dictionary does not have is skipped rather than crashing the run.
 Which leaves those are depends on the data dictionary in use, so they are logged at `debug` level
@@ -18,8 +23,6 @@ re-shaping is:
 
 * a leaf that is entirely non-finite is left unset, rather than written as `NaN`, because an unset
   node is how IMAS represents "not calculated";
-* the ragged 1D contours (the boundary outline) are trimmed of the `NaN` padding that the gather
-  into a rectangle introduced;
 * the 2D maps are transposed if needed so that `dim1` is R and `dim2` is Z, checked against the
   lengths of `grid/dim1` and `grid/dim2` rather than assumed;
 * `bool` and `usize` are cast to the `int` the data dictionary expects.
@@ -123,31 +126,23 @@ def _is_array_of_structures(path: typing.Any) -> bool:
 
 
 def _read_leaf(plasma: "gsfit_rs.Plasma", path: typing.Any) -> typing.Any:
-    """Read one leaf out of the Rust IDS held by `plasma`, or `None` if it cannot be gathered.
+    """Read one leaf out of the Rust IDS held by `plasma`, or `None` if its path does not exist.
 
-    A leaf GSFit never set reads back as its IMAS empty value - `NaN`, `EMPTY_INT`, an empty
-    string or an empty array - and `_write_leaf` leaves such a node unset in the output. The read
-    itself only fails when the gather has no single shape, e.g. a per-slice integer array which
-    some slices set and others did not; that node is skipped for every slice.
+    Every path read here selects a single element of each array of structures on it, e.g.
+    `time_slice[i_time]` and `profiles_2d[0]`, so the leaf comes back exactly as it is stored in that
+    element, at its own length. None of the accumulators (`time_slice[:]`) is used, because gathering
+    elements of different lengths into one array has to pad them.
+
+    A leaf GSFit never set reads back as its IMAS empty value - `NaN`, `EMPTY_INT`, an empty string
+    or an empty array - and `_write_leaf` leaves such a node unset in the output. The read itself
+    only fails when an index is beyond the end of an array of structures, e.g. `profiles_2d[0]` on
+    a time-slice which has no `profiles_2d`.
     """
 
     try:
         return plasma.get(path)
-    except (IndexError, TypeError):
+    except IndexError:
         return None
-
-
-def _trim_trailing_nan(values: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-    """Drop the `NaN` padding from a ragged 1D contour.
-
-    The Rust getter gathers one contour per time-slice into a rectangle, padding the short rows.
-    Only trailing padding is removed, so an interior `NaN` - which would be real data - survives.
-    """
-
-    finite = np.isfinite(values)
-    if not finite.any():
-        return values[:0]
-    return values[: int(np.flatnonzero(finite)[-1]) + 1]
 
 
 def _write_leaf(destination: typing.Any, name: str, values: typing.Any, data_type: str) -> None:
@@ -175,36 +170,30 @@ def _write_leaf(destination: typing.Any, name: str, values: typing.Any, data_typ
         # Nothing was calculated; an unset node says that, a node full of NaN does not
         return
 
-    if array.ndim == 1:
-        array = _trim_trailing_nan(array)
-        if array.size == 0:
-            return
-
     setattr(destination, name, array)
 
 
-def _copy_time_slice_branch(
+def _copy_branch(
     source: typing.Any,
     destination: typing.Any,
     plasma: "gsfit_rs.Plasma",
-    i_time: int,
     path: str,
     skipped: set[str],
 ) -> None:
-    """Copy one branch of `time_slice[i_time]` from the Rust IDS into the official IDS.
+    """Traverse one branch of the Rust IDS, and fill the node of the same name in the official IDS.
 
-    `source` is a path over `time_slice[:]`, so every leaf read returns the whole time series at
-    once, with time as its first dimension, and `[i_time]` selects the slice. Reading the whole
-    series, rather than `time_slice[i_time]`, is what lets `_read_leaf` skip a node which cannot be
-    gathered for every slice alike, instead of writing it for some slices and not others.
+    :param source: a path into the Rust IDS which selects single elements only, such as
+        `equilibrium_paths.time_slice[i_time]` or `equilibrium_paths.vacuum_toroidal_field`
+    :param destination: the matching node of the official IDS
+    :param path: the IMAS path of `source`, used to report the leaves which are skipped
+    :param skipped: the leaves the data dictionary has no node for, added to in place
     """
 
     for name in sorted(n for n in dir(source) if not n.startswith("_")):
         source_child = getattr(source, name)
         if not isinstance(source_child, gsfit_imas.Path):
             continue
-
-        child_path = f"{path}/{name}" if path else name
+        child_path = f"{path}/{name}"
 
         if not hasattr(destination, name):
             skipped.add(child_path)
@@ -217,59 +206,79 @@ def _copy_time_slice_branch(
             # and the rest (`boundary/gap`, `contour_tree/node`, `ggd`) GSFit does not store. None
             # of them is a schema mismatch, so none is reported as one
             if name == "profiles_2d":
-                _copy_profiles_2d(source_child, destination_child, plasma, i_time, child_path, skipped)
+                _copy_profiles_2d(source_child, destination_child, plasma, child_path, skipped)
             continue
 
         if _is_leaf(source_child):
             values = _read_leaf(plasma, source_child)
             if values is not None:
-                _write_leaf(destination, name, np.asarray(values)[i_time], source_child.data_type)
+                _write_leaf(destination, name, values, source_child.data_type)
             continue
 
-        _copy_time_slice_branch(source_child, destination_child, plasma, i_time, child_path, skipped)
+        _copy_branch(source_child, destination_child, plasma, child_path, skipped)
 
 
 def _copy_profiles_2d(
     source: typing.Any,
     destination: typing.Any,
     plasma: "gsfit_rs.Plasma",
-    i_time: int,
     path: str,
     skipped: set[str],
 ) -> None:
     """Copy `profiles_2d[0]`, orienting the 2D maps as the data dictionary wants them."""
 
-    destination.resize(1)
     source_entry = source[0]
-    destination_entry = destination[0]
 
-    dim1 = np.asarray(_read_leaf(plasma, source_entry.grid.dim1))[i_time]
-    dim2 = np.asarray(_read_leaf(plasma, source_entry.grid.dim2))[i_time]
-    n_dim1 = int(np.isfinite(dim1).sum())
-    n_dim2 = int(np.isfinite(dim2).sum())
+    dim1 = _read_leaf(plasma, source_entry.grid.dim1)
+    dim2 = _read_leaf(plasma, source_entry.grid.dim2)
+    if dim1 is None or dim2 is None:
+        # This time-slice has no `profiles_2d`
+        return
+    n_dim1: int = len(dim1)
+    n_dim2: int = len(dim2)
 
-    for name in sorted(n for n in dir(source_entry) if not n.startswith("_")):
-        source_child = getattr(source_entry, name)
+    destination.resize(1)
+    _copy_profiles_2d_branch(source_entry, destination[0], plasma, path, skipped, n_dim1, n_dim2)
+
+
+def _copy_profiles_2d_branch(
+    source: typing.Any,
+    destination: typing.Any,
+    plasma: "gsfit_rs.Plasma",
+    path: str,
+    skipped: set[str],
+    n_dim1: int,
+    n_dim2: int,
+) -> None:
+    """Copy one branch of `profiles_2d[0]`, orienting every 2D map it holds against the grid.
+
+    Recursive, so that the 2D maps in a sub-structure, such as `grid/volume_element`, are oriented
+    too, not only the direct children of `profiles_2d`.
+
+    :param n_dim1: the length of `grid/dim1`, the major radius [count]
+    :param n_dim2: the length of `grid/dim2`, the height [count]
+    """
+
+    for name in sorted(n for n in dir(source) if not n.startswith("_")):
+        source_child = getattr(source, name)
         if not isinstance(source_child, gsfit_imas.Path):
             continue
         child_path = f"{path}/{name}"
 
-        if not hasattr(destination_entry, name):
+        if not hasattr(destination, name):
             skipped.add(child_path)
             continue
 
         if not _is_leaf(source_child):
             if _is_array_of_structures(source_child):
                 continue
-            _copy_time_slice_branch(
-                source_child, getattr(destination_entry, name), plasma, i_time, child_path, skipped
-            )
+            _copy_profiles_2d_branch(source_child, getattr(destination, name), plasma, child_path, skipped, n_dim1, n_dim2)
             continue
 
         raw = _read_leaf(plasma, source_child)
         if raw is None:
             continue
-        values = np.asarray(raw)[i_time]
+        values = np.asarray(raw)
 
         # The DD requires (dim1, dim2) = (R, Z). Checked against the grid rather than assumed,
         # so that a change of storage order on the Rust side is caught instead of silently
@@ -283,38 +292,7 @@ def _copy_profiles_2d(
                     f"({n_dim1}, {n_dim2}) nor its transpose"
                 )
 
-        _write_leaf(destination_entry, name, values, source_child.data_type)
-
-
-def _copy_time_independent(
-    source: typing.Any,
-    destination: typing.Any,
-    plasma: "gsfit_rs.Plasma",
-    path: str,
-    skipped: set[str],
-) -> None:
-    """Copy a branch which is not under `time_slice`, such as `vacuum_toroidal_field` or `code`."""
-
-    for name in sorted(n for n in dir(source) if not n.startswith("_")):
-        source_child = getattr(source, name)
-        if not isinstance(source_child, gsfit_imas.Path):
-            continue
-        child_path = f"{path}/{name}" if path else name
-
-        if not hasattr(destination, name):
-            skipped.add(child_path)
-            continue
-
-        if _is_array_of_structures(source_child):
-            continue
-
-        if _is_leaf(source_child):
-            values = _read_leaf(plasma, source_child)
-            if values is not None:
-                _write_leaf(destination, name, values, source_child.data_type)
-            continue
-
-        _copy_time_independent(source_child, getattr(destination, name), plasma, child_path, skipped)
+        _write_leaf(destination, name, values, source_child.data_type)
 
 
 def _sensor_series(sensor_object: typing.Any, sensor_name: str, quantity: str) -> dict[str, typing.Any]:
@@ -388,23 +366,10 @@ def map_results_to_database(
     skipped: set[str] = set()
 
     for i_time in range(n_time):
-        _copy_time_slice_branch(
-            equilibrium_paths.time_slice[:],
-            equilibrium.time_slice[i_time],
-            plasma,
-            i_time,
-            "",
-            skipped,
-        )
+        _copy_branch(equilibrium_paths.time_slice[i_time], equilibrium.time_slice[i_time], plasma, "time_slice", skipped)
 
-    _copy_time_independent(
-        equilibrium_paths.vacuum_toroidal_field,
-        equilibrium.vacuum_toroidal_field,
-        plasma,
-        "vacuum_toroidal_field",
-        skipped,
-    )
-    _copy_time_independent(equilibrium_paths.code, equilibrium.code, plasma, "code", skipped)
+    _copy_branch(equilibrium_paths.vacuum_toroidal_field, equilibrium.vacuum_toroidal_field, plasma, "vacuum_toroidal_field", skipped)
+    _copy_branch(equilibrium_paths.code, equilibrium.code, plasma, "code", skipped)
 
     # GSFit stores some things the data dictionary has no home for. Which ones depends on the
     # dictionary in use, so they are reported from the run rather than listed in the source

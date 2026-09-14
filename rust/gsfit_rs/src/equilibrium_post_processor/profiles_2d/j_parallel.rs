@@ -38,9 +38,7 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// * `constant_values` - the constant values; `b0` and `ff_prime_source_function` are read
 ///
 /// The mask zeroes the poloidal part outside the plasma boundary, where `ff'(psi)` has no meaning;
-/// `j_phi` is already zero there, so `j_parallel` comes out zero too. A time-slice which failed to
-/// converge carries `NaN` in `j_phi` and in the fields, so `j_parallel` comes out `NaN` without
-/// needing a special case.
+/// `j_phi` is already zero there, so `j_parallel` comes out zero too.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let b0: f64 = constant_values.b0;
     let ff_prime_source_function: &SharedSourceFunction = constant_values.ff_prime_source_function;

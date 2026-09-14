@@ -18,9 +18,6 @@ use std::f64::consts::PI;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_2d(0)/b_field_r` and `.../b_field_z` are
 ///   written into it
-///
-/// A time-slice which failed to converge carries NaN in the flux derivatives, so the fields come
-/// out NaN without needing a special case.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures

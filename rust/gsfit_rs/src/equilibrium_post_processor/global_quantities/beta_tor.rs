@@ -17,11 +17,9 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// where `<p>` is the volume-averaged pressure, which comes from the stored MHD energy,
 /// `w_mhd = (3 / 2) * int(p dV)`.
 ///
-/// Note: the old post-processor reported `beta_tor` as a **percentage**, whereas the data
-/// dictionary defines it as a fraction ("beta_toroidal = 2 mu0 int(p dV) / V / B0^2"). This writes
-/// the fraction, so `global_quantities/beta_tor` is 100 times smaller than the old
-/// `global/beta_t`. `beta_tor_norm` is unaffected: its data dictionary definition carries the
-/// factor of 100 explicitly, so it already matched.
+/// Note: `beta_tor` is a **fraction**, not a percentage, as the data dictionary defines it
+/// ("beta_toroidal = 2 mu0 int(p dV) / V / B0^2"). `beta_tor_norm` carries the factor of 100
+/// explicitly in its data dictionary definition.
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; the two `global_quantities` nodes are written into it
@@ -41,8 +39,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 
     let beta_tor: f64 = 2.0 * MU_0 * p_vol_avg / bt_vac_at_r_geo.powi(2);
 
-    // The percentage form is kept as an intermediate, so that `beta_tor_norm` is evaluated in
-    // exactly the same order as the old post-processor evaluated it
+    // `beta_tor_norm` is evaluated from the percentage form, which supplies its factor of 100
     let beta_tor_percent: f64 = 2.0 * MU_0 * p_vol_avg * 100.0 / bt_vac_at_r_geo.powi(2);
     let beta_tor_norm: f64 = beta_tor_percent * r_minor * bt_vac_at_r_geo / (ip / 1e6);
 

@@ -52,12 +52,6 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 fn calculate_bp_sq_fs_avg(time_slice: &EquilibriumTimeSlice, intermediate_values: &IntermediateValues) -> f64 {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
-    // A slice which did not converge has no flux surfaces to average over
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        return f64::NAN;
-    }
-
     let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
     let n_psi_norm: usize = psi_norm.len();
 

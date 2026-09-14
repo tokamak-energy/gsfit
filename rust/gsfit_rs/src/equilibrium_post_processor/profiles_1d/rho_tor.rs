@@ -24,9 +24,6 @@ use std::f64::consts::PI;
 /// * `constant_values` - the constant values; `b0`, the vacuum toroidal field at `r0` for this time-slice,
 ///   `vacuum_toroidal_field/b0` [tesla], is read
 ///
-/// A slice which did not converge carries NaN in `phi`, so the profile comes out NaN without
-/// needing a special case.
-///
 /// `phi` and `b0` share a sign - both are positive when the toroidal field is counter-clockwise
 /// viewed from above - so their ratio is positive. The magnitude is taken anyway, because
 /// `rho_tor` is a positive radial coordinate and a sign convention disagreeing between the two

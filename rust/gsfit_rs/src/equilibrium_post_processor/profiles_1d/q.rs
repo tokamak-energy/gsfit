@@ -19,17 +19,8 @@ const GAUSS_LEGENDRE_ABSCISSA: f64 = 0.5773502691896258;
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
-    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.len();
-
-    // A slice which did not converge has no flux surfaces to integrate around
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        time_slice.profiles_1d.q = Array1::from_elem(n_psi_norm, f64::NAN);
-        return;
-    }
-
     let f_profile: &Array1<f64> = &time_slice.profiles_1d.f;
-    let q_profile: Array1<f64> = epp_q_profile(time_slice, flux_surfaces, f_profile);
+    let q_profile: Array1<f64> = q_profile(time_slice, flux_surfaces, f_profile);
 
     time_slice.profiles_1d.q = q_profile;
 }
@@ -63,7 +54,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 ///
 /// # Returns
 /// * `q_profile` - the safety factor profile [dimensionless]
-pub(in crate::equilibrium_post_processor) fn epp_q_profile(
+pub(in crate::equilibrium_post_processor) fn q_profile(
     time_slice: &EquilibriumTimeSlice,
     flux_surfaces: &[FluxSurface],
     f_profile: &Array1<f64>,
@@ -84,7 +75,7 @@ pub(in crate::equilibrium_post_processor) fn epp_q_profile(
     }
 
     if n_psi_norm > 0 && psi_norm[0] != 1.0 {
-        q_profile[0] = epp_q_axis(time_slice, f_profile, &psi_gradient_interpolator);
+        q_profile[0] = q_axis(time_slice, f_profile, &psi_gradient_interpolator);
     }
 
     q_profile
@@ -160,10 +151,11 @@ fn q_integrand_at(r_here: f64, z_here: f64, psi_gradient_interpolator: &PsiGradi
 /// # Arguments
 /// * `time_slice` - the solved time-slice, read only
 /// * `f_profile` - the `f = R * B_phi` profile to integrate with [tesla metre]
+/// * `psi_gradient_interpolator` - the bicubic model of `grad(psi)` built from `time_slice`
 ///
 /// # Returns
 /// * `q_axis` - the safety factor on the magnetic axis [dimensionless]
-fn epp_q_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, psi_gradient_interpolator: &PsiGradientInterpolator) -> f64 {
+fn q_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, psi_gradient_interpolator: &PsiGradientInterpolator) -> f64 {
     let j_2d: &Array2<f64> = &time_slice.profiles_2d[0].j_phi;
 
     let r_mag: f64 = time_slice.global_quantities.magnetic_axis.r;
@@ -199,7 +191,7 @@ fn epp_q_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, psi_gr
 /// * `hessian_matrix` - the 2x2 Hessian matrix [weber per metre ** 2]
 /// * `hessian_determinant` - its determinant
 /// * `hessian_trace` - its trace
-pub(super) fn epp_hessian_matrix(time_slice: &EquilibriumTimeSlice, r_point: f64, z_point: f64) -> Option<(Array2<f64>, f64, f64)> {
+pub(super) fn hessian_matrix(time_slice: &EquilibriumTimeSlice, r_point: f64, z_point: f64) -> Option<(Array2<f64>, f64, f64)> {
     return PsiGradientInterpolator::new(time_slice).hessian_matrix(r_point, z_point);
 }
 
@@ -452,7 +444,7 @@ mod tests {
             circular_flux_surface(r_axis, z_axis, 0.4),
         ];
         let f_profile: Array1<f64> = Array1::from_elem(flux_surfaces.len(), f_here);
-        let q_profile: Array1<f64> = epp_q_profile(&time_slice, &flux_surfaces, &f_profile);
+        let q_profile: Array1<f64> = q_profile(&time_slice, &flux_surfaces, &f_profile);
 
         let q_expected: f64 = 2.0 * PI * f_here / (psi_curvature * (r_axis.powi(2) - minor_radius.powi(2)).sqrt());
         assert_abs_diff_eq!(q_profile[2], q_expected, epsilon = 2e-6);
@@ -509,7 +501,7 @@ mod tests {
 
         let f_profile: Array1<f64> = Array1::from_vec(vec![f_axis]);
         let psi_gradient_interpolator: PsiGradientInterpolator = PsiGradientInterpolator::new(&time_slice);
-        let q_axis: f64 = epp_q_axis(&time_slice, &f_profile, &psi_gradient_interpolator);
+        let q_axis: f64 = q_axis(&time_slice, &f_profile, &psi_gradient_interpolator);
         let q_axis_expected: f64 = (psi_rr_axis + psi_zz_axis).abs() / (psi_rr_axis * psi_zz_axis).sqrt() * f_axis / (MU_0 * mag_r.powi(2) * j_phi_axis);
 
         assert_abs_diff_eq!(q_axis, q_axis_expected, epsilon = 1e-12);

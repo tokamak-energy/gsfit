@@ -27,11 +27,11 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; the four `global_quantities` nodes are written into it
-/// * `bp_sq_fs_avg` - flux-surface-averaged `b_p ** 2` from
-///   `bp_sq_flux_surface_average::calculate`
-///   [tesla ** 2]
-/// * `r0` - the vacuum toroidal field reference radius `vacuum_toroidal_field/r0` [metre], which
-///   `solve_grad_shafranov` copies from `tf/r0`
+/// * `constant_values` - the constant values; `r0`, the vacuum toroidal field reference radius
+///   `vacuum_toroidal_field/r0` [metre], which `solve_grad_shafranov` copies from `tf/r0`, is read
+/// * `intermediate_values` - the shared intermediate values; `bp_sq_fs_avg`, the
+///   flux-surface-averaged `b_p ** 2` from `bp_sq_flux_surface_average::calculate` [tesla ** 2], is
+///   read
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let bp_sq_fs_avg: f64 = intermediate_values.bp_sq_fs_avg;
     let r0: f64 = constant_values.r0;

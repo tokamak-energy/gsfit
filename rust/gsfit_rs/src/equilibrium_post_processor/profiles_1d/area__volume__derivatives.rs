@@ -34,26 +34,13 @@ use std::f64::consts::PI;
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; the seven `profiles_1d` nodes above are written into it
-/// * `flux_surfaces` - the flux surfaces from `flux_surfaces::calculate`, one per `psi_norm`
+/// * `intermediate_values` - the shared intermediate values; `flux_surfaces`, one per `psi_norm`, is
+///   read
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let flux_surfaces: &[FluxSurface] = &intermediate_values.flux_surfaces;
 
     let psi_norm: &Array1<f64> = &time_slice.profiles_1d.psi_norm;
     let n_psi_norm: usize = psi_norm.len();
-
-    // A slice which did not converge has no flux surfaces to measure
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        let nan_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
-        time_slice.profiles_1d.volume = nan_profile.clone();
-        time_slice.profiles_1d.dvolume_dpsi = nan_profile.clone();
-        time_slice.profiles_1d.dvolume_drho_tor = nan_profile.clone();
-        time_slice.profiles_1d.area = nan_profile.clone();
-        time_slice.profiles_1d.darea_dpsi = nan_profile.clone();
-        time_slice.profiles_1d.darea_drho_tor = nan_profile.clone();
-        time_slice.profiles_1d.surface = nan_profile;
-        return;
-    }
 
     // The psi grid spacing, taken from the psi profile rather than recomputed, so that it cannot
     // disagree with it
@@ -93,7 +80,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
         // Calculate the volume
         area_profile[i_psi_norm] = area;
         volume_profile[i_psi_norm] = 2.0 * PI * mass_centroid_r * area;
-        surface_profile[i_psi_norm] = epp_surface_of_revolution(&flux_surface.r, &flux_surface.z);
+        surface_profile[i_psi_norm] = surface_of_revolution(&flux_surface.r, &flux_surface.z);
     }
 
     // Take derivatives.
@@ -116,8 +103,8 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 
     // The same two derivatives, against the other radial coordinate
     let rho_tor: &Array1<f64> = &time_slice.profiles_1d.rho_tor;
-    let volume_prime_rho_tor_profile: Array1<f64> = epp_d_profile_d_rho_tor(&volume_profile, rho_tor);
-    let area_prime_rho_tor_profile: Array1<f64> = epp_d_profile_d_rho_tor(&area_profile, rho_tor);
+    let volume_prime_rho_tor_profile: Array1<f64> = d_profile_d_rho_tor(&volume_profile, rho_tor);
+    let area_prime_rho_tor_profile: Array1<f64> = d_profile_d_rho_tor(&area_profile, rho_tor);
 
     time_slice.profiles_1d.volume = volume_profile;
     time_slice.profiles_1d.dvolume_dpsi = volume_prime_profile;
@@ -142,7 +129,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 ///
 /// # Returns
 /// * `surface` - the area of the toroidal surface [metre ** 2]
-fn epp_surface_of_revolution(fs_r: &Array1<f64>, fs_z: &Array1<f64>) -> f64 {
+fn surface_of_revolution(fs_r: &Array1<f64>, fs_z: &Array1<f64>) -> f64 {
     let n_fs: usize = fs_r.len();
 
     // The ring is closed, so the last point repeats the first and every segment is covered
@@ -172,7 +159,7 @@ fn epp_surface_of_revolution(fs_r: &Array1<f64>, fs_z: &Array1<f64>) -> f64 {
 /// Written this way the result is identical to `d(profile)/d(psi) / (d(rho_tor)/d(psi))` taken with
 /// the same stencils, because the `d(psi)` of the two cancels exactly. Doing it in one step avoids
 /// the `0 / 0` that chain rule would hit at the magnetic axis, where `d(rho_tor)/d(psi)` diverges.
-fn epp_d_profile_d_rho_tor(profile: &Array1<f64>, rho_tor: &Array1<f64>) -> Array1<f64> {
+fn d_profile_d_rho_tor(profile: &Array1<f64>, rho_tor: &Array1<f64>) -> Array1<f64> {
     let n_psi_norm: usize = rho_tor.len();
 
     let mut d_profile_d_rho_tor: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
@@ -187,11 +174,8 @@ fn epp_d_profile_d_rho_tor(profile: &Array1<f64>, rho_tor: &Array1<f64>) -> Arra
 
 #[cfg(test)]
 mod tests {
-    use super::super::super::constant_values::constant_values_for_test;
-    use super::super::super::intermediate_values::intermediate_values_for_test;
     use super::*;
     use approx::assert_abs_diff_eq;
-    use ndarray::array;
 
     /// A circular contour of minor radius `a` about `(r_geo, 0)` sweeps out a torus, whose surface
     /// area is `4 * pi ** 2 * r_geo * a`
@@ -206,7 +190,7 @@ mod tests {
         let fs_r: Array1<f64> = r_geo + a * theta.mapv(f64::cos);
         let fs_z: Array1<f64> = a * theta.mapv(f64::sin);
 
-        let surface: f64 = epp_surface_of_revolution(&fs_r, &fs_z);
+        let surface: f64 = surface_of_revolution(&fs_r, &fs_z);
 
         assert_abs_diff_eq!(surface, 4.0 * PI.powi(2) * r_geo * a, epsilon = 1e-6);
     }
@@ -222,7 +206,7 @@ mod tests {
         let rho_tor: Array1<f64> = psi_norm.mapv(|psi_norm_here| 0.4 * psi_norm_here.sqrt());
         let profile: Array1<f64> = rho_tor.mapv(|rho_tor_here| k * rho_tor_here.powi(2));
 
-        let d_profile_d_rho_tor: Array1<f64> = epp_d_profile_d_rho_tor(&profile, &rho_tor);
+        let d_profile_d_rho_tor: Array1<f64> = d_profile_d_rho_tor(&profile, &rho_tor);
 
         // In the interior, where the central difference is used. It is exact for a quadratic on an
         // even grid, so all that is left is the unevenness of `rho_tor` itself
@@ -234,27 +218,5 @@ mod tests {
 
         // The forward difference at the magnetic axis: `(k * rho_tor[1] ** 2 - 0) / rho_tor[1]`
         assert_abs_diff_eq!(d_profile_d_rho_tor[0], k * rho_tor[1], epsilon = 1e-12);
-    }
-
-    #[test]
-    fn a_slice_which_did_not_converge_is_all_nan() {
-        let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.profiles_1d.psi_norm = array![0.0, 0.5, 1.0];
-        time_slice.global_quantities.psi_magnetic_axis = f64::NAN;
-
-        let flux_surface_empty: FluxSurface = FluxSurface {
-            r: Array1::from_elem(0, f64::NAN),
-            z: Array1::from_elem(0, f64::NAN),
-        };
-        let flux_surfaces: Vec<FluxSurface> = vec![flux_surface_empty; 3];
-
-        let mut intermediate_values: IntermediateValues = intermediate_values_for_test();
-        intermediate_values.flux_surfaces = flux_surfaces;
-        calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values);
-
-        // Including the magnetic axis, which is only filled once there is a converged solution
-        assert!(time_slice.profiles_1d.surface.iter().all(|value| value.is_nan()));
-        assert!(time_slice.profiles_1d.dvolume_drho_tor.iter().all(|value| value.is_nan()));
-        assert!(time_slice.profiles_1d.darea_drho_tor.iter().all(|value| value.is_nan()));
     }
 }

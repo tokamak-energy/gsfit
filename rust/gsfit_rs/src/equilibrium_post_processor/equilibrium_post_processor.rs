@@ -158,7 +158,6 @@ pub fn equilibrium_post_processor(
     // nothing about which slice it is, exactly as the solver does. That independence is what
     // lets the slices run in parallel
     equilibrium_ids.time_slice.par_iter_mut().enumerate().for_each(|(i_time, time_slice)| {
-        // equilibrium_ids.time_slice.iter_mut().enumerate().for_each(|(i_time, time_slice)| {
         // Every calculator takes the same `(time_slice, &constant_values, &mut intermediate_values)`
         // triple, which is what lets them be held in one table and called from one loop
         //
@@ -180,8 +179,6 @@ pub fn equilibrium_post_processor(
 
         // Dispatching is all this loop does: `calculators_sorted` is already in dependency order,
         // so running them in that order is enough
-        // println!("i_time = {:#?}", i_time);
-        // println!("time = {:#?}", time_slice.time);
         for calculator in &calculators_sorted {
             let convergence_flag: i32 = time_slice.convergence.result.index;
             if convergence_flag == 1 {
@@ -191,7 +188,6 @@ pub fn equilibrium_post_processor(
             } else {
                 // Unconverged, skip equilibrium post-processing
             }
-            // println!("{:?}", calculator.identifier);  // added for debugging
         }
     });
 

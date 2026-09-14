@@ -17,8 +17,6 @@ use imas_rs::EquilibriumTimeSlice;
 /// index = 6
 /// ```
 ///
-/// This is metadata, so it is filled even when the equilibrium solve did not converge.
-///
 /// # Arguments
 /// * `time_slice` - the time-slice whose convergence-expression identifier is written
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {

@@ -19,7 +19,8 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `global_quantities/bt_vac_at_r_geo` is written into it
-/// * `i_rod` - current in the toroidal field coil's central rod [ampere]
+/// * `constant_values` - the constant values; `i_rod`, the current in the toroidal field coil's
+///   central rod [ampere], is read
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let i_rod: f64 = constant_values.i_rod;
 

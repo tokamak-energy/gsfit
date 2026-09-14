@@ -27,7 +27,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     assert_eq!(rho_tor.len(), n_psi_norm);
 
     let mut dpsi_drho_tor: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
-    if n_psi_norm == 0 || time_slice.global_quantities.psi_magnetic_axis.is_nan() {
+    if n_psi_norm == 0 {
         time_slice.profiles_1d.dpsi_drho_tor = dpsi_drho_tor;
         return;
     }
@@ -132,17 +132,5 @@ mod tests {
         for i_psi_norm in 0..rho_tor.len() {
             assert_abs_diff_eq!(dpsi_drho_tor[i_psi_norm], 2.0 * coefficient * rho_tor[i_psi_norm], epsilon = 1e-13);
         }
-    }
-
-    #[test]
-    fn failed_slice_is_all_nan() {
-        let mut time_slice: EquilibriumTimeSlice = EquilibriumTimeSlice::default();
-        time_slice.global_quantities.psi_magnetic_axis = f64::NAN;
-        time_slice.profiles_1d.psi = array![f64::NAN, f64::NAN, f64::NAN];
-        time_slice.profiles_1d.rho_tor = array![f64::NAN, f64::NAN, f64::NAN];
-
-        calculate(&mut time_slice, &constant_values_for_test(), &mut intermediate_values_for_test());
-
-        assert!(time_slice.profiles_1d.dpsi_drho_tor.iter().all(|value| value.is_nan()));
     }
 }

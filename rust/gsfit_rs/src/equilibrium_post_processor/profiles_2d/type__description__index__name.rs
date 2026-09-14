@@ -17,8 +17,7 @@ use imas_rs::EquilibriumTimeSlice;
 ///
 /// The identifier applies to the complete `profiles_2d(0)` structure: its magnetic field,
 /// current density and poloidal flux include all active-coil, passive-element and plasma
-/// contributions. This is metadata, so it is filled even when the equilibrium solve did not
-/// converge.
+/// contributions.
 ///
 /// # Arguments
 /// * `time_slice` - the time-slice whose `profiles_2d(0)/type` identifier is written

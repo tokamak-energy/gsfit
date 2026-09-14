@@ -16,21 +16,11 @@ use ndarray::Array1;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_1d/phi` is written into it
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    let n_psi_norm: usize = time_slice.profiles_1d.psi_norm.len();
-
-    // A slice which did not converge has no safety factor to integrate. Without this the flux at
-    // the magnetic axis would come out as the hard-coded 0.0 rather than NaN
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        time_slice.profiles_1d.phi = Array1::from_elem(n_psi_norm, f64::NAN);
-        return;
-    }
-
     let q_profile: &Array1<f64> = &time_slice.profiles_1d.q;
     let psi_profile: &Array1<f64> = &time_slice.profiles_1d.psi;
 
     let boundary_diverted: bool = time_slice.boundary.r#type == 1;
-    let flux_toroidal_profile: Array1<f64> = epp_flux_toroidal_profile(q_profile, psi_profile, boundary_diverted);
+    let flux_toroidal_profile: Array1<f64> = flux_toroidal_profile(q_profile, psi_profile, boundary_diverted);
 
     time_slice.profiles_1d.phi = flux_toroidal_profile;
 }
@@ -58,11 +48,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 ///
 /// # Returns
 /// * `flux_toroidal_profile` - the enclosed toroidal flux profile [weber]
-pub(in crate::equilibrium_post_processor) fn epp_flux_toroidal_profile(
-    q_profile: &Array1<f64>,
-    psi_profile: &Array1<f64>,
-    boundary_diverted: bool,
-) -> Array1<f64> {
+pub(in crate::equilibrium_post_processor) fn flux_toroidal_profile(q_profile: &Array1<f64>, psi_profile: &Array1<f64>, boundary_diverted: bool) -> Array1<f64> {
     let n_psi_norm: usize = psi_profile.len();
     assert_eq!(q_profile.len(), n_psi_norm);
 
@@ -145,7 +131,7 @@ mod tests {
         let i_boundary: usize = q_profile.len() - 1;
         q_profile[i_boundary] = f64::NAN;
 
-        let flux_toroidal_profile: Array1<f64> = epp_flux_toroidal_profile(&q_profile, &psi_profile, true);
+        let flux_toroidal_profile: Array1<f64> = flux_toroidal_profile(&q_profile, &psi_profile, true);
         let i_before: usize = q_profile.len() - 2;
         let delta_psi_norm: f64 = 1.0 - psi_norm[i_before];
         let final_interval_expected: f64 = (psi_profile[psi_profile.len() - 1] - psi_profile[0]) * delta_psi_norm * (q_profile[i_before] - log_coefficient);
@@ -165,7 +151,7 @@ mod tests {
         let i_boundary: usize = q_profile.len() - 1;
         q_profile[i_boundary] = f64::NAN;
 
-        let flux_toroidal_profile: Array1<f64> = epp_flux_toroidal_profile(&q_profile, &psi_profile, false);
+        let flux_toroidal_profile: Array1<f64> = flux_toroidal_profile(&q_profile, &psi_profile, false);
         let i_before: usize = q_profile.len() - 2;
         let final_interval_expected: f64 = 2.0 * (1.0 - psi_profile[i_before]) + 1.5 * (1.0 - psi_profile[i_before].powi(2));
 

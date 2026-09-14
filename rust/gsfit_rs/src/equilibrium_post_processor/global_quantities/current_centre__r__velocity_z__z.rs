@@ -28,8 +28,7 @@ use ndarray::{Array1, Array2};
 ///   written into it. `.../velocity_z` differentiates across time-slices, so it is filled by
 ///   [`calculate_velocity_z`] after the per-slice loop instead
 ///
-/// A time-slice which failed to converge carries `NaN` in `j_phi`, so the centre comes out `NaN`
-/// without needing a special case; so does a time-slice carrying no plasma current.
+/// A time-slice carrying no plasma current gives a `NaN` centre.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures

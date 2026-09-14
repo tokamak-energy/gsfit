@@ -26,9 +26,9 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; the three `global_quantities` nodes are written into it
-/// * `bp_sq_fs_avg` - flux-surface-averaged `b_p ** 2` from
-///   `bp_sq_flux_surface_average::calculate`
-///   [tesla ** 2]
+/// * `intermediate_values` - the shared intermediate values; `bp_sq_fs_avg`, the
+///   flux-surface-averaged `b_p ** 2` from `bp_sq_flux_surface_average::calculate` [tesla ** 2], is
+///   read
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, intermediate_values: &mut IntermediateValues) {
     let bp_sq_fs_avg: f64 = intermediate_values.bp_sq_fs_avg;
 

@@ -17,9 +17,6 @@ use ndarray::Array1;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_1d/magnetic_shear` is written into it
 ///
-/// A slice which did not converge carries NaN in both `q` and `rho_tor`, so the profile comes out
-/// NaN without needing a special case.
-///
 /// # The magnetic axis
 ///
 /// `rho_tor` is zero on the magnetic axis, and `q` is finite there, so the shear is exactly zero at
@@ -30,7 +27,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
     let rho_tor: &Array1<f64> = &time_slice.profiles_1d.rho_tor;
     let n_psi_norm: usize = rho_tor.len();
 
-    let d_q_d_rho_tor: Array1<f64> = epp_d_q_d_rho_tor(q_profile, rho_tor);
+    let d_q_d_rho_tor: Array1<f64> = d_q_d_rho_tor(q_profile, rho_tor);
 
     let mut magnetic_shear: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
     for i_psi_norm in 0..n_psi_norm {
@@ -53,7 +50,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 /// roughly as the square root of `psi_norm` - so each difference is divided by the span of
 /// `rho_tor` it was taken over rather than by a single grid spacing: a forward difference at the
 /// first point, central differences in the interior, and a backward difference at the last point.
-fn epp_d_q_d_rho_tor(q_profile: &Array1<f64>, rho_tor: &Array1<f64>) -> Array1<f64> {
+fn d_q_d_rho_tor(q_profile: &Array1<f64>, rho_tor: &Array1<f64>) -> Array1<f64> {
     let n_psi_norm: usize = rho_tor.len();
 
     let mut d_q_d_rho_tor: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);

@@ -15,11 +15,6 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_2d(0)/b_field_phi` is written into it
 /// * `constant_values` - the constant values; `ff_prime_source_function` and `i_rod` are read
-///
-/// A time-slice which failed to converge gets `NaN` everywhere. Without the guard the vacuum field
-/// is written unconditionally before the mask is applied, so the array would come back as the
-/// vacuum field rather than `NaN` - which is what the old post-processor produced, because it
-/// skipped failed slices entirely and left the array at its `NaN` initialisation.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let ff_prime_source_function: &SharedSourceFunction = constant_values.ff_prime_source_function;
     let i_rod: f64 = constant_values.i_rod;
@@ -37,12 +32,6 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let (n_z, n_r): (usize, usize) = mask.dim();
 
     let mut bt_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
-
-    // A slice which did not converge has no plasma, so no toroidal field is reported for it
-    if psi_a.is_nan() {
-        time_slice.profiles_2d[0].b_field_phi = bt_2d;
-        return;
-    }
 
     // BT vacuum
     let bt_vac_vs_r: Array1<f64> = MU_0 * i_rod / (2.0 * PI * r);

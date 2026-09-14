@@ -16,22 +16,11 @@ use ndarray::{Array1, Array2};
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `boundary/outline/r` and `.../z` are written into it
 ///
-/// A time-slice which failed to converge gets an empty outline, which is how the old
-/// post-processor represented "no boundary" too.
-///
 /// Note: the solver already traces this contour while testing whether a candidate boundary point is
 /// viable, and `find_boundary` traces it again, but neither keeps the result - only the mask and
 /// the bounding point are stored. So it is traced here a third time. The solver only needs the
 /// mask, so the cheaper fix is to stop tracing during the iterations at all.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    // A slice which did not converge has no boundary to trace
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        time_slice.boundary.outline.r = Array1::from_elem(0, f64::NAN);
-        time_slice.boundary.outline.z = Array1::from_elem(0, f64::NAN);
-        return;
-    }
-
     // `profiles_2d[0]` because GSFit solves on a single rectangular (R, Z) grid, so there is only
     // ever one entry in this array of structures
     let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;

@@ -17,18 +17,10 @@ const Q_95_PSI_NORM: f64 = 0.95;
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `global_quantities/q_95` is written into it
-/// * `ff_prime_source_function` - the FF' source function the reconstruction was run with
-/// * `i_rod` - current in the toroidal field coil's central rod [ampere]
+/// * `constant_values` - the constant values; `ff_prime_source_function` and `i_rod` are read
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let ff_prime_source_function: &SharedSourceFunction = constant_values.ff_prime_source_function;
     let i_rod: f64 = constant_values.i_rod;
-
-    // A slice which did not converge has no flux surface to integrate around.
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        time_slice.global_quantities.q_95 = f64::NAN;
-        return;
-    }
 
     let flux_surface: FluxSurface = flux_surfaces::calculate_at_psi_norm(time_slice, Q_95_PSI_NORM);
     let f_95: f64 = profiles_1d::f::value_at_psi_norm(time_slice, ff_prime_source_function, i_rod, Q_95_PSI_NORM);

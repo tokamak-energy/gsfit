@@ -19,23 +19,6 @@ use std::f64::consts::PI;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; the `boundary` scalars listed above are written into it
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    // A slice which did not converge has no boundary to measure
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        time_slice.boundary.minor_radius = f64::NAN;
-        time_slice.boundary.geometric_axis.r = f64::NAN;
-        time_slice.boundary.geometric_axis.z = f64::NAN;
-        time_slice.boundary.elongation = f64::NAN;
-        time_slice.boundary.triangularity = f64::NAN;
-        time_slice.boundary.triangularity_lower = f64::NAN;
-        time_slice.boundary.triangularity_upper = f64::NAN;
-        time_slice.boundary.squareness_lower_inner = f64::NAN;
-        time_slice.boundary.squareness_lower_outer = f64::NAN;
-        time_slice.boundary.squareness_upper_inner = f64::NAN;
-        time_slice.boundary.squareness_upper_outer = f64::NAN;
-        return;
-    }
-
     let boundary_r: &Array1<f64> = &time_slice.boundary.outline.r;
     let boundary_z: &Array1<f64> = &time_slice.boundary.outline.z;
 
@@ -48,7 +31,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 
     // Boundary shape: elongation, triangularity and squareness
     let (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o): (f64, f64, f64, f64, f64, f64, f64, f64) =
-        epp_boundary_geometry(boundary_r, boundary_z);
+        boundary_geometry(boundary_r, boundary_z);
 
     time_slice.boundary.minor_radius = r_minor;
     time_slice.boundary.geometric_axis.r = r_geo;
@@ -86,10 +69,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, _constant_values: &Const
 /// * `square_l_o` - lower outer squareness [dimensionless]
 /// * `square_u_i` - upper inner squareness [dimensionless]
 /// * `square_u_o` - upper outer squareness [dimensionless]
-pub(in crate::equilibrium_post_processor) fn epp_boundary_geometry(
-    boundary_r: &Array1<f64>,
-    boundary_z: &Array1<f64>,
-) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
+pub(in crate::equilibrium_post_processor) fn boundary_geometry(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
     let nan_result: (f64, f64, f64, f64, f64, f64, f64, f64) = (f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN);
 
     // Defensive programming: when a time-slice has failed the boundary contour can be
@@ -142,10 +122,10 @@ pub(in crate::equilibrium_post_processor) fn epp_boundary_geometry(
     // e.g. the upper outer quadrant is spanned by the top point and the outboard point.
     // The quadrant "centre" is `(r, z) = (r_of_the_top_or_bottom_point, z_of_the_inboard_or_outboard_point)`
     // and the quadrant "corner" is the opposite corner of the bounding box.
-    let square_u_o: f64 = epp_squareness(boundary_r, boundary_z, r_at_z_max, z_at_r_max, r_max, z_max);
-    let square_u_i: f64 = epp_squareness(boundary_r, boundary_z, r_at_z_max, z_at_r_min, r_min, z_max);
-    let square_l_o: f64 = epp_squareness(boundary_r, boundary_z, r_at_z_min, z_at_r_max, r_max, z_min);
-    let square_l_i: f64 = epp_squareness(boundary_r, boundary_z, r_at_z_min, z_at_r_min, r_min, z_min);
+    let square_u_o: f64 = squareness(boundary_r, boundary_z, r_at_z_max, z_at_r_max, r_max, z_max);
+    let square_u_i: f64 = squareness(boundary_r, boundary_z, r_at_z_max, z_at_r_min, r_min, z_max);
+    let square_l_o: f64 = squareness(boundary_r, boundary_z, r_at_z_min, z_at_r_max, r_max, z_min);
+    let square_l_i: f64 = squareness(boundary_r, boundary_z, r_at_z_min, z_at_r_min, r_min, z_min);
 
     (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o)
 }
@@ -166,7 +146,7 @@ pub(in crate::equilibrium_post_processor) fn epp_boundary_geometry(
 ///
 /// # Returns
 /// * `squareness` - squareness of the quadrant [dimensionless]
-fn epp_squareness(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>, centre_r: f64, centre_z: f64, corner_r: f64, corner_z: f64) -> f64 {
+fn squareness(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>, centre_r: f64, centre_z: f64, corner_r: f64, corner_z: f64) -> f64 {
     let n_boundary: usize = boundary_r.len();
 
     // Defensive programming: when a time-slice has failed the boundary contour can be
@@ -223,7 +203,7 @@ fn epp_squareness(boundary_r: &Array1<f64>, boundary_z: &Array1<f64>, centre_r: 
 }
 
 #[test]
-fn test_epp_boundary_geometry_ellipse() {
+fn test_boundary_geometry_ellipse() {
     use approx::assert_abs_diff_eq;
 
     // An ellipse has zero triangularity and zero squareness
@@ -238,7 +218,7 @@ fn test_epp_boundary_geometry_ellipse() {
     let boundary_r: Array1<f64> = r_geo + r_minor * theta.mapv(f64::cos);
     let boundary_z: Array1<f64> = z_geo + kappa * r_minor * theta.mapv(f64::sin);
 
-    let (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o) = epp_boundary_geometry(&boundary_r, &boundary_z);
+    let (elongation, triang, triang_l, triang_u, square_l_i, square_l_o, square_u_i, square_u_o) = boundary_geometry(&boundary_r, &boundary_z);
 
     assert_abs_diff_eq!(elongation, kappa, epsilon = 1e-6);
     assert_abs_diff_eq!(triang, 0.0, epsilon = 1e-6);
@@ -251,7 +231,7 @@ fn test_epp_boundary_geometry_ellipse() {
 }
 
 #[test]
-fn test_epp_boundary_geometry_miller() {
+fn test_boundary_geometry_miller() {
     use approx::assert_abs_diff_eq;
 
     // Miller parameterisation: `r = r_geo + r_minor * cos(theta + arcsin(delta) * sin(theta))`
@@ -267,7 +247,7 @@ fn test_epp_boundary_geometry_miller() {
     let boundary_r: Array1<f64> = r_geo + r_minor * theta.mapv(|theta_local| (theta_local + delta.asin() * theta_local.sin()).cos());
     let boundary_z: Array1<f64> = z_geo + kappa * r_minor * theta.mapv(f64::sin);
 
-    let (elongation, triang, triang_l, triang_u, _square_l_i, _square_l_o, _square_u_i, _square_u_o) = epp_boundary_geometry(&boundary_r, &boundary_z);
+    let (elongation, triang, triang_l, triang_u, _square_l_i, _square_l_o, _square_u_i, _square_u_o) = boundary_geometry(&boundary_r, &boundary_z);
 
     assert_abs_diff_eq!(elongation, kappa, epsilon = 1e-6);
     assert_abs_diff_eq!(triang, delta, epsilon = 1e-6);
@@ -276,7 +256,7 @@ fn test_epp_boundary_geometry_miller() {
 }
 
 #[test]
-fn test_epp_boundary_geometry_superellipse() {
+fn test_boundary_geometry_superellipse() {
     use approx::assert_abs_diff_eq;
 
     // Superellipse: `|(r - r_geo) / r_minor| ** n_exponent + |(z - z_geo) / (kappa * r_minor)| ** n_exponent = 1`
@@ -295,7 +275,7 @@ fn test_epp_boundary_geometry_superellipse() {
     let boundary_z: Array1<f64> =
         z_geo + kappa * r_minor * theta.mapv(|theta_local| theta_local.sin().signum() * theta_local.sin().abs().powf(2.0 / n_exponent));
 
-    let (elongation, triang, _triang_l, _triang_u, square_l_i, square_l_o, square_u_i, square_u_o) = epp_boundary_geometry(&boundary_r, &boundary_z);
+    let (elongation, triang, _triang_l, _triang_u, square_l_i, square_l_o, square_u_i, square_u_o) = boundary_geometry(&boundary_r, &boundary_z);
 
     let t_expected: f64 = (0.5f64).powf(1.0 / n_exponent);
     let squareness_expected: f64 = (t_expected - std::f64::consts::FRAC_1_SQRT_2) / (1.0 - std::f64::consts::FRAC_1_SQRT_2);

@@ -34,11 +34,6 @@ where
 
     let mut values_average: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
 
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        return values_average;
-    }
-
     let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
     let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
     let b_field_r_2d: &Array2<f64> = &time_slice.profiles_2d[0].b_field_r;

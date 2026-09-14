@@ -35,10 +35,10 @@ use ndarray::{Array1, Array2, s};
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `global_quantities/delta_r_sep` is written into it
-/// * `wall_ids` - the wall IDS, which supplies the vacuum vessel the X-points must lie inside
+/// * `constant_values` - the constant values; `wall_ids`, which supplies the vacuum vessel the
+///   X-points must lie inside, is read
 ///
-/// NaN when the plasma is limited, when no second X-point was found, or when the slice did not
-/// converge.
+/// NaN when the plasma is limited, or when no second X-point was found.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let wall_ids: &WallIds = constant_values.wall_ids;
 

@@ -1,6 +1,6 @@
 //! The closed flux surfaces, as (R, Z) contours.
 //!
-//! Unlike the other `epp_*` helpers this one fills no data-dictionary path. The flux surfaces are
+//! Unlike most calculators this one fills no data-dictionary path. The flux surfaces are
 //! an intermediate quantity: several profiles are line-integrals around them, so they are worth
 //! calculating once and passing to the helpers which need them, rather than re-contouring per
 //! quantity.
@@ -60,12 +60,6 @@ fn calculate_flux_surfaces(time_slice: &EquilibriumTimeSlice) -> Vec<FluxSurface
     let flux_surface_empty: FluxSurface = empty_flux_surface();
     let mut flux_surfaces: Vec<FluxSurface> = vec![flux_surface_empty; n_psi_norm];
 
-    // A slice which did not converge has no flux surfaces to find
-    let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        return flux_surfaces;
-    }
-
     let boundary_r: &Array1<f64> = &time_slice.boundary.outline.r;
     let boundary_z: &Array1<f64> = &time_slice.boundary.outline.z;
 
@@ -89,17 +83,14 @@ fn calculate_flux_surfaces(time_slice: &EquilibriumTimeSlice) -> Vec<FluxSurface
 ///
 /// The contour is selected by flood-filling outwards from the magnetic axis before marching its
 /// edge, so a disconnected private-flux contour at the same flux cannot be returned accidentally.
-/// A value outside `0 < psi_norm < 1`, a failed time-slice, or a contour with fewer than three
-/// distinct points returns an empty surface.
+/// A value outside `0 < psi_norm < 1`, or a contour with fewer than three distinct points, returns
+/// an empty surface.
 pub(in crate::equilibrium_post_processor) fn calculate_at_psi_norm(time_slice: &EquilibriumTimeSlice, psi_norm: f64) -> FluxSurface {
     if !psi_norm.is_finite() || psi_norm <= 0.0 || psi_norm >= 1.0 {
         return empty_flux_surface();
     }
 
     let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
-    if psi_a.is_nan() {
-        return empty_flux_surface();
-    }
 
     // `profiles_2d[0]` because GSFit solves on one rectangular (R, Z) grid.
     let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;

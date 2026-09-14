@@ -25,10 +25,6 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `profiles_1d_r_midplane/f` is written into it
 /// * `constant_values` - the constant values; `ff_prime_source_function` and `i_rod` are read
-///
-/// A time-slice which failed to converge carries `NaN` in the coefficients, `boundary/psi` and
-/// `global_quantities/psi_magnetic_axis`, so the inside points come out `NaN` without needing a
-/// special case.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
     let ff_prime_source_function: &SharedSourceFunction = constant_values.ff_prime_source_function;
     let i_rod: f64 = constant_values.i_rod;
