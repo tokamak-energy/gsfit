@@ -6,6 +6,7 @@ import numpy.typing as npt
 from .imas import Equilibrium
 from .imas import Magnetics as MagneticsIds
 from .imas import Path
+from .imas import PulseSchedule as PulseScheduleIds
 from .imas import Tf as TfIds
 from .imas import Wall as WallIds
 
@@ -81,6 +82,7 @@ def solve_grad_shafranov(
     pressure_sensors: Pressure,
     stationary_point: StationaryPoint,
     dialoop: Dialoop,
+    pulse_schedule: PulseSchedule | None = None,
 ) -> None:
     """
     :param plasma: Plasma object, note this is mutated and contains the solution
@@ -96,6 +98,8 @@ def solve_grad_shafranov(
     :param pressure_sensors: Pressure object, note this is mutated and contains the solution
     :param stationary_point: StationaryPoint object, note this is mutated and contains the solution
     :param dialoop: Dialoop object, note this is mutated and contains the solution
+    :param pulse_schedule: (optional) PulseSchedule object, supplying the gap definitions. Its gaps are copied onto every
+        time-slice's `boundary/gap` and their values calculated. `None`, the default, gives an equilibrium with no gaps
 
     The times to reconstruct are read from `plasma`, which was built with one equilibrium
     time-slice per time.
@@ -425,7 +429,7 @@ class Plasma(DataTreeAccessor):
         n_iter_max: int,
         n_iter_min: int,
         n_iter_no_vertical_feedback: int,
-        gs_error: float,
+        grad_shafranov_deviation_tolerance: float,
         use_anderson_mixing: bool,
         anderson_mixing_from_previous_iter: float,
         times_to_reconstruct: npt.NDArray[np.float64],
@@ -448,7 +452,7 @@ class Plasma(DataTreeAccessor):
         :param n_iter_max: Maximum number of iterations
         :param n_iter_min: Minimum number of iterations before the convergence test may pass
         :param n_iter_no_vertical_feedback: Number of initial iterations with the vertical feedback switched off
-        :param gs_error: Grad-Shafranov deviation below which the solution is taken as converged
+        :param grad_shafranov_deviation_tolerance: Grad-Shafranov deviation below which the solution is taken as converged
         :param use_anderson_mixing: Whether to use Anderson mixing
         :param anderson_mixing_from_previous_iter: Anderson mixing factor from the previous iteration [dimensionless]
         :param times_to_reconstruct: Times the equilibrium will be solved at; one equilibrium time-slice is allocated per time [second]
@@ -585,6 +589,59 @@ class Wall:
     @property
     def wall_ids(self) -> WallIds:
         """A copy of the whole wall IDS, read with `gsfit_rs.imas.wall_paths`.
+
+        Read the data with `get` instead: this copies the IDS on every access. It is for when a
+        detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
+        """
+        ...
+
+class PulseSchedule:
+    """The machine's pulse schedule, stored as an IMAS `pulse_schedule` IDS.
+
+    Only the gap definitions are filled so far:
+    `pulse_schedule/position_control/gap(i)/name`, `.../r`, `.../z` and `.../angle`.
+
+    A gap is a reference point and a direction. `solve_grad_shafranov` copies the definitions onto
+    every time-slice's `equilibrium/time_slice(itime)/boundary/gap`, and calculates each value: the
+    distance from the reference point to the plasma boundary along that direction.
+
+    The angle is stored in the equilibrium IDS's convention, clockwise from `grad(R)` in the usual
+    plot with `R` to the right and `Z` upwards, so the gap points along
+    `(cos(angle), -sin(angle))`. A database reader holding a counter-clockwise angle must convert it.
+
+    Read it back through `pulse_schedule_ids` and a path from `gsfit_rs.imas.pulse_schedule_paths`.
+    """
+
+    def __new__(cls) -> PulseSchedule:
+        """Construct an empty pulse schedule, with no gaps, ready for `add_gap` to be called."""
+        ...
+    def add_gap(
+        self,
+        name: str,
+        r: float,
+        z: float,
+        angle: float,
+    ) -> None:
+        """
+        Append a gap to `pulse_schedule/position_control/gap`.
+
+        :param name: short identifier for the gap, unique within the pulse schedule, e.g. `"IMGAP"`
+        :param r: major radius of the reference point [metre]
+        :param z: height of the reference point [metre]
+        :param angle: direction the gap is measured in, clockwise from `grad(R)` [radian]
+        """
+        ...
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path`, from `gsfit_rs.imas.pulse_schedule_paths`, straight out of the pulse_schedule IDS.
+
+        This is how the data is read: a path holds no data, so the IDS is only borrowed for the
+        read, never copied. The shape of the result follows the shape of the index; see
+        `gsfit_rs.imas.PulseSchedule.get`.
+        """
+        ...
+    @property
+    def pulse_schedule_ids(self) -> PulseScheduleIds:
+        """A copy of the whole pulse_schedule IDS, read with `gsfit_rs.imas.pulse_schedule_paths`.
 
         Read the data with `get` instead: this copies the IDS on every access. It is for when a
         detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.

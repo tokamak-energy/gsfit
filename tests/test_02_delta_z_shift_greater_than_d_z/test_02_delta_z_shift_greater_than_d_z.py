@@ -96,11 +96,11 @@ def test_02_delta_z_shift_greater_than_d_z() -> None:
     grid_z = gsfit_controller.plasma.get(ep.time_slice[0].profiles_2d[0].grid.dim2)
     d_z = grid_z[1] - grid_z[0]
     print(f"test_02_delta_z_shift_greater_than_d_z:  d_z = {d_z} m")
-    gs_error = gsfit_controller.plasma.get(ep.time_slice[0].convergence.grad_shafranov_deviation_value)
+    grad_shafranov_deviation_value = gsfit_controller.plasma.get(ep.time_slice[0].convergence.grad_shafranov_deviation_value)
     r_mag = gsfit_controller.plasma.get(ep.time_slice[0].global_quantities.magnetic_axis.r)
     z_mag = gsfit_controller.plasma.get(ep.time_slice[0].global_quantities.magnetic_axis.z)
 
-    assert np.isfinite(gs_error), "GS reconstruction failed, should have converged"
+    assert np.isfinite(grad_shafranov_deviation_value), "GS reconstruction failed, should have converged"
     assert np.isfinite(r_mag) and np.isfinite(z_mag), "magnetic axis position is not finite"
 
 

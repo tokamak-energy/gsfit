@@ -5,6 +5,7 @@ import gsfit_rs
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Plasma
+from st40_database import GetData
 
 from ...tensioned_cubic_splines_regularisations import make_tensioned_cubic_b_spline_regularisations
 
@@ -41,7 +42,7 @@ def setup_plasma(
     n_iter_max = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"]
     n_iter_min = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_min"]
     n_iter_no_vertical_feedback = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_no_vertical_feedback"]
-    gs_error = settings["GSFIT_code_settings.json"]["numerics"]["gs_error"]
+    grad_shafranov_deviation_tolerance = settings["GSFIT_code_settings.json"]["numerics"]["grad_shafranov_deviation_tolerance"]
     use_anderson_mixing = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["use"]
     anderson_mixing_from_previous_iter = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["mixing_from_previous_iter"]
 
@@ -140,7 +141,7 @@ def setup_plasma(
         n_iter_max,
         n_iter_min,
         n_iter_no_vertical_feedback,
-        gs_error,
+        grad_shafranov_deviation_tolerance,
         use_anderson_mixing,
         anderson_mixing_from_previous_iter,
         times_to_reconstruct,

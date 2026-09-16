@@ -55,6 +55,10 @@ class Gsfit(DiagnosticAndSimulationBase):
     tf: gsfit_rs.Tf
     wall: gsfit_rs.Wall
 
+    # Optional: only a `database_reader` which reads gap definitions builds one. `None` means
+    # the equilibrium has no gaps
+    pulse_schedule: gsfit_rs.PulseSchedule | None = None
+
     # Set by `write_results_to_database` when the `imas` database_writer is selected: the
     # populated IMAS `equilibrium` IDS. `None` for every other writer
     equilibrium_ids: "IDSToplevel | None" = None
@@ -93,7 +97,8 @@ class Gsfit(DiagnosticAndSimulationBase):
         2. Set the environment variables
         3. Setup the timeslices to reconstruct
         4. Read in all the machine settings and initalise the following Rust implementations:
-            `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
+            `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+            and the optional `pulse_schedule`
         5. Initialise the Greens functions
         6. Solve the GS equation
         7. Map the results to the MDSplus database structure and store in `self.results`
@@ -118,7 +123,8 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.setup_timeslices()
 
         # Read in all the machine settings and initalise the following Rust implementations:
-        # `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
+        # `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+        # and the optional `pulse_schedule`
         self.setup_objects(**kwargs)
 
         # Calculate the Greens functions for all permutations between current source objects and sensors.
@@ -266,6 +272,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         pressure_sensors = self.pressure_sensors
         stationary_point = self.stationary_point
         dialoop = self.dialoop
+        pulse_schedule = self.pulse_schedule
 
         self.logger.info(msg="About to call: `gsfit_rs.solve_grad_shafranov`")
         # Note: the solution to the GS equation is stored inside: `plasma`, `passives`, `bp_probes`, `flux_loops`, and `rogowski_coils`
@@ -284,6 +291,7 @@ class Gsfit(DiagnosticAndSimulationBase):
             pressure_sensors,
             stationary_point,
             dialoop,
+            pulse_schedule=pulse_schedule,
         )
         toc = time_py.time()
         self.logger.info(msg=f"Finished: `gsfit_rs.solve_inverse_problem` time = {(toc - tic) * 1e3:,.2f}ms")
@@ -346,7 +354,8 @@ class Gsfit(DiagnosticAndSimulationBase):
     def setup_objects(self, **kwargs: dict[str, typing.Any]) -> None:
         """
         Initialises the Rust objects needed to run the GSFit inverse solver:
-        `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`
+        `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+        and the optional `pulse_schedule`, which is `None` unless the `database_reader` implements `setup_pulse_schedule`
 
         Different machines will use different data stores (e.g. MDSplus, or FreeGNSKE object).
         New readers for different devices / forward GS solvers can be added to:
@@ -433,3 +442,11 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.dialoop = database_reader.setup_dialoop(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`dialoop` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        tic = time_py.time()
+        self.pulse_schedule = database_reader.setup_pulse_schedule(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        toc = time_py.time()
+        if self.pulse_schedule is None:
+            self.logger.info(msg=f"`pulse_schedule` not used by this database_reader, so there are no gaps;  {(toc - tic) * 1e3:,.2f}ms")
+        else:
+            self.logger.info(msg=f"`pulse_schedule` initialised;  {(toc - tic) * 1e3:,.2f}ms")

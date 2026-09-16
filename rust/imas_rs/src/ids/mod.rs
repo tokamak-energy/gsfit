@@ -7,6 +7,7 @@ pub mod equilibrium;
 pub mod magnetics;
 pub mod pf_active;
 pub mod pf_passive;
+pub mod pulse_schedule;
 pub mod tf;
 pub mod wall;
 

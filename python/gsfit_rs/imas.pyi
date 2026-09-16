@@ -7912,6 +7912,2501 @@ class _PfPassivePaths:
 
 pf_passive_paths: _PfPassivePaths
 
+class PulseSchedule:
+    """Description of Pulse Schedule, described by subsystems waveform references and an enveloppe around them. The controllers, pulse schedule and SDN are defined in separate IDSs. All names and identifiers of subsystems appearing in the pulse_schedule must be identical to those used in the IDSs describing the related subsystems."""
+
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path` out of this IDS.
+
+        The shape of the result follows the shape of the index: an integer index
+        gives one value, a slice gathers. The dimensions are gained from left to right:
+        one per sliced level, in the order they appear on the path, then the leaf's own
+        dimensions. A sliced level which selects a different number of elements under
+        different elements above it would be jagged, and raises `IndexError`.
+
+        An unset leaf reads back as the IMAS empty value: NaN for a float,
+        -999999999 (`EMPTY_INT`) for an integer, an empty string, or an empty array.
+        """
+    def __len__(self) -> int:
+        """The number of time slices held by this IDS."""
+    def __repr__(self) -> str: ...
+
+# ==========================================================================
+# pulse_schedule path nodes
+# ==========================================================================
+
+class _PulseScheduleCodeItem:
+    """Generic decription of the code-specific parameters for the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Name of software generating IDS
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[str]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[str]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[str]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[str]:
+        """List of the code specific parameters in XML format
+        """
+    @property
+    def output_flag(self) -> Path[npt.NDArray[np.int32]]:
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
+        """
+    @property
+    def library(self) -> _PulseScheduleLibraryArrayFromItem:
+        """List of external libraries used by the code that has produced this IDS
+        """
+
+class _PulseScheduleCodeMany:
+    """Generic decription of the code-specific parameters for the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of software generating IDS
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[npt.NDArray[np.str_]]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
+        """List of the code specific parameters in XML format
+        """
+    @property
+    def output_flag(self) -> Path[npt.NDArray[np.int32]]:
+        """Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.
+        """
+    @property
+    def library(self) -> _PulseScheduleLibraryArrayFromMany:
+        """List of external libraries used by the code that has produced this IDS
+        """
+
+class _PulseScheduleGasMixtureConstantItem:
+    """Description of a neutral species within a gas mixture (constant)
+    """
+
+    @property
+    def element(self) -> _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromItem:
+        """List of elements forming the atom or molecule
+        """
+    @property
+    def name(self) -> Path[str]:
+        """String identifying neutral (e.g. H, D, T, He, C, ...)
+        """
+    @property
+    def fraction(self) -> Path[float]:
+        """Relative fraction of this species (in molecules) in the gas mixture
+
+        Units: 1
+        """
+
+class _PulseScheduleGasMixtureConstantMany:
+    """Description of a neutral species within a gas mixture (constant)
+    """
+
+    @property
+    def element(self) -> _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromMany:
+        """List of elements forming the atom or molecule
+        """
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """String identifying neutral (e.g. H, D, T, He, C, ...)
+        """
+    @property
+    def fraction(self) -> Path[npt.NDArray[np.float64]]:
+        """Relative fraction of this species (in molecules) in the gas mixture
+
+        Units: 1
+        """
+
+class _PulseScheduleIdentifierItem:
+    """Standard type for identifiers (constant). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[int]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Verbose description
+        """
+
+class _PulseScheduleIdentifierMany:
+    """Standard type for identifiers (constant). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[npt.NDArray[np.int32]]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Verbose description
+        """
+
+class _PulseScheduleIdentifierStaticItem:
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[int]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Verbose description
+        """
+
+class _PulseScheduleIdentifierStaticMany:
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[npt.NDArray[np.int32]]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Verbose description
+        """
+
+class _PulseScheduleLibraryItem:
+    """Library used by the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Name of software
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[str]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[str]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[str]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[str]:
+        """List of the code specific parameters in XML format
+        """
+
+class _PulseScheduleLibraryMany:
+    """Library used by the code that has produced this IDS
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of software
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Short description of the software (type, purpose)
+        """
+    @property
+    def commit(self) -> Path[npt.NDArray[np.str_]]:
+        """Unique commit reference of software
+        """
+    @property
+    def version(self) -> Path[npt.NDArray[np.str_]]:
+        """Unique version (tag) of software
+        """
+    @property
+    def repository(self) -> Path[npt.NDArray[np.str_]]:
+        """URL of software repository
+        """
+    @property
+    def parameters(self) -> Path[npt.NDArray[np.str_]]:
+        """List of the code specific parameters in XML format
+        """
+
+class _PulseScheduleLineOfSight3pointsItem:
+    """Generic description of a line of sight, defined by two points (one way) and an optional third point to indicate the direction of reflection if the second point is e.g. the position of a mirror reflecting the line-of-sight
+    """
+
+    @property
+    def first_point(self) -> _PulseScheduleRphiz0dStaticItem:
+        """Position of the first point
+        """
+    @property
+    def second_point(self) -> _PulseScheduleRphiz0dStaticItem:
+        """Position of the second point
+        """
+    @property
+    def third_point(self) -> _PulseScheduleRphiz0dStaticItem:
+        """Position of the third point
+        """
+
+class _PulseScheduleLineOfSight3pointsMany:
+    """Generic description of a line of sight, defined by two points (one way) and an optional third point to indicate the direction of reflection if the second point is e.g. the position of a mirror reflecting the line-of-sight
+    """
+
+    @property
+    def first_point(self) -> _PulseScheduleRphiz0dStaticMany:
+        """Position of the first point
+        """
+    @property
+    def second_point(self) -> _PulseScheduleRphiz0dStaticMany:
+        """Position of the second point
+        """
+    @property
+    def third_point(self) -> _PulseScheduleRphiz0dStaticMany:
+        """Position of the third point
+        """
+
+class _PulseSchedulePlasmaCompositionNeutralElementConstantItem:
+    """Element entering in the composition of the neutral atom or molecule (constant)
+    """
+
+    @property
+    def a(self) -> Path[float]:
+        """Mass of atom
+
+        Units: u
+        """
+    @property
+    def z_n(self) -> Path[int]:
+        """Nuclear charge
+
+        Units: e
+        """
+    @property
+    def atoms_n(self) -> Path[int]:
+        """Number of atoms of this element in the molecule
+        """
+
+class _PulseSchedulePlasmaCompositionNeutralElementConstantMany:
+    """Element entering in the composition of the neutral atom or molecule (constant)
+    """
+
+    @property
+    def a(self) -> Path[npt.NDArray[np.float64]]:
+        """Mass of atom
+
+        Units: u
+        """
+    @property
+    def z_n(self) -> Path[npt.NDArray[np.int32]]:
+        """Nuclear charge
+
+        Units: e
+        """
+    @property
+    def atoms_n(self) -> Path[npt.NDArray[np.int32]]:
+        """Number of atoms of this element in the molecule
+        """
+
+class _PulseScheduleDensityControlItem:
+    """Gas injection system
+    """
+
+    @property
+    def valve(self) -> _PulseScheduleDensityControlValveArrayFromItem:
+        """Set of injection valves. Time-dependent
+        """
+    @property
+    def n_e_line(self) -> _PulseScheduleReferenceDensityItem:
+        """Line integrated electron density over a line of sight in the whole vacuum chamber
+
+        Units: m^-2
+        """
+    @property
+    def n_e_line_lcfs(self) -> _PulseScheduleReferenceDensityItem:
+        """Line integrated electron density over a line of sight within the LCFS
+
+        Units: m^-2
+        """
+    @property
+    def n_e_profile_average(self) -> _PulseScheduleReferenceDensityItem:
+        """Integral of a 1D core profile over rho_tor_norm up to the LCFS
+
+        Units: m^-3
+        """
+    @property
+    def n_e_line_of_sight(self) -> _PulseScheduleLineOfSight3pointsItem:
+        """Description of the line of sight for calculating n_e, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path
+        """
+    @property
+    def n_e_volume_average(self) -> _PulseScheduleReferenceDensityItem:
+        """Volume averaged electron density (average over the plasma volume up to the LCFS)
+
+        Units: m^-3
+        """
+    @property
+    def zeff(self) -> _PulseScheduleReferenceDensityItem:
+        """Line averaged effective charge
+
+        Units: 1
+        """
+    @property
+    def zeff_method(self) -> _PulseScheduleIdentifierStaticItem:
+        """Method for zeff calculation : Index = 1: average over a line of sight in the whole vacuum chamber, 2 : average over a line of sight within the LCFS, 3 : average of a 1D core profile over rho_tor_norm up to the LCFS
+        """
+    @property
+    def zeff_line_of_sight(self) -> _PulseScheduleLineOfSight3pointsItem:
+        """Description of the line of sight for calculating zeff, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path
+        """
+    @property
+    def n_t_over_n_d(self) -> _PulseScheduleReferenceDensityItem:
+        """Average ratio of tritium over deuterium density
+
+        Units: 1
+        """
+    @property
+    def n_h_over_n_d(self) -> _PulseScheduleReferenceDensityItem:
+        """Average ratio of hydrogen over deuterium density
+
+        Units: 1
+        """
+    @property
+    def ion(self) -> _PulseScheduleDensityControlIonArrayFromItem:
+        """Quantities related to the different ion species, in the sense of isonuclear or isomolecular sequences
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleDensityControlMany:
+    """Gas injection system
+    """
+
+    @property
+    def valve(self) -> _PulseScheduleDensityControlValveArrayFromMany:
+        """Set of injection valves. Time-dependent
+        """
+    @property
+    def n_e_line(self) -> _PulseScheduleReferenceDensityMany:
+        """Line integrated electron density over a line of sight in the whole vacuum chamber
+
+        Units: m^-2
+        """
+    @property
+    def n_e_line_lcfs(self) -> _PulseScheduleReferenceDensityMany:
+        """Line integrated electron density over a line of sight within the LCFS
+
+        Units: m^-2
+        """
+    @property
+    def n_e_profile_average(self) -> _PulseScheduleReferenceDensityMany:
+        """Integral of a 1D core profile over rho_tor_norm up to the LCFS
+
+        Units: m^-3
+        """
+    @property
+    def n_e_line_of_sight(self) -> _PulseScheduleLineOfSight3pointsMany:
+        """Description of the line of sight for calculating n_e, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path
+        """
+    @property
+    def n_e_volume_average(self) -> _PulseScheduleReferenceDensityMany:
+        """Volume averaged electron density (average over the plasma volume up to the LCFS)
+
+        Units: m^-3
+        """
+    @property
+    def zeff(self) -> _PulseScheduleReferenceDensityMany:
+        """Line averaged effective charge
+
+        Units: 1
+        """
+    @property
+    def zeff_method(self) -> _PulseScheduleIdentifierStaticMany:
+        """Method for zeff calculation : Index = 1: average over a line of sight in the whole vacuum chamber, 2 : average over a line of sight within the LCFS, 3 : average of a 1D core profile over rho_tor_norm up to the LCFS
+        """
+    @property
+    def zeff_line_of_sight(self) -> _PulseScheduleLineOfSight3pointsMany:
+        """Description of the line of sight for calculating zeff, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path
+        """
+    @property
+    def n_t_over_n_d(self) -> _PulseScheduleReferenceDensityMany:
+        """Average ratio of tritium over deuterium density
+
+        Units: 1
+        """
+    @property
+    def n_h_over_n_d(self) -> _PulseScheduleReferenceDensityMany:
+        """Average ratio of hydrogen over deuterium density
+
+        Units: 1
+        """
+    @property
+    def ion(self) -> _PulseScheduleDensityControlIonArrayFromMany:
+        """Quantities related to the different ion species, in the sense of isonuclear or isomolecular sequences
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleDensityControlIonItem:
+    """References for ion species
+    """
+
+    @property
+    def element(self) -> _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromItem:
+        """List of elements forming the atom or molecule
+        """
+    @property
+    def z_ion(self) -> Path[float]:
+        """Ion charge
+
+        Units: e
+        """
+    @property
+    def name(self) -> Path[str]:
+        """String identifying ion (e.g. H, D, T, He, C, D2, ...)
+        """
+    @property
+    def n_i_volume_average(self) -> _PulseScheduleReferenceDensityItem:
+        """Volume averaged ion density (average over the plasma volume up to the LCFS)
+
+        Units: m^-3
+        """
+
+class _PulseScheduleDensityControlIonMany:
+    """References for ion species
+    """
+
+    @property
+    def element(self) -> _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromMany:
+        """List of elements forming the atom or molecule
+        """
+    @property
+    def z_ion(self) -> Path[npt.NDArray[np.float64]]:
+        """Ion charge
+
+        Units: e
+        """
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """String identifying ion (e.g. H, D, T, He, C, D2, ...)
+        """
+    @property
+    def n_i_volume_average(self) -> _PulseScheduleReferenceDensityMany:
+        """Volume averaged ion density (average over the plasma volume up to the LCFS)
+
+        Units: m^-3
+        """
+
+class _PulseScheduleDensityControlValveItem:
+    """Gas injection valve
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def flow_rate(self) -> _PulseScheduleReferenceDensityItem:
+        """Flow rate of the valve
+
+        Units: Pa.m^3.s^-1
+        """
+    @property
+    def species(self) -> _PulseScheduleGasMixtureConstantArrayFromItem:
+        """Species injected by the valve (may be more than one in case the valve injects a gas mixture)
+        """
+
+class _PulseScheduleDensityControlValveMany:
+    """Gas injection valve
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def flow_rate(self) -> _PulseScheduleReferenceDensityMany:
+        """Flow rate of the valve
+
+        Units: Pa.m^3.s^-1
+        """
+    @property
+    def species(self) -> _PulseScheduleGasMixtureConstantArrayFromMany:
+        """Species injected by the valve (may be more than one in case the valve injects a gas mixture)
+        """
+
+class _PulseScheduleEcItem:
+    """Electron cyclotron heating and current drive system
+    """
+
+    @property
+    def beam(self) -> _PulseScheduleEcBeamArrayFromItem:
+        """Set of Electron Cyclotron beams
+        """
+    @property
+    def power_launched(self) -> _PulseScheduleReferenceEcItem:
+        """Total EC power launched in the plasma (sum over the beams)
+
+        Units: W
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleEcMany:
+    """Electron cyclotron heating and current drive system
+    """
+
+    @property
+    def beam(self) -> _PulseScheduleEcBeamArrayFromMany:
+        """Set of Electron Cyclotron beams
+        """
+    @property
+    def power_launched(self) -> _PulseScheduleReferenceEcMany:
+        """Total EC power launched in the plasma (sum over the beams)
+
+        Units: W
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleEcBeamItem:
+    """EC beam
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def power_launched(self) -> _PulseScheduleReferenceEcItem:
+        """Beam power launched into the vacuum vessel
+
+        Units: W
+        """
+    @property
+    def frequency(self) -> _PulseScheduleReferenceEcItem:
+        """Frequency
+
+        Units: Hz
+        """
+    @property
+    def deposition_rho_tor_norm(self) -> _PulseScheduleReferenceEcItem:
+        """Normalized toroidal flux coordinate at which the main deposition should occur
+
+        Units: 1
+        """
+    @property
+    def steering_angle_pol(self) -> _PulseScheduleReferenceEcItem:
+        """Steering angle of the EC beam in the R,Z plane (from the -R axis towards the -Z axis), angle_pol=atan2(-k_Z,-k_R), where k_Z and k_R are the Z and R components of the mean wave vector in the EC beam
+
+        Units: rad
+        """
+    @property
+    def steering_angle_tor(self) -> _PulseScheduleReferenceEcItem:
+        """Steering angle of the EC beam away from the poloidal plane that is increasing towards the positive phi axis, angle_tor=arcsin(k_phi/k), where k_phi is the component of the wave vector in the phi direction and k is the length of the wave vector. Here the term wave vector refers to the mean wave vector in the EC beam
+
+        Units: rad
+        """
+
+class _PulseScheduleEcBeamMany:
+    """EC beam
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def power_launched(self) -> _PulseScheduleReferenceEcMany:
+        """Beam power launched into the vacuum vessel
+
+        Units: W
+        """
+    @property
+    def frequency(self) -> _PulseScheduleReferenceEcMany:
+        """Frequency
+
+        Units: Hz
+        """
+    @property
+    def deposition_rho_tor_norm(self) -> _PulseScheduleReferenceEcMany:
+        """Normalized toroidal flux coordinate at which the main deposition should occur
+
+        Units: 1
+        """
+    @property
+    def steering_angle_pol(self) -> _PulseScheduleReferenceEcMany:
+        """Steering angle of the EC beam in the R,Z plane (from the -R axis towards the -Z axis), angle_pol=atan2(-k_Z,-k_R), where k_Z and k_R are the Z and R components of the mean wave vector in the EC beam
+
+        Units: rad
+        """
+    @property
+    def steering_angle_tor(self) -> _PulseScheduleReferenceEcMany:
+        """Steering angle of the EC beam away from the poloidal plane that is increasing towards the positive phi axis, angle_tor=arcsin(k_phi/k), where k_phi is the component of the wave vector in the phi direction and k is the length of the wave vector. Here the term wave vector refers to the mean wave vector in the EC beam
+
+        Units: rad
+        """
+
+class _PulseScheduleEventItem:
+    """Event
+    """
+
+    @property
+    def type(self) -> _PulseScheduleIdentifierItem:
+        """Type of this event
+        """
+    @property
+    def identifier(self) -> Path[str]:
+        """Unique identifier of this event provided by the scheduling / event handler
+        """
+    @property
+    def time_stamp(self) -> Path[float]:
+        """Time stamp of this event
+
+        Units: s
+        """
+    @property
+    def duration(self) -> Path[float]:
+        """Duration of this event
+
+        Units: s
+        """
+    @property
+    def acquisition_strategy(self) -> _PulseScheduleIdentifierItem:
+        """Acquisition strategy related to this event: index = 1 : on-trigger; index = 2 : pre-trigger; index = 3 : post-trigger
+        """
+    @property
+    def acquisition_state(self) -> _PulseScheduleIdentifierItem:
+        """Acquisition state of the related system : index = 1 : armed; index = 2 : on; index = 3 : off; index = 4 : closed
+        """
+    @property
+    def provider(self) -> Path[str]:
+        """System having generated this event
+        """
+    @property
+    def listeners(self) -> Path[list[str]]:
+        """Systems listening to this event
+        """
+
+class _PulseScheduleEventMany:
+    """Event
+    """
+
+    @property
+    def type(self) -> _PulseScheduleIdentifierMany:
+        """Type of this event
+        """
+    @property
+    def identifier(self) -> Path[npt.NDArray[np.str_]]:
+        """Unique identifier of this event provided by the scheduling / event handler
+        """
+    @property
+    def time_stamp(self) -> Path[npt.NDArray[np.float64]]:
+        """Time stamp of this event
+
+        Units: s
+        """
+    @property
+    def duration(self) -> Path[npt.NDArray[np.float64]]:
+        """Duration of this event
+
+        Units: s
+        """
+    @property
+    def acquisition_strategy(self) -> _PulseScheduleIdentifierMany:
+        """Acquisition strategy related to this event: index = 1 : on-trigger; index = 2 : pre-trigger; index = 3 : post-trigger
+        """
+    @property
+    def acquisition_state(self) -> _PulseScheduleIdentifierMany:
+        """Acquisition state of the related system : index = 1 : armed; index = 2 : on; index = 3 : off; index = 4 : closed
+        """
+    @property
+    def provider(self) -> Path[npt.NDArray[np.str_]]:
+        """System having generated this event
+        """
+    @property
+    def listeners(self) -> Path[npt.NDArray[np.str_]]:
+        """Systems listening to this event
+        """
+
+class _PulseScheduleFluxControlItem:
+    """Flux control references
+    """
+
+    @property
+    def ip(self) -> _PulseScheduleReferenceNoAosItem:
+        """Plasma current
+
+        Units: A
+        """
+    @property
+    def v_loop(self) -> _PulseScheduleReferenceNoAosItem:
+        """Loop voltage
+
+        Units: V
+        """
+    @property
+    def li_3(self) -> _PulseScheduleReferenceNoAosItem:
+        """Internal inductance
+
+        Units: 1
+        """
+    @property
+    def beta_tor_norm(self) -> _PulseScheduleReferenceNoAosItem:
+        """Normalized toroidal beta, defined as 100 * beta_tor * a[m] * B0 [T] / ip [MA]
+
+        Units: 1
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleFluxControlMany:
+    """Flux control references
+    """
+
+    @property
+    def ip(self) -> _PulseScheduleReferenceNoAosMany:
+        """Plasma current
+
+        Units: A
+        """
+    @property
+    def v_loop(self) -> _PulseScheduleReferenceNoAosMany:
+        """Loop voltage
+
+        Units: V
+        """
+    @property
+    def li_3(self) -> _PulseScheduleReferenceNoAosMany:
+        """Internal inductance
+
+        Units: 1
+        """
+    @property
+    def beta_tor_norm(self) -> _PulseScheduleReferenceNoAosMany:
+        """Normalized toroidal beta, defined as 100 * beta_tor * a[m] * B0 [T] / ip [MA]
+
+        Units: 1
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleGapItem:
+    """Gap for describing the plasma boundary
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def r(self) -> Path[float]:
+        """Major radius of the reference point
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Height of the reference point
+
+        Units: m
+        """
+    @property
+    def angle(self) -> Path[float]:
+        """Angle between the direction in which the gap is measured (in the poloidal cross-section) and the horizontal axis.
+
+        Units: rad
+        """
+    @property
+    def value(self) -> _PulseScheduleReferencePositionItem:
+        """Value of the gap, i.e. distance between the reference point and the separatrix along the gap direction
+
+        Units: m
+        """
+
+class _PulseScheduleGapMany:
+    """Gap for describing the plasma boundary
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of the reference point
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the reference point
+
+        Units: m
+        """
+    @property
+    def angle(self) -> Path[npt.NDArray[np.float64]]:
+        """Angle between the direction in which the gap is measured (in the poloidal cross-section) and the horizontal axis.
+
+        Units: rad
+        """
+    @property
+    def value(self) -> _PulseScheduleReferencePositionMany:
+        """Value of the gap, i.e. distance between the reference point and the separatrix along the gap direction
+
+        Units: m
+        """
+
+class _PulseScheduleIcItem:
+    """Ion cyclotron heating and current drive system
+    """
+
+    @property
+    def antenna(self) -> _PulseScheduleIcAntennaArrayFromItem:
+        """Set of ICRH antennas
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceIcItem:
+        """Total IC power (sum over the antennas)
+
+        Units: W
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleIcMany:
+    """Ion cyclotron heating and current drive system
+    """
+
+    @property
+    def antenna(self) -> _PulseScheduleIcAntennaArrayFromMany:
+        """Set of ICRH antennas
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceIcMany:
+        """Total IC power (sum over the antennas)
+
+        Units: W
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleIcAntennaItem:
+    """IC antenna
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def power_type(self) -> _PulseScheduleIdentifierStaticItem:
+        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the ic_antennas  IDS)
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceIcItem:
+        """Power
+
+        Units: W
+        """
+    @property
+    def phase(self) -> _PulseScheduleReferenceIcItem:
+        """Phase
+
+        Units: rad
+        """
+    @property
+    def frequency(self) -> _PulseScheduleReferenceIcItem:
+        """Frequency
+
+        Units: Hz
+        """
+
+class _PulseScheduleIcAntennaMany:
+    """IC antenna
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def power_type(self) -> _PulseScheduleIdentifierStaticMany:
+        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the ic_antennas  IDS)
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceIcMany:
+        """Power
+
+        Units: W
+        """
+    @property
+    def phase(self) -> _PulseScheduleReferenceIcMany:
+        """Phase
+
+        Units: rad
+        """
+    @property
+    def frequency(self) -> _PulseScheduleReferenceIcMany:
+        """Frequency
+
+        Units: Hz
+        """
+
+class _PulseScheduleLhItem:
+    """Lower hybrid heating and current drive system
+    """
+
+    @property
+    def antenna(self) -> _PulseScheduleLhAntennaArrayFromItem:
+        """Set of LH antennas
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceLhItem:
+        """Total LH power (sum over the antennas)
+
+        Units: W
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleLhMany:
+    """Lower hybrid heating and current drive system
+    """
+
+    @property
+    def antenna(self) -> _PulseScheduleLhAntennaArrayFromMany:
+        """Set of LH antennas
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceLhMany:
+        """Total LH power (sum over the antennas)
+
+        Units: W
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleLhAntennaItem:
+    """LH antenna
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def power_type(self) -> _PulseScheduleIdentifierStaticItem:
+        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the lh_antennas  IDS)
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceLhItem:
+        """Power
+
+        Units: W
+        """
+    @property
+    def phase(self) -> _PulseScheduleReferenceLhItem:
+        """Phasing between neighbour waveguides (in the toroidal direction)
+
+        Units: rad
+        """
+    @property
+    def n_parallel(self) -> _PulseScheduleReferenceLhItem:
+        """Main parallel refractive index of the injected wave power spectrum
+
+        Units: 1
+        """
+    @property
+    def frequency(self) -> _PulseScheduleReferenceLhItem:
+        """Frequency
+
+        Units: Hz
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+
+class _PulseScheduleLhAntennaMany:
+    """LH antenna
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def power_type(self) -> _PulseScheduleIdentifierStaticMany:
+        """Type of power used in the sibling power node (defining which power is referred to in this pulse_schedule). Index = 1: power_launched, 2: power_forward (see definitions in the lh_antennas  IDS)
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceLhMany:
+        """Power
+
+        Units: W
+        """
+    @property
+    def phase(self) -> _PulseScheduleReferenceLhMany:
+        """Phasing between neighbour waveguides (in the toroidal direction)
+
+        Units: rad
+        """
+    @property
+    def n_parallel(self) -> _PulseScheduleReferenceLhMany:
+        """Main parallel refractive index of the injected wave power spectrum
+
+        Units: 1
+        """
+    @property
+    def frequency(self) -> _PulseScheduleReferenceLhMany:
+        """Frequency
+
+        Units: Hz
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+
+class _PulseScheduleNbiItem:
+    """Neutral beam heating and current drive system
+    """
+
+    @property
+    def unit(self) -> _PulseScheduleNbiUnitArrayFromItem:
+        """Set of NBI units
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceNbiItem:
+        """Total NBI power (sum over the units)
+
+        Units: W
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleNbiMany:
+    """Neutral beam heating and current drive system
+    """
+
+    @property
+    def unit(self) -> _PulseScheduleNbiUnitArrayFromMany:
+        """Set of NBI units
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceNbiMany:
+        """Total NBI power (sum over the units)
+
+        Units: W
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleNbiUnitItem:
+    """NBI unit
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def species(self) -> _PulseScheduleGasMixtureConstantArrayFromItem:
+        """Species injected by the NBI unit (may be more than one in case the unit injects a gas mixture)
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceNbiItem:
+        """Power launched from this unit into the vacuum vessel
+
+        Units: W
+        """
+    @property
+    def energy(self) -> _PulseScheduleReferenceNbiItem:
+        """Full energy of the injected species (acceleration of a single atom)
+
+        Units: eV
+        """
+
+class _PulseScheduleNbiUnitMany:
+    """NBI unit
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def species(self) -> _PulseScheduleGasMixtureConstantArrayFromMany:
+        """Species injected by the NBI unit (may be more than one in case the unit injects a gas mixture)
+        """
+    @property
+    def power(self) -> _PulseScheduleReferenceNbiMany:
+        """Power launched from this unit into the vacuum vessel
+
+        Units: W
+        """
+    @property
+    def energy(self) -> _PulseScheduleReferenceNbiMany:
+        """Full energy of the injected species (acceleration of a single atom)
+
+        Units: eV
+        """
+
+class _PulseScheduleOutlineItem:
+    """RZ outline
+    """
+
+    @property
+    def r(self) -> _PulseScheduleReferencePositionItem:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> _PulseScheduleReferencePositionItem:
+        """Height
+
+        Units: m
+        """
+
+class _PulseScheduleOutlineMany:
+    """RZ outline
+    """
+
+    @property
+    def r(self) -> _PulseScheduleReferencePositionMany:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> _PulseScheduleReferencePositionMany:
+        """Height
+
+        Units: m
+        """
+
+class _PulseSchedulePfActiveItem:
+    """PF coils references
+    """
+
+    @property
+    def coil(self) -> _PulseSchedulePfActiveCoilArrayFromItem:
+        """Set of poloidal field coils
+        """
+    @property
+    def supply(self) -> _PulseSchedulePfActiveSupplyArrayFromItem:
+        """Set of PF power supplies
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseSchedulePfActiveMany:
+    """PF coils references
+    """
+
+    @property
+    def coil(self) -> _PulseSchedulePfActiveCoilArrayFromMany:
+        """Set of poloidal field coils
+        """
+    @property
+    def supply(self) -> _PulseSchedulePfActiveSupplyArrayFromMany:
+        """Set of PF power supplies
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseSchedulePfActiveCoilItem:
+    """PF coil
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def current(self) -> _PulseScheduleReferencePfActiveItem:
+        """Reference waveform of current to be fed into the coil (for 1 turn, to be multiplied by the number of turns to obtain the generated magnetic field).  Positive when the current flows counter-clockwise in the coil when viewed from above.
+
+        Units: A
+        """
+    @property
+    def resistance_additional(self) -> _PulseScheduleReferencePfActiveItem:
+        """Additional resistance due to e.g. dynamically switchable resistors
+
+        Units: ohm
+        """
+
+class _PulseSchedulePfActiveCoilMany:
+    """PF coil
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def current(self) -> _PulseScheduleReferencePfActiveMany:
+        """Reference waveform of current to be fed into the coil (for 1 turn, to be multiplied by the number of turns to obtain the generated magnetic field).  Positive when the current flows counter-clockwise in the coil when viewed from above.
+
+        Units: A
+        """
+    @property
+    def resistance_additional(self) -> _PulseScheduleReferencePfActiveMany:
+        """Additional resistance due to e.g. dynamically switchable resistors
+
+        Units: ohm
+        """
+
+class _PulseSchedulePfActiveSupplyItem:
+    """PF supply
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def voltage(self) -> _PulseScheduleReferencePfActiveItem:
+        """Voltage at the supply output (Vside1-Vside2)
+
+        Units: V
+        """
+    @property
+    def current(self) -> _PulseScheduleReferencePfActiveItem:
+        """Current fed into one turn of the coil. (Multiply by number of turns to obtain generated magnetic field). Positive when flowing from side 1 to side 2 of the coil, this numbering being made consistently with the convention that the current flows counter-clockwise when viewed from above.
+
+        Units: A
+        """
+
+class _PulseSchedulePfActiveSupplyMany:
+    """PF supply
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Description, e.g. “channel viewing the upper divertor”
+        """
+    @property
+    def voltage(self) -> _PulseScheduleReferencePfActiveMany:
+        """Voltage at the supply output (Vside1-Vside2)
+
+        Units: V
+        """
+    @property
+    def current(self) -> _PulseScheduleReferencePfActiveMany:
+        """Current fed into one turn of the coil. (Multiply by number of turns to obtain generated magnetic field). Positive when flowing from side 1 to side 2 of the coil, this numbering being made consistently with the convention that the current flows counter-clockwise when viewed from above.
+
+        Units: A
+        """
+
+class _PulseSchedulePositionItem:
+    """Position control references
+    """
+
+    @property
+    def magnetic_axis(self) -> _PulseScheduleRzItem:
+        """Magnetic axis position
+        """
+    @property
+    def geometric_axis(self) -> _PulseScheduleRzItem:
+        """RZ position of the geometric axis (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the boundary)
+        """
+    @property
+    def minor_radius(self) -> _PulseScheduleReferencePositionItem:
+        """Minor radius of the plasma boundary (defined as (Rmax-Rmin) / 2 of the boundary)
+
+        Units: m
+        """
+    @property
+    def elongation(self) -> _PulseScheduleReferencePositionItem:
+        """Elongation of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def elongation_upper(self) -> _PulseScheduleReferencePositionItem:
+        """Elongation (upper half w.r.t. geometric axis) of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def elongation_lower(self) -> _PulseScheduleReferencePositionItem:
+        """Elongation (lower half w.r.t. geometric axis) of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity(self) -> _PulseScheduleReferencePositionItem:
+        """Triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity_upper(self) -> _PulseScheduleReferencePositionItem:
+        """Upper triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity_lower(self) -> _PulseScheduleReferencePositionItem:
+        """Lower triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity_inner(self) -> _PulseScheduleReferencePositionItem:
+        """Inner triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity_outer(self) -> _PulseScheduleReferencePositionItem:
+        """Outer triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity_minor(self) -> _PulseScheduleReferencePositionItem:
+        """Minor triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def squareness_upper_outer(self) -> _PulseScheduleReferencePositionItem:
+        """Upper outer squareness of the plasma boundary (definition from T. Luce, Plasma Phys. Control. Fusion 55 (2013) 095009)
+
+        Units: 1
+        """
+    @property
+    def squareness_upper_inner(self) -> _PulseScheduleReferencePositionItem:
+        """Upper inner squareness of the plasma boundary (definition from T. Luce, Plasma Phys. Control. Fusion 55 (2013) 095009)
+
+        Units: 1
+        """
+    @property
+    def squareness_lower_outer(self) -> _PulseScheduleReferencePositionItem:
+        """Lower outer squareness of the plasma boundary (definition from T. Luce, Plasma Phys. Control. Fusion 55 (2013) 095009)
+
+        Units: 1
+        """
+    @property
+    def squareness_lower_inner(self) -> _PulseScheduleReferencePositionItem:
+        """Lower inner squareness of the plasma boundary (definition from T. Luce, Plasma Phys. Control. Fusion 55 (2013) 095009)
+
+        Units: 1
+        """
+    @property
+    def x_point(self) -> _PulseScheduleRzArrayFromItem:
+        """Array of X-points, for each of them the RZ position is given
+        """
+    @property
+    def strike_point(self) -> _PulseScheduleRzArrayFromItem:
+        """Array of strike points, for each of them the RZ position is given
+        """
+    @property
+    def active_limiter_point(self) -> _PulseScheduleRzItem:
+        """RZ position of the active limiter point (point of the plasma boundary in contact with the limiter)
+        """
+    @property
+    def boundary_outline(self) -> _PulseScheduleOutlineArrayFromItem:
+        """Set of (R,Z) points defining the outline of the plasma boundary
+        """
+    @property
+    def z_r_max(self) -> _PulseScheduleReferencePositionItem:
+        """Height of the separatrix point of maximum major radius
+
+        Units: m
+        """
+    @property
+    def z_r_min(self) -> _PulseScheduleReferencePositionItem:
+        """Height of the separatrix point of minimum major radius
+
+        Units: m
+        """
+    @property
+    def gap(self) -> _PulseScheduleGapArrayFromItem:
+        """Set of gaps, defined by a reference point and a direction.
+        """
+    @property
+    def current_centroid(self) -> _PulseScheduleRzItem:
+        """RZ position of the current centroid
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseSchedulePositionMany:
+    """Position control references
+    """
+
+    @property
+    def magnetic_axis(self) -> _PulseScheduleRzMany:
+        """Magnetic axis position
+        """
+    @property
+    def geometric_axis(self) -> _PulseScheduleRzMany:
+        """RZ position of the geometric axis (defined as (Rmin+Rmax) / 2 and (Zmin+Zmax) / 2 of the boundary)
+        """
+    @property
+    def minor_radius(self) -> _PulseScheduleReferencePositionMany:
+        """Minor radius of the plasma boundary (defined as (Rmax-Rmin) / 2 of the boundary)
+
+        Units: m
+        """
+    @property
+    def elongation(self) -> _PulseScheduleReferencePositionMany:
+        """Elongation of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def elongation_upper(self) -> _PulseScheduleReferencePositionMany:
+        """Elongation (upper half w.r.t. geometric axis) of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def elongation_lower(self) -> _PulseScheduleReferencePositionMany:
+        """Elongation (lower half w.r.t. geometric axis) of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity(self) -> _PulseScheduleReferencePositionMany:
+        """Triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity_upper(self) -> _PulseScheduleReferencePositionMany:
+        """Upper triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity_lower(self) -> _PulseScheduleReferencePositionMany:
+        """Lower triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity_inner(self) -> _PulseScheduleReferencePositionMany:
+        """Inner triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity_outer(self) -> _PulseScheduleReferencePositionMany:
+        """Outer triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def triangularity_minor(self) -> _PulseScheduleReferencePositionMany:
+        """Minor triangularity of the plasma boundary
+
+        Units: 1
+        """
+    @property
+    def squareness_upper_outer(self) -> _PulseScheduleReferencePositionMany:
+        """Upper outer squareness of the plasma boundary (definition from T. Luce, Plasma Phys. Control. Fusion 55 (2013) 095009)
+
+        Units: 1
+        """
+    @property
+    def squareness_upper_inner(self) -> _PulseScheduleReferencePositionMany:
+        """Upper inner squareness of the plasma boundary (definition from T. Luce, Plasma Phys. Control. Fusion 55 (2013) 095009)
+
+        Units: 1
+        """
+    @property
+    def squareness_lower_outer(self) -> _PulseScheduleReferencePositionMany:
+        """Lower outer squareness of the plasma boundary (definition from T. Luce, Plasma Phys. Control. Fusion 55 (2013) 095009)
+
+        Units: 1
+        """
+    @property
+    def squareness_lower_inner(self) -> _PulseScheduleReferencePositionMany:
+        """Lower inner squareness of the plasma boundary (definition from T. Luce, Plasma Phys. Control. Fusion 55 (2013) 095009)
+
+        Units: 1
+        """
+    @property
+    def x_point(self) -> _PulseScheduleRzArrayFromMany:
+        """Array of X-points, for each of them the RZ position is given
+        """
+    @property
+    def strike_point(self) -> _PulseScheduleRzArrayFromMany:
+        """Array of strike points, for each of them the RZ position is given
+        """
+    @property
+    def active_limiter_point(self) -> _PulseScheduleRzMany:
+        """RZ position of the active limiter point (point of the plasma boundary in contact with the limiter)
+        """
+    @property
+    def boundary_outline(self) -> _PulseScheduleOutlineArrayFromMany:
+        """Set of (R,Z) points defining the outline of the plasma boundary
+        """
+    @property
+    def z_r_max(self) -> _PulseScheduleReferencePositionMany:
+        """Height of the separatrix point of maximum major radius
+
+        Units: m
+        """
+    @property
+    def z_r_min(self) -> _PulseScheduleReferencePositionMany:
+        """Height of the separatrix point of minimum major radius
+
+        Units: m
+        """
+    @property
+    def gap(self) -> _PulseScheduleGapArrayFromMany:
+        """Set of gaps, defined by a reference point and a direction.
+        """
+    @property
+    def current_centroid(self) -> _PulseScheduleRzMany:
+        """RZ position of the current centroid
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleReferenceDensityItem:
+    """Pulse schedule reference for the density_control structure
+    """
+
+    @property
+    def reference_name(self) -> Path[str]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[int]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[int]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceDensityMany:
+    """Pulse schedule reference for the density_control structure
+    """
+
+    @property
+    def reference_name(self) -> Path[npt.NDArray[np.str_]]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceEcItem:
+    """Pulse schedule reference for the ec structure
+    """
+
+    @property
+    def reference_name(self) -> Path[str]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[int]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[int]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceEcMany:
+    """Pulse schedule reference for the ec structure
+    """
+
+    @property
+    def reference_name(self) -> Path[npt.NDArray[np.str_]]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceIcItem:
+    """Pulse schedule reference for the ic structure
+    """
+
+    @property
+    def reference_name(self) -> Path[str]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[int]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[int]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceIcMany:
+    """Pulse schedule reference for the ic structure
+    """
+
+    @property
+    def reference_name(self) -> Path[npt.NDArray[np.str_]]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceLhItem:
+    """Pulse schedule reference for the lh structure
+    """
+
+    @property
+    def reference_name(self) -> Path[str]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[int]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[int]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceLhMany:
+    """Pulse schedule reference for the lh structure
+    """
+
+    @property
+    def reference_name(self) -> Path[npt.NDArray[np.str_]]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceNbiItem:
+    """Pulse schedule reference for the nbi structure
+    """
+
+    @property
+    def reference_name(self) -> Path[str]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[int]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[int]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceNbiMany:
+    """Pulse schedule reference for the nbi structure
+    """
+
+    @property
+    def reference_name(self) -> Path[npt.NDArray[np.str_]]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceNoAosItem:
+    """Pulse schedule reference with relative path to common time not traversing an AoS
+    """
+
+    @property
+    def reference_name(self) -> Path[str]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[int]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[int]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferenceNoAosMany:
+    """Pulse schedule reference with relative path to common time not traversing an AoS
+    """
+
+    @property
+    def reference_name(self) -> Path[npt.NDArray[np.str_]]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferencePfActiveItem:
+    """Pulse schedule reference for the pf_active structure
+    """
+
+    @property
+    def reference_name(self) -> Path[str]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[int]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[int]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferencePfActiveMany:
+    """Pulse schedule reference for the pf_active structure
+    """
+
+    @property
+    def reference_name(self) -> Path[npt.NDArray[np.str_]]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferencePositionItem:
+    """Pulse schedule reference for the position_control structure
+    """
+
+    @property
+    def reference_name(self) -> Path[str]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[int]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[int]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleReferencePositionMany:
+    """Pulse schedule reference for the position_control structure
+    """
+
+    @property
+    def reference_name(self) -> Path[npt.NDArray[np.str_]]:
+        """Reference name (e.g. in the native pulse schedule system of the device)
+        """
+    @property
+    def reference(self) -> Path[npt.NDArray[np.float64]]:
+        """Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.
+
+        Units: mixed
+        """
+    @property
+    def reference_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node
+        """
+    @property
+    def envelope_type(self) -> Path[npt.NDArray[np.int32]]:
+        """Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower are upper are taken in the strict mathematical sense, without considering absolute values of the data
+        """
+
+class _PulseScheduleRzItem:
+    """R,Z position
+    """
+
+    @property
+    def r(self) -> _PulseScheduleReferencePositionItem:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> _PulseScheduleReferencePositionItem:
+        """Height
+
+        Units: m
+        """
+
+class _PulseScheduleRzMany:
+    """R,Z position
+    """
+
+    @property
+    def r(self) -> _PulseScheduleReferencePositionMany:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def z(self) -> _PulseScheduleReferencePositionMany:
+        """Height
+
+        Units: m
+        """
+
+class _PulseScheduleTfItem:
+    """Toroidal field references
+    """
+
+    @property
+    def b_field_tor_vacuum_r(self) -> _PulseScheduleReferenceNoAosItem:
+        """Vacuum magnetic field times major radius within the cage of toroidal field coils. Positive sign means magnetic field is orientated counter-clockwise when viewed from above.
+
+        Units: T.m
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleTfMany:
+    """Toroidal field references
+    """
+
+    @property
+    def b_field_tor_vacuum_r(self) -> _PulseScheduleReferenceNoAosMany:
+        """Vacuum magnetic field times major radius within the cage of toroidal field coils. Positive sign means magnetic field is orientated counter-clockwise when viewed from above.
+
+        Units: T.m
+        """
+    @property
+    def mode(self) -> Path[npt.NDArray[np.int32]]:
+        """Control mode (operation mode and/or settings used by the controller)
+        """
+    @property
+    def time(self) -> Path[npt.NDArray[np.float64]]:
+        """Timebase for the dynamic nodes located at this level of the IDS structure and below
+
+        Units: s
+        """
+
+class _PulseScheduleRphiz0dStaticItem:
+    """Structure for R, Z, Phi positions (0D, static)
+    """
+
+    @property
+    def r(self) -> Path[float]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def phi(self) -> Path[float]:
+        """Toroidal angle (oriented counter-clockwise when viewed from above)
+
+        Units: rad
+        """
+    @property
+    def z(self) -> Path[float]:
+        """Height
+
+        Units: m
+        """
+
+class _PulseScheduleRphiz0dStaticMany:
+    """Structure for R, Z, Phi positions (0D, static)
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius
+
+        Units: m
+        """
+    @property
+    def phi(self) -> Path[npt.NDArray[np.float64]]:
+        """Toroidal angle (oriented counter-clockwise when viewed from above)
+
+        Units: rad
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height
+
+        Units: m
+        """
+
+# --------------------------------------------------------------------------
+# pulse_schedule arrays of structures
+# --------------------------------------------------------------------------
+
+class _PulseScheduleGasMixtureConstantArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleGasMixtureConstantItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleGasMixtureConstantMany: ...
+
+class _PulseScheduleGasMixtureConstantArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleGasMixtureConstantMany: ...
+
+class _PulseScheduleLibraryArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleLibraryItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleLibraryMany: ...
+
+class _PulseScheduleLibraryArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleLibraryMany: ...
+
+class _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseSchedulePlasmaCompositionNeutralElementConstantItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseSchedulePlasmaCompositionNeutralElementConstantMany: ...
+
+class _PulseSchedulePlasmaCompositionNeutralElementConstantArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseSchedulePlasmaCompositionNeutralElementConstantMany: ...
+
+class _PulseScheduleDensityControlIonArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleDensityControlIonItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleDensityControlIonMany: ...
+
+class _PulseScheduleDensityControlIonArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleDensityControlIonMany: ...
+
+class _PulseScheduleDensityControlValveArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleDensityControlValveItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleDensityControlValveMany: ...
+
+class _PulseScheduleDensityControlValveArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleDensityControlValveMany: ...
+
+class _PulseScheduleEcBeamArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleEcBeamItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleEcBeamMany: ...
+
+class _PulseScheduleEcBeamArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleEcBeamMany: ...
+
+class _PulseScheduleEventArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleEventItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleEventMany: ...
+
+class _PulseScheduleEventArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleEventMany: ...
+
+class _PulseScheduleGapArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleGapItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleGapMany: ...
+
+class _PulseScheduleGapArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleGapMany: ...
+
+class _PulseScheduleIcAntennaArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleIcAntennaItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleIcAntennaMany: ...
+
+class _PulseScheduleIcAntennaArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleIcAntennaMany: ...
+
+class _PulseScheduleLhAntennaArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleLhAntennaItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleLhAntennaMany: ...
+
+class _PulseScheduleLhAntennaArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleLhAntennaMany: ...
+
+class _PulseScheduleNbiUnitArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleNbiUnitItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleNbiUnitMany: ...
+
+class _PulseScheduleNbiUnitArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleNbiUnitMany: ...
+
+class _PulseScheduleOutlineArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleOutlineItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleOutlineMany: ...
+
+class _PulseScheduleOutlineArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleOutlineMany: ...
+
+class _PulseSchedulePfActiveCoilArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseSchedulePfActiveCoilItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseSchedulePfActiveCoilMany: ...
+
+class _PulseSchedulePfActiveCoilArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseSchedulePfActiveCoilMany: ...
+
+class _PulseSchedulePfActiveSupplyArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseSchedulePfActiveSupplyItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseSchedulePfActiveSupplyMany: ...
+
+class _PulseSchedulePfActiveSupplyArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseSchedulePfActiveSupplyMany: ...
+
+class _PulseScheduleRzArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleRzItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleRzMany: ...
+
+class _PulseScheduleRzArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleRzMany: ...
+
+# --------------------------------------------------------------------------
+# pulse_schedule root
+# --------------------------------------------------------------------------
+
+class _PulseSchedulePaths:
+    """Description of Pulse Schedule, described by subsystems waveform references and an enveloppe around them. The controllers, pulse schedule and SDN are defined in separate IDSs. All names and identifiers of subsystems appearing in the pulse_schedule must be identical to those used in the IDSs describing the related subsystems.
+    """
+
+    @property
+    def ic(self) -> _PulseScheduleIcItem:
+        """Ion cyclotron heating and current drive system
+        """
+    @property
+    def ec(self) -> _PulseScheduleEcItem:
+        """Electron cyclotron heating and current drive system
+        """
+    @property
+    def lh(self) -> _PulseScheduleLhItem:
+        """Lower Hybrid heating and current drive system
+        """
+    @property
+    def nbi(self) -> _PulseScheduleNbiItem:
+        """Neutral beam heating and current drive system
+        """
+    @property
+    def density_control(self) -> _PulseScheduleDensityControlItem:
+        """Gas injection system and density control references
+        """
+    @property
+    def event(self) -> _PulseScheduleEventArrayFromItem:
+        """List of events, either predefined triggers  or events recorded during the pulse
+        """
+    @property
+    def flux_control(self) -> _PulseScheduleFluxControlItem:
+        """Magnetic flux control references
+        """
+    @property
+    def pf_active(self) -> _PulseSchedulePfActiveItem:
+        """Poloidal field coil references
+        """
+    @property
+    def position_control(self) -> _PulseSchedulePositionItem:
+        """Plasma position and shape control references
+        """
+    @property
+    def tf(self) -> _PulseScheduleTfItem:
+        """Toroidal field references
+        """
+    @property
+    def code(self) -> _PulseScheduleCodeItem: ...
+
+pulse_schedule_paths: _PulseSchedulePaths
+
 class Tf:
     """Toroidal field coils"""
 

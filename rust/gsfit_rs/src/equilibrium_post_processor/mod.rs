@@ -35,6 +35,7 @@ pub use equilibrium_post_processor::equilibrium_post_processor;
 #[expect(non_camel_case_types, reason = "variants are named after the IDS nodes and intermediate-value fields they fill")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CalculatorIdentifier {
+    boundary__gap__value,
     boundary__geometry,
     boundary__outline__r__z,
     boundary__psi_norm__rho_tor,

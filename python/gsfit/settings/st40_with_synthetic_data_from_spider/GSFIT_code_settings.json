@@ -90,7 +90,7 @@
       "mixing_from_previous_iter": 0.1,
       "use": false
     },
-    "gs_error": 5e-06,
+    "grad_shafranov_deviation_tolerance": 5e-06,
     "n_iter_max": 180,
     "n_iter_min": 3,
     "n_iter_no_vertical_feedback": 1,

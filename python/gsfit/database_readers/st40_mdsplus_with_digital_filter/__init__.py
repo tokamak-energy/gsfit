@@ -9,6 +9,7 @@ from gsfit_rs import IsofluxBoundary
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
 from gsfit_rs import Pressure
+from gsfit_rs import PulseSchedule
 from gsfit_rs import RogowskiCoils
 from gsfit_rs import StationaryPoint
 from gsfit_rs import Tf
@@ -24,6 +25,7 @@ from .setup_isoflux_sensors import setup_isoflux_sensors
 from .setup_passives import setup_passives
 from .setup_plasma import setup_plasma
 from .setup_pressure_sensors import setup_pressure_sensors
+from .setup_pulse_schedule import setup_pulse_schedule
 from .setup_rogowski_coils import setup_rogowski_coils
 from .setup_stationary_point_sensors import setup_stationary_point_sensors
 from .setup_tf import setup_tf
@@ -74,6 +76,9 @@ class DatabaseReader(DatabaseReaderProtocol):
 
     def setup_pressure_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Pressure:
         return setup_pressure_sensors(self, *args, **kwargs)
+
+    def setup_pulse_schedule(self, *args: typing.Any, **kwargs: typing.Any) -> PulseSchedule:
+        return setup_pulse_schedule(self, *args, **kwargs)
 
     def setup_rogowski_coils(self, *args: typing.Any, **kwargs: typing.Any) -> RogowskiCoils:
         return setup_rogowski_coils(self, *args, **kwargs)

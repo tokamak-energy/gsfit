@@ -71,7 +71,7 @@ the generated table in by hand, in two files:
   the wrapper's name in the `pub use ids::{...}` line, and two lines in `register`
   (`add_class` and `add("<ids_name>_paths", ...)`).
 
-The IDSs currently generated are `equilibrium`, `magnetics`, `pf_active`, `pf_passive`, `tf` and `wall`.
+The IDSs currently generated are `equilibrium`, `magnetics`, `pf_active`, `pf_passive`, `pulse_schedule`, `tf` and `wall`.
 
 ## Custom (non-IMAS) keys
 

@@ -6,6 +6,7 @@ use crate::coils::Coils;
 use crate::equilibrium_post_processor::equilibrium_post_processor;
 use crate::passives::Passives;
 use crate::plasma::Plasma;
+use crate::pulse_schedule::{PulseSchedule, fill_equilibrium_gaps};
 use crate::sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, SensorsDynamic, SensorsStatic, StationaryPoint};
 use crate::source_functions::SourceFunctionTraits;
 use crate::tf::Tf;
@@ -20,6 +21,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 #[pyfunction]
+#[pyo3(signature = (plasma, wall, tf, coils, passives, bp_probes, flux_loops, rogowski_coils, isoflux, isoflux_boundary, pressure_sensors, stationary_point, dialoop, pulse_schedule=None))]
 pub fn solve_grad_shafranov(
     mut plasma: PyRefMut<Plasma>,
     wall: PyRef<Wall>,
@@ -34,6 +36,7 @@ pub fn solve_grad_shafranov(
     mut pressure_sensors: PyRefMut<Pressure>,
     mut stationary_point: PyRefMut<StationaryPoint>,
     mut dialoop: PyRefMut<Dialoop>,
+    pulse_schedule: Option<PyRef<PulseSchedule>>,
 ) {
     println!("solve_grad_shafranov starting");
     let timing_start_serial_setup: Instant = Instant::now();
@@ -277,7 +280,7 @@ pub fn solve_grad_shafranov(
     for (i_time, time_slice) in equilibrium_ids.time_slice.iter().enumerate() {
         let solution_found: bool = time_slice.global_quantities.ip.is_finite();
         println!(
-            "time={:6.1}ms;  solution_found={};  gs_error={:.18};  n_iter={}",
+            "time={:6.1}ms;  solution_found={};  grad_shafranov_deviation_value={:.18};  n_iter={}",
             times_to_reconstruct[i_time] * 1e3,
             solution_found,
             time_slice.convergence.grad_shafranov_deviation_value,
@@ -287,6 +290,12 @@ pub fn solve_grad_shafranov(
 
     let gsfit_solve_all_time_slices_duration: Duration = gsfit_solve_all_time_slices_timing_start.elapsed();
     info!("GSFit time elapsed: {:?}", gsfit_solve_all_time_slices_duration);
+
+    // The gaps, where the pulse schedule defines any. Their reference points and directions go onto
+    // every time-slice, converged or not, and the post-processor then measures each one
+    if let Some(pulse_schedule) = &pulse_schedule {
+        fill_equilibrium_gaps(&pulse_schedule.pulse_schedule_ids, equilibrium_ids);
+    }
 
     // Post-process
     equilibrium_post_processor(equilibrium_ids, &wall_ids, &p_prime_source_function, &ff_prime_source_function);

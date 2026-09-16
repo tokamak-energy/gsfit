@@ -201,12 +201,14 @@ def _copy_branch(
         destination_child = getattr(destination, name)
 
         if _is_array_of_structures(source_child):
-            # `profiles_2d` is the only array of structures this copier fills, and always with a
-            # single entry. The constraint arrays are filled from the sensor objects further down,
-            # and the rest (`boundary/gap`, `contour_tree/node`, `ggd`) GSFit does not store. None
-            # of them is a schema mismatch, so none is reported as one
+            # `profiles_2d` and `boundary/gap` are the only arrays of structures this copier fills.
+            # The constraint arrays are filled from the sensor objects further down, and the rest
+            # (`contour_tree/node`, `ggd`) GSFit does not store. None of them is a schema mismatch,
+            # so none is reported as one
             if name == "profiles_2d":
                 _copy_profiles_2d(source_child, destination_child, plasma, child_path, skipped)
+            elif name == "gap":
+                _copy_gaps(source_child, destination_child, plasma, child_path, skipped)
             continue
 
         if _is_leaf(source_child):
@@ -239,6 +241,32 @@ def _copy_profiles_2d(
 
     destination.resize(1)
     _copy_profiles_2d_branch(source_entry, destination[0], plasma, path, skipped, n_dim1, n_dim2)
+
+
+def _copy_gaps(
+    source: typing.Any,
+    destination: typing.Any,
+    plasma: "gsfit_rs.Plasma",
+    path: str,
+    skipped: set[str],
+) -> None:
+    """Copy `boundary/gap`, one element at a time.
+
+    There are only gaps when `solve_grad_shafranov` was given a pulse schedule defining some, so an
+    empty array is the usual case and leaves the node empty. Every time-slice carries the same gaps,
+    whether or not it converged; one which did not has each `value` unset.
+    """
+
+    gap_names = _read_leaf(plasma, source[:].name)
+    if gap_names is None:
+        return
+    n_gaps: int = len(gap_names)
+    if n_gaps == 0:
+        return
+
+    destination.resize(n_gaps)
+    for i_gap in range(n_gaps):
+        _copy_branch(source[i_gap], destination[i_gap], plasma, path, skipped)
 
 
 def _copy_profiles_2d_branch(
@@ -279,6 +307,11 @@ def _copy_profiles_2d_branch(
         if raw is None:
             continue
         values = np.asarray(raw)
+
+        # An unset map, e.g. on a time-slice which did not converge, is empty; there is nothing to
+        # orient, and `_write_leaf` leaves it unset
+        if values.size == 0:
+            continue
 
         # The DD requires (dim1, dim2) = (R, Z). Checked against the grid rather than assumed,
         # so that a change of storage order on the Rust side is caught instead of silently

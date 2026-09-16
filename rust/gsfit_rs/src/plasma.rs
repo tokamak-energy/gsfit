@@ -47,7 +47,7 @@ impl Plasma {
     /// * `n_iter_max` - maximum number of Picard iterations, [dimensionless]
     /// * `n_iter_min` - minimum number of Picard iterations before the convergence test may pass, [dimensionless]
     /// * `n_iter_no_vertical_feedback` - number of initial iterations with the vertical feedback off, [dimensionless]
-    /// * `gs_error` - Grad-Shafranov deviation below which the solution is taken as converged, [mixed]
+    /// * `grad_shafranov_deviation_tolerance` - Grad-Shafranov deviation below which the solution is taken as converged, [mixed]
     /// * `use_anderson_mixing` - whether Anderson mixing is applied
     /// * `anderson_mixing_from_previous_iter` - fraction of the previous iteration mixed in, [dimensionless]
     /// * `times_to_reconstruct` - the times the equilibrium will be solved at (1d array), [second].
@@ -77,7 +77,7 @@ impl Plasma {
         n_iter_max: usize,
         n_iter_min: usize,
         n_iter_no_vertical_feedback: usize,
-        gs_error: f64,
+        grad_shafranov_deviation_tolerance: f64,
         use_anderson_mixing: bool,
         anderson_mixing_from_previous_iter: f64,
         times_to_reconstruct: PyReadonlyArray1<f64>,
@@ -234,7 +234,7 @@ impl Plasma {
         equilibrium_ids.code.numerics.iterations.n_max = n_iter_max as i32;
         equilibrium_ids.code.numerics.iterations.n_min = n_iter_min as i32;
         equilibrium_ids.code.numerics.iterations.n_no_vertical_feedback = n_iter_no_vertical_feedback as i32;
-        equilibrium_ids.code.numerics.grad_shafranov_deviation_tolerance = gs_error;
+        equilibrium_ids.code.numerics.grad_shafranov_deviation_tolerance = grad_shafranov_deviation_tolerance;
         // The data dictionary has no boolean base type, so the flag is stored as 0 or 1
         equilibrium_ids.code.numerics.anderson_mixing.r#use = use_anderson_mixing as i32;
         equilibrium_ids.code.numerics.anderson_mixing.mixing_from_previous_iter = anderson_mixing_from_previous_iter;

@@ -123,7 +123,7 @@ def run() -> None:
         n_iter_max=30,
         n_iter_min=1,
         n_iter_no_vertical_feedback=100,
-        gs_error=1.0e5,
+        grad_shafranov_deviation_tolerance=1.0e5,
         use_anderson_mixing=False,
         anderson_mixing_from_previous_iter=0.0,
         times_to_reconstruct=np.array([0.5]),

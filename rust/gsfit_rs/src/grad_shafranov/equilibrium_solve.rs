@@ -518,7 +518,7 @@ impl<'a> EquilibriumSolver<'a> {
         let n_iter_max: usize = self.equilibrium_code.numerics.iterations.n_max as usize;
         let n_iter_min: usize = self.equilibrium_code.numerics.iterations.n_min as usize;
         let n_iter_no_vertical_feedback: usize = self.equilibrium_code.numerics.iterations.n_no_vertical_feedback as usize;
-        let gs_error_tolerance: f64 = self.equilibrium_code.numerics.grad_shafranov_deviation_tolerance;
+        let grad_shafranov_deviation_tolerance: f64 = self.equilibrium_code.numerics.grad_shafranov_deviation_tolerance;
 
         // Constraints
         let n_bp: usize = bp_probes_dynamic.measured.len();
@@ -592,7 +592,7 @@ impl<'a> EquilibriumSolver<'a> {
 
         // Some variables we want to track between iterations
         let mut dof_values_previous: Array1<f64> = Array1::zeros(n_p_prime_dof + n_ff_prime_dof + n_passive_dof + 1);
-        let mut psi_a_previous: f64 = 0.0; // needed to calculate gs-error
+        let mut psi_a_previous: f64 = 0.0; // needed to calculate the Grad-Shafranov deviation
 
         // The reorganised Greens tables for `calculate_psi_and_derivatives`. They depend only on
         // the geometry, so they are built once by the caller and shared by every time-slice
@@ -744,13 +744,13 @@ impl<'a> EquilibriumSolver<'a> {
             profiles_2d.psi_norm = mask * (psi_2d - psi_a) / (psi_b - psi_a);
             let psi_norm_2d: &Array2<f64> = &profiles_2d.psi_norm;
 
-            // Calculate GS error
-            let gs_error_calculated: f64 = Self::calculate_gs_error(psi_a, psi_b, psi_a_previous);
-            self.time_slice.convergence.grad_shafranov_deviation_value = gs_error_calculated;
-            psi_a_previous = psi_a; // needed to calculate gs-error in next iteration
+            // Calculate the Grad-Shafranov deviation
+            let grad_shafranov_deviation_value: f64 = Self::calculate_grad_shafranov_deviation(psi_a, psi_b, psi_a_previous);
+            self.time_slice.convergence.grad_shafranov_deviation_value = grad_shafranov_deviation_value;
+            psi_a_previous = psi_a; // needed to calculate the Grad-Shafranov deviation in the next iteration
 
             // Check for convergence
-            if gs_error_calculated < gs_error_tolerance && i_iter > n_iter_min {
+            if grad_shafranov_deviation_value < grad_shafranov_deviation_tolerance && i_iter > n_iter_min {
                 self.time_slice.convergence.iterations_n = i_iter as i32;
                 self.time_slice.convergence.result.name = "converged".to_string();
                 self.time_slice.convergence.result.index = CONVERGENCE_STATUS_CONVERGED;
@@ -1692,27 +1692,27 @@ impl<'a> EquilibriumSolver<'a> {
         Ok(())
     }
 
-    /// Calculate the Grad-Shafranov "error"
+    /// Calculate the Grad-Shafranov deviation
     /// In the Picard iteration we change the solution by the error,
     /// so what we are doing here is checking to see how much the solutions
     /// is changing by
     /// Takes its inputs as arguments rather than reading them off `&mut self`, so that the caller
     /// can hold a borrow of `self.time_slice` across the call. A `&mut self` method borrows the
     /// whole struct, which would conflict with the `profiles_2d_*` pointers in `solve`.
-    fn calculate_gs_error(psi_a: f64, psi_b: f64, psi_a_previous: f64) -> f64 {
+    fn calculate_grad_shafranov_deviation(psi_a: f64, psi_b: f64, psi_a_previous: f64) -> f64 {
         // Calculate the "error", in the same way EFIT does (called `cerror`)
         // Note, while this might "look" like a convergence test, it is in fact very similar
         // to a residule, since at each iteration the solution changes by the residule
-        let gs_error_calculated: f64 = (psi_a - psi_a_previous).abs() / (psi_b - psi_a).abs();
+        let grad_shafranov_deviation_value: f64 = (psi_a - psi_a_previous).abs() / (psi_b - psi_a).abs();
 
-        gs_error_calculated
+        grad_shafranov_deviation_value
     }
 
-    /// Calculate the Grad Shafranov error by calcuating the LHS and RHS
+    /// Calculate the Grad-Shafranov deviation by calculating the LHS and RHS
     /// on the 2D (r, z) grid and seeing the difference = LHS - RHS.
     ///
     /// **This function is only used for development**
-    fn _calculate_gs_error_numerical(&mut self) {
+    fn _calculate_grad_shafranov_deviation_numerical(&mut self) {
         let psi_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].psi;
         let r: &Array1<f64> = &self.time_slice.profiles_2d[0].grid.dim1;
         let z: &Array1<f64> = &self.time_slice.profiles_2d[0].grid.dim2;

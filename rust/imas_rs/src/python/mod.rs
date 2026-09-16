@@ -51,6 +51,7 @@ mod equilibrium_paths;
 mod magnetics_paths;
 mod pf_active_paths;
 mod pf_passive_paths;
+mod pulse_schedule_paths;
 mod tf_paths;
 mod wall_paths;
 
@@ -58,7 +59,7 @@ use pyo3::prelude::*;
 
 pub use description::{Leaf, Node, NodeKind};
 pub use gather::{Gatherable, LengthOf, Value, gather, no_levels};
-pub use ids::{PyEquilibrium, PyMagnetics, PyPfActive, PyPfPassive, PyTf, PyWall};
+pub use ids::{PyEquilibrium, PyMagnetics, PyPfActive, PyPfPassive, PyPulseSchedule, PyTf, PyWall};
 pub use index::IndexSpec;
 pub use path::{PyPath, Segment, read_path};
 
@@ -66,6 +67,7 @@ pub use equilibrium_paths::EQUILIBRIUM_ROOT;
 pub use magnetics_paths::MAGNETICS_ROOT;
 pub use pf_active_paths::PF_ACTIVE_ROOT;
 pub use pf_passive_paths::PF_PASSIVE_ROOT;
+pub use pulse_schedule_paths::PULSE_SCHEDULE_ROOT;
 pub use tf_paths::TF_ROOT;
 pub use wall_paths::WALL_ROOT;
 
@@ -76,12 +78,14 @@ pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PyMagnetics>()?;
     module.add_class::<PyPfActive>()?;
     module.add_class::<PyPfPassive>()?;
+    module.add_class::<PyPulseSchedule>()?;
     module.add_class::<PyTf>()?;
     module.add_class::<PyWall>()?;
     module.add("equilibrium_paths", PyPath::at_root(&EQUILIBRIUM_ROOT).into_pyobject(module.py())?)?;
     module.add("magnetics_paths", PyPath::at_root(&MAGNETICS_ROOT).into_pyobject(module.py())?)?;
     module.add("pf_active_paths", PyPath::at_root(&PF_ACTIVE_ROOT).into_pyobject(module.py())?)?;
     module.add("pf_passive_paths", PyPath::at_root(&PF_PASSIVE_ROOT).into_pyobject(module.py())?)?;
+    module.add("pulse_schedule_paths", PyPath::at_root(&PULSE_SCHEDULE_ROOT).into_pyobject(module.py())?)?;
     module.add("tf_paths", PyPath::at_root(&TF_ROOT).into_pyobject(module.py())?)?;
     module.add("wall_paths", PyPath::at_root(&WALL_ROOT).into_pyobject(module.py())?)?;
     Ok(())

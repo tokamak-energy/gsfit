@@ -9,6 +9,7 @@ mod grad_shafranov;
 mod magnetics;
 mod passives;
 mod plasma;
+mod pulse_schedule;
 mod sensors;
 mod source_functions;
 mod tf;
@@ -26,6 +27,7 @@ use magnetics::Magnetics;
 mod material_properties;
 use passives::Passives;
 use plasma::Plasma;
+use pulse_schedule::PulseSchedule;
 mod python_pickling_methods;
 use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, StationaryPoint};
 use source_functions::{EfitPolynomial, TensionedCubicBSpline};
@@ -70,6 +72,9 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Plasma>()?;
     m.add_class::<Tf>()?;
     m.add_class::<Wall>()?;
+
+    // Expose machine operation classes
+    m.add_class::<PulseSchedule>()?;
 
     // Expose sensor classes
     m.add_class::<BpProbes>()?;

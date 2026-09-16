@@ -8,6 +8,7 @@ use crate::ids::equilibrium::Equilibrium;
 use crate::ids::magnetics::Magnetics;
 use crate::ids::pf_active::PfActive;
 use crate::ids::pf_passive::PfPassive;
+use crate::ids::pulse_schedule::PulseSchedule;
 use crate::ids::tf::Tf;
 use crate::ids::wall::Wall;
 use pyo3::prelude::*;
@@ -130,6 +131,32 @@ impl PyPfPassive {
 
     fn __repr__(&self) -> String {
         format!("PfPassive(loop={} loop(s))", self.inner.r#loop.len())
+    }
+}
+
+/// A pulse_schedule IDS, readable from Python through paths.
+#[pyclass(module = "gsfit_rs.imas", name = "PulseSchedule")]
+pub struct PyPulseSchedule {
+    pub inner: PulseSchedule,
+}
+
+impl PyPulseSchedule {
+    pub fn new(inner: PulseSchedule) -> Self {
+        Self { inner }
+    }
+}
+
+#[pymethods]
+impl PyPulseSchedule {
+    /// Read the data at `path` out of this IDS.
+    fn get<'py>(&self, py: Python<'py>, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
+        read_path(py, &self.inner, "pulse_schedule", path)
+    }
+
+    /// A pulse schedule holds references for many unrelated systems, so it has no single length
+    /// and there is no `__len__`. The gaps are what GSFit fills, so those are what is shown.
+    fn __repr__(&self) -> String {
+        format!("PulseSchedule(position_control.gap={} gap(s))", self.inner.position_control.gap.len())
     }
 }
 

@@ -18,6 +18,7 @@ rust/imas_rs/src/ids/equilibrium.rs        linguist-generated=true
 rust/imas_rs/src/ids/magnetics.rs          linguist-generated=true
 rust/imas_rs/src/ids/pf_active.rs          linguist-generated=true
 rust/imas_rs/src/ids/pf_passive.rs         linguist-generated=true
+rust/imas_rs/src/ids/pulse_schedule.rs     linguist-generated=true
 rust/imas_rs/src/ids/tf.rs                 linguist-generated=true
 rust/imas_rs/src/ids/wall.rs               linguist-generated=true
 

@@ -74,7 +74,7 @@
     },
     "numerics": {
         "n_iter_max": 80,
-        "gs_error": 5.0e-6,
+        "grad_shafranov_deviation_tolerance": 5.0e-6,
         "n_iter_no_vertical_feedback": 1,
         "n_iter_min": 3,
         "anderson_mixing": {

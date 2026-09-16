@@ -12,6 +12,7 @@ from gsfit_rs import IsofluxBoundary
 from gsfit_rs import Passives
 from gsfit_rs import Plasma
 from gsfit_rs import Pressure
+from gsfit_rs import PulseSchedule
 from gsfit_rs import RogowskiCoils
 from gsfit_rs import StationaryPoint
 from gsfit_rs import Tf
@@ -26,6 +27,9 @@ class DatabaseReaderProtocol(Protocol):
 
     The Protocol defines the inputs and outputs of each method.
     New database readers should be implemented **all** methods.
+
+    The one exception is `setup_pulse_schedule`, which initialises the optional `pulse_schedule`.
+    It has a default here, returning `None`, so a reader for a machine with no gaps to measure need not implement it.
     """
 
     def setup_bp_probes(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> BpProbes:
@@ -405,7 +409,7 @@ class DatabaseReaderProtocol(Protocol):
             n_iter_max=...,                                    # read from `GSFIT_code_settings.json` file
             n_iter_min=...,                                    # read from `GSFIT_code_settings.json` file
             n_iter_no_vertical_feedback=...,                   # read from `GSFIT_code_settings.json` file
-            gs_error=...,                                      # read from `GSFIT_code_settings.json` file
+            grad_shafranov_deviation_tolerance=...,            # read from `GSFIT_code_settings.json` file
             use_anderson_mixing=...,                           # read from `GSFIT_code_settings.json` file
             anderson_mixing_from_previous_iter=...,            # read from `GSFIT_code_settings.json` file
             times_to_reconstruct=times_to_reconstruct,         # passed in, from `setup_timeslices`
@@ -594,3 +598,49 @@ class DatabaseReaderProtocol(Protocol):
         ```
         """
         ...
+
+    def setup_pulse_schedule(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> PulseSchedule | None:
+        """
+        This method initialises the Rust `PulseSchedule` class, which holds an IMAS `pulse_schedule` IDS.
+
+        :param pulseNo: Pulse number, used to read from the database
+        :param settings: Dictionary containing the JSON settings read from the `settings` directory
+        :param kwargs: Additional objects, such as FreeGNSKE object
+
+        **This method is optional.**
+        Unlike every other method it has a default, which returns `None`: `solve_grad_shafranov` then runs without a pulse schedule, and the equilibrium has no gaps.
+
+        Initialising requires reading data from:
+        1. Database reading (e.g. MDSplus): Which contains the gap definitions
+
+        Only the gap definitions are filled, `pulse_schedule/position_control/gap(i)`.
+        A gap is a reference point and a direction, and its value is the distance from the reference point to the plasma boundary along that direction.
+        `solve_grad_shafranov` copies the definitions onto every time-slice's `equilibrium/time_slice(itime)/boundary/gap`, and the equilibrium post-processor calculates each value.
+
+        **The angle is clockwise from `grad(R)`**, in the usual plot with `R` to the right and `Z` upwards, which is the equilibrium IDS's convention.
+        So an angle of `pi / 2` points towards `-Z`.
+        A machine which stores the angle counter-clockwise has to negate it.
+
+        Different machines will use different data stores for the gap definitions.
+        This Protocol allows different database readers to be selected.
+        The output of this method must always be a `PulseSchedule` object, or `None`.
+
+        At a minimum this method should look like this:
+        ```python
+        # Initialise the PulseSchedule Rust class
+        pulse_schedule = PulseSchedule()
+
+        # Add all of the gaps; a machine with no gaps adds none
+        for i_gap in range(n_gaps):
+            pulse_schedule.add_gap(
+                name=...,   # read from a database
+                r=...,      # read from a database
+                z=...,      # read from a database
+                angle=...,  # read from a database, clockwise from `grad(R)`
+            )
+
+        return pulse_schedule
+        ```
+        """
+
+        return None
