@@ -8,7 +8,6 @@ import mdsthin
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Coils
-from scipy.constants import mu_0
 
 from .astra_coils_reader import astra_coils_reader
 
@@ -486,15 +485,6 @@ def setup_coils(
         d_z=0.0 * coil_z,
         time=time,
         measured=currents_local,
-    )
-
-    # Add TF coil
-    bt_vac = conn.get(f"\\ASTRA::TOP.{astra_run_name}.GLOBAL:BTVAC").data().astype(np.float64)  # time-dependent
-    r_reference = 0.5
-    i_rod = bt_vac * (2.0 * np.pi * r_reference) / mu_0  # time-dependent
-    coils.add_tf_coil(
-        time=time,
-        measured=i_rod,
     )
 
     return coils

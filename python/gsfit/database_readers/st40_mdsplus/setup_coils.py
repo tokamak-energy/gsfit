@@ -75,11 +75,4 @@ def setup_coils(
                     measured=current_this_psu,
                 )
 
-    # Add TF coil
-    i_rod = typing.cast(npt.NDArray[np.float64], psu2coil.get("TF.I_ROD"))
-    coils.add_tf_coil(
-        time,
-        i_rod,
-    )
-
     return coils

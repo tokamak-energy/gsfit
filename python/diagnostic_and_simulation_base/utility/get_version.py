@@ -3,7 +3,6 @@ import pathlib
 from importlib import metadata as metadata_py
 
 # import setuptools_git_versioning
-
 from .. import version_storage
 
 

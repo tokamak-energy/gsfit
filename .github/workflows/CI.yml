@@ -17,6 +17,46 @@ permissions:
   contents: read
 
 jobs:
+  imas_data_dictionary_version:
+    name: "IMAS Data Dictionary: check for updates"
+    runs-on: ubuntu-latest
+    # Never fails the run. Regenerating the IDS structs can break `imas_rs`, and is a manual
+    # step taken deliberately, so being behind the Data Dictionary is a warning, not an error.
+    continue-on-error: true
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+      - name: Warn if the Data Dictionary has moved on
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          imas_dd_version="$(cat rust/imas_rs/src/imas_dd_version.txt)"
+          echo "\`imas_rs\` was generated from IMAS Data Dictionary ${imas_dd_version}"
+
+          # `git describe` writes `<tag>` or `<tag>-<n_commits>-g<commit>`, either with an
+          # optional `-dirty` suffix. Recover something the GitHub API can resolve: the
+          # commit when there is one, otherwise the tag.
+          imas_dd_ref="$(sed -E 's/-dirty$//; s/^.*-g([0-9a-f]+)$/\1/' <<< "${imas_dd_version}")"
+
+          if [[ "${imas_dd_version}" == *-dirty ]]; then
+            echo "::warning title=IMAS Data Dictionary clone was dirty::rust/imas_rs/src/ids/*.rs were generated from a Data Dictionary clone with uncommitted changes (${imas_dd_version}), so they cannot be reproduced from the Data Dictionary repository alone."
+          fi
+
+          # `|| true` so that a GitHub outage, or a commit that has been force-pushed away,
+          # leaves this step quiet rather than red
+          commits_ahead="$(gh api "repos/iterorganization/IMAS-Data-Dictionary/compare/${imas_dd_ref}...develop" --jq ".ahead_by" 2>/dev/null || true)"
+
+          if [[ -z "${commits_ahead}" ]]; then
+            echo "Could not compare \`${imas_dd_ref}\` against the Data Dictionary's \`develop\` branch; skipping"
+            echo "gsfit.imas_rs: IMAS Data Dictionary: could not be checked" >> "${GITHUB_STEP_SUMMARY}"
+          elif [[ "${commits_ahead}" == "0" ]]; then
+            echo "Up to date with the Data Dictionary's \`develop\` branch"
+            echo "gsfit.imas_rs: IMAS Data Dictionary: \`${imas_dd_version}\` is up to date with \`develop\`" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "::warning title=IMAS Data Dictionary has moved on::rust/imas_rs was generated from ${imas_dd_version}, and the Data Dictionary's develop branch is now ${commits_ahead} commit(s) ahead. Regenerating is a deliberate manual step: see rust/imas_rs/imas_updater/README.md."
+            echo "gsfit.imas_rs: IMAS Data Dictionary: \`develop\` is **${commits_ahead} commit(s) ahead** of \`${imas_dd_version}\`" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
   sdist:
     name: Source distribution
     runs-on: ubuntu-latest
@@ -82,7 +122,7 @@ jobs:
       - name: Clone FreeGSNKE repository
         run: |
           mkdir -p ~/github
-          git clone https://github.com/FusionComputingLab/freegsnke.git ~/github/freegsnke
+          git clone --depth 1 --single-branch https://github.com/FusionComputingLab/freegsnke.git ~/github/freegsnke
       - name: Generate code coverage (Rust unit tests + Python integration tests)
         env:
           # Limit parallel Rust compilation jobs to avoid OOM on the GitHub Actions runner
@@ -297,7 +337,7 @@ jobs:
       - name: Clone FreeGSNKE repository
         run: |
           mkdir -p ~/github
-          git clone https://github.com/FusionComputingLab/freegsnke.git ~/github/freegsnke
+          git clone --depth 1 --single-branch https://github.com/FusionComputingLab/freegsnke.git ~/github/freegsnke
       - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
         run: |
           python -m pip install --upgrade pip
@@ -430,7 +470,7 @@ jobs:
       - name: Clone FreeGSNKE repository
         run: |
           mkdir -p ~/github
-          git clone https://github.com/FusionComputingLab/freegsnke.git ~/github/freegsnke
+          git clone --depth 1 --single-branch https://github.com/FusionComputingLab/freegsnke.git ~/github/freegsnke
       - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
         run: |
           python -m pip install --upgrade pip
@@ -511,7 +551,7 @@ jobs:
       - name: Clone FreeGSNKE repository
         run: |
           mkdir $env:USERPROFILE\github
-          git clone https://github.com/FusionComputingLab/freegsnke.git $env:USERPROFILE\github\freegsnke
+          git clone --depth 1 --single-branch https://github.com/FusionComputingLab/freegsnke.git $env:USERPROFILE\github\freegsnke
       - name: Install wheel and [dev,with_freegs_and_freegsnke] dependencies
         run: |
           py -3.11 -m pip install --upgrade pip

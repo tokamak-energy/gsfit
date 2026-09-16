@@ -328,7 +328,7 @@ impl Greens {
                     }
                 }
 
-                return green_this_filament;
+                green_this_filament
             })
             .collect();
 

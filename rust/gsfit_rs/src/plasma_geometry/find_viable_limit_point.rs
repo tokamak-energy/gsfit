@@ -45,7 +45,7 @@ pub fn find_viable_limit_point(
     // Filter to retain only `stationary_points` which are saddle points
     saddle_points.retain(|stationary_point| {
         let saddle_point_test: bool = stationary_point.hessian_determinant < 0.0;
-        return saddle_point_test;
+        saddle_point_test
     });
 
     // Grid variables
