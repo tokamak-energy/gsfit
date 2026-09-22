@@ -57,6 +57,11 @@ with_freegs_and_freegsnke = [
     "freegsnke==3.0.1",
     "freegs4e==0.13.1"
 ]
+with_imas = [
+    "imas-core",
+    "imas-data-dictionaries",
+    "imas-python"
+]
 
 [project.urls]
 Repository = "https://github.com/tokamak-energy/gsfit"
@@ -97,6 +102,7 @@ module = [
     "standard_utility.*",
     "mdsthin.*",
     "f90nml.*",
+    "imas.*",
 ]
 ignore_missing_imports = true
 
@@ -116,6 +122,7 @@ replace-imports-with-any = [
     "standard_utility", "standard_utility.**",
     "mdsthin", "mdsthin.**",
     "f90nml", "f90nml.**",
+    "imas", "imas.**",
 ]
 
 # We use `ruff` not `black`. Here we "try" to prevent `black` from running.

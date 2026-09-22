@@ -3,7 +3,7 @@ use super::cubic_interpolation::cubic_interpolation;
 use approx::abs_diff_eq;
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub fn marching_squares(
     r: &Array1<f64>,
@@ -21,9 +21,17 @@ pub fn marching_squares(
     let n_z: usize = z.len();
     let n_r: usize = r.len();
 
-    // HashMap key: (i_r_from, i_z_from, i_r_to, i_z_to)
-    // HashMap value: (r_cross, z_cross)
-    let mut unsorted_boundary_points: HashMap<(usize, usize, usize, usize), (f64, f64)> = HashMap::new();
+    // Key: (i_r_from, i_z_from, i_r_to, i_z_to)
+    // Value: (r_cross, z_cross)
+    //
+    // A `BTreeMap` rather than a `HashMap`, because the contour walk below starts from whichever
+    // point the iteration yields first. `HashMap` iteration order is unspecified, and Rust seeds
+    // `RandomState` per instance, so two maps holding identical crossings iterate differently even
+    // within one process: the traced contour came back rotated by a different amount on every call.
+    // The curve and its point set were always the same, but everything downstream which depends on
+    // the ordering - the polygon area and volume, the flux surface line integrals behind `q`, and
+    // the squareness - moved with it. Ordering by grid index makes the walk reproducible
+    let mut unsorted_boundary_points: BTreeMap<(usize, usize, usize, usize), (f64, f64)> = BTreeMap::new();
 
     // March from left to right
     for i_z in 0..n_z {
@@ -102,7 +110,7 @@ pub fn marching_squares(
 
     // If x-point is not provided, we are limited
     if xpt_r_or_none.is_none() || xpt_z_or_none.is_none() {
-        // Collect boundary points from the HashMap
+        // Collect boundary points, in grid-index order
         let mut unsorted_boundary_r: Vec<f64> = unsorted_boundary_points.values().map(|&(r_val, _)| r_val).collect();
         let mut unsorted_boundary_z: Vec<f64> = unsorted_boundary_points.values().map(|&(_, z_val)| z_val).collect();
 
@@ -178,7 +186,7 @@ pub fn marching_squares(
         i_z_nearest_xpt_upper = i_z_nearest_xpt;
     }
 
-    // Remove the connections between the four grid points from the boundary HashMap, which enclose the x-point
+    // Remove the connections between the four grid points from the boundary map, which enclose the x-point
     let cells_to_remove: Vec<(usize, usize, usize, usize)> = vec![
         // Marching left to right
         // lower edge
@@ -403,7 +411,7 @@ fn sort_boundary_points(sorted_r: Vec<f64>, sorted_z: Vec<f64>, unsorted_boundar
 /// then switches to nearest-neighbour with a no-cross guard.
 /// Returns [xpt, start, ..., end, xpt].
 pub fn sort_boundary_points_version_2(
-    unsorted_boundary_points: HashMap<(usize, usize, usize, usize), (f64, f64)>,
+    unsorted_boundary_points: BTreeMap<(usize, usize, usize, usize), (f64, f64)>,
     xpt_r: f64,
     xpt_z: f64,
     mag_r: f64,
@@ -620,4 +628,51 @@ pub fn sort_boundary_points_version_2(
     z_sorted.push(xpt_z);
 
     (r_sorted, z_sorted)
+}
+
+#[test]
+fn test_marching_squares_is_deterministic() {
+    use ndarray::Array1;
+
+    // A circular flux function, `psi = (r - r_axis) ** 2 + (z - z_axis) ** 2`, contoured at a level
+    // which encloses a good number of grid cells, so the traced contour has many points and any
+    // change in the walk's starting point shows up
+    let n_r: usize = 41;
+    let n_z: usize = 41;
+    let r: Array1<f64> = Array1::linspace(0.1, 1.1, n_r);
+    let z: Array1<f64> = Array1::linspace(-0.5, 0.5, n_z);
+
+    let r_axis: f64 = 0.6;
+    let z_axis: f64 = 0.0;
+    let psi_b: f64 = 0.09; // a circle of radius 0.3 about the axis
+
+    let mut psi_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    let mut d_psi_d_r_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    let mut d_psi_d_z_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    let mut mask_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            let d_r: f64 = r[i_r] - r_axis;
+            let d_z: f64 = z[i_z] - z_axis;
+            psi_2d[(i_z, i_r)] = d_r.powi(2) + d_z.powi(2);
+            d_psi_d_r_2d[(i_z, i_r)] = 2.0 * d_r;
+            d_psi_d_z_2d[(i_z, i_r)] = 2.0 * d_z;
+            // `psi` increases outwards here, so the plasma is the low-`psi` region
+            mask_2d[(i_z, i_r)] = if psi_2d[(i_z, i_r)] < psi_b { 1.0 } else { 0.0 };
+        }
+    }
+
+    // Limited, so no x-point is supplied. This is the branch which orders the crossings by
+    // collecting them out of the map, and so the branch which was nondeterministic when that map
+    // was a `HashMap`
+    let first: MarchingContour = marching_squares(&r, &z, &psi_2d, &d_psi_d_r_2d, &d_psi_d_z_2d, psi_b, &mask_2d, None, None, r_axis, z_axis);
+    let second: MarchingContour = marching_squares(&r, &z, &psi_2d, &d_psi_d_r_2d, &d_psi_d_z_2d, psi_b, &mask_2d, None, None, r_axis, z_axis);
+
+    assert!(first.n > 20, "expected a well-resolved contour, got {} points", first.n);
+    assert_eq!(first.n, second.n, "contour length is not reproducible");
+
+    // Bitwise equality, not a tolerance: the same input must give the same contour, in the same
+    // order, every time
+    assert_eq!(first.r, second.r, "contour `r` is not reproducible");
+    assert_eq!(first.z, second.z, "contour `z` is not reproducible");
 }

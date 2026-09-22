@@ -220,6 +220,11 @@ This means we typically will not use `while` loops at all.
 
 We should name the maximum limit `n_variable_max`, where the "`_max`" hints that we will most likely exit the loop before reaching the limit.
 
+## `mod.rs` and `lib.rs` files
+Normally, the `mod.rs` and `lib.rs` files should only be used to register and expose.
+It should not normally be used for code.
+The reason-- code can effectively be "hidden" within the module file.
+
 # Python
 When using strings I prefer a double backslash `\\` instead of raw, e.g.
 ```python
@@ -228,3 +233,16 @@ mds_path = r"\GSFIT::TOP.BEST.GLOBAL:IP"
 # This is correct
 mds_path = "\\GSFIT::TOP.BEST.GLOBAL:IP"
 ```
+
+# GSFit conventions
+## Equilibrium post processor
+
+* `equilibrium_post_processor.rs` is the single source of truth for execution order and hidden dependencies. Keep `// Requires:` comments there only, and omit dependencies already passed as function arguments.
+* Group calculators by the IDS destination they fill, and name files/modules after the quantity or closely related sibling quantities.
+* When one calculator fills multiple nodes, separate their node or agreed family names with a double underscore `__`; a single underscore remains part of one name. Do not use `_and_`. Examples are `global_quantities/area__length_pol__surface__volume.rs` and `global_quantities/q_min__psi__psi_norm__rho_tor_norm__value.rs`.
+* Preserve complete flat node names rather than factoring out common words, e.g. `profiles_1d/b_field_average__b_field_max__b_field_min.rs`, not `b_field__average__max__min.rs`.
+* For children of a common IDS parent, write the parent followed by the child names, e.g. `profiles_1d/geometric_axis__r__z.rs`.
+* Compact family names may be clearer than listing every expanded node. Approved examples are `area__volume__derivatives.rs`, `elongation__squareness__triangularity.rs`, `beta_pol.rs`, `beta_tor.rs`, `li.rs`, and `gm1_to_gm9.rs`. `boundary/geometry.rs` and `sol/legs_and_strike_points.rs` are explicit exceptions for broad and branching calculations.
+* Rust's `non_snake_case` lint rejects consecutive underscores. Keep the file and module names identical and place `#[expect(non_snake_case, reason = "double underscores separate IDS node names")]` on each affected module declaration.
+* Keep file names alphabetically sorted. Calls in `equilibrium_post_processor.rs` remain dependency-ordered, not alphabetically ordered.
+* Calculate shared intermediate quantities once and pass them explicitly; root-level intermediate helpers do not write IDS paths.

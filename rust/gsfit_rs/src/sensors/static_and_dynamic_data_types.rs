@@ -1,6 +1,18 @@
 use ndarray::{Array1, Array2};
 
 #[derive(Clone, Debug)]
+/// Sensor data which does not change from one solver iteration to the next.
+///
+/// The solver is handed one of these per time-slice, as a `Vec<Arc<SensorsStatic>>`. Some sensor
+/// types genuinely need that: the isoflux sensors move, so their Green's tables really are
+/// different at every time-slice. For most sensor types, though, the tables are fixed geometry and
+/// every time-slice wants the same numbers.
+///
+/// Rather than special-casing those, the vector is a vector of `Arc` handles. Sensor types whose
+/// data does vary build a new one per time-slice; those whose data does not point every entry at a
+/// single shared copy. The solver indexes `[i_time]` either way and cannot tell the difference,
+/// but the fixed ones are stored once instead of 480 times — for ST40's magnetics that is about
+/// 29 MB in place of 13.7 GB.
 pub struct SensorsStatic {
     pub greens_with_grid: Array2<f64>,            // shape = [n_z * n_r, n_sensors]
     pub greens_with_pf: Array2<f64>,              // shape = [n_pf, n_sensors]

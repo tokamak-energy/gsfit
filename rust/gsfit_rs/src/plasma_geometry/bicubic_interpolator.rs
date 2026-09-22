@@ -129,7 +129,6 @@ impl BicubicInterpolator {
     ///
     /// # Returns
     /// * `f` - interpolated value at (x, y), [any]
-    #[allow(dead_code)]
     pub fn interpolate(&self, x: f64, y: f64) -> f64 {
         let x_vec: Array1<f64> = array![1.0, x, x.powi(2), x.powi(3)];
         let y_vec: Array1<f64> = array![1.0, y, y.powi(2), y.powi(3)];
@@ -274,7 +273,7 @@ pub fn find_stationary_point(
         }
     }
 
-    return Err(last_error);
+    Err(last_error)
 }
 
 /// One Newton solve for `u = 0`, `v = 0`, from a single starting point.
@@ -338,7 +337,7 @@ fn newton_solve_for_common_root(
         }
     }
 
-    return Err(ErrorType::MaxIterationsReached);
+    Err(ErrorType::MaxIterationsReached)
 }
 
 #[test]

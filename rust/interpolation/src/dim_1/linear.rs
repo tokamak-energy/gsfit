@@ -161,8 +161,8 @@ impl Dim1Linear {
 /// even when the neighbouring `f` values are NaN.
 #[test]
 fn test_interpolation_with_nans_either_side() {
-    use ndarray::array;
     use crate::dim_1::linear::Dim1Linear;
+    use ndarray::array;
 
     let x: Array1<f64> = array![0.0, 1.0, 2.0];
     let f: Array1<f64> = array![f64::NAN, 5.0, f64::NAN];

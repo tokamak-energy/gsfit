@@ -8,7 +8,6 @@ import mdsthin
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Coils
-from scipy.constants import mu_0
 from st40_database import GetData
 
 if TYPE_CHECKING:
@@ -561,15 +560,6 @@ def setup_coils(
         d_z=0.0 * coil_z,
         time=time,
         measured=currents_local,
-    )
-
-    # Add TF coil
-    bt_vac = conn.get(f"\\SPIDER::TOP.{spider_run_name}.GLOBAL:BTVAC_GEO").data().astype(np.float64)  # time-dependent
-    r_geo = conn.get(f"\\SPIDER::TOP.{spider_run_name}.GLOBAL:RGEO").data().astype(np.float64)  # time-dependent
-    i_rod = bt_vac * (2.0 * np.pi * r_geo) / mu_0  # time-dependent
-    coils.add_tf_coil(
-        time=time,
-        measured=i_rod,
     )
 
     return coils
