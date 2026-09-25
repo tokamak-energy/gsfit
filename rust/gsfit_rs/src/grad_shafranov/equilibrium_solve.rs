@@ -771,12 +771,11 @@ impl<'a> EquilibriumSolver<'a> {
             let psi_norm_flat: Array1<f64> = psi_norm_2d.flatten().to_owned();
             let j_2d_flat: Array1<f64> = j_2d.flatten().to_owned();
 
-            let n_vertical_stabilisation: usize;
-            if i_iter > n_iter_no_vertical_feedback {
-                n_vertical_stabilisation = 1;
+            let n_vertical_stabilisation: usize = if i_iter > n_iter_no_vertical_feedback {
+                1
             } else {
-                n_vertical_stabilisation = 0;
-            }
+                0
+            };
 
             let n_dof: usize = n_p_prime_dof + n_ff_prime_dof + n_passive_dof + n_vertical_stabilisation;
             // Create the fitting matrix
@@ -1379,12 +1378,12 @@ impl<'a> EquilibriumSolver<'a> {
             self.passive_dof_values = passive_dof_values;
 
             // Extract vertical stability
-            let delta_z: f64;
-            if i_iter > n_iter_no_vertical_feedback {
-                delta_z = dof_values.last().unwrap().to_owned();
+            let delta_z: f64 = if i_iter > n_iter_no_vertical_feedback {
+                dof_values.last().unwrap().to_owned()
             } else {
-                delta_z = 0.0;
-            }
+                0.0
+            };
+
             self.time_slice.convergence.delta_z = delta_z;
 
             // Calculate j_2d

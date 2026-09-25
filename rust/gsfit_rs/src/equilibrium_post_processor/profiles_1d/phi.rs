@@ -99,17 +99,18 @@ fn boundary_interval_q_integral(q_profile: &Array1<f64>, psi_profile: &Array1<f6
         return None;
     }
 
-    let integral_q_d_psi_norm: f64;
-    if boundary_diverted {
+    let integral_q_d_psi_norm: f64 = if boundary_diverted {
         let log_distance_before: f64 = delta_psi_norm.ln();
         let log_distance_before_previous: f64 = (1.0 - psi_norm_before_previous).ln();
         let log_coefficient: f64 = (q_profile[i_before] - q_profile[i_before_previous]) / (log_distance_before - log_distance_before_previous);
-        integral_q_d_psi_norm = delta_psi_norm * (q_profile[i_before] - log_coefficient);
+
+        delta_psi_norm * (q_profile[i_before] - log_coefficient)
     } else {
         let q_slope: f64 = (q_profile[i_before] - q_profile[i_before_previous]) / (psi_norm_before - psi_norm_before_previous);
         let q_boundary_extrapolated: f64 = q_profile[i_before] + q_slope * delta_psi_norm;
-        integral_q_d_psi_norm = 0.5 * delta_psi_norm * (q_profile[i_before] + q_boundary_extrapolated);
-    }
+
+        0.5 * delta_psi_norm * (q_profile[i_before] + q_boundary_extrapolated)
+    };
 
     let integral_q_d_psi: f64 = psi_span * integral_q_d_psi_norm;
     integral_q_d_psi.is_finite().then_some(integral_q_d_psi)

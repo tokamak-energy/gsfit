@@ -305,14 +305,14 @@ pub fn solve_grad_shafranov(
 
     // Calculate sensor values. Borrowed rather than cloned: each of these is a separate
     // `PyRefMut`, so borrowing them here does not clash with the `&mut` on the sensor being written
-    bp_probes.calculate_sensor_values_rs(&coils, &passives, &plasma);
-    flux_loops.calculate_sensor_values_rs(&coils, &passives, &plasma);
-    rogowski_coils.calculate_sensor_values_rs(&coils, &passives, &plasma);
+    bp_probes.calculate_sensor_values_rs(&coils, &passives, plasma);
+    flux_loops.calculate_sensor_values_rs(&coils, &passives, plasma);
+    rogowski_coils.calculate_sensor_values_rs(&coils, &passives, plasma);
     if pressure_sensors.results.data.len() > 0 {
-        pressure_sensors.calculate_sensor_values_rust(&plasma);
+        pressure_sensors.calculate_sensor_values_rust(plasma);
     }
     // The diamagnetic loop depends only on the toroidal flux function `f` (no Green's functions)
-    dialoop.calculate_sensor_values_rs(&plasma);
+    dialoop.calculate_sensor_values_rs(plasma);
 
     // Calculate chi_sq_mag for each time slice
     let chi_mag: Array1<f64> = epp_chi_sq_mag(&bp_probes, &flux_loops, &rogowski_coils, &dialoop, n_time);

@@ -263,7 +263,7 @@ fn crossing_in_cell(
         }
     }
 
-    return r_crossing;
+    r_crossing
 }
 
 /// `psi` at a major radius inside one radial cell, from the cubic Hermite along the row.
@@ -294,7 +294,7 @@ fn psi_hermite_at(r: &Array1<f64>, psi_at_grid_lines: &Array1<f64>, d_psi_d_r_at
     let c: f64 = delta_r * d_psi_d_r_left;
     let d: f64 = psi_left;
 
-    return ((a * t + b) * t + c) * t + d;
+    ((a * t + b) * t + c) * t + d
 }
 
 /// Does `psi_target` lie between the two ends of an interval being walked?
@@ -318,7 +318,7 @@ fn brackets(psi_near: f64, psi_far: f64, psi_target: f64) -> bool {
         return false;
     }
 
-    return (psi_near < psi_target) != (psi_far < psi_target);
+    (psi_near < psi_target) != (psi_far < psi_target)
 }
 
 #[cfg(test)]

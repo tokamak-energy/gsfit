@@ -636,12 +636,13 @@ pub fn solve_circuit_equations(
     // Allocate passive currents
     for passive_name in passives.results.keys() {
         let n_filaments: usize = passives.results.get(&passive_name).get("geometry").get("r").unwrap_array1().len();
-        let n_time_store: usize;
-        if adaptive_time_stepping {
-            n_time_store = n_time;
+
+        let n_time_store: usize = if adaptive_time_stepping {
+            n_time
         } else {
-            n_time_store = times_to_solve_ndarray.len();
-        }
+            times_to_solve_ndarray.len()
+        };
+
         let current_simulated: Array2<f64> = Array2::from_elem((n_time_store, n_filaments), f64::NAN);
         passives
             .results

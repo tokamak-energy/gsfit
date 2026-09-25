@@ -197,7 +197,7 @@ fn r_at_psi(
     }
 
     // The surface does not reach the height of the magnetic axis on this side of the grid
-    return f64::NAN;
+    f64::NAN
 }
 
 /// Solve one radial cell's cubic for the crossing on one side of the magnetic axis.
@@ -264,7 +264,7 @@ fn crossing_in_cell(
         }
     }
 
-    return r_crossing;
+    r_crossing
 }
 
 /// Does `psi_target` lie between the two ends of an interval being walked?
@@ -288,7 +288,7 @@ fn brackets(psi_near: f64, psi_far: f64, psi_target: f64) -> bool {
         return false;
     }
 
-    return (psi_near < psi_target) != (psi_far < psi_target);
+    (psi_near < psi_target) != (psi_far < psi_target)
 }
 
 #[cfg(test)]
