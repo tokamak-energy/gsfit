@@ -767,3 +767,96 @@ fn test_3_find_stationary_points_using_winding_number_with_up_down_symmetry() {
 
     assert!(found_magnetic_axis, "Failed to find magnetic axis");
 }
+
+/// In this test the magnetic axis lies exactly on a grid row. The data are from example 17: the
+/// up/down symmetric Guazzotto-Freidberg double null, forward solved on a grid with a row at Z = 0,
+/// at the iteration where the magnetic axis was lost (`NoMagneticAxisFound`). By symmetry,
+/// `d_psi_d_z` is round-off (~1e-11) along the whole row, and the root finder along the cell edges,
+/// which used absolute tolerances, turned that into a crossing which was not there.
+///
+/// The row is also replaced by the other patterns of round-off it can have: exactly zero, positive,
+/// and alternating in sign from one grid point to the next. Each time the magnetic axis must be found
+/// exactly once, by one of the two cells either side of the row but not by both.
+#[test]
+fn test_4_find_stationary_points_using_winding_number_with_o_point_on_grid_row() {
+    use ndarray::Array1;
+
+    let test_data_directory: &std::path::Path = std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_assets/plasma_geometry/find_stationary_points_using_winding_number/gf_double_null_o_point_on_grid_row"
+    ));
+    let r: Array1<f64> = npy_reader_and_writer::read_npy_1d(&test_data_directory.join("r.npy"));
+    let z: Array1<f64> = npy_reader_and_writer::read_npy_1d(&test_data_directory.join("z.npy"));
+    let psi_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(&test_data_directory.join("psi_2d.npy"));
+    let d_psi_d_r_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(&test_data_directory.join("d_psi_d_r_2d.npy"));
+    let d_psi_d_z_2d_as_solved: Array2<f64> = npy_reader_and_writer::read_npy_2d(&test_data_directory.join("d_psi_d_z_2d.npy"));
+    let d2_psi_d_r2_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(&test_data_directory.join("d2_psi_d_r2_2d.npy"));
+    let d2_psi_d_r_d_z_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(&test_data_directory.join("d2_psi_d_r_d_z_2d.npy"));
+    let d2_psi_d_z2_2d: Array2<f64> = npy_reader_and_writer::read_npy_2d(&test_data_directory.join("d2_psi_d_z2_2d.npy"));
+
+    // The grid row at Z = 0
+    let i_z_row: usize = z.mapv(f64::abs).argmin().unwrap();
+    assert_eq!(z[i_z_row], 0.0);
+    let d_z: f64 = z[1] - z[0];
+
+    // The row is round-off (below 1e-10) across the plasma; towards the edges of the grid, near the
+    // coils, it is up to ~4e-7. Only the round-off is replaced
+    let mut n_round_off: usize = 0;
+    for row_pattern in ["as solved", "zero", "positive", "alternating sign"] {
+        let mut d_psi_d_z_2d: Array2<f64> = d_psi_d_z_2d_as_solved.clone();
+        n_round_off = 0;
+        for i_r in 0..r.len() {
+            let round_off: f64 = d_psi_d_z_2d_as_solved[(i_z_row, i_r)].abs();
+            if round_off >= 1.0e-10 {
+                continue;
+            }
+            n_round_off += 1;
+            d_psi_d_z_2d[(i_z_row, i_r)] = match row_pattern {
+                "as solved" => d_psi_d_z_2d_as_solved[(i_z_row, i_r)],
+                "zero" => 0.0,
+                "positive" => round_off,
+                "alternating sign" => {
+                    if i_r % 2 == 0 {
+                        round_off
+                    } else {
+                        -round_off
+                    }
+                }
+                _ => unreachable!(),
+            };
+        }
+
+        let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
+            r.view(),
+            z.view(),
+            psi_2d.view(),
+            d_psi_d_r_2d.view(),
+            d_psi_d_z_2d.view(),
+            d2_psi_d_r2_2d.view(),
+            d2_psi_d_r_d_z_2d.view(),
+            d2_psi_d_z2_2d.view(),
+        );
+
+        // Exactly one stationary point near the magnetic axis, and it is a maximum
+        let near_magnetic_axis: Vec<&StationaryPoint> = stationary_points
+            .iter()
+            .filter(|stationary_point: &&StationaryPoint| (1.05..=1.11).contains(&stationary_point.r) && stationary_point.z.abs() < 2.0 * d_z)
+            .collect();
+        assert_eq!(near_magnetic_axis.len(), 1, "{row_pattern}: stationary points = {stationary_points:#?}");
+        let magnetic_axis: &StationaryPoint = near_magnetic_axis[0];
+        assert!(
+            magnetic_axis.hessian_determinant > 0.0 && magnetic_axis.hessian_trace < 0.0,
+            "{row_pattern}: {magnetic_axis:#?}"
+        );
+        assert!((magnetic_axis.r - 1.07905).abs() < 1.0e-4, "{row_pattern}: {magnetic_axis:#?}");
+        assert!(magnetic_axis.z.abs() < 1.0e-6 * d_z, "{row_pattern}: {magnetic_axis:#?}");
+
+        // The upper and lower X-points are still found
+        let n_x_points: usize = stationary_points
+            .iter()
+            .filter(|stationary_point: &&StationaryPoint| stationary_point.hessian_determinant < 0.0 && (1.4..=1.6).contains(&stationary_point.z.abs()))
+            .count();
+        assert_eq!(n_x_points, 2, "{row_pattern}: stationary points = {stationary_points:#?}");
+    }
+    assert!(n_round_off > 20, "most of the row should be round-off, but only {n_round_off} points are");
+}

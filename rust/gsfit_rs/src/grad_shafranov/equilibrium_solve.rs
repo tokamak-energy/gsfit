@@ -4,6 +4,7 @@
 //! Equilibrium structure during iterations.
 
 use super::Error;
+use super::nonlinear_solvers::{newton_krylov, newton_picard, picard};
 use crate::plasma_geometry;
 use crate::plasma_geometry::BoundaryContour;
 use crate::plasma_geometry::MagneticAxis;
@@ -35,7 +36,7 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 
 /// Convergence status values, from the data dictionary's `equilibrium_convergence_status`
 /// enumeration, stored in `equilibrium/time_slice/convergence/result`
-const CONVERGENCE_STATUS_CONVERGED: i32 = 1;
+pub(crate) const CONVERGENCE_STATUS_CONVERGED: i32 = 1;
 const CONVERGENCE_STATUS_UNCONVERGED: i32 = 10;
 const CONVERGENCE_STATUS_FATAL_ERROR: i32 = 20;
 
@@ -86,7 +87,7 @@ mod tests {
     }
 }
 
-/// Scratch buffers for `calculate_psi_and_derivatives`.
+/// Scratch buffers for `calculate_psi_and_derivatives`, held on `EquilibriumSolver`.
 ///
 /// This type holds no state. It exists only so that the two buffers are allocated **once per
 /// time-slice** rather than on every Picard iteration: they are `(n_z, n_z * n_r)`, which is 8.3
@@ -97,12 +98,12 @@ mod tests {
 /// so whatever they hold on entry is discarded, and nothing is carried from one iteration to the
 /// next. Deleting this type and allocating inside the function would be correct, only slower.
 ///
-/// The caller fills them with `NaN` rather than zeros, so that an element which the **first**
-/// iteration fails to write propagates a visible `NaN` into `psi` rather than silently
+/// `EquilibriumSolver::new` fills them with `NaN` rather than zeros, so that an element which the
+/// **first** iteration fails to write propagates a visible `NaN` into `psi` rather than silently
 /// contributing nothing. On later iterations they hold the previous iteration's values, so this
 /// catches a gap in the fill loop only the first time round.
 ///
-/// The read-only counterpart is [`PsiAndDerivativesGreens`]: both are built by the caller and
+/// The read-only counterpart is [`PsiAndDerivativesGreens`], which is built once by the caller and
 /// handed in, for the same reason.
 pub struct PsiAndDerivativesTemporaryStorage {
     /// Current sources gathered for the even kernels; shape = (n_z, n_z * n_r)
@@ -326,17 +327,19 @@ pub struct EquilibriumSolver<'a> {
     // Object inputs
     /// The IDS time-slice being solved. Results live here as they are calculated, rather than
     /// being accumulated on this struct and copied over at the end
-    time_slice: &'a mut EquilibriumTimeSlice,
+    pub(super) time_slice: &'a mut EquilibriumTimeSlice,
     /// Description of the code, including the settings it was run with. These are the same for
     /// every time-slice, so they sit on the IDS itself (`equilibrium.code`) rather than inside
     /// `time_slice`
-    equilibrium_code: &'a Code,
+    pub(super) equilibrium_code: &'a Code,
     /// Greens tables, shared by every time-slice because they are geometry only
     greens_tables: &'a EquilibriumGreens,
     /// The same Greens tables, reorganised into the shapes `calculate_psi_and_derivatives` wants.
     /// Built once by the caller and shared, because the reorganisation depends only on the
     /// geometry - see `PsiAndDerivativesGreens`
     psi_and_derivatives_greens: &'a PsiAndDerivativesGreens,
+    /// Scratch space for `calculate_psi_and_derivatives`; it holds no state, see the type
+    temporary_storage: PsiAndDerivativesTemporaryStorage,
     /// The initial current-density guess, or the reason it could not be built. It is the same for
     /// every time-slice, so the caller builds it once; the `Result` is carried in so that a bad
     /// initial guess still fails every slice in the way it did when each built its own
@@ -371,6 +374,9 @@ pub struct EquilibriumSolver<'a> {
     pub ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
     passive_regularisations: Array2<f64>,
     passive_regularisations_weight: Array1<f64>,
+    /// The number of calls to `update_psi_and_geometry`, whichever nonlinear solver makes them.
+    /// Written to `convergence/flux_evaluations_n` when the solve finishes
+    n_flux_evaluations: usize,
 }
 
 impl<'a> EquilibriumSolver<'a> {
@@ -392,12 +398,24 @@ impl<'a> EquilibriumSolver<'a> {
             time_slice.profiles_2d = vec![EquilibriumProfiles2d::default()];
         }
 
+        // Scratch space for `calculate_psi_and_derivatives`. Allocated here, once per time-slice,
+        // purely so that it is not reallocated on every iteration - it holds no state; see the
+        // type. Filled with `NaN` rather than zeros so that an element the first iteration fails to
+        // write shows up as `NaN` in `psi` instead of silently contributing nothing
+        let n_r: usize = equilibrium_code.grid.n_r as usize;
+        let n_z: usize = equilibrium_code.grid.n_z as usize;
+        let temporary_storage: PsiAndDerivativesTemporaryStorage = PsiAndDerivativesTemporaryStorage {
+            w_even: Array2::from_elem((n_z, n_z * n_r), f64::NAN),
+            w_odd: Array2::from_elem((n_z, n_z * n_r), f64::NAN),
+        };
+
         EquilibriumSolver {
             // Object inputs
             time_slice,
             equilibrium_code,
             greens_tables,
             psi_and_derivatives_greens: inputs.psi_and_derivatives_greens,
+            temporary_storage,
             initial_j_2d: inputs.initial_j_2d,
             vacuum_toroidal_field_r0,
             vacuum_toroidal_field_b0,
@@ -425,11 +443,20 @@ impl<'a> EquilibriumSolver<'a> {
             ff_prime_source_function: inputs.ff_prime_source_function.clone(),
             passive_regularisations: inputs.passive_regularisations.to_owned(),
             passive_regularisations_weight: inputs.passive_regularisations_weight.to_owned(),
+            n_flux_evaluations: 0,
         }
     }
 
+    /// Record that the solver has converged, after `n_iter` iterations
+    pub(super) fn set_to_converged_time_slice(&mut self, n_iter: usize) {
+        self.time_slice.convergence.iterations_n = n_iter as i32;
+        self.time_slice.convergence.flux_evaluations_n = self.n_flux_evaluations as i32;
+        self.time_slice.convergence.result.name = "converged".to_string();
+        self.time_slice.convergence.result.index = CONVERGENCE_STATUS_CONVERGED;
+    }
+
     /// If the solver fails to converge, this function will set the solution to NAN values (but with the correct shape).
-    fn set_to_failed_time_slice(&mut self, error: Error) {
+    pub(super) fn set_to_failed_time_slice(&mut self, error: Error) {
         // Classified against the data dictionary's convergence status enumeration. Listed
         // variant by variant rather than with a catch-all, so that a new `Error` fails to
         // compile until it has been classified
@@ -443,6 +470,8 @@ impl<'a> EquilibriumSolver<'a> {
         self.time_slice.convergence.result.name = result_name.to_string();
         self.time_slice.convergence.result.index = result_index;
         self.time_slice.convergence.result.description = format!("{:?}", error);
+        // Kept, unlike the rest of the solution: it is what the failed solve cost
+        self.time_slice.convergence.flux_evaluations_n = self.n_flux_evaluations as i32;
 
         self.time_slice.convergence.grad_shafranov_deviation_value = f64::NAN;
         self.time_slice.source_functions.ff_prime.coefficients *= f64::NAN;
@@ -472,8 +501,178 @@ impl<'a> EquilibriumSolver<'a> {
         self.time_slice.boundary.r#type = EMPTY_INT;
     }
 
-    /// Solve the inverse Grad-Shafranov problem
+    /// Solve the Grad-Shafranov equation at this time-slice.
+    ///
+    /// The nonlinear solver, which makes the flux and the current density consistent with each
+    /// other, is chosen by `code/numerics/nonlinear_solver/method`. All are built from the same
+    /// two halves of a Picard iteration, `update_psi_and_geometry` and `fit_and_update_current`:
+    /// * "picard": see `nonlinear_solvers::picard`
+    /// * "newton_krylov": see `nonlinear_solvers::newton_krylov`
+    /// * "newton_picard": see `nonlinear_solvers::newton_picard`
     pub fn solve(&mut self) {
+        match self.equilibrium_code.numerics.nonlinear_solver.method.as_str() {
+            "picard" => picard::solve(self),
+            "newton_krylov" => newton_krylov::solve(self),
+            "newton_picard" => newton_picard::solve(self),
+            method => panic!("EquilibriumSolver::solve: unknown nonlinear_solver method \"{method}\""),
+        }
+    }
+
+    /// Set up the first iteration: the passive currents are zero, and the current density is the
+    /// initial guess
+    pub(super) fn initialise(&mut self) -> Result<(), Error> {
+        let n_passive_dof: usize = self.bp_probes_static.greens_with_passives.shape()[0];
+
+        // TODO: IDEA- change the normalisation so that it does represent current. But this won't work for the IVC eigenvalues
+        self.passive_dof_values = Array1::zeros(n_passive_dof);
+
+        // Initialise the plasma.
+        // Note: the initial seed is the same for all time-slices
+        self.initialise_plasma_with_quadratic_current_density().map_err(Error::InvalidInitialCurrent)
+    }
+
+    /// The first half of a Picard iteration: the flux from the current density, and from the flux
+    /// the magnetic axis, the plasma boundary and `psi_norm`.
+    ///
+    /// The flux is calculated from `j_phi`, `passive_dof_values` and `convergence/delta_z`, which
+    /// is everything the nonlinear solvers iterate on. The magnetic axis is searched for starting
+    /// from the one already in the IDS.
+    ///
+    /// On failure the time-slice is left as it is, so that the caller can decide what to do.
+    pub(super) fn update_psi_and_geometry(&mut self) -> Result<(), Error> {
+        self.n_flux_evaluations += 1;
+
+        // Limiter, from the `wall` IDS. `limit_pts` gathers every limiter unit, `vessel` is
+        // `unit(0)` alone
+        let (limit_pts_r, limit_pts_z): (Array1<f64>, Array1<f64>) = limiter_points(self.wall).unwrap();
+        let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(self.wall).unwrap();
+
+        // Updates `psi` and all of its derivatives (including the `delta_z` vertical stability correction);
+        // timing: 350ms, with [n_r, n_z]=[81, 321]
+        self.calculate_psi_and_derivatives();
+
+        // Construct pointers to the grid, to psi and to psi's derivatives, for convenience.
+        // These borrow out of the IDS rather than copying out of it, so nothing is cloned each
+        // iteration. The names match the parameters of the functions they are passed into.
+        //
+        // The single `&mut` to `profiles_2d[0]` matters: borrowing each field off it lets the
+        // solver hold `psi` while it writes `mask` and `psi_norm` further down, because those
+        // are disjoint fields of one struct. Writing `self.time_slice.profiles_2d[0]` out in
+        // full at each site would not compile - the compiler cannot tell two index expressions
+        // refer to the same element, so it treats the borrows as overlapping.
+        let profiles_2d: &mut EquilibriumProfiles2d = &mut self.time_slice.profiles_2d[0];
+        let psi_2d: &Array2<f64> = &profiles_2d.psi;
+        let d_psi_d_r_2d: &Array2<f64> = &profiles_2d.d_psi_d_r;
+        let d_psi_d_z_2d: &Array2<f64> = &profiles_2d.d_psi_d_z;
+        let d2_psi_d_r2_2d: &Array2<f64> = &profiles_2d.d2_psi_d_r2;
+        let d2_psi_d_r_d_z_2d: &Array2<f64> = &profiles_2d.d2_psi_d_r_d_z;
+        let d2_psi_d_z2_2d: &Array2<f64> = &profiles_2d.d2_psi_d_z2;
+        let r: &Array1<f64> = &profiles_2d.grid.dim1;
+        let z: &Array1<f64> = &profiles_2d.grid.dim2;
+        // Find stationary points in `psi` (magnetic axis and x-points)
+        let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
+            r.view(),
+            z.view(),
+            psi_2d.view(),
+            d_psi_d_r_2d.view(),
+            d_psi_d_z_2d.view(),
+            d2_psi_d_r2_2d.view(),
+            d2_psi_d_r_d_z_2d.view(),
+            d2_psi_d_z2_2d.view(),
+        );
+        // At a minimum we should have found the magnetic axis
+        if stationary_points.is_empty() {
+            return Err(Error::NoStationaryPointsFound);
+        }
+
+        // Store the stationary points in the IDS
+        self.time_slice.contour_tree.node = contour_tree_nodes(&stationary_points);
+
+        // Find the magnetic axis (o-point).
+        // The search starts from the magnetic axis found on the previous iteration, which is
+        // still what the IDS holds at this point; it is overwritten a few lines below.
+        let mag_r_previous: f64 = self.time_slice.global_quantities.magnetic_axis.r;
+        let mag_z_previous: f64 = self.time_slice.global_quantities.magnetic_axis.z;
+        let magnetic_axis_or_error: Result<MagneticAxis, String> = find_magnetic_axis(&stationary_points, mag_r_previous, mag_z_previous, &vessel_r, &vessel_z);
+        // Test if we have found the magnetic axis
+        if magnetic_axis_or_error.is_err() {
+            return Err(Error::NoMagneticAxisFound);
+        }
+        // Unwrap and get results out of `magnetic_axis_or_error`
+        let magnetic_axis: MagneticAxis = magnetic_axis_or_error.unwrap();
+        let mag_r: f64 = magnetic_axis.r;
+        let mag_z: f64 = magnetic_axis.z;
+        let psi_a: f64 = magnetic_axis.psi;
+        self.time_slice.global_quantities.magnetic_axis.r = mag_r;
+        self.time_slice.global_quantities.magnetic_axis.z = mag_z;
+        self.time_slice.global_quantities.psi_magnetic_axis = psi_a;
+
+        // Find boundary
+        let plasma_boundary_or_error: Result<BoundaryContour, plasma_geometry::Error> = find_boundary(
+            r,
+            z,
+            psi_2d,
+            d_psi_d_r_2d,
+            d_psi_d_z_2d,
+            d2_psi_d_r_d_z_2d,
+            &stationary_points,
+            &limit_pts_r,
+            &limit_pts_z,
+            &vessel_r,
+            &vessel_z,
+            mag_r,
+            mag_z,
+        );
+        // Test if we have found a plasma boundary
+        if plasma_boundary_or_error.is_err() {
+            // Extract the reasons for no boundary found
+            let plasma_boundary_error: plasma_geometry::Error = plasma_boundary_or_error.err().unwrap();
+            let (no_xpt_reason, no_limit_point_reason) = match plasma_boundary_error {
+                plasma_geometry::Error::NoBoundaryFound {
+                    no_xpt_reason,
+                    no_limit_point_reason,
+                } => (no_xpt_reason, no_limit_point_reason),
+            };
+            // Stored in this module's own Error enum
+            return Err(Error::NoBoundaryFound {
+                no_xpt_reason,
+                no_limit_point_reason,
+            });
+        }
+        // Unwrap and store the plasma boundary
+        let plasma_boundary: BoundaryContour = plasma_boundary_or_error.unwrap();
+        profiles_2d.mask = plasma_boundary.mask.unwrap();
+        self.time_slice.boundary.psi = plasma_boundary.bounding_psi;
+        self.time_slice.boundary.bounding.r = plasma_boundary.bounding_r;
+        self.time_slice.boundary.bounding.z = plasma_boundary.bounding_z;
+        let mask: &Array2<f64> = &profiles_2d.mask;
+        let psi_b: f64 = self.time_slice.boundary.psi;
+        // "type" is a Rust key word, so we need to use the "raw identifier" = `r#` to access it.
+        self.time_slice.boundary.r#type = plasma_boundary.xpt_diverted as i32;
+
+        // Calculate psi_norm_2d
+        profiles_2d.psi_norm = mask * (psi_2d - psi_a) / (psi_b - psi_a);
+
+        Ok(())
+    }
+
+    /// The second half of a Picard iteration: fit the source functions, the passive currents and
+    /// `delta_z` to the constraints, using the flux, magnetic axis and boundary left in the IDS by
+    /// `update_psi_and_geometry`, then calculate the new current density.
+    ///
+    /// `vertical_feedback` switches on the fitting of `delta_z`; when it is off, `delta_z` is 0.
+    ///
+    /// When a source function is "exact" (see `SourceFunctionTraits::source_function_exact_dof_values`)
+    /// its coefficients are held fixed rather than fitted, so it has `n_dof = 0`. With both `p_prime`
+    /// and `ff_prime` exact this is a forward solve, which needs no magnetic diagnostics:
+    /// * a `StationaryPoint` constraint at the magnetic axis fixes `delta_z`, the vertical position
+    /// * a plasma current constraint (a Rogowski coil) fixes a common amplitude for `p_prime` and
+    ///   `ff_prime`, which holds the plasma radially. Their shapes stay exactly as given, and the
+    ///   coefficients written to the IDS are the given ones times this amplitude
+    ///
+    /// Without the plasma current constraint the amplitude stays at 1, and the Picard iteration is
+    /// free to drift radially to a different equilibrium.
+    pub(super) fn fit_and_update_current(&mut self, vertical_feedback: bool) {
         let p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.p_prime_source_function.clone();
         let ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.ff_prime_source_function.clone();
 
@@ -499,26 +698,19 @@ impl<'a> EquilibriumSolver<'a> {
         let magnetic_axis_dynamic: &SensorsDynamic = self.magnetic_axis_dynamic;
 
         // Plasma grid. The grid never changes while the solver runs, so it is read out of the IDS
-        // rather than copied out of it; this borrow ends here, and `r` and `z` are taken again
-        // inside the iteration loop, off the same `&mut profiles_2d[0]` as `psi` and its derivatives
+        // rather than copied out of it
         let grid: &EquilibriumProfiles2dGrid = &self.time_slice.profiles_2d[0].grid;
         let d_area: f64 = grid.d_area;
         let flat_r: Array1<f64> = flatten_grid_r(&grid.dim1, grid.dim2.len());
-        // Limiter, from the `wall` IDS. `limit_pts` gathers every limiter unit, `vessel` is
-        // `unit(0)` alone
-        let (limit_pts_r, limit_pts_z): (Array1<f64>, Array1<f64>) = limiter_points(self.wall).unwrap();
-        let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(self.wall).unwrap();
 
         // Degrees of freedom
         let passives_shape: &[usize] = bp_probes_static.greens_with_passives.shape();
         let n_passive_dof: usize = passives_shape[0];
+        // 0 for an "exact" source function, whose coefficients are known rather than fitted
         let n_p_prime_dof: usize = p_prime_source_function.source_function_n_dof();
         let n_ff_prime_dof: usize = ff_prime_source_function.source_function_n_dof();
-        // Solver settings, supplied through `equilibrium.code`
-        let n_iter_max: usize = self.equilibrium_code.numerics.iterations.n_max as usize;
-        let n_iter_min: usize = self.equilibrium_code.numerics.iterations.n_min as usize;
-        let n_iter_no_vertical_feedback: usize = self.equilibrium_code.numerics.iterations.n_no_vertical_feedback as usize;
-        let grad_shafranov_deviation_tolerance: f64 = self.equilibrium_code.numerics.grad_shafranov_deviation_tolerance;
+        let p_prime_exact_dof_values: Option<Array1<f64>> = p_prime_source_function.source_function_exact_dof_values();
+        let ff_prime_exact_dof_values: Option<Array1<f64>> = ff_prime_source_function.source_function_exact_dof_values();
 
         // Constraints
         let n_bp: usize = bp_probes_dynamic.measured.len();
@@ -545,6 +737,18 @@ impl<'a> EquilibriumSolver<'a> {
             + n_ff_prime_regularisation
             + n_passive_regularisation
             + n_delta_z_regularisation;
+
+        // With nothing to fit in `p_prime` or `ff_prime` (a forward solve) the Picard iteration is
+        // radially unstable: nothing holds the plasma current, so the plasma drifts in or out to a
+        // different equilibrium. Their shapes are therefore kept, but a common amplitude is fitted,
+        // whenever there is a constraint besides the magnetic axis to fit it to - normally the
+        // plasma current from a Rogowski coil. The amplitude is the last degree of freedom
+        let n_constraints_besides_magnetic_axis: usize = n_bp + n_fl + n_dialoop + n_rog + n_isoflux + n_isoflux_boundary + n_pressure_sensors;
+        let n_exact_amplitude_dof: usize = if n_p_prime_dof + n_ff_prime_dof == 0 && n_constraints_besides_magnetic_axis > 0 {
+            1
+        } else {
+            0
+        };
 
         // Magnetic sensor's Greens tables
         let greens_bp_probes_grid: &Array2<f64> = &bp_probes_static.greens_with_grid; // shape = [n_z*n_r, n_sensors]
@@ -580,728 +784,615 @@ impl<'a> EquilibriumSolver<'a> {
         // pf_coil_currents
         let pf_coil_currents: &Array1<f64> = &coils_dynamic.measured;
 
-        // TODO: IDEA- change the normalisation so that it does represent current. But this won't work for the IVC eigenvalues
-        self.passive_dof_values = Array1::zeros(n_passive_dof);
+        // The flux, magnetic axis and boundary, from `update_psi_and_geometry`. These borrow out of
+        // the IDS rather than copying out of it
+        let psi_a: f64 = self.time_slice.global_quantities.psi_magnetic_axis;
+        let psi_b: f64 = self.time_slice.boundary.psi;
+        let profiles_2d: &EquilibriumProfiles2d = &self.time_slice.profiles_2d[0];
+        let psi_2d: &Array2<f64> = &profiles_2d.psi;
+        let d_psi_d_r_2d: &Array2<f64> = &profiles_2d.d_psi_d_r;
+        let d_psi_d_z_2d: &Array2<f64> = &profiles_2d.d_psi_d_z;
+        let d2_psi_d_r_d_z_2d: &Array2<f64> = &profiles_2d.d2_psi_d_r_d_z;
+        let r: &Array1<f64> = &profiles_2d.grid.dim1;
+        let z: &Array1<f64> = &profiles_2d.grid.dim2;
+        let mask: &Array2<f64> = &profiles_2d.mask;
+        let psi_norm_2d: &Array2<f64> = &profiles_2d.psi_norm;
+        // `j_phi` is the current density the flux was calculated from, which is the previous
+        // iteration's: `calculate_psi_and_derivatives` reads it but never writes it
+        let j_2d: &Array2<f64> = &profiles_2d.j_phi;
 
-        // Initialise the plasma.
-        // Note: the initial seed is the same for all time-slices
-        if let Err(reason) = self.initialise_plasma_with_quadratic_current_density() {
-            self.set_to_failed_time_slice(Error::InvalidInitialCurrent(reason));
-            return;
+        // Grid spacing
+        let d_r: f64 = r[1] - r[0];
+        let d_z: f64 = z[1] - z[0];
+
+        // Flatten variables
+        let mask_flat: Array1<f64> = mask.flatten().to_owned();
+        let psi_norm_flat: Array1<f64> = psi_norm_2d.flatten().to_owned();
+        let j_2d_flat: Array1<f64> = j_2d.flatten().to_owned();
+
+        // The current density from the exact source functions. Their coefficients are known, so
+        // their contribution to each constraint is known too, and it is not fitted
+        let mut j_exact_flat: Array1<f64> = Array1::zeros(mask_flat.len());
+        if let Some(p_prime_exact) = &p_prime_exact_dof_values {
+            j_exact_flat += &(2.0 * PI * &flat_r * &mask_flat * p_prime_source_function.source_function_value(&psi_norm_flat, p_prime_exact));
+        }
+        if let Some(ff_prime_exact) = &ff_prime_exact_dof_values {
+            j_exact_flat += &(2.0 * PI * &mask_flat * ff_prime_source_function.source_function_value(&psi_norm_flat, ff_prime_exact) / (MU_0 * &flat_r));
         }
 
-        // Some variables we want to track between iterations
-        let mut dof_values_previous: Array1<f64> = Array1::zeros(n_p_prime_dof + n_ff_prime_dof + n_passive_dof + 1);
-        let mut psi_a_previous: f64 = 0.0; // needed to calculate the Grad-Shafranov deviation
+        let n_vertical_stabilisation: usize = if vertical_feedback { 1 } else { 0 };
 
-        // The reorganised Greens tables for `calculate_psi_and_derivatives`. They depend only on
-        // the geometry, so they are built once by the caller and shared by every time-slice
-        let psi_and_derivatives_greens: &PsiAndDerivativesGreens = self.psi_and_derivatives_greens;
+        let n_dof: usize = n_p_prime_dof + n_ff_prime_dof + n_passive_dof + n_vertical_stabilisation + n_exact_amplitude_dof;
+        // Create the fitting matrix
+        let mut fitting_matrix: Array2<f64> = Array2::zeros((n_constraints, n_dof));
+        let mut constraint_weights: Array1<f64> = Array1::zeros(n_constraints);
+        let mut constraint_values_from_coils: Array1<f64> = Array1::zeros(n_constraints);
+        let mut constraint_values_from_exact_source_functions: Array1<f64> = Array1::zeros(n_constraints);
+        let mut s_measured: Array1<f64> = Array1::zeros(n_constraints);
 
-        // Scratch space for `calculate_psi_and_derivatives`. Allocated out here purely so that it
-        // is not reallocated on every iteration - it holds no state; see the type. Filled with
-        // `NaN` rather than zeros so that an element the first iteration fails to write shows up as
-        // `NaN` in `psi` instead of silently contributing nothing
-        let n_r: usize = self.equilibrium_code.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_code.grid.n_z as usize;
-        let mut temporary_storage: PsiAndDerivativesTemporaryStorage = PsiAndDerivativesTemporaryStorage {
-            w_even: Array2::from_elem((n_z, n_z * n_r), f64::NAN),
-            w_odd: Array2::from_elem((n_z, n_z * n_r), f64::NAN),
-        };
+        // Counter for the constraints
+        let mut i_constraint: usize = 0;
 
-        // Iteration loop
-        'iteration_loop: for i_iter in 0..n_iter_max {
-            // println!("");
-            // println!("Iteration {i_iter}");
-            // Updates `psi` and all of its derivatives (including the `delta_z` vertical stability correction);
-            // timing: 350ms, with [n_r, n_z]=[81, 321]
-            self.calculate_psi_and_derivatives(psi_and_derivatives_greens, &mut temporary_storage);
+        // Add bp_probes to fitting matrix
+        for i_sensor in 0..n_bp {
+            // j = 2.0 * pi * r * p_prime + 2.0 * pi * ff_prime / (mu_0 * r)
 
-            // Construct pointers to the grid, to psi and to psi's derivatives, for convenience.
-            // These borrow out of the IDS rather than copying out of it, so nothing is cloned each
-            // iteration. The names match the parameters of the functions they are passed into.
-            //
-            // The single `&mut` to `profiles_2d[0]` matters: borrowing each field off it lets the
-            // solver hold `psi` while it writes `mask` and `psi_norm` further down, because those
-            // are disjoint fields of one struct. Writing `self.time_slice.profiles_2d[0]` out in
-            // full at each site would not compile - the compiler cannot tell two index expressions
-            // refer to the same element, so it treats the borrows as overlapping.
-            let profiles_2d: &mut EquilibriumProfiles2d = &mut self.time_slice.profiles_2d[0];
-            let psi_2d: &Array2<f64> = &profiles_2d.psi;
-            let d_psi_d_r_2d: &Array2<f64> = &profiles_2d.d_psi_d_r;
-            let d_psi_d_z_2d: &Array2<f64> = &profiles_2d.d_psi_d_z;
-            let d2_psi_d_r2_2d: &Array2<f64> = &profiles_2d.d2_psi_d_r2;
-            let d2_psi_d_r_d_z_2d: &Array2<f64> = &profiles_2d.d2_psi_d_r_d_z;
-            let d2_psi_d_z2_2d: &Array2<f64> = &profiles_2d.d2_psi_d_z2;
-            let r: &Array1<f64> = &profiles_2d.grid.dim1;
-            let z: &Array1<f64> = &profiles_2d.grid.dim2;
-            // `j_phi` is the previous iteration's current density: `calculate_psi_and_derivatives`
-            // above reads it but never writes it
-            let j_2d: &Array2<f64> = &profiles_2d.j_phi;
-
-            // Grid spacing
-            let d_r: f64 = r[1] - r[0];
-            let d_z: f64 = z[1] - z[0];
-
-            // Find stationary points in `psi` (magnetic axis and x-points)
-            let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
-                r.view(),
-                z.view(),
-                psi_2d.view(),
-                d_psi_d_r_2d.view(),
-                d_psi_d_z_2d.view(),
-                d2_psi_d_r2_2d.view(),
-                d2_psi_d_r_d_z_2d.view(),
-                d2_psi_d_z2_2d.view(),
-            );
-            // At a minimum we should have found the magnetic axis
-            if stationary_points.is_empty() {
-                // Set time-slice to failed
-
-                // Store error state
-                self.set_to_failed_time_slice(Error::NoStationaryPointsFound);
-
-                // Exit iteration loop for this time-slice
-                break 'iteration_loop;
+            // p_prime degrees of freedom
+            for i_p_prime_dof in 0..n_p_prime_dof {
+                fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_bp_probes_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
+                        * &flat_r)
+                        .sum();
             }
 
-            // Store the stationary points in the IDS
-            self.time_slice.contour_tree.node = Self::contour_tree_nodes(&stationary_points);
-
-            // Find the magnetic axis (o-point).
-            // The search starts from the magnetic axis found on the previous iteration, which is
-            // still what the IDS holds at this point; it is overwritten a few lines below.
-            let mag_r_previous: f64 = self.time_slice.global_quantities.magnetic_axis.r;
-            let mag_z_previous: f64 = self.time_slice.global_quantities.magnetic_axis.z;
-            let magnetic_axis_or_error: Result<MagneticAxis, String> =
-                find_magnetic_axis(&stationary_points, mag_r_previous, mag_z_previous, &vessel_r, &vessel_z);
-            // Test if we have found the magnetic axis
-            if magnetic_axis_or_error.is_err() {
-                // Set time-slice to failed
-
-                // Store error state
-                self.set_to_failed_time_slice(Error::NoMagneticAxisFound);
-
-                // Exit iteration loop for this time-slice
-                break 'iteration_loop;
-            }
-            // Unwrap and get results out of `magnetic_axis_or_error`
-            let magnetic_axis: MagneticAxis = magnetic_axis_or_error.unwrap();
-            let mag_r: f64 = magnetic_axis.r;
-            let mag_z: f64 = magnetic_axis.z;
-            let psi_a: f64 = magnetic_axis.psi;
-            self.time_slice.global_quantities.magnetic_axis.r = mag_r;
-            self.time_slice.global_quantities.magnetic_axis.z = mag_z;
-            self.time_slice.global_quantities.psi_magnetic_axis = psi_a;
-
-            // Find boundary
-            let plasma_boundary_or_error: Result<BoundaryContour, plasma_geometry::Error> = find_boundary(
-                r,
-                z,
-                psi_2d,
-                d_psi_d_r_2d,
-                d_psi_d_z_2d,
-                d2_psi_d_r_d_z_2d,
-                &stationary_points,
-                &limit_pts_r,
-                &limit_pts_z,
-                &vessel_r,
-                &vessel_z,
-                mag_r,
-                mag_z,
-            );
-            // Test if we have found a plasma boundary
-            if plasma_boundary_or_error.is_err() {
-                // Extract the reasons for no boundary found
-                let plasma_boundary_error: plasma_geometry::Error = plasma_boundary_or_error.err().unwrap();
-                let (no_xpt_reason, no_limit_point_reason) = match plasma_boundary_error {
-                    plasma_geometry::Error::NoBoundaryFound {
-                        no_xpt_reason,
-                        no_limit_point_reason,
-                    } => (no_xpt_reason, no_limit_point_reason),
-                };
-                // Set time-slice to failed, storing the reason in this module's own Error enum
-                self.set_to_failed_time_slice(Error::NoBoundaryFound {
-                    no_xpt_reason,
-                    no_limit_point_reason,
-                });
-
-                // Exit iteration loop for this time-slice
-                break 'iteration_loop;
-            }
-            // Unwrap and store the plasma boundary
-            let plasma_boundary: BoundaryContour = plasma_boundary_or_error.unwrap();
-            profiles_2d.mask = plasma_boundary.mask.unwrap();
-            self.time_slice.boundary.psi = plasma_boundary.bounding_psi;
-            self.time_slice.boundary.bounding.r = plasma_boundary.bounding_r;
-            self.time_slice.boundary.bounding.z = plasma_boundary.bounding_z;
-            let mask: &Array2<f64> = &profiles_2d.mask;
-            let psi_b: f64 = self.time_slice.boundary.psi;
-            // "type" is a Rust key word, so we need to use the "raw identifier" = `r#` to access it.
-            self.time_slice.boundary.r#type = plasma_boundary.xpt_diverted as i32;
-
-            // Calculate psi_norm_2d
-            profiles_2d.psi_norm = mask * (psi_2d - psi_a) / (psi_b - psi_a);
-            let psi_norm_2d: &Array2<f64> = &profiles_2d.psi_norm;
-
-            // Calculate the Grad-Shafranov deviation
-            let grad_shafranov_deviation_value: f64 = Self::calculate_grad_shafranov_deviation(psi_a, psi_b, psi_a_previous);
-            self.time_slice.convergence.grad_shafranov_deviation_value = grad_shafranov_deviation_value;
-            psi_a_previous = psi_a; // needed to calculate the Grad-Shafranov deviation in the next iteration
-
-            // Check for convergence
-            if grad_shafranov_deviation_value < grad_shafranov_deviation_tolerance && i_iter > n_iter_min {
-                self.time_slice.convergence.iterations_n = i_iter as i32;
-                self.time_slice.convergence.result.name = "converged".to_string();
-                self.time_slice.convergence.result.index = CONVERGENCE_STATUS_CONVERGED;
-                break 'iteration_loop; // Exit the iteration loop
+            // ff_prime degrees of freedom
+            for i_ff_prime_dof in 0..n_ff_prime_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_bp_probes_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
+                        / (MU_0 * &flat_r))
+                        .sum();
             }
 
-            // Check if we have reached the maximum number of iterations
-            if i_iter == n_iter_max - 1 {
-                // Set time-slice to failed
-                self.set_to_failed_time_slice(Error::MaxIterReached);
-
-                // Exit iteration loop for this time-slice
-                break 'iteration_loop;
+            // Add passive degrees of freedom
+            for i_passive_dof in 0..n_passive_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_bp_probes_passives[(i_passive_dof, i_sensor)];
             }
 
-            // Flatten variables
-            let mask_flat: Array1<f64> = mask.flatten().to_owned();
-            let psi_norm_flat: Array1<f64> = psi_norm_2d.flatten().to_owned();
-            let j_2d_flat: Array1<f64> = j_2d.flatten().to_owned();
+            // Vertical stability (using previous iteration)
+            // j_2d is not consistent with mask. This inconsistency is how the plasma can "move" from iteration to iteration
+            if vertical_feedback {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
+                    d_area * (&greens_d_bp_probes_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
+            }
 
-            let n_vertical_stabilisation: usize = if i_iter > n_iter_no_vertical_feedback {
-                1
+            // PF coil component
+            let tmp: Array1<f64> = &greens_bp_probes_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            constraint_values_from_coils[i_constraint] = tmp.sum();
+
+            // Exact source function component
+            constraint_values_from_exact_source_functions[i_constraint] = d_area * (&greens_bp_probes_grid.slice(s![.., i_sensor]) * &j_exact_flat).sum();
+
+            // Store sensor values
+            s_measured[i_constraint] = bp_probes_dynamic.measured[i_sensor];
+
+            // Store weights
+            constraint_weights[i_constraint] = bp_probes_static.fit_settings_weight[i_sensor] / bp_probes_static.fit_settings_expected_value[i_sensor];
+
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
+
+        // Add flux_loops to fitting matrix
+        for i_sensor in 0..n_fl {
+            // p_prime degrees of freedom
+            for i_p_prime_dof in 0..n_p_prime_dof {
+                fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_flux_loops_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
+                        * &flat_r)
+                        .sum();
+            }
+
+            // ff_prime degrees of freedom
+            for i_ff_prime_dof in 0..n_ff_prime_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_flux_loops_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
+                        / (MU_0 * &flat_r))
+                        .sum();
+            }
+
+            // Add passive degrees of freedom
+            for i_passive_dof in 0..n_passive_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_flux_loops_passives[(i_passive_dof, i_sensor)];
+            }
+
+            // Vertical stability (using previous iteration)
+            if vertical_feedback {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
+                    d_area * (&greens_d_flux_loops_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
+                //  * &mask_flat
+            }
+
+            // PF coil component
+            let tmp: Array1<f64> = &greens_flux_loops_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            constraint_values_from_coils[i_constraint] = tmp.sum();
+
+            // Exact source function component
+            constraint_values_from_exact_source_functions[i_constraint] = d_area * (&greens_flux_loops_grid.slice(s![.., i_sensor]) * &j_exact_flat).sum();
+
+            // Store sensor values
+            // s_measured[i_constraint] = flux_loops_rs.all.psi.measured[i_sensor];
+            s_measured[i_constraint] = flux_loops_dynamic.measured[i_sensor];
+
+            // Store weights
+            constraint_weights[i_constraint] =
+                2.0 * PI * flux_loops_static.fit_settings_weight[i_sensor] / flux_loops_static.fit_settings_expected_value[i_sensor];
+
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
+
+        // Add dialoop (diamagnetic flux loop) to the fitting matrix.
+        //
+        // The diamagnetic loop responds to the toroidal flux function `f` (the poloidal-current
+        // function), which depends only on the ff' source function — NOT on the toroidal
+        // currents. The Green's tables relate toroidal currents to psi/B_p, so the dialoop uses
+        // NO Green's functions, and no p', passive, coil or vertical-stabilisation terms.
+        //
+        // The diamagnetic flux is (Moret Eq. 41):
+        //     Phi_t = integral( (f - f_vac) / R ) dA          (over the plasma mask)
+        // where, as in `epp_bt_2d`, `f` is reconstructed from the ff' source function:
+        //     f = sqrt( f_vac^2 + 2*(psi_b - psi_a)*G ),   G = sum_i ff'_dof[i]*ff'_integral_i(psi_norm)
+        // and f_vac = R0*B_phi0 = MU_0*i_rod/(2*PI).
+        //
+        // Linearising for small diamagnetism (|f - f_vac| << |f_vac|):
+        //     f - f_vac ~= (psi_b - psi_a) * G / f_vac
+        // so the response is linear in the ff' degrees of freedom:
+        //     T[i] = ((psi_b - psi_a) / f_vac) * dA * sum_grid [ mask * ff'_integral_i(psi_norm) / R ]
+        //
+        // Note on sign: this linearisation divides by the *signed* f_vac, so it already
+        // preserves the correct sign for a negative TF rod current. Expanding the exact
+        // f = sign(f_vac)*sqrt(f_vac^2 + 2*(psi_b-psi_a)*G) for small G gives
+        // f - f_vac ~= (psi_b - psi_a)*G / f_vac, matching the term below without a separate
+        // sign() factor.
+        let i_rod: f64 = 2.0 * PI * self.vacuum_toroidal_field_r0 * self.vacuum_toroidal_field_b0 / MU_0;
+        let f_vac: f64 = MU_0 * i_rod / (2.0 * PI);
+        let d_psi: f64 = psi_b - psi_a;
+        for i_sensor in 0..n_dialoop {
+            // ff_prime degrees of freedom only (no p', no passives, no coils, no Green's)
+            for i_ff_prime_dof in 0..n_ff_prime_dof {
+                let ff_prime_integral: Array1<f64> = ff_prime_source_function.source_function_integral_single_dof(&psi_norm_flat, i_ff_prime_dof);
+                let integrand: Array1<f64> = &mask_flat * &ff_prime_integral / &flat_r;
+                fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = (d_psi / f_vac) * d_area * integrand.sum();
+            }
+
+            // Exact source function component
+            if let Some(ff_prime_exact) = &ff_prime_exact_dof_values {
+                let ff_prime_integral: Array1<f64> = ff_prime_source_function.source_function_integral(&psi_norm_flat, ff_prime_exact);
+                let integrand: Array1<f64> = &mask_flat * &ff_prime_integral / &flat_r;
+                constraint_values_from_exact_source_functions[i_constraint] = (d_psi / f_vac) * d_area * integrand.sum();
+            }
+
+            // Store sensor value
+            s_measured[i_constraint] = dialoop_dynamic.measured[i_sensor];
+
+            // Store weights
+            constraint_weights[i_constraint] = dialoop_static.fit_settings_weight[i_sensor] / dialoop_static.fit_settings_expected_value[i_sensor];
+
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
+
+        // Add rogowski_coils to fitting matrix
+        for i_sensor in 0..n_rog {
+            // p_prime degrees of freedom
+            for i_p_prime_dof in 0..n_p_prime_dof {
+                fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_rogowski_coils_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
+                        * &flat_r)
+                        .sum();
+            }
+
+            // ff_prime degrees of freedom
+            for i_ff_prime_dof in 0..n_ff_prime_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_rogowski_coils_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
+                        / (MU_0 * &flat_r))
+                        .sum();
+            }
+
+            // Add passive degrees of freedom
+            for i_passive_dof in 0..n_passive_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_rogowski_coils_passives[(i_passive_dof, i_sensor)];
+            }
+
+            // Vertical stability (using previous iteration)
+            if vertical_feedback {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
+                    d_area * (&greens_d_rogowski_coils_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
+            }
+
+            // PF coil component
+            let tmp: Array1<f64> = &greens_rogowski_coils_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            constraint_values_from_coils[i_constraint] = tmp.sum();
+
+            // Exact source function component
+            constraint_values_from_exact_source_functions[i_constraint] = d_area * (&greens_rogowski_coils_grid.slice(s![.., i_sensor]) * &j_exact_flat).sum();
+
+            // Store sensor values
+            s_measured[i_constraint] = rogowski_coils_dynamic.measured[i_sensor];
+
+            // Store weights
+            constraint_weights[i_constraint] =
+                rogowski_coils_static.fit_settings_weight[i_sensor] / rogowski_coils_static.fit_settings_expected_value[i_sensor];
+
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
+
+        // Add isoflux to fitting matrix
+        for i_sensor in 0..n_isoflux {
+            // p_prime degrees of freedom
+            for i_p_prime_dof in 0..n_p_prime_dof {
+                fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_isoflux_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
+                        * &flat_r)
+                        .sum();
+            }
+
+            // ff_prime degrees of freedom
+            for i_ff_prime_dof in 0..n_ff_prime_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_isoflux_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
+                        / (MU_0 * &flat_r))
+                        .sum();
+            }
+
+            // Add passive degrees of freedom
+            for i_passive_dof in 0..n_passive_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_isoflux_passives[(i_passive_dof, i_sensor)];
+            }
+
+            // Vertical stability (using previous iteration)
+            // TODO: check vertical stability for isoflux!!!!
+            if vertical_feedback {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
+                    0.0 * d_area * (&greens_d_isoflux_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
+            }
+
+            // PF coil component
+            let tmp: Array1<f64> = &greens_isoflux_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            constraint_values_from_coils[i_constraint] = tmp.sum();
+
+            // Exact source function component
+            constraint_values_from_exact_source_functions[i_constraint] = d_area * (&greens_isoflux_grid.slice(s![.., i_sensor]) * &j_exact_flat).sum();
+
+            // Store sensor values
+            s_measured[i_constraint] = isoflux_dynamic.measured[i_sensor];
+
+            // Store weights
+            constraint_weights[i_constraint] = isoflux_static.fit_settings_weight[i_sensor] / isoflux_static.fit_settings_expected_value[i_sensor];
+
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
+
+        // Add isoflux_boundary to fitting matrix
+        for i_sensor in 0..n_isoflux_boundary {
+            // p_prime degrees of freedom
+            for i_p_prime_dof in 0..n_p_prime_dof {
+                fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_isoflux_boundary_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
+                        * &flat_r)
+                        .sum();
+            }
+
+            // ff_prime degrees of freedom
+            for i_ff_prime_dof in 0..n_ff_prime_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_isoflux_boundary_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
+                        / (MU_0 * &flat_r))
+                        .sum();
+            }
+
+            // Add passive degrees of freedom
+            for i_passive_dof in 0..n_passive_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_isoflux_boundary_passives[(i_passive_dof, i_sensor)];
+            }
+
+            // Vertical stability (using previous iteration)
+            // TODO: check vertical stability for isoflux_boundary!!!!
+            if vertical_feedback {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
+                    0.0 * d_area * (&greens_d_isoflux_boundary_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
+            }
+
+            // PF coil component
+            let tmp: Array1<f64> = &greens_isoflux_boundary_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            constraint_values_from_coils[i_constraint] = tmp.sum();
+
+            // Exact source function component
+            constraint_values_from_exact_source_functions[i_constraint] =
+                d_area * (&greens_isoflux_boundary_grid.slice(s![.., i_sensor]) * &j_exact_flat).sum();
+
+            // Store sensor values
+            s_measured[i_constraint] = psi_a;
+
+            // Store weights
+            constraint_weights[i_constraint] =
+                isoflux_boundary_static.fit_settings_weight[i_sensor] / isoflux_boundary_static.fit_settings_expected_value[i_sensor];
+
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
+
+        // Add pressure_sensors to fitting matrix
+        // d(psi)/d(psi_norm)
+        let d_psi_d_psi_norm: f64 = 1.0 / (psi_b - psi_a);
+
+        'loop_over_pressure_sensors: for i_sensor in 0..n_pressure_sensors {
+            // Find the value of psi_norm at the location of the pressure sensor
+            let sensor_r: f64 = pressure_sensors_static.geometry_r[i_sensor];
+            let sensor_z: f64 = pressure_sensors_static.geometry_z[i_sensor];
+
+            // Find the nearest grid point to the sensor location
+            let i_r_nearest: usize = (r - sensor_r).abs().argmin().unwrap();
+            let i_z_nearest: usize = (z - sensor_z).abs().argmin().unwrap();
+
+            // Find the four corner grid points surrounding the pressure sensor
+            let i_r_nearest_left: usize;
+            let i_r_nearest_right: usize;
+            let i_z_nearest_lower: usize;
+            let i_z_nearest_upper: usize;
+            if pressure_sensors_static.geometry_r[i_sensor] > r[i_r_nearest] {
+                i_r_nearest_left = i_r_nearest;
+                i_r_nearest_right = i_r_nearest + 1;
             } else {
-                0
-            };
-
-            let n_dof: usize = n_p_prime_dof + n_ff_prime_dof + n_passive_dof + n_vertical_stabilisation;
-            // Create the fitting matrix
-            let mut fitting_matrix: Array2<f64> = Array2::zeros((n_constraints, n_dof));
-            let mut constraint_weights: Array1<f64> = Array1::zeros(n_constraints);
-            let mut constraint_values_from_coils: Array1<f64> = Array1::zeros(n_constraints);
-            let mut s_measured: Array1<f64> = Array1::zeros(n_constraints);
-
-            // Counter for the constraints
-            let mut i_constraint: usize = 0;
-
-            // Add bp_probes to fitting matrix
-            for i_sensor in 0..n_bp {
-                // j = 2.0 * pi * r * p_prime + 2.0 * pi * ff_prime / (mu_0 * r)
-
-                // p_prime degrees of freedom
-                for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_bp_probes_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
-                }
-
-                // ff_prime degrees of freedom
-                for i_ff_prime_dof in 0..n_ff_prime_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_bp_probes_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
-                }
-
-                // Add passive degrees of freedom
-                for i_passive_dof in 0..n_passive_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_bp_probes_passives[(i_passive_dof, i_sensor)];
-                }
-
-                // Vertical stability (using previous iteration)
-                // j_2d is not consistent with mask. This inconsistency is how the plasma can "move" from iteration to iteration
-                if i_iter > n_iter_no_vertical_feedback {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
-                        d_area * (&greens_d_bp_probes_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
-                }
-
-                // PF coil component
-                let tmp: Array1<f64> = &greens_bp_probes_pf.slice(s![.., i_sensor]) * pf_coil_currents;
-                constraint_values_from_coils[i_constraint] = tmp.sum();
-
-                // Store sensor values
-                s_measured[i_constraint] = bp_probes_dynamic.measured[i_sensor];
-
-                // Store weights
-                constraint_weights[i_constraint] = bp_probes_static.fit_settings_weight[i_sensor] / bp_probes_static.fit_settings_expected_value[i_sensor];
-
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
+                i_r_nearest_left = i_r_nearest - 1;
+                i_r_nearest_right = i_r_nearest;
+            }
+            if pressure_sensors_static.geometry_z[i_sensor] > z[i_z_nearest] {
+                i_z_nearest_lower = i_z_nearest;
+                i_z_nearest_upper = i_z_nearest + 1;
+            } else {
+                i_z_nearest_lower = i_z_nearest - 1;
+                i_z_nearest_upper = i_z_nearest;
             }
 
-            // Add flux_loops to fitting matrix
-            for i_sensor in 0..n_fl {
-                // p_prime degrees of freedom
-                for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_flux_loops_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
-                }
+            // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
+            let f: ArrayView2<f64> = psi_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
+            let d_f_d_r: ArrayView2<f64> = d_psi_d_r_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
+            let d_f_d_z: ArrayView2<f64> = d_psi_d_z_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
+            let d2_f_d_r_d_z: ArrayView2<f64> = d2_psi_d_r_d_z_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
 
-                // ff_prime degrees of freedom
-                for i_ff_prime_dof in 0..n_ff_prime_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_flux_loops_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
-                }
+            // Create a bicubic interpolator
+            let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f, d_f_d_r, d_f_d_z, d2_f_d_r_d_z);
 
-                // Add passive degrees of freedom
-                for i_passive_dof in 0..n_passive_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_flux_loops_passives[(i_passive_dof, i_sensor)];
-                }
+            // Find psi at the pressure sensor
+            let x: f64 = (pressure_sensors_static.geometry_r[i_sensor] - r[i_r_nearest_left]) / d_r;
+            let y: f64 = (pressure_sensors_static.geometry_z[i_sensor] - z[i_z_nearest_lower]) / d_z;
+            let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);
 
-                // Vertical stability (using previous iteration)
-                if i_iter > n_iter_no_vertical_feedback {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
-                        d_area * (&greens_d_flux_loops_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
-                    //  * &mask_flat
-                }
-
-                // PF coil component
-                let tmp: Array1<f64> = &greens_flux_loops_pf.slice(s![.., i_sensor]) * pf_coil_currents;
-                constraint_values_from_coils[i_constraint] = tmp.sum();
-
-                // Store sensor values
-                // s_measured[i_constraint] = flux_loops_rs.all.psi.measured[i_sensor];
-                s_measured[i_constraint] = flux_loops_dynamic.measured[i_sensor];
-
-                // Store weights
-                constraint_weights[i_constraint] =
-                    2.0 * PI * flux_loops_static.fit_settings_weight[i_sensor] / flux_loops_static.fit_settings_expected_value[i_sensor];
-
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
+            let psi_norm_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
+            if !(0.0..=1.0).contains(&psi_norm_at_sensor) {
+                println!(
+                    "Warning: pressure sensor {} is outside of the plasma boundary (psi_norm = {})",
+                    i_sensor, psi_norm_at_sensor
+                );
+                // Skip to the next sensor
+                continue 'loop_over_pressure_sensors;
             }
 
-            // Add dialoop (diamagnetic flux loop) to the fitting matrix.
-            //
-            // The diamagnetic loop responds to the toroidal flux function `f` (the poloidal-current
-            // function), which depends only on the ff' source function — NOT on the toroidal
-            // currents. The Green's tables relate toroidal currents to psi/B_p, so the dialoop uses
-            // NO Green's functions, and no p', passive, coil or vertical-stabilisation terms.
-            //
-            // The diamagnetic flux is (Moret Eq. 41):
-            //     Phi_t = integral( (f - f_vac) / R ) dA          (over the plasma mask)
-            // where, as in `epp_bt_2d`, `f` is reconstructed from the ff' source function:
-            //     f = sqrt( f_vac^2 + 2*(psi_b - psi_a)*G ),   G = sum_i ff'_dof[i]*ff'_integral_i(psi_norm)
-            // and f_vac = R0*B_phi0 = MU_0*i_rod/(2*PI).
-            //
-            // Linearising for small diamagnetism (|f - f_vac| << |f_vac|):
-            //     f - f_vac ~= (psi_b - psi_a) * G / f_vac
-            // so the response is linear in the ff' degrees of freedom:
-            //     T[i] = ((psi_b - psi_a) / f_vac) * dA * sum_grid [ mask * ff'_integral_i(psi_norm) / R ]
-            //
-            // Note on sign: this linearisation divides by the *signed* f_vac, so it already
-            // preserves the correct sign for a negative TF rod current. Expanding the exact
-            // f = sign(f_vac)*sqrt(f_vac^2 + 2*(psi_b-psi_a)*G) for small G gives
-            // f - f_vac ~= (psi_b - psi_a)*G / f_vac, matching the term below without a separate
-            // sign() factor.
-            let i_rod: f64 = 2.0 * PI * self.vacuum_toroidal_field_r0 * self.vacuum_toroidal_field_b0 / MU_0;
-            let f_vac: f64 = MU_0 * i_rod / (2.0 * PI);
-            let d_psi: f64 = psi_b - psi_a;
-            for i_sensor in 0..n_dialoop {
-                // ff_prime degrees of freedom only (no p', no passives, no coils, no Green's)
-                for i_ff_prime_dof in 0..n_ff_prime_dof {
-                    let ff_prime_integral: Array1<f64> = ff_prime_source_function.source_function_integral_single_dof(&psi_norm_flat, i_ff_prime_dof);
-                    let integrand: Array1<f64> = &mask_flat * &ff_prime_integral / &flat_r;
-                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = (d_psi / f_vac) * d_area * integrand.sum();
-                }
+            let psi_norm_from_sensor_to_boundary: Array1<f64> = Array1::from_vec(vec![psi_norm_at_sensor, 1.0]);
 
-                // Store sensor value
-                s_measured[i_constraint] = dialoop_dynamic.measured[i_sensor];
+            // p_prime degrees of freedom
+            for i_p_prime_dof in 0..n_p_prime_dof {
+                // Indefinitive integral of p_prime = pressure
+                let indefinite_integral_p_prime: Array1<f64> =
+                    p_prime_source_function.source_function_integral_single_dof(&psi_norm_from_sensor_to_boundary, i_p_prime_dof);
 
-                // Store weights
-                constraint_weights[i_constraint] = dialoop_static.fit_settings_weight[i_sensor] / dialoop_static.fit_settings_expected_value[i_sensor];
+                // The constant of integration is zero pressure at the boundary; or this can be thought of as a definite integral from the sensor to the boundary
+                // let definite_integral_p_prime: f64 = indefinite_integral_p_prime[1] - indefinite_integral_p_prime[0];
+                let definite_integral_p_prime: f64 = indefinite_integral_p_prime[0] - indefinite_integral_p_prime[1];
 
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
+                // Add to fitting matrix
+                fitting_matrix[(i_constraint, i_p_prime_dof)] = definite_integral_p_prime / d_psi_d_psi_norm;
             }
 
-            // Add rogowski_coils to fitting matrix
-            for i_sensor in 0..n_rog {
-                // p_prime degrees of freedom
-                for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_rogowski_coils_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
-                }
-
-                // ff_prime degrees of freedom
-                for i_ff_prime_dof in 0..n_ff_prime_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_rogowski_coils_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
-                }
-
-                // Add passive degrees of freedom
-                for i_passive_dof in 0..n_passive_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_rogowski_coils_passives[(i_passive_dof, i_sensor)];
-                }
-
-                // Vertical stability (using previous iteration)
-                if i_iter > n_iter_no_vertical_feedback {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
-                        d_area * (&greens_d_rogowski_coils_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
-                }
-
-                // PF coil component
-                let tmp: Array1<f64> = &greens_rogowski_coils_pf.slice(s![.., i_sensor]) * pf_coil_currents;
-                constraint_values_from_coils[i_constraint] = tmp.sum();
-
-                // Store sensor values
-                s_measured[i_constraint] = rogowski_coils_dynamic.measured[i_sensor];
-
-                // Store weights
-                constraint_weights[i_constraint] =
-                    rogowski_coils_static.fit_settings_weight[i_sensor] / rogowski_coils_static.fit_settings_expected_value[i_sensor];
-
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
+            // Exact source function component
+            if let Some(p_prime_exact) = &p_prime_exact_dof_values {
+                let indefinite_integral_p_prime: Array1<f64> =
+                    p_prime_source_function.source_function_integral(&psi_norm_from_sensor_to_boundary, p_prime_exact);
+                let definite_integral_p_prime: f64 = indefinite_integral_p_prime[0] - indefinite_integral_p_prime[1];
+                constraint_values_from_exact_source_functions[i_constraint] = definite_integral_p_prime / d_psi_d_psi_norm;
             }
 
-            // Add isoflux to fitting matrix
-            for i_sensor in 0..n_isoflux {
-                // p_prime degrees of freedom
-                for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_isoflux_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
-                }
+            // Vertical stability (not for pressure sensors)
+            // TODO: should there be vertical stability for pressure sensors? I don't think so?
 
-                // ff_prime degrees of freedom
-                for i_ff_prime_dof in 0..n_ff_prime_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_isoflux_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
-                }
+            // Store sensor values
+            s_measured[i_constraint] = pressure_sensors_dynamic.measured[i_sensor];
 
-                // Add passive degrees of freedom
-                for i_passive_dof in 0..n_passive_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_isoflux_passives[(i_passive_dof, i_sensor)];
-                }
+            // Store weights
+            constraint_weights[i_constraint] =
+                pressure_sensors_static.fit_settings_weight[i_sensor] / pressure_sensors_static.fit_settings_expected_value[i_sensor];
 
-                // Vertical stability (using previous iteration)
-                // TODO: check vertical stability for isoflux!!!!
-                if i_iter > n_iter_no_vertical_feedback {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
-                        0.0 * d_area * (&greens_d_isoflux_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
-                }
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
 
-                // PF coil component
-                let tmp: Array1<f64> = &greens_isoflux_pf.slice(s![.., i_sensor]) * pf_coil_currents;
-                constraint_values_from_coils[i_constraint] = tmp.sum();
-
-                // Store sensor values
-                s_measured[i_constraint] = isoflux_dynamic.measured[i_sensor];
-
-                // Store weights
-                constraint_weights[i_constraint] = isoflux_static.fit_settings_weight[i_sensor] / isoflux_static.fit_settings_expected_value[i_sensor];
-
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
+        // Add magnetic_axis to fitting matrix
+        for i_sensor in 0..n_magnetic_axis_constraints {
+            // p_prime degrees of freedom
+            for i_p_prime_dof in 0..n_p_prime_dof {
+                fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
+                        * &flat_r)
+                        .sum();
             }
 
-            // Add isoflux_boundary to fitting matrix
-            for i_sensor in 0..n_isoflux_boundary {
-                // p_prime degrees of freedom
-                for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_isoflux_boundary_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
-                }
-
-                // ff_prime degrees of freedom
-                for i_ff_prime_dof in 0..n_ff_prime_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_isoflux_boundary_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
-                }
-
-                // Add passive degrees of freedom
-                for i_passive_dof in 0..n_passive_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] =
-                        greens_isoflux_boundary_passives[(i_passive_dof, i_sensor)];
-                }
-
-                // Vertical stability (using previous iteration)
-                // TODO: check vertical stability for isoflux_boundary!!!!
-                if i_iter > n_iter_no_vertical_feedback {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
-                        0.0 * d_area * (&greens_d_isoflux_boundary_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
-                }
-
-                // PF coil component
-                let tmp: Array1<f64> = &greens_isoflux_boundary_pf.slice(s![.., i_sensor]) * pf_coil_currents;
-                constraint_values_from_coils[i_constraint] = tmp.sum();
-
-                // Store sensor values
-                s_measured[i_constraint] = psi_a;
-
-                // Store weights
-                constraint_weights[i_constraint] =
-                    isoflux_boundary_static.fit_settings_weight[i_sensor] / isoflux_boundary_static.fit_settings_expected_value[i_sensor];
-
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
+            // ff_prime degrees of freedom
+            for i_ff_prime_dof in 0..n_ff_prime_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
+                    * PI
+                    * d_area
+                    * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
+                        * &mask_flat
+                        * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
+                        / (MU_0 * &flat_r))
+                        .sum();
             }
 
-            // Add pressure_sensors to fitting matrix
-            // d(psi)/d(psi_norm)
-            let d_psi_d_psi_norm: f64 = 1.0 / (psi_b - psi_a);
-
-            'loop_over_pressure_sensors: for i_sensor in 0..n_pressure_sensors {
-                // Find the value of psi_norm at the location of the pressure sensor
-                let sensor_r: f64 = pressure_sensors_static.geometry_r[i_sensor];
-                let sensor_z: f64 = pressure_sensors_static.geometry_z[i_sensor];
-
-                // Find the nearest grid point to the sensor location
-                let i_r_nearest: usize = (r - sensor_r).abs().argmin().unwrap();
-                let i_z_nearest: usize = (z - sensor_z).abs().argmin().unwrap();
-
-                // Find the four corner grid points surrounding the pressure sensor
-                let i_r_nearest_left: usize;
-                let i_r_nearest_right: usize;
-                let i_z_nearest_lower: usize;
-                let i_z_nearest_upper: usize;
-                if pressure_sensors_static.geometry_r[i_sensor] > r[i_r_nearest] {
-                    i_r_nearest_left = i_r_nearest;
-                    i_r_nearest_right = i_r_nearest + 1;
-                } else {
-                    i_r_nearest_left = i_r_nearest - 1;
-                    i_r_nearest_right = i_r_nearest;
-                }
-                if pressure_sensors_static.geometry_z[i_sensor] > z[i_z_nearest] {
-                    i_z_nearest_lower = i_z_nearest;
-                    i_z_nearest_upper = i_z_nearest + 1;
-                } else {
-                    i_z_nearest_lower = i_z_nearest - 1;
-                    i_z_nearest_upper = i_z_nearest;
-                }
-
-                // Gather psi and its gradients at the four corner grid points surrounding the magnetic axis
-                let f: ArrayView2<f64> = psi_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
-                let d_f_d_r: ArrayView2<f64> = d_psi_d_r_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
-                let d_f_d_z: ArrayView2<f64> = d_psi_d_z_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
-                let d2_f_d_r_d_z: ArrayView2<f64> = d2_psi_d_r_d_z_2d.slice(s![i_z_nearest_lower..=i_z_nearest_upper, i_r_nearest_left..=i_r_nearest_right]);
-
-                // Create a bicubic interpolator
-                let bicubic_interpolator: BicubicInterpolator = BicubicInterpolator::new(d_r, d_z, f, d_f_d_r, d_f_d_z, d2_f_d_r_d_z);
-
-                // Find psi at the pressure sensor
-                let x: f64 = (pressure_sensors_static.geometry_r[i_sensor] - r[i_r_nearest_left]) / d_r;
-                let y: f64 = (pressure_sensors_static.geometry_z[i_sensor] - z[i_z_nearest_lower]) / d_z;
-                let psi_at_sensor: f64 = bicubic_interpolator.interpolate(x, y);
-
-                let psi_norm_at_sensor: f64 = (psi_at_sensor - psi_a) / (psi_b - psi_a);
-                if !(0.0..=1.0).contains(&psi_norm_at_sensor) {
-                    println!(
-                        "Warning: pressure sensor {} is outside of the plasma boundary (psi_norm = {})",
-                        i_sensor, psi_norm_at_sensor
-                    );
-                    // Skip to the next sensor
-                    continue 'loop_over_pressure_sensors;
-                }
-
-                let psi_norm_from_sensor_to_boundary: Array1<f64> = Array1::from_vec(vec![psi_norm_at_sensor, 1.0]);
-
-                // p_prime degrees of freedom
-                for i_p_prime_dof in 0..n_p_prime_dof {
-                    // Indefinitive integral of p_prime = pressure
-                    let indefinite_integral_p_prime: Array1<f64> =
-                        p_prime_source_function.source_function_integral_single_dof(&psi_norm_from_sensor_to_boundary, i_p_prime_dof);
-
-                    // The constant of integration is zero pressure at the boundary; or this can be thought of as a definite integral from the sensor to the boundary
-                    // let definite_integral_p_prime: f64 = indefinite_integral_p_prime[1] - indefinite_integral_p_prime[0];
-                    let definite_integral_p_prime: f64 = indefinite_integral_p_prime[0] - indefinite_integral_p_prime[1];
-
-                    // Add to fitting matrix
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = definite_integral_p_prime / d_psi_d_psi_norm;
-                }
-
-                // Vertical stability (not for pressure sensors)
-                // TODO: should there be vertical stability for pressure sensors? I don't think so?
-
-                // Store sensor values
-                s_measured[i_constraint] = pressure_sensors_dynamic.measured[i_sensor];
-
-                // Store weights
-                constraint_weights[i_constraint] =
-                    pressure_sensors_static.fit_settings_weight[i_sensor] / pressure_sensors_static.fit_settings_expected_value[i_sensor];
-
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
+            // Add passive degrees of freedom
+            for i_passive_dof in 0..n_passive_dof {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_magnetic_axis_passives[(i_passive_dof, i_sensor)];
             }
 
-            // Add magnetic_axis to fitting matrix
-            for i_sensor in 0..n_magnetic_axis_constraints {
-                // p_prime degrees of freedom
-                for i_p_prime_dof in 0..n_p_prime_dof {
-                    fitting_matrix[(i_constraint, i_p_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * p_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_p_prime_dof)
-                            * &flat_r)
-                            .sum();
-                }
-
-                // ff_prime degrees of freedom
-                for i_ff_prime_dof in 0..n_ff_prime_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + i_ff_prime_dof)] = 2.0
-                        * PI
-                        * d_area
-                        * (&greens_magnetic_axis_grid.slice(s![.., i_sensor])
-                            * &mask_flat
-                            * ff_prime_source_function.source_function_value_single_dof(&psi_norm_flat, i_ff_prime_dof)
-                            / (MU_0 * &flat_r))
-                            .sum();
-                }
-
-                // Add passive degrees of freedom
-                for i_passive_dof in 0..n_passive_dof {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + i_passive_dof)] = greens_magnetic_axis_passives[(i_passive_dof, i_sensor)];
-                }
-
-                // Vertical stability (using previous iteration)
-                if i_iter > n_iter_no_vertical_feedback {
-                    fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
-                        d_area * (&greens_d_magnetic_axis_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
-                }
-
-                // PF coil component
-                let tmp: Array1<f64> = &greens_magnetic_axis_pf.slice(s![.., i_sensor]) * pf_coil_currents;
-                constraint_values_from_coils[i_constraint] = tmp.sum();
-
-                // Store sensor values
-                s_measured[i_constraint] = 0.0; // Magnetic axis value is always zero
-
-                // Store weights
-                constraint_weights[i_constraint] =
-                    magnetic_axis_static.fit_settings_weight[i_sensor] / magnetic_axis_static.fit_settings_expected_value[i_sensor];
-
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
+            // Vertical stability (using previous iteration)
+            if vertical_feedback {
+                fitting_matrix[(i_constraint, n_p_prime_dof + n_ff_prime_dof + n_passive_dof)] =
+                    d_area * (&greens_d_magnetic_axis_dz.slice(s![.., i_sensor]) * &j_2d_flat).sum();
             }
 
-            // Pressure sensor:
-            // 1.) Find where the pressure sensors are located in `psi_norm`
-            // 2.) Calculate the "sensor" measurement matrix:
-            //     `pressure[psi_norm] = pressure_int_dof_01 * d(psi)/d(psi_norm) + pressure_int_dof_02 * d(psi)/d(psi_norm) + ... = measured_pressure`
-            //     where `pressure_int_dof_xx` = integral from LCFS to psi_norm of basis function xx
+            // PF coil component
+            let tmp: Array1<f64> = &greens_magnetic_axis_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            constraint_values_from_coils[i_constraint] = tmp.sum();
 
-            // Add p_prime_regularisation to fitting matrix
-            let p_prime_regularisation: Array2<f64> = p_prime_source_function.source_function_regularisation(); // shape = [n_regularisation, n_dof]
-            for i_regularisation in 0..n_p_prime_regularisation {
-                // Add regularisation to fitting matrix
-                fitting_matrix
-                    .slice_mut(s![i_constraint, 0..n_p_prime_dof])
-                    .assign(&p_prime_regularisation.slice(s![i_regularisation, ..]));
-                // Store weights
-                constraint_weights[i_constraint] = 1.0;
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
-            }
+            // Exact source function component
+            constraint_values_from_exact_source_functions[i_constraint] = d_area * (&greens_magnetic_axis_grid.slice(s![.., i_sensor]) * &j_exact_flat).sum();
 
-            // Add ff_prime_regularisation to fitting matrix
-            let ff_prime_regularisation: Array2<f64> = ff_prime_source_function.source_function_regularisation(); // shape = [n_regularisation, n_dof]
-            for i_regularisation in 0..n_ff_prime_regularisation {
-                // Add regularisation to fitting matrix
-                fitting_matrix
-                    .slice_mut(s![i_constraint, n_p_prime_dof..n_p_prime_dof + n_ff_prime_dof])
-                    .assign(&ff_prime_regularisation.slice(s![i_regularisation, ..]));
-                // Store weights
-                constraint_weights[i_constraint] = 1.0;
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
-            }
+            // Store sensor values
+            s_measured[i_constraint] = 0.0; // Magnetic axis value is always zero
 
-            // // Add passive regularisation to the fitting matrix
-            let regularisation_scaling: f64 = 0.001 * PI; // This regularisation_scaling factor need improving and explaining!
+            // Store weights
+            constraint_weights[i_constraint] = magnetic_axis_static.fit_settings_weight[i_sensor] / magnetic_axis_static.fit_settings_expected_value[i_sensor];
 
-            let passive_regularisations: &Array2<f64> = &self.passive_regularisations;
-            let passive_regularisations_weight: &Array1<f64> = &self.passive_regularisations_weight;
-            for i_regularisation in 0..n_passive_regularisation {
-                let passive_regularisation: ArrayView1<f64> = passive_regularisations.slice(s![i_regularisation, ..]);
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
 
-                // Add passive degrees of freedom
-                fitting_matrix
-                    .slice_mut(s![
-                        i_constraint,
-                        n_p_prime_dof + n_ff_prime_dof..=n_p_prime_dof + n_ff_prime_dof + n_passive_dof - 1
-                    ])
-                    .assign(&passive_regularisation);
+        // Pressure sensor:
+        // 1.) Find where the pressure sensors are located in `psi_norm`
+        // 2.) Calculate the "sensor" measurement matrix:
+        //     `pressure[psi_norm] = pressure_int_dof_01 * d(psi)/d(psi_norm) + pressure_int_dof_02 * d(psi)/d(psi_norm) + ... = measured_pressure`
+        //     where `pressure_int_dof_xx` = integral from LCFS to psi_norm of basis function xx
 
-                // Add weight
-                constraint_weights[i_constraint] = passive_regularisations_weight[i_regularisation] * regularisation_scaling;
+        // Add p_prime_regularisation to fitting matrix
+        let p_prime_regularisation: Array2<f64> = p_prime_source_function.source_function_regularisation(); // shape = [n_regularisation, n_dof]
+        for i_regularisation in 0..n_p_prime_regularisation {
+            // Add regularisation to fitting matrix
+            fitting_matrix
+                .slice_mut(s![i_constraint, 0..n_p_prime_dof])
+                .assign(&p_prime_regularisation.slice(s![i_regularisation, ..]));
+            // Store weights
+            constraint_weights[i_constraint] = 1.0;
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
 
-                // Setup indexer for next sensor or constraint
-                i_constraint += 1;
-            }
+        // Add ff_prime_regularisation to fitting matrix
+        let ff_prime_regularisation: Array2<f64> = ff_prime_source_function.source_function_regularisation(); // shape = [n_regularisation, n_dof]
+        for i_regularisation in 0..n_ff_prime_regularisation {
+            // Add regularisation to fitting matrix
+            fitting_matrix
+                .slice_mut(s![i_constraint, n_p_prime_dof..n_p_prime_dof + n_ff_prime_dof])
+                .assign(&ff_prime_regularisation.slice(s![i_regularisation, ..]));
+            // Store weights
+            constraint_weights[i_constraint] = 1.0;
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
 
-            // Solve for the least squares problem for the source function coefficients, passive currents, and vertical stability
-            let a: Array2<f64> = Array2::from_diag(&constraint_weights).dot(&fitting_matrix); // matrix-matrix multiplication
-            let b: Array1<f64> = &constraint_weights * &s_measured - &constraint_weights * &constraint_values_from_coils;
+        // // Add passive regularisation to the fitting matrix
+        let regularisation_scaling: f64 = 0.001 * PI; // This regularisation_scaling factor need improving and explaining!
 
-            fn l2_norm(v: ArrayView1<f64>) -> f64 {
-                // Sum of squares of the elements in the vector
-                let sum_of_squares: f64 = v.iter().map(|&x| x * x).sum();
-                // Take the square root to get the L2 norm
-                sum_of_squares.sqrt()
-            }
+        let passive_regularisations: &Array2<f64> = &self.passive_regularisations;
+        let passive_regularisations_weight: &Array1<f64> = &self.passive_regularisations_weight;
+        for i_regularisation in 0..n_passive_regularisation {
+            let passive_regularisation: ArrayView1<f64> = passive_regularisations.slice(s![i_regularisation, ..]);
 
+            // Add passive degrees of freedom
+            fitting_matrix
+                .slice_mut(s![
+                    i_constraint,
+                    n_p_prime_dof + n_ff_prime_dof..=n_p_prime_dof + n_ff_prime_dof + n_passive_dof - 1
+                ])
+                .assign(&passive_regularisation);
+
+            // Add weight
+            constraint_weights[i_constraint] = passive_regularisations_weight[i_regularisation] * regularisation_scaling;
+
+            // Setup indexer for next sensor or constraint
+            i_constraint += 1;
+        }
+
+        // The exact source functions are known, so either their contribution is the column of
+        // their fitted amplitude, or it moves to the right hand side, alongside the PF coils
+        let mut b: Array1<f64> = &constraint_weights * &s_measured - &constraint_weights * &constraint_values_from_coils;
+        if n_exact_amplitude_dof == 1 {
+            fitting_matrix.column_mut(n_dof - 1).assign(&constraint_values_from_exact_source_functions);
+        } else {
+            b -= &(&constraint_weights * &constraint_values_from_exact_source_functions);
+        }
+
+        // Solve for the least squares problem for the source function coefficients, passive currents, and vertical stability
+        let a: Array2<f64> = Array2::from_diag(&constraint_weights).dot(&fitting_matrix); // matrix-matrix multiplication
+
+        fn l2_norm(v: ArrayView1<f64>) -> f64 {
+            // Sum of squares of the elements in the vector
+            let sum_of_squares: f64 = v.iter().map(|&x| x * x).sum();
+            // Take the square root to get the L2 norm
+            sum_of_squares.sqrt()
+        }
+
+        // There can be nothing to fit. In a forward solve with no passives and no plasma current
+        // constraint that is the case until the vertical feedback is switched on
+        let dof_values: Array1<f64> = if n_dof == 0 || n_constraints == 0 {
+            Array1::zeros(n_dof)
+        } else {
             // Preconditioner
             let n_cols: usize = a.ncols();
 
@@ -1334,14 +1425,6 @@ impl<'a> EquilibriumSolver<'a> {
             }
             let d_new: Array1<f64> = Array1::from_vec(d_new_vec);
 
-            let mut dof_values: Array1<f64> = d.dot(&d_new); // `d` is the preconditioning matrix
-
-            // // Could add Anderson mixing here??????????????
-            // if i_iter > 3 {
-            //     dof_values = 0.6 * &dof_values + 0.4 * &dof_values_previous;
-            // }
-            // let dof_values_old: Array1<f64> = dof_values.clone();
-
             // Compute the condition number from SVD singular values
             let s_col = svd.S().column_vector();
             let mut s: Vec<f64> = Vec::with_capacity(s_col.nrows());
@@ -1354,51 +1437,65 @@ impl<'a> EquilibriumSolver<'a> {
                 println!("Matrix is rank-deficient or singular, condition number is undefined.");
             }
 
-            // // Add Anderson mixing. Will this help???  // NO: Anderson mixing does not seem to help!!
-            // if i_iter > 3 {
-            //     dof_values = 0.3 * &dof_values + 0.7 * &dof_values_previous;
-            // }
+            d.dot(&d_new) // `d` is the preconditioning matrix
+        };
 
-            if i_iter > n_iter_no_vertical_feedback {
-                dof_values_previous = dof_values.clone();
-            }
+        // // Could add Anderson mixing here??????????????
+        // if i_iter > 3 {
+        //     dof_values = 0.6 * &dof_values + 0.4 * &dof_values_previous;
+        // }
+        // let dof_values_old: Array1<f64> = dof_values.clone();
 
-            // Extract p_prime
-            let p_prime_dof_values: Array1<f64> = dof_values.slice(s![0..n_p_prime_dof]).to_owned();
-            self.time_slice.source_functions.p_prime.coefficients = p_prime_dof_values;
+        // // Add Anderson mixing. Will this help???  // NO: Anderson mixing does not seem to help!!
+        // if i_iter > 3 {
+        //     dof_values = 0.3 * &dof_values + 0.7 * &dof_values_previous;
+        // }
 
-            // Extract ff_prime
-            let ff_prime_dof_values: Array1<f64> = dof_values.slice(s![n_p_prime_dof..n_p_prime_dof + n_ff_prime_dof]).to_owned();
-            self.time_slice.source_functions.ff_prime.coefficients = ff_prime_dof_values;
+        // The amplitude of the exact source functions; the coefficients stored for them are the
+        // exact ones times this
+        let exact_amplitude: f64 = if n_exact_amplitude_dof == 1 { dof_values[n_dof - 1] } else { 1.0 };
 
-            // Extract passive currents
-            let passive_dof_values: Array1<f64> = dof_values
-                .slice(s![n_p_prime_dof + n_ff_prime_dof..n_p_prime_dof + n_ff_prime_dof + n_passive_dof])
-                .to_owned();
-            self.passive_dof_values = passive_dof_values;
+        // Extract p_prime
+        let p_prime_dof_values: Array1<f64> = match &p_prime_exact_dof_values {
+            Some(p_prime_exact) => p_prime_exact * exact_amplitude,
+            None => dof_values.slice(s![0..n_p_prime_dof]).to_owned(),
+        };
+        self.time_slice.source_functions.p_prime.coefficients = p_prime_dof_values;
 
-            // Extract vertical stability
-            let delta_z: f64 = if i_iter > n_iter_no_vertical_feedback {
-                dof_values.last().unwrap().to_owned()
-            } else {
-                0.0
-            };
+        // Extract ff_prime
+        let ff_prime_dof_values: Array1<f64> = match &ff_prime_exact_dof_values {
+            Some(ff_prime_exact) => ff_prime_exact * exact_amplitude,
+            None => dof_values.slice(s![n_p_prime_dof..n_p_prime_dof + n_ff_prime_dof]).to_owned(),
+        };
+        self.time_slice.source_functions.ff_prime.coefficients = ff_prime_dof_values;
 
-            self.time_slice.convergence.delta_z = delta_z;
+        // Extract passive currents
+        let passive_dof_values: Array1<f64> = dof_values
+            .slice(s![n_p_prime_dof + n_ff_prime_dof..n_p_prime_dof + n_ff_prime_dof + n_passive_dof])
+            .to_owned();
+        self.passive_dof_values = passive_dof_values;
 
-            // Calculate j_2d
-            self.calculate_j();
-            let j_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].j_phi;
+        // Extract vertical stability
+        let delta_z: f64 = if vertical_feedback {
+            dof_values[n_p_prime_dof + n_ff_prime_dof + n_passive_dof]
+        } else {
+            0.0
+        };
 
-            // Total plasma current
-            // TODO: do we actually need to calculate Ip at every iteration?
-            let i_2d: Array2<f64> = j_2d * d_area;
-            let ip: f64 = i_2d.sum();
-            self.time_slice.global_quantities.ip = ip;
+        self.time_slice.convergence.delta_z = delta_z;
 
-            // // Write the time-slice to numpy files for debugging
-            // self._write_time_slice_to_file(i_iter);
-        }
+        // Calculate j_2d
+        self.calculate_j();
+        let j_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].j_phi;
+
+        // Total plasma current
+        // TODO: do we actually need to calculate Ip at every iteration?
+        let i_2d: Array2<f64> = j_2d * d_area;
+        let ip: f64 = i_2d.sum();
+        self.time_slice.global_quantities.ip = ip;
+
+        // // Write the time-slice to numpy files for debugging
+        // self._write_time_slice_to_file(i_iter);
     }
 
     /// Calculate the poloidal flux, psi, in the 2d (r, z) grid.
@@ -1427,11 +1524,13 @@ impl<'a> EquilibriumSolver<'a> {
     ///
     /// The plasma contribution is calculated with two GEMMs; see `PsiAndDerivativesGreens` for the
     /// reorganisation of the convolution over current sources.
-    /// `temporary_storage` is owned by the caller only so that its buffers are not reallocated on
+    /// `temporary_storage` is held on the solver only so that its buffers are not reallocated on
     /// every iteration; it carries nothing between calls. See
     /// [`PsiAndDerivativesTemporaryStorage`].
-    pub fn calculate_psi_and_derivatives(&mut self, greens_tables: &PsiAndDerivativesGreens, temporary_storage: &mut PsiAndDerivativesTemporaryStorage) {
+    pub fn calculate_psi_and_derivatives(&mut self) {
         // Unpack from self
+        let greens_tables: &PsiAndDerivativesGreens = self.psi_and_derivatives_greens;
+        let temporary_storage: &mut PsiAndDerivativesTemporaryStorage = &mut self.temporary_storage;
         let n_r: usize = self.equilibrium_code.grid.n_r as usize;
         let n_z: usize = self.equilibrium_code.grid.n_z as usize;
         let d_area: f64 = self.time_slice.profiles_2d[0].grid.d_area;
@@ -1698,7 +1797,7 @@ impl<'a> EquilibriumSolver<'a> {
     /// Takes its inputs as arguments rather than reading them off `&mut self`, so that the caller
     /// can hold a borrow of `self.time_slice` across the call. A `&mut self` method borrows the
     /// whole struct, which would conflict with the `profiles_2d_*` pointers in `solve`.
-    fn calculate_grad_shafranov_deviation(psi_a: f64, psi_b: f64, psi_a_previous: f64) -> f64 {
+    pub(super) fn calculate_grad_shafranov_deviation(psi_a: f64, psi_b: f64, psi_a_previous: f64) -> f64 {
         // Calculate the "error", in the same way EFIT does (called `cerror`)
         // Note, while this might "look" like a convergence test, it is in fact very similar
         // to a residule, since at each iteration the solution changes by the residule
@@ -1780,35 +1879,6 @@ impl<'a> EquilibriumSolver<'a> {
         npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_mag_r.npy", i_iter)), mag_r);
         npy_reader_and_writer::write_npy_0d(Path::new(&format!("tmp/i_iter={:03}_mag_z.npy", i_iter)), mag_z);
     }
-    /// Convert the stationary points found in `psi` into contour-tree nodes.
-    ///
-    /// Classified by the second-derivative test: a negative determinant is a saddle (X-point); a
-    /// positive determinant is a minimum when the trace is positive and a maximum when it is
-    /// negative. The data dictionary node carries only the position, `psi` and the classification,
-    /// so the Hessian and grid-index fields of `StationaryPoint` are not stored.
-    fn contour_tree_nodes(stationary_points: &[StationaryPoint]) -> Vec<EquilibriumContourTreeNode> {
-        let n_stationary_point: usize = stationary_points.len();
-        let mut nodes: Vec<EquilibriumContourTreeNode> = Vec::with_capacity(n_stationary_point);
-        for i_stationary_point in 0..n_stationary_point {
-            let stationary_point: &StationaryPoint = &stationary_points[i_stationary_point];
-            let critical_type: i32 = if stationary_point.hessian_determinant < 0.0 {
-                1
-            } else if stationary_point.hessian_trace > 0.0 {
-                0
-            } else {
-                2
-            };
-            nodes.push(EquilibriumContourTreeNode {
-                critical_type,
-                r: stationary_point.r,
-                z: stationary_point.z,
-                psi: stationary_point.psi,
-                ..Default::default()
-            });
-        }
-        nodes
-    }
-
     /// Copy the solution into an IMAS `EquilibriumTimeSlice`.
     ///
     /// Keys with no counterpart in the data dictionary are custom keys, declared by hand in
@@ -1841,6 +1911,35 @@ pub fn output_flag(time_slice: &EquilibriumTimeSlice) -> i32 {
         return -CONVERGENCE_STATUS_FATAL_ERROR;
     }
     -convergence_status
+}
+
+/// Convert the stationary points found in `psi` into contour-tree nodes.
+///
+/// Classified by the second-derivative test: a negative determinant is a saddle (X-point); a
+/// positive determinant is a minimum when the trace is positive and a maximum when it is
+/// negative. The data dictionary node carries only the position, `psi` and the classification,
+/// so the Hessian and grid-index fields of `StationaryPoint` are not stored.
+pub(crate) fn contour_tree_nodes(stationary_points: &[StationaryPoint]) -> Vec<EquilibriumContourTreeNode> {
+    let n_stationary_point: usize = stationary_points.len();
+    let mut nodes: Vec<EquilibriumContourTreeNode> = Vec::with_capacity(n_stationary_point);
+    for i_stationary_point in 0..n_stationary_point {
+        let stationary_point: &StationaryPoint = &stationary_points[i_stationary_point];
+        let critical_type: i32 = if stationary_point.hessian_determinant < 0.0 {
+            1
+        } else if stationary_point.hessian_trace > 0.0 {
+            0
+        } else {
+            2
+        };
+        nodes.push(EquilibriumContourTreeNode {
+            critical_type,
+            r: stationary_point.r,
+            z: stationary_point.z,
+            psi: stationary_point.psi,
+            ..Default::default()
+        });
+    }
+    nodes
 }
 
 /// Everything the Grad-Shafranov solve needs which is not already in the `Equilibrium` IDS.

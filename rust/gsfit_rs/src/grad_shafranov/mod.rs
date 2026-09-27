@@ -3,8 +3,11 @@ mod chi_sq_mag;
 mod equilibrium_solve;
 mod grad_shafranov_solver;
 mod initial_current_seed;
+mod nonlinear_solvers;
 
 // Expose functions to public
+pub(crate) use equilibrium_solve::CONVERGENCE_STATUS_CONVERGED;
+pub(crate) use equilibrium_solve::contour_tree_nodes;
 pub use equilibrium_solve::output_flag;
 pub use grad_shafranov_solver::solve_grad_shafranov;
 

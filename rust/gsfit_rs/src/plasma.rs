@@ -44,12 +44,23 @@ impl Plasma {
     /// * `initial_guess_cur_z` - vertical centre of the initial current distribution, [metre]
     /// * `initial_guess_minor_radius` - radial semi-axis of the initial current distribution, [metre]
     /// * `initial_guess_elongation` - elongation of the initial current distribution, [dimensionless]
-    /// * `n_iter_max` - maximum number of Picard iterations, [dimensionless]
-    /// * `n_iter_min` - minimum number of Picard iterations before the convergence test may pass, [dimensionless]
-    /// * `n_iter_no_vertical_feedback` - number of initial iterations with the vertical feedback off, [dimensionless]
+    /// * `n_iter_max` - maximum number of nonlinear solver iterations, [dimensionless]
+    /// * `n_iter_min` - minimum number of nonlinear solver iterations before the convergence test may pass, [dimensionless]
     /// * `grad_shafranov_deviation_tolerance` - Grad-Shafranov deviation below which the solution is taken as converged, [mixed]
-    /// * `use_anderson_mixing` - whether Anderson mixing is applied
-    /// * `anderson_mixing_from_previous_iter` - fraction of the previous iteration mixed in, [dimensionless]
+    /// * `nonlinear_solver_method` - either "picard", "newton_krylov" or "newton_picard"
+    /// * `picard_n_iter_no_vertical_feedback` - number of initial Picard iterations with the vertical feedback off, [dimensionless]
+    /// * `picard_apply_anderson_mixing` - whether the Picard iterations use Anderson mixing
+    /// * `picard_anderson_n_history` - maximum number of previous iterations Anderson mixing combines, [dimensionless]
+    /// * `picard_anderson_mixing` - fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it, [dimensionless]
+    /// * `newton_krylov_picard_handover` - Grad-Shafranov deviation below which Newton-Krylov hands over from Picard to Newton iterations, [mixed]
+    /// * `newton_krylov_n_krylov_max` - maximum number of Krylov directions per Newton iteration, [dimensionless]
+    /// * `newton_krylov_krylov_tolerance` - fraction of the residual the Krylov solve must leave unexplained before it stops, [dimensionless]
+    /// * `newton_krylov_finite_difference_step` - Jacobian-vector product step, as a multiple of the residual size, [dimensionless]
+    /// * `newton_krylov_verbose` - whether to print the progress of each Newton iteration
+    /// * `newton_picard_n_basis_max` - maximum number of directions in which Newton-Picard uses Newton's method, [dimensionless]
+    /// * `newton_picard_contraction_threshold` - a direction is added when the residual outside them shrinks by less than this factor per iteration, [dimensionless]
+    /// * `newton_picard_finite_difference_step` - Jacobian-vector product step, as a multiple of the residual size, [dimensionless]
+    /// * `newton_picard_verbose` - whether to print the progress of each Newton-Picard iteration
     /// * `times_to_reconstruct` - the times the equilibrium will be solved at (1d array), [second].
     ///   One equilibrium time-slice is allocated per time, so that the IDS is fully formed before
     ///   the Green's tables are built
@@ -76,10 +87,21 @@ impl Plasma {
         initial_guess_elongation: f64,
         n_iter_max: usize,
         n_iter_min: usize,
-        n_iter_no_vertical_feedback: usize,
         grad_shafranov_deviation_tolerance: f64,
-        use_anderson_mixing: bool,
-        anderson_mixing_from_previous_iter: f64,
+        nonlinear_solver_method: String,
+        picard_n_iter_no_vertical_feedback: usize,
+        picard_apply_anderson_mixing: bool,
+        picard_anderson_n_history: usize,
+        picard_anderson_mixing: f64,
+        newton_krylov_picard_handover: f64,
+        newton_krylov_n_krylov_max: usize,
+        newton_krylov_krylov_tolerance: f64,
+        newton_krylov_finite_difference_step: f64,
+        newton_krylov_verbose: bool,
+        newton_picard_n_basis_max: usize,
+        newton_picard_contraction_threshold: f64,
+        newton_picard_finite_difference_step: f64,
+        newton_picard_verbose: bool,
         times_to_reconstruct: PyReadonlyArray1<f64>,
     ) -> Self {
         // Change Python types into Rust types
@@ -101,6 +123,16 @@ impl Plasma {
         let d_r: f64 = r[1] - r[0];
         let d_z: f64 = z[1] - z[0];
         let d_area: f64 = d_r * d_z;
+
+        // Check the nonlinear solver is one `EquilibriumSolver::solve` knows
+        if !["picard", "newton_krylov", "newton_picard"].contains(&nonlinear_solver_method.as_str()) {
+            panic!("plasma.new: nonlinear_solver_method = \"{nonlinear_solver_method}\"; it must be \"picard\", \"newton_krylov\" or \"newton_picard\"");
+        }
+
+        // Anderson mixing takes a positive fraction of the residual
+        if picard_anderson_mixing.is_nan() || picard_anderson_mixing <= 0.0 {
+            panic!("plasma.new: picard_anderson_mixing = {picard_anderson_mixing}; it must be positive");
+        }
 
         // Check that the R grid doesn't go negative
         // Note, we allow cells to touch the axis (R=0), which would be excluded by `r_min - d_r / 2.0 <= 0.0`
@@ -233,11 +265,23 @@ impl Plasma {
 
         equilibrium_ids.code.numerics.iterations.n_max = n_iter_max as i32;
         equilibrium_ids.code.numerics.iterations.n_min = n_iter_min as i32;
-        equilibrium_ids.code.numerics.iterations.n_no_vertical_feedback = n_iter_no_vertical_feedback as i32;
         equilibrium_ids.code.numerics.grad_shafranov_deviation_tolerance = grad_shafranov_deviation_tolerance;
+
+        equilibrium_ids.code.numerics.nonlinear_solver.method = nonlinear_solver_method;
+        equilibrium_ids.code.numerics.nonlinear_solver.picard.n_iter_no_vertical_feedback = picard_n_iter_no_vertical_feedback as i32;
         // The data dictionary has no boolean base type, so the flag is stored as 0 or 1
-        equilibrium_ids.code.numerics.anderson_mixing.r#use = use_anderson_mixing as i32;
-        equilibrium_ids.code.numerics.anderson_mixing.mixing_from_previous_iter = anderson_mixing_from_previous_iter;
+        equilibrium_ids.code.numerics.nonlinear_solver.picard.apply_anderson_mixing = picard_apply_anderson_mixing as i32;
+        equilibrium_ids.code.numerics.nonlinear_solver.picard.anderson_n_history = picard_anderson_n_history as i32;
+        equilibrium_ids.code.numerics.nonlinear_solver.picard.anderson_mixing = picard_anderson_mixing;
+        equilibrium_ids.code.numerics.nonlinear_solver.newton_krylov.picard_handover = newton_krylov_picard_handover;
+        equilibrium_ids.code.numerics.nonlinear_solver.newton_krylov.n_krylov_max = newton_krylov_n_krylov_max as i32;
+        equilibrium_ids.code.numerics.nonlinear_solver.newton_krylov.krylov_tolerance = newton_krylov_krylov_tolerance;
+        equilibrium_ids.code.numerics.nonlinear_solver.newton_krylov.finite_difference_step = newton_krylov_finite_difference_step;
+        equilibrium_ids.code.numerics.nonlinear_solver.newton_krylov.verbose = newton_krylov_verbose as i32;
+        equilibrium_ids.code.numerics.nonlinear_solver.newton_picard.n_basis_max = newton_picard_n_basis_max as i32;
+        equilibrium_ids.code.numerics.nonlinear_solver.newton_picard.contraction_threshold = newton_picard_contraction_threshold;
+        equilibrium_ids.code.numerics.nonlinear_solver.newton_picard.finite_difference_step = newton_picard_finite_difference_step;
+        equilibrium_ids.code.numerics.nonlinear_solver.newton_picard.verbose = newton_picard_verbose as i32;
 
         equilibrium_ids.greens.grid_grid = greens_grid_grid;
 

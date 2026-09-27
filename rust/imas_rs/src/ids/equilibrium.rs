@@ -120,6 +120,11 @@ pub struct EquilibriumConvergence {
     /// solve has run, and 0 while the vertical feedback is switched off
     /// Units: m
     pub delta_z: FLT_0D,
+    /// Number of times the flux was calculated on the grid from the current density, each followed
+    /// by the search for the magnetic axis and the plasma boundary. This is where nearly all the
+    /// time goes: a Picard iteration does it once, a Newton iteration several times. Recorded
+    /// whether or not the solve converged
+    pub flux_evaluations_n: INT_0D,
 }
 
 impl Default for EquilibriumConvergence {
@@ -130,6 +135,7 @@ impl Default for EquilibriumConvergence {
             grad_shafranov_deviation_value: f64::NAN,
             result: IdentifierDynamicAos3::default(),
             delta_z: f64::NAN,
+            flux_evaluations_n: EMPTY_INT,
         }
     }
 }
@@ -1621,22 +1627,23 @@ impl Default for EquilibriumCodeGrid {
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeNumerics {
-    /// Bounds on the Picard iteration loop
+    /// Bounds on the nonlinear solver's iteration loop
     pub iterations: EquilibriumCodeNumericsIterations,
-    /// Mixing of the previous iteration's degrees of freedom into the current ones
-    pub anderson_mixing: EquilibriumCodeNumericsAndersonMixing,
     /// Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
     /// converged
     /// Units: mixed
     pub grad_shafranov_deviation_tolerance: FLT_0D,
+    /// The method which makes the flux and the current density consistent with each other, and
+    /// its settings
+    pub nonlinear_solver: EquilibriumCodeNumericsNonlinearSolver,
 }
 
 impl Default for EquilibriumCodeNumerics {
     fn default() -> Self {
         Self {
             iterations: EquilibriumCodeNumericsIterations::default(),
-            anderson_mixing: EquilibriumCodeNumericsAndersonMixing::default(),
             grad_shafranov_deviation_tolerance: f64::NAN,
+            nonlinear_solver: EquilibriumCodeNumericsNonlinearSolver::default(),
         }
     }
 }
@@ -1648,8 +1655,6 @@ pub struct EquilibriumCodeNumericsIterations {
     pub n_max: INT_0D,
     /// Minimum number of iterations before the convergence test is allowed to pass
     pub n_min: INT_0D,
-    /// Number of initial iterations for which the vertical feedback is switched off
-    pub n_no_vertical_feedback: INT_0D,
 }
 
 impl Default for EquilibriumCodeNumericsIterations {
@@ -1657,27 +1662,108 @@ impl Default for EquilibriumCodeNumericsIterations {
         Self {
             n_max: EMPTY_INT,
             n_min: EMPTY_INT,
-            n_no_vertical_feedback: EMPTY_INT,
+        }
+    }
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeNumericsNonlinearSolver {
+    /// Either "picard", "newton_krylov" or "newton_picard"
+    pub method: STR_0D,
+    /// Settings for the Picard iteration
+    pub picard: EquilibriumCodeNumericsNonlinearSolverPicard,
+    /// Settings for the Jacobian-free Newton-Krylov iteration
+    pub newton_krylov: EquilibriumCodeNumericsNonlinearSolverNewtonKrylov,
+    /// Settings for the Newton-Picard iteration (the recursive projection method)
+    pub newton_picard: EquilibriumCodeNumericsNonlinearSolverNewtonPicard,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeNumericsNonlinearSolverPicard {
+    /// Number of initial iterations for which the vertical feedback is switched off
+    pub n_iter_no_vertical_feedback: INT_0D,
+    /// Whether Anderson mixing is applied: each new state is the combination of the last few
+    /// iterates which best cancels their residuals, rather than the Picard update itself. 0 for
+    /// off, 1 for on. The data dictionary has no boolean base type, so this is an integer
+    pub apply_anderson_mixing: INT_0D,
+    /// Maximum number of previous iterations Anderson mixing combines
+    pub anderson_n_history: INT_0D,
+    /// Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it
+    /// Units: dimensionless
+    pub anderson_mixing: FLT_0D,
+}
+
+impl Default for EquilibriumCodeNumericsNonlinearSolverPicard {
+    fn default() -> Self {
+        Self {
+            n_iter_no_vertical_feedback: EMPTY_INT,
+            apply_anderson_mixing: EMPTY_INT,
+            anderson_n_history: EMPTY_INT,
+            anderson_mixing: f64::NAN,
         }
     }
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
 #[derive(Debug, Clone)]
-pub struct EquilibriumCodeNumericsAndersonMixing {
-    /// Whether the mixing is applied; 0 for off, 1 for on. The data dictionary has no boolean
-    /// base type, so this is an integer
-    pub r#use: INT_0D,
-    /// Fraction of the previous iteration's degrees of freedom mixed into the current ones
+pub struct EquilibriumCodeNumericsNonlinearSolverNewtonKrylov {
+    /// Value of convergence/grad_shafranov_deviation_value below which the Picard iterations hand
+    /// over to Newton iterations
+    /// Units: mixed
+    pub picard_handover: FLT_0D,
+    /// Maximum number of Krylov directions per Newton iteration. Each costs one evaluation of the
+    /// Picard update
+    pub n_krylov_max: INT_0D,
+    /// The Krylov solve stops once the linearised residual has fallen to this fraction of the
+    /// nonlinear residual
     /// Units: dimensionless
-    pub mixing_from_previous_iter: FLT_0D,
+    pub krylov_tolerance: FLT_0D,
+    /// Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
+    /// the size of the nonlinear residual
+    /// Units: dimensionless
+    pub finite_difference_step: FLT_0D,
+    /// Whether to print the progress of each Newton iteration; 0 for off, 1 for on
+    pub verbose: INT_0D,
 }
 
-impl Default for EquilibriumCodeNumericsAndersonMixing {
+impl Default for EquilibriumCodeNumericsNonlinearSolverNewtonKrylov {
     fn default() -> Self {
         Self {
-            r#use: EMPTY_INT,
-            mixing_from_previous_iter: f64::NAN,
+            picard_handover: f64::NAN,
+            n_krylov_max: EMPTY_INT,
+            krylov_tolerance: f64::NAN,
+            finite_difference_step: f64::NAN,
+            verbose: EMPTY_INT,
+        }
+    }
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeNumericsNonlinearSolverNewtonPicard {
+    /// Maximum number of directions in which Newton's method is used
+    pub n_basis_max: INT_0D,
+    /// A direction is added when the part of the residual outside them has shrunk by less than
+    /// this factor since the previous iteration
+    /// Units: dimensionless
+    pub contraction_threshold: FLT_0D,
+    /// Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
+    /// the size of the nonlinear residual
+    /// Units: dimensionless
+    pub finite_difference_step: FLT_0D,
+    /// Whether to print the progress of each iteration; 0 for off, 1 for on
+    pub verbose: INT_0D,
+}
+
+impl Default for EquilibriumCodeNumericsNonlinearSolverNewtonPicard {
+    fn default() -> Self {
+        Self {
+            n_basis_max: EMPTY_INT,
+            contraction_threshold: f64::NAN,
+            finite_difference_step: f64::NAN,
+            verbose: EMPTY_INT,
         }
     }
 }
@@ -4544,6 +4630,7 @@ pub struct EquilibriumTimeSliceConvergenceView<'a, D> {
     pub grad_shafranov_deviation_value: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub result: EquilibriumTimeSliceConvergenceResultView<'a, D>,
     pub delta_z: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub flux_evaluations_n: Accumulator<'a, EquilibriumTimeSlice, INT_0D, D>,
     slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
@@ -4555,6 +4642,7 @@ impl<'a, D: Dimension> EquilibriumTimeSliceConvergenceView<'a, D> {
             grad_shafranov_deviation_value: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.convergence.grad_shafranov_deviation_value),
             result: EquilibriumTimeSliceConvergenceResultView::new(elements.clone()),
             delta_z: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.convergence.delta_z),
+            flux_evaluations_n: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.convergence.flux_evaluations_n),
             slice_elements: elements,
         }
     }

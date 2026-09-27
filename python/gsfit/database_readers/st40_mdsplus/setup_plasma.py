@@ -40,10 +40,21 @@ def setup_plasma(
     # Numerical settings the Grad-Shafranov solve is run with
     n_iter_max = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_max"]
     n_iter_min = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_min"]
-    n_iter_no_vertical_feedback = settings["GSFIT_code_settings.json"]["numerics"]["n_iter_no_vertical_feedback"]
     grad_shafranov_deviation_tolerance = settings["GSFIT_code_settings.json"]["numerics"]["grad_shafranov_deviation_tolerance"]
-    use_anderson_mixing = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["use"]
-    anderson_mixing_from_previous_iter = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["mixing_from_previous_iter"]
+    nonlinear_solver_method = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["method"]
+    picard_n_iter_no_vertical_feedback = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["picard"]["n_iter_no_vertical_feedback"]
+    picard_apply_anderson_mixing = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["picard"]["apply_anderson_mixing"]
+    picard_anderson_n_history = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["picard"]["anderson_n_history"]
+    picard_anderson_mixing = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["picard"]["anderson_mixing"]
+    newton_krylov_picard_handover = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_krylov"]["picard_handover"]
+    newton_krylov_n_krylov_max = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_krylov"]["n_krylov_max"]
+    newton_krylov_krylov_tolerance = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_krylov"]["krylov_tolerance"]
+    newton_krylov_finite_difference_step = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_krylov"]["finite_difference_step"]
+    newton_krylov_verbose = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_krylov"]["verbose"]
+    newton_picard_n_basis_max = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_picard"]["n_basis_max"]
+    newton_picard_contraction_threshold = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_picard"]["contraction_threshold"]
+    newton_picard_finite_difference_step = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_picard"]["finite_difference_step"]
+    newton_picard_verbose = settings["GSFIT_code_settings.json"]["numerics"]["nonlinear_solver"]["newton_picard"]["verbose"]
 
     # Set the source functions types
     p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.TensionedCubicBSpline
@@ -56,7 +67,13 @@ def setup_plasma(
         # Which would be interpreted as (n_regularisations, n_dof). So it would cause an error
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
-        p_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
+        # `exact` fixes the coefficients to `coefficients`, rather than fitting them
+        p_prime_source_function = gsfit_rs.EfitPolynomial(
+            n_dof,
+            regularisations,
+            exact=settings["source_function_p_prime.json"]["efit_polynomial"].get("exact", False),
+            coefficients=np.array(settings["source_function_p_prime.json"]["efit_polynomial"].get("coefficients", []), dtype=np.float64),
+        )
     elif settings["source_function_p_prime.json"]["method"] == "tensioned_cubic_b_spline":
         p_prime_tensioned_cubic_b_spline_settings = settings["source_function_p_prime.json"]["tensioned_cubic_b_spline"]
         interior_knots = np.array(p_prime_tensioned_cubic_b_spline_settings["interior_knots"])
@@ -86,7 +103,13 @@ def setup_plasma(
         # Which would be interpreted as (n_regularisations, n_dof). So it would cause an error
         if regularisations.shape == (1, 0):
             regularisations = np.zeros((0, n_dof), dtype=np.float64)
-        ff_prime_source_function = gsfit_rs.EfitPolynomial(n_dof, regularisations)
+        # `exact` fixes the coefficients to `coefficients`, rather than fitting them
+        ff_prime_source_function = gsfit_rs.EfitPolynomial(
+            n_dof,
+            regularisations,
+            exact=settings["source_function_ff_prime.json"]["efit_polynomial"].get("exact", False),
+            coefficients=np.array(settings["source_function_ff_prime.json"]["efit_polynomial"].get("coefficients", []), dtype=np.float64),
+        )
     elif settings["source_function_ff_prime.json"]["method"] == "tensioned_cubic_b_spline":
         ff_prime_tensioned_cubic_b_spline_settings = settings["source_function_ff_prime.json"]["tensioned_cubic_b_spline"]
         interior_knots = np.array(ff_prime_tensioned_cubic_b_spline_settings["interior_knots"])
@@ -139,10 +162,21 @@ def setup_plasma(
         initial_guess_elongation,
         n_iter_max,
         n_iter_min,
-        n_iter_no_vertical_feedback,
         grad_shafranov_deviation_tolerance,
-        use_anderson_mixing,
-        anderson_mixing_from_previous_iter,
+        nonlinear_solver_method,
+        picard_n_iter_no_vertical_feedback,
+        picard_apply_anderson_mixing,
+        picard_anderson_n_history,
+        picard_anderson_mixing,
+        newton_krylov_picard_handover,
+        newton_krylov_n_krylov_max,
+        newton_krylov_krylov_tolerance,
+        newton_krylov_finite_difference_step,
+        newton_krylov_verbose,
+        newton_picard_n_basis_max,
+        newton_picard_contraction_threshold,
+        newton_picard_finite_difference_step,
+        newton_picard_verbose,
         times_to_reconstruct,
     )
 

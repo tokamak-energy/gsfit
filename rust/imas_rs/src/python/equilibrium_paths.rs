@@ -9707,6 +9707,27 @@ solve has run, and 0 while the vertical feedback is switched off",
             },
         }),
     },
+    Node {
+        name: "flux_evaluations_n",
+        documentation: "Number of times the flux was calculated on the grid from the current density, each followed
+by the search for the magnetic axis and the plasma boundary. This is where nearly all the
+time goes: a Picard iteration does it once, a Newton iteration several times. Recorded
+whether or not the solve converged",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.time_slice[at[0]].convergence.flux_evaluations_n.clone() },
+                )
+            },
+        }),
+    },
 ];
 
 static NODES_TIME_SLICE_SOURCE_FUNCTIONS_P_PRIME: &[Node] = &[Node {
@@ -10420,8 +10441,11 @@ static NODES_CODE_NUMERICS_ITERATIONS: &[Node] = &[
             },
         }),
     },
+];
+
+static NODES_CODE_NUMERICS_NONLINEAR_SOLVER_PICARD: &[Node] = &[
     Node {
-        name: "n_no_vertical_feedback",
+        name: "n_iter_no_vertical_feedback",
         documentation: "Number of initial iterations for which the vertical feedback is switched off",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -10429,57 +10453,236 @@ static NODES_CODE_NUMERICS_ITERATIONS: &[Node] = &[
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.numerics.iterations.n_no_vertical_feedback.clone()
+                    equilibrium.code.numerics.nonlinear_solver.picard.n_iter_no_vertical_feedback.clone()
                 })
             },
         }),
     },
-];
-
-static NODES_CODE_NUMERICS_ANDERSON_MIXING: &[Node] = &[
     Node {
-        name: "use",
-        documentation: "Whether the mixing is applied; 0 for off, 1 for on. The data dictionary has no boolean
-base type, so this is an integer",
+        name: "apply_anderson_mixing",
+        documentation: "Whether Anderson mixing is applied: each new state is the combination of the last few
+iterates which best cancels their residuals, rather than the Picard update itself. 0 for
+off, 1 for on. The data dictionary has no boolean base type, so this is an integer",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
-                    equilibrium.code.numerics.anderson_mixing.r#use.clone()
+                    equilibrium.code.numerics.nonlinear_solver.picard.apply_anderson_mixing.clone()
                 })
             },
         }),
     },
     Node {
-        name: "mixing_from_previous_iter",
-        documentation: "Fraction of the previous iteration's degrees of freedom mixed into the current ones",
+        name: "anderson_n_history",
+        documentation: "Maximum number of previous iterations Anderson mixing combines",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.numerics.nonlinear_solver.picard.anderson_n_history.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "anderson_mixing",
+        documentation: "Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
                 let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
                 gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
-                    equilibrium.code.numerics.anderson_mixing.mixing_from_previous_iter.clone()
+                    equilibrium.code.numerics.nonlinear_solver.picard.anderson_mixing.clone()
                 })
             },
         }),
     },
 ];
 
+static NODES_CODE_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[Node] = &[
+    Node {
+        name: "picard_handover",
+        documentation: "Value of convergence/grad_shafranov_deviation_value below which the Picard iterations hand
+over to Newton iterations",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.numerics.nonlinear_solver.newton_krylov.picard_handover.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "n_krylov_max",
+        documentation: "Maximum number of Krylov directions per Newton iteration. Each costs one evaluation of the
+Picard update",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.numerics.nonlinear_solver.newton_krylov.n_krylov_max.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "krylov_tolerance",
+        documentation: "The Krylov solve stops once the linearised residual has fallen to this fraction of the
+nonlinear residual",
+        units: "dimensionless",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.numerics.nonlinear_solver.newton_krylov.krylov_tolerance.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "finite_difference_step",
+        documentation: "Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
+the size of the nonlinear residual",
+        units: "dimensionless",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.numerics.nonlinear_solver.newton_krylov.finite_difference_step.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "verbose",
+        documentation: "Whether to print the progress of each Newton iteration; 0 for off, 1 for on",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.numerics.nonlinear_solver.newton_krylov.verbose.clone()
+                })
+            },
+        }),
+    },
+];
+
+static NODES_CODE_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD: &[Node] = &[
+    Node {
+        name: "n_basis_max",
+        documentation: "Maximum number of directions in which Newton's method is used",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.numerics.nonlinear_solver.newton_picard.n_basis_max.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "contraction_threshold",
+        documentation: "A direction is added when the part of the residual outside them has shrunk by less than
+this factor since the previous iteration",
+        units: "dimensionless",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.numerics.nonlinear_solver.newton_picard.contraction_threshold.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "finite_difference_step",
+        documentation: "Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
+the size of the nonlinear residual",
+        units: "dimensionless",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.numerics.nonlinear_solver.newton_picard.finite_difference_step.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "verbose",
+        documentation: "Whether to print the progress of each iteration; 0 for off, 1 for on",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.numerics.nonlinear_solver.newton_picard.verbose.clone()
+                })
+            },
+        }),
+    },
+];
+
+static NODES_CODE_NUMERICS_NONLINEAR_SOLVER: &[Node] = &[
+    Node {
+        name: "method",
+        documentation: "Either \"picard\", \"newton_krylov\" or \"newton_picard\"",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
+                    equilibrium.code.numerics.nonlinear_solver.method.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "picard",
+        documentation: "Settings for the Picard iteration",
+        units: "",
+        kind: NodeKind::Structure(NODES_CODE_NUMERICS_NONLINEAR_SOLVER_PICARD),
+    },
+    Node {
+        name: "newton_krylov",
+        documentation: "Settings for the Jacobian-free Newton-Krylov iteration",
+        units: "",
+        kind: NodeKind::Structure(NODES_CODE_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV),
+    },
+    Node {
+        name: "newton_picard",
+        documentation: "Settings for the Newton-Picard iteration (the recursive projection method)",
+        units: "",
+        kind: NodeKind::Structure(NODES_CODE_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD),
+    },
+];
+
 static NODES_CODE_NUMERICS: &[Node] = &[
     Node {
         name: "iterations",
-        documentation: "Bounds on the Picard iteration loop",
+        documentation: "Bounds on the nonlinear solver's iteration loop",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_NUMERICS_ITERATIONS),
-    },
-    Node {
-        name: "anderson_mixing",
-        documentation: "Mixing of the previous iteration's degrees of freedom into the current ones",
-        units: "",
-        kind: NodeKind::Structure(NODES_CODE_NUMERICS_ANDERSON_MIXING),
     },
     Node {
         name: "grad_shafranov_deviation_tolerance",
@@ -10495,6 +10698,13 @@ converged",
                 })
             },
         }),
+    },
+    Node {
+        name: "nonlinear_solver",
+        documentation: "The method which makes the flux and the current density consistent with each other, and
+its settings",
+        units: "",
+        kind: NodeKind::Structure(NODES_CODE_NUMERICS_NONLINEAR_SOLVER),
     },
 ];
 

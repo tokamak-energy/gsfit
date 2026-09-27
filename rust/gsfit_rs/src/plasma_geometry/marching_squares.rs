@@ -5,6 +5,18 @@ use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
 use std::collections::BTreeMap;
 
+/// Trace the `psi = psi_b` contour along the edge of the mask.
+///
+/// # Arguments
+/// * `r`, `z` - grid points [metre]
+/// * `psi_2d`, `d_psi_d_r_2d`, `d_psi_d_z_2d` - poloidal flux and its derivatives, shape = (n_z, n_r)
+/// * `psi_b` - the flux of the contour [weber]
+/// * `mask_2d` - 1.0 inside the contour, 0.0 outside; the contour is only looked for on the grid edges where it changes
+/// * `xpt_r_or_none`, `xpt_z_or_none` - the X-point bounding a diverted plasma, or `None` for a limited one [metre]
+/// * `xpt_secondary_r_or_none`, `xpt_secondary_z_or_none` - a second X-point on the contour, for a perfect double null,
+///   or `None`. Only used when the plasma is diverted; see `marching_squares_double_null`
+/// * `mag_r`, `mag_z` - the magnetic axis [metre]
+#[allow(clippy::too_many_arguments)]
 pub fn marching_squares(
     r: &Array1<f64>,
     z: &Array1<f64>,
@@ -15,6 +27,8 @@ pub fn marching_squares(
     mask_2d: &Array2<f64>,
     xpt_r_or_none: Option<f64>,
     xpt_z_or_none: Option<f64>,
+    xpt_secondary_r_or_none: Option<f64>,
+    xpt_secondary_z_or_none: Option<f64>,
     mag_r: f64,
     mag_z: f64,
 ) -> MarchingContour {
@@ -143,6 +157,23 @@ pub fn marching_squares(
     // Unwrap the x-point coordinates
     let xpt_r: f64 = xpt_r_or_none.unwrap();
     let xpt_z: f64 = xpt_z_or_none.unwrap();
+
+    // Special condition: a perfect double null, whose boundary passes through a second X-point
+    if let (Some(xpt_secondary_r), Some(xpt_secondary_z)) = (xpt_secondary_r_or_none, xpt_secondary_z_or_none) {
+        return marching_squares_double_null(
+            r,
+            z,
+            psi_2d,
+            d_psi_d_r_2d,
+            d_psi_d_z_2d,
+            psi_b,
+            unsorted_boundary_points,
+            (xpt_r, xpt_z),
+            (xpt_secondary_r, xpt_secondary_z),
+            mag_r,
+            mag_z,
+        );
+    }
 
     // Find the closest grid point
     let i_r_nearest_xpt: usize = (r - xpt_r).abs().argmin().unwrap();
@@ -630,6 +661,199 @@ pub fn sort_boundary_points_version_2(
     (r_sorted, z_sorted)
 }
 
+/// The boundary of a perfect double null: the `psi = psi_b` contour through both X-points.
+///
+/// The line joining the two X-points splits the boundary into two arcs, one on each side of it.
+/// Each arc is ordered by nearest neighbour, from one X-point to the other, and the two are joined
+/// at the X-points: primary X-point, first arc, secondary X-point, second arc, primary X-point.
+///
+/// The grid cell holding each X-point is handled as `marching_squares` handles a single X-point's:
+/// its edges' crossings are taken out of the mask's, and the contour is looked for on all four of
+/// its edges, whatever the mask. Of those crossings on each side of the line, the one in the
+/// direction most towards the magnetic axis is where the arc leaves the X-point; the others are on
+/// the divertor legs, and are dropped. Choosing one on each side, rather than the two most towards
+/// the axis, keeps both arcs when `psi` at an X-point is not exactly `psi_b`, and the contour
+/// passes to one side of it. A side with no crossing around an X-point joins its arc straight to
+/// the X-point.
+///
+/// # Arguments
+/// * `r`, `z` - grid points [metre]
+/// * `psi_2d`, `d_psi_d_r_2d`, `d_psi_d_z_2d` - poloidal flux and its derivatives, shape = (n_z, n_r)
+/// * `psi_b` - the flux of the contour [weber]
+/// * `unsorted_boundary_points` - the contour's crossings of the grid edges where the mask changes, keyed by edge
+/// * `xpt_primary` - `(r, z)` of the X-point bounding the plasma [metre]
+/// * `xpt_secondary` - `(r, z)` of the other X-point [metre]
+/// * `mag_r`, `mag_z` - the magnetic axis [metre]
+///
+/// # Returns
+/// * the closed contour, from the primary X-point round to it again
+#[allow(clippy::too_many_arguments)]
+fn marching_squares_double_null(
+    r: &Array1<f64>,
+    z: &Array1<f64>,
+    psi_2d: &Array2<f64>,
+    d_psi_d_r_2d: &Array2<f64>,
+    d_psi_d_z_2d: &Array2<f64>,
+    psi_b: f64,
+    mut unsorted_boundary_points: BTreeMap<(usize, usize, usize, usize), (f64, f64)>,
+    xpt_primary: (f64, f64),
+    xpt_secondary: (f64, f64),
+    mag_r: f64,
+    mag_z: f64,
+) -> MarchingContour {
+    let crossings_primary: Vec<(f64, f64)> =
+        crossings_around_x_point(r, z, psi_2d, d_psi_d_r_2d, d_psi_d_z_2d, psi_b, xpt_primary, &mut unsorted_boundary_points);
+    let crossings_secondary: Vec<(f64, f64)> =
+        crossings_around_x_point(r, z, psi_2d, d_psi_d_r_2d, d_psi_d_z_2d, psi_b, xpt_secondary, &mut unsorted_boundary_points);
+
+    // Which side of the line from the primary to the secondary X-point a point is on
+    let line_r: f64 = xpt_secondary.0 - xpt_primary.0;
+    let line_z: f64 = xpt_secondary.1 - xpt_primary.1;
+    let is_left = |point: (f64, f64)| -> bool { line_r * (point.1 - xpt_primary.1) - line_z * (point.0 - xpt_primary.0) >= 0.0 };
+
+    let mut contour_r: Vec<f64> = Vec::new();
+    let mut contour_z: Vec<f64> = Vec::new();
+    // The left arc runs from the primary X-point to the secondary, and the right arc back again
+    for (left, xpt_from, crossings_from, xpt_to, crossings_to) in [
+        (true, xpt_primary, &crossings_primary, xpt_secondary, &crossings_secondary),
+        (false, xpt_secondary, &crossings_secondary, xpt_primary, &crossings_primary),
+    ] {
+        let crossings_from_side: Vec<(f64, f64)> = crossings_from.iter().copied().filter(|&point| is_left(point) == left).collect();
+        let crossings_to_side: Vec<(f64, f64)> = crossings_to.iter().copied().filter(|&point| is_left(point) == left).collect();
+        let interior: Vec<(f64, f64)> = unsorted_boundary_points.values().copied().filter(|&point| is_left(point) == left).collect();
+        let interior_r: Vec<f64> = interior.iter().map(|point| point.0).collect();
+        let interior_z: Vec<f64> = interior.iter().map(|point| point.1).collect();
+
+        let mut arc_r: Vec<f64> = vec![xpt_from.0];
+        let mut arc_z: Vec<f64> = vec![xpt_from.1];
+        if let Some(first) = crossing_towards_magnetic_axis(&crossings_from_side, xpt_from, mag_r, mag_z) {
+            arc_r.push(first.0);
+            arc_z.push(first.1);
+        }
+        let (mut arc_r, mut arc_z): (Vec<f64>, Vec<f64>) = sort_boundary_points(arc_r, arc_z, &interior_r, &interior_z);
+        if let Some(last) = crossing_towards_magnetic_axis(&crossings_to_side, xpt_to, mag_r, mag_z) {
+            arc_r.push(last.0);
+            arc_z.push(last.1);
+        }
+
+        // Each arc ends where the next begins, so it is added without its end X-point
+        contour_r.extend(arc_r);
+        contour_z.extend(arc_z);
+    }
+
+    // Close at the primary X-point
+    contour_r.push(xpt_primary.0);
+    contour_z.push(xpt_primary.1);
+
+    let n: usize = contour_r.len();
+    MarchingContour {
+        r: Array1::from_vec(contour_r),
+        z: Array1::from_vec(contour_z),
+        n,
+    }
+}
+
+/// The contour's crossings of the four edges of the grid cell holding an X-point, whatever the
+/// mask. Those edges are removed from `unsorted_boundary_points`, as `marching_squares` does for a
+/// single X-point.
+///
+/// # Arguments
+/// * `r`, `z` - grid points [metre]
+/// * `psi_2d`, `d_psi_d_r_2d`, `d_psi_d_z_2d` - poloidal flux and its derivatives, shape = (n_z, n_r)
+/// * `psi_b` - the flux of the contour [weber]
+/// * `xpt` - `(r, z)` of the X-point [metre]
+/// * `unsorted_boundary_points` - the contour's crossings of the grid edges where the mask changes, keyed by edge
+///
+/// # Returns
+/// * the crossings, `(r, z)` [metre]
+#[allow(clippy::too_many_arguments)]
+fn crossings_around_x_point(
+    r: &Array1<f64>,
+    z: &Array1<f64>,
+    psi_2d: &Array2<f64>,
+    d_psi_d_r_2d: &Array2<f64>,
+    d_psi_d_z_2d: &Array2<f64>,
+    psi_b: f64,
+    xpt: (f64, f64),
+    unsorted_boundary_points: &mut BTreeMap<(usize, usize, usize, usize), (f64, f64)>,
+) -> Vec<(f64, f64)> {
+    // The grid cell holding the X-point
+    let i_r_nearest_xpt: usize = (r - xpt.0).abs().argmin().unwrap();
+    let i_z_nearest_xpt: usize = (z - xpt.1).abs().argmin().unwrap();
+    let (i_r_left, i_r_right): (usize, usize) = if xpt.0 > r[i_r_nearest_xpt] {
+        (i_r_nearest_xpt, i_r_nearest_xpt + 1)
+    } else {
+        (i_r_nearest_xpt - 1, i_r_nearest_xpt)
+    };
+    let (i_z_lower, i_z_upper): (usize, usize) = if xpt.1 > z[i_z_nearest_xpt] {
+        (i_z_nearest_xpt, i_z_nearest_xpt + 1)
+    } else {
+        (i_z_nearest_xpt - 1, i_z_nearest_xpt)
+    };
+
+    let mut crossings: Vec<(f64, f64)> = Vec::new();
+    // Left to right, along the lower and upper edges
+    for i_z in [i_z_lower, i_z_upper] {
+        unsorted_boundary_points.remove(&(i_r_left, i_z, i_r_right, i_z));
+        let cubic_interpolation_or_error: Result<Array1<f64>, String> = cubic_interpolation(
+            r[i_r_left],
+            psi_2d[(i_z, i_r_left)],
+            d_psi_d_r_2d[(i_z, i_r_left)],
+            r[i_r_right],
+            psi_2d[(i_z, i_r_right)],
+            d_psi_d_r_2d[(i_z, i_r_right)],
+            psi_b,
+        );
+        if let Ok(r_crossings) = cubic_interpolation_or_error {
+            crossings.extend(r_crossings.iter().map(|&r_cross| (r_cross, z[i_z])));
+        }
+    }
+    // Bottom to top, along the left and right edges
+    for i_r in [i_r_left, i_r_right] {
+        unsorted_boundary_points.remove(&(i_r, i_z_lower, i_r, i_z_upper));
+        let cubic_interpolation_or_error: Result<Array1<f64>, String> = cubic_interpolation(
+            z[i_z_lower],
+            psi_2d[(i_z_lower, i_r)],
+            d_psi_d_z_2d[(i_z_lower, i_r)],
+            z[i_z_upper],
+            psi_2d[(i_z_upper, i_r)],
+            d_psi_d_z_2d[(i_z_upper, i_r)],
+            psi_b,
+        );
+        if let Ok(z_crossings) = cubic_interpolation_or_error {
+            crossings.extend(z_crossings.iter().map(|&z_cross| (r[i_r], z_cross)));
+        }
+    }
+
+    crossings
+}
+
+/// Of the crossings around an X-point, the one in the direction most towards the magnetic axis,
+/// which is where the boundary leaves the X-point; or `None` when there are none.
+///
+/// # Arguments
+/// * `crossings` - `(r, z)` of the crossings [metre]
+/// * `xpt` - `(r, z)` of the X-point [metre]
+/// * `mag_r`, `mag_z` - the magnetic axis [metre]
+fn crossing_towards_magnetic_axis(crossings: &[(f64, f64)], xpt: (f64, f64), mag_r: f64, mag_z: f64) -> Option<(f64, f64)> {
+    let axis_distance: f64 = (mag_r - xpt.0).hypot(mag_z - xpt.1);
+    let mut best_crossing: Option<(f64, f64)> = None;
+    let mut best_cosine: f64 = f64::NEG_INFINITY;
+    for &crossing in crossings {
+        let crossing_distance: f64 = (crossing.0 - xpt.0).hypot(crossing.1 - xpt.1);
+        // A crossing on the X-point itself has no direction
+        if crossing_distance == 0.0 {
+            continue;
+        }
+        let cosine: f64 = ((crossing.0 - xpt.0) * (mag_r - xpt.0) + (crossing.1 - xpt.1) * (mag_z - xpt.1)) / (crossing_distance * axis_distance);
+        if cosine > best_cosine {
+            best_cosine = cosine;
+            best_crossing = Some(crossing);
+        }
+    }
+    best_crossing
+}
+
 #[test]
 fn test_marching_squares_is_deterministic() {
     use ndarray::Array1;
@@ -665,8 +889,36 @@ fn test_marching_squares_is_deterministic() {
     // Limited, so no x-point is supplied. This is the branch which orders the crossings by
     // collecting them out of the map, and so the branch which was nondeterministic when that map
     // was a `HashMap`
-    let first: MarchingContour = marching_squares(&r, &z, &psi_2d, &d_psi_d_r_2d, &d_psi_d_z_2d, psi_b, &mask_2d, None, None, r_axis, z_axis);
-    let second: MarchingContour = marching_squares(&r, &z, &psi_2d, &d_psi_d_r_2d, &d_psi_d_z_2d, psi_b, &mask_2d, None, None, r_axis, z_axis);
+    let first: MarchingContour = marching_squares(
+        &r,
+        &z,
+        &psi_2d,
+        &d_psi_d_r_2d,
+        &d_psi_d_z_2d,
+        psi_b,
+        &mask_2d,
+        None,
+        None,
+        None,
+        None,
+        r_axis,
+        z_axis,
+    );
+    let second: MarchingContour = marching_squares(
+        &r,
+        &z,
+        &psi_2d,
+        &d_psi_d_r_2d,
+        &d_psi_d_z_2d,
+        psi_b,
+        &mask_2d,
+        None,
+        None,
+        None,
+        None,
+        r_axis,
+        z_axis,
+    );
 
     assert!(first.n > 20, "expected a well-resolved contour, got {} points", first.n);
     assert_eq!(first.n, second.n, "contour length is not reproducible");
@@ -675,4 +927,122 @@ fn test_marching_squares_is_deterministic() {
     // order, every time
     assert_eq!(first.r, second.r, "contour `r` is not reproducible");
     assert_eq!(first.z, second.z, "contour `z` is not reproducible");
+}
+
+#[test]
+fn test_marching_squares_perfect_double_null() {
+    use ndarray::Array1;
+
+    // `psi = -a * (r - r_axis) ** 2 + b * (z ** 2 - z_xpt ** 2) ** 2` has its maximum, the magnetic
+    // axis, at (r_axis, 0), and saddle points at (r_axis, +/- z_xpt), where `psi = 0`: a perfect double
+    // null with `psi_b = 0`. Its boundary is `z ** 2 = z_xpt ** 2 - k * |r - r_axis|`, with `k = sqrt(a / b)`,
+    // which encloses an area of `8 * z_xpt ** 3 / (3 * k)`. Beyond each X-point, between the divertor legs,
+    // is a private flux region, where `psi > psi_b` too
+    let a: f64 = 1.44;
+    let b: f64 = 1.0;
+    let r_axis: f64 = 0.6;
+    let z_xpt: f64 = 0.6;
+    let psi_b: f64 = 0.0;
+    let psi_a: f64 = b * z_xpt.powi(4);
+    let psi = |r: f64, z: f64| -> f64 { -a * (r - r_axis).powi(2) + b * (z * z - z_xpt * z_xpt).powi(2) };
+    let area_expected: f64 = 8.0 * z_xpt.powi(3) / (3.0 * (a / b).sqrt());
+
+    // Neither X-point, nor the axis, is on a grid point
+    let n_r: usize = 50;
+    let n_z: usize = 100;
+    let r: Array1<f64> = Array1::linspace(0.1, 1.1, n_r);
+    let z: Array1<f64> = Array1::linspace(-1.0, 1.0, n_z);
+
+    let mut psi_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    let mut d_psi_d_r_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    let mut d_psi_d_z_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    let mut mask_2d: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
+    for i_z in 0..n_z {
+        for i_r in 0..n_r {
+            psi_2d[(i_z, i_r)] = psi(r[i_r], z[i_z]);
+            d_psi_d_r_2d[(i_z, i_r)] = -2.0 * a * (r[i_r] - r_axis);
+            d_psi_d_z_2d[(i_z, i_r)] = 4.0 * b * z[i_z] * (z[i_z] * z[i_z] - z_xpt * z_xpt);
+            // The mask stops at the X-points, as the flood fill's does, so the private flux regions are not in it
+            mask_2d[(i_z, i_r)] = if psi_2d[(i_z, i_r)] > psi_b && z[i_z].abs() < z_xpt { 1.0 } else { 0.0 };
+        }
+    }
+
+    // The lower X-point bounds the plasma, and the upper one is the secondary
+    let contour: MarchingContour = marching_squares(
+        &r,
+        &z,
+        &psi_2d,
+        &d_psi_d_r_2d,
+        &d_psi_d_z_2d,
+        psi_b,
+        &mask_2d,
+        Some(r_axis),
+        Some(-z_xpt),
+        Some(r_axis),
+        Some(z_xpt),
+        r_axis,
+        0.0,
+    );
+    let n: usize = contour.n;
+    assert!(n > 50, "expected a well-resolved contour, got {n} points");
+
+    // Closed at the primary X-point, and through the secondary one
+    assert_eq!(
+        (contour.r[0], contour.z[0]),
+        (r_axis, -z_xpt),
+        "the contour does not start at the primary X-point"
+    );
+    assert_eq!(
+        (contour.r[n - 1], contour.z[n - 1]),
+        (r_axis, -z_xpt),
+        "the contour does not end at the primary X-point"
+    );
+    let n_secondary: usize = (0..n).filter(|&i| contour.r[i] == r_axis && contour.z[i] == z_xpt).count();
+    assert_eq!(n_secondary, 1, "the contour passes through the secondary X-point {n_secondary} times");
+
+    // Every point is on the boundary, and none is in a private flux region
+    for i in 0..n {
+        assert!(
+            (psi(contour.r[i], contour.z[i]) - psi_b).abs() < 1.0e-5 * psi_a,
+            "point {i}, ({}, {}), is not on psi = psi_b",
+            contour.r[i],
+            contour.z[i]
+        );
+        assert!(
+            contour.z[i].abs() <= z_xpt,
+            "point {i}, ({}, {}), is beyond the X-points",
+            contour.r[i],
+            contour.z[i]
+        );
+    }
+
+    // No two segments cross, so the contour does not loop back on itself
+    for i in 0..n - 1 {
+        for j in (i + 2)..n - 1 {
+            assert!(
+                !segments_intersect(
+                    contour.r[i],
+                    contour.z[i],
+                    contour.r[i + 1],
+                    contour.z[i + 1],
+                    contour.r[j],
+                    contour.z[j],
+                    contour.r[j + 1],
+                    contour.z[j + 1]
+                ),
+                "segments {i} and {j} cross"
+            );
+        }
+    }
+
+    // It encloses the whole plasma, both tips included
+    let mut area: f64 = 0.0;
+    for i in 0..n - 1 {
+        area += contour.r[i] * contour.z[i + 1] - contour.r[i + 1] * contour.z[i];
+    }
+    area = 0.5 * area.abs();
+    assert!(
+        (area / area_expected - 1.0).abs() < 1.0e-2,
+        "enclosed area {area} differs from the analytic {area_expected}"
+    );
 }

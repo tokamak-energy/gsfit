@@ -664,11 +664,7 @@ class _EquilibriumCodeNumericsItem:
 
     @property
     def iterations(self) -> _EquilibriumCodeNumericsIterationsItem:
-        """Bounds on the Picard iteration loop
-        """
-    @property
-    def anderson_mixing(self) -> _EquilibriumCodeNumericsAndersonMixingItem:
-        """Mixing of the previous iteration's degrees of freedom into the current ones
+        """Bounds on the nonlinear solver's iteration loop
         """
     @property
     def grad_shafranov_deviation_tolerance(self) -> Path[float]:
@@ -677,6 +673,11 @@ converged
 
         Units: mixed
         """
+    @property
+    def nonlinear_solver(self) -> _EquilibriumCodeNumericsNonlinearSolverItem:
+        """The method which makes the flux and the current density consistent with each other, and
+its settings
+        """
 
 class _EquilibriumCodeNumericsMany:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
@@ -684,11 +685,7 @@ class _EquilibriumCodeNumericsMany:
 
     @property
     def iterations(self) -> _EquilibriumCodeNumericsIterationsMany:
-        """Bounds on the Picard iteration loop
-        """
-    @property
-    def anderson_mixing(self) -> _EquilibriumCodeNumericsAndersonMixingMany:
-        """Mixing of the previous iteration's degrees of freedom into the current ones
+        """Bounds on the nonlinear solver's iteration loop
         """
     @property
     def grad_shafranov_deviation_tolerance(self) -> Path[npt.NDArray[np.float64]]:
@@ -697,37 +694,10 @@ converged
 
         Units: mixed
         """
-
-class _EquilibriumCodeNumericsAndersonMixingItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
-
     @property
-    def use(self) -> Path[int]:
-        """Whether the mixing is applied; 0 for off, 1 for on. The data dictionary has no boolean
-base type, so this is an integer
-        """
-    @property
-    def mixing_from_previous_iter(self) -> Path[float]:
-        """Fraction of the previous iteration's degrees of freedom mixed into the current ones
-
-        Units: dimensionless
-        """
-
-class _EquilibriumCodeNumericsAndersonMixingMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
-
-    @property
-    def use(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether the mixing is applied; 0 for off, 1 for on. The data dictionary has no boolean
-base type, so this is an integer
-        """
-    @property
-    def mixing_from_previous_iter(self) -> Path[npt.NDArray[np.float64]]:
-        """Fraction of the previous iteration's degrees of freedom mixed into the current ones
-
-        Units: dimensionless
+    def nonlinear_solver(self) -> _EquilibriumCodeNumericsNonlinearSolverMany:
+        """The method which makes the flux and the current density consistent with each other, and
+its settings
         """
 
 class _EquilibriumCodeNumericsIterationsItem:
@@ -742,10 +712,6 @@ class _EquilibriumCodeNumericsIterationsItem:
     def n_min(self) -> Path[int]:
         """Minimum number of iterations before the convergence test is allowed to pass
         """
-    @property
-    def n_no_vertical_feedback(self) -> Path[int]:
-        """Number of initial iterations for which the vertical feedback is switched off
-        """
 
 class _EquilibriumCodeNumericsIterationsMany:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
@@ -759,9 +725,221 @@ class _EquilibriumCodeNumericsIterationsMany:
     def n_min(self) -> Path[npt.NDArray[np.int32]]:
         """Minimum number of iterations before the convergence test is allowed to pass
         """
+
+class _EquilibriumCodeNumericsNonlinearSolverItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
     @property
-    def n_no_vertical_feedback(self) -> Path[npt.NDArray[np.int32]]:
+    def method(self) -> Path[str]:
+        """Either "picard", "newton_krylov" or "newton_picard"
+        """
+    @property
+    def picard(self) -> _EquilibriumCodeNumericsNonlinearSolverPicardItem:
+        """Settings for the Picard iteration
+        """
+    @property
+    def newton_krylov(self) -> _EquilibriumCodeNumericsNonlinearSolverNewtonKrylovItem:
+        """Settings for the Jacobian-free Newton-Krylov iteration
+        """
+    @property
+    def newton_picard(self) -> _EquilibriumCodeNumericsNonlinearSolverNewtonPicardItem:
+        """Settings for the Newton-Picard iteration (the recursive projection method)
+        """
+
+class _EquilibriumCodeNumericsNonlinearSolverMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def method(self) -> Path[npt.NDArray[np.str_]]:
+        """Either "picard", "newton_krylov" or "newton_picard"
+        """
+    @property
+    def picard(self) -> _EquilibriumCodeNumericsNonlinearSolverPicardMany:
+        """Settings for the Picard iteration
+        """
+    @property
+    def newton_krylov(self) -> _EquilibriumCodeNumericsNonlinearSolverNewtonKrylovMany:
+        """Settings for the Jacobian-free Newton-Krylov iteration
+        """
+    @property
+    def newton_picard(self) -> _EquilibriumCodeNumericsNonlinearSolverNewtonPicardMany:
+        """Settings for the Newton-Picard iteration (the recursive projection method)
+        """
+
+class _EquilibriumCodeNumericsNonlinearSolverNewtonKrylovItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def picard_handover(self) -> Path[float]:
+        """Value of convergence/grad_shafranov_deviation_value below which the Picard iterations hand
+over to Newton iterations
+
+        Units: mixed
+        """
+    @property
+    def n_krylov_max(self) -> Path[int]:
+        """Maximum number of Krylov directions per Newton iteration. Each costs one evaluation of the
+Picard update
+        """
+    @property
+    def krylov_tolerance(self) -> Path[float]:
+        """The Krylov solve stops once the linearised residual has fallen to this fraction of the
+nonlinear residual
+
+        Units: dimensionless
+        """
+    @property
+    def finite_difference_step(self) -> Path[float]:
+        """Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
+the size of the nonlinear residual
+
+        Units: dimensionless
+        """
+    @property
+    def verbose(self) -> Path[int]:
+        """Whether to print the progress of each Newton iteration; 0 for off, 1 for on
+        """
+
+class _EquilibriumCodeNumericsNonlinearSolverNewtonKrylovMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def picard_handover(self) -> Path[npt.NDArray[np.float64]]:
+        """Value of convergence/grad_shafranov_deviation_value below which the Picard iterations hand
+over to Newton iterations
+
+        Units: mixed
+        """
+    @property
+    def n_krylov_max(self) -> Path[npt.NDArray[np.int32]]:
+        """Maximum number of Krylov directions per Newton iteration. Each costs one evaluation of the
+Picard update
+        """
+    @property
+    def krylov_tolerance(self) -> Path[npt.NDArray[np.float64]]:
+        """The Krylov solve stops once the linearised residual has fallen to this fraction of the
+nonlinear residual
+
+        Units: dimensionless
+        """
+    @property
+    def finite_difference_step(self) -> Path[npt.NDArray[np.float64]]:
+        """Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
+the size of the nonlinear residual
+
+        Units: dimensionless
+        """
+    @property
+    def verbose(self) -> Path[npt.NDArray[np.int32]]:
+        """Whether to print the progress of each Newton iteration; 0 for off, 1 for on
+        """
+
+class _EquilibriumCodeNumericsNonlinearSolverNewtonPicardItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def n_basis_max(self) -> Path[int]:
+        """Maximum number of directions in which Newton's method is used
+        """
+    @property
+    def contraction_threshold(self) -> Path[float]:
+        """A direction is added when the part of the residual outside them has shrunk by less than
+this factor since the previous iteration
+
+        Units: dimensionless
+        """
+    @property
+    def finite_difference_step(self) -> Path[float]:
+        """Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
+the size of the nonlinear residual
+
+        Units: dimensionless
+        """
+    @property
+    def verbose(self) -> Path[int]:
+        """Whether to print the progress of each iteration; 0 for off, 1 for on
+        """
+
+class _EquilibriumCodeNumericsNonlinearSolverNewtonPicardMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def n_basis_max(self) -> Path[npt.NDArray[np.int32]]:
+        """Maximum number of directions in which Newton's method is used
+        """
+    @property
+    def contraction_threshold(self) -> Path[npt.NDArray[np.float64]]:
+        """A direction is added when the part of the residual outside them has shrunk by less than
+this factor since the previous iteration
+
+        Units: dimensionless
+        """
+    @property
+    def finite_difference_step(self) -> Path[npt.NDArray[np.float64]]:
+        """Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
+the size of the nonlinear residual
+
+        Units: dimensionless
+        """
+    @property
+    def verbose(self) -> Path[npt.NDArray[np.int32]]:
+        """Whether to print the progress of each iteration; 0 for off, 1 for on
+        """
+
+class _EquilibriumCodeNumericsNonlinearSolverPicardItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def n_iter_no_vertical_feedback(self) -> Path[int]:
         """Number of initial iterations for which the vertical feedback is switched off
+        """
+    @property
+    def apply_anderson_mixing(self) -> Path[int]:
+        """Whether Anderson mixing is applied: each new state is the combination of the last few
+iterates which best cancels their residuals, rather than the Picard update itself. 0 for
+off, 1 for on. The data dictionary has no boolean base type, so this is an integer
+        """
+    @property
+    def anderson_n_history(self) -> Path[int]:
+        """Maximum number of previous iterations Anderson mixing combines
+        """
+    @property
+    def anderson_mixing(self) -> Path[float]:
+        """Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it
+
+        Units: dimensionless
+        """
+
+class _EquilibriumCodeNumericsNonlinearSolverPicardMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def n_iter_no_vertical_feedback(self) -> Path[npt.NDArray[np.int32]]:
+        """Number of initial iterations for which the vertical feedback is switched off
+        """
+    @property
+    def apply_anderson_mixing(self) -> Path[npt.NDArray[np.int32]]:
+        """Whether Anderson mixing is applied: each new state is the combination of the last few
+iterates which best cancels their residuals, rather than the Picard update itself. 0 for
+off, 1 for on. The data dictionary has no boolean base type, so this is an integer
+        """
+    @property
+    def anderson_n_history(self) -> Path[npt.NDArray[np.int32]]:
+        """Maximum number of previous iterations Anderson mixing combines
+        """
+    @property
+    def anderson_mixing(self) -> Path[npt.NDArray[np.float64]]:
+        """Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it
+
+        Units: dimensionless
         """
 
 class _EquilibriumConstraintsItem:
@@ -1781,6 +1959,13 @@ solve has run, and 0 while the vertical feedback is switched off
 
         Units: m
         """
+    @property
+    def flux_evaluations_n(self) -> Path[int]:
+        """Number of times the flux was calculated on the grid from the current density, each followed
+by the search for the magnetic axis and the plasma boundary. This is where nearly all the
+time goes: a Picard iteration does it once, a Newton iteration several times. Recorded
+whether or not the solve converged
+        """
 
 class _EquilibriumConvergenceMany:
     """Convergence details for the equilibrium calculation
@@ -1810,6 +1995,13 @@ class _EquilibriumConvergenceMany:
 solve has run, and 0 while the vertical feedback is switched off
 
         Units: m
+        """
+    @property
+    def flux_evaluations_n(self) -> Path[npt.NDArray[np.int32]]:
+        """Number of times the flux was calculated on the grid from the current density, each followed
+by the search for the magnetic axis and the plasma boundary. This is where nearly all the
+time goes: a Picard iteration does it once, a Newton iteration several times. Recorded
+whether or not the solve converged
         """
 
 class _EquilibriumCoordinateSystemItem:

@@ -62,13 +62,30 @@
     "numerics": {
         "n_iter_max": 100,
         "grad_shafranov_deviation_tolerance": 5.0e-6,
-        "n_iter_no_vertical_feedback": 1,
         "n_iter_min": 0,
-        "anderson_mixing": {
-            "use": false,
-            "mixing_from_previous_iter": 0.1
-        },
-        "save_unconverged": false
+        "save_unconverged": false,
+        "nonlinear_solver": {
+            "method": "picard",
+            "picard": {
+                "n_iter_no_vertical_feedback": 1,
+                "apply_anderson_mixing": false,
+                "anderson_n_history": 5,
+                "anderson_mixing": 1.0
+            },
+            "newton_krylov": {
+                "picard_handover": 1.0e-2,
+                "n_krylov_max": 10,
+                "krylov_tolerance": 0.1,
+                "finite_difference_step": 1.0,
+                "verbose": false
+            },
+            "newton_picard": {
+                "n_basis_max": 10,
+                "contraction_threshold": 0.5,
+                "finite_difference_step": 1.0,
+                "verbose": false
+            }
+        }
     },
     "type_of_run": {
         "forward": false,

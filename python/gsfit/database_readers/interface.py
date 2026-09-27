@@ -371,8 +371,10 @@ class DatabaseReaderProtocol(Protocol):
 
         Initialising requires reading data from three locations:
         1. `GSFIT_code_settings.json`: Which contains the plasma grid size and the numerical settings the solve is run with
-        2. `source_function_p_prime.json`: Which contains the number of degrees of freedom for p_prime, and regularisation
-        3. `source_function_ff_prime.json`: Which contains the number of degrees of freedom for ff_prime, and regularisation
+        2. `source_function_p_prime.json`: Which contains the number of degrees of freedom for p_prime, and regularisation;
+           or, when `exact` is `true`, the fixed `coefficients`
+        3. `source_function_ff_prime.json`: Which contains the number of degrees of freedom for ff_prime, and regularisation;
+           or, when `exact` is `true`, the fixed `coefficients`
 
         Normally, this method will be the same for all machines.
 
@@ -384,10 +386,14 @@ class DatabaseReaderProtocol(Protocol):
         p_prime_source_function = gsfit_rs.EfitPolynomial(
             n_dof=...,            # read from `source_function_p_prime.json` file
             regularisations=...,  # read from `source_function_p_prime.json` file
+            exact=...,            # read from `source_function_p_prime.json` file (optional, default `False`)
+            coefficients=...,     # read from `source_function_p_prime.json` file (only needed when `exact=True`)
         )
         ff_prime_source_function = gsfit_rs.EfitPolynomial(
             n_dof=...,            # read from `source_function_ff_prime.json` file
             regularisations=...,  # read from `source_function_ff_prime.json` file
+            exact=...,            # read from `source_function_ff_prime.json` file (optional, default `False`)
+            coefficients=...,     # read from `source_function_ff_prime.json` file (only needed when `exact=True`)
         )
 
         # Initialise the Plasma Rust class
@@ -408,10 +414,21 @@ class DatabaseReaderProtocol(Protocol):
             initial_guess_elongation=...,                      # read from `GSFIT_code_settings.json` file
             n_iter_max=...,                                    # read from `GSFIT_code_settings.json` file
             n_iter_min=...,                                    # read from `GSFIT_code_settings.json` file
-            n_iter_no_vertical_feedback=...,                   # read from `GSFIT_code_settings.json` file
             grad_shafranov_deviation_tolerance=...,            # read from `GSFIT_code_settings.json` file
-            use_anderson_mixing=...,                           # read from `GSFIT_code_settings.json` file
-            anderson_mixing_from_previous_iter=...,            # read from `GSFIT_code_settings.json` file
+            nonlinear_solver_method=...,                       # read from `GSFIT_code_settings.json` file
+            picard_n_iter_no_vertical_feedback=...,            # read from `GSFIT_code_settings.json` file
+            picard_apply_anderson_mixing=...,                  # read from `GSFIT_code_settings.json` file
+            picard_anderson_n_history=...,                     # read from `GSFIT_code_settings.json` file
+            picard_anderson_mixing=...,                        # read from `GSFIT_code_settings.json` file
+            newton_krylov_picard_handover=...,                 # read from `GSFIT_code_settings.json` file
+            newton_krylov_n_krylov_max=...,                    # read from `GSFIT_code_settings.json` file
+            newton_krylov_krylov_tolerance=...,                # read from `GSFIT_code_settings.json` file
+            newton_krylov_finite_difference_step=...,          # read from `GSFIT_code_settings.json` file
+            newton_krylov_verbose=...,                         # read from `GSFIT_code_settings.json` file
+            newton_picard_n_basis_max=...,                     # read from `GSFIT_code_settings.json` file
+            newton_picard_contraction_threshold=...,           # read from `GSFIT_code_settings.json` file
+            newton_picard_finite_difference_step=...,          # read from `GSFIT_code_settings.json` file
+            newton_picard_verbose=...,                         # read from `GSFIT_code_settings.json` file
             times_to_reconstruct=times_to_reconstruct,         # passed in, from `setup_timeslices`
         )
 

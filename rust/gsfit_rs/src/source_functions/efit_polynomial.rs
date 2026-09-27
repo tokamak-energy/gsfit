@@ -1,14 +1,20 @@
 use crate::source_functions::SourceFunctionTraits;
 use ndarray::{Array1, Array2};
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
-use numpy::borrow::PyReadonlyArray2;
+use numpy::borrow::{PyReadonlyArray1, PyReadonlyArray2};
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
 #[derive(Clone)]
 #[pyclass(skip_from_py_object)]
 pub struct EfitPolynomial {
+    /// The number of polynomial terms. These are all fixed when `exact` is `true`, so then
+    /// `source_function_n_dof`, the number of fitted terms, is 0
     pub n_dof: usize,
     pub regularisations: Array2<f64>,
+    /// When `true` the coefficients are not fitted: the solver uses `dof_values` as they are
+    pub exact: bool,
+    /// The fixed coefficients, used when `exact` is `true`; shape = [n_dof]
     pub dof_values: Array1<f64>,
 }
 
@@ -21,18 +27,39 @@ impl EfitPolynomial {
     /// Using Eq. 4 and 5 from:
     /// L. Lao, et. al., "Reconstruction of current profile parameters and plasma shapes in tokamaks", Nucl. Fusion, 1985
     /// https://doi.org/10.1088/0029-5515/25/11/007
+    ///
+    /// # Arguments
+    /// * `n_dof` - number of degrees of freedom
+    /// * `regularisations` - shape = [n_regularisations, n_dof]; not used when `exact` is `true`
+    /// * `exact` - when `true` the coefficients are fixed to `coefficients` rather than fitted (with both
+    ///   `p_prime` and `ff_prime` exact they may share a fitted amplitude; see `EquilibriumSolver::solve`)
+    /// * `coefficients` - the fixed coefficients, shape = [n_dof]; required when `exact` is `true`
     #[new]
-    pub fn new(n_dof: usize, regularisations: PyReadonlyArray2<f64>) -> Self {
+    #[pyo3(signature = (n_dof, regularisations, exact=false, coefficients=None))]
+    pub fn new(n_dof: usize, regularisations: PyReadonlyArray2<f64>, exact: bool, coefficients: Option<PyReadonlyArray1<f64>>) -> PyResult<Self> {
         // Change Python types into Rust types
         let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
-        let polynomial_coefficients_ndarray: Array1<f64> = Array1::zeros(0);
+        let polynomial_coefficients_ndarray: Array1<f64> = match coefficients {
+            Some(coefficients) => coefficients.to_owned_array(),
+            None => Array1::zeros(0),
+        };
+
+        // An exact source function is only usable if we know every coefficient
+        if exact && polynomial_coefficients_ndarray.len() != n_dof {
+            return Err(PyValueError::new_err(format!(
+                "EfitPolynomial: `exact=True` needs `coefficients` with n_dof={} values, but {} were given",
+                n_dof,
+                polynomial_coefficients_ndarray.len()
+            )));
+        }
 
         // Create the struct
-        EfitPolynomial {
+        Ok(EfitPolynomial {
             n_dof,
             regularisations: regularisations_ndarray,
+            exact,
             dof_values: polynomial_coefficients_ndarray,
-        }
+        })
     }
 
     /// Print to screen, to be used within Python
@@ -45,6 +72,10 @@ impl EfitPolynomial {
 
         let n_dof: usize = self.n_dof;
         string_output += &format!("║ {:<75} ║\n", format!(" n_dof = {}", n_dof.to_string()));
+        string_output += &format!("║ {:<75} ║\n", format!(" exact = {}", self.exact));
+        if self.exact {
+            string_output += &format!("║ {:<75} ║\n", format!(" coefficients = {}", self.dof_values));
+        }
 
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
@@ -129,14 +160,19 @@ impl SourceFunctionTraits for EfitPolynomial {
     }
 
     fn source_function_regularisation(&self) -> Array2<f64> {
-        let regularisations: Array2<f64> = self.regularisations.clone();
+        // The regularisation acts on fitted coefficients, and an exact source function has none
+        let regularisations: Array2<f64> = if self.exact { Array2::zeros((0, 0)) } else { self.regularisations.clone() };
 
         regularisations
     }
 
     fn source_function_n_dof(&self) -> usize {
-        let n_dof: usize = self.n_dof;
+        let n_dof: usize = if self.exact { 0 } else { self.n_dof };
 
         n_dof
+    }
+
+    fn source_function_exact_dof_values(&self) -> Option<Array1<f64>> {
+        if self.exact { Some(self.dof_values.clone()) } else { None }
     }
 }

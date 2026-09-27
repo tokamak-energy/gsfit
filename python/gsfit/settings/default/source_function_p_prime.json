@@ -4,7 +4,9 @@
         "n_dof": 2,
         "regularizations": [
             [0.0, 0.00004467344]
-        ]
+        ],
+        "exact": false,
+        "coefficients": []
     },
     "tensioned_cubic_b_spline": {
         "regularizations": [

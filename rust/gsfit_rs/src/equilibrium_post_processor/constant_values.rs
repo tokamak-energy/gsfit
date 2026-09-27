@@ -36,6 +36,7 @@ pub fn constant_values_for_test() -> ConstantValues<'static> {
         Arc::new(EfitPolynomial {
             n_dof: 1,
             regularisations: Array2::zeros((1, 1)),
+            exact: false,
             dof_values: Array1::zeros(0),
         })
     });

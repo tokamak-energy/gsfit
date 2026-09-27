@@ -2,6 +2,7 @@
 use pyo3::prelude::*;
 
 // Load modules
+mod analytic_grad_shafranov;
 mod circuit_equations;
 mod coils;
 mod equilibrium_post_processor;
@@ -16,6 +17,7 @@ mod tf;
 mod wall;
 
 // Load structs and functions
+use analytic_grad_shafranov::{Configuration, GuazzottoFreidberg, Symmetry};
 use circuit_equations::solve_circuit_equations;
 use coils::Coils;
 use grad_shafranov::solve_grad_shafranov;
@@ -47,7 +49,6 @@ pub mod plasma_geometry;
 // Future modules
 // mod solovev_equilibrium;
 // pub use solovev_equilibrium::run_solovev;
-// mod analytic_grad_shafranov;
 // mod equilibrium_post_processor;
 
 /// A Python module implemented in Rust; bindings added here
@@ -90,6 +91,11 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Expose source functions
     m.add_class::<EfitPolynomial>()?;
     m.add_class::<TensionedCubicBSpline>()?;
+
+    // Expose analytic equilibria
+    m.add_class::<GuazzottoFreidberg>()?;
+    m.add_class::<Symmetry>()?;
+    m.add_class::<Configuration>()?;
 
     // Expose solovev equilibrium function
     // m.add_function(wrap_pyfunction!(run_solovev, m)?)?;

@@ -428,10 +428,21 @@ class Plasma(DataTreeAccessor):
         initial_guess_elongation: float,
         n_iter_max: int,
         n_iter_min: int,
-        n_iter_no_vertical_feedback: int,
         grad_shafranov_deviation_tolerance: float,
-        use_anderson_mixing: bool,
-        anderson_mixing_from_previous_iter: float,
+        nonlinear_solver_method: str,
+        picard_n_iter_no_vertical_feedback: int,
+        picard_apply_anderson_mixing: bool,
+        picard_anderson_n_history: int,
+        picard_anderson_mixing: float,
+        newton_krylov_picard_handover: float,
+        newton_krylov_n_krylov_max: int,
+        newton_krylov_krylov_tolerance: float,
+        newton_krylov_finite_difference_step: float,
+        newton_krylov_verbose: bool,
+        newton_picard_n_basis_max: int,
+        newton_picard_contraction_threshold: float,
+        newton_picard_finite_difference_step: float,
+        newton_picard_verbose: bool,
         times_to_reconstruct: npt.NDArray[np.float64],
     ) -> Plasma:
         """
@@ -449,12 +460,23 @@ class Plasma(DataTreeAccessor):
         :param initial_guess_cur_z: Vertical centre of the initial current distribution [metre]
         :param initial_guess_minor_radius: Radial semi-axis of the initial current distribution [metre]
         :param initial_guess_elongation: Elongation of the initial current distribution [dimensionless]
-        :param n_iter_max: Maximum number of iterations
-        :param n_iter_min: Minimum number of iterations before the convergence test may pass
-        :param n_iter_no_vertical_feedback: Number of initial iterations with the vertical feedback switched off
+        :param n_iter_max: Maximum number of nonlinear solver iterations
+        :param n_iter_min: Minimum number of nonlinear solver iterations before the convergence test may pass
         :param grad_shafranov_deviation_tolerance: Grad-Shafranov deviation below which the solution is taken as converged
-        :param use_anderson_mixing: Whether to use Anderson mixing
-        :param anderson_mixing_from_previous_iter: Anderson mixing factor from the previous iteration [dimensionless]
+        :param nonlinear_solver_method: The nonlinear solver: "picard", "newton_krylov" or "newton_picard"
+        :param picard_n_iter_no_vertical_feedback: Number of initial Picard iterations with the vertical feedback switched off
+        :param picard_apply_anderson_mixing: Whether the Picard iterations use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals
+        :param picard_anderson_n_history: Maximum number of previous iterations Anderson mixing combines
+        :param picard_anderson_mixing: Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it [dimensionless]
+        :param newton_krylov_picard_handover: Grad-Shafranov deviation below which Newton-Krylov hands over from Picard to Newton iterations
+        :param newton_krylov_n_krylov_max: Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work
+        :param newton_krylov_krylov_tolerance: The Krylov solve stops once the linearised residual is this fraction of the residual [dimensionless]
+        :param newton_krylov_finite_difference_step: Jacobian-vector product step, as a multiple of the size of the residual [dimensionless]
+        :param newton_krylov_verbose: Whether to print the progress of each Newton iteration
+        :param newton_picard_n_basis_max: Maximum number of directions in which Newton-Picard uses Newton's method; each costs one Picard iteration's work to add
+        :param newton_picard_contraction_threshold: A direction is added when the residual outside them shrinks by less than this factor per iteration [dimensionless]
+        :param newton_picard_finite_difference_step: Jacobian-vector product step, as a multiple of the size of the residual [dimensionless]
+        :param newton_picard_verbose: Whether to print the progress of each Newton-Picard iteration
         :param times_to_reconstruct: Times the equilibrium will be solved at; one equilibrium time-slice is allocated per time [second]
         """
         ...
@@ -673,6 +695,250 @@ class Magnetics:
 
         Read the data with `get` instead: this copies the IDS on every access. It is for when a
         detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
+        """
+        ...
+
+class Symmetry:
+    """Up-down symmetry of the equilibrium configuration.
+
+    `Symmetric` selects the 7-term cos(h_n y) expansion (limiter or double-null);
+    `Asymmetric` adds the sin(h_n y) family for the 12-term single-null solve.
+    """
+
+    Symmetric: Symmetry
+    Asymmetric: Symmetry
+
+class Configuration:
+    """Plasma boundary topology and the shape parameters it requires.
+
+    Each variant carries exactly its own shape inputs; up-down symmetry
+    (7- vs 12-term expansion) is implied by the variant.
+    """
+    @staticmethod
+    def SymmetricLimited(kappa: float, delta: float) -> Configuration:
+        """Up-down symmetric smooth limiter (7-term).
+
+        :param kappa: Elongation [dimensionless]
+        :param delta: Triangularity [dimensionless]
+        """
+        ...
+    @staticmethod
+    def AntisymmetricLimited(kappa_upper: float, delta_upper: float, kappa_lower: float, delta_lower: float) -> Configuration:
+        """Up-down asymmetric smooth limiter (12-term). NOT YET IMPLEMENTED.
+
+        :param kappa_upper: Upper elongation [dimensionless]
+        :param delta_upper: Upper triangularity [dimensionless]
+        :param kappa_lower: Lower elongation [dimensionless]
+        :param delta_lower: Lower triangularity [dimensionless]
+        """
+        ...
+    @staticmethod
+    def DoubleNull(kappa_x: float, delta_x: float) -> Configuration:
+        """Up-down symmetric double-null divertor (7-term).
+
+        :param kappa_x: X-point elongation [dimensionless]
+        :param delta_x: X-point triangularity [dimensionless]
+        """
+        ...
+    @staticmethod
+    def SingleNull(kappa: float, delta: float, kappa_x: float, delta_x: float) -> Configuration:
+        """Up-down asymmetric lower single-null divertor (12-term). The upper half is a smooth Miller
+        profile (`kappa`, `delta`) and the lower half has the X-point (`kappa_x`, `delta_x`).
+
+        :param kappa: Upper (smooth) elongation [dimensionless]
+        :param delta: Upper (smooth) triangularity [dimensionless]
+        :param kappa_x: X-point elongation [dimensionless]
+        :param delta_x: X-point triangularity [dimensionless]
+        """
+        ...
+
+class GuazzottoFreidberg:
+    """Guazzotto-Freidberg analytic Grad-Shafranov equilibrium.
+
+    Solves the analytic equilibrium and produces a `Coils` object whose PF-coil
+    currents reproduce the vacuum field consistent with the solution, i.e. a
+    self-consistent free-boundary test case for GSFit to reconstruct.
+
+    Flux follows the IMAS convention, the total poloidal flux `psi = 2 * pi * R * A_phi` [weber],
+    so `psi_0` and the equilibrium IDS are `2 * pi` times GF's per-radian values.
+
+    Reference: J. Plasma Phys. 87 (2021) 905870303.
+    """
+    def __new__(
+        cls,
+        configuration: Configuration,
+        eps: float,
+        nu: float,
+        r_geo: float,
+        bt_vac_at_r_geo: float,
+        p_axis: float,
+        n_r: int,
+        n_z: int,
+        r_min: float,
+        r_max: float,
+        z_min: float,
+        z_max: float,
+        n_radial_expansion: int,
+    ) -> GuazzottoFreidberg:
+        """Construct the equilibrium; it is not solved until `solve` is called.
+
+        :param configuration: Boundary topology + shape (SymmetricLimited, AntisymmetricLimited, DoubleNull, or SingleNull)
+        :param eps: Inverse aspect ratio, a / r_geo [dimensionless]
+        :param nu: Profile parameter, approximately the poloidal beta [dimensionless]
+        :param r_geo: Geometric major radius [metre]
+        :param bt_vac_at_r_geo: Vacuum toroidal field at r_geo [tesla]
+        :param p_axis: Pressure on the magnetic axis [pascal]
+        :param n_r: Number of radial grid points [dimensionless]
+        :param n_z: Number of vertical grid points [dimensionless]
+        :param r_min: Minimum radius [metre]
+        :param r_max: Maximum radius [metre]
+        :param z_min: Minimum vertical position [metre]
+        :param z_max: Maximum vertical position [metre]
+        :param n_radial_expansion: Number of terms in the C_n / S_n series (the paper's M) [dimensionless]
+        """
+        ...
+    def solve(
+        self,
+    ) -> None:
+        """Solve the eigenvalue `alpha` and evaluate the analytic flux and plasma mask over the (R, Z) grid."""
+        ...
+    def get_coils(
+        self,
+        coil_regularisation_weight: float,
+        control_points: npt.NDArray[np.float64],
+        wall: Wall,
+    ) -> Coils:
+        """
+        Fit the PF-coil currents on the (R, Z) grid boundary so that, with the plasma's own field, they reproduce
+        the analytic flux at `control_points`. Then store the free-boundary equilibrium in `equilibrium_ids` and
+        post-process it. Requires `solve` first.
+
+        The IDS holds the total flux, plasma plus coils, which is valid in the vacuum as well as inside the plasma.
+        For a diverted plasma the magnetic axis, the X-points, the boundary flux and the plasma mask are found in
+        that flux, as the Grad-Shafranov solver finds them; for a limited one they are the analytic ones.
+
+        :param coil_regularisation_weight: Tikhonov weight on the coil-current magnitude [dimensionless]
+        :param control_points: (n_control_point, 2) array of (r, z) points where the flux is matched [metre]
+        :param wall: The wall: its limiter and vacuum vessel bound a diverted plasma, and the post-processor traces
+            the scrape-off layer legs up to it
+        :return: One single-filament PF coil per boundary node, carrying the fitted current
+        """
+        ...
+    def get_sensor_values(
+        self,
+        bp_probes: BpProbes,
+        flux_loops: FluxLoops,
+        coils: Coils,
+    ) -> None:
+        """
+        Fill each BP probe (tesla) and flux loop (weber) `experimental` value with the field the analytic plasma
+        current plus `coils` produce at that sensor. Mutates `bp_probes` and `flux_loops` in place. Requires `solve` first.
+
+        Each coil filament carries its coil's current at the first time of its experimental timebase.
+
+        :param bp_probes: BpProbes with geometry already set; their measurements are overwritten
+        :param flux_loops: FluxLoops with geometry already set; their measurements are overwritten
+        :param coils: The PF coils, typically the ones `get_coils` returned
+        """
+        ...
+    def model_surface(
+        self,
+        n_point_per_half: int,
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        """
+        GF's model surface, the shape the analytic boundary is matched to at the matching points (the red curve in
+        GF's figures). Does not need `solve`.
+
+        :param n_point_per_half: Number of points on each of the upper and lower halves; must be even
+        :return: `(r, z)`, the closed outline, anticlockwise from the outer midplane; the last point repeats the first,
+            so each is `2 * n_point_per_half + 1` long [metre]
+        """
+        ...
+    @property
+    def configuration(self) -> Configuration:
+        """Boundary topology and its shape parameters"""
+        ...
+    @property
+    def eps(self) -> float:
+        """Inverse aspect ratio, a / r_geo [dimensionless]"""
+        ...
+    @property
+    def nu(self) -> float:
+        """Profile parameter, approximately the poloidal beta [dimensionless]"""
+        ...
+    @property
+    def r_geo(self) -> float:
+        """Geometric major radius [metre]"""
+        ...
+    @property
+    def bt_vac_at_r_geo(self) -> float:
+        """Vacuum toroidal field at r_geo [tesla]"""
+        ...
+    @property
+    def p_axis(self) -> float:
+        """Pressure normalisation, the pressure where psi_hat = 1 [pascal]"""
+        ...
+    @property
+    def n_r(self) -> int:
+        """Number of radial grid points [dimensionless]"""
+        ...
+    @property
+    def n_z(self) -> int:
+        """Number of vertical grid points [dimensionless]"""
+        ...
+    @property
+    def r_min(self) -> float:
+        """Minimum radius of the grid [metre]"""
+        ...
+    @property
+    def r_max(self) -> float:
+        """Maximum radius of the grid [metre]"""
+        ...
+    @property
+    def z_min(self) -> float:
+        """Minimum vertical position of the grid [metre]"""
+        ...
+    @property
+    def z_max(self) -> float:
+        """Maximum vertical position of the grid [metre]"""
+        ...
+    @property
+    def n_radial_expansion(self) -> int:
+        """Number of terms in the C_n / S_n series (the paper's M) [dimensionless]"""
+        ...
+    @property
+    def alpha(self) -> float:
+        """The eigenvalue; NaN until `solve` has run [dimensionless]"""
+        ...
+    @property
+    def beta_0(self) -> float:
+        """Beta at psi_hat = 1, 2 * mu_0 * p_axis / bt_vac_at_r_geo ** 2 (GF Eq. 6.4); NaN until `solve` has run [dimensionless]"""
+        ...
+    @property
+    def bt_diamagnetic_shift(self) -> float:
+        """Diamagnetic change in the toroidal field (GF Eq. 6.4); NaN until `solve` has run [tesla]"""
+        ...
+    @property
+    def psi_0(self) -> float:
+        """Flux normalisation, psi = psi_0 * psi_hat: GF's Psi_0 (Eq. 6.5) times 2 * pi; NaN until `solve` has run [weber]"""
+        ...
+    @property
+    def psi_analytic(self) -> npt.NDArray[np.float64]:
+        """The analytic flux, psi_0 * psi_hat, on every grid cell, shape (n_z, n_r) [weber].
+
+        Outside the model box the truncated series is unphysical and can diverge; use `mask` to select the plasma.
+        """
+        ...
+    @property
+    def mask(self) -> npt.NDArray[np.float64]:
+        """1 inside the analytic plasma and 0 elsewhere, shape (n_z, n_r) [dimensionless]"""
+        ...
+    @property
+    def equilibrium_ids(self) -> Equilibrium:
+        """The free-boundary equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`. Empty until `get_coils` has run.
+
+        The IDS is copied into the returned object, so it is a snapshot: changes made on the Rust side afterwards
+        are not seen by it.
         """
         ...
 
@@ -1020,10 +1286,16 @@ class EfitPolynomial(DataTreeAccessor):
         cls,
         n_dof: int,
         regularisations: npt.NDArray[np.float64],
+        exact: bool = False,
+        coefficients: npt.NDArray[np.float64] | None = None,
     ) -> EfitPolynomial:
         """
         :param n_dof: Number of degrees of freedom
-        :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values [dimensionless]
+        :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values [dimensionless]; not used when `exact=True`
+        :param exact: When `True` the coefficients are fixed to `coefficients` rather than fitted. With both `p_prime` and `ff_prime` exact, this is a forward solve:
+            their shapes are fixed, and if there is a constraint besides the magnetic axis (normally the plasma current from a Rogowski coil) they share one fitted amplitude,
+            which holds the plasma radially. The coefficients written to the equilibrium are the given ones times this amplitude
+        :param coefficients: A 1D array of size [n_dof] with the fixed coefficients; required when `exact=True`
         """
         ...
 

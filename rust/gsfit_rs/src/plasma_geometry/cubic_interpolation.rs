@@ -12,7 +12,22 @@ use ndarray::Array1;
 /// * `f_target` - target function value, [any]
 ///
 /// Returns:
-/// * `x` - array of coordinate where `f(x) = f_target` (minimum 1 `x` value; maximum 3 `x` values), [metre]
+/// * `x` - the coordinates where `f` crosses `f_target`, in increasing `t` (0 to 3 values), [metre]
+///
+/// Only **crossings**, where `f - f_target` changes sign, are returned: a point where the cubic
+/// only touches `f_target` is not one. The winding number in
+/// `find_stationary_points_using_winding_number` flips the sign of a field at every crossing, so a
+/// touch counted as a crossing would break its count.
+///
+/// The crossings are found from signs alone, with no tolerance on `f`, so the result does not depend
+/// on the units or the size of `f`. This matters on a plane of up/down symmetry, where
+/// `d(psi)/d(z)` is round-off (~1e-11) along a whole grid row: solving the cubic with absolute
+/// tolerances on its coefficients reported a double root, a crossing which was not there, and lost
+/// the magnetic axis. Instead, `[0, 1]` is split at the turning points of the cubic into pieces on
+/// which it is monotonic, and each piece whose ends have different signs holds exactly one crossing,
+/// found by bisection.
+///
+/// The signs use the same tie-break as the winding number: `0.0` counts as positive.
 pub fn cubic_interpolation_v2(cell0_x: f64, cell0_f: f64, cell0_d_f_d_x: f64, cell1_x: f64, cell1_f: f64, cell1_d_f_d_x: f64, f_target: f64) -> Vec<f64> {
     let delta_x: f64 = cell1_x - cell0_x;
 
@@ -39,18 +54,77 @@ pub fn cubic_interpolation_v2(cell0_x: f64, cell0_f: f64, cell0_d_f_d_x: f64, ce
     let c: f64 = delta_x * cell0_d_f_d_x;
     let d: f64 = cell0_f;
 
-    // Rearrange: a*t**3 + b*t**2 + c*t + (d - f_target) = 0
-    let roots: Vec<f64> = solve_cubic(a, b, c, d - f_target);
-
-    // Find the root in [0.0, 1.0] (valid interpolation range)
-    let mut x_values: Vec<f64> = Vec::new();
-    for &t in &roots {
-        if (0.0..=1.0).contains(&t) {
-            x_values.push(cell0_x + t * delta_x);
+    // `g(t) = f(t) - f_target`. At the ends the given values are used, rather than the polynomial,
+    // so that the signs match the corner values exactly
+    let g = |t: f64| -> f64 { ((a * t + b) * t + c) * t + (d - f_target) };
+    let g_at = |t: f64| -> f64 {
+        if t == 0.0 {
+            cell0_f - f_target
+        } else if t == 1.0 {
+            cell1_f - f_target
+        } else {
+            g(t)
         }
+    };
+
+    // Split [0, 1] at the turning points of `g`, the roots of `g'(t) = 3 a t**2 + 2 b t + c`
+    let mut breakpoints: Vec<f64> = vec![0.0];
+    for t_turning in quadratic_real_roots(3.0 * a, 2.0 * b, c) {
+        if t_turning > 0.0 && t_turning < 1.0 {
+            breakpoints.push(t_turning);
+        }
+    }
+    breakpoints.push(1.0);
+    breakpoints.sort_by(|t_1: &f64, t_2: &f64| t_1.total_cmp(t_2));
+
+    // `g` is monotonic between neighbouring breakpoints, so a change of sign there is exactly one
+    // crossing
+    let is_positive = |value: f64| -> bool { value >= 0.0 };
+    let mut x_values: Vec<f64> = Vec::new();
+    for i_piece in 0..breakpoints.len() - 1 {
+        let mut t_low: f64 = breakpoints[i_piece];
+        let mut t_high: f64 = breakpoints[i_piece + 1];
+        let low_is_positive: bool = is_positive(g_at(t_low));
+        if low_is_positive == is_positive(g_at(t_high)) {
+            continue;
+        }
+        // Bisection; 64 halvings take the bracket below the spacing of `f64` on [0, 1]
+        for _i_bisection in 0..64 {
+            let t_middle: f64 = 0.5 * (t_low + t_high);
+            if t_middle <= t_low || t_middle >= t_high {
+                break;
+            }
+            if is_positive(g(t_middle)) == low_is_positive {
+                t_low = t_middle;
+            } else {
+                t_high = t_middle;
+            }
+        }
+        x_values.push(cell0_x + 0.5 * (t_low + t_high) * delta_x);
     }
 
     x_values
+}
+
+/// The real roots of `a x**2 + b x + c = 0`, with no tolerances: `a == 0.0` is linear, and a
+/// negative discriminant has none. The roots are computed in the form which avoids cancellation.
+fn quadratic_real_roots(a: f64, b: f64, c: f64) -> Vec<f64> {
+    if a == 0.0 {
+        if b == 0.0 {
+            return Vec::new();
+        }
+        return vec![-c / b];
+    }
+    let discriminant: f64 = b * b - 4.0 * a * c;
+    if discriminant < 0.0 {
+        return Vec::new();
+    }
+    let q: f64 = -0.5 * (b + b.signum() * discriminant.sqrt());
+    if q == 0.0 {
+        // `b == 0` and `c == 0`: a double root at zero
+        return vec![0.0];
+    }
+    vec![q / a, c / q]
 }
 
 /// Cubic interpolation (consistent with bicubic interpolation)
@@ -293,4 +367,59 @@ fn test_cubic_interpolation() {
     println!("x_value: {}", x_value);
 
     assert_abs_diff_eq!(x_value[0], x_target, epsilon = 1e-6);
+}
+
+/// The edge from example 17 where a crossing was reported which is not there. Along a grid row on a
+/// plane of up/down symmetry, `d(psi)/d(z)` is round-off: both ends are -1e-10 (the value the winding
+/// number search clamps round-off to) and the slopes are ~1e-11, so it never reaches zero.
+#[test]
+fn test_cubic_interpolation_v2_round_off_edge_has_no_crossing() {
+    let x_values: Vec<f64> = cubic_interpolation_v2(1.090625, -1.0e-10, -1.5196e-11, 1.1146875, -1.0e-10, -1.4721e-11, 0.0);
+
+    assert!(x_values.is_empty(), "x_values = {x_values:?}");
+}
+
+/// The crossings do not depend on the size of `f`
+#[test]
+fn test_cubic_interpolation_v2_is_independent_of_scale() {
+    use approx::assert_abs_diff_eq;
+
+    // f(x) = scale * (x - 0.3), on x in [0, 1]
+    for scale in [1.0e-15, 1.0, 1.0e15] {
+        let x_values: Vec<f64> = cubic_interpolation_v2(0.0, -0.3 * scale, scale, 1.0, 0.7 * scale, scale, 0.0);
+
+        assert_eq!(x_values.len(), 1, "scale = {scale}");
+        assert_abs_diff_eq!(x_values[0], 0.3, epsilon = 1.0e-14);
+    }
+}
+
+/// A cubic which only touches the target is not a crossing; one which dips just below it crosses twice
+#[test]
+fn test_cubic_interpolation_v2_touch_is_not_a_crossing() {
+    use approx::assert_abs_diff_eq;
+
+    // f(x) = (x - 0.5)**2, on x in [0, 1], touches 0 at x = 0.5
+    let x_values: Vec<f64> = cubic_interpolation_v2(0.0, 0.25, -1.0, 1.0, 0.25, 1.0, 0.0);
+    assert!(x_values.is_empty(), "x_values = {x_values:?}");
+
+    // f(x) = (x - 0.5)**2 - 1e-6 crosses 0 at x = 0.5 -/+ 1e-3
+    let x_values: Vec<f64> = cubic_interpolation_v2(0.0, 0.25 - 1.0e-6, -1.0, 1.0, 0.25 - 1.0e-6, 1.0, 0.0);
+    assert_eq!(x_values.len(), 2, "x_values = {x_values:?}");
+    assert_abs_diff_eq!(x_values[0], 0.499, epsilon = 1.0e-12);
+    assert_abs_diff_eq!(x_values[1], 0.501, epsilon = 1.0e-12);
+}
+
+/// Three crossings, returned in order along the edge, and relative to a non-zero target
+#[test]
+fn test_cubic_interpolation_v2_three_crossings() {
+    use approx::assert_abs_diff_eq;
+
+    // f(x) = 2 + (t - 0.2) * (t - 0.5) * (t - 0.8), with t = (x - 1) / 2 on x in [1, 3]; crosses 2 at t = 0.2, 0.5, 0.8.
+    // f(t=0) = 2 - 0.08, f(t=1) = 2 + 0.08, and d(f)/d(t) = 0.66 at both ends, so d(f)/d(x) = 0.33
+    let x_values: Vec<f64> = cubic_interpolation_v2(1.0, 2.0 - 0.08, 0.33, 3.0, 2.0 + 0.08, 0.33, 2.0);
+
+    assert_eq!(x_values.len(), 3, "x_values = {x_values:?}");
+    assert_abs_diff_eq!(x_values[0], 1.4, epsilon = 1.0e-12);
+    assert_abs_diff_eq!(x_values[1], 2.0, epsilon = 1.0e-12);
+    assert_abs_diff_eq!(x_values[2], 2.6, epsilon = 1.0e-12);
 }

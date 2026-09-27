@@ -234,6 +234,11 @@ pub struct EquilibriumConvergence {
     /// solve has run, and 0 while the vertical feedback is switched off
     /// Units: m
     pub delta_z: FLT_0D,
+    /// Number of times the flux was calculated on the grid from the current density, each followed
+    /// by the search for the magnetic axis and the plasma boundary. This is where nearly all the
+    /// time goes: a Picard iteration does it once, a Newton iteration several times. Recorded
+    /// whether or not the solve converged
+    pub flux_evaluations_n: INT_0D,
 }
 
 /// The IDS root. `greens` hangs off it rather than off `time_slice`, because the Greens tables
@@ -282,34 +287,96 @@ pub struct EquilibriumCodeGrid {
 /// These are the same for every time-slice, which is why they sit on `code` rather than inside
 /// `time_slice`.
 pub struct EquilibriumCodeNumerics {
-    /// Bounds on the Picard iteration loop
+    /// Bounds on the nonlinear solver's iteration loop
     pub iterations: EquilibriumCodeNumericsIterations,
-    /// Mixing of the previous iteration's degrees of freedom into the current ones
-    pub anderson_mixing: EquilibriumCodeNumericsAndersonMixing,
     /// Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
     /// converged
     /// Units: mixed
     pub grad_shafranov_deviation_tolerance: FLT_0D,
+    /// The method which makes the flux and the current density consistent with each other, and
+    /// its settings
+    pub nonlinear_solver: EquilibriumCodeNumericsNonlinearSolver,
 }
 
-/// Bounds on the Picard iteration loop
+/// Bounds on the nonlinear solver's iteration loop
 pub struct EquilibriumCodeNumericsIterations {
     /// Maximum number of iterations the convergence loop is allowed to run for
     pub n_max: INT_0D,
     /// Minimum number of iterations before the convergence test is allowed to pass
     pub n_min: INT_0D,
-    /// Number of initial iterations for which the vertical feedback is switched off
-    pub n_no_vertical_feedback: INT_0D,
 }
 
-/// Mixing of the previous iteration's degrees of freedom into the current ones
-pub struct EquilibriumCodeNumericsAndersonMixing {
-    /// Whether the mixing is applied; 0 for off, 1 for on. The data dictionary has no boolean
-    /// base type, so this is an integer
-    pub r#use: INT_0D,
-    /// Fraction of the previous iteration's degrees of freedom mixed into the current ones
+/// The method which makes the flux and the current density consistent with each other, and its
+/// settings
+pub struct EquilibriumCodeNumericsNonlinearSolver {
+    /// Either "picard", "newton_krylov" or "newton_picard"
+    pub method: STR_0D,
+    /// Settings for the Picard iteration
+    pub picard: EquilibriumCodeNumericsNonlinearSolverPicard,
+    /// Settings for the Jacobian-free Newton-Krylov iteration
+    pub newton_krylov: EquilibriumCodeNumericsNonlinearSolverNewtonKrylov,
+    /// Settings for the Newton-Picard iteration (the recursive projection method)
+    pub newton_picard: EquilibriumCodeNumericsNonlinearSolverNewtonPicard,
+}
+
+/// Settings for the Picard iteration
+pub struct EquilibriumCodeNumericsNonlinearSolverPicard {
+    /// Number of initial iterations for which the vertical feedback is switched off
+    pub n_iter_no_vertical_feedback: INT_0D,
+    /// Whether Anderson mixing is applied: each new state is the combination of the last few
+    /// iterates which best cancels their residuals, rather than the Picard update itself. 0 for
+    /// off, 1 for on. The data dictionary has no boolean base type, so this is an integer
+    pub apply_anderson_mixing: INT_0D,
+    /// Maximum number of previous iterations Anderson mixing combines
+    pub anderson_n_history: INT_0D,
+    /// Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it
     /// Units: dimensionless
-    pub mixing_from_previous_iter: FLT_0D,
+    pub anderson_mixing: FLT_0D,
+}
+
+/// Settings for the Jacobian-free Newton-Krylov iteration.
+///
+/// It starts with Picard iterations, using the Picard settings, and hands over to Newton
+/// iterations once the Grad-Shafranov deviation is below `picard_handover`. The Newton iterations
+/// do not use `delta_z`: they converge to the vertically unstable equilibrium without it
+pub struct EquilibriumCodeNumericsNonlinearSolverNewtonKrylov {
+    /// Value of convergence/grad_shafranov_deviation_value below which the Picard iterations hand
+    /// over to Newton iterations
+    /// Units: mixed
+    pub picard_handover: FLT_0D,
+    /// Maximum number of Krylov directions per Newton iteration. Each costs one evaluation of the
+    /// Picard update
+    pub n_krylov_max: INT_0D,
+    /// The Krylov solve stops once the linearised residual has fallen to this fraction of the
+    /// nonlinear residual
+    /// Units: dimensionless
+    pub krylov_tolerance: FLT_0D,
+    /// Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
+    /// the size of the nonlinear residual
+    /// Units: dimensionless
+    pub finite_difference_step: FLT_0D,
+    /// Whether to print the progress of each Newton iteration; 0 for off, 1 for on
+    pub verbose: INT_0D,
+}
+
+/// Settings for the Newton-Picard iteration (the recursive projection method).
+///
+/// Newton's method is used in the few directions in which the Picard iteration converges slowly
+/// or diverges, and Picard iterations everywhere else. The directions are found as the iteration
+/// goes. Like Newton-Krylov it does not use `delta_z`
+pub struct EquilibriumCodeNumericsNonlinearSolverNewtonPicard {
+    /// Maximum number of directions in which Newton's method is used
+    pub n_basis_max: INT_0D,
+    /// A direction is added when the part of the residual outside them has shrunk by less than
+    /// this factor since the previous iteration
+    /// Units: dimensionless
+    pub contraction_threshold: FLT_0D,
+    /// Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
+    /// the size of the nonlinear residual
+    /// Units: dimensionless
+    pub finite_difference_step: FLT_0D,
+    /// Whether to print the progress of each iteration; 0 for off, 1 for on
+    pub verbose: INT_0D,
 }
 
 /// Initial guess for the plasma, used to seed the first iteration.

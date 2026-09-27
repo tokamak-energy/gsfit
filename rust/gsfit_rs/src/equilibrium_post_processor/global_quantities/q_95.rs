@@ -90,6 +90,7 @@ mod tests {
         let ff_prime_source_function: SharedSourceFunction = Arc::new(EfitPolynomial {
             n_dof: 1,
             regularisations: Array2::zeros((1, 1)),
+            exact: false,
             dof_values: Array1::zeros(0),
         });
         let i_rod: f64 = 2.0 * PI * f_95 / physical_constants::VACUUM_MAG_PERMEABILITY;

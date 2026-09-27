@@ -207,7 +207,8 @@ pub fn find_viable_limit_point(
         // Calculate the plasma boundary
         // TODO: update `marching_squares` to only do points near limit_point
         let psi_b: f64 = potential_limit_point.bounding_psi;
-        let plasma_boundary: MarchingContour = marching_squares(r, z, psi_2d, d_psi_d_r_2d, d_psi_d_z_2d, psi_b, &mask_2d, None, None, mag_r, mag_z);
+        let plasma_boundary: MarchingContour =
+            marching_squares(r, z, psi_2d, d_psi_d_r_2d, d_psi_d_z_2d, psi_b, &mask_2d, None, None, None, None, mag_r, mag_z);
         if plasma_boundary.r.is_empty() {
             continue 'loop_over_potential_limit_points;
         }

@@ -106,7 +106,21 @@ pub(in crate::equilibrium_post_processor) fn calculate_at_psi_norm(time_slice: &
     let mask_2d: Array2<f64> = flood_fill_mask_at_psi(r, z, psi_2d, psi_local, mag_r, mag_z);
 
     // An interior flux surface is smooth, so there is no X-point to supply.
-    let flux_surface_contour: MarchingContour = marching_squares(r, z, psi_2d, d_psi_d_r_2d, d_psi_d_z_2d, psi_local, &mask_2d, None, None, mag_r, mag_z);
+    let flux_surface_contour: MarchingContour = marching_squares(
+        r,
+        z,
+        psi_2d,
+        d_psi_d_r_2d,
+        d_psi_d_z_2d,
+        psi_local,
+        &mask_2d,
+        None,
+        None,
+        None,
+        None,
+        mag_r,
+        mag_z,
+    );
     if flux_surface_contour.n < 4 {
         return empty_flux_surface();
     }
