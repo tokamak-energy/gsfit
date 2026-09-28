@@ -492,6 +492,11 @@ impl Pressure {
 
             for i_time in 0..n_time {
                 let time_slice: &EquilibriumTimeSlice = &plasma.equilibrium_ids.time_slice[i_time];
+                let convergence_flag: i32 = time_slice.convergence.result.index;
+                if convergence_flag != 1 {
+                    // Unconverged time-slice: fields may be uninitialised (shape [0, 0]), so skip.
+                    continue;
+                }
 
                 let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
                 let psi_b: f64 = time_slice.boundary.psi;
