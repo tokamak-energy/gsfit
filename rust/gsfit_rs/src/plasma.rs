@@ -50,6 +50,11 @@ impl Plasma {
     /// * `grad_shafranov_deviation_tolerance` - Grad-Shafranov deviation below which the solution is taken as converged, [mixed]
     /// * `use_anderson_mixing` - whether Anderson mixing is applied
     /// * `anderson_mixing_from_previous_iter` - fraction of the previous iteration mixed in, [dimensionless]
+    /// * `pressure_edge_free` - whether the pressure at the plasma boundary is a free parameter of
+    ///   the fit. When false the pressure is taken to be zero at the boundary, which is how GSFit
+    ///   has always fixed `p'`'s constant of integration
+    /// * `pressure_edge_regularisation_weight` - weight of the regularisation pulling the fitted
+    ///   edge pressure towards zero, [1 / pascal]. Only used when `pressure_edge_free` is true
     /// * `times_to_reconstruct` - the times the equilibrium will be solved at (1d array), [second].
     ///   One equilibrium time-slice is allocated per time, so that the IDS is fully formed before
     ///   the Green's tables are built
@@ -59,6 +64,31 @@ impl Plasma {
     ///
     #[new]
     #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (
+        n_r,
+        n_z,
+        r_min,
+        r_max,
+        z_min,
+        z_max,
+        psi_norm,
+        p_prime_source_function,
+        ff_prime_source_function,
+        initial_guess_ip,
+        initial_guess_cur_r,
+        initial_guess_cur_z,
+        initial_guess_minor_radius,
+        initial_guess_elongation,
+        n_iter_max,
+        n_iter_min,
+        n_iter_no_vertical_feedback,
+        grad_shafranov_deviation_tolerance,
+        use_anderson_mixing,
+        anderson_mixing_from_previous_iter,
+        times_to_reconstruct,
+        pressure_edge_free = false,
+        pressure_edge_regularisation_weight = 0.0,
+    ))]
     pub fn new(
         n_r: usize,
         n_z: usize,
@@ -81,6 +111,8 @@ impl Plasma {
         use_anderson_mixing: bool,
         anderson_mixing_from_previous_iter: f64,
         times_to_reconstruct: PyReadonlyArray1<f64>,
+        pressure_edge_free: bool,
+        pressure_edge_regularisation_weight: f64,
     ) -> Self {
         // Change Python types into Rust types
         let psi_norm_ndarray: Array1<f64> = psi_norm.to_owned_array();
@@ -238,6 +270,8 @@ impl Plasma {
         // The data dictionary has no boolean base type, so the flag is stored as 0 or 1
         equilibrium_ids.code.numerics.anderson_mixing.r#use = use_anderson_mixing as i32;
         equilibrium_ids.code.numerics.anderson_mixing.mixing_from_previous_iter = anderson_mixing_from_previous_iter;
+        equilibrium_ids.code.numerics.pressure_edge.free = pressure_edge_free as i32;
+        equilibrium_ids.code.numerics.pressure_edge.regularisation_weight = pressure_edge_regularisation_weight;
 
         equilibrium_ids.greens.grid_grid = greens_grid_grid;
 
