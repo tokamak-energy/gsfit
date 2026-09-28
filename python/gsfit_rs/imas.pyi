@@ -671,6 +671,10 @@ class _EquilibriumCodeNumericsItem:
         """Mixing of the previous iteration's degrees of freedom into the current ones
         """
     @property
+    def pressure_edge(self) -> _EquilibriumCodeNumericsPressureEdgeItem:
+        """Treatment of the pressure at the plasma boundary
+        """
+    @property
     def grad_shafranov_deviation_tolerance(self) -> Path[float]:
         """Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
 converged
@@ -689,6 +693,10 @@ class _EquilibriumCodeNumericsMany:
     @property
     def anderson_mixing(self) -> _EquilibriumCodeNumericsAndersonMixingMany:
         """Mixing of the previous iteration's degrees of freedom into the current ones
+        """
+    @property
+    def pressure_edge(self) -> _EquilibriumCodeNumericsPressureEdgeMany:
+        """Treatment of the pressure at the plasma boundary
         """
     @property
     def grad_shafranov_deviation_tolerance(self) -> Path[npt.NDArray[np.float64]]:
@@ -728,6 +736,44 @@ base type, so this is an integer
         """Fraction of the previous iteration's degrees of freedom mixed into the current ones
 
         Units: dimensionless
+        """
+
+class _EquilibriumCodeNumericsPressureEdgeItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def free(self) -> Path[int]:
+        """Whether the edge pressure is fitted; 0 for a fixed zero edge pressure, 1 for a free
+parameter. The data dictionary has no boolean base type, so this is an integer
+        """
+    @property
+    def regularisation_weight(self) -> Path[float]:
+        """Weight of the regularisation which pulls the fitted edge pressure towards zero. It keeps
+the least-squares problem well-posed when few pressure sensors lie inside the plasma, and
+is applied as the row `weight * pressure_edge = 0`, so it is a weight per pascal and is
+directly comparable with a pressure sensor's `weight / expected_value`
+
+        Units: Pa^-1
+        """
+
+class _EquilibriumCodeNumericsPressureEdgeMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def free(self) -> Path[npt.NDArray[np.int32]]:
+        """Whether the edge pressure is fitted; 0 for a fixed zero edge pressure, 1 for a free
+parameter. The data dictionary has no boolean base type, so this is an integer
+        """
+    @property
+    def regularisation_weight(self) -> Path[npt.NDArray[np.float64]]:
+        """Weight of the regularisation which pulls the fitted edge pressure towards zero. It keeps
+the least-squares problem well-posed when few pressure sensors lie inside the plasma, and
+is applied as the row `weight * pressure_edge = 0`, so it is a weight per pascal and is
+directly comparable with a pressure sensor's `weight / expected_value`
+
+        Units: Pa^-1
         """
 
 class _EquilibriumCodeNumericsIterationsItem:
@@ -4644,6 +4690,15 @@ class _EquilibriumSourceFunctionsItem:
     def ff_prime(self) -> _EquilibriumSourceFunctionItem:
         """The FF' source function, F dF/dpsi
         """
+    @property
+    def pressure_edge(self) -> Path[float]:
+        """Fitted pressure at the plasma boundary, `p(psi_norm = 1)`. Integrating `p'` only fixes the
+pressure up to a constant of integration, exactly as integrating `FF'` only fixes `F^2 / 2`
+up to `f_vac^2 / 2`. That constant is this value: it is a free parameter of the fit when
+`code/numerics/pressure_edge/free` is set, and is zero otherwise
+
+        Units: Pa
+        """
 
 class _EquilibriumSourceFunctionsMany:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
@@ -4656,6 +4711,15 @@ class _EquilibriumSourceFunctionsMany:
     @property
     def ff_prime(self) -> _EquilibriumSourceFunctionMany:
         """The FF' source function, F dF/dpsi
+        """
+    @property
+    def pressure_edge(self) -> Path[npt.NDArray[np.float64]]:
+        """Fitted pressure at the plasma boundary, `p(psi_norm = 1)`. Integrating `p'` only fixes the
+pressure up to a constant of integration, exactly as integrating `FF'` only fixes `F^2 / 2`
+up to `f_vac^2 / 2`. That constant is this value: it is a free parameter of the fit when
+`code/numerics/pressure_edge/free` is set, and is zero otherwise
+
+        Units: Pa
         """
 
 class _EquilibriumTimeSliceItem:

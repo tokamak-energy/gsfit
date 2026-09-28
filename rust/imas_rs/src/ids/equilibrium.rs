@@ -1625,6 +1625,8 @@ pub struct EquilibriumCodeNumerics {
     pub iterations: EquilibriumCodeNumericsIterations,
     /// Mixing of the previous iteration's degrees of freedom into the current ones
     pub anderson_mixing: EquilibriumCodeNumericsAndersonMixing,
+    /// Treatment of the pressure at the plasma boundary
+    pub pressure_edge: EquilibriumCodeNumericsPressureEdge,
     /// Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
     /// converged
     /// Units: mixed
@@ -1636,6 +1638,7 @@ impl Default for EquilibriumCodeNumerics {
         Self {
             iterations: EquilibriumCodeNumericsIterations::default(),
             anderson_mixing: EquilibriumCodeNumericsAndersonMixing::default(),
+            pressure_edge: EquilibriumCodeNumericsPressureEdge::default(),
             grad_shafranov_deviation_tolerance: f64::NAN,
         }
     }
@@ -1678,6 +1681,29 @@ impl Default for EquilibriumCodeNumericsAndersonMixing {
         Self {
             r#use: EMPTY_INT,
             mixing_from_previous_iter: f64::NAN,
+        }
+    }
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeNumericsPressureEdge {
+    /// Whether the edge pressure is fitted; 0 for a fixed zero edge pressure, 1 for a free
+    /// parameter. The data dictionary has no boolean base type, so this is an integer
+    pub free: INT_0D,
+    /// Weight of the regularisation which pulls the fitted edge pressure towards zero. It keeps
+    /// the least-squares problem well-posed when few pressure sensors lie inside the plasma, and
+    /// is applied as the row `weight * pressure_edge = 0`, so it is a weight per pascal and is
+    /// directly comparable with a pressure sensor's `weight / expected_value`
+    /// Units: Pa^-1
+    pub regularisation_weight: FLT_0D,
+}
+
+impl Default for EquilibriumCodeNumericsPressureEdge {
+    fn default() -> Self {
+        Self {
+            free: EMPTY_INT,
+            regularisation_weight: f64::NAN,
         }
     }
 }
@@ -1760,12 +1786,28 @@ impl Default for EquilibriumSolStrikePoint {
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct EquilibriumSourceFunctions {
     /// The p' source function, dp/dpsi
     pub p_prime: EquilibriumSourceFunction,
     /// The FF' source function, F dF/dpsi
     pub ff_prime: EquilibriumSourceFunction,
+    /// Fitted pressure at the plasma boundary, `p(psi_norm = 1)`. Integrating `p'` only fixes the
+    /// pressure up to a constant of integration, exactly as integrating `FF'` only fixes `F^2 / 2`
+    /// up to `f_vac^2 / 2`. That constant is this value: it is a free parameter of the fit when
+    /// `code/numerics/pressure_edge/free` is set, and is zero otherwise
+    /// Units: Pa
+    pub pressure_edge: FLT_0D,
+}
+
+impl Default for EquilibriumSourceFunctions {
+    fn default() -> Self {
+        Self {
+            p_prime: EquilibriumSourceFunction::default(),
+            ff_prime: EquilibriumSourceFunction::default(),
+            pressure_edge: f64::NAN,
+        }
+    }
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
