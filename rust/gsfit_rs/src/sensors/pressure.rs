@@ -546,14 +546,17 @@ impl Pressure {
                     continue;
                 }
 
-                // Analytically integrate p'(psi_norm) with boundary condition p(psi_norm = 1) = 0.
+                // Analytically integrate p'(psi_norm) with boundary condition
+                // p(psi_norm = 1) = pressure_edge, which is zero unless the edge pressure is a
+                // free parameter of the fit.
                 // Note: source_function_integral returns an integral from psi_norm = 1 to psi_norm,
                 // i.e. p(psi_norm) = integral_{1}^{psi_norm} p'(x) dx, scaled by (psi_b - psi_a).
                 let p_prime_dof_values: Array1<f64> = time_slice.source_functions.p_prime.coefficients.to_owned();
                 sensor_values[i_time] = plasma
                     .p_prime_source_function
                     .source_function_integral(&Array1::from_vec(vec![psi_norm_at_sensor]), &p_prime_dof_values)[0]
-                    * (psi_b - psi_a);
+                    * (psi_b - psi_a)
+                    + time_slice.source_functions.pressure_edge;
             }
 
             self.results
