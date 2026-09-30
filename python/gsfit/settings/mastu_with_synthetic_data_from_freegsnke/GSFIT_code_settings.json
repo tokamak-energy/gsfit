@@ -19,8 +19,7 @@
                     "run_name": "RUN02",
                     "usage": "PF and TF coil currents"
                 }
-            },
-            "isoflux_code_name": null
+            }
         },
         "freegs": {
             "workflow": {

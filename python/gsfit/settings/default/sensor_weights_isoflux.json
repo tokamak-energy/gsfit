@@ -1,2 +1,27 @@
 {
+    "include": false,
+    "sensor_name_prefix": "ISOFLUX",
+    "fit_settings": {
+        "weight": 1000.0,
+        "comment": "Thomson scattering HFS/LFS pair on the same flux surface"
+    },
+    "thomson_scattering": {
+        "quantity": "TE",
+        "level_fractions": [
+            0.35,
+            0.45,
+            0.55,
+            0.65,
+            0.75,
+            0.85
+        ],
+        "max_relative_error": 0.1,
+        "max_gap": 0.08,
+        "min_points_per_branch": 3,
+        "max_time_offset": 0.005,
+        "r_limits": [
+            0.25,
+            0.8
+        ]
+    }
 }
