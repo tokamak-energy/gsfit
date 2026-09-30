@@ -34,8 +34,7 @@
                     "run_name": "BEST",
                     "usage": "Thomson scattering geometry and electron pressure"
                 }
-            },
-            "isoflux_code_name": null
+            }
         },
         "st40_mdsplus_with_digital_filter": {
             "workflow": {
@@ -69,8 +68,7 @@
                     "run_name": "BEST",
                     "usage": "Thomson scattering geometry and electron pressure"
                 }
-            },
-            "isoflux_code_name": null
+            }
         },
         "st40_mdsplus_full_ip_rog": {
             "workflow": {
@@ -89,8 +87,7 @@
                     "run_name": "RUN02",
                     "usage": "PF and TF coil currents"
                 }
-            },
-            "isoflux_code_name": null
+            }
         },
         "freegs": {
             "workflow": {

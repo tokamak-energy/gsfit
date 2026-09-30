@@ -29,8 +29,7 @@
                     "run_name": "BEST",
                     "usage": "Thomson scattering geometry and electron pressure"
                 }
-            },
-            "isoflux_code_name": null
+            }
         },
         "freegs": {
             "workflow": {
