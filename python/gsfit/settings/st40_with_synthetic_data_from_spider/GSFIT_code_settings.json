@@ -23,7 +23,6 @@
       }
     },
     "st40_mdsplus": {
-      "isoflux_code_name": null,
       "workflow": {
         "elmag": {
           "pulseNo": null,
