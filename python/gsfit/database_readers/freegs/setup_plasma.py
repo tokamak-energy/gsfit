@@ -54,7 +54,7 @@ def setup_plasma(
         "pressure_edge", settings["GSFIT_code_settings.json"]["numerics"].get("pressure_edge", {})
     )
     pressure_edge_free = pressure_edge_settings.get("free", False)
-    pressure_edge_regularisation_weight = pressure_edge_settings.get("regularisation_weight", 0.0)
+    pressure_edge_regularisation_weight = pressure_edge_settings.get("regularisation_weight", 1.0e-4)
 
     # Set the source functions types
     p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.TensionedCubicBSpline

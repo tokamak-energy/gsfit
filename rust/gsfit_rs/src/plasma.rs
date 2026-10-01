@@ -11,6 +11,7 @@ use imas_rs::{
 use ndarray::{Array1, Array2, ArrayView2, Axis, MeshIndex, meshgrid, s};
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
@@ -54,7 +55,8 @@ impl Plasma {
     ///   the fit. When false the pressure is taken to be zero at the boundary, which is how GSFit
     ///   has always fixed `p'`'s constant of integration
     /// * `pressure_edge_regularisation_weight` - weight of the regularisation pulling the fitted
-    ///   edge pressure towards zero, [1 / pascal]. Only used when `pressure_edge_free` is true
+    ///   edge pressure towards zero, [1 / pascal]. Must be positive and finite when
+    ///   `pressure_edge_free` is true
     /// * `times_to_reconstruct` - the times the equilibrium will be solved at (1d array), [second].
     ///   One equilibrium time-slice is allocated per time, so that the IDS is fully formed before
     ///   the Green's tables are built
@@ -87,7 +89,7 @@ impl Plasma {
         anderson_mixing_from_previous_iter,
         times_to_reconstruct,
         pressure_edge_free = false,
-        pressure_edge_regularisation_weight = 0.0,
+        pressure_edge_regularisation_weight = 1.0e-4,
     ))]
     pub fn new(
         n_r: usize,
@@ -113,7 +115,13 @@ impl Plasma {
         times_to_reconstruct: PyReadonlyArray1<f64>,
         pressure_edge_free: bool,
         pressure_edge_regularisation_weight: f64,
-    ) -> Self {
+    ) -> PyResult<Self> {
+        if pressure_edge_free && (!pressure_edge_regularisation_weight.is_finite() || pressure_edge_regularisation_weight <= 0.0) {
+            return Err(PyValueError::new_err(
+                "pressure_edge_regularisation_weight must be positive and finite when pressure_edge_free is true",
+            ));
+        }
+
         // Change Python types into Rust types
         let psi_norm_ndarray: Array1<f64> = psi_norm.to_owned_array();
 
@@ -285,7 +293,7 @@ impl Plasma {
         // grid it carries is read before then: the Green's tables are built from it
         plasma.initialise_equilibrium_ids(&times_to_reconstruct.to_owned_array(), &r, &z, &mesh_r, &mesh_z, &psi_norm_ndarray, d_area);
 
-        plasma
+        Ok(plasma)
     }
 
     /// Calculate the Greens function with coils

@@ -434,7 +434,7 @@ class Plasma(DataTreeAccessor):
         anderson_mixing_from_previous_iter: float,
         times_to_reconstruct: npt.NDArray[np.float64],
         pressure_edge_free: bool = False,
-        pressure_edge_regularisation_weight: float = 0.0,
+        pressure_edge_regularisation_weight: float = 1.0e-4,
     ) -> Plasma:
         """
         :param n_r: Number of radial poitns [dimensionless]
@@ -459,7 +459,7 @@ class Plasma(DataTreeAccessor):
         :param anderson_mixing_from_previous_iter: Anderson mixing factor from the previous iteration [dimensionless]
         :param times_to_reconstruct: Times the equilibrium will be solved at; one equilibrium time-slice is allocated per time [second]
         :param pressure_edge_free: Whether the pressure at the plasma boundary is a free parameter of the fit, instead of being pinned to zero
-        :param pressure_edge_regularisation_weight: Weight of the regularisation pulling the fitted edge pressure towards zero [1 / pascal]; only used when `pressure_edge_free` is true
+        :param pressure_edge_regularisation_weight: Weight of the regularisation pulling the fitted edge pressure towards zero [1 / pascal]; must be positive and finite when `pressure_edge_free` is true
         """
         ...
     def greens_with_coils(
