@@ -2,7 +2,7 @@
 #
 # Example 14: pressure-constrained GSFit for ST40 with the **edge pressure as a free parameter**.
 #
-# This is example_13 plus one change: `numerics/pressure_edge/free`.
+# This is example_13 plus one change: `source_function_p_prime.json/pressure_edge/free`.
 #
 # The Grad-Shafranov equation only ever involves `p'`, so the pressure is recovered by integrating
 # it, which leaves it defined only up to a constant of integration. GSFit has historically fixed
@@ -10,7 +10,7 @@
 # boundary. That is a modelling choice, not a measurement, and the Thomson scattering profile
 # frequently has real pressure out at the boundary.
 #
-# Setting `numerics/pressure_edge/free` makes that constant an extra degree of freedom of the
+# Setting `source_function_p_prime.json/pressure_edge/free` makes that constant an extra degree of freedom of the
 # least-squares fit instead, so the pressure sensors choose the edge pressure rather than having it
 # imposed on them. The fitted value is written to `PROFILES_1D.PSI_NORM:PRESSURE`, whose last point
 # (`psi_norm = 1`) is the edge pressure: exactly zero in example_13, and whatever the fit chose here.
@@ -57,7 +57,7 @@ gsfit_controller.settings["source_function_p_prime.json"]["method"] = "efit_poly
 
 # 4. The change this example is about: let the fit choose the pressure at the plasma boundary
 #    instead of pinning it to zero.
-pressure_edge_settings = gsfit_controller.settings["GSFIT_code_settings.json"]["numerics"]["pressure_edge"]
+pressure_edge_settings = gsfit_controller.settings["source_function_p_prime.json"]["pressure_edge"]
 pressure_edge_settings["free"] = True
 
 # The edge pressure is unconstrained whenever no pressure sensor lies inside the plasma, so it

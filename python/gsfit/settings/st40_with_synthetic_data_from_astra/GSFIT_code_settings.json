@@ -81,11 +81,7 @@
             "use": false,
             "mixing_from_previous_iter": 0.1
         },
-        "save_unconverged": false,
-        "pressure_edge": {
-            "free": false,
-            "regularisation_weight": 1.0e-4
-        }
+        "save_unconverged": false
     },
     "type_of_run": {
         "forward": false,

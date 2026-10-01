@@ -94,11 +94,7 @@
     "n_iter_max": 180,
     "n_iter_min": 3,
     "n_iter_no_vertical_feedback": 1,
-    "save_unconverged": false,
-        "pressure_edge": {
-            "free": false,
-            "regularisation_weight": 1.0e-4
-        }
+    "save_unconverged": false
   },
   "timeslices": {
     "arange": {

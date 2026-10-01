@@ -50,7 +50,9 @@ def setup_plasma(
     # The pressure at the plasma boundary. Integrating `p'` leaves the pressure defined up to a constant, which
     # GSFit historically fixed by demanding zero pressure at the boundary. Setting `free` makes it a degree of
     # freedom of the fit instead. `.get` is used so that older settings directories keep working
-    pressure_edge_settings = settings["GSFIT_code_settings.json"]["numerics"].get("pressure_edge", {})
+    pressure_edge_settings = settings["source_function_p_prime.json"].get(
+        "pressure_edge", settings["GSFIT_code_settings.json"]["numerics"].get("pressure_edge", {})
+    )
     pressure_edge_free = pressure_edge_settings.get("free", False)
     pressure_edge_regularisation_weight = pressure_edge_settings.get("regularisation_weight", 0.0)
 
