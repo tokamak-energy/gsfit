@@ -45,6 +45,14 @@ def setup_plasma(
     grad_shafranov_deviation_tolerance = settings["GSFIT_code_settings.json"]["numerics"]["grad_shafranov_deviation_tolerance"]
     use_anderson_mixing = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["use"]
     anderson_mixing_from_previous_iter = settings["GSFIT_code_settings.json"]["numerics"]["anderson_mixing"]["mixing_from_previous_iter"]
+    # The pressure at the plasma boundary. Integrating `p'` leaves the pressure defined up to a constant, which
+    # GSFit historically fixed by demanding zero pressure at the boundary. Setting `free` makes it a degree of
+    # freedom of the fit instead. `.get` is used so that older settings directories keep working
+    pressure_edge_settings = settings["source_function_p_prime.json"].get(
+        "pressure_edge", settings["GSFIT_code_settings.json"]["numerics"].get("pressure_edge", {})
+    )
+    pressure_edge_free = pressure_edge_settings.get("free", False)
+    pressure_edge_regularisation_weight = pressure_edge_settings.get("regularisation_weight", 1.0e-4)
 
     # Set the source functions types
     p_prime_source_function: gsfit_rs.EfitPolynomial | gsfit_rs.TensionedCubicBSpline
@@ -129,6 +137,8 @@ def setup_plasma(
         use_anderson_mixing,
         anderson_mixing_from_previous_iter,
         times_to_reconstruct,
+        pressure_edge_free,
+        pressure_edge_regularisation_weight,
     )
 
     return plasma

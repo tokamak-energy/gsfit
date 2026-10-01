@@ -447,6 +447,7 @@ impl<'a> EquilibriumSolver<'a> {
         self.time_slice.convergence.grad_shafranov_deviation_value = f64::NAN;
         self.time_slice.source_functions.ff_prime.coefficients *= f64::NAN;
         self.time_slice.source_functions.p_prime.coefficients *= f64::NAN;
+        self.time_slice.source_functions.pressure_edge = f64::NAN;
         self.passive_dof_values *= f64::NAN;
         self.time_slice.profiles_2d[0].psi *= f64::NAN;
         self.time_slice.profiles_2d[0].d_psi_d_r *= f64::NAN;
@@ -514,6 +515,17 @@ impl<'a> EquilibriumSolver<'a> {
         let n_passive_dof: usize = passives_shape[0];
         let n_p_prime_dof: usize = p_prime_source_function.source_function_n_dof();
         let n_ff_prime_dof: usize = ff_prime_source_function.source_function_n_dof();
+        // The pressure at the plasma boundary. The Grad-Shafranov equation only involves `p'`, so
+        // integrating it leaves the pressure defined up to a constant, in the same way that
+        // integrating `ff'` leaves `f^2 / 2` defined up to `f_vac^2 / 2`. GSFit historically set
+        // that constant so that `p(psi_norm = 1) = 0`; when `pressure_edge/free` is set it becomes
+        // an extra degree of freedom of the fit instead
+        let pressure_edge_free: bool = self.equilibrium_code.numerics.pressure_edge.free == 1;
+        let pressure_edge_regularisation_weight: f64 = self.equilibrium_code.numerics.pressure_edge.regularisation_weight;
+        let n_pressure_edge_dof: usize = if pressure_edge_free { 1 } else { 0 };
+        // The edge pressure is a single unregularised number the moment no pressure sensor lies
+        // inside the plasma, so it always carries a prior pulling it back towards zero
+        let n_pressure_edge_regularisation: usize = n_pressure_edge_dof;
         // Solver settings, supplied through `equilibrium.code`
         let n_iter_max: usize = self.equilibrium_code.numerics.iterations.n_max as usize;
         let n_iter_min: usize = self.equilibrium_code.numerics.iterations.n_min as usize;
@@ -544,6 +556,7 @@ impl<'a> EquilibriumSolver<'a> {
             + n_p_prime_regularisation
             + n_ff_prime_regularisation
             + n_passive_regularisation
+            + n_pressure_edge_regularisation
             + n_delta_z_regularisation;
 
         // Magnetic sensor's Greens tables
@@ -778,7 +791,12 @@ impl<'a> EquilibriumSolver<'a> {
                 n_vertical_stabilisation = 0;
             }
 
-            let n_dof: usize = n_p_prime_dof + n_ff_prime_dof + n_passive_dof + n_vertical_stabilisation;
+            let n_dof: usize = n_p_prime_dof + n_ff_prime_dof + n_passive_dof + n_vertical_stabilisation + n_pressure_edge_dof;
+            // Index of the edge pressure degree of freedom. It sits after the vertical
+            // stabilisation one, whose presence depends on the iteration, so it is named here
+            // rather than written out at each use
+            let i_dof_delta_z: usize = n_p_prime_dof + n_ff_prime_dof + n_passive_dof;
+            let i_dof_pressure_edge: usize = i_dof_delta_z + n_vertical_stabilisation;
             // Create the fitting matrix
             let mut fitting_matrix: Array2<f64> = Array2::zeros((n_constraints, n_dof));
             let mut constraint_weights: Array1<f64> = Array1::zeros(n_constraints);
@@ -1171,6 +1189,13 @@ impl<'a> EquilibriumSolver<'a> {
                     fitting_matrix[(i_constraint, i_p_prime_dof)] = definite_integral_p_prime / d_psi_d_psi_norm;
                 }
 
+                // Edge pressure degree of freedom. The integral above is taken from the boundary
+                // to the sensor, so the constant of integration - the pressure at the boundary -
+                // adds to the pressure at every sensor equally
+                if pressure_edge_free {
+                    fitting_matrix[(i_constraint, i_dof_pressure_edge)] = 1.0;
+                }
+
                 // Vertical stability (not for pressure sensors)
                 // TODO: should there be vertical stability for pressure sensors? I don't think so?
 
@@ -1292,6 +1317,21 @@ impl<'a> EquilibriumSolver<'a> {
                 i_constraint += 1;
             }
 
+            // Add the edge pressure regularisation to the fitting matrix.
+            // The row is `weight * pressure_edge = 0`, i.e. a prior of zero edge pressure. It
+            // stops the edge pressure running away when no pressure sensor lies inside the plasma,
+            // in which case its column would otherwise be empty and the least-squares problem
+            // rank-deficient
+            if pressure_edge_free {
+                fitting_matrix[(i_constraint, i_dof_pressure_edge)] = 1.0;
+
+                // Add weight
+                constraint_weights[i_constraint] = pressure_edge_regularisation_weight;
+
+                // Setup indexer for next sensor or constraint
+                i_constraint += 1;
+            }
+
             // Solve for the least squares problem for the source function coefficients, passive currents, and vertical stability
             let a: Array2<f64> = Array2::from_diag(&constraint_weights).dot(&fitting_matrix); // matrix-matrix multiplication
             let b: Array1<f64> = &constraint_weights * &s_measured - &constraint_weights * &constraint_values_from_coils;
@@ -1381,11 +1421,15 @@ impl<'a> EquilibriumSolver<'a> {
             // Extract vertical stability
             let delta_z: f64;
             if i_iter > n_iter_no_vertical_feedback {
-                delta_z = dof_values.last().unwrap().to_owned();
+                delta_z = dof_values[i_dof_delta_z];
             } else {
                 delta_z = 0.0;
             }
             self.time_slice.convergence.delta_z = delta_z;
+
+            // Extract the edge pressure. When it is not a free parameter of the fit, `p'` is
+            // integrated with the boundary condition `p(psi_norm = 1) = 0`, as it always was
+            self.time_slice.source_functions.pressure_edge = if pressure_edge_free { dof_values[i_dof_pressure_edge] } else { 0.0 };
 
             // Calculate j_2d
             self.calculate_j();

@@ -492,6 +492,11 @@ impl Pressure {
 
             for i_time in 0..n_time {
                 let time_slice: &EquilibriumTimeSlice = &plasma.equilibrium_ids.time_slice[i_time];
+                let convergence_flag: i32 = time_slice.convergence.result.index;
+                if convergence_flag != 1 {
+                    // Unconverged time-slice: fields may be uninitialised (shape [0, 0]), so skip.
+                    continue;
+                }
 
                 let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
                 let psi_b: f64 = time_slice.boundary.psi;
@@ -541,14 +546,17 @@ impl Pressure {
                     continue;
                 }
 
-                // Analytically integrate p'(psi_norm) with boundary condition p(psi_norm = 1) = 0.
+                // Analytically integrate p'(psi_norm) with boundary condition
+                // p(psi_norm = 1) = pressure_edge, which is zero unless the edge pressure is a
+                // free parameter of the fit.
                 // Note: source_function_integral returns an integral from psi_norm = 1 to psi_norm,
                 // i.e. p(psi_norm) = integral_{1}^{psi_norm} p'(x) dx, scaled by (psi_b - psi_a).
                 let p_prime_dof_values: Array1<f64> = time_slice.source_functions.p_prime.coefficients.to_owned();
                 sensor_values[i_time] = plasma
                     .p_prime_source_function
                     .source_function_integral(&Array1::from_vec(vec![psi_norm_at_sensor]), &p_prime_dof_values)[0]
-                    * (psi_b - psi_a);
+                    * (psi_b - psi_a)
+                    + time_slice.source_functions.pressure_edge;
             }
 
             self.results

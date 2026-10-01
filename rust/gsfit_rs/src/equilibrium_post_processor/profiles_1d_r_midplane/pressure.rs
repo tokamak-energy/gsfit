@@ -26,6 +26,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
     let psi_b: f64 = time_slice.boundary.psi;
+    let pressure_edge: f64 = time_slice.source_functions.pressure_edge;
 
     let p_prime_dof_values: &Array1<f64> = &time_slice.source_functions.p_prime.coefficients;
 
@@ -35,7 +36,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
 
     let mut p_profile: Array1<f64> = Array1::from_elem(n_r, f64::NAN);
 
-    // p = (dψ/dψ_N) · ∫_1^{ψ_N} p′(ψ_N′) dψ_N′,  where  dψ/dψ_N = ψ_B − ψ_A
+    // p = p_edge + (dψ/dψ_N) · ∫_1^{ψ_N} p′(ψ_N′) dψ_N′,  where  dψ/dψ_N = ψ_B − ψ_A
     // See `profiles_1d::pressure::calculate` for the full derivation.
     let d_psi_d_psi_norm: f64 = psi_b - psi_a;
 
@@ -46,7 +47,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
         let pressure_local: f64 = p_prime_source_function.source_function_integral(&array![psi_norm_here], p_prime_dof_values)[0];
 
         // Apply the mask, and store pressure
-        p_profile[i_r] = pressure_local * mask_2d[(i_z_centre, i_r)] * d_psi_d_psi_norm;
+        p_profile[i_r] = (pressure_local * d_psi_d_psi_norm + pressure_edge) * mask_2d[(i_z_centre, i_r)];
     }
 
     time_slice.profiles_1d_r_midplane.r = r.to_owned();
