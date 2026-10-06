@@ -9,6 +9,11 @@
     ]
   },
   "method": "efit_polynomial",
+  "pressure_edge": {
+    "free": false,
+    "regularisation_weight": 1.0e-4,
+    "comment": "Pressure is the integral of p_prime plus its boundary value. When free, fit that value with a zero-centred prior weighted in 1/Pa; otherwise fix it to zero."
+  },
   "spline": {
     "n_dof": 2
   }

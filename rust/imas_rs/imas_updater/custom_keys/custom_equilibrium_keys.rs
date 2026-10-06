@@ -286,10 +286,30 @@ pub struct EquilibriumCodeNumerics {
     pub iterations: EquilibriumCodeNumericsIterations,
     /// Mixing of the previous iteration's degrees of freedom into the current ones
     pub anderson_mixing: EquilibriumCodeNumericsAndersonMixing,
+    /// Treatment of the pressure at the plasma boundary
+    pub pressure_edge: EquilibriumCodeNumericsPressureEdge,
     /// Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
     /// converged
     /// Units: mixed
     pub grad_shafranov_deviation_tolerance: FLT_0D,
+}
+
+/// Treatment of the pressure at the plasma boundary, `p(psi_norm = 1)`.
+///
+/// The Grad-Shafranov equation only involves `p'`, so the pressure it implies is defined up to a
+/// constant of integration. GSFit traditionally set that constant to zero; setting `free` makes it
+/// an extra degree of freedom of the least-squares fit instead, constrained by the pressure
+/// sensors in the same way the source function degrees of freedom are.
+pub struct EquilibriumCodeNumericsPressureEdge {
+    /// Whether the edge pressure is fitted; 0 for a fixed zero edge pressure, 1 for a free
+    /// parameter. The data dictionary has no boolean base type, so this is an integer
+    pub free: INT_0D,
+    /// Weight of the regularisation which pulls the fitted edge pressure towards zero. It keeps
+    /// the least-squares problem well-posed when few pressure sensors lie inside the plasma, and
+    /// is applied as the row `weight * pressure_edge = 0`, so it is a weight per pascal and is
+    /// directly comparable with a pressure sensor's `weight / expected_value`
+    /// Units: Pa^-1
+    pub regularisation_weight: FLT_0D,
 }
 
 /// Bounds on the Picard iteration loop
@@ -391,6 +411,12 @@ pub struct EquilibriumSourceFunctions {
     pub p_prime: EquilibriumSourceFunction,
     /// The FF' source function, F dF/dpsi
     pub ff_prime: EquilibriumSourceFunction,
+    /// Fitted pressure at the plasma boundary, `p(psi_norm = 1)`. Integrating `p'` only fixes the
+    /// pressure up to a constant of integration, exactly as integrating `FF'` only fixes `F^2 / 2`
+    /// up to `f_vac^2 / 2`. That constant is this value: it is a free parameter of the fit when
+    /// `code/numerics/pressure_edge/free` is set, and is zero otherwise
+    /// Units: Pa
+    pub pressure_edge: FLT_0D,
 }
 
 /// A source function, as fitted by the equilibrium reconstruction

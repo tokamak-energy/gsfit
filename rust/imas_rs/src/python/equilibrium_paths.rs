@@ -9760,6 +9760,27 @@ static NODES_TIME_SLICE_SOURCE_FUNCTIONS: &[Node] = &[
         units: "",
         kind: NodeKind::Structure(NODES_TIME_SLICE_SOURCE_FUNCTIONS_FF_PRIME),
     },
+    Node {
+        name: "pressure_edge",
+        documentation: "Fitted pressure at the plasma boundary, `p(psi_norm = 1)`. Integrating `p'` only fixes the
+pressure up to a constant of integration, exactly as integrating `FF'` only fixes `F^2 / 2`
+up to `f_vac^2 / 2`. That constant is this value: it is a free parameter of the fit when
+`code/numerics/pressure_edge/free` is set, and is zero otherwise",
+        units: "Pa",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(
+                    equilibrium,
+                    indices,
+                    1,
+                    lengths_time_slice,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].source_functions.pressure_edge.clone() },
+                )
+            },
+        }),
+    },
 ];
 
 static NODES_TIME_SLICE_PROFILES_1D_R_MIDPLANE: &[Node] = &[
@@ -10468,6 +10489,41 @@ base type, so this is an integer",
     },
 ];
 
+static NODES_CODE_NUMERICS_PRESSURE_EDGE: &[Node] = &[
+    Node {
+        name: "free",
+        documentation: "Whether the edge pressure is fitted; 0 for a fixed zero edge pressure, 1 for a free
+parameter. The data dictionary has no boolean base type, so this is an integer",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> INT_0D {
+                    equilibrium.code.numerics.pressure_edge.free.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "regularisation_weight",
+        documentation: "Weight of the regularisation which pulls the fitted edge pressure towards zero. It keeps
+the least-squares problem well-posed when few pressure sensors lie inside the plasma, and
+is applied as the row `weight * pressure_edge = 0`, so it is a weight per pascal and is
+directly comparable with a pressure sensor's `weight / expected_value`",
+        units: "Pa^-1",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
+                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> FLT_0D {
+                    equilibrium.code.numerics.pressure_edge.regularisation_weight.clone()
+                })
+            },
+        }),
+    },
+];
+
 static NODES_CODE_NUMERICS: &[Node] = &[
     Node {
         name: "iterations",
@@ -10480,6 +10536,12 @@ static NODES_CODE_NUMERICS: &[Node] = &[
         documentation: "Mixing of the previous iteration's degrees of freedom into the current ones",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_NUMERICS_ANDERSON_MIXING),
+    },
+    Node {
+        name: "pressure_edge",
+        documentation: "Treatment of the pressure at the plasma boundary",
+        units: "",
+        kind: NodeKind::Structure(NODES_CODE_NUMERICS_PRESSURE_EDGE),
     },
     Node {
         name: "grad_shafranov_deviation_tolerance",
