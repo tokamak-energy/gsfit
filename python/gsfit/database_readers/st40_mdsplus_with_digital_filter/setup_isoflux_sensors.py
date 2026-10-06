@@ -13,21 +13,24 @@ The pairs come from the TS profile itself: if the measured quantity is a flux fu
 at which the profile crosses a given level lie on the same flux surface. Cutting the profile at several
 levels gives several pairs per time-slice.
 
-Which quantity to pair on is set by `thomson_scattering.quantity` ("TE", "NE" or "PE"). "TE" is the default,
-despite being the noisiest of the three:
+Which quantity to pair on is set by `thomson_scattering.quantity` ("TE", "NE" or "PE"). "TE" is the default
+for its expected flux-function behaviour, not because it is known to have the smallest measurement
+uncertainty. "TE" and "NE" are measured by TS, while "PE" is derived from their product, so its uncertainty
+generally reflects uncertainty in both quantities. Compare the reported `*_ERR` profiles rather than assuming
+which quantity is least noisy:
 
 * Force balance gives `B . grad p = 0` only for the *total* pressure and only for a static plasma. With
   toroidal rotation the momentum equation picks up a centrifugal term, so the total pressure is no longer
   exactly a flux function.
 * Parallel force balance at constant `T_s` integrates to `n_s ~ exp[(m_s Omega^2 R^2 / 2 - e_s Phi) / T_s]`,
   i.e. rotation pushes density outboard on a flux surface. "NE", and hence "PE", inherit that asymmetry.
-* "TE" does not: fast parallel heat conduction equilibrates the temperature along a field line whatever the
-  centrifugal force does.
+* "TE" is expected to be less affected: fast parallel heat conduction tends to equilibrate the temperature
+  along a field line despite the centrifugal force.
 
-The character of the error matters more than its size. The centrifugal term is anti-symmetric between the
-high-field side (HFS) and the low-field side (LFS), so it biases every pair the same way and averaging over
-pairs does not reduce it. The TS random error is larger on "TE", but it is random, so it averages down.
-Pairing on "NE" as well and comparing is a useful cross-check.
+These are physical expectations, not guarantees that any quantity is an exact flux function. Pairing on "NE"
+or "PE" as well and comparing is a useful sensitivity check. The TS errors are used to reject channels whose
+relative uncertainty exceeds `max_relative_error`; surviving channel errors do not individually weight the
+isoflux rows.
 """
 
 import typing
