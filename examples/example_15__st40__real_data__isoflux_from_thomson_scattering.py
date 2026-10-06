@@ -48,15 +48,16 @@ gsfit_controller.settings["sensor_weights_pressure.json"]["include"] = False
 
 # 4. Pair on the electron temperature.
 #
-#    "TE" is the default despite being the noisiest of the three available quantities. Force balance gives
-#    `B . grad p = 0` only for the *total* pressure and only without rotation; with toroidal rotation the
-#    centrifugal term pushes density outboard on a flux surface, so "NE" -- and hence "PE" -- are not exactly
-#    flux functions. Fast parallel heat conduction keeps "TE" one regardless.
+#    "TE" is chosen for its expected flux-function behaviour, not because it has the smallest measurement
+#    uncertainty. "TE" and "NE" are measured by TS, while "PE" is derived from their product; its uncertainty
+#    generally reflects uncertainty in both quantities. Check the reported *_ERR profiles rather than assuming
+#    which quantity is least noisy.
 #
-#    The character of the error matters more than its size: the centrifugal term is anti-symmetric between the
-#    high-field and low-field sides, so it biases every pair the same way and averaging over pairs does not
-#    reduce it. The larger "TE" error is random, so it does average down. Running this again with "NE" is a
-#    useful cross-check -- a disagreement has the known functional form above.
+#    Force balance makes the *total* pressure a flux function only for a static plasma. With toroidal rotation,
+#    the centrifugal term pushes density outboard on a flux surface, so "NE" -- and hence "PE" -- can have a
+#    systematic HFS/LFS asymmetry. Fast parallel heat conduction tends to equilibrate "TE" along a field line,
+#    making it a plausible alternative for locating flux surfaces. This is a physical approximation, not a
+#    guarantee; running with "NE" or "PE" as a sensitivity check is useful.
 thomson_scattering_settings = gsfit_controller.settings["sensor_weights_isoflux.json"]["thomson_scattering"]
 thomson_scattering_settings["quantity"] = "TE"
 
@@ -67,7 +68,8 @@ thomson_scattering_settings["level_fractions"] = [0.35, 0.45, 0.55, 0.65, 0.75, 
 
 # 6. Guards on the pair-finding. A level is rejected -- leaving that (time, level) out of the fit entirely --
 #    rather than guessed at, whenever the data cannot support it:
-#      * `max_relative_error`: drop TS channels whose relative uncertainty exceeds this.
+#      * `max_relative_error`: drop TS channels whose relative uncertainty for the selected quantity exceeds
+#        this. The surviving channel errors are not used to weight the isoflux rows.
 #      * `max_gap`: refuse to place a crossing by interpolating across a radial hole wider than this [metre],
 #        such as one left behind by the uncertainty filter.
 #      * `min_points_per_branch`: how many usable channels each of the two branches needs.
