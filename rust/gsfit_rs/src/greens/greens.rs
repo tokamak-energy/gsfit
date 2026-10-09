@@ -12,13 +12,13 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// Numerically matched at `(r, z) = (0.41, 0.0)` with `d_r = d_z = 0.0125`.
 const XI: f64 = 0.157;
 
-/// Ad hoc parameter which defines when a sensor which is "close" to a conductor should be considered as at the same location (i.e. self-point).
-/// Defined as a module constant to ensure consistency across all Greens-function calculations.
+/// Maximum coordinate-wise offset at which a sensor is approximated as being at a conductor's
+/// centre and uses the finite-cross-section self term instead of the divergent filament formula.
+/// This 5 mm threshold is a practical approximation, not a test for containment in the conductor's
+/// rectangular cross-section; the self term is strictly correct only at the centre. A geometry-aware
+/// switch to the finite-cross-section formula is a more accurate long-term solution.
 /// Units are metres.
-/// We could make the distance exactly 0.0, which would work when calculating the grid-to-grid for Plasma which will be "bit exact".
-/// But there are other cases with the passives and coils to the grid which might lie on top of each other, but might contain floating point rounding errors, so we need a small tolerance.
-/// We could replace this tolerance with one on `k_sq`, as the problem we are avoiding is that `K(k_sq) --> \infty` as `k_sq --> 1.0`, but that loses the physical meaning of "near distance".
-const SELF_POINT_DISTANCE_TOLERANCE: f64 = 1e-7; // = 0.1 μm
+const SELF_POINT_DISTANCE_TOLERANCE: f64 = 5e-3; // = 0.5 cm
 
 /// Greens-function table between "sensors" `(r, z)` and "conductors" `(conductor_r, conductor_z)`.
 ///
@@ -1553,6 +1553,11 @@ fn test_self_field_off_diagonal_matches_sensor_to_conductor() {
         greens_filament.d3_psi_d_r_d_z2()[(0, 0)],
         epsilon = 1e-15
     );
+}
+
+#[test]
+fn test_self_point_distance_tolerance_is_half_a_centimetre() {
+    assert_eq!(SELF_POINT_DISTANCE_TOLERANCE, 0.005);
 }
 
 /// The self-point branch in each Greens table (`psi`, `d_psi_d_r`, `d_psi_d_z`, `d2_psi_d_r2`,
