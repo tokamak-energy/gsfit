@@ -15,6 +15,8 @@ class Gsfit_Ts(Gsfit):
     """
 
     PRESSURE_EDGE_FREE: bool
+    PRESSURE_SENSORS_ENABLED: bool = True
+    ISOFLUX_SENSORS_ENABLED: bool = False
 
     def __init__(
         self,
@@ -37,8 +39,9 @@ class Gsfit_Ts(Gsfit):
 
         # 1. Only reconstruct the time-slices where the pressure (TS) sensors are "good".
         self.settings["GSFIT_code_settings.json"]["timeslices"]["method"] = "good_pressure_sensors"
-        # 2. Turn on the pressure (Thomson scattering) sensors.
-        self.settings["sensor_weights_pressure.json"]["include"] = True
+        # 2. Configure which Thomson-derived constraints are included.
+        self.settings["sensor_weights_pressure.json"]["include"] = self.PRESSURE_SENSORS_ENABLED
+        self.settings["sensor_weights_isoflux.json"]["include"] = self.ISOFLUX_SENSORS_ENABLED
         # 3. Use the EFIT polynomial for p' and select the edge-pressure constraint.
         p_prime_settings = self.settings["source_function_p_prime.json"]
         p_prime_settings["method"] = "efit_polynomial"
@@ -55,3 +58,10 @@ class Gsfit_Ts_2(Gsfit_Ts):
     """Pressure-constrained GSFit with a free edge pressure."""
 
     PRESSURE_EDGE_FREE = True
+
+
+class Gsfit_Ts_3(Gsfit_Ts_1):
+    """Isoflux-constrained GSFit with EFIT-polynomial p' and zero edge pressure."""
+
+    PRESSURE_SENSORS_ENABLED = False
+    ISOFLUX_SENSORS_ENABLED = True

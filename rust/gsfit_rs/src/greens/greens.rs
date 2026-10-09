@@ -12,11 +12,12 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// Numerically matched at `(r, z) = (0.41, 0.0)` with `d_r = d_z = 0.0125`.
 const XI: f64 = 0.157;
 
-/// Maximum coordinate-wise offset at which a sensor is approximated as being at a conductor's
-/// centre and uses the finite-cross-section self term instead of the divergent filament formula.
-/// This 5 mm threshold is a practical approximation, not a test for containment in the conductor's
-/// rectangular cross-section; the self term is strictly correct only at the centre. A geometry-aware
-/// switch to the finite-cross-section formula is a more accurate long-term solution.
+/// Maximum per-coordinate separation between a Green's-function evaluation point and a
+/// finite-cross-section current-source centre for which we use the source's self term instead of
+/// the divergent filament formula. This 5 mm threshold is a practical approximation, not a test
+/// for whether the evaluation point lies inside the source's rectangular cross-section; the self
+/// term is strictly correct only at the centre. A geometry-aware switch to the finite-cross-section
+/// formula is a more accurate long-term solution.
 /// Units are metres.
 const SELF_POINT_DISTANCE_TOLERANCE: f64 = 5e-3; // = 0.5 cm
 
