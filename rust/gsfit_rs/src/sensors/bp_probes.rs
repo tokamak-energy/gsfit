@@ -563,14 +563,16 @@ impl BpProbes {
             for pf_coil_name in coils.results.get("pf").keys() {
                 let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
+                let coil_d_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("d_r").unwrap_array1();
+                let coil_d_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("d_z").unwrap_array1();
 
                 let greens_calculator: Greens = Greens::sensor_to_conductor(
                     array![sensor_r],
                     array![sensor_z],
                     coil_r.clone(),
                     coil_z.clone(),
-                    coil_r.clone() * 0.0, // TODO: should this be NaN instead?
-                    coil_z.clone() * 0.0,
+                    coil_d_r,
+                    coil_d_z,
                 );
 
                 let g_b_r_matrix: Array2<f64> = greens_calculator.b_r(); // shape() = (1, n_coils)
@@ -602,6 +604,8 @@ impl BpProbes {
         let mesh_z: &Array2<f64> = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
+        let plasma_d_r: Array1<f64> = Array1::from_elem(plasma_r.len(), mesh_r[(0, 1)] - mesh_r[(0, 0)]);
+        let plasma_d_z: Array1<f64> = Array1::from_elem(plasma_z.len(), mesh_z[(1, 0)] - mesh_z[(0, 0)]);
 
         for sensor_name in self.results.keys() {
             // Get variables out of self
@@ -614,8 +618,8 @@ impl BpProbes {
                 array![sensor_z],
                 plasma_r.clone(),
                 plasma_z.clone(),
-                plasma_r.clone() * 0.0, // TODO: this should be d_r not 0.0
-                plasma_z.clone() * 0.0,
+                plasma_d_r.clone(),
+                plasma_d_z.clone(),
             );
 
             let g_b_r_matrix: Array2<f64> = greens_calculator.b_r(); // shape() = (1, n_z*n_r)
@@ -663,6 +667,8 @@ impl BpProbes {
                 let dof_names: Vec<String> = passive_dofs.keys();
                 let passive_r: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
+                let passive_d_r: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("d_r").unwrap_array1();
+                let passive_d_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("d_z").unwrap_array1();
 
                 // These Green's tables depend on the sensor and this passive's filament geometry,
                 // not on the degree of freedom, so they are built once and re-used for every one
@@ -671,8 +677,8 @@ impl BpProbes {
                     array![sensor_z],
                     passive_r.clone(),
                     passive_z.clone(),
-                    passive_r.clone() * 0.0, // TODO: should this be NaN instead?
-                    passive_z.clone() * 0.0,
+                    passive_d_r,
+                    passive_d_z,
                 );
 
                 let g_br_matrix: Array2<f64> = greens_calculator.b_r(); // shape() = (1, n_z*n_r)

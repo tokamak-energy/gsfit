@@ -321,7 +321,8 @@ impl Plasma {
             // Coils
             let coil_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
             let coil_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
-            let n_coil_filaments: usize = coil_r.len();
+            let coil_d_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("d_r").unwrap_array1();
+            let coil_d_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("d_z").unwrap_array1();
 
             // Greens function for flux
             let greens_calculator: Greens = Greens::sensor_to_conductor(
@@ -329,8 +330,8 @@ impl Plasma {
                 flat_z.clone(),
                 coil_r.clone(),
                 coil_z.clone(),
-                Array1::from_elem(n_coil_filaments, f64::NAN), // grid should not overlap with coils
-                Array1::from_elem(n_coil_filaments, f64::NAN),
+                coil_d_r,
+                coil_d_z,
             );
 
             // Greens function for psi, br, bz, and derivatives
@@ -470,6 +471,8 @@ impl Plasma {
             let dof_names: Vec<String> = _tmp.keys();
             let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
             let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
+            let passive_d_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("d_r").unwrap_array1();
+            let passive_d_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("d_z").unwrap_array1();
 
             // Green's tables. These depend only on the grid and this passive's filament geometry,
             // so they are built once per passive; the degree of freedom is applied to them below
@@ -478,8 +481,8 @@ impl Plasma {
                 flat_z.clone(),
                 passive_r.clone(),
                 passive_z.clone(),
-                passive_r.clone() * f64::NAN, // d_r=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
-                passive_z.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
+                passive_d_r,
+                passive_d_z,
             );
 
             // Green's functions for `psi`, `b_r`, `b_z`, and derivatives

@@ -98,14 +98,16 @@ impl FluxLoops {
             for pf_coil_name in coils_local.results.get("pf").keys() {
                 let coil_r: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
+                let coil_d_r: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("d_r").unwrap_array1();
+                let coil_d_z: Array1<f64> = coils_local.results.get("pf").get(&pf_coil_name).get("geometry").get("d_z").unwrap_array1();
 
                 let greens_calculator: Greens = Greens::sensor_to_conductor(
                     array![sensor_r],
                     array![sensor_z],
                     coil_r.clone(),
                     coil_z.clone(),
-                    coil_r.clone() * 0.0, // TODO: should I set these to NaN?
-                    coil_z.clone() * 0.0,
+                    coil_d_r,
+                    coil_d_z,
                 );
                 // Greens between "sensors" and "current sources"
                 let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, coil_r.len())
@@ -138,6 +140,8 @@ impl FluxLoops {
                 let dof_names: Vec<String> = dof_accumulator.keys();
                 let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
+                let passive_d_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("d_r").unwrap_array1();
+                let passive_d_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("d_z").unwrap_array1();
 
                 // This Green's table depends on the sensor and this passive's filament geometry,
                 // not on the degree of freedom, so it is built once and re-used for every one
@@ -146,8 +150,8 @@ impl FluxLoops {
                     array![sensor_z],
                     passive_r.clone(),
                     passive_z.clone(),
-                    passive_r.clone() * 0.0, // TODO: should I set these to NaN?
-                    passive_z.clone() * 0.0,
+                    passive_d_r,
+                    passive_d_z,
                 );
                 let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, passive_r.len())
 
@@ -190,6 +194,8 @@ impl FluxLoops {
         let mesh_z: &Array2<f64> = &plasma_local.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
+        let plasma_d_r: Array1<f64> = Array1::from_elem(plasma_r.len(), mesh_r[(0, 1)] - mesh_r[(0, 0)]);
+        let plasma_d_z: Array1<f64> = Array1::from_elem(plasma_z.len(), mesh_z[(1, 0)] - mesh_z[(0, 0)]);
 
         for sensor_name in self.results.keys() {
             // Get variables out of self
@@ -201,8 +207,8 @@ impl FluxLoops {
                 array![sensor_z],
                 plasma_r.clone(),
                 plasma_z.clone(),
-                plasma_r.clone() * 0.0, // TODO: should I set these to NaN?
-                plasma_z.clone() * 0.0,
+                plasma_d_r.clone(),
+                plasma_d_z.clone(),
             );
             // Sensors Green's function
             let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, n_r * n_z)

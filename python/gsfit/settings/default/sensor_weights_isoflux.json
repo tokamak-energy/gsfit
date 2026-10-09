@@ -2,7 +2,7 @@
     "include": false,
     "sensor_name_prefix": "ISOFLUX",
     "fit_settings": {
-        "weight": 100.0,
+        "weight": 1000.0,
         "comment": "Thomson scattering HFS/LFS pair on the same flux surface"
     },
     "thomson_scattering": {

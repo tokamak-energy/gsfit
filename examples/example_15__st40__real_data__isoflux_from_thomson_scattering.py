@@ -19,6 +19,10 @@
 # The pairs come from the TS profile itself: if the measured quantity is a flux function, the two radii at
 # which the profile crosses a given level are on the same flux surface. Cutting the profile at several levels
 # gives several pairs per time-slice.
+#
+# Isoflux Green's tables use filament coupling outside the coordinate-wise self-point tolerance.
+# Inside it, they use the source's finite-cross-section centre formula with the actual coil,
+# passive or plasma-cell widths. This is a near-source approximation, not off-centre integration.
 
 from gsfit import Gsfit
 
