@@ -1,36 +1,11 @@
 """
-Thomson scattering (TS) derived isoflux sensors for ST40.
+Build ST40 isoflux sensors from Thomson-scattering (TS) profiles by pairing high- and low-field-side radii at
+configured fractions of the selected profile's peak.
 
-An isoflux sensor states that two points lie on the same flux surface::
-
-    psi(r_1, z_1) - psi(r_2, z_2) = 0
-
-which is linear in every degree of freedom of the fit and has a right-hand side of exactly zero. Unlike a
-pressure sensor it needs neither an absolute calibration nor an assumed ion contribution, because the
-constraint is invariant under scaling the measured profile by any constant.
-
-The pairs come from the TS profile itself: if the measured quantity is a flux function, then the two radii
-at which the profile crosses a given level lie on the same flux surface. Cutting the profile at several
-levels gives several pairs per time-slice.
-
-Which quantity to pair on is set by `thomson_scattering.quantity` ("TE", "NE" or "PE"). "TE" is the default
-for its expected flux-function behaviour, not because it is known to have the smallest measurement
-uncertainty. "TE" and "NE" are measured by TS, while "PE" is derived from their product, so its uncertainty
-generally reflects uncertainty in both quantities. Compare the reported `*_ERR` profiles rather than assuming
-which quantity is least noisy:
-
-* Force balance gives `B . grad p = 0` only for the *total* pressure and only for a static plasma. With
-  toroidal rotation the momentum equation picks up a centrifugal term, so the total pressure is no longer
-  exactly a flux function.
-* Parallel force balance at constant `T_s` integrates to `n_s ~ exp[(m_s Omega^2 R^2 / 2 - e_s Phi) / T_s]`,
-  i.e. rotation pushes density outboard on a flux surface. "NE", and hence "PE", inherit that asymmetry.
-* "TE" is expected to be less affected: fast parallel heat conduction tends to equilibrate the temperature
-  along a field line despite the centrifugal force.
-
-These are physical expectations, not guarantees that any quantity is an exact flux function. Pairing on "NE"
-or "PE" as well and comparing is a useful sensitivity check. The TS errors are used to reject channels whose
-relative uncertainty exceeds `max_relative_error`; surviving channel errors do not individually weight the
-isoflux rows.
+This assumes the selected quantity (`TE`, `NE` or `PE`) is approximately constant on a flux surface. `TE` is
+the default; selecting another quantity can provide a useful sensitivity check. Channels with relative
+uncertainty above `max_relative_error` are discarded, but the remaining TS uncertainties do not individually
+weight the isoflux constraints.
 """
 
 import typing
