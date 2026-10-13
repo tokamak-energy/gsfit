@@ -12,14 +12,10 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// Numerically matched at `(r, z) = (0.41, 0.0)` with `d_r = d_z = 0.0125`.
 const XI: f64 = 0.157;
 
-/// Maximum per-coordinate separation between a Green's-function evaluation point and a
-/// finite-cross-section current-source centre for which we use the source's self term instead of
-/// the divergent filament formula. This 5 mm threshold is a practical approximation, not a test
-/// for whether the evaluation point lies inside the source's rectangular cross-section; the self
-/// term is strictly correct only at the centre. A geometry-aware switch to the finite-cross-section
-/// formula is a more accurate long-term solution.
+/// Small per-coordinate tolerance for treating a Green's-function evaluation point as coincident
+/// with a finite-cross-section current-source centre, allowing for floating-point rounding.
 /// Units are metres.
-const SELF_POINT_DISTANCE_TOLERANCE: f64 = 5e-3; // = 0.5 cm
+const SELF_POINT_DISTANCE_TOLERANCE: f64 = 1e-7; // = 0.1 μm
 
 /// Greens-function table between "sensors" `(r, z)` and "conductors" `(conductor_r, conductor_z)`.
 ///
@@ -1557,8 +1553,8 @@ fn test_self_field_off_diagonal_matches_sensor_to_conductor() {
 }
 
 #[test]
-fn test_self_point_distance_tolerance_is_half_a_centimetre() {
-    assert_eq!(SELF_POINT_DISTANCE_TOLERANCE, 0.005);
+fn test_self_point_distance_tolerance_is_one_tenth_of_a_micrometre() {
+    assert_eq!(SELF_POINT_DISTANCE_TOLERANCE, 1e-7);
 }
 
 /// The self-point branch in each Greens table (`psi`, `d_psi_d_r`, `d_psi_d_z`, `d2_psi_d_r2`,

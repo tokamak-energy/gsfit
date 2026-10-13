@@ -28,6 +28,9 @@ def setup_coils(
 
     **This method is specific to FreeGSNKE.**
 
+    Each PF filament uses the physical rectangular cross-section ``dR * dZ`` supplied by
+    FreeGSNKE. Both dimensions must be finite and positive, in metre.
+
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """
 
@@ -87,8 +90,14 @@ def setup_coils(
 
                 coil_r = np.array(coil_object.Rfil).astype(np.float64)
                 coil_z = np.array(coil_object.Zfil).astype(np.float64)
-                coil_d_r = 0.0 * coil_r
-                coil_d_z = 0.0 * coil_z
+                if not hasattr(coil_object, "dR") or not hasattr(coil_object, "dZ"):
+                    raise ValueError(f"FreeGSNKE PF coil '{coil_name}' is missing physical filament dimensions dR or dZ.")
+                filament_d_r: float = float(coil_object.dR)
+                filament_d_z: float = float(coil_object.dZ)
+                if not np.isfinite(filament_d_r) or not np.isfinite(filament_d_z) or filament_d_r <= 0.0 or filament_d_z <= 0.0:
+                    raise ValueError(f"FreeGSNKE PF coil '{coil_name}' requires finite, positive filament dimensions dR and dZ [metre].")
+                coil_d_r = np.full_like(coil_r, filament_d_r)
+                coil_d_z = np.full_like(coil_z, filament_d_z)
 
                 current = coil_object.current
 
