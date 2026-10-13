@@ -49,17 +49,19 @@ pub fn greens_d_psi_d_r(
     z_prime: PyReadonlyArray1<f64>,
     d_r: PyReadonlyArray1<f64>,
     d_z: PyReadonlyArray1<f64>,
-) -> Py<PyArray2<f64>> {
+) -> PyResult<Py<PyArray2<f64>>> {
     let r_ndarray: Array1<f64> = r.to_owned_array();
     let z_ndarray: Array1<f64> = z.to_owned_array();
     let r_prime_ndarray: Array1<f64> = r_prime.to_owned_array();
     let z_prime_ndarray: Array1<f64> = z_prime.to_owned_array();
     let d_r_ndarray: Array1<f64> = d_r.to_owned_array();
     let d_z_ndarray: Array1<f64> = d_z.to_owned_array();
+    Greens::validate_source_widths(&r_ndarray, &z_ndarray, &r_prime_ndarray, &z_prime_ndarray, &d_r_ndarray, &d_z_ndarray)
+        .map_err(PyValueError::new_err)?;
 
     let greens_table: Greens = Greens::sensor_to_conductor(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray, d_r_ndarray, d_z_ndarray);
 
-    greens_table.d_psi_d_r().into_pyarray(py).into()
+    Ok(greens_table.d_psi_d_r().into_pyarray(py).into())
 }
 
 #[pyfunction]
@@ -71,17 +73,19 @@ pub fn greens_d_psi_d_z(
     z_prime: PyReadonlyArray1<f64>,
     d_r: PyReadonlyArray1<f64>,
     d_z: PyReadonlyArray1<f64>,
-) -> Py<PyArray2<f64>> {
+) -> PyResult<Py<PyArray2<f64>>> {
     let r_ndarray: Array1<f64> = r.to_owned_array();
     let z_ndarray: Array1<f64> = z.to_owned_array();
     let r_prime_ndarray: Array1<f64> = r_prime.to_owned_array();
     let z_prime_ndarray: Array1<f64> = z_prime.to_owned_array();
     let d_r_ndarray: Array1<f64> = d_r.to_owned_array();
     let d_z_ndarray: Array1<f64> = d_z.to_owned_array();
+    Greens::validate_source_widths(&r_ndarray, &z_ndarray, &r_prime_ndarray, &z_prime_ndarray, &d_r_ndarray, &d_z_ndarray)
+        .map_err(PyValueError::new_err)?;
 
     let greens_table: Greens = Greens::sensor_to_conductor(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray, d_r_ndarray, d_z_ndarray);
 
-    greens_table.d_psi_d_z().into_pyarray(py).into()
+    Ok(greens_table.d_psi_d_z().into_pyarray(py).into())
 }
 
 #[pyfunction]
@@ -93,17 +97,19 @@ pub fn greens_d2_psi_d_r2(
     z_prime: PyReadonlyArray1<f64>,
     d_r: PyReadonlyArray1<f64>,
     d_z: PyReadonlyArray1<f64>,
-) -> Py<PyArray2<f64>> {
+) -> PyResult<Py<PyArray2<f64>>> {
     let r_ndarray: Array1<f64> = r.to_owned_array();
     let z_ndarray: Array1<f64> = z.to_owned_array();
     let r_prime_ndarray: Array1<f64> = r_prime.to_owned_array();
     let z_prime_ndarray: Array1<f64> = z_prime.to_owned_array();
     let d_r_ndarray: Array1<f64> = d_r.to_owned_array();
     let d_z_ndarray: Array1<f64> = d_z.to_owned_array();
+    Greens::validate_source_widths(&r_ndarray, &z_ndarray, &r_prime_ndarray, &z_prime_ndarray, &d_r_ndarray, &d_z_ndarray)
+        .map_err(PyValueError::new_err)?;
 
     let greens_table: Greens = Greens::sensor_to_conductor(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray, d_r_ndarray, d_z_ndarray);
 
-    greens_table.d2_psi_d_r2().into_pyarray(py).into()
+    Ok(greens_table.d2_psi_d_r2().into_pyarray(py).into())
 }
 
 #[pyfunction]
@@ -115,17 +121,19 @@ pub fn greens_d2_psi_d_r_d_z(
     z_prime: PyReadonlyArray1<f64>,
     d_r: PyReadonlyArray1<f64>,
     d_z: PyReadonlyArray1<f64>,
-) -> Py<PyArray2<f64>> {
+) -> PyResult<Py<PyArray2<f64>>> {
     let r_ndarray: Array1<f64> = r.to_owned_array();
     let z_ndarray: Array1<f64> = z.to_owned_array();
     let r_prime_ndarray: Array1<f64> = r_prime.to_owned_array();
     let z_prime_ndarray: Array1<f64> = z_prime.to_owned_array();
     let d_r_ndarray: Array1<f64> = d_r.to_owned_array();
     let d_z_ndarray: Array1<f64> = d_z.to_owned_array();
+    Greens::validate_source_widths(&r_ndarray, &z_ndarray, &r_prime_ndarray, &z_prime_ndarray, &d_r_ndarray, &d_z_ndarray)
+        .map_err(PyValueError::new_err)?;
 
     let greens_table: Greens = Greens::sensor_to_conductor(r_ndarray, z_ndarray, r_prime_ndarray, z_prime_ndarray, d_r_ndarray, d_z_ndarray);
 
-    greens_table.d2_psi_d_r_d_z().into_pyarray(py).into()
+    Ok(greens_table.d2_psi_d_r_d_z().into_pyarray(py).into())
 }
 
 #[pyfunction]

@@ -160,6 +160,9 @@ def greens_d_psi_d_r(
     """
     First derivative of the Green's function with respect to `r`.
 
+    Zero widths select an ideal filament. Negative/nonfinite widths, mismatched
+    array lengths, and singular filament evaluations raise ValueError.
+
     :param r: (by convention) Sensor radial positions [metre]
     :param z: (by convention) Sensor vertical positions [metre]
     :param r_prime: (by convention) Current source radial positions [metre]
@@ -180,6 +183,9 @@ def greens_d_psi_d_z(
     """
     First derivative of the Green's function with respect to `z`.
 
+    Zero widths select an ideal filament. Negative/nonfinite widths, mismatched
+    array lengths, and singular filament evaluations raise ValueError.
+
     :param r: (by convention) Sensor radial positions [metre]
     :param z: (by convention) Sensor vertical positions [metre]
     :param r_prime: (by convention) Current source radial positions [metre]
@@ -199,6 +205,9 @@ def greens_d2_psi_d_r2(
 ) -> npt.NDArray[np.float64]:
     """
     Second derivative of the Green's function with respect to `r`.
+
+    Zero widths select an ideal filament. Negative/nonfinite widths, mismatched
+    array lengths, and singular filament evaluations raise ValueError.
 
     When a sensor coincides with a current source, the source's `d_r` and `d_z`
     are used to evaluate the analytic self-term
@@ -223,6 +232,9 @@ def greens_d2_psi_d_r_d_z(
 ) -> npt.NDArray[np.float64]:
     """
     Mixed second derivative of the Green's function with respect to `r` and `z`.
+
+    Zero widths select an ideal filament. Negative/nonfinite widths, mismatched
+    array lengths, and singular filament evaluations raise ValueError.
 
     :param r: (by convention) Sensor radial positions [metre]
     :param z: (by convention) Sensor vertical positions [metre]

@@ -11,6 +11,13 @@ OPTIONAL_DERIVATIVE_APIS = (
     "greens_d3_psi_d_r2_d_z",
     "greens_d3_psi_d_r_d_z2",
 )
+REQUIRED_DERIVATIVE_APIS = (
+    "greens_d_psi_d_r",
+    "greens_d_psi_d_z",
+    "greens_d2_psi_d_r2",
+    "greens_d2_psi_d_r_d_z",
+)
+GREEN_APIS = ("greens_py", *OPTIONAL_DERIVATIVE_APIS, *REQUIRED_DERIVATIVE_APIS)
 
 
 def make_isoflux(offset: float) -> gsfit_rs.Isoflux:
@@ -278,7 +285,7 @@ def test_near_filament_flux_does_not_use_self_term(widths: tuple[float | None, f
 
 @pytest.mark.parametrize("width", [-0.01, np.nan, np.inf])
 @pytest.mark.parametrize("dimension", ["d_r", "d_z"])
-@pytest.mark.parametrize("api_name", ("greens_py", *OPTIONAL_DERIVATIVE_APIS))
+@pytest.mark.parametrize("api_name", GREEN_APIS)
 def test_invalid_green_widths_raise_value_error(width: float, dimension: str, api_name: str) -> None:
     widths = {"d_r": np.array([0.01]), "d_z": np.array([0.02])}
     widths[dimension] = np.array([width])
@@ -286,20 +293,26 @@ def test_invalid_green_widths_raise_value_error(width: float, dimension: str, ap
         getattr(gsfit_rs, api_name)(np.array([0.5]), np.array([0.001]), np.array([0.5]), np.array([0.0]), **widths)
 
 
-@pytest.mark.parametrize("widths", [(None, None), (0.0, 0.0), (0.0, 0.02), (0.01, 0.0)])
-@pytest.mark.parametrize("api_name", ("greens_py", *OPTIONAL_DERIVATIVE_APIS))
-def test_coincident_filament_greens_are_rejected(widths: tuple[float | None, float | None], api_name: str) -> None:
+@pytest.mark.parametrize("widths", [(0.0, 0.0), (0.0, 0.02), (0.01, 0.0)])
+@pytest.mark.parametrize("api_name", GREEN_APIS)
+def test_coincident_filament_greens_are_rejected(widths: tuple[float, float], api_name: str) -> None:
     r, z = np.array([0.5]), np.array([0.0])
-    d_r = None if widths[0] is None else np.array([widths[0]])
-    d_z = None if widths[1] is None else np.array([widths[1]])
+    d_r, d_z = np.array([widths[0]]), np.array([widths[1]])
     with pytest.raises(ValueError, match="coincident filament evaluation is singular"):
         getattr(gsfit_rs, api_name)(r, z, r, z, d_r, d_z)
 
 
 @pytest.mark.parametrize("api_name", ("greens_py", *OPTIONAL_DERIVATIVE_APIS))
+def test_coincident_filament_with_omitted_widths_is_rejected(api_name: str) -> None:
+    r, z = np.array([0.5]), np.array([0.0])
+    with pytest.raises(ValueError, match="coincident filament evaluation is singular"):
+        getattr(gsfit_rs, api_name)(r, z, r, z)
+
+
+@pytest.mark.parametrize("api_name", GREEN_APIS)
 def test_numerically_singular_filament_greens_are_rejected(api_name: str) -> None:
     with pytest.raises(ValueError, match="filament separation is numerically singular"):
-        getattr(gsfit_rs, api_name)(np.array([0.5]), np.array([1e-12]), np.array([0.5]), np.array([0.0]))
+        getattr(gsfit_rs, api_name)(np.array([0.5]), np.array([1e-12]), np.array([0.5]), np.array([0.0]), np.zeros(1), np.zeros(1))
 
 
 @pytest.mark.parametrize("api_name", OPTIONAL_DERIVATIVE_APIS)
@@ -320,8 +333,8 @@ def test_optional_derivative_widths_select_filaments(
     np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=0.0)
 
 
-@pytest.mark.parametrize("api_name", OPTIONAL_DERIVATIVE_APIS)
-def test_optional_derivatives_preserve_finite_width_self_terms(api_name: str) -> None:
+@pytest.mark.parametrize("api_name", GREEN_APIS)
+def test_greens_preserve_finite_width_self_terms(api_name: str) -> None:
     api = getattr(gsfit_rs, api_name)
     r, z = np.array([0.5]), np.array([0.001])
     source_r, source_z = np.array([0.5]), np.array([0.0])
@@ -332,11 +345,14 @@ def test_optional_derivatives_preserve_finite_width_self_terms(api_name: str) ->
     np.testing.assert_allclose(actual, centre, rtol=1e-12, atol=0.0)
 
 
-@pytest.mark.parametrize("api_name", OPTIONAL_DERIVATIVE_APIS)
-def test_optional_derivative_width_lengths_raise_value_error(api_name: str) -> None:
+@pytest.mark.parametrize("api_name", GREEN_APIS)
+@pytest.mark.parametrize("dimension", ["d_r", "d_z"])
+def test_green_width_lengths_raise_value_error(api_name: str, dimension: str) -> None:
+    widths = {"d_r": np.zeros(1), "d_z": np.zeros(1)}
+    widths[dimension] = np.zeros(2)
     with pytest.raises(ValueError, match="matching lengths"):
         getattr(gsfit_rs, api_name)(
-            np.array([0.5]), np.array([0.001]), np.array([0.5]), np.array([0.0]), np.zeros(2), np.zeros(1),
+            np.array([0.5]), np.array([0.001]), np.array([0.5]), np.array([0.0]), **widths,
         )
 
 
