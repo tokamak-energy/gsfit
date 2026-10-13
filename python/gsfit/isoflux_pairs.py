@@ -67,7 +67,7 @@ def find_isoflux_pairs_for_slice(
 
     :param r: Radii of the TS channels [metre]
     :param value: The measured profile
-    :param error: The uncertainty on `value`
+    :param error: The uncertainty on `value`; finite zero uncertainties are accepted, negative/nonfinite ones are discarded
     :param level_fractions: Levels to cut the profile at, as fractions of its peak value
     :param max_relative_error: Drop channels whose relative uncertainty exceeds this
     :param max_gap: Refuse to interpolate a level across a radial gap wider than this [metre]
@@ -80,7 +80,7 @@ def find_isoflux_pairs_for_slice(
 
     pairs: npt.NDArray[np.float64] = np.full((len(level_fractions), 2), np.nan)
 
-    usable = np.isfinite(r) & np.isfinite(value) & np.isfinite(error) & (value > 0.0) & (error > 0.0)
+    usable = np.isfinite(r) & np.isfinite(value) & np.isfinite(error) & (value > 0.0) & (error >= 0.0)
     usable &= error <= max_relative_error * value
     if np.count_nonzero(usable) < 2 * min_points_per_branch - 1:
         return pairs
