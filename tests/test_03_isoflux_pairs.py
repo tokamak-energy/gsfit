@@ -136,6 +136,30 @@ def test_pairs_outside_the_radial_limits_are_discarded() -> None:
     assert np.all(np.isnan(pairs)), "every crossing lies outside the artificially narrow limits"
 
 
+@pytest.mark.parametrize("min_points_per_branch", [2, 3, 4])
+def test_minimum_sized_profile_shares_the_peak(min_points_per_branch: int) -> None:
+    r = np.linspace(0.3, 0.7, 2 * min_points_per_branch - 1)
+    value = 9.0 - 40.0 * np.abs(r - R_AXIS)
+    error = 0.01 * value
+
+    pairs = _find(r, value, error, max_gap=0.21, min_points_per_branch=min_points_per_branch)
+
+    expected = np.array([
+        [R_AXIS - 9.0 * (1.0 - fraction) / 40.0, R_AXIS + 9.0 * (1.0 - fraction) / 40.0]
+        for fraction in LEVEL_FRACTIONS
+    ])
+    np.testing.assert_allclose(pairs, expected)
+
+
+def test_enough_total_channels_with_a_short_branch_gives_no_pairs() -> None:
+    r = np.linspace(0.3, 0.8, 6)
+    value = np.array([1.0, 9.0, 7.0, 5.0, 3.0, 1.0])
+
+    pairs = _find(r, value, 0.01 * value, max_gap=0.11)
+
+    assert np.all(np.isnan(pairs))
+
+
 def test_too_few_channels_gives_no_pairs() -> None:
     """Below `min_points_per_branch` on either branch, no pair should be taken."""
 

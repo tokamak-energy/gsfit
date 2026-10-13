@@ -119,7 +119,7 @@ def find_isoflux_pairs_for_slice(
 
     usable = np.isfinite(r) & np.isfinite(value) & np.isfinite(error) & (value > 0.0) & (error > 0.0)
     usable &= error <= max_relative_error * value
-    if np.count_nonzero(usable) < 2 * min_points_per_branch:
+    if np.count_nonzero(usable) < 2 * min_points_per_branch - 1:
         return pairs
 
     order = np.argsort(r[usable])
