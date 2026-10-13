@@ -5,8 +5,9 @@ import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Isoflux
 
-# The Thomson scattering (TS) tree reading and the isoflux pair-finding live in the
-# `st40_mdsplus_with_digital_filter` reader. It is reused here so that the isoflux-sensor set-up is defined in
+# The Thomson scattering (TS) tree reading and sensor set-up live in the
+# `st40_mdsplus_with_digital_filter` reader; the pure pair-finding lives in `gsfit.isoflux_pairs`.
+# The reader is reused here so that the isoflux-sensor set-up is defined in
 # a single place (it depends only on `sensor_weights_isoflux.json`, not on the digital filter), which keeps
 # both ST40 readers consistent and avoids duplicated boiler-plate.
 from ..st40_mdsplus_with_digital_filter.setup_isoflux_sensors import build_isoflux_pairs as build_isoflux_pairs
