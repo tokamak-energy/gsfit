@@ -20,7 +20,8 @@ def _radius_at_level(
     :param branch_value: The branch's values, non-decreasing.
     :param value_target: The level to solve for.
     :param max_gap: Reject the level if the two channels bracketing it are further apart than this [metre],
-        rather than interpolating across a hole in the data.
+        rather than interpolating across a hole in the data. Unique exact channel matches need no interpolation
+        and are accepted regardless of neighbouring gaps.
 
     :return: The interpolated radius [metre], or NaN if the level is out of range or unsupported by the data.
     """
@@ -32,7 +33,12 @@ def _radius_at_level(
     if value_target < branch_value[0] or value_target > branch_value[-1]:
         return float("nan")
 
-    i_upper = int(np.clip(np.searchsorted(branch_value, value_target, side="left"), 1, branch_value.size - 1))
+    i_match = int(np.searchsorted(branch_value, value_target, side="left"))
+    i_match_end = int(np.searchsorted(branch_value, value_target, side="right"))
+    if i_match_end == i_match + 1:
+        return float(branch_r[i_match])
+
+    i_upper = int(np.clip(i_match, 1, branch_value.size - 1))
     value_lower, value_upper = branch_value[i_upper - 1], branch_value[i_upper]
     r_lower, r_upper = branch_r[i_upper - 1], branch_r[i_upper]
 
