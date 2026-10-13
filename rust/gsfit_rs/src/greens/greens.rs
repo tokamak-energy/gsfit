@@ -12,10 +12,12 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 /// Numerically matched at `(r, z) = (0.41, 0.0)` with `d_r = d_z = 0.0125`.
 const XI: f64 = 0.157;
 
-/// Small per-coordinate tolerance for treating a Green's-function evaluation point as coincident
-/// with a finite-cross-section current-source centre, allowing for floating-point rounding.
+/// Maximum per-coordinate separation for using the finite-cross-section self term instead of
+/// the filament expression. This 5 mm switch deliberately approximates nearby fields with the
+/// centre self term; it is not a cross-section containment test or an off-centre field integral.
+/// Sources evaluated within this neighbourhood require positive cross-section widths.
 /// Units are metres.
-const SELF_POINT_DISTANCE_TOLERANCE: f64 = 1e-7; // = 0.1 μm
+const SELF_POINT_DISTANCE_TOLERANCE: f64 = 5e-3; // = 5 mm
 
 /// Greens-function table between "sensors" `(r, z)` and "conductors" `(conductor_r, conductor_z)`.
 ///
@@ -1553,8 +1555,8 @@ fn test_self_field_off_diagonal_matches_sensor_to_conductor() {
 }
 
 #[test]
-fn test_self_point_distance_tolerance_is_one_tenth_of_a_micrometre() {
-    assert_eq!(SELF_POINT_DISTANCE_TOLERANCE, 1e-7);
+fn test_self_point_distance_tolerance_is_half_a_centimetre() {
+    assert_eq!(SELF_POINT_DISTANCE_TOLERANCE, 5e-3);
 }
 
 /// The self-point branch in each Greens table (`psi`, `d_psi_d_r`, `d_psi_d_z`, `d2_psi_d_r2`,

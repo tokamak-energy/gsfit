@@ -79,7 +79,11 @@ def test_plasma_uses_actual_cell_widths(offset: float) -> None:
 
     evaluation_r = np.array([0.4125 + offset])
     evaluation_z = np.array([0.001])
-    reference = gsfit_rs.greens_py(evaluation_r, evaluation_z, source_r[4:5], source_z[4:5], np.zeros(1), np.zeros(1))
+    if offset < 0.005:
+        # The centre approximation uses the evaluation radius in the self-term formula.
+        reference = gsfit_rs.greens_py(evaluation_r, evaluation_z, evaluation_r, evaluation_z, d_r[:1], d_z[:1])
+    else:
+        reference = gsfit_rs.greens_py(evaluation_r, evaluation_z, source_r[4:5], source_z[4:5], np.zeros(1), np.zeros(1))
     other_point = gsfit_rs.greens_py(np.array([0.7]), np.array([0.03]), source_r[4:5], source_z[4:5], d_r[:1], d_z[:1])
     assert greens["plasma"][0, 4] == pytest.approx(reference[0, 0] - other_point[0, 0], rel=1e-12)
 
