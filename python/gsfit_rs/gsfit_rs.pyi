@@ -142,10 +142,14 @@ def greens_py(
     :param d_z: (optional) Vertical heights [metre]
 
     Omitted or zero widths select an ideal filament, even within the 5 mm near-source cutoff.
-    Both widths must be positive to use the finite-cross-section centre approximation.
+    Both widths must be positive to use the finite-cross-section source-centre approximation.
+    Within the strict 5 mm per-coordinate cutoff, values are evaluated at the actual source centre.
+    This is an interim approximation to the flux at the observation point: the available
+    finite-cross-section formula is valid only at the source centre, not at off-centre points.
     Negative/nonfinite widths and exactly or numerically coincident filament evaluations raise ValueError.
 
-    Note: the inputs are symmetrical
+    Rows correspond to observations and columns to sources. The source-centre approximation
+    does not enforce reciprocity when observations and sources are exchanged.
     """
     ...
 

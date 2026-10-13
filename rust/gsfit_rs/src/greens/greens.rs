@@ -13,8 +13,11 @@ const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 const XI: f64 = 0.157;
 
 /// Maximum per-coordinate separation for using the finite-cross-section self term instead of
-/// the filament expression. This 5 mm switch deliberately approximates nearby fields with the
-/// centre self term; it is not a cross-section containment test or an off-centre field integral.
+/// the filament expression. The intended quantity is the field at the observation point, but
+/// the available finite-cross-section expressions are valid only at the source centre.
+/// This 5 mm switch uses those source-centre values as an interim near-source approximation,
+/// including the source radius in derived fields. It is not a cross-section containment test
+/// or an off-centre field integral.
 /// Only sources with two positive cross-section widths use the self term. Zero-width sources
 /// retain the filament expression and cannot be evaluated at exact coincidence.
 /// Units are metres.
@@ -308,6 +311,14 @@ impl Greens {
             && (self.z[i_sensor] - self.conductor_z[i_source]).abs() < SELF_POINT_DISTANCE_TOLERANCE
     }
 
+    fn evaluation_radius(&self, i_sensor: usize, i_source: usize) -> f64 {
+        if self.uses_self_term(i_sensor, i_source) {
+            self.conductor_r[i_source]
+        } else {
+            self.r[i_sensor]
+        }
+    }
+
     /// Calculates `g_psi`, where:
     /// `psi = g_psi * current`
     ///
@@ -379,7 +390,8 @@ impl Greens {
                         let p_c: f64 = 0.5 * ((d_r.powi(2) + d_z.powi(2)) / 4.0).ln() - 1.5
                             + d_r / (2.0 * d_z) * (d_z / d_r).atan()
                             + d_z / (2.0 * d_r) * (d_r / d_z).atan();
-                        green_this_filament[i_rz] = MU_0 * r[i_rz] * ((8.0 * r[i_rz]).ln() - 2.0 - p_c);
+                        let source_r: f64 = conductor_r[i_conductor_rz];
+                        green_this_filament[i_rz] = MU_0 * source_r * ((8.0 * source_r).ln() - 2.0 - p_c);
                     }
                 }
 
@@ -462,8 +474,9 @@ impl Greens {
                     if self.uses_self_term(i_rz, i_conductor_rz) {
                         let d_r: f64 = conductor_d_r[i_conductor_rz];
                         let d_z: f64 = conductor_d_z[i_conductor_rz];
+                        let source_r: f64 = conductor_r[i_conductor_rz];
                         g_d_psi_d_r_local[i_rz] =
-                            MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
+                            MU_0 / 2.0 * ((16.0 * source_r / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
                     }
                 }
 
@@ -612,9 +625,10 @@ impl Greens {
                     if self.uses_self_term(i_rz, i_conductor_rz) {
                         let d_r: f64 = conductor_d_r[i_conductor_rz];
                         let d_z: f64 = conductor_d_z[i_conductor_rz];
+                        let source_r: f64 = conductor_r[i_conductor_rz];
                         let d_psi_d_r_self: f64 =
-                            MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
-                        g_d2_psi_d_r2_local[i_rz] = -4.0 * MU_0 * r[i_rz] * (d_z / d_r).atan() / (d_r * d_z) + (0.5 - XI) * d_psi_d_r_self / r[i_rz];
+                            MU_0 / 2.0 * ((16.0 * source_r / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
+                        g_d2_psi_d_r2_local[i_rz] = -4.0 * MU_0 * source_r * (d_z / d_r).atan() / (d_r * d_z) + (0.5 - XI) * d_psi_d_r_self / source_r;
                     }
                 }
 
@@ -763,9 +777,10 @@ impl Greens {
                     if self.uses_self_term(i_rz, i_conductor_rz) {
                         let d_r: f64 = conductor_d_r[i_conductor_rz];
                         let d_z: f64 = conductor_d_z[i_conductor_rz];
+                        let source_r: f64 = conductor_r[i_conductor_rz];
                         let d_psi_d_r_self: f64 =
-                            MU_0 / 2.0 * ((16.0 * r[i_rz] / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
-                        g_d2_psi_d_z2_local[i_rz] = -4.0 * MU_0 * r[i_rz] * (d_r / d_z).atan() / (d_r * d_z) + (0.5 + XI) * d_psi_d_r_self / r[i_rz];
+                            MU_0 / 2.0 * ((16.0 * source_r / (d_r.powi(2) + d_z.powi(2)).sqrt()).ln() + 1.0 - (d_z / d_r) * (d_r / d_z).atan());
+                        g_d2_psi_d_z2_local[i_rz] = -4.0 * MU_0 * source_r * (d_r / d_z).atan() / (d_r * d_z) + (0.5 + XI) * d_psi_d_r_self / source_r;
                     }
                 }
 
@@ -868,8 +883,6 @@ impl Greens {
     pub fn d3_psi_d_r2_d_z(&self) -> Array2<f64> {
         let d2_psi_d_r_d_z: Array2<f64> = self.d2_psi_d_r_d_z();
         let d3_psi_d_z3: Array2<f64> = self.d3_psi_d_z3();
-        let r: &Array1<f64> = &self.r;
-
         // At the self-point both inputs are exactly zero (kernels odd in h), and zero is also
         // the correct value for this table (its kernel is odd in h too). The
         // identity itself remains valid on the diagonal: it is the z-derivative of the sourced
@@ -877,7 +890,8 @@ impl Greens {
         let mut g_d3_psi_d_r2_d_z: Array2<f64> = Array2::from_elem((self.n_rz, self.conductor_n_rz), f64::NAN);
         for i_rz in 0..self.n_rz {
             for i_conductor_rz in 0..self.conductor_n_rz {
-                g_d3_psi_d_r2_d_z[(i_rz, i_conductor_rz)] = d2_psi_d_r_d_z[(i_rz, i_conductor_rz)] / r[i_rz] - d3_psi_d_z3[(i_rz, i_conductor_rz)];
+                g_d3_psi_d_r2_d_z[(i_rz, i_conductor_rz)] =
+                    d2_psi_d_r_d_z[(i_rz, i_conductor_rz)] / self.evaluation_radius(i_rz, i_conductor_rz) - d3_psi_d_z3[(i_rz, i_conductor_rz)];
             }
         }
 
@@ -985,12 +999,11 @@ impl Greens {
     /// * `g_b_r[(i_rz, i_conductor_rz)]` - The Greens table between "sensors" and "conductors"`
     pub fn b_r(&self) -> Array2<f64> {
         let d_psi_d_z: Array2<f64> = self.d_psi_d_z();
-        let r: &Array1<f64> = &self.r;
 
         let mut g_b_r: Array2<f64> = Array2::from_elem((self.n_rz, self.conductor_n_rz), f64::NAN);
         for i_rz in 0..self.n_rz {
             for i_conductor_rz in 0..self.conductor_n_rz {
-                g_b_r[(i_rz, i_conductor_rz)] = -d_psi_d_z[(i_rz, i_conductor_rz)] / (2.0 * PI * r[i_rz]);
+                g_b_r[(i_rz, i_conductor_rz)] = -d_psi_d_z[(i_rz, i_conductor_rz)] / (2.0 * PI * self.evaluation_radius(i_rz, i_conductor_rz));
             }
         }
 
@@ -1007,12 +1020,11 @@ impl Greens {
     /// * `g_b_z[(i_rz, i_conductor_rz)]` - The Greens table between "sensors" and "conductors"`
     pub fn b_z(&self) -> Array2<f64> {
         let d_psi_d_r: Array2<f64> = self.d_psi_d_r();
-        let r: &Array1<f64> = &self.r;
 
         let mut g_b_z: Array2<f64> = Array2::from_elem((self.n_rz, self.conductor_n_rz), f64::NAN);
         for i_rz in 0..self.n_rz {
             for i_conductor_rz in 0..self.conductor_n_rz {
-                g_b_z[(i_rz, i_conductor_rz)] = d_psi_d_r[(i_rz, i_conductor_rz)] / (2.0 * PI * r[i_rz]);
+                g_b_z[(i_rz, i_conductor_rz)] = d_psi_d_r[(i_rz, i_conductor_rz)] / (2.0 * PI * self.evaluation_radius(i_rz, i_conductor_rz));
             }
         }
 
@@ -1028,12 +1040,11 @@ impl Greens {
     /// * `g_d_b_r_d_z[(i_rz, i_conductor_rz)]` - The Greens table between "sensors" and "conductors"`
     pub fn d_b_r_d_z(&self) -> Array2<f64> {
         let d2_psi_d_z2: Array2<f64> = self.d2_psi_d_z2();
-        let r: &Array1<f64> = &self.r;
 
         let mut g_d_b_r_d_z: Array2<f64> = Array2::from_elem((self.n_rz, self.conductor_n_rz), f64::NAN);
         for i_rz in 0..self.n_rz {
             for i_conductor_rz in 0..self.conductor_n_rz {
-                g_d_b_r_d_z[(i_rz, i_conductor_rz)] = -d2_psi_d_z2[(i_rz, i_conductor_rz)] / (2.0 * PI * r[i_rz]);
+                g_d_b_r_d_z[(i_rz, i_conductor_rz)] = -d2_psi_d_z2[(i_rz, i_conductor_rz)] / (2.0 * PI * self.evaluation_radius(i_rz, i_conductor_rz));
             }
         }
 
@@ -1049,12 +1060,11 @@ impl Greens {
     /// * `g_d_b_z_d_z[(i_rz, i_conductor_rz)]` - The Greens table between "sensors" and "conductors"`
     pub fn d_b_z_d_z(&self) -> Array2<f64> {
         let d2_psi_d_r_d_z: Array2<f64> = self.d2_psi_d_r_d_z();
-        let r: &Array1<f64> = &self.r;
 
         let mut g_d_b_z_d_z: Array2<f64> = Array2::from_elem((self.n_rz, self.conductor_n_rz), f64::NAN);
         for i_rz in 0..self.n_rz {
             for i_conductor_rz in 0..self.conductor_n_rz {
-                g_d_b_z_d_z[(i_rz, i_conductor_rz)] = d2_psi_d_r_d_z[(i_rz, i_conductor_rz)] / (2.0 * PI * r[i_rz]);
+                g_d_b_z_d_z[(i_rz, i_conductor_rz)] = d2_psi_d_r_d_z[(i_rz, i_conductor_rz)] / (2.0 * PI * self.evaluation_radius(i_rz, i_conductor_rz));
             }
         }
 
@@ -1599,6 +1609,80 @@ fn test_self_field_off_diagonal_matches_sensor_to_conductor() {
 #[test]
 fn test_self_point_distance_tolerance_is_half_a_centimetre() {
     assert_eq!(SELF_POINT_DISTANCE_TOLERANCE, 5e-3);
+}
+
+#[test]
+fn test_near_source_tables_equal_actual_source_centre() {
+    use ndarray::array;
+    let methods: [fn(&Greens) -> Array2<f64>; 13] = [
+        Greens::psi,
+        Greens::d_psi_d_r,
+        Greens::d_psi_d_z,
+        Greens::d2_psi_d_r2,
+        Greens::d2_psi_d_r_d_z,
+        Greens::d2_psi_d_z2,
+        Greens::d3_psi_d_z3,
+        Greens::d3_psi_d_r2_d_z,
+        Greens::d3_psi_d_r_d_z2,
+        Greens::b_r,
+        Greens::b_z,
+        Greens::d_b_r_d_z,
+        Greens::d_b_z_d_z,
+    ];
+    let source_r: Array1<f64> = array![0.5, 0.8];
+    let source_z: Array1<f64> = array![0.0, 0.1];
+    let d_r: Array1<f64> = array![0.01, 0.02];
+    let d_z: Array1<f64> = array![0.02, 0.03];
+    let centre: Greens = Greens::sensor_to_conductor(
+        source_r.clone(),
+        source_z.clone(),
+        source_r.clone(),
+        source_z.clone(),
+        d_r.clone(),
+        d_z.clone(),
+    );
+    for radial_offset in [-0.0049, 0.0, 0.0049] {
+        for vertical_offset in [-0.0049, 0.0, 0.0049] {
+            let near: Greens = Greens::sensor_to_conductor(
+                &source_r + radial_offset,
+                &source_z + vertical_offset,
+                source_r.clone(),
+                source_z.clone(),
+                d_r.clone(),
+                d_z.clone(),
+            );
+            for method in methods {
+                let actual: Array2<f64> = method(&near);
+                let expected: Array2<f64> = method(&centre);
+                let n_sources: usize = source_r.len();
+                for i_source in 0..n_sources {
+                    assert!(actual[(i_source, i_source)].is_finite());
+                    assert_eq!(actual[(i_source, i_source)], expected[(i_source, i_source)]);
+                }
+            }
+            for radial_offset in [-0.006, 0.006] {
+                let far: Greens = Greens::sensor_to_conductor(
+                    &source_r + radial_offset,
+                    &source_z + 0.001,
+                    source_r.clone(),
+                    source_z.clone(),
+                    d_r.clone(),
+                    d_z.clone(),
+                );
+                let filament: Greens = Greens::sensor_to_conductor(
+                    &source_r + radial_offset,
+                    &source_z + 0.001,
+                    source_r.clone(),
+                    source_z.clone(),
+                    Array1::zeros(2),
+                    Array1::zeros(2),
+                );
+                for method in methods {
+                    assert_eq!(method(&far), method(&filament));
+                }
+            }
+        }
+    }
 }
 
 #[test]

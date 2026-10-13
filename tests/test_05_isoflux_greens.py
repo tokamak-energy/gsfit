@@ -94,8 +94,7 @@ def test_plasma_uses_actual_cell_widths(offset: float) -> None:
     evaluation_r = np.array([0.4125 + offset])
     evaluation_z = np.array([0.001])
     if offset < 0.005:
-        # The centre approximation uses the evaluation radius in the self-term formula.
-        reference = gsfit_rs.greens_py(evaluation_r, evaluation_z, evaluation_r, evaluation_z, d_r[:1], d_z[:1])
+        reference = gsfit_rs.greens_py(source_r[4:5], source_z[4:5], source_r[4:5], source_z[4:5], d_r[:1], d_z[:1])
     else:
         reference = gsfit_rs.greens_py(evaluation_r, evaluation_z, source_r[4:5], source_z[4:5], np.zeros(1), np.zeros(1))
     other_point = gsfit_rs.greens_py(np.array([0.7]), np.array([0.03]), source_r[4:5], source_z[4:5], d_r[:1], d_z[:1])
@@ -179,7 +178,9 @@ def test_magnetic_sensors_use_source_widths(offset: float, sensor_kind: str, sou
     assert np.isfinite(result).all()
     r, z = np.array([0.4125 + offset]), np.array([0.001])
     if sensor_kind == "bp_probe":
-        kernel = gsfit_rs.greens_d_psi_d_r(r, z, source_r, source_z, d_r, d_z) / (2.0 * np.pi * r[0])
+        near_source = (np.abs(r[0] - source_r) < 0.005) & (np.abs(z[0] - source_z) < 0.005)
+        field_r = np.where(near_source, source_r, r[0])
+        kernel = gsfit_rs.greens_d_psi_d_r(r, z, source_r, source_z, d_r, d_z) / (2.0 * np.pi * field_r)
     else:
         kernel = gsfit_rs.greens_py(r, z, source_r, source_z, d_r, d_z)
     expected = kernel[0] if source_kind == "plasma" else kernel.sum() * scale
@@ -256,8 +257,10 @@ def test_boundary_and_stationary_sensors_use_source_widths(offset: float, sensor
         kernel = gsfit_rs.greens_py(r, z, source_r, source_z, d_r, d_z)
         derivative = gsfit_rs.greens_d_psi_d_z(r, z, source_r, source_z, d_r, d_z)
     else:
-        kernel = -gsfit_rs.greens_d_psi_d_z(r, z, source_r, source_z, d_r, d_z) / (2.0 * np.pi * r[0])
-        derivative = -gsfit_rs.greens_d2_psi_d_z2(r, z, source_r, source_z, d_r, d_z) / (2.0 * np.pi * r[0])
+        near_source = (np.abs(r[0] - source_r) < 0.005) & (np.abs(z[0] - source_z) < 0.005)
+        field_r = np.where(near_source, source_r, r[0])
+        kernel = -gsfit_rs.greens_d_psi_d_z(r, z, source_r, source_z, d_r, d_z) / (2.0 * np.pi * field_r)
+        derivative = -gsfit_rs.greens_d2_psi_d_z2(r, z, source_r, source_z, d_r, d_z) / (2.0 * np.pi * field_r)
     expected = np.repeat(kernel, 2, axis=0) if source_kind == "plasma" else np.full(2, kernel.sum() * scale)
     assert np.isfinite(result).all()
     np.testing.assert_allclose(result, expected, rtol=1e-12, atol=1e-15)
@@ -334,13 +337,14 @@ def test_optional_derivative_widths_select_filaments(
 
 
 @pytest.mark.parametrize("api_name", GREEN_APIS)
-def test_greens_preserve_finite_width_self_terms(api_name: str) -> None:
+@pytest.mark.parametrize("radial_offset", [-0.0049, 0.0, 0.0049])
+def test_greens_preserve_finite_width_self_terms(api_name: str, radial_offset: float) -> None:
     api = getattr(gsfit_rs, api_name)
-    r, z = np.array([0.5]), np.array([0.001])
+    r, z = np.array([0.5 + radial_offset]), np.array([0.001])
     source_r, source_z = np.array([0.5]), np.array([0.0])
     d_r, d_z = np.array([0.01]), np.array([0.02])
     actual = api(r, z, source_r, source_z, d_r, d_z)
-    centre = api(r, z, r, z, d_r, d_z)
+    centre = api(source_r, source_z, source_r, source_z, d_r, d_z)
     assert np.isfinite(actual).all()
     np.testing.assert_allclose(actual, centre, rtol=1e-12, atol=0.0)
 
