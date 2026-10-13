@@ -156,6 +156,8 @@ impl BpProbes {
         let passives_geometry: PassiveGeometryAll = passives.get_all_passive_filament_geometry();
         let passives_r: Array1<f64> = passives_geometry.r;
         let passives_z: Array1<f64> = passives_geometry.z;
+        let passives_d_r: Array1<f64> = passives_geometry.d_r;
+        let passives_d_z: Array1<f64> = passives_geometry.d_z;
 
         let passive_currents: Array2<f64> = passives.get_passive_filament_currents_from_simulated();
         for sensor_name in &self.results.keys() {
@@ -168,8 +170,8 @@ impl BpProbes {
                 array![sensor_z],
                 passives_r.clone(),
                 passives_z.clone(),
-                passives_r.clone() * 0.0, // TODO: should this be NaN instead?
-                passives_z.clone() * 0.0,
+                passives_d_r.clone(),
+                passives_d_z.clone(),
             );
 
             // Calculate Greens

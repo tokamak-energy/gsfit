@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2, s};
+use ndarray::{s, Array1, Array2, ArrayView1, ArrayView2};
 use rayon::prelude::*;
 use spec_math::cephes64::ellpe; // complete elliptic integral of the second kind
 use spec_math::cephes64::ellpk; // complete elliptic integral of the first kind
@@ -15,7 +15,8 @@ const XI: f64 = 0.157;
 /// Maximum per-coordinate separation for using the finite-cross-section self term instead of
 /// the filament expression. This 5 mm switch deliberately approximates nearby fields with the
 /// centre self term; it is not a cross-section containment test or an off-centre field integral.
-/// Sources evaluated within this neighbourhood require positive cross-section widths.
+/// Only sources with two positive cross-section widths use the self term. Zero-width sources
+/// retain the filament expression and cannot be evaluated at exact coincidence.
 /// Units are metres.
 const SELF_POINT_DISTANCE_TOLERANCE: f64 = 5e-3; // = 5 mm
 
@@ -70,6 +71,12 @@ impl Greens {
     /// * `conductor_z` - vertical coordinates of the "conductors", same length as `conductor_r`, [metre]
     /// * `conductor_d_r` - radial widths of the conductor cross-sections, same length as `conductor_r`, [metre]
     /// * `conductor_d_z` - vertical heights of the conductor cross-sections, same length as `conductor_r`, [metre]
+    ///
+    /// Widths must be finite and nonnegative. If either width is zero, the source is treated as
+    /// an ideal filament rather than using the finite-area self term.
+    ///
+    /// # Panics
+    /// Panics on malformed widths or singular filament evaluations.
     ///
     /// # Returns
     /// * `greens_calculator` - a Greens object from which we can calculate `g_psi`, `g_d_psi_d_r`, ...
@@ -136,6 +143,8 @@ impl Greens {
             conductor_d_z.len() == conductor_n_rz,
             "`conductor_d_z` and `conductor_z` must have the same length"
         );
+        Self::validate_source_widths(&sensor_r, &sensor_z, &conductor_r, &conductor_z, &conductor_d_r, &conductor_d_z)
+            .expect("Invalid Green's-function source geometry");
 
         // Pre-compute the elliptic integrals
         let elliptic_integrals: Vec<(Array1<f64>, Array1<f64>)> = (0..conductor_n_rz)
@@ -206,6 +215,8 @@ impl Greens {
             conductor_d_z.len() == conductor_n_rz,
             "`conductor_d_z` and `conductor_z` must have the same length"
         );
+        Self::validate_source_widths(&sensor_r, &sensor_z, &conductor_r, &conductor_z, &conductor_d_r, &conductor_d_z)
+            .expect("Invalid Green's-function source geometry");
 
         // Pre-compute the elliptic integrals
         let elliptic_integrals: Vec<(Array1<f64>, Array1<f64>)> = (0..conductor_n_rz)
@@ -248,6 +259,53 @@ impl Greens {
             elliptic_integral_k,
             mode: Mode::SelfField,
         }
+    }
+
+    pub(crate) fn validate_source_widths(
+        sensor_r: &Array1<f64>,
+        sensor_z: &Array1<f64>,
+        conductor_r: &Array1<f64>,
+        conductor_z: &Array1<f64>,
+        conductor_d_r: &Array1<f64>,
+        conductor_d_z: &Array1<f64>,
+    ) -> Result<(), String> {
+        let n_sources: usize = conductor_r.len();
+        if conductor_z.len() != n_sources || conductor_d_r.len() != n_sources || conductor_d_z.len() != n_sources || sensor_r.len() != sensor_z.len() {
+            return Err("Green's-function coordinate and width arrays must have matching lengths".to_string());
+        }
+        for i_source in 0..n_sources {
+            let d_r: f64 = conductor_d_r[i_source];
+            let d_z: f64 = conductor_d_z[i_source];
+            if !d_r.is_finite() || !d_z.is_finite() || d_r < 0.0 || d_z < 0.0 {
+                return Err(format!("Source {i_source}: cross-section widths must be finite and nonnegative"));
+            }
+            if d_r == 0.0 || d_z == 0.0 {
+                let n_sensors: usize = sensor_r.len();
+                for i_sensor in 0..n_sensors {
+                    if sensor_r[i_sensor] == conductor_r[i_source] && sensor_z[i_sensor] == conductor_z[i_source] {
+                        return Err(format!(
+                            "Source {i_source}, sensor {i_sensor}: coincident filament evaluation is singular; supply positive cross-section widths"
+                        ));
+                    }
+                    let distance_sum_sq: f64 =
+                        (sensor_r[i_sensor] + conductor_r[i_source]).powi(2) + (sensor_z[i_sensor] - conductor_z[i_source]).powi(2);
+                    let k_sq: f64 = 4.0 * sensor_r[i_sensor] * conductor_r[i_source] / distance_sum_sq;
+                    if k_sq >= 1.0 {
+                        return Err(format!(
+                            "Source {i_source}, sensor {i_sensor}: filament separation is numerically singular; supply positive cross-section widths"
+                        ));
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn uses_self_term(&self, i_sensor: usize, i_source: usize) -> bool {
+        self.conductor_d_r[i_source] > 0.0
+            && self.conductor_d_z[i_source] > 0.0
+            && (self.r[i_sensor] - self.conductor_r[i_source]).abs() < SELF_POINT_DISTANCE_TOLERANCE
+            && (self.z[i_sensor] - self.conductor_z[i_source]).abs() < SELF_POINT_DISTANCE_TOLERANCE
     }
 
     /// Calculates `g_psi`, where:
@@ -315,9 +373,7 @@ impl Greens {
                 // where `p_c` is the mean log distance from the cell centre to the cross-section:
                 // p_c = 0.5 * ln((d_r^2 + d_z^2) / 4) - 3/2 + (d_r / (2 * d_z)) * atan(d_z / d_r) + (d_z / (2 * d_r)) * atan(d_r / d_z)
                 for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
+                    if self.uses_self_term(i_rz, i_conductor_rz) {
                         let d_r: f64 = conductor_d_r[i_conductor_rz];
                         let d_z: f64 = conductor_d_z[i_conductor_rz];
                         let p_c: f64 = 0.5 * ((d_r.powi(2) + d_z.powi(2)) / 4.0).ln() - 1.5
@@ -403,9 +459,7 @@ impl Greens {
                 // Self-point: the hoop field of the finite rectangular cross-section
                 // <d_psi_d_r> = (MU_0 / 2) * (ln(16 * r / sqrt(d_r^2 + d_z^2)) + 1 - (d_z / d_r) * atan(d_r / d_z))
                 for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
+                    if self.uses_self_term(i_rz, i_conductor_rz) {
                         let d_r: f64 = conductor_d_r[i_conductor_rz];
                         let d_z: f64 = conductor_d_z[i_conductor_rz];
                         g_d_psi_d_r_local[i_rz] =
@@ -475,9 +529,7 @@ impl Greens {
                 // Self-point: the kernel is odd in h, so the value is EXACTLY zero for any
                 // z-symmetric cross-section
                 for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
+                    if self.uses_self_term(i_rz, i_conductor_rz) {
                         g_d_psi_d_z_local[i_rz] = 0.0;
                     }
                 }
@@ -557,9 +609,7 @@ impl Greens {
                 // hoop-field correction `d_psi_d_r / r` (split by XI) so that Ampere's law is satisfied
                 // <d2_psi_d_r2> = -4 * MU_0 * r * atan(d_z / d_r) / (d_r * d_z) + (1/2 - XI) * <d_psi_d_r> / r
                 for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
+                    if self.uses_self_term(i_rz, i_conductor_rz) {
                         let d_r: f64 = conductor_d_r[i_conductor_rz];
                         let d_z: f64 = conductor_d_z[i_conductor_rz];
                         let d_psi_d_r_self: f64 =
@@ -633,9 +683,7 @@ impl Greens {
                 // Self-point: the kernel is odd in h, so the value is EXACTLY zero for any
                 // z-symmetric cross-section
                 for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
+                    if self.uses_self_term(i_rz, i_conductor_rz) {
                         g_d2_psi_d_r_d_z_local[i_rz] = 0.0;
                     }
                 }
@@ -712,9 +760,7 @@ impl Greens {
                 // hoop-field correction `d_psi_d_r / r` (split by XI) so that Ampere's law is satisfied
                 // <d2_psi_d_z2> = -4 * MU_0 * r * atan(d_r / d_z) / (d_r * d_z) + (1/2 + XI) * <d_psi_d_r> / r
                 for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
+                    if self.uses_self_term(i_rz, i_conductor_rz) {
                         let d_r: f64 = conductor_d_r[i_conductor_rz];
                         let d_z: f64 = conductor_d_z[i_conductor_rz];
                         let d_psi_d_r_self: f64 =
@@ -790,9 +836,7 @@ impl Greens {
                 // Set to zero when conductor and sensor are at the same location
                 // (d3_psi_d_z3 is odd in h, so zero is the symmetric value at the self-point)
                 for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
+                    if self.uses_self_term(i_rz, i_conductor_rz) {
                         g_d3_psi_d_z3_local[i_rz] = 0.0;
                     }
                 }
@@ -910,9 +954,7 @@ impl Greens {
                 // Self-point: pure toroidal-curvature (hoop) effect
                 // <d3_psi_d_r_d_z2> = -MU_0 * (4 * atan(d_r / d_z) - 2 * d_r * d_z / (d_r^2 + d_z^2)) / (d_r * d_z)
                 for i_rz in 0..n_rz {
-                    if (r[i_rz] - conductor_r[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                        && (z[i_rz] - conductor_z[i_conductor_rz]).abs() < SELF_POINT_DISTANCE_TOLERANCE
-                    {
+                    if self.uses_self_term(i_rz, i_conductor_rz) {
                         let d_r: f64 = conductor_d_r[i_conductor_rz];
                         let d_z: f64 = conductor_d_z[i_conductor_rz];
                         g_d3_psi_d_r_d_z2_local[i_rz] = -MU_0 * (4.0 * (d_r / d_z).atan() - 2.0 * d_r * d_z / (d_r.powi(2) + d_z.powi(2))) / (d_r * d_z);
@@ -1557,6 +1599,46 @@ fn test_self_field_off_diagonal_matches_sensor_to_conductor() {
 #[test]
 fn test_self_point_distance_tolerance_is_half_a_centimetre() {
     assert_eq!(SELF_POINT_DISTANCE_TOLERANCE, 5e-3);
+}
+
+#[test]
+fn test_near_filaments_bypass_all_self_terms() {
+    use ndarray::array;
+    for (d_r, d_z) in [(0.0, 0.0), (0.0, 0.02), (0.01, 0.0)] {
+        let greens: Greens = Greens::sensor_to_conductor(array![0.5], array![0.001], array![0.5], array![0.0], array![d_r], array![d_z]);
+        assert!(!greens.uses_self_term(0, 0));
+        let tables: [Array2<f64>; 8] = [
+            greens.psi(),
+            greens.d_psi_d_r(),
+            greens.d_psi_d_z(),
+            greens.d2_psi_d_r2(),
+            greens.d2_psi_d_r_d_z(),
+            greens.d2_psi_d_z2(),
+            greens.d3_psi_d_z3(),
+            greens.d3_psi_d_r_d_z2(),
+        ];
+        for table in tables {
+            assert!(table.iter().all(|value| value.is_finite()));
+            assert_ne!(table[(0, 0)], 0.0);
+        }
+    }
+}
+
+#[test]
+#[should_panic(expected = "coincident filament evaluation is singular")]
+fn test_coincident_filament_is_rejected() {
+    use ndarray::array;
+    Greens::sensor_to_conductor(array![0.5], array![0.0], array![0.5], array![0.0], array![0.0], array![0.0]);
+}
+
+#[test]
+fn test_malformed_widths_are_rejected() {
+    use ndarray::array;
+    for width in [-0.01, f64::NAN, f64::INFINITY] {
+        for (d_r, d_z) in [(width, 0.02), (0.01, width)] {
+            assert!(Greens::validate_source_widths(&array![0.5], &array![0.001], &array![0.5], &array![0.0], &array![d_r], &array![d_z]).is_err());
+        }
+    }
 }
 
 /// The self-point branch in each Greens table (`psi`, `d_psi_d_r`, `d_psi_d_z`, `d2_psi_d_r2`,

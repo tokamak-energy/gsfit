@@ -86,13 +86,13 @@ def build_isoflux_pairs(
         conn.openTree("TS", pulseNo)
         sensors_geometry_r = np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}:R").data(), dtype=np.float64)
         sensors_geometry_z = np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}:Z").data(), dtype=np.float64)
-        time_thomson_scattering = np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}:TIME").data(), dtype=np.float64)
+        thomson_scattering_time = np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}:TIME").data(), dtype=np.float64)
         # `measured` and `measured_error` have shape = [n_time, n_sensors]
         measured = np.atleast_2d(np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}.PROFILES:{quantity}").data(), dtype=np.float64))
         measured_error = np.atleast_2d(np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}.PROFILES:{quantity}_ERR").data(), dtype=np.float64))
 
     # The TS chord sits a few mm off the midplane, so use its actual height rather than assuming Z = 0
-    z_thomson_scattering = float(np.nanmedian(sensors_geometry_z))
+    thomson_scattering_z = float(np.nanmedian(sensors_geometry_z))
 
     n_time = len(times_to_reconstruct)
     n_levels = len(level_fractions)
@@ -101,8 +101,8 @@ def build_isoflux_pairs(
 
     for i_time in range(n_time):
         # Use the nearest TS time-slice, but only if it is close enough to be describing the same plasma
-        i_thomson_scattering = int(np.argmin(np.abs(time_thomson_scattering - times_to_reconstruct[i_time])))
-        if abs(time_thomson_scattering[i_thomson_scattering] - times_to_reconstruct[i_time]) > max_time_offset:
+        i_thomson_scattering = int(np.argmin(np.abs(thomson_scattering_time - times_to_reconstruct[i_time])))
+        if abs(thomson_scattering_time[i_thomson_scattering] - times_to_reconstruct[i_time]) > max_time_offset:
             continue
 
         pairs = find_isoflux_pairs_for_slice(
@@ -122,9 +122,9 @@ def build_isoflux_pairs(
         "time": np.asarray(times_to_reconstruct, dtype=np.float64),
         "level_fractions": np.asarray(level_fractions, dtype=np.float64),
         "location_1_r": location_1_r,
-        "location_1_z": np.full_like(location_1_r, z_thomson_scattering),
+        "location_1_z": np.full_like(location_1_r, thomson_scattering_z),
         "location_2_r": location_2_r,
-        "location_2_z": np.full_like(location_2_r, z_thomson_scattering),
+        "location_2_z": np.full_like(location_2_r, thomson_scattering_z),
     }
 
 

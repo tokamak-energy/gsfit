@@ -24,6 +24,19 @@ pub struct FluxLoops {
     pub results: DataTree,
 }
 
+#[test]
+fn test_rust_coil_greens_preserve_near_source_widths() {
+    let mut coils: Coils = Coils::new();
+    coils.add_pf_coil_rs("source", &array![0.5], &array![0.0], &array![0.01], &array![0.02], &array![0.0], &array![1.0]);
+    let mut sensor: FluxLoops = FluxLoops::new();
+    sensor.add_sensor_rs("sensor", 0.5, 0.001, String::new(), 0.0, true, 1.0, array![0.0], array![0.0]);
+    sensor.greens_with_coils_rs(&coils);
+    let actual: f64 = sensor.results.get("sensor").get("greens").get("pf").get("source").unwrap_f64();
+    let expected: f64 = Greens::sensor_to_conductor(array![0.5], array![0.001], array![0.5], array![0.0], array![0.01], array![0.02]).psi()[(0, 0)];
+    assert!(actual.is_finite());
+    assert_eq!(actual, expected);
+}
+
 impl Default for FluxLoops {
     fn default() -> Self {
         Self::new()
@@ -241,6 +254,8 @@ impl FluxLoops {
         let passives_geometry: PassiveGeometryAll = passives.get_all_passive_filament_geometry();
         let passives_r: Array1<f64> = passives_geometry.r;
         let passives_z: Array1<f64> = passives_geometry.z;
+        let passives_d_r: Array1<f64> = passives_geometry.d_r;
+        let passives_d_z: Array1<f64> = passives_geometry.d_z;
 
         let passive_currents: Array2<f64> = passives.get_passive_filament_currents_from_simulated();
         for sensor_name in &self.results.keys() {
@@ -252,8 +267,8 @@ impl FluxLoops {
                 array![sensor_z],
                 passives_r.clone(),
                 passives_z.clone(),
-                passives_r.clone() * 0.0, // TODO: should this be NaN instead?
-                passives_z.clone() * 0.0,
+                passives_d_r.clone(),
+                passives_d_z.clone(),
             );
 
             // Calculate Greens
@@ -418,15 +433,11 @@ impl FluxLoops {
             for pf_coil_name in coils.results.get("pf").keys() {
                 let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
+                let coil_d_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("d_r").unwrap_array1();
+                let coil_d_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("d_z").unwrap_array1();
 
-                let greens_calculator: Greens = Greens::sensor_to_conductor(
-                    array![sensor_r],
-                    array![sensor_z],
-                    coil_r.clone(),
-                    coil_z.clone(),
-                    coil_r.clone() * 0.0, // TODO: should this be NaN instead?
-                    coil_z.clone() * 0.0,
-                );
+                let greens_calculator: Greens =
+                    Greens::sensor_to_conductor(array![sensor_r], array![sensor_z], coil_r.clone(), coil_z.clone(), coil_d_r, coil_d_z);
 
                 let g_psi_matrix: Array2<f64> = greens_calculator.psi(); // shape = (1, n_coils)
 

@@ -256,3 +256,78 @@ def test_boundary_and_stationary_sensors_use_source_widths(offset: float, sensor
         else:
             filament = -gsfit_rs.greens_d_psi_d_z(r, z, source_r, source_z, np.zeros(1), np.zeros(1)) / (2.0 * np.pi * r[0])
         np.testing.assert_allclose(result, np.full(2, filament.sum() * scale), rtol=1e-12, atol=1e-15)
+
+
+@pytest.mark.parametrize("widths", [(None, None), (0.0, 0.0), (0.0, 0.02), (0.01, 0.0)])
+def test_near_filament_flux_does_not_use_self_term(widths: tuple[float | None, float | None]) -> None:
+    r, z = np.array([0.5]), np.array([0.001])
+    source_r, source_z = np.array([0.5]), np.array([0.0])
+    d_r = None if widths[0] is None else np.array([widths[0]])
+    d_z = None if widths[1] is None else np.array([widths[1]])
+    flux = gsfit_rs.greens_py(r, z, source_r, source_z, d_r, d_z)
+    assert np.isfinite(flux).all()
+    assert flux[0, 0] == pytest.approx(3.95467178e-6, rel=1e-8)
+
+
+@pytest.mark.parametrize("width", [-0.01, np.nan, np.inf])
+@pytest.mark.parametrize("dimension", ["d_r", "d_z"])
+def test_invalid_green_widths_raise_value_error(width: float, dimension: str) -> None:
+    widths = {"d_r": np.array([0.01]), "d_z": np.array([0.02])}
+    widths[dimension] = np.array([width])
+    with pytest.raises(ValueError, match="finite and nonnegative"):
+        gsfit_rs.greens_py(np.array([0.5]), np.array([0.001]), np.array([0.5]), np.array([0.0]), **widths)
+
+
+@pytest.mark.parametrize("widths", [(None, None), (0.0, 0.0), (0.0, 0.02), (0.01, 0.0)])
+def test_coincident_filament_flux_is_rejected(widths: tuple[float | None, float | None]) -> None:
+    r, z = np.array([0.5]), np.array([0.0])
+    d_r = None if widths[0] is None else np.array([widths[0]])
+    d_z = None if widths[1] is None else np.array([widths[1]])
+    with pytest.raises(ValueError, match="coincident filament evaluation is singular"):
+        gsfit_rs.greens_py(r, z, r, z, d_r, d_z)
+
+
+def test_numerically_singular_filament_flux_is_rejected() -> None:
+    with pytest.raises(ValueError, match="filament separation is numerically singular"):
+        gsfit_rs.greens_py(np.array([0.5]), np.array([1e-12]), np.array([0.5]), np.array([0.0]))
+
+
+@pytest.mark.parametrize("sensor_kind", ["bp_probe", "flux_loop"])
+def test_vacuum_sensor_values_preserve_passive_widths(sensor_kind: str) -> None:
+    r, z = np.array([0.4125]), np.array([0.0])
+    d_r, d_z = np.array([0.01]), np.array([0.02])
+    time = np.array([0.0, 1.0])
+    coils = gsfit_rs.Coils()
+    coils.add_pf_coil("source", np.array([0.8]), np.array([0.1]), d_r, d_z, time, np.zeros(2))
+    state = coils.__getstate__()
+    state["results"]["pf"]["source"]["i"]["simulated"] = {"time": time, "value": np.zeros(2)}
+    coils.__setstate__(state)
+    passives = gsfit_rs.Passives()
+    passives.add_passive(
+        "source", r, z, d_r, d_z, np.zeros(1), np.zeros(1),
+        1e-6, "constant_current_density", 1, np.zeros((0, 1)), np.zeros(0),
+    )
+    state = passives.__getstate__()
+    state["results"]["source"]["i_filaments"] = {"simulated": {"time": time, "value": np.ones((2, 1))}}
+    passives.__setstate__(state)
+    sensor = gsfit_rs.BpProbes() if sensor_kind == "bp_probe" else gsfit_rs.FluxLoops()
+    settings = dict(
+        name="sensor", geometry_r=0.4125, geometry_z=0.001,
+        fit_settings_comment="vacuum near-source test", fit_settings_expected_value=0.0,
+        fit_settings_include=True, fit_settings_weight=1.0, time=time, measured=np.zeros(2),
+    )
+    if sensor_kind == "bp_probe":
+        settings["geometry_angle_pol"] = np.pi / 2.0
+    sensor.add_sensor(**settings)
+    sensor.greens_with_coils(coils)
+    sensor.calculate_sensor_values_vacuum(coils, passives)
+    result = sensor.__getstate__()["results"]["sensor"]
+    sensor_r, sensor_z = np.array([0.4125]), np.array([0.001])
+    if sensor_kind == "bp_probe":
+        expected = gsfit_rs.greens_d_psi_d_r(sensor_r, sensor_z, r, z, d_r, d_z)[0, 0] / (2.0 * np.pi * sensor_r[0])
+        values = result["b"]["simulated"]["value"]
+    else:
+        expected = gsfit_rs.greens_py(sensor_r, sensor_z, r, z, d_r, d_z)[0, 0]
+        values = result["psi"]["simulated"]["value"]
+    assert np.isfinite(values).all()
+    np.testing.assert_allclose(values, np.full(2, expected), rtol=1e-12, atol=1e-15)

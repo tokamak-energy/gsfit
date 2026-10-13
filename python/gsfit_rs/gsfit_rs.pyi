@@ -141,6 +141,10 @@ def greens_py(
     :param d_r: (optional) Radial widths [metre]
     :param d_z: (optional) Vertical heights [metre]
 
+    Omitted or zero widths select an ideal filament, even within the 5 mm near-source cutoff.
+    Both widths must be positive to use the finite-cross-section centre approximation.
+    Negative/nonfinite widths and exactly or numerically coincident filament evaluations raise ValueError.
+
     Note: the inputs are symmetrical
     """
     ...
