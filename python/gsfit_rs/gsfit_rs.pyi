@@ -246,8 +246,11 @@ def greens_d2_psi_d_z2(
 
     When a sensor coincides with a current source, the source's `d_r` and `d_z`
     are used to evaluate the analytic self-term
-    (see `documentation/jump_condition_dbr_dz.md`); if they are omitted the
-    self-term is zero.
+    (see `documentation/jump_condition_dbr_dz.md`).
+
+    Omitted or zero widths select an ideal filament. Both widths must be positive
+    to use the 5 mm finite-cross-section centre approximation. Negative/nonfinite
+    widths and exactly or numerically coincident filament evaluations raise ValueError.
 
     :param r: (by convention) Sensor radial positions [metre]
     :param z: (by convention) Sensor vertical positions [metre]
@@ -268,6 +271,10 @@ def greens_d3_psi_d_z3(
 ) -> npt.NDArray[np.float64]:
     """
     Third derivative of the Green's function with respect to `z` three times.
+
+    Omitted or zero widths select an ideal filament. Both widths must be positive
+    to use the 5 mm finite-cross-section centre approximation. Negative/nonfinite
+    widths and exactly or numerically coincident filament evaluations raise ValueError.
 
     :param r: (by convention) Sensor radial positions [metre]
     :param z: (by convention) Sensor vertical positions [metre]
@@ -292,6 +299,10 @@ def greens_d3_psi_d_r2_d_z(
     Computed from the homogeneous Grad-Shafranov equation:
     `d3_psi_d_r2_d_z = d2_psi_d_r_d_z / r - d3_psi_d_z3`.
 
+    Omitted or zero widths select an ideal filament. Both widths must be positive
+    to use the 5 mm finite-cross-section centre approximation. Negative/nonfinite
+    widths and exactly or numerically coincident filament evaluations raise ValueError.
+
     :param r: (by convention) Sensor radial positions [metre]
     :param z: (by convention) Sensor vertical positions [metre]
     :param r_prime: (by convention) Current source radial positions [metre]
@@ -311,6 +322,10 @@ def greens_d3_psi_d_r_d_z2(
 ) -> npt.NDArray[np.float64]:
     """
     Third derivative of the Green's function with respect to `r` and `z` twice.
+
+    Omitted or zero widths select an ideal filament. Both widths must be positive
+    to use the 5 mm finite-cross-section centre approximation. Negative/nonfinite
+    widths and exactly or numerically coincident filament evaluations raise ValueError.
 
     :param r: (by convention) Sensor radial positions [metre]
     :param z: (by convention) Sensor vertical positions [metre]
