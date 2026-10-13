@@ -8,7 +8,7 @@ high-field-side / low-field-side radius pairs. No database connection is needed.
 import numpy as np
 import numpy.typing as npt
 import pytest
-from gsfit.database_readers.st40_mdsplus_with_digital_filter.setup_isoflux_sensors import find_isoflux_pairs_for_slice
+from gsfit.isoflux_pairs import find_isoflux_pairs_for_slice
 
 # A symmetric, peaked profile: a pair cut at any level should straddle the peak symmetrically
 R_AXIS = 0.5
