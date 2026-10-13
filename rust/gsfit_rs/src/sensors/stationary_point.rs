@@ -16,6 +16,8 @@ use pyo3::types::{PyDict, PyList};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Stationary-point constraints using stored coil/passive cross-sections and plasma grid-cell widths
+/// for the Green's-function near-source centre approximation.
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass(module = "gsfit_rs", skip_from_py_object)]
 pub struct StationaryPoint {
@@ -382,7 +384,8 @@ impl StationaryPoint {
                 for i_time in 0..n_time {
                     let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                     let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
-                    let n_filaments: usize = coil_r.len();
+                    let coil_d_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("d_r").unwrap_array1();
+                    let coil_d_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("d_z").unwrap_array1();
 
                     let mag_axis_r_local: Array1<f64> = array![mag_axis_r[i_time]];
                     let mag_axis_z_local: Array1<f64> = array![mag_axis_z[i_time]];
@@ -392,8 +395,8 @@ impl StationaryPoint {
                         mag_axis_z_local.clone(),
                         coil_r.clone(),
                         coil_z.clone(),
-                        Array1::zeros(n_filaments), // TODO: should this be NaN?
-                        Array1::zeros(n_filaments),
+                        coil_d_r,
+                        coil_d_z,
                     );
 
                     let g_b_r_matrix: Array2<f64> = greens_calculator.b_r(); // shape = [n_sensor, n_coil_filament]
@@ -426,6 +429,8 @@ impl StationaryPoint {
         let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
         let n_r: usize = plasma.equilibrium_ids.code.grid.n_r as usize;
         let n_z: usize = plasma.equilibrium_ids.code.grid.n_z as usize;
+        let plasma_d_r: Array1<f64> = Array1::from_elem(n_r * n_z, mesh_r[(0, 1)] - mesh_r[(0, 0)]);
+        let plasma_d_z: Array1<f64> = Array1::from_elem(n_r * n_z, mesh_z[(1, 0)] - mesh_z[(0, 0)]);
 
         for sensor_name in self.results.keys() {
             // Get time
@@ -444,8 +449,8 @@ impl StationaryPoint {
                     array![mag_axis_z[i_time]],
                     plasma_r.clone(), // current source
                     plasma_z.clone(),
-                    Array1::zeros(n_z * n_r), // TODO: should this be NaN?
-                    Array1::zeros(n_z * n_r),
+                    plasma_d_r.clone(),
+                    plasma_d_z.clone(),
                 );
 
                 let g_br_full: Array2<f64> = greens_calculator.b_r(); // shape = [n_sensor, n_z * n_r]
@@ -489,6 +494,8 @@ impl StationaryPoint {
                 let dof_names: Vec<String> = dof_names_accumulator.keys();
                 let passive_r: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
+                let passive_d_r: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("d_r").unwrap_array1();
+                let passive_d_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("d_z").unwrap_array1();
 
                 for dof_name in dof_names {
                     let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -498,8 +505,8 @@ impl StationaryPoint {
                             array![mag_axis_z[i_time]],
                             passive_r.clone(), // current source
                             passive_z.clone(),
-                            Array1::zeros(passive_r.len()), // TODO: should this be NaN?
-                            Array1::zeros(passive_r.len()),
+                            passive_d_r.clone(),
+                            passive_d_z.clone(),
                         );
 
                         let g_br_full: Array2<f64> = greens_calculator.b_r(); // shape = [n_sensor, n_passive_filament]

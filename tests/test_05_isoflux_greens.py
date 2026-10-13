@@ -188,3 +188,71 @@ def test_grid_to_conductors_uses_source_widths() -> None:
     for field in ["psi", "d_psi_d_r", "d_psi_d_z", "d2_psi_d_r2", "d2_psi_d_r_d_z", "d2_psi_d_z2"]:
         assert np.isfinite(plasma.get(getattr(ep.greens.pf_active[0], field))).all()
         assert np.isfinite(plasma.get(getattr(ep.greens.pf_passive[0].dof[0], field))).all()
+
+
+@pytest.mark.parametrize("offset", [0.0, 0.0049, 0.0051, 0.006])
+@pytest.mark.parametrize("sensor_kind", ["isoflux_boundary", "stationary_point"])
+@pytest.mark.parametrize("source_kind", ["plasma", "coil", "passive"])
+def test_boundary_and_stationary_sensors_use_source_widths(offset: float, sensor_kind: str, source_kind: str) -> None:
+    sensor = gsfit_rs.IsofluxBoundary() if sensor_kind == "isoflux_boundary" else gsfit_rs.StationaryPoint()
+    r, z = np.array([0.4125 + offset]), np.array([0.001])
+    settings = dict(
+        name="sensor", fit_settings_comment="finite source geometry",
+        fit_settings_include=True, fit_settings_weight=1.0,
+        time=np.array([0.0, 1.0]), times_to_reconstruct=np.array([0.0, 1.0]),
+    )
+    if sensor_kind == "isoflux_boundary":
+        settings.update(location_1_r=np.repeat(r, 2), location_1_z=np.repeat(z, 2))
+    else:
+        settings.update(mag_axis_r=np.repeat(r, 2), mag_axis_z=np.repeat(z, 2), fit_settings_expected_value=0.0)
+    sensor.add_sensor(**settings)
+
+    if source_kind == "plasma":
+        sensor.greens_with_plasma(make_plasma())
+        mesh_r, mesh_z = np.meshgrid(np.linspace(0.4, 0.425, 3), np.linspace(-0.025, 0.025, 3))
+        source_r, source_z = mesh_r.ravel(), mesh_z.ravel()
+        d_r, d_z = np.full(9, 0.0125), np.full(9, 0.025)
+        scale = 1.0
+    else:
+        source_r, source_z = np.array([0.4125]), np.array([0.0])
+        d_r, d_z = np.array([0.01]), np.array([0.02])
+        if source_kind == "coil":
+            coils = gsfit_rs.Coils()
+            coils.add_pf_coil("source", source_r, source_z, d_r, d_z, np.array([0.0, 1.0]), np.ones(2))
+            sensor.greens_with_coils(coils)
+            scale = 1.0
+        else:
+            passives = gsfit_rs.Passives()
+            passives.add_passive(
+                "source", source_r, source_z, d_r, d_z, np.zeros(1), np.zeros(1),
+                1e-6, "constant_current_density", 1, np.zeros((0, 1)), np.zeros(0),
+            )
+            sensor.greens_with_passives(passives)
+            scale = d_r[0] * d_z[0]
+
+    greens = sensor.__getstate__()["results"]["sensor"]["greens"]
+    if source_kind == "plasma":
+        result = greens["plasma"]
+    elif source_kind == "coil":
+        result = greens["pf"]["source"]
+    else:
+        result = greens["passives"]["source"]["constant_current_density"]
+
+    if sensor_kind == "isoflux_boundary":
+        kernel = gsfit_rs.greens_py(r, z, source_r, source_z, d_r, d_z)
+        derivative = gsfit_rs.greens_d_psi_d_z(r, z, source_r, source_z, d_r, d_z)
+    else:
+        kernel = -gsfit_rs.greens_d_psi_d_z(r, z, source_r, source_z, d_r, d_z) / (2.0 * np.pi * r[0])
+        derivative = -gsfit_rs.greens_d2_psi_d_z2(r, z, source_r, source_z, d_r, d_z) / (2.0 * np.pi * r[0])
+    expected = np.repeat(kernel, 2, axis=0) if source_kind == "plasma" else np.full(2, kernel.sum() * scale)
+    assert np.isfinite(result).all()
+    np.testing.assert_allclose(result, expected, rtol=1e-12, atol=1e-15)
+    if source_kind == "plasma":
+        assert np.isfinite(greens["d_plasma_d_z"]).all()
+        np.testing.assert_allclose(greens["d_plasma_d_z"], np.repeat(derivative, 2, axis=0), rtol=1e-12, atol=1e-15)
+    elif offset > 0.005:
+        if sensor_kind == "isoflux_boundary":
+            filament = gsfit_rs.greens_py(r, z, source_r, source_z, np.zeros(1), np.zeros(1))
+        else:
+            filament = -gsfit_rs.greens_d_psi_d_z(r, z, source_r, source_z, np.zeros(1), np.zeros(1)) / (2.0 * np.pi * r[0])
+        np.testing.assert_allclose(result, np.full(2, filament.sum() * scale), rtol=1e-12, atol=1e-15)

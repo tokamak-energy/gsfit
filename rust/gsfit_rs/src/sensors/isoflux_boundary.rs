@@ -17,6 +17,8 @@ use pyo3::types::{PyDict, PyList};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Boundary flux constraints using stored coil/passive cross-sections and plasma grid-cell widths
+/// for the Green's-function near-source centre approximation.
 #[derive(Clone, AddDataTreeGetters)]
 #[pyclass(module = "gsfit_rs", skip_from_py_object)]
 pub struct IsofluxBoundary {
@@ -185,6 +187,8 @@ impl IsofluxBoundary {
             for pf_coil_name in coils_local.results.get("pf").keys() {
                 let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
                 let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
+                let coil_d_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("d_r").unwrap_array1();
+                let coil_d_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("d_z").unwrap_array1();
 
                 let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                 for i_time in 0..n_time {
@@ -194,8 +198,8 @@ impl IsofluxBoundary {
                         array![location_1_z[i_time]],
                         coil_r.clone(),
                         coil_z.clone(),
-                        coil_r.clone() * 0.0,
-                        coil_z.clone() * 0.0,
+                        coil_d_r.clone(),
+                        coil_d_z.clone(),
                     );
                     let g_full_location_1: Array2<f64> = greens_calculator.psi(); // shape = [1, n_z * n_r]
 
@@ -247,6 +251,8 @@ impl IsofluxBoundary {
                 let dof_names: Vec<String> = _tmp.keys();
                 let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
                 let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
+                let passive_d_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("d_r").unwrap_array1();
+                let passive_d_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("d_z").unwrap_array1();
 
                 // Loop over all degrees of freedom
                 for dof_name in dof_names {
@@ -258,8 +264,8 @@ impl IsofluxBoundary {
                             array![location_1_z[i_time]],
                             passive_r.clone(),
                             passive_z.clone(),
-                            passive_r.clone() * 0.0,
-                            passive_z.clone() * 0.0,
+                            passive_d_r.clone(),
+                            passive_d_z.clone(),
                         );
                         let g_full_location_1: Array2<f64> = greens_calculator.psi(); // shape = [1, n_z * n_r]
 
@@ -305,6 +311,8 @@ impl IsofluxBoundary {
         let mesh_z: &Array2<f64> = &plasma_local.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied()); // shape = n_z * n_r
         let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
+        let plasma_d_r: Array1<f64> = Array1::from_elem(n_r * n_z, mesh_r[(0, 1)] - mesh_r[(0, 0)]);
+        let plasma_d_z: Array1<f64> = Array1::from_elem(n_r * n_z, mesh_z[(1, 0)] - mesh_z[(0, 0)]);
 
         for sensor_name in self.results.keys() {
             // Get the isoflux locations
@@ -338,8 +346,8 @@ impl IsofluxBoundary {
                     array![location_1_z[i_time]],
                     plasma_r.clone(),
                     plasma_z.clone(),
-                    plasma_r.clone() * 0.0,
-                    plasma_z.clone() * 0.0,
+                    plasma_d_r.clone(),
+                    plasma_d_z.clone(),
                 );
                 let g_full_location_1: Array2<f64> = greens_calculator.psi(); // shape = [1, n_z * n_r]
 
