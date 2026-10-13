@@ -8,12 +8,58 @@ high-field-side / low-field-side radius pairs. No database connection is needed.
 import numpy as np
 import numpy.typing as npt
 import pytest
-from gsfit.isoflux_pairs import find_isoflux_pairs_for_slice
+from gsfit.isoflux_pairs import _radius_at_level, find_isoflux_pairs_for_slice
 
 # A symmetric, peaked profile: a pair cut at any level should straddle the peak symmetrically
 R_AXIS = 0.5
 R_WIDTH = 0.2
 LEVEL_FRACTIONS = [0.25, 0.5, 0.75]
+
+
+@pytest.mark.parametrize("descending", [False, True])
+@pytest.mark.parametrize("i_channel", [0, 1, 2])
+def test_exact_channel_crossings_ignore_neighbouring_gaps(descending: bool, i_channel: int) -> None:
+    r = np.array([0.3, 0.5, 0.7])
+    if descending:
+        r = r[::-1]
+    value = np.array([1.0, 5.0, 9.0])
+
+    actual = _radius_at_level(r, value, float(value[i_channel]), max_gap=0.08)
+
+    assert actual == r[i_channel]
+
+
+@pytest.mark.parametrize("descending", [False, True])
+@pytest.mark.parametrize("target", [0.0, 3.0, 7.0, 10.0])
+def test_unsupported_crossings_remain_rejected(descending: bool, target: float) -> None:
+    r = np.array([0.3, 0.5, 0.7])
+    if descending:
+        r = r[::-1]
+
+    actual = _radius_at_level(r, np.array([1.0, 5.0, 9.0]), target, max_gap=0.08)
+
+    assert np.isnan(actual)
+
+
+@pytest.mark.parametrize("descending", [False, True])
+def test_exact_plateau_does_not_bypass_gap_guard(descending: bool) -> None:
+    r = np.array([0.3, 0.5, 0.7])
+    if descending:
+        r = r[::-1]
+
+    actual = _radius_at_level(r, np.array([5.0, 5.0, 9.0]), 5.0, max_gap=0.08)
+
+    assert np.isnan(actual)
+
+
+def test_exact_measured_pair_is_retained_across_neighbouring_gaps() -> None:
+    r = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
+    value = np.array([1.0, 5.0, 9.0, 5.0, 1.0])
+    pairs = find_isoflux_pairs_for_slice(
+        r, value, 0.01 * value, [5.0 / 9.0], 0.1, 0.08, 3, (0.1, 0.9),
+    )
+
+    np.testing.assert_array_equal(pairs, np.array([[0.3, 0.7]]))
 
 
 def _parabolic_profile(n_channels: int = 21) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
