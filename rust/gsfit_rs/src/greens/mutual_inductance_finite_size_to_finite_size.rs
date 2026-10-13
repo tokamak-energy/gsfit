@@ -5,6 +5,9 @@ use rayon::prelude::*;
 
 /// Mutual inductance between filaments of finite size
 ///
+/// The primed filaments are the Green's-function sources. Near-source self terms use
+/// their cross-section widths divided by the number of subdivisions per side.
+///
 /// # Arguments
 /// * `r` - R coordinate of the first set of filaments, shape = [n_filaments], [metre]
 /// * `z` - Z coordinate of the first set of filaments, shape = [n_filaments], [metre]
@@ -99,8 +102,8 @@ pub fn mutual_inductance_finite_size_to_finite_size(
                     z_sub_filament.clone(),
                     r_sub_filament_prime.clone(),
                     z_sub_filament_prime.clone(),
-                    r_sub_filament_prime.clone() * 0.0 + d_r[i_filament] / (n_sub_filaments as f64),
-                    z_sub_filament_prime.clone() * 0.0 + d_z[i_filament] / (n_sub_filaments as f64),
+                    Array1::from_elem(r_sub_filament_prime.len(), d_r_prime[i_filament_prime] / (n_sub_filaments as f64)),
+                    Array1::from_elem(z_sub_filament_prime.len(), d_z_prime[i_filament_prime] / (n_sub_filaments as f64)),
                 );
                 let g_sub_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_sub_filaments * n_sub_filaments, n_sub_filaments * n_sub_filaments]
 
@@ -158,4 +161,94 @@ fn discretise_parallelogram(
 
     // Return the sub-filaments
     (r_sub_filament_flat, z_sub_filament_flat, d_r_sub_filament_flat, d_z_sub_filament_flat, area)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ndarray::array;
+
+    fn check_source_widths(source_offset: f64, equal_widths: bool) -> (f64, f64) {
+        let r: Array1<f64> = array![0.5];
+        let z: Array1<f64> = array![0.0];
+        let d_r: Array1<f64> = array![0.002];
+        let d_z: Array1<f64> = array![0.003];
+        let angles: Array1<f64> = array![0.0];
+        let r_prime: Array1<f64> = array![0.5 + source_offset, 0.501 + source_offset];
+        let z_prime: Array1<f64> = array![0.001, -0.001];
+        let d_r_prime: Array1<f64> = if equal_widths { array![0.002, 0.002] } else { array![0.006, 0.004] };
+        let d_z_prime: Array1<f64> = if equal_widths { array![0.003, 0.003] } else { array![0.008, 0.007] };
+        let angles_prime: Array1<f64> = array![0.0, 0.0];
+        let actual: Array2<f64> = mutual_inductance_finite_size_to_finite_size(
+            &r,
+            &z,
+            &d_r,
+            &d_z,
+            &angles,
+            &angles,
+            &r_prime,
+            &z_prime,
+            &d_r_prime,
+            &d_z_prime,
+            &angles_prime,
+            &angles_prime,
+        );
+        assert_eq!(actual.dim(), (1, 2));
+
+        let n_sub: usize = 10;
+        let (sensor_r, sensor_z, _, _, _): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, f64) =
+            discretise_parallelogram(r[0], z[0], d_r[0], d_z[0], 0.0, 0.0, n_sub);
+        let mut expected_total: f64 = 0.0;
+        let mut observation_width_total: f64 = 0.0;
+        let n_sources: usize = r_prime.len();
+        for i_source in 0..n_sources {
+            let (source_r, source_z, _, _, _): (Array1<f64>, Array1<f64>, Array1<f64>, Array1<f64>, f64) =
+                discretise_parallelogram(r_prime[i_source], z_prime[i_source], d_r_prime[i_source], d_z_prime[i_source], 0.0, 0.0, n_sub);
+            let expected: f64 = Greens::sensor_to_conductor(
+                sensor_r.clone(),
+                sensor_z.clone(),
+                source_r.clone(),
+                source_z.clone(),
+                Array1::from_elem(n_sub * n_sub, d_r_prime[i_source] / n_sub as f64),
+                Array1::from_elem(n_sub * n_sub, d_z_prime[i_source] / n_sub as f64),
+            )
+            .psi()
+            .sum()
+                / (n_sub as f64).powi(4);
+            let observation_width_result: f64 = Greens::sensor_to_conductor(
+                sensor_r.clone(),
+                sensor_z.clone(),
+                source_r,
+                source_z,
+                Array1::from_elem(n_sub * n_sub, d_r[0] / n_sub as f64),
+                Array1::from_elem(n_sub * n_sub, d_z[0] / n_sub as f64),
+            )
+            .psi()
+            .sum()
+                / (n_sub as f64).powi(4);
+            assert!(actual[(0, i_source)].is_finite());
+            assert!((actual[(0, i_source)] - expected).abs() <= 1e-12 * expected.abs());
+            expected_total += expected;
+            observation_width_total += observation_width_result;
+        }
+        (expected_total, observation_width_total)
+    }
+
+    #[test]
+    fn near_source_mutual_inductance_uses_primed_sub_filament_widths() {
+        let (expected, observation_width_result): (f64, f64) = check_source_widths(0.0, false);
+        assert!((expected - observation_width_result).abs() > 0.01 * expected.abs());
+    }
+
+    #[test]
+    fn far_field_mutual_inductance_is_unchanged() {
+        let (expected, observation_width_result): (f64, f64) = check_source_widths(0.1, false);
+        assert_eq!(expected, observation_width_result);
+    }
+
+    #[test]
+    fn equal_width_mutual_inductance_is_unchanged() {
+        let (expected, observation_width_result): (f64, f64) = check_source_widths(0.0, true);
+        assert_eq!(expected, observation_width_result);
+    }
 }
