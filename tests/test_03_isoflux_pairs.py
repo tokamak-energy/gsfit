@@ -93,6 +93,41 @@ def test_noisy_channels_are_dropped() -> None:
     assert np.all(np.isnan(pairs)), "with one branch entirely filtered out, no pair can be formed"
 
 
+@pytest.mark.parametrize("zero_channels", [slice(None), slice(None, None, 2)])
+def test_zero_uncertainty_channels_are_retained(zero_channels: slice) -> None:
+    r = np.linspace(0.3, 0.7, 5)
+    value = np.array([1.0, 5.0, 9.0, 5.0, 1.0])
+    error = 0.01 * value
+    expected = _find(r, value, error, max_gap=0.11)
+    assert np.isfinite(expected).all()
+
+    error[zero_channels] = 0.0
+    actual = _find(r, value, error, max_gap=0.11)
+
+    np.testing.assert_allclose(actual, expected)
+
+
+def test_zero_uncertainties_satisfy_zero_relative_error_limit() -> None:
+    r, value, error = _parabolic_profile()
+    expected = _find(r, value, error)
+
+    actual = _find(r, value, np.zeros_like(error), max_relative_error=0.0)
+
+    np.testing.assert_allclose(actual, expected)
+
+
+@pytest.mark.parametrize("invalid_error", [-0.01, np.nan, np.inf, -np.inf])
+def test_negative_and_nonfinite_uncertainties_are_discarded(invalid_error: float) -> None:
+    r = np.linspace(0.3, 0.7, 5)
+    value = np.array([1.0, 5.0, 9.0, 5.0, 1.0])
+    error = np.zeros(5)
+    error[0] = invalid_error
+
+    pairs = _find(r, value, error, max_gap=0.11)
+
+    assert np.isnan(pairs).all()
+
+
 def test_a_hole_in_the_data_is_not_interpolated_across() -> None:
     """A level falling inside a gap wider than `max_gap` must be rejected rather than guessed at."""
 
