@@ -29,15 +29,20 @@ impl Default for Isoflux {
     }
 }
 
-/// Test whether a valid isoflux pair exists on this time-slice.
+/// Test whether the isoflux pair has finite coordinates and positive radii on this time-slice.
 ///
 /// A pair which could not be found is stored as NaN, and the Green's functions must not be evaluated there:
-/// `Greens::sensor_to_conductor` asserts `sensor_r > 0`, which NaN fails, so the whole run would panic. The
-/// Green's are left as zero for such a time-slice instead. Nothing reads those zeros, because `add_sensor`
-/// sets the sensor's time-dependent "include" flag to `false` wherever a location is not finite, which
-/// removes the time-slice from the fit in `split_into_static_and_dynamic`.
-fn pair_is_finite(location_1_r: &Array1<f64>, location_1_z: &Array1<f64>, location_2_r: &Array1<f64>, location_2_z: &Array1<f64>, i_time: usize) -> bool {
-    location_1_r[i_time].is_finite() && location_1_z[i_time].is_finite() && location_2_r[i_time].is_finite() && location_2_z[i_time].is_finite()
+/// `Greens::sensor_to_conductor` asserts `sensor_r > 0`, so non-finite or nonpositive radii would panic the
+/// whole run. The Green's are left as zero for such a time-slice instead. Nothing reads those zeros, because
+/// `add_sensor` disables the sensor on time-slices with unusable coordinates, removing them from the fit in
+/// `split_into_static_and_dynamic`.
+fn pair_is_usable(location_1_r: &Array1<f64>, location_1_z: &Array1<f64>, location_2_r: &Array1<f64>, location_2_z: &Array1<f64>, i_time: usize) -> bool {
+    location_1_r[i_time].is_finite()
+        && location_1_r[i_time] > 0.0
+        && location_1_z[i_time].is_finite()
+        && location_2_r[i_time].is_finite()
+        && location_2_r[i_time] > 0.0
+        && location_2_z[i_time].is_finite()
 }
 
 /// Python accessible methods
@@ -194,7 +199,7 @@ impl Isoflux {
         // Add a time-dependent "include"
         let mut include_dynamic: Vec<bool> = vec![fit_settings_include; n_time];
         for i_time in 0..n_time {
-            if !pair_is_finite(
+            if !pair_is_usable(
                 &location_1_r_measured,
                 &location_1_z_measured,
                 &location_2_r_measured,
@@ -204,6 +209,7 @@ impl Isoflux {
                 include_dynamic[i_time] = false;
             }
         }
+
         self.results
             .get_or_insert(name)
             .get_or_insert("fit_settings")
@@ -261,7 +267,7 @@ impl Isoflux {
                 let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
                 for i_time in 0..n_time {
                     // Leave the Green's as zero where no isoflux pair was found on this time-slice
-                    if !pair_is_finite(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
+                    if !pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
                         continue;
                     }
 
@@ -359,7 +365,7 @@ impl Isoflux {
                     let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
                     for i_time in 0..n_time {
                         // Leave the Green's as zero where no isoflux pair was found on this time-slice
-                        if !pair_is_finite(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
+                        if !pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
                             continue;
                         }
 
@@ -489,7 +495,7 @@ impl Isoflux {
             let mut g_d_plasma_d_z: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
             for i_time in 0..n_time {
                 // Leave the Green's as zero where no isoflux pair was found on this time-slice
-                if !pair_is_finite(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
+                if !pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
                     continue;
                 }
 
@@ -759,5 +765,27 @@ impl Isoflux {
         for sensor_name in self.results.keys() {
             println!("sensor_name = {}", sensor_name);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::pair_is_usable;
+    use ndarray::array;
+
+    #[test]
+    fn pair_is_usable_requires_finite_coordinates_and_positive_radii() {
+        let location_1_r = array![1.0, 0.0, -1.0, 1.0, 1.0, 1.0, 1.0];
+        let location_1_z = array![0.0, 0.0, 0.0, 0.0, 0.0, f64::NAN, 0.0];
+        let location_2_r = array![1.0, 1.0, 1.0, 0.0, -1.0, 1.0, 1.0];
+        let location_2_z = array![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, f64::INFINITY];
+
+        assert!(pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 0));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 1));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 2));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 3));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 4));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 5));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 6));
     }
 }
