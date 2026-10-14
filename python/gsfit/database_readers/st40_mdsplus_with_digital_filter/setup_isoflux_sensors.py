@@ -97,7 +97,7 @@ def build_isoflux_pairs(
     max_gap = thomson_scattering_settings["max_gap"]
     min_points_per_branch = thomson_scattering_settings["min_points_per_branch"]
     max_time_offset = thomson_scattering_settings["max_time_offset"]
-    r_limits = thomson_scattering_settings["r_limits"]
+    limits_r = thomson_scattering_settings["limits_r"]
 
     # The TS `run_name` is read from the active method's workflow (e.g. "BEST")
     ts_run_name: str = _get_workflow_settings(settings)["ts"]["run_name"]
@@ -112,7 +112,7 @@ def build_isoflux_pairs(
         measured_error = np.atleast_2d(np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}.PROFILES:{quantity}_ERR").data(), dtype=np.float64))
 
     # The TS chord sits a few mm off the midplane, so use its actual height rather than assuming Z = 0
-    z_thomson_scattering = float(np.nanmedian(sensors_geometry_z))
+    thomson_scattering_z = float(np.nanmedian(sensors_geometry_z))
 
     n_time = len(times_to_reconstruct)
     n_levels = len(level_fractions)
@@ -137,7 +137,7 @@ def build_isoflux_pairs(
             max_relative_error=max_relative_error,
             max_gap=max_gap,
             min_points_per_branch=min_points_per_branch,
-            r_limits=r_limits,
+            limits_r=limits_r,
         )
         location_1_r[i_time] = pairs[:, 0]
         location_2_r[i_time] = pairs[:, 1]
@@ -146,9 +146,9 @@ def build_isoflux_pairs(
         "time": np.asarray(times_to_reconstruct, dtype=np.float64),
         "level_fractions": np.asarray(level_fractions, dtype=np.float64),
         "location_1_r": location_1_r,
-        "location_1_z": np.full_like(location_1_r, z_thomson_scattering),
+        "location_1_z": np.full_like(location_1_r, thomson_scattering_z),
         "location_2_r": location_2_r,
-        "location_2_z": np.full_like(location_2_r, z_thomson_scattering),
+        "location_2_z": np.full_like(location_2_r, thomson_scattering_z),
     }
 
 

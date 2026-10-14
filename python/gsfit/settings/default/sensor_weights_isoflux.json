@@ -19,7 +19,7 @@
         "max_gap": 0.08,
         "min_points_per_branch": 3,
         "max_time_offset": 0.005,
-        "r_limits": [
+        "limits_r": [
             0.25,
             0.8
         ]

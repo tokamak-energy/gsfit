@@ -44,22 +44,22 @@ def _radius_at_level(
 
     if i_match_end > i_match:
         # The exact level spans a plateau; use the full run as the ambiguous interval.
-        r_lower, r_upper = branch_r[i_match], branch_r[i_match_end - 1]
+        lower_r, upper_r = branch_r[i_match], branch_r[i_match_end - 1]
         value_lower = value_upper = value_target
     else:
         i_upper = int(np.clip(i_match, 1, branch_value.size - 1))
         value_lower, value_upper = branch_value[i_upper - 1], branch_value[i_upper]
-        r_lower, r_upper = branch_r[i_upper - 1], branch_r[i_upper]
+        lower_r, upper_r = branch_r[i_upper - 1], branch_r[i_upper]
 
     # Refuse to interpolate across a hole in the data, e.g. one left behind by the uncertainty filter
-    if abs(r_upper - r_lower) > max_gap:
+    if abs(upper_r - lower_r) > max_gap:
         return float("nan")
 
     # A flat run, left behind by forcing the branch to be monotonic; the midpoint is the best guess
     if value_upper == value_lower:
-        return float(0.5 * (r_lower + r_upper))
+        return float(0.5 * (lower_r + upper_r))
 
-    return float(r_lower + (r_upper - r_lower) * (value_target - value_lower) / (value_upper - value_lower))
+    return float(lower_r + (upper_r - lower_r) * (value_target - value_lower) / (value_upper - value_lower))
 
 
 def find_isoflux_pairs_for_slice(
@@ -70,7 +70,7 @@ def find_isoflux_pairs_for_slice(
     max_relative_error: float,
     max_gap: float,
     min_points_per_branch: int,
-    r_limits: typing.Sequence[float],
+    limits_r: typing.Sequence[float],
 ) -> npt.NDArray[np.float64]:
     """
     Find the HFS / LFS radius pair at each level, for a single time-slice.
@@ -87,9 +87,8 @@ def find_isoflux_pairs_for_slice(
     :param max_relative_error: Drop channels whose relative uncertainty exceeds this
     :param max_gap: Refuse to interpolate a level across a radial gap wider than this [metre]
     :param min_points_per_branch: Minimum usable channels needed on each branch before any pair is taken
-    :param r_limits: Discard pairs falling outside this radial range [metre]
-
-    :return: Array of shape `[n_levels, 2]` holding `(r_hfs, r_lfs)` per level. Levels for which no supported
+    :param limits_r: Discard pairs falling outside this radial range [metre]
+    :return: Array of shape `[n_levels, 2]` holding `(hfs_crossing_r, lfs_crossing_r)` per level. Levels for which no supported
         pair exists are NaN.
     """
 
@@ -101,7 +100,7 @@ def find_isoflux_pairs_for_slice(
         return pairs
 
     order = np.argsort(r[usable])
-    r_sorted = r[usable][order]
+    sorted_r = r[usable][order]
     value_sorted = value[usable][order]
 
     i_peak = int(np.argmax(value_sorted))
@@ -109,8 +108,8 @@ def find_isoflux_pairs_for_slice(
 
     # Split at the peak. Both branches keep the peak itself, so each spans the full range from its edge value
     # up to the peak value.
-    hfs_r, hfs_value = r_sorted[: i_peak + 1], value_sorted[: i_peak + 1]
-    lfs_r, lfs_value = r_sorted[i_peak:], value_sorted[i_peak:]
+    hfs_r, hfs_value = sorted_r[: i_peak + 1], value_sorted[: i_peak + 1]
+    lfs_r, lfs_value = sorted_r[i_peak:], value_sorted[i_peak:]
     if hfs_r.size < min_points_per_branch or lfs_r.size < min_points_per_branch:
         return pairs
 
@@ -122,16 +121,16 @@ def find_isoflux_pairs_for_slice(
         value_target = fraction * value_peak
 
         # Both branches are passed value-ascending, as `_radius_at_level` requires
-        r_hfs = _radius_at_level(hfs_r, hfs_value_monotonic, value_target, max_gap)
-        r_lfs = _radius_at_level(lfs_r[::-1], lfs_value_monotonic[::-1], value_target, max_gap)
-        if not (np.isfinite(r_hfs) and np.isfinite(r_lfs) and r_lfs > r_hfs):
+        hfs_crossing_r = _radius_at_level(hfs_r, hfs_value_monotonic, value_target, max_gap)
+        lfs_crossing_r = _radius_at_level(lfs_r[::-1], lfs_value_monotonic[::-1], value_target, max_gap)
+        if not (np.isfinite(hfs_crossing_r) and np.isfinite(lfs_crossing_r) and lfs_crossing_r > hfs_crossing_r):
             continue
 
         # A flat-cored profile ("NE" especially) puts its level crossings far out in the scrape-off layer,
         # where the two points are no longer meaningfully on the same closed flux surface
-        if r_hfs < r_limits[0] or r_lfs > r_limits[1]:
+        if hfs_crossing_r < limits_r[0] or lfs_crossing_r > limits_r[1]:
             continue
 
-        pairs[i_level] = (r_hfs, r_lfs)
+        pairs[i_level] = (hfs_crossing_r, lfs_crossing_r)
 
     return pairs

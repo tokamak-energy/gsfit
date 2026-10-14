@@ -73,13 +73,13 @@ thomson_scattering_settings["level_fractions"] = [0.35, 0.45, 0.55, 0.65, 0.75, 
 #      * `max_gap`: refuse to place a crossing by interpolating across a radial hole wider than this [metre],
 #        such as one left behind by the uncertainty filter.
 #      * `min_points_per_branch`: how many usable channels each of the two branches needs.
-#      * `r_limits`: discard pairs straying outside this radial range [metre]. A flat-cored profile puts its
+#      * `limits_r`: discard pairs straying outside this radial range [metre]. A flat-cored profile puts its
 #        crossings far out in the scrape-off layer, where the two points are no longer meaningfully on the
 #        same closed flux surface.
 thomson_scattering_settings["max_relative_error"] = 0.1
 thomson_scattering_settings["max_gap"] = 0.08
 thomson_scattering_settings["min_points_per_branch"] = 3
-thomson_scattering_settings["r_limits"] = [0.25, 0.8]
+thomson_scattering_settings["limits_r"] = [0.25, 0.8]
 
 # 7. Weight given to each isoflux row. The residual is a flux difference in Wb and the expected value is 1.0,
 #    so the effective weight is this number directly, in 1/Wb. For comparison, the flux loops work out at

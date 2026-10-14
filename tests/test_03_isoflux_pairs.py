@@ -91,7 +91,7 @@ def _find(
     max_relative_error: float = 0.1,
     max_gap: float = 0.08,
     min_points_per_branch: int = 3,
-    r_limits: tuple[float, float] = (0.1, 0.9),
+    limits_r: tuple[float, float] = (0.1, 0.9),
 ) -> npt.NDArray[np.float64]:
     """Call `find_isoflux_pairs_for_slice` with the test defaults."""
 
@@ -103,7 +103,7 @@ def _find(
         max_relative_error=max_relative_error,
         max_gap=max_gap,
         min_points_per_branch=min_points_per_branch,
-        r_limits=r_limits,
+        limits_r=limits_r,
     )
 
 
@@ -116,14 +116,14 @@ def test_pairs_straddle_the_peak_symmetrically() -> None:
     assert np.all(np.isfinite(pairs)), "every level lies inside a full parabola, so every level should pair"
 
     for i_level, fraction in enumerate(LEVEL_FRACTIONS):
-        r_hfs, r_lfs = pairs[i_level]
-        assert r_hfs < AXIS_R < r_lfs
+        hfs_crossing_r, lfs_crossing_r = pairs[i_level]
+        assert hfs_crossing_r < AXIS_R < lfs_crossing_r
 
         # The midpoint of the pair is the magnetic axis of a symmetric profile
-        assert 0.5 * (r_hfs + r_lfs) == pytest.approx(AXIS_R, abs=1.0e-3)
+        assert 0.5 * (hfs_crossing_r + lfs_crossing_r) == pytest.approx(AXIS_R, abs=1.0e-3)
 
         # A parabola reaches `fraction` of its peak at `PROFILE_WIDTH_R * sqrt(1 - fraction)` from the peak
-        assert 0.5 * (r_lfs - r_hfs) == pytest.approx(PROFILE_WIDTH_R * np.sqrt(1.0 - fraction), abs=5.0e-3)
+        assert 0.5 * (lfs_crossing_r - hfs_crossing_r) == pytest.approx(PROFILE_WIDTH_R * np.sqrt(1.0 - fraction), abs=5.0e-3)
 
 
 def test_ordering_of_the_channels_does_not_matter() -> None:
@@ -215,16 +215,16 @@ def test_a_hollow_profile_is_flattened_not_double_valued() -> None:
 
     assert np.any(finite), "a hollow profile should still produce pairs"
     for i_level in np.flatnonzero(finite):
-        r_hfs, r_lfs = pairs[i_level]
-        assert r_hfs < r_lfs
+        hfs_crossing_r, lfs_crossing_r = pairs[i_level]
+        assert hfs_crossing_r < lfs_crossing_r
 
 
 def test_pairs_outside_the_radial_limits_are_discarded() -> None:
-    """A pair straying outside `r_limits` is no longer meaningfully on a closed flux surface."""
+    """A pair straying outside `limits_r` is no longer meaningfully on a closed flux surface."""
 
     r, value, error = _parabolic_profile()
 
-    pairs = _find(r, value, error, r_limits=(AXIS_R - 0.05, AXIS_R + 0.05))
+    pairs = _find(r, value, error, limits_r=(AXIS_R - 0.05, AXIS_R + 0.05))
 
     assert np.all(np.isnan(pairs)), "every crossing lies outside the artificially narrow limits"
 
