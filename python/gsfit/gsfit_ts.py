@@ -22,7 +22,7 @@ class Gsfit_Ts(Gsfit):
         self,
         pulseNo: int,
         run_name: str,
-        run_description: str = "Pressure-constrained (Thomson scattering) GSFit",
+        run_description: str = "Thomson scattering GSFit",
         write_to_mds: bool = True,
         pulseNo_write: int | None = None,
         link_run_to_best: bool = False,
