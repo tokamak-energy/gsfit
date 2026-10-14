@@ -21,7 +21,8 @@ def _radius_at_level(
     :param value_target: The level to solve for.
     :param max_gap: Reject the level if the two channels bracketing it are further apart than this [metre],
         rather than interpolating across a hole in the data. Unique exact channel matches need no interpolation
-        and are accepted regardless of neighbouring gaps.
+        and are accepted regardless of neighbouring gaps. Exact plateaus are treated as ambiguous intervals:
+        they are accepted at their midpoint only when the plateau width is no greater than this.
 
     :return: The interpolated radius [metre], or NaN if the level is out of range or unsupported by the data.
     """
@@ -33,14 +34,22 @@ def _radius_at_level(
     if value_target < branch_value[0] or value_target > branch_value[-1]:
         return float("nan")
 
+    # Find the full run of exact matches in the sorted branch values. For example, target 5
+    # in [1, 5, 9] gives [i_match, i_match_end) = [1, 2), one exact crossing; in
+    # [1, 5, 5, 9] it gives [1, 3), the full plateau interval handled below.
     i_match = int(np.searchsorted(branch_value, value_target, side="left"))
     i_match_end = int(np.searchsorted(branch_value, value_target, side="right"))
     if i_match_end == i_match + 1:
         return float(branch_r[i_match])
 
-    i_upper = int(np.clip(i_match, 1, branch_value.size - 1))
-    value_lower, value_upper = branch_value[i_upper - 1], branch_value[i_upper]
-    r_lower, r_upper = branch_r[i_upper - 1], branch_r[i_upper]
+    if i_match_end > i_match:
+        # The exact level spans a plateau; use the full run as the ambiguous interval.
+        r_lower, r_upper = branch_r[i_match], branch_r[i_match_end - 1]
+        value_lower = value_upper = value_target
+    else:
+        i_upper = int(np.clip(i_match, 1, branch_value.size - 1))
+        value_lower, value_upper = branch_value[i_upper - 1], branch_value[i_upper]
+        r_lower, r_upper = branch_r[i_upper - 1], branch_r[i_upper]
 
     # Refuse to interpolate across a hole in the data, e.g. one left behind by the uncertainty filter
     if abs(r_upper - r_lower) > max_gap:

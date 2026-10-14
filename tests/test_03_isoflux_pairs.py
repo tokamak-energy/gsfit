@@ -52,6 +52,18 @@ def test_exact_plateau_does_not_bypass_gap_guard(descending: bool) -> None:
     assert np.isnan(actual)
 
 
+def test_supported_interior_plateau_uses_its_midpoint() -> None:
+    actual = _radius_at_level(np.array([0.1, 0.2, 0.24, 0.3]), np.array([1.0, 5.0, 5.0, 9.0]), 5.0, max_gap=0.08)
+
+    assert actual == pytest.approx(0.22)
+
+
+def test_wide_interior_plateau_is_rejected() -> None:
+    actual = _radius_at_level(np.array([0.1, 0.2, 0.4, 0.5]), np.array([1.0, 5.0, 5.0, 9.0]), 5.0, max_gap=0.08)
+
+    assert np.isnan(actual)
+
+
 def test_exact_measured_pair_is_retained_across_neighbouring_gaps() -> None:
     r = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
     value = np.array([1.0, 5.0, 9.0, 5.0, 1.0])
