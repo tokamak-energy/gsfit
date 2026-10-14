@@ -11,8 +11,8 @@ import pytest
 from gsfit.isoflux_pairs import _radius_at_level, find_isoflux_pairs_for_slice
 
 # A symmetric, peaked profile: a pair cut at any level should straddle the peak symmetrically
-R_AXIS = 0.5
-R_WIDTH = 0.2
+AXIS_R = 0.5
+PROFILE_WIDTH_R = 0.2
 LEVEL_FRACTIONS = [0.25, 0.5, 0.75]
 
 
@@ -75,10 +75,10 @@ def test_exact_measured_pair_is_retained_across_neighbouring_gaps() -> None:
 
 
 def _parabolic_profile(n_channels: int = 21) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-    """Return `(r, value, error)` for a symmetric parabolic profile peaking at `R_AXIS`."""
+    """Return `(r, value, error)` for a symmetric parabolic profile peaking at `AXIS_R`."""
 
-    r = np.linspace(R_AXIS - R_WIDTH, R_AXIS + R_WIDTH, n_channels)
-    value = 1000.0 * (1.0 - ((r - R_AXIS) / R_WIDTH) ** 2) + 1.0
+    r = np.linspace(AXIS_R - PROFILE_WIDTH_R, AXIS_R + PROFILE_WIDTH_R, n_channels)
+    value = 1000.0 * (1.0 - ((r - AXIS_R) / PROFILE_WIDTH_R) ** 2) + 1.0
     error = 0.01 * value
 
     return r, value, error
@@ -117,13 +117,13 @@ def test_pairs_straddle_the_peak_symmetrically() -> None:
 
     for i_level, fraction in enumerate(LEVEL_FRACTIONS):
         r_hfs, r_lfs = pairs[i_level]
-        assert r_hfs < R_AXIS < r_lfs
+        assert r_hfs < AXIS_R < r_lfs
 
         # The midpoint of the pair is the magnetic axis of a symmetric profile
-        assert 0.5 * (r_hfs + r_lfs) == pytest.approx(R_AXIS, abs=1.0e-3)
+        assert 0.5 * (r_hfs + r_lfs) == pytest.approx(AXIS_R, abs=1.0e-3)
 
-        # A parabola reaches `fraction` of its peak at `R_WIDTH * sqrt(1 - fraction)` from the peak
-        assert 0.5 * (r_lfs - r_hfs) == pytest.approx(R_WIDTH * np.sqrt(1.0 - fraction), abs=5.0e-3)
+        # A parabola reaches `fraction` of its peak at `PROFILE_WIDTH_R * sqrt(1 - fraction)` from the peak
+        assert 0.5 * (r_lfs - r_hfs) == pytest.approx(PROFILE_WIDTH_R * np.sqrt(1.0 - fraction), abs=5.0e-3)
 
 
 def test_ordering_of_the_channels_does_not_matter() -> None:
@@ -144,7 +144,7 @@ def test_noisy_channels_are_dropped() -> None:
     r, value, error = _parabolic_profile()
 
     # Spoil one whole side of the profile
-    error[r > R_AXIS] = value[r > R_AXIS]
+    error[r > AXIS_R] = value[r > AXIS_R]
 
     pairs = _find(r, value, error)
 
@@ -192,7 +192,7 @@ def test_a_hole_in_the_data_is_not_interpolated_across() -> None:
     r, value, error = _parabolic_profile()
 
     # Delete a block of low-field-side channels, leaving a hole much wider than `max_gap`
-    keep = ~((r > R_AXIS + 0.02) & (r < R_AXIS + 0.16))
+    keep = ~((r > AXIS_R + 0.02) & (r < AXIS_R + 0.16))
 
     pairs_narrow_gap = _find(r[keep], value[keep], error[keep], max_gap=0.02)
     pairs_wide_gap = _find(r[keep], value[keep], error[keep], max_gap=1.0)
@@ -207,7 +207,7 @@ def test_a_hollow_profile_is_flattened_not_double_valued() -> None:
     r, value, error = _parabolic_profile()
 
     # Put a dip in the core, so the raw profile crosses some levels four times rather than twice
-    value[np.abs(r - R_AXIS) < 0.05] *= 0.5
+    value[np.abs(r - AXIS_R) < 0.05] *= 0.5
     error = 0.01 * value
 
     pairs = _find(r, value, error)
@@ -224,7 +224,7 @@ def test_pairs_outside_the_radial_limits_are_discarded() -> None:
 
     r, value, error = _parabolic_profile()
 
-    pairs = _find(r, value, error, r_limits=(R_AXIS - 0.05, R_AXIS + 0.05))
+    pairs = _find(r, value, error, r_limits=(AXIS_R - 0.05, AXIS_R + 0.05))
 
     assert np.all(np.isnan(pairs)), "every crossing lies outside the artificially narrow limits"
 
@@ -232,13 +232,13 @@ def test_pairs_outside_the_radial_limits_are_discarded() -> None:
 @pytest.mark.parametrize("min_points_per_branch", [2, 3, 4])
 def test_minimum_sized_profile_shares_the_peak(min_points_per_branch: int) -> None:
     r = np.linspace(0.3, 0.7, 2 * min_points_per_branch - 1)
-    value = 9.0 - 40.0 * np.abs(r - R_AXIS)
+    value = 9.0 - 40.0 * np.abs(r - AXIS_R)
     error = 0.01 * value
 
     pairs = _find(r, value, error, max_gap=0.21, min_points_per_branch=min_points_per_branch)
 
     expected = np.array([
-        [R_AXIS - 9.0 * (1.0 - fraction) / 40.0, R_AXIS + 9.0 * (1.0 - fraction) / 40.0]
+        [AXIS_R - 9.0 * (1.0 - fraction) / 40.0, AXIS_R + 9.0 * (1.0 - fraction) / 40.0]
         for fraction in LEVEL_FRACTIONS
     ])
     np.testing.assert_allclose(pairs, expected)
