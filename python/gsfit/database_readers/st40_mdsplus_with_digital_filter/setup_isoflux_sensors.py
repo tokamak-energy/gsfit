@@ -25,6 +25,26 @@ if TYPE_CHECKING:
 TS_PROFILE_NODES: tuple[str, ...] = ("TE", "NE", "PE")
 
 
+def _nearest_valid_ts_time_index(
+    time_thomson_scattering: npt.NDArray[np.float64],
+    time_to_reconstruct: float,
+    max_time_offset: float,
+) -> int | None:
+    """Return the nearest finite TS time index within the allowed offset, if one exists."""
+
+    time_offsets = np.abs(time_thomson_scattering - time_to_reconstruct)
+    valid_indices = np.flatnonzero(np.isfinite(time_offsets))
+    if valid_indices.size == 0:
+        return None
+
+    i_nearest_valid = int(np.argmin(time_offsets[valid_indices]))
+    i_thomson_scattering = int(valid_indices[i_nearest_valid])
+    if time_offsets[i_thomson_scattering] > max_time_offset:
+        return None
+
+    return i_thomson_scattering
+
+
 def _get_workflow_settings(
     settings: dict[str, typing.Any],
 ) -> dict[str, typing.Any]:
@@ -101,8 +121,12 @@ def build_isoflux_pairs(
 
     for i_time in range(n_time):
         # Use the nearest TS time-slice, but only if it is close enough to be describing the same plasma
-        i_thomson_scattering = int(np.argmin(np.abs(time_thomson_scattering - times_to_reconstruct[i_time])))
-        if abs(time_thomson_scattering[i_thomson_scattering] - times_to_reconstruct[i_time]) > max_time_offset:
+        i_thomson_scattering = _nearest_valid_ts_time_index(
+            time_thomson_scattering,
+            times_to_reconstruct[i_time],
+            max_time_offset,
+        )
+        if i_thomson_scattering is None:
             continue
 
         pairs = find_isoflux_pairs_for_slice(
