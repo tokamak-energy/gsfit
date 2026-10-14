@@ -141,9 +141,11 @@ def greens_py(
     :param d_r: (optional) Radial widths [metre]
     :param d_z: (optional) Vertical heights [metre]
 
-    Omitted or zero widths select an ideal filament, even within the 5 mm near-source cutoff.
+    Omitted or zero widths select an ideal filament, even within the
+    `SELF_POINT_DISTANCE_TOLERANCE` near-source cutoff.
     Both widths must be positive to use the finite-cross-section source-centre approximation.
-    Within the strict 5 mm per-coordinate cutoff, values are evaluated at the actual source centre.
+    Within the strict per-coordinate `SELF_POINT_DISTANCE_TOLERANCE` cutoff, values are
+    evaluated at the actual source centre.
     This is an interim approximation to the flux at the observation point: the available
     finite-cross-section formula is valid only at the source centre, not at off-centre points.
     Negative/nonfinite widths and exactly or numerically coincident filament evaluations raise ValueError.
@@ -265,7 +267,8 @@ def greens_d2_psi_d_z2(
     (see `documentation/jump_condition_dbr_dz.md`).
 
     Omitted or zero widths select an ideal filament. Both widths must be positive
-    to use the 5 mm finite-cross-section centre approximation. Negative/nonfinite
+    to use the finite-cross-section centre approximation within the per-coordinate
+    `SELF_POINT_DISTANCE_TOLERANCE` cutoff. Negative/nonfinite
     widths and exactly or numerically coincident filament evaluations raise ValueError.
 
     :param r: (by convention) Sensor radial positions [metre]
@@ -289,7 +292,8 @@ def greens_d3_psi_d_z3(
     Third derivative of the Green's function with respect to `z` three times.
 
     Omitted or zero widths select an ideal filament. Both widths must be positive
-    to use the 5 mm finite-cross-section centre approximation. Negative/nonfinite
+    to use the finite-cross-section centre approximation within the per-coordinate
+    `SELF_POINT_DISTANCE_TOLERANCE` cutoff. Negative/nonfinite
     widths and exactly or numerically coincident filament evaluations raise ValueError.
 
     :param r: (by convention) Sensor radial positions [metre]
@@ -316,7 +320,8 @@ def greens_d3_psi_d_r2_d_z(
     `d3_psi_d_r2_d_z = d2_psi_d_r_d_z / r - d3_psi_d_z3`.
 
     Omitted or zero widths select an ideal filament. Both widths must be positive
-    to use the 5 mm finite-cross-section centre approximation. Negative/nonfinite
+    to use the finite-cross-section centre approximation within the per-coordinate
+    `SELF_POINT_DISTANCE_TOLERANCE` cutoff. Negative/nonfinite
     widths and exactly or numerically coincident filament evaluations raise ValueError.
 
     :param r: (by convention) Sensor radial positions [metre]
@@ -340,7 +345,8 @@ def greens_d3_psi_d_r_d_z2(
     Third derivative of the Green's function with respect to `r` and `z` twice.
 
     Omitted or zero widths select an ideal filament. Both widths must be positive
-    to use the 5 mm finite-cross-section centre approximation. Negative/nonfinite
+    to use the finite-cross-section centre approximation within the per-coordinate
+    `SELF_POINT_DISTANCE_TOLERANCE` cutoff. Negative/nonfinite
     widths and exactly or numerically coincident filament evaluations raise ValueError.
 
     :param r: (by convention) Sensor radial positions [metre]
