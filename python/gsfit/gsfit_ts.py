@@ -1,3 +1,5 @@
+"""Provide GSFit classes required by PPAC, an internal ST40 post-pulse analysis chain."""
+
 from .gsfit import Gsfit
 
 

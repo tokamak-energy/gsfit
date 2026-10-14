@@ -20,8 +20,9 @@
 # which the profile crosses a given level are on the same flux surface. Cutting the profile at several levels
 # gives several pairs per time-slice.
 #
-# Isoflux Green's tables use filament coupling outside the coordinate-wise self-point tolerance.
-# Inside it, they use the source's finite-cross-section centre formula with the actual coil,
+# Isoflux Green's tables use the finite-cross-section centre formula only when both the R and Z
+# separations are less than `SELF_POINT_DISTANCE_TOLERANCE` (5 mm) and both source widths are
+# positive; otherwise they use filament coupling. The centre formula uses the actual coil,
 # passive or plasma-cell widths. This is a near-source approximation, not off-centre integration.
 
 from gsfit import Gsfit
