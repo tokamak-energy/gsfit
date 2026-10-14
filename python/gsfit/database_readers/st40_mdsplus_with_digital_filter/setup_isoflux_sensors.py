@@ -45,6 +45,24 @@ def _nearest_valid_ts_time_index(
     return i_thomson_scattering
 
 
+def _interpolate_channel_z_at_radius(
+    geometry_r: npt.NDArray[np.float64],
+    geometry_z: npt.NDArray[np.float64],
+    locations_r: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """Interpolate the TS chord height at radial locations, leaving out-of-range locations as NaN."""
+
+    valid_geometry = np.isfinite(geometry_r) & np.isfinite(geometry_z)
+    if np.count_nonzero(valid_geometry) < 2:
+        return np.full_like(locations_r, np.nan)
+
+    order = np.argsort(geometry_r[valid_geometry])
+    sorted_geometry_r = geometry_r[valid_geometry][order]
+    sorted_geometry_z = geometry_z[valid_geometry][order]
+
+    return np.interp(locations_r, sorted_geometry_r, sorted_geometry_z, left=np.nan, right=np.nan)
+
+
 def _get_workflow_settings(
     settings: dict[str, typing.Any],
 ) -> dict[str, typing.Any]:
@@ -111,9 +129,6 @@ def build_isoflux_pairs(
         measured = np.atleast_2d(np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}.PROFILES:{quantity}").data(), dtype=np.float64))
         measured_error = np.atleast_2d(np.asarray(conn.get(f"\\TS::TOP.{ts_run_name}.PROFILES:{quantity}_ERR").data(), dtype=np.float64))
 
-    # The TS chord sits a few mm off the midplane, so use its actual height rather than assuming Z = 0
-    thomson_scattering_z = float(np.nanmedian(sensors_geometry_z))
-
     n_time = len(times_to_reconstruct)
     n_levels = len(level_fractions)
     location_1_r: npt.NDArray[np.float64] = np.full((n_time, n_levels), np.nan)
@@ -146,9 +161,9 @@ def build_isoflux_pairs(
         "time": np.asarray(times_to_reconstruct, dtype=np.float64),
         "level_fractions": np.asarray(level_fractions, dtype=np.float64),
         "location_1_r": location_1_r,
-        "location_1_z": np.full_like(location_1_r, thomson_scattering_z),
+        "location_1_z": _interpolate_channel_z_at_radius(sensors_geometry_r, sensors_geometry_z, location_1_r),
         "location_2_r": location_2_r,
-        "location_2_z": np.full_like(location_2_r, thomson_scattering_z),
+        "location_2_z": _interpolate_channel_z_at_radius(sensors_geometry_r, sensors_geometry_z, location_2_r),
     }
 
 

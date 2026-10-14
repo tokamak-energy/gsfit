@@ -1,14 +1,41 @@
 """Tests for selecting Thomson-scattering time-slices for isoflux pairing."""
 
 import importlib
+import importlib.util
+import sys
+import types
+from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
 import pytest
 
-from gsfit.database_readers.st40_mdsplus_with_digital_filter.setup_isoflux_sensors import _nearest_valid_ts_time_index
+gsfit_spec = importlib.util.find_spec("gsfit")
+assert gsfit_spec is not None
+assert gsfit_spec.submodule_search_locations is not None
+reader_path = (
+    Path(next(iter(gsfit_spec.submodule_search_locations)))
+    / "database_readers"
+    / "st40_mdsplus_with_digital_filter"
+    / "setup_isoflux_sensors.py"
+)
+reader_spec = importlib.util.spec_from_file_location("_gsfit_test_setup_isoflux_sensors", reader_path)
+assert reader_spec is not None
+assert reader_spec.loader is not None
+isoflux_reader = importlib.util.module_from_spec(reader_spec)
+mdsthin_stub = types.ModuleType("mdsthin")
+mdsthin_stub.Connection = None
+existing_mdsthin = sys.modules.get("mdsthin")
+sys.modules["mdsthin"] = mdsthin_stub
+try:
+    reader_spec.loader.exec_module(isoflux_reader)
+finally:
+    if existing_mdsthin is None:
+        del sys.modules["mdsthin"]
+    else:
+        sys.modules["mdsthin"] = existing_mdsthin
 
-isoflux_reader = importlib.import_module("gsfit.database_readers.st40_mdsplus_with_digital_filter.setup_isoflux_sensors")
+_nearest_valid_ts_time_index = isoflux_reader._nearest_valid_ts_time_index
 
 
 def test_nearest_valid_ts_time_ignores_nonfinite_offsets() -> None:
@@ -157,8 +184,12 @@ def test_database_reader_wires_selected_profiles_to_sensors(monkeypatch: pytest.
     assert [sensor["name"] for sensor in sensors] == ["ISOFLUX01", "ISOFLUX02"]
     np.testing.assert_array_equal(sensors[0]["location_1_r"], [0.31, 0.32, np.nan])
     np.testing.assert_array_equal(sensors[0]["location_2_r"], [0.69, 0.68, np.nan])
+    np.testing.assert_allclose(sensors[0]["location_1_z"], [0.011, 0.012, np.nan], equal_nan=True)
+    np.testing.assert_allclose(sensors[0]["location_2_z"], [0.039, 0.038, np.nan], equal_nan=True)
     np.testing.assert_array_equal(sensors[1]["location_1_r"], [np.nan, 0.42, np.nan])
     np.testing.assert_array_equal(sensors[1]["location_2_r"], [np.nan, 0.58, np.nan])
+    np.testing.assert_allclose(sensors[1]["location_1_z"], [np.nan, 0.021, np.nan], equal_nan=True)
+    np.testing.assert_allclose(sensors[1]["location_2_z"], [np.nan, 0.029, np.nan], equal_nan=True)
     np.testing.assert_array_equal(sensors[0]["times_to_reconstruct"], times_to_reconstruct)
     assert sensors[0]["fit_settings_comment"] == "TS isoflux; TS NE = 0.30 x peak"
     assert sensors[1]["fit_settings_comment"] == "TS isoflux; TS NE = 0.60 x peak"
