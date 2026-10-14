@@ -29,6 +29,22 @@ impl Default for Isoflux {
     }
 }
 
+/// Test whether the isoflux pair has finite coordinates and positive radii on this time-slice.
+///
+/// A pair which could not be found is stored as NaN, and the Green's functions must not be evaluated there:
+/// `Greens::sensor_to_conductor` asserts `sensor_r > 0`, so non-finite or nonpositive radii would panic the
+/// whole run. The Green's are left as zero for such a time-slice instead. Nothing reads those zeros, because
+/// `add_sensor` disables the sensor on time-slices with unusable coordinates, removing them from the fit in
+/// `split_into_static_and_dynamic`.
+fn pair_is_usable(location_1_r: &Array1<f64>, location_1_z: &Array1<f64>, location_2_r: &Array1<f64>, location_2_z: &Array1<f64>, i_time: usize) -> bool {
+    location_1_r[i_time].is_finite()
+        && location_1_r[i_time] > 0.0
+        && location_1_z[i_time].is_finite()
+        && location_2_r[i_time].is_finite()
+        && location_2_r[i_time] > 0.0
+        && location_2_z[i_time].is_finite()
+}
+
 /// Python accessible methods
 #[pymethods]
 impl Isoflux {
@@ -148,7 +164,7 @@ impl Isoflux {
             .get_or_insert("isoflux_geometry")
             .get_or_insert("location_1")
             .get_or_insert("z")
-            .insert("measured", location_1_z_measured);
+            .insert("measured", location_1_z_measured.clone());
         // location_2_r
         let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(time_ndarray.clone(), location_2_r_ndarray.clone())
             .expect("Isoflux.greens_with_coils: Can't make interpolator for location_2_r");
@@ -172,7 +188,7 @@ impl Isoflux {
             .get_or_insert("isoflux_geometry")
             .get_or_insert("location_2")
             .get_or_insert("z")
-            .insert("measured", location_2_z_measured);
+            .insert("measured", location_2_z_measured.clone());
 
         // Add time
         self.results
@@ -183,10 +199,17 @@ impl Isoflux {
         // Add a time-dependent "include"
         let mut include_dynamic: Vec<bool> = vec![fit_settings_include; n_time];
         for i_time in 0..n_time {
-            if location_1_r_measured[i_time].is_nan() || location_2_r_measured[i_time].is_nan() {
+            if !pair_is_usable(
+                &location_1_r_measured,
+                &location_1_z_measured,
+                &location_2_r_measured,
+                &location_2_z_measured,
+                i_time,
+            ) {
                 include_dynamic[i_time] = false;
             }
         }
+
         self.results
             .get_or_insert(name)
             .get_or_insert("fit_settings")
@@ -243,6 +266,11 @@ impl Isoflux {
 
                 let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
                 for i_time in 0..n_time {
+                    // Leave the Green's as zero where no isoflux pair was found on this time-slice
+                    if !pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
+                        continue;
+                    }
+
                     // Calculate the Green's at location 1
                     let greens_calculator: Greens = Greens::sensor_to_conductor(
                         array![location_1_r[i_time]],
@@ -336,6 +364,11 @@ impl Isoflux {
                 for dof_name in dof_names {
                     let mut g_vs_time: Array1<f64> = Array1::zeros(n_time);
                     for i_time in 0..n_time {
+                        // Leave the Green's as zero where no isoflux pair was found on this time-slice
+                        if !pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
+                            continue;
+                        }
+
                         // Location 1
                         let greens_calculator: Greens = Greens::sensor_to_conductor(
                             array![location_1_r[i_time]],
@@ -461,6 +494,11 @@ impl Isoflux {
             let mut g_with_plasma: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
             let mut g_d_plasma_d_z: Array2<f64> = Array2::zeros([n_time, n_z * n_r]);
             for i_time in 0..n_time {
+                // Leave the Green's as zero where no isoflux pair was found on this time-slice
+                if !pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, i_time) {
+                    continue;
+                }
+
                 // Location 1
                 let greens_calculator: Greens = Greens::sensor_to_conductor(
                     array![location_1_r[i_time]],
@@ -727,5 +765,27 @@ impl Isoflux {
         for sensor_name in self.results.keys() {
             println!("sensor_name = {}", sensor_name);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::pair_is_usable;
+    use ndarray::array;
+
+    #[test]
+    fn pair_is_usable_requires_finite_coordinates_and_positive_radii() {
+        let location_1_r = array![1.0, 0.0, -1.0, 1.0, 1.0, 1.0, 1.0];
+        let location_1_z = array![0.0, 0.0, 0.0, 0.0, 0.0, f64::NAN, 0.0];
+        let location_2_r = array![1.0, 1.0, 1.0, 0.0, -1.0, 1.0, 1.0];
+        let location_2_z = array![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, f64::INFINITY];
+
+        assert!(pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 0));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 1));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 2));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 3));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 4));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 5));
+        assert!(!pair_is_usable(&location_1_r, &location_1_z, &location_2_r, &location_2_z, 6));
     }
 }
