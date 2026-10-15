@@ -258,6 +258,13 @@ jobs:
 
           generate_python_badge "python_coverage_from_python_tests.json" "pages/python_coverage_from_python_tests/coverage-badge.json" "python coverage"
 
+      - name: Draw the code flow figure
+        run: |
+          # `code_flow.svg` is not committed, so it is drawn here and published to GitHub Pages with the coverage reports.
+          # The `.venv` made for the coverage already has numpy and matplotlib, which are GSFit dependencies
+          .venv/bin/python documentation/code_flow/code_flow.py
+          mkdir -p pages/code_flow
+          cp documentation/code_flow/code_flow.svg pages/code_flow/code_flow.svg
       - name: Upload coverage report to Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:

@@ -150,7 +150,8 @@ python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"
 ```
 
 # 2. GSFit program layout and flow
-![Code flow](https://raw.githubusercontent.com/tokamak-energy/gsfit/assets/code_flow.svg)
+![Code flow](https://tokamak-energy.github.io/gsfit/code_flow/code_flow.svg)
+
 ## 2.1 Initialisation
 GSFit's solver and numerics are programmed in Rust, with the initialisation done within Python.
 

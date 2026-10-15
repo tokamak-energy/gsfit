@@ -23,9 +23,10 @@ paper's other figures. The figure is the 153 millimetre \\textwidth set by the I
 
 Usage: python code_flow.py
 Needs only numpy and matplotlib.
-Writes `code_flow.svg` into this script's directory.
+Writes `code_flow.svg`, shown at `SVG_DISPLAY_SCALE` times the figure's size, into this script's directory.
 """
 
+import re
 import typing
 from collections.abc import Callable
 from collections.abc import Iterator
@@ -57,6 +58,9 @@ TEXT_WIDTH = 153.0  # [millimetre]
 CANVAS_MARGIN = 0.5  # [millimetre]
 MILLIMETRE_PER_INCH = 25.4  # [millimetre / inch]
 MILLIMETRE_PER_POINT = 25.4 / 72.0  # [millimetre / point]
+# The SVG is shown at this multiple of the figure's size, so that it is large enough to read in the README.
+# Only the SVG's `width` and `height` are scaled, not its `viewBox`, so the drawing and its text are enlarged evenly
+SVG_DISPLAY_SCALE = 1.75  # [dimensionless]
 
 # --- The fonts ---
 # The font of the paper's captions, which the IOP class sets in the LaTeX default roman, Computer Modern.
@@ -1163,6 +1167,15 @@ if __name__ == "__main__":
     figure_path = Path(__file__).resolve().parent / "code_flow.svg"
     # No date, so the SVG only changes when the figure does
     fig.savefig(figure_path, metadata={"Date": None})
+    # Enlarge the size the SVG is shown at, by scaling the `width` and `height` which matplotlib writes on its root `<svg>` tag
+    svg_text: str = figure_path.read_text()
+    svg_size_match: re.Match[str] | None = re.search('width="([0-9.]+)pt" height="([0-9.]+)pt"', svg_text)
+    if svg_size_match is None:
+        raise ValueError(f"no `width` and `height` in points found in {figure_path}")
+    svg_width: float = float(svg_size_match.group(1)) * SVG_DISPLAY_SCALE  # [point]
+    svg_height: float = float(svg_size_match.group(2)) * SVG_DISPLAY_SCALE  # [point]
+    svg_text = svg_text[: svg_size_match.start()] + f'width="{svg_width:f}pt" height="{svg_height:f}pt"' + svg_text[svg_size_match.end() :]
+    figure_path.write_text(svg_text)
     print(f"saved {figure_path}")
     # Save to PNG
     figure_path = Path(__file__).resolve().parent / "code_flow.png"
