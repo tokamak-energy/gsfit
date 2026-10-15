@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<numerics xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/numerics.xsd">
+    <RAYON_NUM_THREADS>10</RAYON_NUM_THREADS>
+    <n_iter_max>100</n_iter_max>
+    <grad_shafranov_deviation_tolerance>5.0e-6</grad_shafranov_deviation_tolerance>
+    <n_iter_min>0</n_iter_min>
+    <save_unconverged>false</save_unconverged>
+    <nonlinear_solver>
+        <method>picard</method>
+        <picard>
+            <n_iter_no_vertical_feedback>1</n_iter_no_vertical_feedback>
+            <apply_anderson_mixing>false</apply_anderson_mixing>
+            <anderson_n_history>5</anderson_n_history>
+            <anderson_mixing>1.0</anderson_mixing>
+        </picard>
+        <newton_krylov>
+            <picard_handover>1.0e-2</picard_handover>
+            <n_krylov_max>10</n_krylov_max>
+            <krylov_tolerance>0.1</krylov_tolerance>
+            <finite_difference_step>1.0</finite_difference_step>
+            <verbose>false</verbose>
+        </newton_krylov>
+        <newton_picard>
+            <n_basis_max>10</n_basis_max>
+            <contraction_threshold>0.5</contraction_threshold>
+            <finite_difference_step>1.0</finite_difference_step>
+            <verbose>false</verbose>
+        </newton_picard>
+    </nonlinear_solver>
+</numerics>

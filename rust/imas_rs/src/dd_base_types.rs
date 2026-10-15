@@ -18,6 +18,7 @@
 use ndarray::{Array1, Array2, Array3, Array4, Array5, Array6, ArrayD, Dimension, Ix1, IxDyn};
 use num_complex::Complex64;
 use std::marker::PhantomData;
+use std::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 use std::slice::SliceIndex;
 use std::sync::Arc;
 
@@ -305,6 +306,35 @@ impl<'a, T, D: Dimension> Elements<'a, T, D> {
         }
     }
 
+    /// Select the element named `name` from a nested array of structures under every element, adding no dimension.
+    ///
+    /// `get` reaches the nested array from one element, as for [`Elements::nest`]. `field_path` is only used to name the
+    /// nested array if this panics.
+    ///
+    /// # Panics
+    /// If, under any element, no element or more than one is named `name`.
+    pub fn nest_named<U: Named>(&self, field_path: &'static str, get: fn(&T) -> &[U], name: &str) -> Elements<'a, U, D> {
+        let n_items: usize = self.items.len();
+        let mut named_items: Vec<&'a U> = Vec::with_capacity(n_items);
+        for i_item in 0..n_items {
+            let nested: &'a [U] = get(self.items[i_item]);
+            match index_of_name(nested, name) {
+                Ok(i_named) => named_items.push(&nested[i_named]),
+                Err(reason) => panic!(
+                    "cannot select from `{field_path}` under the element at {:?}: {reason}",
+                    unravel(i_item, &self.gathered_shape)
+                ),
+            }
+        }
+
+        // One element under every element, so the sliced levels are those above
+        Elements {
+            items: named_items.into(),
+            gathered_shape: Arc::clone(&self.gathered_shape),
+            rank: PhantomData,
+        }
+    }
+
     /// Read one leaf out of every element, and arrange the values from left to right.
     fn gather<U: Clone>(&self, project: fn(&T) -> U) -> Array<U, D> {
         let n_items: usize = self.items.len();
@@ -395,6 +425,177 @@ impl<T, U> Accumulator<'_, T, U, Ix1> {
 }
 
 // ============================================================================
+// Selecting from an Array of Structures
+// ============================================================================
+
+// Every array of structures has an accessor named after it, e.g. `pf_active.coil(...)`, which takes either
+// of two selections:
+// * a range of positions, e.g. `.coil(..)` or `.coil(0..2)`, which gives a slice view over those elements,
+//   whose leaves gather one value per element;
+// * the `name` of one element, e.g. `.coil("BVLT")`, which gives that element. It is only offered where the
+//   element has a `name`, which the data dictionary defines as a "short string identifier (unique for a
+//   given device)".
+// A single position is not a selection: one element is reached by indexing the array itself, `.coil[0]`, so
+// that there is only one way to write it.
+
+/// An element of an array of structures: what a slice view gathers over.
+///
+/// Implemented by the generated code for every type which appears in an array of structures, so that a
+/// [`Selection`] can build that type's slice view without knowing which type it is.
+pub trait ArrayOfStructuresElement: Sized {
+    /// The slice view which gathers over elements of this type, with `D` sliced levels
+    type SliceView<'a, D>
+    where
+        Self: 'a;
+
+    /// Build the slice view over `elements`
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a;
+}
+
+/// An element of an array of structures which has a `name`, so can be selected by it.
+///
+/// Implemented by the generated code for every such type.
+pub trait Named {
+    /// The element's `name`
+    fn name(&self) -> &str;
+}
+
+/// What an array-of-structures accessor, e.g. `.coil(...)`, can be given: a range of positions, or the `name` of
+/// one element. See the section comment above.
+///
+/// `Output` is what the accessor gives from the structure which holds the array, e.g. `pf_active.coil(...)`.
+/// `NestedOutput<D>` is what it gives from a view which has already sliced `D` levels above it, e.g.
+/// `equilibrium.time_slice(..).constraints.pf_current(...)`: a range adds one dimension, and a name, which takes
+/// the element with that name under every element above, adds none.
+///
+/// A single position is not a selection, so this does not compile; it is written `magnetics.flux_loop[0]`:
+///
+/// ```compile_fail,E0277
+/// let magnetics: imas_rs::ids::magnetics::Magnetics = imas_rs::ids::magnetics::Magnetics::default();
+/// let _flux_loop = magnetics.flux_loop(0);
+/// ```
+///
+/// Nor does a name, where the elements have none:
+///
+/// ```compile_fail,E0277
+/// let equilibrium: imas_rs::Equilibrium = imas_rs::Equilibrium::default();
+/// let _time_slice = equilibrium.time_slice("t0");
+/// ```
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` cannot select from an array of structures",
+    label = "give a range, e.g. `..` or `0..2`, or the `name` of one element",
+    note = "a single element is reached by indexing the array itself, e.g. `pf_active.coil[0]` rather than `pf_active.coil(0)`",
+    note = "a name only selects where the elements have a `name`"
+)]
+pub trait Selection<'a, T: 'a> {
+    /// What the accessor gives from the structure which holds the array
+    type Output;
+    /// What the accessor gives from a view which has already sliced `D` levels above the array
+    type NestedOutput<D: Dimension>;
+
+    /// Select from `items`, the array named `field_path`
+    fn select(self, field_path: &'static str, items: &'a [T]) -> Self::Output;
+
+    /// Select from the array which `get` reaches under every element of `elements`, named `field_path`
+    fn select_nested<P, D: Dimension>(self, field_path: &'static str, elements: &Elements<'a, P, D>, get: fn(&P) -> &[T]) -> Self::NestedOutput<D>;
+}
+
+/// A range of positions selects a slice view over those elements, exactly as slicing a `Vec` does
+macro_rules! impl_selection_for_range {
+    ($($range:ty),+) => {
+        $(
+            impl<'a, T: ArrayOfStructuresElement + 'a> Selection<'a, T> for $range {
+                type Output = T::SliceView<'a, Ix1>;
+                type NestedOutput<D: Dimension> = T::SliceView<'a, D::Larger>;
+
+                fn select(self, _field_path: &'static str, items: &'a [T]) -> Self::Output {
+                    T::slice_view(Elements::from_slice(&items[self]))
+                }
+
+                fn select_nested<P, D: Dimension>(
+                    self,
+                    field_path: &'static str,
+                    elements: &Elements<'a, P, D>,
+                    get: fn(&P) -> &[T],
+                ) -> Self::NestedOutput<D> {
+                    T::slice_view(elements.nest(field_path, get, self))
+                }
+            }
+        )+
+    };
+}
+
+impl_selection_for_range!(
+    RangeFull,
+    Range<usize>,
+    RangeFrom<usize>,
+    RangeTo<usize>,
+    RangeInclusive<usize>,
+    RangeToInclusive<usize>
+);
+
+/// A name selects the one element with that `name`
+impl<'a, T: ArrayOfStructuresElement + Named + 'a> Selection<'a, T> for &str {
+    type Output = &'a T;
+    type NestedOutput<D: Dimension> = T::SliceView<'a, D>;
+
+    fn select(self, field_path: &'static str, items: &'a [T]) -> &'a T {
+        match index_of_name(items, self) {
+            Ok(i_named) => &items[i_named],
+            Err(reason) => panic!("cannot select from `{field_path}`: {reason}"),
+        }
+    }
+
+    fn select_nested<P, D: Dimension>(self, field_path: &'static str, elements: &Elements<'a, P, D>, get: fn(&P) -> &[T]) -> Self::NestedOutput<D> {
+        T::slice_view(elements.nest_named(field_path, get, self))
+    }
+}
+
+/// A name held in a `String`, so that `.coil(&name)` works as well as `.coil(name.as_str())`
+impl<'a, T: ArrayOfStructuresElement + Named + 'a> Selection<'a, T> for &String {
+    type Output = &'a T;
+    type NestedOutput<D: Dimension> = T::SliceView<'a, D>;
+
+    fn select(self, field_path: &'static str, items: &'a [T]) -> &'a T {
+        self.as_str().select(field_path, items)
+    }
+
+    fn select_nested<P, D: Dimension>(self, field_path: &'static str, elements: &Elements<'a, P, D>, get: fn(&P) -> &[T]) -> Self::NestedOutput<D> {
+        self.as_str().select_nested(field_path, elements, get)
+    }
+}
+
+/// The position of the one element of `items` named `name`.
+///
+/// The data dictionary asks for a name to be unique, so a name which more than one element has is an error, like
+/// one which no element has, rather than a choice of the first.
+fn index_of_name<T: Named>(items: &[T], name: &str) -> Result<usize, String> {
+    let n_items: usize = items.len();
+    let mut i_named: Option<usize> = None;
+    for i_item in 0..n_items {
+        if items[i_item].name() == name {
+            if let Some(i_first) = i_named {
+                return Err(format!("more than one element is named `{name}`, at positions {i_first} and {i_item}"));
+            }
+            i_named = Some(i_item);
+        }
+    }
+
+    match i_named {
+        Some(i_item) => Ok(i_item),
+        None => {
+            let mut names: Vec<&str> = Vec::with_capacity(n_items);
+            for i_item in 0..n_items {
+                names.push(items[i_item].name());
+            }
+            Err(format!("no element is named `{name}`; the names are {names:?}"))
+        }
+    }
+}
+
+// ============================================================================
 // Re-exports for convenience
 // ============================================================================
 
@@ -481,6 +682,50 @@ mod tests {
         magnetics.flux_loop[1].greens.pf_active.pop();
 
         let _values: Array2<f64> = magnetics.flux_loop(..).greens.pf_active(..).value.to_array();
+    }
+
+    /// A name selects the one element with that name, from the structure which holds the array.
+    #[test]
+    fn a_name_selects_one_element() {
+        let magnetics: Magnetics = magnetics_with_greens(3, 2);
+
+        assert_eq!(magnetics.flux_loop("L001").name, "L001");
+        assert_eq!(magnetics.flux_loop("L002").greens.pf_active("PF1").value, greens_value(2, 1));
+
+        // A name held in a `String`
+        let flux_loop_name: String = "L000".to_string();
+        assert_eq!(magnetics.flux_loop(&flux_loop_name).greens.pf_active("PF0").value, greens_value(0, 0));
+    }
+
+    /// A name under every element takes the element with that name under each of them, adding no dimension.
+    #[test]
+    fn a_name_under_every_element_adds_no_dimension() {
+        let magnetics: Magnetics = magnetics_with_greens(3, 2);
+
+        let values: Array1<f64> = magnetics.flux_loop(..).greens.pf_active("PF1").value.to_array(); // shape = (n_flux_loop)
+        assert_eq!(values, array![greens_value(0, 1), greens_value(1, 1), greens_value(2, 1)]);
+
+        // A range above a name still adds its own dimension
+        let values: Array1<f64> = magnetics.flux_loop(1..).greens.pf_active("PF0").value.to_array(); // shape = (n_flux_loop)
+        assert_eq!(values, array![greens_value(1, 0), greens_value(2, 0)]);
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot select from `flux_loop`: no element is named `L009`; the names are [\"L000\", \"L001\", \"L002\"]")]
+    fn a_name_which_no_element_has_panics() {
+        let magnetics: Magnetics = magnetics_with_greens(3, 2);
+
+        let _flux_loop: &MagneticsFluxLoop = magnetics.flux_loop("L009");
+    }
+
+    /// The data dictionary asks for names to be unique, so a repeated name is an error rather than a choice of the first.
+    #[test]
+    #[should_panic(expected = "cannot select from `greens.pf_active` under the element at [1]: more than one element is named `PF0`, at positions 0 and 1")]
+    fn a_name_which_more_than_one_element_has_panics() {
+        let mut magnetics: Magnetics = magnetics_with_greens(3, 2);
+        magnetics.flux_loop[1].greens.pf_active[1].name = "PF0".to_string();
+
+        let _values: Array1<f64> = magnetics.flux_loop(..).greens.pf_active("PF0").value.to_array();
     }
 
     /// Gathering over no outer elements is empty at every level, rather than a panic.

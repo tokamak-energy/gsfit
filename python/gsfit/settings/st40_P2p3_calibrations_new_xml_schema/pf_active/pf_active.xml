@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pf_active_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/pf_active/pf_active.xsd">
+    <workflow href="../workflow.xml"/>
+    <st40_mdsplus>
+        <elmag>
+            <pulseNo xsi:nil="true"/>
+            <run_name>RUN16</run_name>
+            <usage>PF coil geometry</usage>
+        </elmag>
+        <psu2coil>
+            <pulseNo xsi:nil="true"/>
+            <run_name>RUN06</run_name>
+            <usage>PF coil currents</usage>
+        </psu2coil>
+    </st40_mdsplus>
+    <st40_astra_mdsplus>
+        <astra>
+            <pulseNo xsi:nil="true"/>
+            <run_name>RUN202</run_name>
+            <usage>PF coil currents</usage>
+        </astra>
+    </st40_astra_mdsplus>
+</pf_active_settings>

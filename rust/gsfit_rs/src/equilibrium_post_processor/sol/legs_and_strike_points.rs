@@ -3,10 +3,9 @@
 
 use super::super::constant_values::ConstantValues;
 use super::super::intermediate_values::IntermediateValues;
+use crate::limiter::vacuum_vessel_outline;
 use crate::plasma_geometry::marching_squares_for_sol::marching_squares_for_sol;
-use crate::wall::vacuum_vessel_outline;
 use imas_rs::EquilibriumTimeSlice;
-use imas_rs::ids::wall::Wall as WallIds;
 use ndarray::{Array1, Array2};
 
 /// Trace the two scrape-off layer legs, and store them in the time-slice.
@@ -17,11 +16,9 @@ use ndarray::{Array1, Array2};
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; the `sol` contours and strike points are written into it
-/// * `constant_values` - the constant values; `wall_ids`, which supplies the vacuum vessel the legs are
+/// * `constant_values` - the constant values; `limiter`, which supplies the vacuum vessel the legs are
 ///   traced up to, is read
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    let wall_ids: &WallIds = constant_values.wall_ids;
-
     // `boundary/type` is 0 for a limited plasma and 1 for a diverted one. Only a diverted plasma
     // has an X-point, and so only a diverted plasma has scrape-off layer legs.
     //
@@ -56,7 +53,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let xpt_r: f64 = time_slice.boundary.bounding.r;
     let xpt_z: f64 = time_slice.boundary.bounding.z;
 
-    let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(wall_ids).unwrap();
+    let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(constant_values.limiter).unwrap();
 
     let n_r: usize = r.len();
     let n_z: usize = z.len();

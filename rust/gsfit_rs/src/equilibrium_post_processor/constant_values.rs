@@ -1,7 +1,7 @@
 //! The quantities which are fixed for the whole of a time-slice's post-processing.
 
 use crate::source_functions::SharedSourceFunction;
-use imas_rs::ids::wall::Wall as WallIds;
+use imas_rs::EquilibriumLimiter;
 
 /// Everything a post-processing calculator reads which is neither on the time-slice it is given
 /// nor produced by an earlier calculator.
@@ -18,10 +18,11 @@ pub struct ConstantValues<'a> {
     pub ff_prime_source_function: &'a SharedSourceFunction,
     /// Toroidal field rod current [ampere]
     pub i_rod: f64,
+    /// The limiter, `equilibrium/limiter`, whose `unit(0)` is the vacuum vessel
+    pub limiter: &'a EquilibriumLimiter,
     pub p_prime_source_function: &'a SharedSourceFunction,
     /// Vacuum toroidal field reference radius [metre]
     pub r0: f64,
-    pub wall_ids: &'a WallIds,
 }
 
 /// Build a `ConstantValues` whose every field is a placeholder, for a unit test to overwrite the
@@ -40,14 +41,14 @@ pub fn constant_values_for_test() -> ConstantValues<'static> {
             dof_values: Array1::zeros(0),
         })
     });
-    static WALL_IDS: LazyLock<WallIds> = LazyLock::new(WallIds::default);
+    static LIMITER: LazyLock<EquilibriumLimiter> = LazyLock::new(EquilibriumLimiter::default);
 
     return ConstantValues {
         b0: f64::NAN,
         ff_prime_source_function: &SOURCE_FUNCTION,
         i_rod: f64::NAN,
+        limiter: &LIMITER,
         p_prime_source_function: &SOURCE_FUNCTION,
         r0: f64::NAN,
-        wall_ids: &WALL_IDS,
     };
 }

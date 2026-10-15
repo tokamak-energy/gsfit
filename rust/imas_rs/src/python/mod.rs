@@ -36,10 +36,14 @@
 //! * `path.rs` - the `Path` cursor, and the reader which resolves one against an IDS
 //! * `ids.rs` - the wrapper class for each IDS
 //! * `<ids>_paths.rs` - the generated tables, one per IDS; do not edit by hand
+//! * `dd_support.rs` - the wrapper class for each structure from `dd_support.xsd` which is not
+//!   an IDS, e.g. `ParametersInput`; these go in their own `dd_support` module, see
+//!   [`register_dd_support`]
 //!
 //! The generated tables import their building blocks from here (`super::`), which is why
 //! everything they need is re-exported below rather than reached through the submodules.
 
+mod dd_support;
 mod description;
 mod gather;
 mod ids;
@@ -57,6 +61,7 @@ mod wall_paths;
 
 use pyo3::prelude::*;
 
+pub use dd_support::PyParametersInput;
 pub use description::{Leaf, Node, NodeKind};
 pub use gather::{Gatherable, LengthOf, Value, gather, no_levels};
 pub use ids::{PyEquilibrium, PyMagnetics, PyPfActive, PyPfPassive, PyPulseSchedule, PyTf, PyWall};
@@ -88,5 +93,11 @@ pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("pulse_schedule_paths", PyPath::at_root(&PULSE_SCHEDULE_ROOT).into_pyobject(module.py())?)?;
     module.add("tf_paths", PyPath::at_root(&TF_ROOT).into_pyobject(module.py())?)?;
     module.add("wall_paths", PyPath::at_root(&WALL_ROOT).into_pyobject(module.py())?)?;
+    Ok(())
+}
+
+/// Populate a `dd_support` module with the data dictionary structures which are not IDSs.
+pub fn register_dd_support(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_class::<PyParametersInput>()?;
     Ok(())
 }

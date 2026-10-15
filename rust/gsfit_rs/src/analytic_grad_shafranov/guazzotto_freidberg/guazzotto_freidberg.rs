@@ -3,18 +3,21 @@ use super::coils_fit::{BoundaryCoilFit, fit_boundary_coils, plasma_current_densi
 use super::eigenvalue::{flux_solution, solve_alpha};
 use super::flux::{FluxDerivatives, FluxSolution};
 use super::matching_geometry::{MatchingGeometry, matching_geometry};
-use crate::coils::Coils;
 use crate::equilibrium_post_processor::equilibrium_post_processor;
 use crate::grad_shafranov::CONVERGENCE_STATUS_CONVERGED;
 use crate::grad_shafranov::contour_tree_nodes as grad_shafranov_contour_tree_nodes;
 use crate::greens::Greens;
+use crate::limiter::{limiter_points, vacuum_vessel_outline};
+use crate::pf_active::PfActive;
 use crate::plasma_geometry::{BoundaryContour, MagneticAxis, StationaryPoint, find_boundary, find_magnetic_axis, find_stationary_points_using_winding_number};
 use crate::sensors::{BpProbes, FluxLoops};
 use crate::source_functions::{EfitPolynomial, SharedSourceFunction};
-use crate::wall::{Wall, limiter_points, vacuum_vessel_outline};
-use imas_rs::ids::wall::Wall as WallIds;
-use imas_rs::python::PyEquilibrium;
-use imas_rs::{Equilibrium, EquilibriumContourTreeNode, EquilibriumProfiles2d, EquilibriumTimeSlice};
+use crate::wall::Wall;
+use imas_rs::dd_support::parameters_input::ParametersInput;
+use imas_rs::ids::pf_active::PfCoils;
+use imas_rs::ids::wall::{Wall as WallIds, Wall2dLimiterUnit};
+use imas_rs::python::{PyEquilibrium, PyParametersInput};
+use imas_rs::{Equilibrium, EquilibriumContourTreeNode, EquilibriumLimiterUnit, EquilibriumLimiterUnitOutline, EquilibriumProfiles2d, EquilibriumTimeSlice};
 use ndarray::{Array1, Array2, array};
 use numpy::borrow::PyReadonlyArray2;
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyArrayMethods};
@@ -44,7 +47,7 @@ const CRITICAL_TYPE_MAXIMUM: i32 = 2;
 /// Reference: L. Guazzotto & J. P. Freidberg, "Simple, general, realistic, robust,
 /// analytic tokamak equilibria. Part 1", J. Plasma Phys. 87 (2021) 905870303.
 ///
-/// The equilibrium is solved analytically; a [`Coils`] object is then produced whose
+/// The equilibrium is solved analytically; a [`PfActive`] object is then produced whose
 /// PF-coil currents (placed on the `(R, Z)` grid boundary) reproduce the vacuum field
 /// consistent with the analytic solution. This yields a self-consistent free-boundary
 /// test case that GSFit can be asked to reconstruct.
@@ -126,8 +129,8 @@ pub struct GuazzottoFreidberg {
     /// shape `(n_z, n_r)` [dimensionless]
     mask: Array2<f64>,
 
-    // Result of `get_coils`
-    /// The free-boundary equilibrium, post-processed; empty until `get_coils` has run
+    // Result of `get_pf_active`
+    /// The free-boundary equilibrium, post-processed; empty until `get_pf_active` has run
     equilibrium_ids: Equilibrium,
 }
 
@@ -273,25 +276,25 @@ impl GuazzottoFreidberg {
     /// # Arguments
     /// * `coil_regularisation_weight` - Tikhonov weight `lambda^2` on the coil-current magnitude
     /// * `control_points` - `(n_control_point, 2)` array of `(r, z)` points where the flux is matched [metre]
-    /// * `wall` - the wall: its limiter and vacuum vessel bound a diverted plasma, and the post-processor traces
-    ///   the scrape-off layer legs up to it
+    /// * `wall` - the wall: its limiter is copied into the equilibrium IDS, where its limiter and vacuum vessel
+    ///   bound a diverted plasma, and the post-processor traces the scrape-off layer legs up to it
     ///
     /// # Returns
-    /// * `coils` - one single-filament PF coil per boundary node, carrying the fitted current
-    pub fn get_coils(&mut self, coil_regularisation_weight: f64, control_points: PyReadonlyArray2<f64>, wall: PyRef<Wall>) -> Coils {
-        self.assert_solved("get_coils");
+    /// * `pf_active` - one single-filament PF coil per boundary node, carrying the fitted current, at the single time 0
+    pub fn get_pf_active(&mut self, coil_regularisation_weight: f64, control_points: PyReadonlyArray2<f64>, wall: PyRef<Wall>) -> PfActive {
+        self.assert_solved("get_pf_active");
 
         let control_points_ndarray: Array2<f64> = control_points.to_owned_array();
         assert!(
             control_points_ndarray.ncols() == 2,
-            "GuazzottoFreidberg.get_coils: control_points must have shape (n_control_point, 2)"
+            "GuazzottoFreidberg.get_pf_active: control_points must have shape (n_control_point, 2)"
         );
         let control_r: Array1<f64> = control_points_ndarray.column(0).to_owned();
         let control_z: Array1<f64> = control_points_ndarray.column(1).to_owned();
         let n_control: usize = control_r.len();
 
         // Re-derive the flux solution (alpha is known, so this is cheap) to evaluate the target flux.
-        let geom: MatchingGeometry = matching_geometry(&self.configuration, self.eps).expect("GuazzottoFreidberg.get_coils");
+        let geom: MatchingGeometry = matching_geometry(&self.configuration, self.eps).expect("GuazzottoFreidberg.get_pf_active");
         let flux: FluxSolution = self.flux_solution(&geom);
         let (r, z): (Array1<f64>, Array1<f64>) = self.grid();
 
@@ -317,8 +320,9 @@ impl GuazzottoFreidberg {
             coil_regularisation_weight,
         );
 
-        // Assemble the Coils object: one single-filament PF coil per boundary node.
-        let mut coils: Coils = Coils::new();
+        // Assemble the PF coils: one single-filament coil per boundary node. The analytic equilibrium has no settings to
+        // record in `pf_active/code/parameters`
+        let mut pf_active: PfActive = PfActive::new(&PyParametersInput::new(ParametersInput::default()));
         let n_coil: usize = fit.coil_r.len();
         let time_single: Array1<f64> = Array1::from_elem(1, 0.0);
         for i_coil in 0..n_coil {
@@ -328,19 +332,21 @@ impl GuazzottoFreidberg {
             let d_r_single: Array1<f64> = Array1::from_elem(1, fit.coil_d_r[i_coil]);
             let d_z_single: Array1<f64> = Array1::from_elem(1, fit.coil_d_z[i_coil]);
             let current_single: Array1<f64> = Array1::from_elem(1, fit.coil_current[i_coil]);
-            coils.add_pf_coil_rs(&name, &r_single, &z_single, &d_r_single, &d_z_single, &time_single, &current_single);
+            pf_active
+                .add_pf_coil_rs(&name, r_single, z_single, d_r_single, d_z_single, time_single.clone(), current_single)
+                .unwrap_or_else(|reason: String| panic!("GuazzottoFreidberg.get_pf_active: {reason}"));
         }
 
         // Store the free-boundary equilibrium, and post-process it exactly as a reconstruction is
         self.equilibrium_ids = self.build_equilibrium_ids(&flux, &geom, &r, &z, fit, j_phi_2d, &wall.wall_ids);
         let (p_prime_source_function, ff_prime_source_function): (SharedSourceFunction, SharedSourceFunction) = source_functions();
-        equilibrium_post_processor(&mut self.equilibrium_ids, &wall.wall_ids, &p_prime_source_function, &ff_prime_source_function);
+        equilibrium_post_processor(&mut self.equilibrium_ids, &p_prime_source_function, &ff_prime_source_function);
 
-        coils
+        pf_active
     }
 
     /// Fill the `experimental` measurement of each BP probe (tesla) and flux loop (weber) with the
-    /// field the analytic plasma current plus `coils` produce at that sensor, mutating the passed
+    /// field the analytic plasma current plus `pf_active` produce at that sensor, mutating the passed
     /// `bp_probes` / `flux_loops` in place. Requires `solve` first. The sensors' geometry must
     /// already be set (e.g. via `add_sensor`).
     ///
@@ -354,8 +360,8 @@ impl GuazzottoFreidberg {
     /// # Arguments
     /// * `bp_probes` - BP probes with geometry already set; their measurements are overwritten
     /// * `flux_loops` - flux loops with geometry already set; their measurements are overwritten
-    /// * `coils` - the PF coils, typically the ones `get_coils` returned
-    pub fn get_sensor_values(&self, mut bp_probes: PyRefMut<BpProbes>, mut flux_loops: PyRefMut<FluxLoops>, coils: PyRef<Coils>) {
+    /// * `pf_active` - the PF coils, typically the ones `get_pf_active` returned
+    pub fn get_sensor_values(&self, mut bp_probes: PyRefMut<BpProbes>, mut flux_loops: PyRefMut<FluxLoops>, pf_active: PyRef<PfActive>) {
         self.assert_solved("get_sensor_values");
 
         // Plasma current filaments + the coils are the free-boundary field the sensors see.
@@ -368,10 +374,12 @@ impl GuazzottoFreidberg {
         let mut coil_r_vec: Vec<f64> = Vec::new();
         let mut coil_z_vec: Vec<f64> = Vec::new();
         let mut coil_current_vec: Vec<f64> = Vec::new();
-        for coil_name in coils.results.get("pf").keys() {
-            let filament_r: Array1<f64> = coils.results.get("pf").get(&coil_name).get("geometry").get("r").unwrap_array1();
-            let filament_z: Array1<f64> = coils.results.get("pf").get(&coil_name).get("geometry").get("z").unwrap_array1();
-            let coil_current: f64 = coils.results.get("pf").get(&coil_name).get("i").get("experimental").get("value").unwrap_array1()[0];
+        let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
+        let n_pf_coil: usize = pf_active_coils.len();
+        for i_pf_coil in 0..n_pf_coil {
+            let filament_r: Array1<f64> = pf_active_coils[i_pf_coil].element(..).geometry.rectangle.r.to_array();
+            let filament_z: Array1<f64> = pf_active_coils[i_pf_coil].element(..).geometry.rectangle.z.to_array();
+            let coil_current: f64 = pf_active_coils[i_pf_coil].current.data[0];
             let n_filament: usize = filament_r.len();
             for i_filament in 0..n_filament {
                 coil_r_vec.push(filament_r[i_filament]);
@@ -522,7 +530,7 @@ impl GuazzottoFreidberg {
     }
 
     /// The equilibrium IDS, for reading with `gsfit_rs.imas.equilibrium_paths`. Empty until
-    /// `get_coils` has run.
+    /// `get_pf_active` has run.
     ///
     /// The IDS is copied into the returned object, so it is a snapshot: changes made on the Rust
     /// side afterwards are not seen by it.
@@ -658,6 +666,21 @@ impl GuazzottoFreidberg {
         let n_z: usize = self.n_z;
         let d_area: f64 = (r[1] - r[0]) * (z[1] - z[0]);
 
+        // The IDS starts with the limiter, copied in from the wall as `Plasma.copy_from_wall_ids` copies it into a
+        // reconstruction's, because a diverted plasma's boundary is found inside it below
+        let mut equilibrium_ids: Equilibrium = Equilibrium::default();
+        let wall_units: &Vec<Wall2dLimiterUnit> = &wall_ids.description_2d[0].limiter.unit;
+        let n_unit: usize = wall_units.len();
+        for i_unit in 0..n_unit {
+            equilibrium_ids.limiter.unit.push(EquilibriumLimiterUnit {
+                name: wall_units[i_unit].name.clone(),
+                outline: EquilibriumLimiterUnitOutline {
+                    r: wall_units[i_unit].outline.r.clone(),
+                    z: wall_units[i_unit].outline.z.clone(),
+                },
+            });
+        }
+
         // Analytic magnetic axis
         let (axis_x, axis_y, axis_psi_hat): (f64, f64, f64) = self.magnetic_axis(flux);
         let (mag_r_analytic, mag_z_analytic): (f64, f64) = self.physical_coordinates(axis_x, axis_y);
@@ -675,8 +698,8 @@ impl GuazzottoFreidberg {
         let contour_tree_nodes: Vec<EquilibriumContourTreeNode>;
         if !geom.xpts().0.is_empty() {
             // Diverted: found in the total flux, as `EquilibriumSolver::update_psi_and_geometry` finds them
-            let (limit_pts_r, limit_pts_z): (Array1<f64>, Array1<f64>) = limiter_points(wall_ids).expect("GuazzottoFreidberg: limiter points");
-            let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(wall_ids).expect("GuazzottoFreidberg: vacuum vessel");
+            let (limit_pts_r, limit_pts_z): (Array1<f64>, Array1<f64>) = limiter_points(&equilibrium_ids.limiter).expect("GuazzottoFreidberg: limiter points");
+            let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(&equilibrium_ids.limiter).expect("GuazzottoFreidberg: vacuum vessel");
             let stationary_points: Vec<StationaryPoint> = find_stationary_points_using_winding_number(
                 r.view(),
                 z.view(),
@@ -735,7 +758,6 @@ impl GuazzottoFreidberg {
         }
 
         // The IDS layout, the same as a reconstruction's: one time-slice, holding one rectangular grid
-        let mut equilibrium_ids: Equilibrium = Equilibrium::default();
         equilibrium_ids.allocate_time_slices(&array![0.0]);
         equilibrium_ids.code.grid.n_r = n_r as i32;
         equilibrium_ids.code.grid.n_z = n_z as i32;

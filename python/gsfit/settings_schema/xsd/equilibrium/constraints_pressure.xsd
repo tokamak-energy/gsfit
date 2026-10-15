@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for constraints_pressure.xml: whether pressure is fitted, and how the pressure constraints are made.
+
+    Named as in the IMAS Data Dictionary: equilibrium time_slice[:]/constraints/pressure[:]. There it is
+    an array, one element per measurement. Here it is a single element, which says how the database
+    reader makes that array: one constraint per measurement channel, all fitted the same way.
+    The root element is `constraints__pressure`, the path of this file's link in equilibrium.xml
+    with `__` for `/`. Neither it nor the Python class generated from it then clashes with those of the
+    other constraints files.
+    See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="constraints__pressure">
+        <xs:annotation><xs:documentation>Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this</xs:documentation></xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="pressure" type="Pressure">
+                    <xs:annotation><xs:documentation>Whether pressure is fitted, and how the pressure constraints are made</xs:documentation></xs:annotation>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="Name">
+        <xs:annotation><xs:documentation>A name, with no spaces</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="NonNegativeDouble">
+        <xs:annotation><xs:documentation>A number greater than or equal to 0</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= Complex types ================================= -->
+
+    <xs:complexType name="PressureThomsonScattering">
+        <xs:annotation><xs:documentation>Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="pressure_multiplier" type="xs:double">
+                <xs:annotation>
+                    <xs:documentation>Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature</xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="minimum_pressure" type="xs:double">
+                <xs:annotation>
+                    <xs:documentation>Total pressures at or below this are ignored. A channel with none above it gets no constraint</xs:documentation>
+                    <xs:appinfo>
+                        <units>Pa</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="Synthetic">
+        <xs:annotation><xs:documentation>Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="r_start" type="xs:double">
+                <xs:annotation>
+                    <xs:documentation>Major radius of the first sensor, relative to the magnetic axis</xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="r_end" type="xs:double">
+                <xs:annotation>
+                    <xs:documentation>Major radius of the last sensor, relative to the magnetic axis</xs:documentation>
+                    <xs:appinfo>
+                        <units>m</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="n_sensors" type="xs:nonNegativeInteger">
+                <xs:annotation><xs:documentation>Number of sensors, evenly spaced from r_start to r_end</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="minimum_pressure" type="xs:double">
+                <xs:annotation>
+                    <xs:documentation>Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint</xs:documentation>
+                    <xs:appinfo>
+                        <units>Pa</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="Pressure">
+        <xs:annotation><xs:documentation>Whether pressure is fitted, and how the pressure constraints are made</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="include" type="xs:boolean">
+                <xs:annotation><xs:documentation>Whether to fit pressure. When false, nothing else in this file is read</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="sensor_name_prefix" type="Name" minOccurs="0">
+                <xs:annotation><xs:documentation>The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="expected_value" type="xs:double" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead</xs:documentation>
+                    <xs:appinfo>
+                        <units>Pa</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="weight" type="NonNegativeDouble" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true</xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="comment" type="xs:string" minOccurs="0">
+                <xs:annotation><xs:documentation>Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="thomson_scattering" type="PressureThomsonScattering" minOccurs="0">
+                <xs:annotation><xs:documentation>Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="synthetic" type="Synthetic" minOccurs="0">
+                <xs:annotation><xs:documentation>Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true</xs:documentation></xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+</xs:schema>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<magnetics_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/magnetics/magnetics.xsd">
+    <workflow href="../workflow.xml"/>
+    <st40_mdsplus>
+        <mag>
+            <pulseNo xsi:nil="true"/>
+            <run_name>BEST</run_name>
+            <usage>Magnetic sensors geometry and measured values</usage>
+        </mag>
+        <dialoop>
+            <pulseNo xsi:nil="true"/>
+            <run_name>BEST</run_name>
+            <usage>Diamagnetic flux measured value</usage>
+        </dialoop>
+    </st40_mdsplus>
+    <st40_astra_mdsplus>
+        <astra>
+            <pulseNo xsi:nil="true"/>
+            <run_name>RUN202</run_name>
+            <usage>Magnetic sensors measured values</usage>
+        </astra>
+    </st40_astra_mdsplus>
+</magnetics_settings>

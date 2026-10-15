@@ -6,6 +6,10 @@ import numpy.typing as npt
 from gsfit_rs import BpProbes
 from st40_database import GetData
 
+from ...settings_schema.python.equilibrium.constraints_b_field_pol_probe import BFieldPolProbe
+from ...settings_schema.python.equilibrium.constraints_b_field_pol_probe import ConstraintsBFieldPolProbe as ConstraintsBFieldPolProbeSettings
+from ...settings_schema.python.magnetics.magnetics import MagneticsSettings
+
 if TYPE_CHECKING:
     from . import DatabaseReader
 
@@ -13,13 +17,16 @@ if TYPE_CHECKING:
 def setup_bp_probes(
     self: "DatabaseReader",
     pulseNo: int,
-    settings: dict[str, typing.Any],
+    settings: MagneticsSettings,
+    settings_bp_probes: ConstraintsBFieldPolProbeSettings,
 ) -> BpProbes:
     """
     This method initialises the Rust `BpProbes` class (Mirnov coils).
 
     :param pulseNo: Pulse number, used to read from the database
-    :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    :param settings: `MagneticsSettings` object, read from `magnetics/magnetics.xml`, whose `workflow` says which MAG run to read the probes from
+    :param settings_bp_probes: `ConstraintsBFieldPolProbe` object, read from `equilibrium/constraints_b_field_pol_probe.xml`, which holds each probe's
+        fitting settings. A probe which is not listed there is not included in the fit
 
     **This method is specific to ST40's experimental MDSplus database.**
 
@@ -29,9 +36,24 @@ def setup_bp_probes(
     # Initialise the BpProbes Rust class
     bp_probes = BpProbes()
 
+    # The MAG run to read, from the `workflow.xml` which `magnetics.xml` links to
+    workflow = settings.workflow
+    if workflow is None or workflow.mag is None:
+        raise ValueError("`magnetics.xml` must link to a `workflow.xml` holding `mag`, which says which MAG run to read the poloidal field probes from")
+    # A nil `pulseNo` reads the pulse being reconstructed
+    mag_settings = workflow.mag
+    if mag_settings.pulseNo is None:
+        mag_pulseNo = pulseNo
+    else:
+        mag_pulseNo = mag_settings.pulseNo
+
     # read in mag data from MDSplus
-    mag_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus_with_digital_filter"]["workflow"]["mag"]["run_name"]
-    mag = GetData(pulseNo, f"MAG#{mag_run_name}", is_fail_quiet=False)
+    mag = GetData(mag_pulseNo, f"MAG#{mag_settings.run_name}", is_fail_quiet=False)
+
+    # The fitting settings of each probe listed in `constraints_b_field_pol_probe.xml`, by name
+    sensors_fit_settings: dict[str, BFieldPolProbe] = {}
+    for sensor_fit_settings in settings_bp_probes.b_field_pol_probe:
+        sensors_fit_settings[sensor_fit_settings.name] = sensor_fit_settings
 
     # Bp-probes
     names_long = typing.cast(list[str], mag.get("BPPROBE.ALL.NAMES"))
@@ -41,14 +63,15 @@ def setup_bp_probes(
     sensors_angle_pol = typing.cast(npt.NDArray[np.float64], mag.get("BPPROBE.ALL.THETA"))
 
     n_sensors = len(sensors_names)
-    for i_sensor in range(0, n_sensors):
+    for i_sensor in range(n_sensors):
         sensor_name = sensors_names[i_sensor]
 
-        if sensor_name in settings["sensor_weights_bp_probe.json"]:
-            fit_settings_comment = settings["sensor_weights_bp_probe.json"][sensor_name]["fit_settings"]["comment"]
-            fit_settings_expected_value = settings["sensor_weights_bp_probe.json"][sensor_name]["fit_settings"]["expected_value"]
-            fit_settings_include = settings["sensor_weights_bp_probe.json"][sensor_name]["fit_settings"]["include"]
-            fit_settings_weight = settings["sensor_weights_bp_probe.json"][sensor_name]["fit_settings"]["weight"]
+        if sensor_name in sensors_fit_settings:
+            sensor_fit_settings = sensors_fit_settings[sensor_name]
+            fit_settings_comment = sensor_fit_settings.comment
+            fit_settings_expected_value = sensor_fit_settings.expected_value
+            fit_settings_include = sensor_fit_settings.include
+            fit_settings_weight = sensor_fit_settings.weight
         else:
             fit_settings_comment = ""
             fit_settings_expected_value = np.nan

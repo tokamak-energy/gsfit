@@ -1,9 +1,10 @@
-import typing
 from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import StationaryPoint
+
+from ...settings_schema.python.magnetics.magnetics import MagneticsSettings
 
 if TYPE_CHECKING:
     from . import DatabaseReader
@@ -12,14 +13,15 @@ if TYPE_CHECKING:
 def setup_stationary_point_sensors(
     self: "DatabaseReader",
     pulseNo: int,
-    settings: dict[str, typing.Any],
+    settings: MagneticsSettings,
     times_to_reconstruct: npt.NDArray[np.float64],
 ) -> StationaryPoint:
     """
     This method initialises the Rust `StationaryPoint` class.
 
     :param pulseNo: Pulse number, used to read from the database
-    :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    :param settings: `MagneticsSettings` object, read from `magnetics/magnetics.xml`; not used
+    :param times_to_reconstruct: Times the equilibrium will be solved at [second]
 
     **This method is specific to ST40's experimental MDSplus database.**
 

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for constraints_flux_loop.xml: how each flux loop is fitted.
+
+    Named as in the IMAS Data Dictionary: equilibrium time_slice[:]/constraints/flux_loop[:], and
+    magnetics flux_loop[:].
+    The root element is `constraints__flux_loop`, the path of this file's link in equilibrium.xml
+    with `__` for `/`, and each `flux_loop` element has the type `flux_loop`. Neither these names nor the
+    Python classes generated from them then clash with those of the other constraints files.
+
+    constraints_flux_loop.xsd, constraints_rogowski_coil.xsd, constraints_diamagnetic_flux.xsd and
+    constraints_isoflux.xsd are the same apart from their names, documentation, units and number of
+    elements, so change them all together.
+    See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="constraints__flux_loop">
+        <xs:annotation><xs:documentation>How each flux loop is fitted, one `flux_loop` per loop. A loop the database has but this file does not list is not fitted, and a listed loop the database does not have is ignored</xs:documentation></xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="flux_loop" type="flux_loop" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation><xs:documentation>One flux loop, which measures the poloidal flux</xs:documentation></xs:annotation>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+        <xs:unique name="constraints_flux_loop_unique_name">
+            <xs:annotation><xs:documentation>Each flux_loop is listed at most once</xs:documentation></xs:annotation>
+            <xs:selector xpath="flux_loop"/>
+            <xs:field xpath="name"/>
+        </xs:unique>
+    </xs:element>
+
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="Name">
+        <xs:annotation><xs:documentation>A name, with no spaces</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="NonNegativeDouble">
+        <xs:annotation><xs:documentation>A number greater than or equal to 0</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= Complex types ================================= -->
+
+    <xs:complexType name="flux_loop">
+        <xs:annotation><xs:documentation>One flux loop, which measures the poloidal flux</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="name" type="Name">
+                <xs:annotation><xs:documentation>The loop's name in the database, e.g. "L001"</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="expected_value" type="xs:double">
+                <xs:annotation><xs:documentation>The typical size of the loop's measured poloidal flux. The fit divides the residual by it</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="weight" type="NonNegativeDouble">
+                <xs:annotation>
+                    <xs:documentation>Relative weight of the constraint in the fit. Its least-squares weight is 2 pi weight / expected_value, but every reader except st40_mdsplus_with_digital_filter first divides `weight` by 2 pi</xs:documentation>
+                    <xs:appinfo>
+                        <units>1</units>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="include" type="xs:boolean">
+                <xs:annotation><xs:documentation>Whether the constraint is fitted</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="comment" type="xs:string">
+                <xs:annotation><xs:documentation>Free text, e.g. why the constraint is not included; not used by the fit</xs:documentation></xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+</xs:schema>

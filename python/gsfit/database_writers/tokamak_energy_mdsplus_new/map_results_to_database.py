@@ -4,7 +4,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs.imas import equilibrium_paths as ep
+from gsfit_rs.imas import pf_passive_paths as pp
 from scipy.constants import mu_0
+
+from ..workflow_names import workflow_from_settings
 
 if TYPE_CHECKING:
     from ...gsfit import Gsfit
@@ -53,6 +56,7 @@ _TIME_SERIES_PATH_PAIRS: list[tuple[tuple[str, ...], typing.Any]] = [
     (("GLOBAL", "BETA_P_1"), ep.time_slice[:].global_quantities.beta_pol_1),
     (("GLOBAL", "BETA_P_2"), ep.time_slice[:].global_quantities.beta_pol_2),
     (("GLOBAL", "BETA_P_3"), ep.time_slice[:].global_quantities.beta_pol_3),
+    (("GLOBAL", "BP_OMP"), ep.time_slice[:].global_quantities.bp_omp),
     (("GLOBAL", "BT_VAC_RGEO"), ep.time_slice[:].global_quantities.bt_vac_at_r_geo),
     (("GLOBAL", "DELTA_R_SEP"), ep.time_slice[:].global_quantities.delta_r_sep),
     (("GLOBAL", "DELTA_Z"), ep.time_slice[:].convergence.delta_z),
@@ -198,14 +202,12 @@ def map_results_to_database(
 
     # Take class object out of the `gsfit_controller` object
     pulseNo = gsfit_controller.pulseNo
-    settings = gsfit_controller.settings
     plasma = gsfit_controller.plasma
     bp_probes = gsfit_controller.bp_probes
     flux_loops = gsfit_controller.flux_loops
     dialoop = gsfit_controller.dialoop
     rogowski_coils = gsfit_controller.rogowski_coils
-    passives = gsfit_controller.passives
-    coils = gsfit_controller.coils
+    pf_passive = gsfit_controller.pf_passive
     pressure_sensors = gsfit_controller.pressure_sensors
     results = gsfit_controller.results
 
@@ -229,6 +231,93 @@ def map_results_to_database(
     results["BOUNDARY"]["OUTLINE"]["N"] = _n_points_per_time(results["BOUNDARY"]["OUTLINE"]["R"])
     results["SOL"]["HFS"]["CONTOUR"]["N"] = _n_points_per_time(results["SOL"]["HFS"]["CONTOUR"]["R"])
     results["SOL"]["LFS"]["CONTOUR"]["N"] = _n_points_per_time(results["SOL"]["LFS"]["CONTOUR"]["R"])
+
+    # Contour tree: the stationary points of psi (O-points and X-points). How many there are changes
+    # from one time-slice to the next, so `time_slice[:].contour_tree.node[:]` would be jagged, which
+    # the IDS refuses to gather. Each time-slice is read on its own, and its nodes are padded with NaN
+    # to the most found on any time-slice. `N` counts the real nodes, with an entry for every
+    # time-slice: 0 for one without nodes, e.g. one which failed. `CRIT_TYPE` is an integer in the
+    # IDS, but is stored as a float so that it can be padded with NaN like the others
+    n_time: int = len(results["TIME"])
+    contour_tree_node_n: npt.NDArray[np.int32] = np.zeros(n_time, dtype=np.int32)
+    for i_time in range(n_time):
+        contour_tree_node_n[i_time] = len(plasma.get(ep.time_slice[i_time].contour_tree.node[:].r))
+    n_node_max: int = int(np.max(contour_tree_node_n, initial=0))
+    contour_tree_node_critical_type: npt.NDArray[np.float64] = np.full((n_time, n_node_max), np.nan)
+    contour_tree_node_psi: npt.NDArray[np.float64] = np.full((n_time, n_node_max), np.nan)
+    contour_tree_node_r: npt.NDArray[np.float64] = np.full((n_time, n_node_max), np.nan)
+    contour_tree_node_z: npt.NDArray[np.float64] = np.full((n_time, n_node_max), np.nan)
+    for i_time in range(n_time):
+        n_node: int = int(contour_tree_node_n[i_time])
+        contour_tree_node_critical_type[i_time, :n_node] = plasma.get(ep.time_slice[i_time].contour_tree.node[:].critical_type)
+        contour_tree_node_psi[i_time, :n_node] = plasma.get(ep.time_slice[i_time].contour_tree.node[:].psi)
+        contour_tree_node_r[i_time, :n_node] = plasma.get(ep.time_slice[i_time].contour_tree.node[:].r)
+        contour_tree_node_z[i_time, :n_node] = plasma.get(ep.time_slice[i_time].contour_tree.node[:].z)
+    results["CONTOUR_TREE"]["NODE"]["CRIT_TYPE"] = contour_tree_node_critical_type  # shape = [n_time, n_node_max]
+    results["CONTOUR_TREE"]["NODE"]["N"] = contour_tree_node_n  # shape = [n_time]
+    results["CONTOUR_TREE"]["NODE"]["PSI"] = contour_tree_node_psi  # shape = [n_time, n_node_max]
+    results["CONTOUR_TREE"]["NODE"]["R"] = contour_tree_node_r  # shape = [n_time, n_node_max]
+    results["CONTOUR_TREE"]["NODE"]["Z"] = contour_tree_node_z  # shape = [n_time, n_node_max]
+
+    # Secondary X-point: the four legs of its separatrix, each from the secondary X-point to where it
+    # meets the limiter. The equilibrium post-processor stores them as the secondary X-point's
+    # `contour_tree/node(i_node)/levelset`, the only node with a `levelset`, in GSFit's own order (see
+    # `contour_tree/node_levelset__r__z.rs`): contours 0 and 1 leave away from the plasma core, and 2
+    # and 3 towards it, the low field side first in each pair. Whether a leg goes up or down therefore
+    # depends on which side of the magnetic axis the secondary X-point is, which can change during a
+    # pulse, so each time-slice is mapped on its own. A time-slice without a secondary X-point, e.g. a
+    # limited one, has no legs: its rows are all NaN and its `N` is 0. Each leg is padded with NaN to
+    # its own longest, rather than all four to the longest of any, which keeps the padding down
+    secondary_xpt_leg_names: list[str] = ["HFS_LOWER", "HFS_UPPER", "LFS_LOWER", "LFS_UPPER"]
+    # The leg which each `levelset` contour is, when the secondary X-point is above the magnetic axis,
+    # and when it is below
+    levelset_leg_names_above_axis: list[str] = ["LFS_UPPER", "HFS_UPPER", "LFS_LOWER", "HFS_LOWER"]
+    levelset_leg_names_below_axis: list[str] = ["LFS_LOWER", "HFS_LOWER", "LFS_UPPER", "HFS_UPPER"]
+    n_levelset: int = len(levelset_leg_names_above_axis)
+    mag_z: npt.NDArray[np.float64] = np.asarray(plasma.get(ep.time_slice[:].global_quantities.magnetic_axis.z))  # shape = [n_time] [metre]
+    # Each leg on each time-slice, without padding; empty on a time-slice without legs
+    secondary_xpt_leg_r: dict[str, list[npt.NDArray[np.float64]]] = {}  # [metre]
+    secondary_xpt_leg_z: dict[str, list[npt.NDArray[np.float64]]] = {}  # [metre]
+    for leg_name in secondary_xpt_leg_names:
+        secondary_xpt_leg_r[leg_name] = [np.zeros(0)] * n_time
+        secondary_xpt_leg_z[leg_name] = [np.zeros(0)] * n_time
+    for i_time in range(n_time):
+        n_node = int(contour_tree_node_n[i_time])
+        for i_node in range(n_node):
+            # One row per contour, the shorter ones padded with NaN; no rows for a node without a `levelset`
+            levelset_r: npt.NDArray[np.float64] = np.asarray(plasma.get(ep.time_slice[i_time].contour_tree.node[i_node].levelset[:].r))  # [metre]
+            if levelset_r.shape[0] == 0:
+                continue
+            if levelset_r.shape[0] != n_levelset:
+                raise ValueError(
+                    f"`time_slice({i_time})/contour_tree/node({i_node})/levelset` has {levelset_r.shape[0]} contours, but the secondary "
+                    f"X-point has {n_levelset} legs: see `contour_tree/node_levelset__r__z.rs`"
+                )
+            levelset_z: npt.NDArray[np.float64] = np.asarray(plasma.get(ep.time_slice[i_time].contour_tree.node[i_node].levelset[:].z))  # [metre]
+            secondary_xpt_z: float = plasma.get(ep.time_slice[i_time].contour_tree.node[i_node].z)  # [metre]
+            if secondary_xpt_z > mag_z[i_time]:
+                levelset_leg_names: list[str] = levelset_leg_names_above_axis
+            else:
+                levelset_leg_names = levelset_leg_names_below_axis
+            for i_levelset in range(n_levelset):
+                # Contour coordinates are always finite, so a NaN can only be padding
+                is_point: npt.NDArray[np.bool_] = np.isfinite(levelset_r[i_levelset, :])
+                secondary_xpt_leg_r[levelset_leg_names[i_levelset]][i_time] = levelset_r[i_levelset, is_point]
+                secondary_xpt_leg_z[levelset_leg_names[i_levelset]][i_time] = levelset_z[i_levelset, is_point]
+    for leg_name in secondary_xpt_leg_names:
+        leg_n: npt.NDArray[np.int32] = np.zeros(n_time, dtype=np.int32)
+        for i_time in range(n_time):
+            leg_n[i_time] = len(secondary_xpt_leg_r[leg_name][i_time])
+        n_point_max: int = int(np.max(leg_n, initial=0))
+        leg_r: npt.NDArray[np.float64] = np.full((n_time, n_point_max), np.nan)
+        leg_z: npt.NDArray[np.float64] = np.full((n_time, n_point_max), np.nan)
+        for i_time in range(n_time):
+            n_point: int = int(leg_n[i_time])
+            leg_r[i_time, :n_point] = secondary_xpt_leg_r[leg_name][i_time]
+            leg_z[i_time, :n_point] = secondary_xpt_leg_z[leg_name][i_time]
+        results["SEC_XPT"][leg_name]["CONTOUR"]["N"] = leg_n  # shape = [n_time]
+        results["SEC_XPT"][leg_name]["CONTOUR"]["R"] = leg_r  # shape = [n_time, n_point_max]
+        results["SEC_XPT"][leg_name]["CONTOUR"]["Z"] = leg_z  # shape = [n_time, n_point_max]
 
     # The data dictionary defines `beta_tor` as a fraction, but this MDSplus node has always held a
     # percentage, so the factor of 100 is put back here rather than changing what consumers read
@@ -269,77 +358,63 @@ def map_results_to_database(
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["RECONSTRUCT"] = dialoop.get_array1([sensor_name, "b", "calculated", "value"])
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["WEIGHT"] = dialoop.get_f64([sensor_name, "fit_settings", "weight"])
 
-    for pf_name in coils.keys(["pf"]):
+    # The PF coil currents, from `constraints/pf_current`, which `Plasma.copy_from_pf_active_ids` filled on every time-slice
+    pf_current_names = [str(pf_name) for pf_name in plasma.get(ep.time_slice[0].constraints.pf_current[:].name)]
+    pf_current_measured = plasma.get(ep.time_slice[:].constraints.pf_current[:].measured)  # shape = (n_time, n_pf)
+    for i_pf, pf_name in enumerate(pf_current_names):
         # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["EXACT"]
-        # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["INCLUDE"] = np.int32(coils.get_bool(["pf", pf_name, "fit_settings", "include"]))
-        results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["MEASURED"] = coils.get_array1(["pf", pf_name, "i", "measured", "value"])
-        # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["RECONSTRUCT"] = coils.get_array1(["pf", pf_name, "i", "calculated", "value"])
-        # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["WEIGHT"] = coils.get_f64(["pf", pf_name, "fit_settings", "weight"])
+        # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["INCLUDE"]
+        results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["MEASURED"] = pf_current_measured[:, i_pf]
+        # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["RECONSTRUCT"] = plasma.get(ep.time_slice[:].constraints.pf_current[i_pf].reconstructed)
+        # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["WEIGHT"] = plasma.get(ep.time_slice[:].constraints.pf_current[i_pf].weight)
     # TODO: need to handle circuits vs coils better
-    results["CONSTRAINTS"]["PF_CURRENT"]["BVL"]["MEASURED"] = coils.get_array1(["pf", "BVLT", "i", "measured", "value"])
-    results["CONSTRAINTS"]["PF_CURRENT"]["DIV"]["MEASURED"] = coils.get_array1(["pf", "DIVT", "i", "measured", "value"])
-    results["CONSTRAINTS"]["PF_CURRENT"]["PSH"]["MEASURED"] = coils.get_array1(["pf", "PSHT", "i", "measured", "value"])
+    results["CONSTRAINTS"]["PF_CURRENT"]["BVL"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("BVLT")]
+    results["CONSTRAINTS"]["PF_CURRENT"]["DIV"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("DIVT")]
+    results["CONSTRAINTS"]["PF_CURRENT"]["PSH"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("PSHT")]
 
-    # # X-points
-    # # TODO!!!!!!!!!!!
-    # results["XPOINTS"]["UPPER"]["R"] = plasma.get_array1(["xpoints", "upper", "r"])
-    # results["XPOINTS"]["UPPER"]["Z"] = plasma.get_array1(["xpoints", "upper", "z"])
-    # results["XPOINTS"]["LOWER"]["R"] = plasma.get_array1(["xpoints", "lower", "r"])
-    # results["XPOINTS"]["LOWER"]["Z"] = plasma.get_array1(["xpoints", "lower", "z"])
+    # Passive conductors: for each loop, its degrees of freedom, which are the amplitudes the reconstruction fitted and their current
+    # distributions, and the geometry of its filaments.
+    # The fitted amplitudes are each time-slice's `passive_dof_values`, NaN on a time-slice which failed. They follow the Greens tables,
+    # `greens/pf_passive`, which are in the order of `pf_passive/loop`, and then of `loop(i1)/dof`
+    passive_dof_values: npt.NDArray[np.float64] = plasma.get(ep.time_slice[:].passive_dof_values)  # shape = [n_time, n_dof_total]
+    n_loop: int = len(pf_passive.get(pp.loop[:].name))
+    i_dof_total: int = 0
+    for i_loop in range(n_loop):
+        passive_name: str = pf_passive.get(pp.loop[i_loop].name)
 
-    # Passives
-    for passive_name in passives.keys():
-        if passive_name == "IVC":
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_01"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_01", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_01"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_01", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_02"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_02", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_02"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_02", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_03"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_03", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_03"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_03", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_04"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_04", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_04"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_04", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_05"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_05", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_05"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_05", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_06"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_06", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_06"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_06", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_07"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_07", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_07"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_07", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_08"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_08", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_08"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_08", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_09"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_09", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_09"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_09", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_10"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_10", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_10"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_10", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_11"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_11", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_11"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_11", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_12"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_12", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_12"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_12", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_13"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_13", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_13"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_13", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_14"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_14", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_14"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_14", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_15"]["RECONSTRUCT"] = passives.get_array1(["IVC", "dof", "eig_15", "calculated"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["DOF"]["EIG_15"]["I_DIST"] = passives.get_array1(["IVC", "dof", "eig_15", "current_distribution"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["GEOMETRY"]["ANGLE_1"] = passives.get_array1(["IVC", "geometry", "angle_1"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["GEOMETRY"]["ANGLE_2"] = passives.get_array1(["IVC", "geometry", "angle_2"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["GEOMETRY"]["D_R"] = passives.get_array1(["IVC", "geometry", "d_r"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["GEOMETRY"]["D_Z"] = passives.get_array1(["IVC", "geometry", "d_z"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["GEOMETRY"]["R"] = passives.get_array1(["IVC", "geometry", "r"])
-            results["CONSTRAINTS"]["PF_PASSIVE"]["IVC"]["GEOMETRY"]["Z"] = passives.get_array1(["IVC", "geometry", "z"])
-        else:
-            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["DOF"]["CONSTANT_J"]["RECONSTRUCT"] = passives.get_array1(
-                [passive_name, "dof", "constant_current_density", "calculated"]
-            )
-            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["DOF"]["CONSTANT_J"]["I_DIST"] = passives.get_array1(
-                [passive_name, "dof", "constant_current_density", "current_distribution"]
-            )
-            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["ANGLE_1"] = passives.get_array1([passive_name, "geometry", "angle_1"])
-            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["ANGLE_2"] = passives.get_array1([passive_name, "geometry", "angle_2"])
-            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["D_R"] = passives.get_array1([passive_name, "geometry", "d_r"])
-            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["D_Z"] = passives.get_array1([passive_name, "geometry", "d_z"])
-            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["R"] = passives.get_array1([passive_name, "geometry", "r"])
-            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["Z"] = passives.get_array1([passive_name, "geometry", "z"])
+        n_dof: int = len(pf_passive.get(pp.loop[i_loop].dof[:].name))
+        for i_dof in range(n_dof):
+            # The MDSplus nodes are named `CONSTANT_J`, and `EIG_01`, `EIG_02`, ... for the eigenmodes
+            dof_name: str = pf_passive.get(pp.loop[i_loop].dof[i_dof].name)
+            if dof_name == "constant_current_density":
+                dof_node_name: str = "CONSTANT_J"
+            else:
+                dof_node_name = dof_name.upper()
+            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["DOF"][dof_node_name]["RECONSTRUCT"] = np.ascontiguousarray(passive_dof_values[:, i_dof_total])
+            results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["DOF"][dof_node_name]["I_DIST"] = pf_passive.get(pp.loop[i_loop].dof[i_dof].current_distribution)
+            i_dof_total += 1
 
+        # The filaments, which the pf_passive IDS describes as parallelograms from one corner (`oblique`), converted back into the centre, the
+        # radial width and vertical height, and the angles of the sides from the R axis, zero for a side which is not sheared, which these nodes
+        # have always held. This is the conversion `passive_filaments` does in `gsfit_rs`
+        oblique_r: npt.NDArray[np.float64] = pf_passive.get(pp.loop[i_loop].element[:].geometry.oblique.r)  # [metre]
+        oblique_z: npt.NDArray[np.float64] = pf_passive.get(pp.loop[i_loop].element[:].geometry.oblique.z)  # [metre]
+        oblique_length_alpha: npt.NDArray[np.float64] = pf_passive.get(pp.loop[i_loop].element[:].geometry.oblique.length_alpha)  # [metre]
+        oblique_length_beta: npt.NDArray[np.float64] = pf_passive.get(pp.loop[i_loop].element[:].geometry.oblique.length_beta)  # [metre]
+        oblique_alpha: npt.NDArray[np.float64] = pf_passive.get(pp.loop[i_loop].element[:].geometry.oblique.alpha)  # [radian]
+        oblique_beta: npt.NDArray[np.float64] = pf_passive.get(pp.loop[i_loop].element[:].geometry.oblique.beta)  # [radian]
+        # The bottom side, inclined at `alpha` from the R axis, and the left side, inclined at `beta` from the Z axis, from the reference point,
+        # the bottom left corner
+        side_alpha_r: npt.NDArray[np.float64] = oblique_length_alpha * np.cos(oblique_alpha)  # [metre]
+        side_alpha_z: npt.NDArray[np.float64] = oblique_length_alpha * np.sin(oblique_alpha)  # [metre]
+        side_beta_r: npt.NDArray[np.float64] = -oblique_length_beta * np.sin(oblique_beta)  # [metre]
+        side_beta_z: npt.NDArray[np.float64] = oblique_length_beta * np.cos(oblique_beta)  # [metre]
+        results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["ANGLE_1"] = np.where(oblique_beta == 0.0, 0.0, oblique_beta + np.pi / 2.0)
+        results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["ANGLE_2"] = np.where(oblique_alpha == 0.0, 0.0, oblique_alpha)
+        results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["D_R"] = side_alpha_r
+        results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["D_Z"] = side_beta_z
+        results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["R"] = oblique_r + 0.5 * (side_alpha_r + side_beta_r)
+        results["CONSTRAINTS"]["PF_PASSIVE"][passive_name]["GEOMETRY"]["Z"] = oblique_z + 0.5 * (side_alpha_z + side_beta_z)
 
     if len(pressure_sensors.keys()) > 0:
         sensor_names = list(pressure_sensors.keys())
@@ -374,20 +449,12 @@ def map_results_to_database(
         )  # shape = [n_time, n_points]
         results["CONSTRAINTS"]["PRESSURE"]["ALL"]["NAMES"] = np.array(sensor_names)
 
-    # Store "WORKFLOW"
-    database_reader_method = settings["GSFIT_code_settings.json"]["database_reader"]["method"]
-
-    code_names = settings["GSFIT_code_settings.json"]["database_reader"][database_reader_method]["workflow"].keys()
-
-    for code_name in code_names:
-        pulseNo_json = settings["GSFIT_code_settings.json"]["database_reader"][database_reader_method]["workflow"][code_name]["pulseNo"]
-        if pulseNo_json is not None:
-            results["INPUT"]["WORKFLOW"][code_name]["PULSE"] = pulseNo_json
-        else:
+    # Store "WORKFLOW": which run of each code the database reader read, from the `workflow.xml` which each IDS's file links to
+    for code_name, workflow_entry in workflow_from_settings(gsfit_controller.settings_xml).items():
+        # A nil `pulseNo` reads the pulse being reconstructed
+        if workflow_entry.pulseNo is None:
             results["INPUT"]["WORKFLOW"][code_name]["PULSE"] = pulseNo
-
-        run_name = settings["GSFIT_code_settings.json"]["database_reader"][database_reader_method]["workflow"][code_name]["run_name"]
-        results["INPUT"]["WORKFLOW"][code_name]["RUN"] = run_name
-
-        usage = settings["GSFIT_code_settings.json"]["database_reader"][database_reader_method]["workflow"][code_name]["usage"]
-        results["INPUT"]["WORKFLOW"][code_name]["USAGE"] = usage
+        else:
+            results["INPUT"]["WORKFLOW"][code_name]["PULSE"] = workflow_entry.pulseNo
+        results["INPUT"]["WORKFLOW"][code_name]["RUN"] = workflow_entry.run_name
+        results["INPUT"]["WORKFLOW"][code_name]["USAGE"] = workflow_entry.usage

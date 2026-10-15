@@ -5,6 +5,7 @@
 
 use super::Error;
 use super::nonlinear_solvers::{newton_krylov, newton_picard, picard};
+use crate::limiter::{limiter_points, vacuum_vessel_outline};
 use crate::plasma_geometry;
 use crate::plasma_geometry::BoundaryContour;
 use crate::plasma_geometry::MagneticAxis;
@@ -15,16 +16,14 @@ use crate::plasma_geometry::find_magnetic_axis;
 use crate::plasma_geometry::find_stationary_points_using_winding_number;
 use crate::sensors::{SensorsDynamic, SensorsStatic};
 use crate::source_functions::SourceFunctionTraits;
-use crate::wall::{limiter_points, vacuum_vessel_outline};
 use faer::linalg::matmul::matmul;
 use faer::linalg::solvers::{SolveLstsq, Svd as FaerSvd};
 use faer::mat::MatRef;
 use faer::{Accum, Par};
 use imas_rs::EMPTY_INT;
-use imas_rs::ids::wall::Wall as WallIds;
 use imas_rs::{
-    Code, EquilibriumContourTreeNode, EquilibriumGreens, EquilibriumGreensPfActive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d,
-    EquilibriumProfiles2dGrid, EquilibriumTimeSlice,
+    Code, EquilibriumConstraints0d, EquilibriumContourTreeNode, EquilibriumGreens, EquilibriumGreensPfActive, EquilibriumGreensPfPassiveDof,
+    EquilibriumLimiter, EquilibriumProfiles2d, EquilibriumProfiles2dGrid, EquilibriumTimeSlice,
 };
 use ndarray::Axis;
 use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView2, concatenate, s};
@@ -348,10 +347,10 @@ pub struct EquilibriumSolver<'a> {
     /// indexed by time on the IDS, so the caller hands in this slice's value rather than the array
     vacuum_toroidal_field_r0: f64,
     vacuum_toroidal_field_b0: f64,
-    /// The machine's wall. The limiter points and the vacuum vessel contour are read from
-    /// `wall/description_2d(0)/limiter`; see `crate::wall::Wall` for the unit ordering
-    wall: &'a WallIds,
-    coils_dynamic: &'a SensorsDynamic,
+    /// The limiter, `equilibrium/limiter`, which is the same for every time-slice, so it sits on the
+    /// IDS itself rather than inside `time_slice`. The limiter points and the vacuum vessel contour
+    /// are read from it; see `crate::limiter` for the unit ordering
+    limiter: &'a EquilibriumLimiter,
     bp_probes_static: &'a SensorsStatic,
     bp_probes_dynamic: &'a SensorsDynamic,
     flux_loops_static: &'a SensorsStatic,
@@ -372,8 +371,6 @@ pub struct EquilibriumSolver<'a> {
     pub passive_dof_values: Array1<f64>,
     pub p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
     pub ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync>,
-    passive_regularisations: Array2<f64>,
-    passive_regularisations_weight: Array1<f64>,
     /// The number of calls to `update_psi_and_geometry`, whichever nonlinear solver makes them.
     /// Written to `convergence/flux_evaluations_n` when the solve finishes
     n_flux_evaluations: usize,
@@ -384,7 +381,7 @@ impl<'a> EquilibriumSolver<'a> {
         time_slice: &'a mut EquilibriumTimeSlice,
         equilibrium_code: &'a Code,
         greens_tables: &'a EquilibriumGreens,
-        wall: &'a WallIds,
+        limiter: &'a EquilibriumLimiter,
         vacuum_toroidal_field_r0: f64,
         vacuum_toroidal_field_b0: f64,
         inputs: &GradShafranovInputs<'a>,
@@ -419,8 +416,7 @@ impl<'a> EquilibriumSolver<'a> {
             initial_j_2d: inputs.initial_j_2d,
             vacuum_toroidal_field_r0,
             vacuum_toroidal_field_b0,
-            wall,
-            coils_dynamic: inputs.coils_dynamic,
+            limiter,
             bp_probes_static: inputs.bp_probes_static,
             bp_probes_dynamic: inputs.bp_probes_dynamic,
             flux_loops_static: inputs.flux_loops_static,
@@ -441,8 +437,6 @@ impl<'a> EquilibriumSolver<'a> {
             passive_dof_values: Array1::zeros(0),
             p_prime_source_function: inputs.p_prime_source_function.clone(),
             ff_prime_source_function: inputs.ff_prime_source_function.clone(),
-            passive_regularisations: inputs.passive_regularisations.to_owned(),
-            passive_regularisations_weight: inputs.passive_regularisations_weight.to_owned(),
             n_flux_evaluations: 0,
         }
     }
@@ -496,6 +490,9 @@ impl<'a> EquilibriumSolver<'a> {
         self.time_slice.convergence.iterations_n = EMPTY_INT;
         self.time_slice.global_quantities.magnetic_axis.r = f64::NAN;
         self.time_slice.global_quantities.magnetic_axis.z = f64::NAN;
+        // The stationary points of the flux which has just been discarded. An array of structures
+        // cannot be set to NaN, so it is emptied: a failed time-slice has no nodes
+        self.time_slice.contour_tree.node.clear();
         // A boundary which does not exist is neither limited nor diverted, and IMAS spells that out
         // with its reserved value, the integer counterpart of the `NaN` every float above is set to
         self.time_slice.boundary.r#type = EMPTY_INT;
@@ -542,10 +539,11 @@ impl<'a> EquilibriumSolver<'a> {
     pub(super) fn update_psi_and_geometry(&mut self) -> Result<(), Error> {
         self.n_flux_evaluations += 1;
 
-        // Limiter, from the `wall` IDS. `limit_pts` gathers every limiter unit, `vessel` is
-        // `unit(0)` alone
-        let (limit_pts_r, limit_pts_z): (Array1<f64>, Array1<f64>) = limiter_points(self.wall).unwrap();
-        let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(self.wall).unwrap();
+        // Limiter, from `equilibrium/limiter`. `limit_pts` gathers every limiter unit, `vessel` is
+        // `unit(0)` alone. `solve_grad_shafranov` has already read both before solving anything, so
+        // neither can fail here
+        let (limit_pts_r, limit_pts_z): (Array1<f64>, Array1<f64>) = limiter_points(self.limiter).unwrap();
+        let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(self.limiter).unwrap();
 
         // Updates `psi` and all of its derivatives (including the `delta_z` vertical stability correction);
         // timing: 350ms, with [n_r, n_z]=[81, 321]
@@ -676,9 +674,6 @@ impl<'a> EquilibriumSolver<'a> {
         let p_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.p_prime_source_function.clone();
         let ff_prime_source_function: Arc<dyn SourceFunctionTraits + Send + Sync> = self.ff_prime_source_function.clone();
 
-        // Unpack objects
-        let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
-
         // Get sensors
         let bp_probes_static: &SensorsStatic = self.bp_probes_static;
         let bp_probes_dynamic: &SensorsDynamic = self.bp_probes_dynamic;
@@ -723,7 +718,14 @@ impl<'a> EquilibriumSolver<'a> {
         let n_magnetic_axis_constraints: usize = magnetic_axis_dynamic.measured.len();
         let n_p_prime_regularisation: usize = p_prime_source_function.source_function_regularisation().shape()[0];
         let n_ff_prime_regularisation: usize = ff_prime_source_function.source_function_regularisation().shape()[0];
-        let n_passive_regularisation: usize = self.passive_regularisations.shape()[0];
+        // The passive loops, which `Plasma.copy_from_pf_passive_ids` copied onto this time-slice, in the same order as the Greens
+        // tables, and with the same degrees of freedom, which `solve_grad_shafranov` checked
+        let pf_passive_currents: &Vec<EquilibriumConstraints0d> = &self.time_slice.constraints.pf_passive_current;
+        let n_loop: usize = pf_passive_currents.len();
+        let mut n_passive_regularisation: usize = 0;
+        for i_loop in 0..n_loop {
+            n_passive_regularisation += pf_passive_currents[i_loop].regularisations.nrows();
+        }
         let n_delta_z_regularisation: usize = 0; // initially set to 0 because we don't have previous iteration
         let n_constraints: usize = n_bp
             + n_fl
@@ -781,8 +783,9 @@ impl<'a> EquilibriumSolver<'a> {
         let greens_magnetic_axis_pf: &Array2<f64> = &magnetic_axis_static.greens_with_pf; // shape = [n_z*n_r, n_sensors]
         let greens_magnetic_axis_passives: &Array2<f64> = &magnetic_axis_static.greens_with_passives; // shape = [n_passive_dof, n_sensors]
 
-        // pf_coil_currents
-        let pf_coil_currents: &Array1<f64> = &coils_dynamic.measured;
+        // The PF coil currents, which `Plasma.copy_from_pf_active_ids` copied onto this time-slice, in the same order
+        // as the Greens tables, which `solve_grad_shafranov` checked
+        let pf_coil_currents: Array1<f64> = self.time_slice.constraints.pf_current(..).measured.to_array();
 
         // The flux, magnetic axis and boundary, from `update_psi_and_geometry`. These borrow out of
         // the IDS rather than copying out of it
@@ -874,7 +877,7 @@ impl<'a> EquilibriumSolver<'a> {
             }
 
             // PF coil component
-            let tmp: Array1<f64> = &greens_bp_probes_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            let tmp: Array1<f64> = &greens_bp_probes_pf.slice(s![.., i_sensor]) * &pf_coil_currents;
             constraint_values_from_coils[i_constraint] = tmp.sum();
 
             // Exact source function component
@@ -929,7 +932,7 @@ impl<'a> EquilibriumSolver<'a> {
             }
 
             // PF coil component
-            let tmp: Array1<f64> = &greens_flux_loops_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            let tmp: Array1<f64> = &greens_flux_loops_pf.slice(s![.., i_sensor]) * &pf_coil_currents;
             constraint_values_from_coils[i_constraint] = tmp.sum();
 
             // Exact source function component
@@ -1036,7 +1039,7 @@ impl<'a> EquilibriumSolver<'a> {
             }
 
             // PF coil component
-            let tmp: Array1<f64> = &greens_rogowski_coils_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            let tmp: Array1<f64> = &greens_rogowski_coils_pf.slice(s![.., i_sensor]) * &pf_coil_currents;
             constraint_values_from_coils[i_constraint] = tmp.sum();
 
             // Exact source function component
@@ -1092,7 +1095,7 @@ impl<'a> EquilibriumSolver<'a> {
             }
 
             // PF coil component
-            let tmp: Array1<f64> = &greens_isoflux_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            let tmp: Array1<f64> = &greens_isoflux_pf.slice(s![.., i_sensor]) * &pf_coil_currents;
             constraint_values_from_coils[i_constraint] = tmp.sum();
 
             // Exact source function component
@@ -1147,7 +1150,7 @@ impl<'a> EquilibriumSolver<'a> {
             }
 
             // PF coil component
-            let tmp: Array1<f64> = &greens_isoflux_boundary_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            let tmp: Array1<f64> = &greens_isoflux_boundary_pf.slice(s![.., i_sensor]) * &pf_coil_currents;
             constraint_values_from_coils[i_constraint] = tmp.sum();
 
             // Exact source function component
@@ -1298,7 +1301,7 @@ impl<'a> EquilibriumSolver<'a> {
             }
 
             // PF coil component
-            let tmp: Array1<f64> = &greens_magnetic_axis_pf.slice(s![.., i_sensor]) * pf_coil_currents;
+            let tmp: Array1<f64> = &greens_magnetic_axis_pf.slice(s![.., i_sensor]) * &pf_coil_currents;
             constraint_values_from_coils[i_constraint] = tmp.sum();
 
             // Exact source function component
@@ -1346,27 +1349,33 @@ impl<'a> EquilibriumSolver<'a> {
             i_constraint += 1;
         }
 
-        // // Add passive regularisation to the fitting matrix
+        // Add the passive regularisations to the fitting matrix, `constraints/pf_passive_current(i1)/regularisations`, each loop's
+        // at its own degrees of freedom; the other passive degrees of freedom are left at zero
         let regularisation_scaling: f64 = 0.001 * PI; // This regularisation_scaling factor need improving and explaining!
 
-        let passive_regularisations: &Array2<f64> = &self.passive_regularisations;
-        let passive_regularisations_weight: &Array1<f64> = &self.passive_regularisations_weight;
-        for i_regularisation in 0..n_passive_regularisation {
-            let passive_regularisation: ArrayView1<f64> = passive_regularisations.slice(s![i_regularisation, ..]);
+        // Where this loop's degrees of freedom start, among the passive degrees of freedom
+        let mut i_passive_dof_start: usize = 0;
+        for i_loop in 0..n_loop {
+            let n_dof_this_loop: usize = pf_passive_currents[i_loop].dof.len();
+            let n_regularisation_this_loop: usize = pf_passive_currents[i_loop].regularisations.nrows();
+            for i_regularisation in 0..n_regularisation_this_loop {
+                // Add this loop's degrees of freedom
+                fitting_matrix
+                    .slice_mut(s![
+                        i_constraint,
+                        n_p_prime_dof + n_ff_prime_dof + i_passive_dof_start..n_p_prime_dof + n_ff_prime_dof + i_passive_dof_start + n_dof_this_loop
+                    ])
+                    .assign(&pf_passive_currents[i_loop].regularisations.row(i_regularisation));
 
-            // Add passive degrees of freedom
-            fitting_matrix
-                .slice_mut(s![
-                    i_constraint,
-                    n_p_prime_dof + n_ff_prime_dof..=n_p_prime_dof + n_ff_prime_dof + n_passive_dof - 1
-                ])
-                .assign(&passive_regularisation);
+                // Add weight
+                constraint_weights[i_constraint] = pf_passive_currents[i_loop].regularisations_weight[i_regularisation] * regularisation_scaling;
 
-            // Add weight
-            constraint_weights[i_constraint] = passive_regularisations_weight[i_regularisation] * regularisation_scaling;
+                // Setup indexer for next sensor or constraint
+                i_constraint += 1;
+            }
 
-            // Setup indexer for next sensor or constraint
-            i_constraint += 1;
+            // The next loop's degrees of freedom follow this loop's
+            i_passive_dof_start += n_dof_this_loop;
         }
 
         // The exact source functions are known, so either their contribution is the column of
@@ -1535,7 +1544,9 @@ impl<'a> EquilibriumSolver<'a> {
         let n_z: usize = self.equilibrium_code.grid.n_z as usize;
         let d_area: f64 = self.time_slice.profiles_2d[0].grid.d_area;
         let j_2d: &Array2<f64> = &self.time_slice.profiles_2d[0].j_phi;
-        let pf_coil_currents: &Array1<f64> = &self.coils_dynamic.measured;
+        // The PF coil currents, which `Plasma.copy_from_pf_active_ids` copied onto this time-slice, in the same order
+        // as the Greens tables, which `solve_grad_shafranov` checked
+        let pf_coil_currents: Array1<f64> = self.time_slice.constraints.pf_current(..).measured.to_array();
         let passive_dof_values: &Array1<f64> = &self.passive_dof_values;
         // NaN until the first inverse solve has run, which is when the vertical shift starts being
         // applied
@@ -1554,14 +1565,14 @@ impl<'a> EquilibriumSolver<'a> {
         // `psi` is precomputed (the PF currents are fixed within a time-slice);
         // the other fields are the Greens tables contracted with the PF currents
         let psi_2d_coils: &Array2<f64> = &self.time_slice.profiles_2d[0].psi_coils;
-        let d_psi_d_r_2d_coils: Array2<f64> = contract(&greens_tables.g_d_psi_d_r_coils_matrix, pf_coil_currents);
-        let d_psi_d_z_2d_coils: Array2<f64> = contract(&greens_tables.g_d_psi_d_z_coils_matrix, pf_coil_currents);
-        let d2_psi_d_r2_2d_coils: Array2<f64> = contract(&greens_tables.g_d2_psi_d_r2_coils_matrix, pf_coil_currents);
-        let d2_psi_d_r_d_z_2d_coils: Array2<f64> = contract(&greens_tables.g_d2_psi_d_r_d_z_coils_matrix, pf_coil_currents);
-        let d2_psi_d_z2_2d_coils: Array2<f64> = contract(&greens_tables.g_d2_psi_d_z2_coils_matrix, pf_coil_currents);
-        let d3_psi_d_r2_d_z_2d_coils: Array2<f64> = contract(&greens_tables.g_d3_psi_d_r2_d_z_coils_matrix, pf_coil_currents);
-        let d3_psi_d_r_d_z2_2d_coils: Array2<f64> = contract(&greens_tables.g_d3_psi_d_r_d_z2_coils_matrix, pf_coil_currents);
-        let d3_psi_d_z3_2d_coils: Array2<f64> = contract(&greens_tables.g_d3_psi_d_z3_coils_matrix, pf_coil_currents);
+        let d_psi_d_r_2d_coils: Array2<f64> = contract(&greens_tables.g_d_psi_d_r_coils_matrix, &pf_coil_currents);
+        let d_psi_d_z_2d_coils: Array2<f64> = contract(&greens_tables.g_d_psi_d_z_coils_matrix, &pf_coil_currents);
+        let d2_psi_d_r2_2d_coils: Array2<f64> = contract(&greens_tables.g_d2_psi_d_r2_coils_matrix, &pf_coil_currents);
+        let d2_psi_d_r_d_z_2d_coils: Array2<f64> = contract(&greens_tables.g_d2_psi_d_r_d_z_coils_matrix, &pf_coil_currents);
+        let d2_psi_d_z2_2d_coils: Array2<f64> = contract(&greens_tables.g_d2_psi_d_z2_coils_matrix, &pf_coil_currents);
+        let d3_psi_d_r2_d_z_2d_coils: Array2<f64> = contract(&greens_tables.g_d3_psi_d_r2_d_z_coils_matrix, &pf_coil_currents);
+        let d3_psi_d_r_d_z2_2d_coils: Array2<f64> = contract(&greens_tables.g_d3_psi_d_r_d_z2_coils_matrix, &pf_coil_currents);
+        let d3_psi_d_z3_2d_coils: Array2<f64> = contract(&greens_tables.g_d3_psi_d_z3_coils_matrix, &pf_coil_currents);
 
         // Passives: the Greens tables contracted with the passive degrees of freedom
         let psi_2d_passives: Array2<f64> = contract(&greens_tables.g_psi_passives_matrix, passive_dof_values);
@@ -1755,13 +1766,12 @@ impl<'a> EquilibriumSolver<'a> {
         // Unpack objects
         let initial_guess_cur_r: f64 = self.equilibrium_code.initial_guess.cur_r;
         let initial_guess_cur_z: f64 = self.equilibrium_code.initial_guess.cur_z;
-        let coils_dynamic: &SensorsDynamic = self.coils_dynamic;
 
-        // Extract stuff from Coils
-        let pf_currents: &Array1<f64> = &coils_dynamic.measured;
+        // The PF coil currents, which `Plasma.copy_from_pf_active_ids` copied onto this time-slice
+        let pf_currents: Array1<f64> = self.time_slice.constraints.pf_current(..).measured.to_array();
 
-        // Flux from the poloidal field coils, from the Greens tables on the IDS. The coils are
-        // summed in IDS order, which is the order the measured currents are in
+        // Flux from the poloidal field coils, from the Greens tables on the IDS. The coils are summed in IDS order,
+        // which `solve_grad_shafranov` checked is the order of the PF coil currents
         let n_pf: usize = self.greens_tables.pf_active.len();
         let n_r: usize = self.equilibrium_code.grid.n_r as usize;
         let n_z: usize = self.equilibrium_code.grid.n_z as usize;
@@ -1959,7 +1969,6 @@ pub struct GradShafranovInputs<'a> {
     /// The initial current-density guess, built once before the loop over time-slices, or the
     /// reason it could not be built
     pub initial_j_2d: &'a Result<Array2<f64>, String>,
-    pub coils_dynamic: &'a SensorsDynamic,
     pub bp_probes_static: &'a SensorsStatic,
     pub bp_probes_dynamic: &'a SensorsDynamic,
     pub flux_loops_static: &'a SensorsStatic,
@@ -1978,6 +1987,4 @@ pub struct GradShafranovInputs<'a> {
     pub magnetic_axis_dynamic: &'a SensorsDynamic,
     pub p_prime_source_function: &'a Arc<dyn SourceFunctionTraits + Send + Sync>,
     pub ff_prime_source_function: &'a Arc<dyn SourceFunctionTraits + Send + Sync>,
-    pub passive_regularisations: &'a Array2<f64>,
-    pub passive_regularisations_weight: &'a Array1<f64>,
 }

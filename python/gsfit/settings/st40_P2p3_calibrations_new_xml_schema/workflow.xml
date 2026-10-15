@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The central list of the codes which the database reader reads from, and which run of each to read.
+
+    Each IDS's file links to this file, e.g. <workflow href="../workflow.xml"/> in pf_active/pf_active.xml,
+    so a code's run is set here once, however many IDSs are built from it.
+    See ../../settings_schema/xsd/workflow.xsd.
+-->
+<workflow xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../settings_schema/xsd/workflow.xsd">
+    <dialoop>
+        <pulseNo xsi:nil="true"/>
+        <run_name>BEST</run_name>
+        <usage>Diamagnetic flux measured value</usage>
+    </dialoop>
+    <elmag>
+        <pulseNo xsi:nil="true"/>
+        <run_name>RUN16</run_name>
+        <usage>PF coil, vessel and limiter geometry, vessel resistance, and gap definitions</usage>
+    </elmag>
+    <mag>
+        <pulseNo xsi:nil="true"/>
+        <run_name>RUN16</run_name>
+        <usage>Magnetic sensors geometry and measured values</usage>
+    </mag>
+    <ppts>
+        <pulseNo xsi:nil="true"/>
+        <run_name>BEST</run_name>
+        <usage>Pressure sensor good time-slices (BAD_MA flag)</usage>
+    </ppts>
+    <psu2coil>
+        <pulseNo xsi:nil="true"/>
+        <run_name>RUN06</run_name>
+        <usage>PF and TF coil currents</usage>
+    </psu2coil>
+    <ts>
+        <pulseNo xsi:nil="true"/>
+        <run_name>BEST</run_name>
+        <usage>Thomson scattering geometry and electron pressure</usage>
+    </ts>
+</workflow>

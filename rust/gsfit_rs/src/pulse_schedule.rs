@@ -1,7 +1,6 @@
-use imas_rs::Equilibrium;
-use imas_rs::ids::equilibrium::EquilibriumGap;
-use imas_rs::ids::pulse_schedule::{PulseSchedule as PulseScheduleIds, PulseScheduleGap};
-use imas_rs::python::{PyPath, PyPulseSchedule, read_path};
+use imas_rs::dd_support::parameters_input::ParametersInput;
+use imas_rs::ids::pulse_schedule::{Code, PulseSchedule as PulseScheduleIds, PulseScheduleGap};
+use imas_rs::python::{PyParametersInput, PyPath, PyPulseSchedule, read_path};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -18,7 +17,7 @@ use pyo3::prelude::*;
 /// The reference waveforms, `gap(i)/value`, are deliberately left empty: GSFit measures the gaps,
 /// it does not control them.
 ///
-/// `solve_grad_shafranov` copies the definitions onto every time-slice's
+/// `Plasma.copy_from_pulse_schedule_ids` copies the definitions onto every time-slice's
 /// `equilibrium/time_slice(itime)/boundary/gap`, which is where the calculated values go.
 ///
 /// # Angle convention
@@ -37,26 +36,50 @@ use pyo3::prelude::*;
 ///
 /// Read the data back through `pulse_schedule_ids` and a path from
 /// `gsfit_rs.imas.pulse_schedule_paths`; there are no bespoke accessors.
+///
+/// # Settings
+///
+/// The pulse schedule is constructed with the settings it is built from, e.g. which run of which
+/// database the gaps are read from, as an IMAS `parameters_input`. They are kept in
+/// `parameters_input`, and their XML is also written to `pulse_schedule/code/parameters`, where
+/// IMAS records the parameters of the code which made an IDS.
 #[pyclass(module = "gsfit_rs")]
 pub struct PulseSchedule {
     pub pulse_schedule_ids: PulseScheduleIds,
-}
-
-impl Default for PulseSchedule {
-    fn default() -> Self {
-        Self::new()
-    }
+    /// The settings the pulse schedule is built from: their XML, the XML schema they follow, and the defaults
+    pub parameters_input: ParametersInput,
 }
 
 /// Python accessible methods
 #[pymethods]
 impl PulseSchedule {
     /// Construct an empty pulse schedule, with no gaps, ready for `add_gap` to be called.
+    ///
+    /// # Arguments
+    /// * `parameters_input` - the settings the pulse schedule is built from, as a
+    ///   `gsfit_rs.dd_support.ParametersInput`; their XML is written to `pulse_schedule/code/parameters`
     #[new]
-    pub fn new() -> Self {
+    pub fn new(parameters_input: &PyParametersInput) -> Self {
+        let pulse_schedule_ids: PulseScheduleIds = PulseScheduleIds {
+            code: Code {
+                parameters: parameters_input.inner.parameters_value.clone(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
         Self {
-            pulse_schedule_ids: PulseScheduleIds::default(),
+            pulse_schedule_ids,
+            parameters_input: parameters_input.inner.clone(),
         }
+    }
+
+    /// The settings the pulse schedule was built from, as a `gsfit_rs.dd_support.ParametersInput`.
+    ///
+    /// This is a copy: changing it does not change the pulse schedule.
+    #[getter]
+    fn parameters_input(&self) -> PyParametersInput {
+        PyParametersInput::new(self.parameters_input.clone())
     }
 
     /// Append a gap to `pulse_schedule/position_control/gap`.
@@ -165,50 +188,24 @@ fn checked_gap(gaps: &[PulseScheduleGap], name: &str, r: f64, z: f64, angle: f64
     })
 }
 
-/// Copy the gap definitions onto every time-slice of the equilibrium IDS.
-///
-/// Fills `equilibrium/time_slice(itime)/boundary/gap(i)/name`, `.../description`, `.../r`,
-/// `.../z` and `.../angle` from `pulse_schedule/position_control/gap(i)`, in the same order.
-/// `.../value` is left unset, for the equilibrium post-processor to calculate.
-///
-/// Every time-slice gets the definitions, including one which did not converge: where the gaps
-/// are measured from is known whether or not the plasma was found, and it keeps the gap array the
-/// same length on every time-slice. Only the value of such a slice is left unset.
-///
-/// Any gaps already on a time-slice are replaced rather than added to, so calling this twice does
-/// not repeat them. A pulse schedule with no gaps leaves every time-slice with none.
-///
-/// # Arguments
-/// * `pulse_schedule_ids` - the pulse_schedule IDS, holding the gap definitions
-/// * `equilibrium_ids` - the equilibrium IDS, whose time-slices are written into
-pub fn fill_equilibrium_gaps(pulse_schedule_ids: &PulseScheduleIds, equilibrium_ids: &mut Equilibrium) {
-    let pulse_schedule_gaps: &Vec<PulseScheduleGap> = &pulse_schedule_ids.position_control.gap;
-    let n_gaps: usize = pulse_schedule_gaps.len();
-
-    let mut equilibrium_gaps: Vec<EquilibriumGap> = Vec::with_capacity(n_gaps);
-    for i_gap in 0..n_gaps {
-        equilibrium_gaps.push(EquilibriumGap {
-            name: pulse_schedule_gaps[i_gap].name.clone(),
-            description: pulse_schedule_gaps[i_gap].description.clone(),
-            r: pulse_schedule_gaps[i_gap].r,
-            z: pulse_schedule_gaps[i_gap].z,
-            // Stored in the equilibrium's convention already; see the `PulseSchedule` documentation
-            angle: pulse_schedule_gaps[i_gap].angle,
-            // Left unset, for the equilibrium post-processor to calculate
-            value: f64::NAN,
-        });
-    }
-
-    let n_time: usize = equilibrium_ids.time_slice.len();
-    for i_time in 0..n_time {
-        equilibrium_ids.time_slice[i_time].boundary.gap = equilibrium_gaps.clone();
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::array;
+
+    #[test]
+    fn the_settings_are_kept_and_their_xml_written_to_code_parameters() {
+        let parameters_input: ParametersInput = ParametersInput {
+            parameters_value: "<pulse_schedule_settings/>".to_string(),
+            parameters_default: String::new(),
+            schema: "<xs:schema/>".to_string(),
+        };
+
+        let pulse_schedule: PulseSchedule = PulseSchedule::new(&PyParametersInput::new(parameters_input));
+
+        assert_eq!(pulse_schedule.pulse_schedule_ids.code.parameters, "<pulse_schedule_settings/>");
+        assert_eq!(pulse_schedule.parameters_input.parameters_value, "<pulse_schedule_settings/>");
+        assert_eq!(pulse_schedule.parameters_input.schema, "<xs:schema/>");
+    }
 
     #[test]
     fn a_gap_is_stored_with_its_definition() {
@@ -240,51 +237,5 @@ mod tests {
         assert!(checked_gap(&[], "IMGAP", f64::NAN, 0.0, 0.0).is_err());
         assert!(checked_gap(&[], "IMGAP", 0.175, f64::INFINITY, 0.0).is_err());
         assert!(checked_gap(&[], "IMGAP", 0.175, 0.0, f64::NAN).is_err());
-    }
-
-    #[test]
-    fn every_time_slice_gets_every_gap_in_order() {
-        let mut pulse_schedule: PulseSchedule = PulseSchedule::new();
-        pulse_schedule.add_gap("IMGAP", 0.175, 0.0, 0.0).unwrap();
-        pulse_schedule.add_gap("MCTGAP", 0.716, 0.32, 2.48).unwrap();
-
-        let mut equilibrium_ids: Equilibrium = Equilibrium::with_time(&array![0.1, 0.2, 0.3]);
-        fill_equilibrium_gaps(&pulse_schedule.pulse_schedule_ids, &mut equilibrium_ids);
-
-        let n_time: usize = equilibrium_ids.time_slice.len();
-        for i_time in 0..n_time {
-            let gaps: &Vec<EquilibriumGap> = &equilibrium_ids.time_slice[i_time].boundary.gap;
-            assert_eq!(gaps.len(), 2);
-            assert_eq!(gaps[0].name, "IMGAP");
-            assert_eq!(gaps[1].name, "MCTGAP");
-            assert_eq!(gaps[1].r, 0.716);
-            assert_eq!(gaps[1].z, 0.32);
-            assert_eq!(gaps[1].angle, 2.48);
-            // The value is the post-processor's to calculate
-            assert!(gaps[1].value.is_nan());
-        }
-    }
-
-    #[test]
-    fn filling_twice_does_not_repeat_the_gaps() {
-        let mut pulse_schedule: PulseSchedule = PulseSchedule::new();
-        pulse_schedule.add_gap("IMGAP", 0.175, 0.0, 0.0).unwrap();
-
-        let mut equilibrium_ids: Equilibrium = Equilibrium::with_time(&array![0.1]);
-        fill_equilibrium_gaps(&pulse_schedule.pulse_schedule_ids, &mut equilibrium_ids);
-        fill_equilibrium_gaps(&pulse_schedule.pulse_schedule_ids, &mut equilibrium_ids);
-
-        assert_eq!(equilibrium_ids.time_slice[0].boundary.gap.len(), 1);
-    }
-
-    #[test]
-    fn a_pulse_schedule_with_no_gaps_leaves_no_gaps() {
-        let pulse_schedule: PulseSchedule = PulseSchedule::new();
-
-        let mut equilibrium_ids: Equilibrium = Equilibrium::with_time(&array![0.1, 0.2]);
-        fill_equilibrium_gaps(&pulse_schedule.pulse_schedule_ids, &mut equilibrium_ids);
-
-        assert!(equilibrium_ids.time_slice[0].boundary.gap.is_empty());
-        assert!(equilibrium_ids.time_slice[1].boundary.gap.is_empty());
     }
 }

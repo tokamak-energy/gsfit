@@ -1,16 +1,25 @@
-use crate::coils::Coils;
 use crate::greens::Greens;
-use crate::passives::Passives;
+use crate::pf_active::PfActive;
+use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
+use crate::pulse_schedule::PulseSchedule;
 use crate::source_functions::SharedSourceFunction;
 use crate::source_functions::extract_source_function;
-use data_tree::DataTreeAccumulator;
+use crate::tf::Tf;
+use crate::wall::Wall;
+use imas_rs::ids::pf_active::PfCoils;
+use imas_rs::ids::pf_passive::PfPassiveLoops;
+use imas_rs::ids::pulse_schedule::PulseScheduleGap;
+use imas_rs::ids::wall::Wall2dLimiterUnit;
 use imas_rs::python::{PyEquilibrium, PyPath, read_path};
 use imas_rs::{
-    Equilibrium, EquilibriumGreensGridGrid, EquilibriumGreensPfActive, EquilibriumGreensPfPassive, EquilibriumGreensPfPassiveDof, EquilibriumProfiles2d,
+    Equilibrium, EquilibriumConstraints0d, EquilibriumConstraints0dDof, EquilibriumConstraints0dIpLike, EquilibriumGap, EquilibriumGreensGridGrid,
+    EquilibriumGreensPfActive, EquilibriumGreensPfPassive, EquilibriumGreensPfPassiveDof, EquilibriumLimiterUnit, EquilibriumLimiterUnitOutline,
+    EquilibriumProfiles2d,
 };
 use ndarray::{Array1, Array2, ArrayView2, Axis, MeshIndex, meshgrid, s};
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
@@ -298,14 +307,269 @@ impl Plasma {
         plasma
     }
 
-    /// Calculate the Greens function with coils
-    /// The Greens tables are stored within self. Example data structure:
-    /// `greens/pf_active(i)/br` on the equilibrium IDS
+    /// Copy the limiter from the wall IDS into the equilibrium IDS.
+    ///
+    /// Copies `wall/description_2d(0)/limiter/unit(i)` into `equilibrium/limiter/unit(i)`, in the
+    /// same order, so `unit(0)` is still the vacuum vessel contour. The solver and the post-processor
+    /// read the limiter from the equilibrium IDS, so this has to be called before
+    /// `solve_grad_shafranov`.
+    ///
+    /// Any limiter already in the equilibrium IDS is replaced, so calling this twice does not repeat
+    /// the units.
     ///
     /// # Arguments
-    /// * `coils` - The Coils object (a Rust implementation, initialised in Python)
+    /// * `wall` - The Wall object (a Rust implementation, initialised in Python)
     ///
-    fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
+    /// # Errors
+    /// A `ValueError` when the wall has no limiter units.
+    pub fn copy_from_wall_ids(&mut self, wall: PyRef<Wall>) -> PyResult<()> {
+        // `description_2d(0)` always exists, because `Wall::new` creates it. The outline of each unit
+        // was checked by `Wall.add_limiter_unit` when the unit was added
+        let wall_units: &Vec<Wall2dLimiterUnit> = &wall.wall_ids.description_2d[0].limiter.unit;
+        let n_unit: usize = wall_units.len();
+        if n_unit == 0 {
+            return Err(PyValueError::new_err("`wall/description_2d(0)/limiter/unit` is empty"));
+        }
+
+        let mut equilibrium_units: Vec<EquilibriumLimiterUnit> = Vec::with_capacity(n_unit);
+        for i_unit in 0..n_unit {
+            equilibrium_units.push(EquilibriumLimiterUnit {
+                name: wall_units[i_unit].name.clone(),
+                outline: EquilibriumLimiterUnitOutline {
+                    r: wall_units[i_unit].outline.r.clone(),
+                    z: wall_units[i_unit].outline.z.clone(),
+                },
+            });
+        }
+
+        // Assigned rather than appended, so that calling this twice replaces the units instead of
+        // repeating them
+        self.equilibrium_ids.limiter.unit = equilibrium_units;
+
+        Ok(())
+    }
+
+    /// Copy the vacuum toroidal field from the tf IDS into the equilibrium IDS.
+    ///
+    /// Fills `equilibrium/vacuum_toroidal_field/r0` from `tf/r0`, and `equilibrium/vacuum_toroidal_field/b0`
+    /// from `tf/b_field_phi_vacuum_r`. That is on the experimental timebase, so it is interpolated onto the
+    /// reconstruction times, which are the times of the time-slices `Plasma::new` allocated, and divided by
+    /// `r0`. The solver and the post-processor read the vacuum toroidal field from the equilibrium IDS, so
+    /// this has to be called before `solve_grad_shafranov`.
+    ///
+    /// Any vacuum toroidal field already in the equilibrium IDS is replaced.
+    ///
+    /// # Arguments
+    /// * `tf` - The Tf object (a Rust implementation, initialised in Python)
+    ///
+    /// # Errors
+    /// A `ValueError` when `tf/r0` or `tf/b_field_phi_vacuum_r` is unset, or when
+    /// `tf/b_field_phi_vacuum_r` cannot be interpolated onto the reconstruction times, e.g. because its
+    /// timebase does not cover them.
+    pub fn copy_from_tf_ids(&mut self, tf: PyRef<Tf>) -> PyResult<()> {
+        let r0: f64 = tf.tf_ids.r0;
+        if r0.is_nan() {
+            return Err(PyValueError::new_err("`tf/r0` is unset"));
+        }
+        let b_field_phi_vacuum_r_time: &Array1<f64> = &tf.tf_ids.b_field_phi_vacuum_r.time;
+        let b_field_phi_vacuum_r_data: &Array1<f64> = &tf.tf_ids.b_field_phi_vacuum_r.data;
+        if b_field_phi_vacuum_r_time.is_empty() || b_field_phi_vacuum_r_data.is_empty() {
+            return Err(PyValueError::new_err("`tf/b_field_phi_vacuum_r` is unset"));
+        }
+
+        // `b_field_phi_vacuum_r` is on the experimental timebase, so it is interpolated onto the times of
+        // the time-slices `Plasma::new` allocated
+        let times_to_reconstruct: Array1<f64> = self.equilibrium_ids.time_slice(..).time.to_array();
+        let interpolator: interpolation::Dim1Linear =
+            interpolation::Dim1Linear::new(b_field_phi_vacuum_r_time.to_owned(), b_field_phi_vacuum_r_data.to_owned())
+                .map_err(|error: interpolation::Error| PyValueError::new_err(format!("cannot interpolate `tf/b_field_phi_vacuum_r`: {error:?}")))?;
+        let b_field_phi_vacuum_r: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct).map_err(|error: interpolation::Error| {
+            PyValueError::new_err(format!("cannot interpolate `tf/b_field_phi_vacuum_r` onto the reconstruction times: {error:?}"))
+        })?;
+
+        // The data dictionary requires `vacuum_toroidal_field/r0 * b0` to equal `tf/b_field_phi_vacuum_r`,
+        // so both are filled from that one signal. The sign carries through. The rod current is not a data
+        // dictionary node, so it is recovered from these two wherever it is needed
+        self.equilibrium_ids.vacuum_toroidal_field.r0 = r0;
+        self.equilibrium_ids.vacuum_toroidal_field.b0 = b_field_phi_vacuum_r / r0;
+
+        Ok(())
+    }
+
+    /// Copy the PF coil currents from the pf_active IDS onto every time-slice of the equilibrium IDS.
+    ///
+    /// Fills, for every coil in `pf_active/coil(i1)`, in the same order, on every time-slice `Plasma::new` allocated:
+    /// * `equilibrium/time_slice(itime)/constraints/pf_current(i1)/name` - a custom key: `pf_active/coil(i1)/name`
+    /// * `.../measured` - `pf_active/coil(i1)/current`, which is on the experimental timebase, interpolated onto the
+    ///   time-slice's time, [ampere]
+    /// * `.../source` - `pf_active/coil(i1)/current`, the path the measurement was read from
+    /// * `.../time_measurement` - the time-slice's own time, because the current is interpolated rather than taken
+    ///   at one of the times it was measured, [second]
+    ///
+    /// The solver reads the PF coil currents from the equilibrium IDS, so this has to be called before
+    /// `solve_grad_shafranov`. The solver multiplies them by the Greens tables, `greens/pf_active(i1)`, so the coils
+    /// have to be in the same order as those, which the solver checks by name.
+    ///
+    /// Any PF coil currents already on a time-slice are replaced, so calling this twice does not repeat them.
+    ///
+    /// # Arguments
+    /// * `pf_active` - The PfActive object (a Rust implementation, initialised in Python)
+    ///
+    /// # Errors
+    /// A `ValueError` when `pf_active/coil` is empty, or when a coil's current cannot be interpolated onto the
+    /// reconstruction times, e.g. because its timebase does not cover them.
+    pub fn copy_from_pf_active_ids(&mut self, pf_active: PyRef<PfActive>) -> PyResult<()> {
+        let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
+        let n_coil: usize = pf_active_coils.len();
+        if n_coil == 0 {
+            return Err(PyValueError::new_err("`pf_active/coil` is empty"));
+        }
+
+        // Each coil's current is on the experimental timebase, so it is interpolated onto the times of the
+        // time-slices `Plasma::new` allocated
+        let times_to_reconstruct: Array1<f64> = self.equilibrium_ids.time_slice(..).time.to_array();
+        let n_time: usize = times_to_reconstruct.len();
+        let mut pf_currents_measured: Array2<f64> = Array2::from_elem((n_time, n_coil), f64::NAN);
+        for i_coil in 0..n_coil {
+            let coil_name: &str = &pf_active_coils[i_coil].name;
+            let interpolator: interpolation::Dim1Linear =
+                interpolation::Dim1Linear::new(pf_active_coils[i_coil].current.time.clone(), pf_active_coils[i_coil].current.data.clone()).map_err(
+                    |error: interpolation::Error| {
+                        PyValueError::new_err(format!("cannot interpolate `pf_active/coil({i_coil})/current` ({coil_name}): {error:?}"))
+                    },
+                )?;
+            let measured: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct).map_err(|error: interpolation::Error| {
+                PyValueError::new_err(format!(
+                    "cannot interpolate `pf_active/coil({i_coil})/current` ({coil_name}) onto the reconstruction times: {error:?}"
+                ))
+            })?;
+            pf_currents_measured.slice_mut(s![.., i_coil]).assign(&measured);
+        }
+
+        // Assigned rather than appended, so that calling this twice replaces the PF coil currents instead of
+        // repeating them
+        for i_time in 0..n_time {
+            let mut pf_currents: Vec<EquilibriumConstraints0dIpLike> = Vec::with_capacity(n_coil);
+            for i_coil in 0..n_coil {
+                pf_currents.push(EquilibriumConstraints0dIpLike {
+                    name: pf_active_coils[i_coil].name.clone(),
+                    measured: pf_currents_measured[[i_time, i_coil]],
+                    source: format!("pf_active/coil({i_coil})/current"),
+                    time_measurement: times_to_reconstruct[i_time],
+                    ..Default::default()
+                });
+            }
+            self.equilibrium_ids.time_slice[i_time].constraints.pf_current = pf_currents;
+        }
+
+        Ok(())
+    }
+
+    /// Copy the passive loops' degrees of freedom, and their regularisations, from the pf_passive IDS onto every time-slice of
+    /// the equilibrium IDS.
+    ///
+    /// Fills, for every loop in `pf_passive/loop(i1)`, in the same order, on every time-slice `Plasma::new` allocated:
+    /// * `equilibrium/time_slice(itime)/constraints/pf_passive_current(i1)/name` - a custom key: `pf_passive/loop(i1)/name`
+    /// * `.../dof(i2)/name` - a custom key: `pf_passive/loop(i1)/dof(i2)/name`, one for each degree of freedom the loop's current
+    ///   is fitted with
+    /// * `.../regularisations` - a custom key: `pf_passive/loop(i1)/regularisations`, shape = (n_regularisations, n_dof)
+    /// * `.../regularisations_weight` - a custom key: `pf_passive/loop(i1)/regularisations_weight`, [dimensionless]
+    ///
+    /// `pf_passive_current(i1)` is where the data dictionary puts the current in `pf_passive/loop(i1)`. GSFit does not measure that
+    /// current: it fits it, as an amplitude for each of the loop's degrees of freedom, and the regularisations are what constrain the
+    /// fit. So `measured`, `source` and `time_measurement` are left unset.
+    ///
+    /// The solver reads the regularisations from the equilibrium IDS, so this has to be called before `solve_grad_shafranov`. It fits
+    /// the amplitudes with the Greens tables, `greens/pf_passive(i1)/dof(i2)`, so the loops and their degrees of freedom have to be in
+    /// the same order as those, which the solver checks by name.
+    ///
+    /// A pf_passive IDS with no loops is allowed: the equilibrium then has no passive conductors. Any passive loops already on a
+    /// time-slice are replaced, so calling this twice does not repeat them.
+    ///
+    /// # Arguments
+    /// * `pf_passive` - The PfPassive object (a Rust implementation, initialised in Python)
+    pub fn copy_from_pf_passive_ids(&mut self, pf_passive: PyRef<PfPassive>) {
+        let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive.pf_passive_ids.r#loop;
+        let n_loop: usize = pf_passive_loops.len();
+
+        // The regularisations were checked against the degrees of freedom by `PfPassive.add_loop` when the loop was added
+        let mut pf_passive_currents: Vec<EquilibriumConstraints0d> = Vec::with_capacity(n_loop);
+        for i_loop in 0..n_loop {
+            let n_dof: usize = pf_passive_loops[i_loop].dof.len();
+            let mut dofs: Vec<EquilibriumConstraints0dDof> = Vec::with_capacity(n_dof);
+            for i_dof in 0..n_dof {
+                dofs.push(EquilibriumConstraints0dDof {
+                    name: pf_passive_loops[i_loop].dof[i_dof].name.clone(),
+                });
+            }
+
+            pf_passive_currents.push(EquilibriumConstraints0d {
+                name: pf_passive_loops[i_loop].name.clone(),
+                dof: dofs,
+                regularisations: pf_passive_loops[i_loop].regularisations.clone(),
+                regularisations_weight: pf_passive_loops[i_loop].regularisations_weight.clone(),
+                ..Default::default()
+            });
+        }
+
+        // Assigned rather than appended, so that calling this twice replaces the passive loops instead of
+        // repeating them
+        let n_time: usize = self.equilibrium_ids.time_slice.len();
+        for i_time in 0..n_time {
+            self.equilibrium_ids.time_slice[i_time].constraints.pf_passive_current = pf_passive_currents.clone();
+        }
+    }
+
+    /// Copy the gap definitions from the pulse_schedule IDS onto every time-slice of the equilibrium IDS.
+    ///
+    /// Fills `equilibrium/time_slice(itime)/boundary/gap(i)/name`, `.../description`, `.../r`, `.../z` and
+    /// `.../angle` from `pulse_schedule/position_control/gap(i)`, in the same order, on every time-slice
+    /// `Plasma::new` allocated. `.../value` is left unset, for the equilibrium post-processor to calculate.
+    ///
+    /// Every time-slice gets the definitions, including one which does not converge: where the gaps are
+    /// measured from is known whether or not the plasma is found, and it keeps the gap array the same
+    /// length on every time-slice. Only the value of such a slice is left unset.
+    ///
+    /// The pulse schedule is optional: without this call, or with a pulse schedule which has no gaps, the
+    /// equilibrium has no gaps. Any gaps already on a time-slice are replaced, so calling this twice does
+    /// not repeat them.
+    ///
+    /// # Arguments
+    /// * `pulse_schedule` - The PulseSchedule object (a Rust implementation, initialised in Python)
+    pub fn copy_from_pulse_schedule_ids(&mut self, pulse_schedule: PyRef<PulseSchedule>) {
+        let pulse_schedule_gaps: &Vec<PulseScheduleGap> = &pulse_schedule.pulse_schedule_ids.position_control.gap;
+        let n_gap: usize = pulse_schedule_gaps.len();
+
+        let mut equilibrium_gaps: Vec<EquilibriumGap> = Vec::with_capacity(n_gap);
+        for i_gap in 0..n_gap {
+            equilibrium_gaps.push(EquilibriumGap {
+                name: pulse_schedule_gaps[i_gap].name.clone(),
+                description: pulse_schedule_gaps[i_gap].description.clone(),
+                r: pulse_schedule_gaps[i_gap].r,
+                z: pulse_schedule_gaps[i_gap].z,
+                // Stored in the equilibrium's convention already; see the `PulseSchedule` documentation
+                angle: pulse_schedule_gaps[i_gap].angle,
+                // Left unset, for the equilibrium post-processor to calculate
+                value: f64::NAN,
+            });
+        }
+
+        // Assigned rather than appended, so that calling this twice replaces the gaps instead of
+        // repeating them
+        let n_time: usize = self.equilibrium_ids.time_slice.len();
+        for i_time in 0..n_time {
+            self.equilibrium_ids.time_slice[i_time].boundary.gap = equilibrium_gaps.clone();
+        }
+    }
+
+    /// Calculate the Greens function with the PF coils
+    /// The Greens tables are stored within self. Example data structure:
+    /// `greens/pf_active(i)/br` on the equilibrium IDS, one for each `pf_active/coil(i)`, in the same order
+    ///
+    /// # Arguments
+    /// * `pf_active` - The PfActive object (a Rust implementation, initialised in Python)
+    ///
+    fn greens_with_pf_active(&mut self, pf_active: PyRef<PfActive>) {
         // Unpack from self
         let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
         let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
@@ -314,15 +578,16 @@ impl Plasma {
         let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let flat_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
-        // Greens tables for the equilibrium IDS. Built in the same loop, and therefore the same
-        // order, as the DataTree ones: both iterate `coils.results.get("pf").keys()`, which is
-        // sorted, and the solver's `pf` wildcard read sorts too, so the two agree column for column
-        let mut greens_pf_active: Vec<EquilibriumGreensPfActive> = Vec::with_capacity(coils.results.get("pf").keys().len());
+        // Greens tables for the equilibrium IDS, one for each PF coil, in the order of `pf_active/coil`, which is
+        // the order `Plasma.copy_from_pf_active_ids` copies the PF coil currents in
+        let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
+        let n_coil: usize = pf_active_coils.len();
+        let mut greens_pf_active: Vec<EquilibriumGreensPfActive> = Vec::with_capacity(n_coil);
 
-        for coil_name in &coils.results.get("pf").keys() {
-            // Coils
-            let coil_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
-            let coil_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
+        for i_coil in 0..n_coil {
+            // The coil's filaments
+            let coil_r: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.r.to_array();
+            let coil_z: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.z.to_array();
             let n_coil_filaments: usize = coil_r.len();
 
             // Greens function for flux
@@ -354,72 +619,72 @@ impl Plasma {
             let g_psi: Array2<f64> = g_psi_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `g_psi_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `g_psi_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d_psi_d_r: Array2<f64> = g_d_psi_d_r_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `g_d_psi_d_r_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `g_d_psi_d_r_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d_psi_d_z: Array2<f64> = g_d_psi_d_z_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `g_d_psi_d_z_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `g_d_psi_d_z_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_br: Array2<f64> = g_br_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `g_br_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `g_br_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_bz: Array2<f64> = g_bz_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `g_bz_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `g_bz_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d_br_d_z: Array2<f64> = g_d_br_d_z_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `g_d_br_d_z_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `g_d_br_d_z_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d_bz_d_z: Array2<f64> = g_d_bz_d_z_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `g_d_bz_d_z_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `g_d_bz_d_z_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d2_psi_d_r2: Array2<f64> = d2_g_d_r2_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `d2_g_d_r2_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `d2_g_d_r2_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d2_psi_d_r_d_z: Array2<f64> = d2_g_d_r_d_z_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `d2_g_d_r_d_z_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `d2_g_d_r_d_z_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d2_psi_d_z2: Array2<f64> = d2_g_d_z2_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `d2_g_d_z2_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `d2_g_d_z2_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d3_psi_d_r2_d_z: Array2<f64> = d3_g_d_r2_d_z_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `d3_g_d_r2_d_z_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `d3_g_d_r2_d_z_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d3_psi_d_r_d_z2: Array2<f64> = d3_g_d_r_d_z2_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `d3_g_d_r_d_z2_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `d3_g_d_r_d_z2_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d3_psi_d_z3: Array2<f64> = d3_g_d_z3_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_coils: Failed to reshape `d3_g_d_z3_all_filaments` into (n_z, n_r)")
+                .expect("plasma.greens_with_pf_active: Failed to reshape `d3_g_d_z3_all_filaments` into (n_z, n_r)")
                 .to_owned();
 
             // Store in the equilibrium IDS
             greens_pf_active.push(EquilibriumGreensPfActive {
-                name: coil_name.clone(),
+                name: pf_active_coils[i_coil].name.clone(),
                 psi: g_psi,
                 br: g_br,
                 bz: g_bz,
@@ -439,18 +704,23 @@ impl Plasma {
         self.equilibrium_ids.greens.pf_active = greens_pf_active;
     }
 
-    /// Calculate the Greens function with passives
+    /// Calculate the Greens function with the passive conductors
     /// The Greens tables are stored within self. Example data structure:
     /// `greens/pf_passive(i)/dof(j)/psi` on the equilibrium IDS
-    /// Note: when adding a passive to the `passives` implementation we selected how to represent the
-    /// passive degrees of freedom through `current_distribution_type` (e.g. `constant_current_density` or `eig`)
+    /// Note: when adding a passive conductor to `pf_passive` we selected how to represent its degrees of freedom through
+    /// `loop(i1)/current_distribution_type` (e.g. `constant_current_density` or `eig`)
+    ///
+    /// The tables are in the order of `pf_passive/loop`, and then of `loop(i1)/dof`. This is the order of the passive degrees of
+    /// freedom everywhere in the solve: the sensors' Greens are gathered in it, the regularisations are assembled in it, and so
+    /// `time_slice(itime)/passive_dof_values` follows it
     ///
     /// # Arguments
-    /// * `passives` - The Passives object (a Rust implementation, initialised in Python)
+    /// * `pf_passive` - The passive conductors, a `PfPassive` (a Rust implementation, initialised in Python)
     ///
-    fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
-        // Change Python types into Rust types
-        let passives_local: &Passives = &passives;
+    fn greens_with_pf_passive(&mut self, pf_passive: PyRef<PfPassive>) {
+        // The passive conductors, in the order of `pf_passive/loop`
+        let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive.pf_passive_ids.r#loop;
+        let n_loop: usize = pf_passive_loops.len();
 
         // Get variables out of self
         // `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives the
@@ -460,18 +730,15 @@ impl Plasma {
         let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let flat_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
-        // Greens tables for the equilibrium IDS. Built in the same nested loop, and therefore the
-        // same order, as the DataTree ones. Both walk sorted key lists, and so does
-        // `get_greens_passive_grid`, so the degree-of-freedom columns agree one for one
-        let mut greens_pf_passive: Vec<EquilibriumGreensPfPassive> = Vec::with_capacity(passives_local.results.keys().len());
+        // Greens tables for the equilibrium IDS
+        let mut greens_pf_passive: Vec<EquilibriumGreensPfPassive> = Vec::with_capacity(n_loop);
 
         // Calculate Greens with each passive degree of freedom
-        // let passive_names: Vec<String> = ;
-        for passive_name in passives_local.results.keys() {
-            let _tmp: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
-            let dof_names: Vec<String> = _tmp.keys();
-            let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
-            let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
+        for i_loop in 0..n_loop {
+            let passive_name: &str = &pf_passive_loops[i_loop].name;
+            let filaments: PassiveFilaments = passive_filaments(&pf_passive_loops[i_loop].element);
+            let passive_r: Array1<f64> = filaments.r;
+            let passive_z: Array1<f64> = filaments.z;
 
             // Green's tables. These depend only on the grid and this passive's filament geometry,
             // so they are built once per passive; the degree of freedom is applied to them below
@@ -501,18 +768,10 @@ impl Plasma {
 
             // The current distribution belonging to each degree of freedom, collected up-front so that
             // all of them can be applied to a Green's table in a single pass over it
-            let n_dof: usize = dof_names.len();
+            let n_dof: usize = pf_passive_loops[i_loop].dof.len();
             let mut current_distributions: Vec<Array1<f64>> = Vec::with_capacity(n_dof);
             for i_dof in 0..n_dof {
-                current_distributions.push(
-                    passives_local
-                        .results
-                        .get(&passive_name)
-                        .get("dof")
-                        .get(&dof_names[i_dof])
-                        .get("current_distribution")
-                        .unwrap_array1(),
-                );
+                current_distributions.push(pf_passive_loops[i_loop].dof[i_dof].current_distribution.clone());
             }
 
             // Apply the current distributions and sum over the filaments; one column per degree of freedom
@@ -533,7 +792,7 @@ impl Plasma {
             let mut greens_dof: Vec<EquilibriumGreensPfPassiveDof> = Vec::with_capacity(n_dof);
             for i_dof in 0..n_dof {
                 greens_dof.push(EquilibriumGreensPfPassiveDof {
-                    name: dof_names[i_dof].clone(),
+                    name: pf_passive_loops[i_loop].dof[i_dof].name.clone(),
                     psi: g_psi_with_dof.column(i_dof).to_owned(),
                     br: g_br_with_dof.column(i_dof).to_owned(),
                     bz: g_bz_with_dof.column(i_dof).to_owned(),
@@ -551,7 +810,7 @@ impl Plasma {
             }
 
             greens_pf_passive.push(EquilibriumGreensPfPassive {
-                name: passive_name,
+                name: passive_name.to_string(),
                 dof: greens_dof,
             });
         }

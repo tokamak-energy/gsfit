@@ -1,11 +1,11 @@
-import typing
 from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Isoflux
-from shapely.geometry import LineString
-from st40_database import GetData
+
+from ...settings_schema.python.equilibrium.constraints_isoflux import ConstraintsIsoflux as ConstraintsIsofluxSettings
+from ...settings_schema.python.magnetics.magnetics import MagneticsSettings
 
 if TYPE_CHECKING:
     from . import DatabaseReader
@@ -14,14 +14,20 @@ if TYPE_CHECKING:
 def setup_isoflux_sensors(
     self: "DatabaseReader",
     pulseNo: int,
-    settings: dict[str, typing.Any],
+    settings: MagneticsSettings,
+    settings_isoflux_sensors: ConstraintsIsofluxSettings,
     times_to_reconstruct: npt.NDArray[np.float64],
 ) -> Isoflux:
     """
     This method initialises the Rust `Isoflux` class.
 
     :param pulseNo: Pulse number, used to read from the database
-    :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    :param settings: `MagneticsSettings` object, read from `magnetics/magnetics.xml`; not used
+    :param settings_isoflux_sensors: `ConstraintsIsoflux` object, read from `equilibrium/constraints_isoflux.xml`, which lists the isoflux constraints
+    :param times_to_reconstruct: Times the equilibrium will be solved at [second]
+
+    No isoflux constraints are made at present, as no settings say where to read their points from.
+    So `constraints_isoflux.xml` should be empty, and any constraints it lists are not added.
 
     **This method is specific to ST40's experimental MDSplus database.**
 
@@ -31,15 +37,12 @@ def setup_isoflux_sensors(
     # Initialise the Isoflux Rust class
     isoflux = Isoflux()
 
-    isoflux_settings = settings["sensor_weights_isoflux.json"]
-
-    if len(isoflux_settings) == 0:
+    if len(settings_isoflux_sensors.isoflux) == 0:
         return isoflux
 
-    code_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus_with_digital_filter"]["isoflux_code_name"]
-    run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus_with_digital_filter"]["workflow"][code_name]["run_name"]
-
     # TODO: need to check that this is working!
+    # It also needs settings for the code and run to read the points from, `code_name` and `run_name`, which the XML settings do not have yet.
+    # The JSON settings had them as `isoflux_code_name`, and its `run_name` in `workflow`, in the `database_reader` of `GSFIT_code_settings.json`
     # for isoflux_name in isoflux_settings.keys():
     #     # We need a try/except here because there is sometimes no TS data
     #     try:

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wall_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/wall/wall.xsd">
+    <workflow href="../workflow.xml"/>
+    <st40_mdsplus>
+        <elmag>
+            <pulseNo xsi:nil="true"/>
+            <run_name>RUN16</run_name>
+            <usage>Limiter geometry</usage>
+        </elmag>
+    </st40_mdsplus>
+    <st40_astra_mdsplus>
+        <elmag>
+            <pulseNo xsi:nil="true"/>
+            <run_name>RUN16</run_name>
+            <usage>Limiter geometry</usage>
+        </elmag>
+    </st40_astra_mdsplus>
+</wall_settings>

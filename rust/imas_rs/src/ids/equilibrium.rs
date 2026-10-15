@@ -9,9 +9,10 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, FLT_3D, FLT_4D, INT_0D, INT_1D, INT_2D, STR_0D};
-use ndarray::{Dimension, Ix1};
-use std::slice::SliceIndex;
+use crate::dd_base_types::{
+    Accumulator, ArrayOfStructuresElement, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, FLT_3D, FLT_4D, INT_0D, INT_1D, INT_2D, Named, STR_0D, Selection,
+};
+use ndarray::Dimension;
 
 // ============================================================================
 // Complex Types
@@ -384,6 +385,14 @@ pub struct EquilibriumGlobalQuantities {
     /// This is the closest of the three to the data dictionary's own `beta_pol`, which uses the
     /// vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
     pub beta_pol_3: FLT_0D,
+    /// Magnitude of the poloidal magnetic field at the outboard midplane,
+    /// `sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of
+    /// the magnetic axis on the outboard side. This is the same point `delta_r_sep` and `f_x`
+    /// use. Evaluated from the solver's bicubic interpolation of `psi`, not from the gridded
+    /// `profiles_2d/b_field_r` and `.../b_field_z`. NaN when the boundary does not cross that
+    /// height within the grid
+    /// Units: T
+    pub bp_omp: FLT_0D,
     /// Vacuum toroidal magnetic field at the plasma geometric axis,
     /// `vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
     /// `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
@@ -450,6 +459,7 @@ impl Default for EquilibriumGlobalQuantities {
             beta_pol_1: f64::NAN,
             beta_pol_2: f64::NAN,
             beta_pol_3: f64::NAN,
+            bp_omp: f64::NAN,
             bt_vac_at_r_geo: f64::NAN,
             li_1: f64::NAN,
             li_2: f64::NAN,
@@ -610,6 +620,9 @@ pub struct EquilibriumConstraints0dIpLike {
     pub reconstructed: FLT_0D,
     /// Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
     pub chi_squared: FLT_0D,
+    /// Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name`
+    /// for `constraints/pf_current(i1)`
+    pub name: STR_0D,
 }
 
 impl Default for EquilibriumConstraints0dIpLike {
@@ -623,6 +636,7 @@ impl Default for EquilibriumConstraints0dIpLike {
             sigma: f64::NAN,
             reconstructed: f64::NAN,
             chi_squared: f64::NAN,
+            name: String::new(),
         }
     }
 }
@@ -690,6 +704,19 @@ pub struct EquilibriumConstraints0d {
     pub reconstructed: FLT_0D,
     /// Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
     pub chi_squared: FLT_0D,
+    /// Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
+    /// `constraints/pf_passive_current(i1)`
+    pub name: STR_0D,
+    /// The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order
+    pub dof: Vec<EquilibriumConstraints0dDof>,
+    /// The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
+    /// regularisation, one coefficient for each `dof`; no rows for none.
+    /// Shape = `(n_regularisations, n_dof)`
+    pub regularisations: FLT_2D,
+    /// The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
+    /// `regularisations`
+    /// Units: dimensionless
+    pub regularisations_weight: FLT_1D,
 }
 
 impl Default for EquilibriumConstraints0d {
@@ -703,6 +730,10 @@ impl Default for EquilibriumConstraints0d {
             sigma: f64::NAN,
             reconstructed: f64::NAN,
             chi_squared: f64::NAN,
+            name: String::new(),
+            dof: Vec::new(),
+            regularisations: Default::default(),
+            regularisations_weight: Default::default(),
         }
     }
 }
@@ -1591,6 +1622,13 @@ impl Default for EquilibriumBoundaryBounding {
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumConstraints0dDof {
+    /// Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
+    pub name: STR_0D,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeGrid {
     /// Number of grid points in the radial direction
@@ -2061,6 +2099,38 @@ pub struct EquilibriumGreensGridGrid {
     pub d3_psi_d_z3: FLT_2D,
 }
 
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumLimiter {
+    /// Limiter units, in the same order as `wall/description_2d(0)/limiter/unit`. The order is part
+    /// of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region
+    /// the plasma is allowed to occupy, and only `unit(0)` is used as the vessel. `unit(1)`,
+    /// `unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the
+    /// vessel contour. The points of every unit are candidate limit points, so a plasma may be
+    /// limited on the vessel or on any of the tiles
+    pub unit: Vec<EquilibriumLimiterUnit>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumLimiterUnit {
+    /// Short identifier for the unit, e.g. `"vacuum_vessel"`
+    pub name: STR_0D,
+    /// Outline of the limiting surface
+    pub outline: EquilibriumLimiterUnitOutline,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumLimiterUnitOutline {
+    /// Major radius of each point along the outline
+    /// Units: m
+    pub r: FLT_1D,
+    /// Height of each point along the outline
+    /// Units: m
+    pub z: FLT_1D,
+}
+
 // ============================================================================
 // Root IDS Structure
 // ============================================================================
@@ -2077,6 +2147,10 @@ pub struct Equilibrium {
     pub code: Code,
     /// Greens tables: the poloidal flux and its derivatives per ampere in each current source
     pub greens: EquilibriumGreens,
+    /// The limiter: the immobile surfaces which bound the plasma. A copy of the `wall` IDS's
+    /// `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and
+    /// the post-processor read it from the equilibrium IDS rather than from the `wall` IDS
+    pub limiter: EquilibriumLimiter,
 }
 
 // ============================================================================
@@ -2154,6 +2228,20 @@ impl<'a, D: Dimension> Rz1dDynamicAosSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for Rz1dDynamicAos {
+    type SliceView<'a, D>
+        = Rz1dDynamicAosSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        Rz1dDynamicAosSliceView::new(elements)
+    }
+}
+
 // --- EquilibriumContourTreeNode View Types ---
 
 /// View over `node_type` (IdentifierDynamicAos3) across multiple EquilibriumContourTreeNode
@@ -2216,19 +2304,27 @@ impl<'a, D: Dimension> EquilibriumContourTreeNodeSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `levelset` under every element, e.g. `.levelset(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `levelset` under every element. A range, e.g. `.levelset(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn levelset<R>(&self, range: R) -> Rz1dDynamicAosSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn levelset<S: Selection<'a, Rz1dDynamicAos>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("levelset", &self.slice_elements, |item: &EquilibriumContourTreeNode| item.levelset.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumContourTreeNode {
+    type SliceView<'a, D>
+        = EquilibriumContourTreeNodeSliceView<'a, D>
     where
-        R: SliceIndex<[Rz1dDynamicAos], Output = [Rz1dDynamicAos]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        Rz1dDynamicAosSliceView::new(
-            self.slice_elements
-                .nest("levelset", |item: &EquilibriumContourTreeNode| item.levelset.as_slice(), range),
-        )
+        EquilibriumContourTreeNodeSliceView::new(elements)
     }
 }
 
@@ -2275,6 +2371,82 @@ impl<'a, D: Dimension> EquilibriumGapSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGap> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumGap {
+    type SliceView<'a, D>
+        = EquilibriumGapSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumGapSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumGap {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- EquilibriumConstraints0dDof View Types ---
+
+/// View over multiple EquilibriumConstraints0dDof with field accumulation
+pub struct EquilibriumConstraints0dDofSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumConstraints0dDof, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumConstraints0dDof, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumConstraints0dDofSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumConstraints0dDof, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dDof| item.name.clone()),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumConstraints0dDof> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumConstraints0dDof {
+    type SliceView<'a, D>
+        = EquilibriumConstraints0dDofSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumConstraints0dDofSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumConstraints0dDof {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2328,6 +2500,20 @@ impl<'a, D: Dimension> EquilibriumConstraints0dOneLikeSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for EquilibriumConstraints0dOneLike {
+    type SliceView<'a, D>
+        = EquilibriumConstraints0dOneLikeSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumConstraints0dOneLikeSliceView::new(elements)
+    }
+}
+
 // --- EquilibriumConstraints0d View Types ---
 
 /// View over multiple EquilibriumConstraints0d with field accumulation
@@ -2340,6 +2526,7 @@ pub struct EquilibriumConstraints0dSliceView<'a, D> {
     pub sigma: Accumulator<'a, EquilibriumConstraints0d, FLT_0D, D>,
     pub reconstructed: Accumulator<'a, EquilibriumConstraints0d, FLT_0D, D>,
     pub chi_squared: Accumulator<'a, EquilibriumConstraints0d, FLT_0D, D>,
+    pub name: Accumulator<'a, EquilibriumConstraints0d, STR_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraints0d, D>,
 }
 
@@ -2354,6 +2541,7 @@ impl<'a, D: Dimension> EquilibriumConstraints0dSliceView<'a, D> {
             sigma: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.sigma),
             reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.reconstructed),
             chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.chi_squared),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0d| item.name.clone()),
             slice_elements: elements,
         }
     }
@@ -2376,6 +2564,37 @@ impl<'a, D: Dimension> EquilibriumConstraints0dSliceView<'a, D> {
     pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumConstraints0d> + '_ {
         self.slice_elements.iter()
     }
+
+    /// Select from `dof` under every element. A range, e.g. `.dof(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.dof(name)`, takes the one element with that `name` under every element, and adds none.
+    ///
+    /// # Panics
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn dof<S: Selection<'a, EquilibriumConstraints0dDof>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("dof", &self.slice_elements, |item: &EquilibriumConstraints0d| item.dof.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumConstraints0d {
+    type SliceView<'a, D>
+        = EquilibriumConstraints0dSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumConstraints0dSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumConstraints0d {
+    fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 // --- EquilibriumConstraintsMagnetization View Types ---
@@ -2390,6 +2609,7 @@ pub struct EquilibriumConstraintsMagnetizationMagnetizationRView<'a, D> {
     pub sigma: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
     pub reconstructed: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
     pub chi_squared: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub name: Accumulator<'a, EquilibriumConstraintsMagnetization, STR_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraintsMagnetization, D>,
 }
 
@@ -2410,8 +2630,22 @@ impl<'a, D: Dimension> EquilibriumConstraintsMagnetizationMagnetizationRView<'a,
                 item.magnetization_r.reconstructed
             }),
             chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.chi_squared),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_r.name.clone()),
             slice_elements: elements,
         }
+    }
+
+    /// Select from `magnetization_r.dof` under every element. A range, e.g. `.dof(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.dof(name)`, takes the one element with that `name` under every element, and adds none.
+    ///
+    /// # Panics
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn dof<S: Selection<'a, EquilibriumConstraints0dDof>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("magnetization_r.dof", &self.slice_elements, |item: &EquilibriumConstraintsMagnetization| {
+            item.magnetization_r.dof.as_slice()
+        })
     }
 }
 
@@ -2425,6 +2659,7 @@ pub struct EquilibriumConstraintsMagnetizationMagnetizationZView<'a, D> {
     pub sigma: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
     pub reconstructed: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
     pub chi_squared: Accumulator<'a, EquilibriumConstraintsMagnetization, FLT_0D, D>,
+    pub name: Accumulator<'a, EquilibriumConstraintsMagnetization, STR_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraintsMagnetization, D>,
 }
 
@@ -2445,8 +2680,22 @@ impl<'a, D: Dimension> EquilibriumConstraintsMagnetizationMagnetizationZView<'a,
                 item.magnetization_z.reconstructed
             }),
             chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.chi_squared),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumConstraintsMagnetization| item.magnetization_z.name.clone()),
             slice_elements: elements,
         }
+    }
+
+    /// Select from `magnetization_z.dof` under every element. A range, e.g. `.dof(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.dof(name)`, takes the one element with that `name` under every element, and adds none.
+    ///
+    /// # Panics
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn dof<S: Selection<'a, EquilibriumConstraints0dDof>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("magnetization_z.dof", &self.slice_elements, |item: &EquilibriumConstraintsMagnetization| {
+            item.magnetization_z.dof.as_slice()
+        })
     }
 }
 
@@ -2483,6 +2732,20 @@ impl<'a, D: Dimension> EquilibriumConstraintsMagnetizationSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumConstraintsMagnetization> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumConstraintsMagnetization {
+    type SliceView<'a, D>
+        = EquilibriumConstraintsMagnetizationSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumConstraintsMagnetizationSliceView::new(elements)
     }
 }
 
@@ -2561,6 +2824,20 @@ impl<'a, D: Dimension> EquilibriumConstraints0dPositionSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for EquilibriumConstraints0dPosition {
+    type SliceView<'a, D>
+        = EquilibriumConstraints0dPositionSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumConstraints0dPositionSliceView::new(elements)
+    }
+}
+
 // --- EquilibriumConstraints0dIpLike View Types ---
 
 /// View over multiple EquilibriumConstraints0dIpLike with field accumulation
@@ -2573,6 +2850,7 @@ pub struct EquilibriumConstraints0dIpLikeSliceView<'a, D> {
     pub sigma: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D, D>,
     pub reconstructed: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D, D>,
     pub chi_squared: Accumulator<'a, EquilibriumConstraints0dIpLike, FLT_0D, D>,
+    pub name: Accumulator<'a, EquilibriumConstraints0dIpLike, STR_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraints0dIpLike, D>,
 }
 
@@ -2587,6 +2865,7 @@ impl<'a, D: Dimension> EquilibriumConstraints0dIpLikeSliceView<'a, D> {
             sigma: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.sigma),
             reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.reconstructed),
             chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.chi_squared),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dIpLike| item.name.clone()),
             slice_elements: elements,
         }
     }
@@ -2608,6 +2887,26 @@ impl<'a, D: Dimension> EquilibriumConstraints0dIpLikeSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumConstraints0dIpLike> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumConstraints0dIpLike {
+    type SliceView<'a, D>
+        = EquilibriumConstraints0dIpLikeSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumConstraints0dIpLikeSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumConstraints0dIpLike {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2697,6 +2996,20 @@ impl<'a, D: Dimension> EquilibriumConstraintsPurePositionSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for EquilibriumConstraintsPurePosition {
+    type SliceView<'a, D>
+        = EquilibriumConstraintsPurePositionSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumConstraintsPurePositionSliceView::new(elements)
+    }
+}
+
 // --- GenericGridScalar View Types ---
 
 /// View over multiple GenericGridScalar with field accumulation
@@ -2732,6 +3045,20 @@ impl<'a, D: Dimension> GenericGridScalarSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridScalar> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridScalar {
+    type SliceView<'a, D>
+        = GenericGridScalarSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridScalarSliceView::new(elements)
     }
 }
 
@@ -2791,31 +3118,36 @@ impl<'a, D: Dimension> GenericGridDynamicSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `space` under every element, e.g. `.space(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `space` under every element. A range, e.g. `.space(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn space<R>(&self, range: R) -> GenericGridDynamicSpaceSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridDynamicSpace], Output = [GenericGridDynamicSpace]> + Clone,
-    {
-        GenericGridDynamicSpaceSliceView::new(self.slice_elements.nest("space", |item: &GenericGridDynamic| item.space.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn space<S: Selection<'a, GenericGridDynamicSpace>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("space", &self.slice_elements, |item: &GenericGridDynamic| item.space.as_slice())
     }
 
-    /// The slice view over a range of `grid_subset` under every element, e.g. `.grid_subset(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `grid_subset` under every element. A range, e.g. `.grid_subset(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn grid_subset<R>(&self, range: R) -> GenericGridDynamicGridSubsetSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn grid_subset<S: Selection<'a, GenericGridDynamicGridSubset>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("grid_subset", &self.slice_elements, |item: &GenericGridDynamic| item.grid_subset.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamic {
+    type SliceView<'a, D>
+        = GenericGridDynamicSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicGridSubset], Output = [GenericGridDynamicGridSubset]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicGridSubsetSliceView::new(
-            self.slice_elements
-                .nest("grid_subset", |item: &GenericGridDynamic| item.grid_subset.as_slice(), range),
-        )
+        GenericGridDynamicSliceView::new(elements)
     }
 }
 
@@ -2912,6 +3244,20 @@ impl<'a, D: Dimension> EquilibriumProfiles2dSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for EquilibriumProfiles2d {
+    type SliceView<'a, D>
+        = EquilibriumProfiles2dSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumProfiles2dSliceView::new(elements)
+    }
+}
+
 // --- EquilibriumGgd View Types ---
 
 /// View over multiple EquilibriumGgd with field accumulation
@@ -2943,130 +3289,108 @@ impl<'a, D: Dimension> EquilibriumGgdSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `r` under every element, e.g. `.r(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `r` under every element. A range, e.g. `.r(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn r<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("r", |item: &EquilibriumGgd| item.r.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn r<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("r", &self.slice_elements, |item: &EquilibriumGgd| item.r.as_slice())
     }
 
-    /// The slice view over a range of `z` under every element, e.g. `.z(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `z` under every element. A range, e.g. `.z(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn z<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("z", |item: &EquilibriumGgd| item.z.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn z<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("z", &self.slice_elements, |item: &EquilibriumGgd| item.z.as_slice())
     }
 
-    /// The slice view over a range of `psi` under every element, e.g. `.psi(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `psi` under every element. A range, e.g. `.psi(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn psi<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("psi", |item: &EquilibriumGgd| item.psi.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn psi<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("psi", &self.slice_elements, |item: &EquilibriumGgd| item.psi.as_slice())
     }
 
-    /// The slice view over a range of `phi` under every element, e.g. `.phi(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `phi` under every element. A range, e.g. `.phi(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn phi<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("phi", |item: &EquilibriumGgd| item.phi.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn phi<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("phi", &self.slice_elements, |item: &EquilibriumGgd| item.phi.as_slice())
     }
 
-    /// The slice view over a range of `theta` under every element, e.g. `.theta(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `theta` under every element. A range, e.g. `.theta(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn theta<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("theta", |item: &EquilibriumGgd| item.theta.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn theta<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("theta", &self.slice_elements, |item: &EquilibriumGgd| item.theta.as_slice())
     }
 
-    /// The slice view over a range of `j_phi` under every element, e.g. `.j_phi(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `j_phi` under every element. A range, e.g. `.j_phi(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn j_phi<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("j_phi", |item: &EquilibriumGgd| item.j_phi.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn j_phi<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("j_phi", &self.slice_elements, |item: &EquilibriumGgd| item.j_phi.as_slice())
     }
 
-    /// The slice view over a range of `j_parallel` under every element, e.g. `.j_parallel(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `j_parallel` under every element. A range, e.g. `.j_parallel(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn j_parallel<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("j_parallel", |item: &EquilibriumGgd| item.j_parallel.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn j_parallel<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("j_parallel", &self.slice_elements, |item: &EquilibriumGgd| item.j_parallel.as_slice())
     }
 
-    /// The slice view over a range of `b_field_r` under every element, e.g. `.b_field_r(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `b_field_r` under every element. A range, e.g. `.b_field_r(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn b_field_r<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("b_field_r", |item: &EquilibriumGgd| item.b_field_r.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn b_field_r<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("b_field_r", &self.slice_elements, |item: &EquilibriumGgd| item.b_field_r.as_slice())
     }
 
-    /// The slice view over a range of `b_field_phi` under every element, e.g. `.b_field_phi(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `b_field_phi` under every element. A range, e.g. `.b_field_phi(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn b_field_phi<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("b_field_phi", |item: &EquilibriumGgd| item.b_field_phi.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn b_field_phi<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("b_field_phi", &self.slice_elements, |item: &EquilibriumGgd| item.b_field_phi.as_slice())
     }
 
-    /// The slice view over a range of `b_field_z` under every element, e.g. `.b_field_z(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `b_field_z` under every element. A range, e.g. `.b_field_z(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn b_field_z<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn b_field_z<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("b_field_z", &self.slice_elements, |item: &EquilibriumGgd| item.b_field_z.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumGgd {
+    type SliceView<'a, D>
+        = EquilibriumGgdSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("b_field_z", |item: &EquilibriumGgd| item.b_field_z.as_slice(), range))
+        EquilibriumGgdSliceView::new(elements)
     }
 }
 
@@ -3145,36 +3469,42 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `coordinates_type` under every element, e.g. `.coordinates_type(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `coordinates_type` under every element. A range, e.g. `.coordinates_type(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.coordinates_type(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn coordinates_type<R>(&self, range: R) -> IdentifierDynamicAos3SliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[IdentifierDynamicAos3], Output = [IdentifierDynamicAos3]> + Clone,
-    {
-        IdentifierDynamicAos3SliceView::new(self.slice_elements.nest(
-            "coordinates_type",
-            |item: &GenericGridDynamicSpace| item.coordinates_type.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn coordinates_type<S: Selection<'a, IdentifierDynamicAos3>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("coordinates_type", &self.slice_elements, |item: &GenericGridDynamicSpace| {
+            item.coordinates_type.as_slice()
+        })
     }
 
-    /// The slice view over a range of `objects_per_dimension` under every element, e.g. `.objects_per_dimension(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `objects_per_dimension` under every element. A range, e.g. `.objects_per_dimension(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn objects_per_dimension<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn objects_per_dimension<S: Selection<'a, GenericGridDynamicSpaceDimension>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("objects_per_dimension", &self.slice_elements, |item: &GenericGridDynamicSpace| {
+            item.objects_per_dimension.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpace {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicSpaceDimension], Output = [GenericGridDynamicSpaceDimension]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicSpaceDimensionSliceView::new(self.slice_elements.nest(
-            "objects_per_dimension",
-            |item: &GenericGridDynamicSpace| item.objects_per_dimension.as_slice(),
-            range,
-        ))
+        GenericGridDynamicSpaceSliceView::new(elements)
     }
 }
 
@@ -3247,35 +3577,36 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElement], Output = [GenericGridDynamicGridSubsetElement]> + Clone,
-    {
-        GenericGridDynamicGridSubsetElementSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &GenericGridDynamicGridSubset| item.element.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, GenericGridDynamicGridSubsetElement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &GenericGridDynamicGridSubset| item.element.as_slice())
     }
 
-    /// The slice view over a range of `base` under every element, e.g. `.base(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `base` under every element. A range, e.g. `.base(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn base<R>(&self, range: R) -> GenericGridDynamicGridSubsetMetricSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn base<S: Selection<'a, GenericGridDynamicGridSubsetMetric>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("base", &self.slice_elements, |item: &GenericGridDynamicGridSubset| item.base.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubset {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicGridSubsetMetric], Output = [GenericGridDynamicGridSubsetMetric]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicGridSubsetMetricSliceView::new(
-            self.slice_elements
-                .nest("base", |item: &GenericGridDynamicGridSubset| item.base.as_slice(), range),
-        )
+        GenericGridDynamicGridSubsetSliceView::new(elements)
     }
 }
 
@@ -3325,6 +3656,26 @@ impl<'a, D: Dimension> LibrarySliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for Library {
+    type SliceView<'a, D>
+        = LibrarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        LibrarySliceView::new(elements)
+    }
+}
+
+impl Named for Library {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- IdentifierDynamicAos3 View Types ---
 
 /// View over multiple IdentifierDynamicAos3 with field accumulation
@@ -3362,6 +3713,26 @@ impl<'a, D: Dimension> IdentifierDynamicAos3SliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a IdentifierDynamicAos3> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for IdentifierDynamicAos3 {
+    type SliceView<'a, D>
+        = IdentifierDynamicAos3SliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        IdentifierDynamicAos3SliceView::new(elements)
+    }
+}
+
+impl Named for IdentifierDynamicAos3 {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -3421,20 +3792,27 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `object` under every element, e.g. `.object(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `object` under every element. A range, e.g. `.object(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn object<S: Selection<'a, GenericGridDynamicSpaceDimensionObject>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("object", &self.slice_elements, |item: &GenericGridDynamicSpaceDimension| item.object.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpaceDimension {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceDimensionSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObject], Output = [GenericGridDynamicSpaceDimensionObject]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(self.slice_elements.nest(
-            "object",
-            |item: &GenericGridDynamicSpaceDimension| item.object.as_slice(),
-            range,
-        ))
+        GenericGridDynamicSpaceDimensionSliceView::new(elements)
     }
 }
 
@@ -3469,20 +3847,29 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetElementSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `object` under every element, e.g. `.object(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `object` under every element. A range, e.g. `.object(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementObjectSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn object<S: Selection<'a, GenericGridDynamicGridSubsetElementObject>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("object", &self.slice_elements, |item: &GenericGridDynamicGridSubsetElement| {
+            item.object.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubsetElement {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetElementSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElementObject], Output = [GenericGridDynamicGridSubsetElementObject]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(self.slice_elements.nest(
-            "object",
-            |item: &GenericGridDynamicGridSubsetElement| item.object.as_slice(),
-            range,
-        ))
+        GenericGridDynamicGridSubsetElementSliceView::new(elements)
     }
 }
 
@@ -3515,6 +3902,20 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetMetricSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubsetMetric> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubsetMetric {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetMetricSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridDynamicGridSubsetMetricSliceView::new(elements)
     }
 }
 
@@ -3553,20 +3954,29 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionObjectSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `boundary` under every element, e.g. `.boundary(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `boundary` under every element. A range, e.g. `.boundary(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn boundary<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn boundary<S: Selection<'a, GenericGridDynamicSpaceDimensionObjectBoundary>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("boundary", &self.slice_elements, |item: &GenericGridDynamicSpaceDimensionObject| {
+            item.boundary.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpaceDimensionObject {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceDimensionObjectSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObjectBoundary], Output = [GenericGridDynamicSpaceDimensionObjectBoundary]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(self.slice_elements.nest(
-            "boundary",
-            |item: &GenericGridDynamicSpaceDimensionObject| item.boundary.as_slice(),
-            range,
-        ))
+        GenericGridDynamicSpaceDimensionObjectSliceView::new(elements)
     }
 }
 
@@ -3610,6 +4020,20 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetElementObjectSliceView<'a, D>
     }
 }
 
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubsetElementObject {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetElementObjectSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridDynamicGridSubsetElementObjectSliceView::new(elements)
+    }
+}
+
 // --- GenericGridDynamicSpaceDimensionObjectBoundary View Types ---
 
 /// View over multiple GenericGridDynamicSpaceDimensionObjectBoundary with field accumulation
@@ -3643,6 +4067,20 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpaceDimensionObjectBoundary> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpaceDimensionObjectBoundary {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(elements)
     }
 }
 
@@ -3682,6 +4120,26 @@ impl<'a, D: Dimension> EquilibriumGreensPfActiveSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for EquilibriumGreensPfActive {
+    type SliceView<'a, D>
+        = EquilibriumGreensPfActiveSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumGreensPfActiveSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumGreensPfActive {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- EquilibriumGreensPfPassive View Types ---
 
 /// View over multiple EquilibriumGreensPfPassive with field accumulation
@@ -3717,16 +4175,35 @@ impl<'a, D: Dimension> EquilibriumGreensPfPassiveSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `dof` under every element, e.g. `.dof(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `dof` under every element. A range, e.g. `.dof(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.dof(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn dof<R>(&self, range: R) -> EquilibriumGreensPfPassiveDofSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn dof<S: Selection<'a, EquilibriumGreensPfPassiveDof>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("dof", &self.slice_elements, |item: &EquilibriumGreensPfPassive| item.dof.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumGreensPfPassive {
+    type SliceView<'a, D>
+        = EquilibriumGreensPfPassiveSliceView<'a, D>
     where
-        R: SliceIndex<[EquilibriumGreensPfPassiveDof], Output = [EquilibriumGreensPfPassiveDof]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        EquilibriumGreensPfPassiveDofSliceView::new(self.slice_elements.nest("dof", |item: &EquilibriumGreensPfPassive| item.dof.as_slice(), range))
+        EquilibriumGreensPfPassiveSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumGreensPfPassive {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -3766,6 +4243,95 @@ impl<'a, D: Dimension> EquilibriumGreensPfPassiveDofSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for EquilibriumGreensPfPassiveDof {
+    type SliceView<'a, D>
+        = EquilibriumGreensPfPassiveDofSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumGreensPfPassiveDofSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumGreensPfPassiveDof {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- EquilibriumLimiterUnit View Types ---
+
+/// View over `outline` (EquilibriumLimiterUnitOutline) across multiple EquilibriumLimiterUnit
+pub struct EquilibriumLimiterUnitOutlineView<'a, D> {
+    slice_elements: Elements<'a, EquilibriumLimiterUnit, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumLimiterUnitOutlineView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumLimiterUnit, D>) -> Self {
+        Self { slice_elements: elements }
+    }
+}
+
+/// View over multiple EquilibriumLimiterUnit with field accumulation
+pub struct EquilibriumLimiterUnitSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumLimiterUnit, STR_0D, D>,
+    pub outline: EquilibriumLimiterUnitOutlineView<'a, D>,
+    slice_elements: Elements<'a, EquilibriumLimiterUnit, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumLimiterUnitSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumLimiterUnit, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumLimiterUnit| item.name.clone()),
+            outline: EquilibriumLimiterUnitOutlineView::new(elements.clone()),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumLimiterUnit> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumLimiterUnit {
+    type SliceView<'a, D>
+        = EquilibriumLimiterUnitSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumLimiterUnitSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumLimiterUnit {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- EquilibriumGgdArray View Types ---
 
 /// View over multiple EquilibriumGgdArray with field accumulation
@@ -3801,16 +4367,27 @@ impl<'a, D: Dimension> EquilibriumGgdArraySliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `grid` under every element, e.g. `.grid(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `grid` under every element. A range, e.g. `.grid(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn grid<R>(&self, range: R) -> GenericGridDynamicSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn grid<S: Selection<'a, GenericGridDynamic>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("grid", &self.slice_elements, |item: &EquilibriumGgdArray| item.grid.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumGgdArray {
+    type SliceView<'a, D>
+        = EquilibriumGgdArraySliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamic], Output = [GenericGridDynamic]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicSliceView::new(self.slice_elements.nest("grid", |item: &EquilibriumGgdArray| item.grid.as_slice(), range))
+        EquilibriumGgdArraySliceView::new(elements)
     }
 }
 
@@ -3949,19 +4526,15 @@ impl<'a, D: Dimension> EquilibriumTimeSliceBoundaryView<'a, D> {
         }
     }
 
-    /// The slice view over a range of `boundary.gap` under every element, e.g. `.gap(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `boundary.gap` under every element. A range, e.g. `.gap(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.gap(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn gap<R>(&self, range: R) -> EquilibriumGapSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumGap], Output = [EquilibriumGap]> + Clone,
-    {
-        EquilibriumGapSliceView::new(
-            self.slice_elements
-                .nest("boundary.gap", |item: &EquilibriumTimeSlice| item.boundary.gap.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn gap<S: Selection<'a, EquilibriumGap>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("boundary.gap", &self.slice_elements, |item: &EquilibriumTimeSlice| item.boundary.gap.as_slice())
     }
 }
 
@@ -3975,20 +4548,15 @@ impl<'a, D: Dimension> EquilibriumTimeSliceContourTreeView<'a, D> {
         Self { slice_elements: elements }
     }
 
-    /// The slice view over a range of `contour_tree.node` under every element, e.g. `.node(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `contour_tree.node` under every element. A range, e.g. `.node(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn node<R>(&self, range: R) -> EquilibriumContourTreeNodeSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumContourTreeNode], Output = [EquilibriumContourTreeNode]> + Clone,
-    {
-        EquilibriumContourTreeNodeSliceView::new(self.slice_elements.nest(
-            "contour_tree.node",
-            |item: &EquilibriumTimeSlice| item.contour_tree.node.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn node<S: Selection<'a, EquilibriumContourTreeNode>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("contour_tree.node", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.contour_tree.node.as_slice()
+        })
     }
 }
 
@@ -4002,6 +4570,7 @@ pub struct EquilibriumTimeSliceConstraintsBFieldTorVacuumRView<'a, D> {
     pub sigma: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub reconstructed: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub chi_squared: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub name: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
     slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
@@ -4024,8 +4593,24 @@ impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsBFieldTorVacuumRView<'a, D
             chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
                 item.constraints.b_field_tor_vacuum_r.chi_squared
             }),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| {
+                item.constraints.b_field_tor_vacuum_r.name.clone()
+            }),
             slice_elements: elements,
         }
+    }
+
+    /// Select from `constraints.b_field_tor_vacuum_r.dof` under every element. A range, e.g. `.dof(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.dof(name)`, takes the one element with that `name` under every element, and adds none.
+    ///
+    /// # Panics
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn dof<S: Selection<'a, EquilibriumConstraints0dDof>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.b_field_tor_vacuum_r.dof", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.b_field_tor_vacuum_r.dof.as_slice()
+        })
     }
 }
 
@@ -4070,6 +4655,7 @@ pub struct EquilibriumTimeSliceConstraintsIpView<'a, D> {
     pub sigma: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub reconstructed: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub chi_squared: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub name: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
     slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
@@ -4084,6 +4670,7 @@ impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsIpView<'a, D> {
             sigma: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.sigma),
             reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.reconstructed),
             chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.chi_squared),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.ip.name.clone()),
             slice_elements: elements,
         }
     }
@@ -4113,260 +4700,192 @@ impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsView<'a, D> {
         }
     }
 
-    /// The slice view over a range of `constraints.b_field_pol_probe` under every element, e.g. `.b_field_pol_probe(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.b_field_pol_probe` under every element. A range, e.g. `.b_field_pol_probe(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn b_field_pol_probe<R>(&self, range: R) -> EquilibriumConstraints0dOneLikeSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dOneLike], Output = [EquilibriumConstraints0dOneLike]> + Clone,
-    {
-        EquilibriumConstraints0dOneLikeSliceView::new(self.slice_elements.nest(
-            "constraints.b_field_pol_probe",
-            |item: &EquilibriumTimeSlice| item.constraints.b_field_pol_probe.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn b_field_pol_probe<S: Selection<'a, EquilibriumConstraints0dOneLike>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.b_field_pol_probe", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.b_field_pol_probe.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.faraday_angle` under every element, e.g. `.faraday_angle(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.faraday_angle` under every element. A range, e.g. `.faraday_angle(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.faraday_angle(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn faraday_angle<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]> + Clone,
-    {
-        EquilibriumConstraints0dSliceView::new(self.slice_elements.nest(
-            "constraints.faraday_angle",
-            |item: &EquilibriumTimeSlice| item.constraints.faraday_angle.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn faraday_angle<S: Selection<'a, EquilibriumConstraints0d>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.faraday_angle", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.faraday_angle.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.mse_polarization_angle` under every element, e.g. `.mse_polarization_angle(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.mse_polarization_angle` under every element. A range, e.g. `.mse_polarization_angle(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.mse_polarization_angle(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn mse_polarization_angle<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]> + Clone,
-    {
-        EquilibriumConstraints0dSliceView::new(self.slice_elements.nest(
-            "constraints.mse_polarization_angle",
-            |item: &EquilibriumTimeSlice| item.constraints.mse_polarization_angle.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn mse_polarization_angle<S: Selection<'a, EquilibriumConstraints0d>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.mse_polarization_angle", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.mse_polarization_angle.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.flux_loop` under every element, e.g. `.flux_loop(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.flux_loop` under every element. A range, e.g. `.flux_loop(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.flux_loop(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn flux_loop<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]> + Clone,
-    {
-        EquilibriumConstraints0dSliceView::new(self.slice_elements.nest(
-            "constraints.flux_loop",
-            |item: &EquilibriumTimeSlice| item.constraints.flux_loop.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn flux_loop<S: Selection<'a, EquilibriumConstraints0d>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.flux_loop", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.flux_loop.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.iron_core_segment` under every element, e.g. `.iron_core_segment(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.iron_core_segment` under every element. A range, e.g. `.iron_core_segment(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn iron_core_segment<R>(&self, range: R) -> EquilibriumConstraintsMagnetizationSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraintsMagnetization], Output = [EquilibriumConstraintsMagnetization]> + Clone,
-    {
-        EquilibriumConstraintsMagnetizationSliceView::new(self.slice_elements.nest(
-            "constraints.iron_core_segment",
-            |item: &EquilibriumTimeSlice| item.constraints.iron_core_segment.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn iron_core_segment<S: Selection<'a, EquilibriumConstraintsMagnetization>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.iron_core_segment", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.iron_core_segment.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.n_e` under every element, e.g. `.n_e(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.n_e` under every element. A range, e.g. `.n_e(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn n_e<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
-            "constraints.n_e",
-            |item: &EquilibriumTimeSlice| item.constraints.n_e.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn n_e<S: Selection<'a, EquilibriumConstraints0dPosition>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.n_e", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.n_e.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.n_e_line` under every element, e.g. `.n_e_line(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.n_e_line` under every element. A range, e.g. `.n_e_line(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.n_e_line(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn n_e_line<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]> + Clone,
-    {
-        EquilibriumConstraints0dSliceView::new(self.slice_elements.nest(
-            "constraints.n_e_line",
-            |item: &EquilibriumTimeSlice| item.constraints.n_e_line.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn n_e_line<S: Selection<'a, EquilibriumConstraints0d>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.n_e_line", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.n_e_line.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.pf_current` under every element, e.g. `.pf_current(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.pf_current` under every element. A range, e.g. `.pf_current(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.pf_current(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn pf_current<R>(&self, range: R) -> EquilibriumConstraints0dIpLikeSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dIpLike], Output = [EquilibriumConstraints0dIpLike]> + Clone,
-    {
-        EquilibriumConstraints0dIpLikeSliceView::new(self.slice_elements.nest(
-            "constraints.pf_current",
-            |item: &EquilibriumTimeSlice| item.constraints.pf_current.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn pf_current<S: Selection<'a, EquilibriumConstraints0dIpLike>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.pf_current", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.pf_current.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.pf_passive_current` under every element, e.g. `.pf_passive_current(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.pf_passive_current` under every element. A range, e.g. `.pf_passive_current(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.pf_passive_current(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn pf_passive_current<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]> + Clone,
-    {
-        EquilibriumConstraints0dSliceView::new(self.slice_elements.nest(
-            "constraints.pf_passive_current",
-            |item: &EquilibriumTimeSlice| item.constraints.pf_passive_current.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn pf_passive_current<S: Selection<'a, EquilibriumConstraints0d>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.pf_passive_current", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.pf_passive_current.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.pressure` under every element, e.g. `.pressure(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.pressure` under every element. A range, e.g. `.pressure(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn pressure<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
-            "constraints.pressure",
-            |item: &EquilibriumTimeSlice| item.constraints.pressure.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn pressure<S: Selection<'a, EquilibriumConstraints0dPosition>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.pressure", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.pressure.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.pressure_rotational` under every element, e.g. `.pressure_rotational(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.pressure_rotational` under every element. A range, e.g. `.pressure_rotational(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn pressure_rotational<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
-            "constraints.pressure_rotational",
-            |item: &EquilibriumTimeSlice| item.constraints.pressure_rotational.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn pressure_rotational<S: Selection<'a, EquilibriumConstraints0dPosition>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.pressure_rotational", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.pressure_rotational.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.q` under every element, e.g. `.q(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.q` under every element. A range, e.g. `.q(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn q<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
-            "constraints.q",
-            |item: &EquilibriumTimeSlice| item.constraints.q.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn q<S: Selection<'a, EquilibriumConstraints0dPosition>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.q", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.q.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.j_phi` under every element, e.g. `.j_phi(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.j_phi` under every element. A range, e.g. `.j_phi(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn j_phi<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
-            "constraints.j_phi",
-            |item: &EquilibriumTimeSlice| item.constraints.j_phi.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn j_phi<S: Selection<'a, EquilibriumConstraints0dPosition>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.j_phi", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.j_phi.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.j_parallel` under every element, e.g. `.j_parallel(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.j_parallel` under every element. A range, e.g. `.j_parallel(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn j_parallel<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]> + Clone,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(self.slice_elements.nest(
-            "constraints.j_parallel",
-            |item: &EquilibriumTimeSlice| item.constraints.j_parallel.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn j_parallel<S: Selection<'a, EquilibriumConstraints0dPosition>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.j_parallel", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.j_parallel.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.x_point` under every element, e.g. `.x_point(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.x_point` under every element. A range, e.g. `.x_point(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn x_point<R>(&self, range: R) -> EquilibriumConstraintsPurePositionSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraintsPurePosition], Output = [EquilibriumConstraintsPurePosition]> + Clone,
-    {
-        EquilibriumConstraintsPurePositionSliceView::new(self.slice_elements.nest(
-            "constraints.x_point",
-            |item: &EquilibriumTimeSlice| item.constraints.x_point.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn x_point<S: Selection<'a, EquilibriumConstraintsPurePosition>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.x_point", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.x_point.as_slice()
+        })
     }
 
-    /// The slice view over a range of `constraints.strike_point` under every element, e.g. `.strike_point(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `constraints.strike_point` under every element. A range, e.g. `.strike_point(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn strike_point<R>(&self, range: R) -> EquilibriumConstraintsPurePositionSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumConstraintsPurePosition], Output = [EquilibriumConstraintsPurePosition]> + Clone,
-    {
-        EquilibriumConstraintsPurePositionSliceView::new(self.slice_elements.nest(
-            "constraints.strike_point",
-            |item: &EquilibriumTimeSlice| item.constraints.strike_point.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn strike_point<S: Selection<'a, EquilibriumConstraintsPurePosition>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.strike_point", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.strike_point.as_slice()
+        })
     }
 }
 
@@ -4454,6 +4973,7 @@ pub struct EquilibriumTimeSliceGlobalQuantitiesView<'a, D> {
     pub beta_pol_1: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub beta_pol_2: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub beta_pol_3: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub bp_omp: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub bt_vac_at_r_geo: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub li_1: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub li_2: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
@@ -4489,6 +5009,7 @@ impl<'a, D: Dimension> EquilibriumTimeSliceGlobalQuantitiesView<'a, D> {
             beta_pol_1: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_1),
             beta_pol_2: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_2),
             beta_pol_3: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.beta_pol_3),
+            bp_omp: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.bp_omp),
             bt_vac_at_r_geo: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.bt_vac_at_r_geo),
             li_1: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.li_1),
             li_2: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.global_quantities.li_2),
@@ -4871,31 +5392,36 @@ impl<'a, D: Dimension> EquilibriumTimeSliceSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `profiles_2d` under every element, e.g. `.profiles_2d(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `profiles_2d` under every element. A range, e.g. `.profiles_2d(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn profiles_2d<R>(&self, range: R) -> EquilibriumProfiles2dSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[EquilibriumProfiles2d], Output = [EquilibriumProfiles2d]> + Clone,
-    {
-        EquilibriumProfiles2dSliceView::new(
-            self.slice_elements
-                .nest("profiles_2d", |item: &EquilibriumTimeSlice| item.profiles_2d.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn profiles_2d<S: Selection<'a, EquilibriumProfiles2d>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("profiles_2d", &self.slice_elements, |item: &EquilibriumTimeSlice| item.profiles_2d.as_slice())
     }
 
-    /// The slice view over a range of `ggd` under every element, e.g. `.ggd(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `ggd` under every element. A range, e.g. `.ggd(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn ggd<R>(&self, range: R) -> EquilibriumGgdSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn ggd<S: Selection<'a, EquilibriumGgd>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("ggd", &self.slice_elements, |item: &EquilibriumTimeSlice| item.ggd.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumTimeSlice {
+    type SliceView<'a, D>
+        = EquilibriumTimeSliceSliceView<'a, D>
     where
-        R: SliceIndex<[EquilibriumGgd], Output = [EquilibriumGgd]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        EquilibriumGgdSliceView::new(self.slice_elements.nest("ggd", |item: &EquilibriumTimeSlice| item.ggd.as_slice(), range))
+        EquilibriumTimeSliceSliceView::new(elements)
     }
 }
 
@@ -4904,13 +5430,14 @@ impl<'a, D: Dimension> EquilibriumTimeSliceSliceView<'a, D> {
 // ============================================================================
 
 impl EquilibriumContourTreeNode {
-    /// The slice view over a range of levelset, e.g. `.levelset(0..2)` or `.levelset(..)`,
-    /// whose leaves gather one value per element. A single element is `.levelset[i]`.
-    pub fn levelset<R>(&self, range: R) -> Rz1dDynamicAosSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Rz1dDynamicAos], Output = [Rz1dDynamicAos]>,
-    {
-        Rz1dDynamicAosSliceView::new(Elements::from_slice(&self.levelset[range]))
+    /// Select from `levelset`. A range, e.g. `.levelset(0..2)` or `.levelset(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.levelset[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn levelset<'a, S: Selection<'a, Rz1dDynamicAos>>(&'a self, selection: S) -> S::Output {
+        selection.select("levelset", &self.levelset)
     }
 
     /// Get the number of levelset elements
@@ -4920,13 +5447,14 @@ impl EquilibriumContourTreeNode {
 }
 
 impl EquilibriumContourTree {
-    /// The slice view over a range of node, e.g. `.node(0..2)` or `.node(..)`,
-    /// whose leaves gather one value per element. A single element is `.node[i]`.
-    pub fn node<R>(&self, range: R) -> EquilibriumContourTreeNodeSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumContourTreeNode], Output = [EquilibriumContourTreeNode]>,
-    {
-        EquilibriumContourTreeNodeSliceView::new(Elements::from_slice(&self.node[range]))
+    /// Select from `node`. A range, e.g. `.node(0..2)` or `.node(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.node[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn node<'a, S: Selection<'a, EquilibriumContourTreeNode>>(&'a self, selection: S) -> S::Output {
+        selection.select("node", &self.node)
     }
 
     /// Get the number of node elements
@@ -4936,13 +5464,16 @@ impl EquilibriumContourTree {
 }
 
 impl EquilibriumBoundary {
-    /// The slice view over a range of gap, e.g. `.gap(0..2)` or `.gap(..)`,
-    /// whose leaves gather one value per element. A single element is `.gap[i]`.
-    pub fn gap<R>(&self, range: R) -> EquilibriumGapSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumGap], Output = [EquilibriumGap]>,
-    {
-        EquilibriumGapSliceView::new(Elements::from_slice(&self.gap[range]))
+    /// Select from `gap`. A range, e.g. `.gap(0..2)` or `.gap(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.gap(name)`, gives the one element with that `name`.
+    /// A single element is `.gap[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn gap<'a, S: Selection<'a, EquilibriumGap>>(&'a self, selection: S) -> S::Output {
+        selection.select("gap", &self.gap)
     }
 
     /// Get the number of gap elements
@@ -4951,14 +5482,34 @@ impl EquilibriumBoundary {
     }
 }
 
+impl EquilibriumConstraints0d {
+    /// Select from `dof`. A range, e.g. `.dof(0..2)` or `.dof(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.dof(name)`, gives the one element with that `name`.
+    /// A single element is `.dof[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn dof<'a, S: Selection<'a, EquilibriumConstraints0dDof>>(&'a self, selection: S) -> S::Output {
+        selection.select("dof", &self.dof)
+    }
+
+    /// Get the number of dof elements
+    pub fn dof_len(&self) -> usize {
+        self.dof.len()
+    }
+}
+
 impl EquilibriumConstraints {
-    /// The slice view over a range of b_field_pol_probe, e.g. `.b_field_pol_probe(0..2)` or `.b_field_pol_probe(..)`,
-    /// whose leaves gather one value per element. A single element is `.b_field_pol_probe[i]`.
-    pub fn b_field_pol_probe<R>(&self, range: R) -> EquilibriumConstraints0dOneLikeSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dOneLike], Output = [EquilibriumConstraints0dOneLike]>,
-    {
-        EquilibriumConstraints0dOneLikeSliceView::new(Elements::from_slice(&self.b_field_pol_probe[range]))
+    /// Select from `b_field_pol_probe`. A range, e.g. `.b_field_pol_probe(0..2)` or `.b_field_pol_probe(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.b_field_pol_probe[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn b_field_pol_probe<'a, S: Selection<'a, EquilibriumConstraints0dOneLike>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_pol_probe", &self.b_field_pol_probe)
     }
 
     /// Get the number of b_field_pol_probe elements
@@ -4968,13 +5519,16 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of faraday_angle, e.g. `.faraday_angle(0..2)` or `.faraday_angle(..)`,
-    /// whose leaves gather one value per element. A single element is `.faraday_angle[i]`.
-    pub fn faraday_angle<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]>,
-    {
-        EquilibriumConstraints0dSliceView::new(Elements::from_slice(&self.faraday_angle[range]))
+    /// Select from `faraday_angle`. A range, e.g. `.faraday_angle(0..2)` or `.faraday_angle(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.faraday_angle(name)`, gives the one element with that `name`.
+    /// A single element is `.faraday_angle[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn faraday_angle<'a, S: Selection<'a, EquilibriumConstraints0d>>(&'a self, selection: S) -> S::Output {
+        selection.select("faraday_angle", &self.faraday_angle)
     }
 
     /// Get the number of faraday_angle elements
@@ -4984,13 +5538,16 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of mse_polarization_angle, e.g. `.mse_polarization_angle(0..2)` or `.mse_polarization_angle(..)`,
-    /// whose leaves gather one value per element. A single element is `.mse_polarization_angle[i]`.
-    pub fn mse_polarization_angle<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]>,
-    {
-        EquilibriumConstraints0dSliceView::new(Elements::from_slice(&self.mse_polarization_angle[range]))
+    /// Select from `mse_polarization_angle`. A range, e.g. `.mse_polarization_angle(0..2)` or `.mse_polarization_angle(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.mse_polarization_angle(name)`, gives the one element with that `name`.
+    /// A single element is `.mse_polarization_angle[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn mse_polarization_angle<'a, S: Selection<'a, EquilibriumConstraints0d>>(&'a self, selection: S) -> S::Output {
+        selection.select("mse_polarization_angle", &self.mse_polarization_angle)
     }
 
     /// Get the number of mse_polarization_angle elements
@@ -5000,13 +5557,16 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of flux_loop, e.g. `.flux_loop(0..2)` or `.flux_loop(..)`,
-    /// whose leaves gather one value per element. A single element is `.flux_loop[i]`.
-    pub fn flux_loop<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]>,
-    {
-        EquilibriumConstraints0dSliceView::new(Elements::from_slice(&self.flux_loop[range]))
+    /// Select from `flux_loop`. A range, e.g. `.flux_loop(0..2)` or `.flux_loop(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.flux_loop(name)`, gives the one element with that `name`.
+    /// A single element is `.flux_loop[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn flux_loop<'a, S: Selection<'a, EquilibriumConstraints0d>>(&'a self, selection: S) -> S::Output {
+        selection.select("flux_loop", &self.flux_loop)
     }
 
     /// Get the number of flux_loop elements
@@ -5016,13 +5576,14 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of iron_core_segment, e.g. `.iron_core_segment(0..2)` or `.iron_core_segment(..)`,
-    /// whose leaves gather one value per element. A single element is `.iron_core_segment[i]`.
-    pub fn iron_core_segment<R>(&self, range: R) -> EquilibriumConstraintsMagnetizationSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraintsMagnetization], Output = [EquilibriumConstraintsMagnetization]>,
-    {
-        EquilibriumConstraintsMagnetizationSliceView::new(Elements::from_slice(&self.iron_core_segment[range]))
+    /// Select from `iron_core_segment`. A range, e.g. `.iron_core_segment(0..2)` or `.iron_core_segment(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.iron_core_segment[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn iron_core_segment<'a, S: Selection<'a, EquilibriumConstraintsMagnetization>>(&'a self, selection: S) -> S::Output {
+        selection.select("iron_core_segment", &self.iron_core_segment)
     }
 
     /// Get the number of iron_core_segment elements
@@ -5032,13 +5593,14 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of n_e, e.g. `.n_e(0..2)` or `.n_e(..)`,
-    /// whose leaves gather one value per element. A single element is `.n_e[i]`.
-    pub fn n_e<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.n_e[range]))
+    /// Select from `n_e`. A range, e.g. `.n_e(0..2)` or `.n_e(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.n_e[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn n_e<'a, S: Selection<'a, EquilibriumConstraints0dPosition>>(&'a self, selection: S) -> S::Output {
+        selection.select("n_e", &self.n_e)
     }
 
     /// Get the number of n_e elements
@@ -5048,13 +5610,16 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of n_e_line, e.g. `.n_e_line(0..2)` or `.n_e_line(..)`,
-    /// whose leaves gather one value per element. A single element is `.n_e_line[i]`.
-    pub fn n_e_line<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]>,
-    {
-        EquilibriumConstraints0dSliceView::new(Elements::from_slice(&self.n_e_line[range]))
+    /// Select from `n_e_line`. A range, e.g. `.n_e_line(0..2)` or `.n_e_line(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.n_e_line(name)`, gives the one element with that `name`.
+    /// A single element is `.n_e_line[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn n_e_line<'a, S: Selection<'a, EquilibriumConstraints0d>>(&'a self, selection: S) -> S::Output {
+        selection.select("n_e_line", &self.n_e_line)
     }
 
     /// Get the number of n_e_line elements
@@ -5064,13 +5629,16 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of pf_current, e.g. `.pf_current(0..2)` or `.pf_current(..)`,
-    /// whose leaves gather one value per element. A single element is `.pf_current[i]`.
-    pub fn pf_current<R>(&self, range: R) -> EquilibriumConstraints0dIpLikeSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dIpLike], Output = [EquilibriumConstraints0dIpLike]>,
-    {
-        EquilibriumConstraints0dIpLikeSliceView::new(Elements::from_slice(&self.pf_current[range]))
+    /// Select from `pf_current`. A range, e.g. `.pf_current(0..2)` or `.pf_current(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.pf_current(name)`, gives the one element with that `name`.
+    /// A single element is `.pf_current[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn pf_current<'a, S: Selection<'a, EquilibriumConstraints0dIpLike>>(&'a self, selection: S) -> S::Output {
+        selection.select("pf_current", &self.pf_current)
     }
 
     /// Get the number of pf_current elements
@@ -5080,13 +5648,16 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of pf_passive_current, e.g. `.pf_passive_current(0..2)` or `.pf_passive_current(..)`,
-    /// whose leaves gather one value per element. A single element is `.pf_passive_current[i]`.
-    pub fn pf_passive_current<R>(&self, range: R) -> EquilibriumConstraints0dSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0d], Output = [EquilibriumConstraints0d]>,
-    {
-        EquilibriumConstraints0dSliceView::new(Elements::from_slice(&self.pf_passive_current[range]))
+    /// Select from `pf_passive_current`. A range, e.g. `.pf_passive_current(0..2)` or `.pf_passive_current(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.pf_passive_current(name)`, gives the one element with that `name`.
+    /// A single element is `.pf_passive_current[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn pf_passive_current<'a, S: Selection<'a, EquilibriumConstraints0d>>(&'a self, selection: S) -> S::Output {
+        selection.select("pf_passive_current", &self.pf_passive_current)
     }
 
     /// Get the number of pf_passive_current elements
@@ -5096,13 +5667,14 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of pressure, e.g. `.pressure(0..2)` or `.pressure(..)`,
-    /// whose leaves gather one value per element. A single element is `.pressure[i]`.
-    pub fn pressure<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.pressure[range]))
+    /// Select from `pressure`. A range, e.g. `.pressure(0..2)` or `.pressure(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.pressure[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn pressure<'a, S: Selection<'a, EquilibriumConstraints0dPosition>>(&'a self, selection: S) -> S::Output {
+        selection.select("pressure", &self.pressure)
     }
 
     /// Get the number of pressure elements
@@ -5112,13 +5684,14 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of pressure_rotational, e.g. `.pressure_rotational(0..2)` or `.pressure_rotational(..)`,
-    /// whose leaves gather one value per element. A single element is `.pressure_rotational[i]`.
-    pub fn pressure_rotational<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.pressure_rotational[range]))
+    /// Select from `pressure_rotational`. A range, e.g. `.pressure_rotational(0..2)` or `.pressure_rotational(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.pressure_rotational[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn pressure_rotational<'a, S: Selection<'a, EquilibriumConstraints0dPosition>>(&'a self, selection: S) -> S::Output {
+        selection.select("pressure_rotational", &self.pressure_rotational)
     }
 
     /// Get the number of pressure_rotational elements
@@ -5128,13 +5701,14 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of q, e.g. `.q(0..2)` or `.q(..)`,
-    /// whose leaves gather one value per element. A single element is `.q[i]`.
-    pub fn q<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.q[range]))
+    /// Select from `q`. A range, e.g. `.q(0..2)` or `.q(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.q[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn q<'a, S: Selection<'a, EquilibriumConstraints0dPosition>>(&'a self, selection: S) -> S::Output {
+        selection.select("q", &self.q)
     }
 
     /// Get the number of q elements
@@ -5144,13 +5718,14 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of j_phi, e.g. `.j_phi(0..2)` or `.j_phi(..)`,
-    /// whose leaves gather one value per element. A single element is `.j_phi[i]`.
-    pub fn j_phi<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.j_phi[range]))
+    /// Select from `j_phi`. A range, e.g. `.j_phi(0..2)` or `.j_phi(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.j_phi[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn j_phi<'a, S: Selection<'a, EquilibriumConstraints0dPosition>>(&'a self, selection: S) -> S::Output {
+        selection.select("j_phi", &self.j_phi)
     }
 
     /// Get the number of j_phi elements
@@ -5160,13 +5735,14 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of j_parallel, e.g. `.j_parallel(0..2)` or `.j_parallel(..)`,
-    /// whose leaves gather one value per element. A single element is `.j_parallel[i]`.
-    pub fn j_parallel<R>(&self, range: R) -> EquilibriumConstraints0dPositionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraints0dPosition], Output = [EquilibriumConstraints0dPosition]>,
-    {
-        EquilibriumConstraints0dPositionSliceView::new(Elements::from_slice(&self.j_parallel[range]))
+    /// Select from `j_parallel`. A range, e.g. `.j_parallel(0..2)` or `.j_parallel(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.j_parallel[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn j_parallel<'a, S: Selection<'a, EquilibriumConstraints0dPosition>>(&'a self, selection: S) -> S::Output {
+        selection.select("j_parallel", &self.j_parallel)
     }
 
     /// Get the number of j_parallel elements
@@ -5176,13 +5752,14 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of x_point, e.g. `.x_point(0..2)` or `.x_point(..)`,
-    /// whose leaves gather one value per element. A single element is `.x_point[i]`.
-    pub fn x_point<R>(&self, range: R) -> EquilibriumConstraintsPurePositionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraintsPurePosition], Output = [EquilibriumConstraintsPurePosition]>,
-    {
-        EquilibriumConstraintsPurePositionSliceView::new(Elements::from_slice(&self.x_point[range]))
+    /// Select from `x_point`. A range, e.g. `.x_point(0..2)` or `.x_point(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.x_point[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn x_point<'a, S: Selection<'a, EquilibriumConstraintsPurePosition>>(&'a self, selection: S) -> S::Output {
+        selection.select("x_point", &self.x_point)
     }
 
     /// Get the number of x_point elements
@@ -5192,13 +5769,14 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumConstraints {
-    /// The slice view over a range of strike_point, e.g. `.strike_point(0..2)` or `.strike_point(..)`,
-    /// whose leaves gather one value per element. A single element is `.strike_point[i]`.
-    pub fn strike_point<R>(&self, range: R) -> EquilibriumConstraintsPurePositionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumConstraintsPurePosition], Output = [EquilibriumConstraintsPurePosition]>,
-    {
-        EquilibriumConstraintsPurePositionSliceView::new(Elements::from_slice(&self.strike_point[range]))
+    /// Select from `strike_point`. A range, e.g. `.strike_point(0..2)` or `.strike_point(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.strike_point[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn strike_point<'a, S: Selection<'a, EquilibriumConstraintsPurePosition>>(&'a self, selection: S) -> S::Output {
+        selection.select("strike_point", &self.strike_point)
     }
 
     /// Get the number of strike_point elements
@@ -5208,13 +5786,14 @@ impl EquilibriumConstraints {
 }
 
 impl EquilibriumGgd {
-    /// The slice view over a range of r, e.g. `.r(0..2)` or `.r(..)`,
-    /// whose leaves gather one value per element. A single element is `.r[i]`.
-    pub fn r<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.r[range]))
+    /// Select from `r`. A range, e.g. `.r(0..2)` or `.r(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.r[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn r<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("r", &self.r)
     }
 
     /// Get the number of r elements
@@ -5224,13 +5803,14 @@ impl EquilibriumGgd {
 }
 
 impl EquilibriumGgd {
-    /// The slice view over a range of z, e.g. `.z(0..2)` or `.z(..)`,
-    /// whose leaves gather one value per element. A single element is `.z[i]`.
-    pub fn z<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.z[range]))
+    /// Select from `z`. A range, e.g. `.z(0..2)` or `.z(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.z[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn z<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("z", &self.z)
     }
 
     /// Get the number of z elements
@@ -5240,13 +5820,14 @@ impl EquilibriumGgd {
 }
 
 impl EquilibriumGgd {
-    /// The slice view over a range of psi, e.g. `.psi(0..2)` or `.psi(..)`,
-    /// whose leaves gather one value per element. A single element is `.psi[i]`.
-    pub fn psi<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.psi[range]))
+    /// Select from `psi`. A range, e.g. `.psi(0..2)` or `.psi(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.psi[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn psi<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("psi", &self.psi)
     }
 
     /// Get the number of psi elements
@@ -5256,13 +5837,14 @@ impl EquilibriumGgd {
 }
 
 impl EquilibriumGgd {
-    /// The slice view over a range of phi, e.g. `.phi(0..2)` or `.phi(..)`,
-    /// whose leaves gather one value per element. A single element is `.phi[i]`.
-    pub fn phi<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.phi[range]))
+    /// Select from `phi`. A range, e.g. `.phi(0..2)` or `.phi(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.phi[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn phi<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("phi", &self.phi)
     }
 
     /// Get the number of phi elements
@@ -5272,13 +5854,14 @@ impl EquilibriumGgd {
 }
 
 impl EquilibriumGgd {
-    /// The slice view over a range of theta, e.g. `.theta(0..2)` or `.theta(..)`,
-    /// whose leaves gather one value per element. A single element is `.theta[i]`.
-    pub fn theta<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.theta[range]))
+    /// Select from `theta`. A range, e.g. `.theta(0..2)` or `.theta(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.theta[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn theta<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("theta", &self.theta)
     }
 
     /// Get the number of theta elements
@@ -5288,13 +5871,14 @@ impl EquilibriumGgd {
 }
 
 impl EquilibriumGgd {
-    /// The slice view over a range of j_phi, e.g. `.j_phi(0..2)` or `.j_phi(..)`,
-    /// whose leaves gather one value per element. A single element is `.j_phi[i]`.
-    pub fn j_phi<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.j_phi[range]))
+    /// Select from `j_phi`. A range, e.g. `.j_phi(0..2)` or `.j_phi(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.j_phi[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn j_phi<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("j_phi", &self.j_phi)
     }
 
     /// Get the number of j_phi elements
@@ -5304,13 +5888,14 @@ impl EquilibriumGgd {
 }
 
 impl EquilibriumGgd {
-    /// The slice view over a range of j_parallel, e.g. `.j_parallel(0..2)` or `.j_parallel(..)`,
-    /// whose leaves gather one value per element. A single element is `.j_parallel[i]`.
-    pub fn j_parallel<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.j_parallel[range]))
+    /// Select from `j_parallel`. A range, e.g. `.j_parallel(0..2)` or `.j_parallel(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.j_parallel[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn j_parallel<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("j_parallel", &self.j_parallel)
     }
 
     /// Get the number of j_parallel elements
@@ -5320,13 +5905,14 @@ impl EquilibriumGgd {
 }
 
 impl EquilibriumGgd {
-    /// The slice view over a range of b_field_r, e.g. `.b_field_r(0..2)` or `.b_field_r(..)`,
-    /// whose leaves gather one value per element. A single element is `.b_field_r[i]`.
-    pub fn b_field_r<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.b_field_r[range]))
+    /// Select from `b_field_r`. A range, e.g. `.b_field_r(0..2)` or `.b_field_r(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.b_field_r[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn b_field_r<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_r", &self.b_field_r)
     }
 
     /// Get the number of b_field_r elements
@@ -5336,13 +5922,14 @@ impl EquilibriumGgd {
 }
 
 impl EquilibriumGgd {
-    /// The slice view over a range of b_field_phi, e.g. `.b_field_phi(0..2)` or `.b_field_phi(..)`,
-    /// whose leaves gather one value per element. A single element is `.b_field_phi[i]`.
-    pub fn b_field_phi<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.b_field_phi[range]))
+    /// Select from `b_field_phi`. A range, e.g. `.b_field_phi(0..2)` or `.b_field_phi(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.b_field_phi[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn b_field_phi<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_phi", &self.b_field_phi)
     }
 
     /// Get the number of b_field_phi elements
@@ -5352,13 +5939,14 @@ impl EquilibriumGgd {
 }
 
 impl EquilibriumGgd {
-    /// The slice view over a range of b_field_z, e.g. `.b_field_z(0..2)` or `.b_field_z(..)`,
-    /// whose leaves gather one value per element. A single element is `.b_field_z[i]`.
-    pub fn b_field_z<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.b_field_z[range]))
+    /// Select from `b_field_z`. A range, e.g. `.b_field_z(0..2)` or `.b_field_z(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.b_field_z[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn b_field_z<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_z", &self.b_field_z)
     }
 
     /// Get the number of b_field_z elements
@@ -5368,13 +5956,14 @@ impl EquilibriumGgd {
 }
 
 impl EquilibriumGgdArray {
-    /// The slice view over a range of grid, e.g. `.grid(0..2)` or `.grid(..)`,
-    /// whose leaves gather one value per element. A single element is `.grid[i]`.
-    pub fn grid<R>(&self, range: R) -> GenericGridDynamicSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamic], Output = [GenericGridDynamic]>,
-    {
-        GenericGridDynamicSliceView::new(Elements::from_slice(&self.grid[range]))
+    /// Select from `grid`. A range, e.g. `.grid(0..2)` or `.grid(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.grid[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn grid<'a, S: Selection<'a, GenericGridDynamic>>(&'a self, selection: S) -> S::Output {
+        selection.select("grid", &self.grid)
     }
 
     /// Get the number of grid elements
@@ -5384,13 +5973,14 @@ impl EquilibriumGgdArray {
 }
 
 impl EquilibriumTimeSlice {
-    /// The slice view over a range of profiles_2d, e.g. `.profiles_2d(0..2)` or `.profiles_2d(..)`,
-    /// whose leaves gather one value per element. A single element is `.profiles_2d[i]`.
-    pub fn profiles_2d<R>(&self, range: R) -> EquilibriumProfiles2dSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumProfiles2d], Output = [EquilibriumProfiles2d]>,
-    {
-        EquilibriumProfiles2dSliceView::new(Elements::from_slice(&self.profiles_2d[range]))
+    /// Select from `profiles_2d`. A range, e.g. `.profiles_2d(0..2)` or `.profiles_2d(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.profiles_2d[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn profiles_2d<'a, S: Selection<'a, EquilibriumProfiles2d>>(&'a self, selection: S) -> S::Output {
+        selection.select("profiles_2d", &self.profiles_2d)
     }
 
     /// Get the number of profiles_2d elements
@@ -5400,13 +5990,14 @@ impl EquilibriumTimeSlice {
 }
 
 impl EquilibriumTimeSlice {
-    /// The slice view over a range of ggd, e.g. `.ggd(0..2)` or `.ggd(..)`,
-    /// whose leaves gather one value per element. A single element is `.ggd[i]`.
-    pub fn ggd<R>(&self, range: R) -> EquilibriumGgdSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumGgd], Output = [EquilibriumGgd]>,
-    {
-        EquilibriumGgdSliceView::new(Elements::from_slice(&self.ggd[range]))
+    /// Select from `ggd`. A range, e.g. `.ggd(0..2)` or `.ggd(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.ggd[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn ggd<'a, S: Selection<'a, EquilibriumGgd>>(&'a self, selection: S) -> S::Output {
+        selection.select("ggd", &self.ggd)
     }
 
     /// Get the number of ggd elements
@@ -5416,13 +6007,14 @@ impl EquilibriumTimeSlice {
 }
 
 impl GenericGridDynamic {
-    /// The slice view over a range of space, e.g. `.space(0..2)` or `.space(..)`,
-    /// whose leaves gather one value per element. A single element is `.space[i]`.
-    pub fn space<R>(&self, range: R) -> GenericGridDynamicSpaceSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpace], Output = [GenericGridDynamicSpace]>,
-    {
-        GenericGridDynamicSpaceSliceView::new(Elements::from_slice(&self.space[range]))
+    /// Select from `space`. A range, e.g. `.space(0..2)` or `.space(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.space[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn space<'a, S: Selection<'a, GenericGridDynamicSpace>>(&'a self, selection: S) -> S::Output {
+        selection.select("space", &self.space)
     }
 
     /// Get the number of space elements
@@ -5432,13 +6024,14 @@ impl GenericGridDynamic {
 }
 
 impl GenericGridDynamic {
-    /// The slice view over a range of grid_subset, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`,
-    /// whose leaves gather one value per element. A single element is `.grid_subset[i]`.
-    pub fn grid_subset<R>(&self, range: R) -> GenericGridDynamicGridSubsetSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubset], Output = [GenericGridDynamicGridSubset]>,
-    {
-        GenericGridDynamicGridSubsetSliceView::new(Elements::from_slice(&self.grid_subset[range]))
+    /// Select from `grid_subset`. A range, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.grid_subset[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn grid_subset<'a, S: Selection<'a, GenericGridDynamicGridSubset>>(&'a self, selection: S) -> S::Output {
+        selection.select("grid_subset", &self.grid_subset)
     }
 
     /// Get the number of grid_subset elements
@@ -5448,13 +6041,16 @@ impl GenericGridDynamic {
 }
 
 impl Code {
-    /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
-    /// whose leaves gather one value per element. A single element is `.library[i]`.
-    pub fn library<R>(&self, range: R) -> LibrarySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Library], Output = [Library]>,
-    {
-        LibrarySliceView::new(Elements::from_slice(&self.library[range]))
+    /// Select from `library`. A range, e.g. `.library(0..2)` or `.library(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.library(name)`, gives the one element with that `name`.
+    /// A single element is `.library[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn library<'a, S: Selection<'a, Library>>(&'a self, selection: S) -> S::Output {
+        selection.select("library", &self.library)
     }
 
     /// Get the number of library elements
@@ -5464,13 +6060,16 @@ impl Code {
 }
 
 impl GenericGridDynamicSpace {
-    /// The slice view over a range of coordinates_type, e.g. `.coordinates_type(0..2)` or `.coordinates_type(..)`,
-    /// whose leaves gather one value per element. A single element is `.coordinates_type[i]`.
-    pub fn coordinates_type<R>(&self, range: R) -> IdentifierDynamicAos3SliceView<'_, Ix1>
-    where
-        R: SliceIndex<[IdentifierDynamicAos3], Output = [IdentifierDynamicAos3]>,
-    {
-        IdentifierDynamicAos3SliceView::new(Elements::from_slice(&self.coordinates_type[range]))
+    /// Select from `coordinates_type`. A range, e.g. `.coordinates_type(0..2)` or `.coordinates_type(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.coordinates_type(name)`, gives the one element with that `name`.
+    /// A single element is `.coordinates_type[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn coordinates_type<'a, S: Selection<'a, IdentifierDynamicAos3>>(&'a self, selection: S) -> S::Output {
+        selection.select("coordinates_type", &self.coordinates_type)
     }
 
     /// Get the number of coordinates_type elements
@@ -5480,13 +6079,14 @@ impl GenericGridDynamicSpace {
 }
 
 impl GenericGridDynamicSpace {
-    /// The slice view over a range of objects_per_dimension, e.g. `.objects_per_dimension(0..2)` or `.objects_per_dimension(..)`,
-    /// whose leaves gather one value per element. A single element is `.objects_per_dimension[i]`.
-    pub fn objects_per_dimension<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpaceDimension], Output = [GenericGridDynamicSpaceDimension]>,
-    {
-        GenericGridDynamicSpaceDimensionSliceView::new(Elements::from_slice(&self.objects_per_dimension[range]))
+    /// Select from `objects_per_dimension`. A range, e.g. `.objects_per_dimension(0..2)` or `.objects_per_dimension(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.objects_per_dimension[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn objects_per_dimension<'a, S: Selection<'a, GenericGridDynamicSpaceDimension>>(&'a self, selection: S) -> S::Output {
+        selection.select("objects_per_dimension", &self.objects_per_dimension)
     }
 
     /// Get the number of objects_per_dimension elements
@@ -5496,13 +6096,14 @@ impl GenericGridDynamicSpace {
 }
 
 impl GenericGridDynamicGridSubset {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElement], Output = [GenericGridDynamicGridSubsetElement]>,
-    {
-        GenericGridDynamicGridSubsetElementSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, GenericGridDynamicGridSubsetElement>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -5512,13 +6113,14 @@ impl GenericGridDynamicGridSubset {
 }
 
 impl GenericGridDynamicGridSubset {
-    /// The slice view over a range of base, e.g. `.base(0..2)` or `.base(..)`,
-    /// whose leaves gather one value per element. A single element is `.base[i]`.
-    pub fn base<R>(&self, range: R) -> GenericGridDynamicGridSubsetMetricSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetMetric], Output = [GenericGridDynamicGridSubsetMetric]>,
-    {
-        GenericGridDynamicGridSubsetMetricSliceView::new(Elements::from_slice(&self.base[range]))
+    /// Select from `base`. A range, e.g. `.base(0..2)` or `.base(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.base[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn base<'a, S: Selection<'a, GenericGridDynamicGridSubsetMetric>>(&'a self, selection: S) -> S::Output {
+        selection.select("base", &self.base)
     }
 
     /// Get the number of base elements
@@ -5528,13 +6130,14 @@ impl GenericGridDynamicGridSubset {
 }
 
 impl GenericGridDynamicSpaceDimension {
-    /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
-    /// whose leaves gather one value per element. A single element is `.object[i]`.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObject], Output = [GenericGridDynamicSpaceDimensionObject]>,
-    {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(Elements::from_slice(&self.object[range]))
+    /// Select from `object`. A range, e.g. `.object(0..2)` or `.object(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.object[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn object<'a, S: Selection<'a, GenericGridDynamicSpaceDimensionObject>>(&'a self, selection: S) -> S::Output {
+        selection.select("object", &self.object)
     }
 
     /// Get the number of object elements
@@ -5544,13 +6147,14 @@ impl GenericGridDynamicSpaceDimension {
 }
 
 impl GenericGridDynamicGridSubsetElement {
-    /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
-    /// whose leaves gather one value per element. A single element is `.object[i]`.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementObjectSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElementObject], Output = [GenericGridDynamicGridSubsetElementObject]>,
-    {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(Elements::from_slice(&self.object[range]))
+    /// Select from `object`. A range, e.g. `.object(0..2)` or `.object(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.object[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn object<'a, S: Selection<'a, GenericGridDynamicGridSubsetElementObject>>(&'a self, selection: S) -> S::Output {
+        selection.select("object", &self.object)
     }
 
     /// Get the number of object elements
@@ -5560,13 +6164,14 @@ impl GenericGridDynamicGridSubsetElement {
 }
 
 impl GenericGridDynamicSpaceDimensionObject {
-    /// The slice view over a range of boundary, e.g. `.boundary(0..2)` or `.boundary(..)`,
-    /// whose leaves gather one value per element. A single element is `.boundary[i]`.
-    pub fn boundary<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObjectBoundary], Output = [GenericGridDynamicSpaceDimensionObjectBoundary]>,
-    {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(Elements::from_slice(&self.boundary[range]))
+    /// Select from `boundary`. A range, e.g. `.boundary(0..2)` or `.boundary(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.boundary[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn boundary<'a, S: Selection<'a, GenericGridDynamicSpaceDimensionObjectBoundary>>(&'a self, selection: S) -> S::Output {
+        selection.select("boundary", &self.boundary)
     }
 
     /// Get the number of boundary elements
@@ -5576,13 +6181,16 @@ impl GenericGridDynamicSpaceDimensionObject {
 }
 
 impl EquilibriumGreens {
-    /// The slice view over a range of pf_active, e.g. `.pf_active(0..2)` or `.pf_active(..)`,
-    /// whose leaves gather one value per element. A single element is `.pf_active[i]`.
-    pub fn pf_active<R>(&self, range: R) -> EquilibriumGreensPfActiveSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumGreensPfActive], Output = [EquilibriumGreensPfActive]>,
-    {
-        EquilibriumGreensPfActiveSliceView::new(Elements::from_slice(&self.pf_active[range]))
+    /// Select from `pf_active`. A range, e.g. `.pf_active(0..2)` or `.pf_active(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.pf_active(name)`, gives the one element with that `name`.
+    /// A single element is `.pf_active[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn pf_active<'a, S: Selection<'a, EquilibriumGreensPfActive>>(&'a self, selection: S) -> S::Output {
+        selection.select("pf_active", &self.pf_active)
     }
 
     /// Get the number of pf_active elements
@@ -5592,13 +6200,16 @@ impl EquilibriumGreens {
 }
 
 impl EquilibriumGreens {
-    /// The slice view over a range of pf_passive, e.g. `.pf_passive(0..2)` or `.pf_passive(..)`,
-    /// whose leaves gather one value per element. A single element is `.pf_passive[i]`.
-    pub fn pf_passive<R>(&self, range: R) -> EquilibriumGreensPfPassiveSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumGreensPfPassive], Output = [EquilibriumGreensPfPassive]>,
-    {
-        EquilibriumGreensPfPassiveSliceView::new(Elements::from_slice(&self.pf_passive[range]))
+    /// Select from `pf_passive`. A range, e.g. `.pf_passive(0..2)` or `.pf_passive(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.pf_passive(name)`, gives the one element with that `name`.
+    /// A single element is `.pf_passive[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn pf_passive<'a, S: Selection<'a, EquilibriumGreensPfPassive>>(&'a self, selection: S) -> S::Output {
+        selection.select("pf_passive", &self.pf_passive)
     }
 
     /// Get the number of pf_passive elements
@@ -5608,13 +6219,16 @@ impl EquilibriumGreens {
 }
 
 impl EquilibriumGreensPfPassive {
-    /// The slice view over a range of dof, e.g. `.dof(0..2)` or `.dof(..)`,
-    /// whose leaves gather one value per element. A single element is `.dof[i]`.
-    pub fn dof<R>(&self, range: R) -> EquilibriumGreensPfPassiveDofSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumGreensPfPassiveDof], Output = [EquilibriumGreensPfPassiveDof]>,
-    {
-        EquilibriumGreensPfPassiveDofSliceView::new(Elements::from_slice(&self.dof[range]))
+    /// Select from `dof`. A range, e.g. `.dof(0..2)` or `.dof(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.dof(name)`, gives the one element with that `name`.
+    /// A single element is `.dof[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn dof<'a, S: Selection<'a, EquilibriumGreensPfPassiveDof>>(&'a self, selection: S) -> S::Output {
+        selection.select("dof", &self.dof)
     }
 
     /// Get the number of dof elements
@@ -5623,14 +6237,34 @@ impl EquilibriumGreensPfPassive {
     }
 }
 
+impl EquilibriumLimiter {
+    /// Select from `unit`. A range, e.g. `.unit(0..2)` or `.unit(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.unit(name)`, gives the one element with that `name`.
+    /// A single element is `.unit[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn unit<'a, S: Selection<'a, EquilibriumLimiterUnit>>(&'a self, selection: S) -> S::Output {
+        selection.select("unit", &self.unit)
+    }
+
+    /// Get the number of unit elements
+    pub fn unit_len(&self) -> usize {
+        self.unit.len()
+    }
+}
+
 impl Equilibrium {
-    /// The slice view over a range of grids_ggd, e.g. `.grids_ggd(0..2)` or `.grids_ggd(..)`,
-    /// whose leaves gather one value per element. A single element is `.grids_ggd[i]`.
-    pub fn grids_ggd<R>(&self, range: R) -> EquilibriumGgdArraySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumGgdArray], Output = [EquilibriumGgdArray]>,
-    {
-        EquilibriumGgdArraySliceView::new(Elements::from_slice(&self.grids_ggd[range]))
+    /// Select from `grids_ggd`. A range, e.g. `.grids_ggd(0..2)` or `.grids_ggd(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.grids_ggd[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn grids_ggd<'a, S: Selection<'a, EquilibriumGgdArray>>(&'a self, selection: S) -> S::Output {
+        selection.select("grids_ggd", &self.grids_ggd)
     }
 
     /// Get the number of grids_ggd elements
@@ -5640,13 +6274,14 @@ impl Equilibrium {
 }
 
 impl Equilibrium {
-    /// The slice view over a range of time_slice, e.g. `.time_slice(0..2)` or `.time_slice(..)`,
-    /// whose leaves gather one value per element. A single element is `.time_slice[i]`.
-    pub fn time_slice<R>(&self, range: R) -> EquilibriumTimeSliceSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[EquilibriumTimeSlice], Output = [EquilibriumTimeSlice]>,
-    {
-        EquilibriumTimeSliceSliceView::new(Elements::from_slice(&self.time_slice[range]))
+    /// Select from `time_slice`. A range, e.g. `.time_slice(0..2)` or `.time_slice(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.time_slice[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn time_slice<'a, S: Selection<'a, EquilibriumTimeSlice>>(&'a self, selection: S) -> S::Output {
+        selection.select("time_slice", &self.time_slice)
     }
 
     /// Get the number of time_slice elements

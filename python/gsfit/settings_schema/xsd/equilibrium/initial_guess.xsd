@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for initial_guess.xml: the plasma current the nonlinear solver starts from.
+
+    See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="initial_guess">
+        <xs:annotation><xs:documentation>The initial guess of the plasma current: an ellipse of current</xs:documentation></xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="ip" type="xs:double">
+                    <xs:annotation>
+                        <xs:documentation>Plasma current</xs:documentation>
+                        <xs:appinfo>
+                            <units>A</units>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="cur_r" type="xs:double">
+                    <xs:annotation>
+                        <xs:documentation>Radial centre of the current</xs:documentation>
+                        <xs:appinfo>
+                            <units>m</units>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="cur_z" type="xs:double">
+                    <xs:annotation>
+                        <xs:documentation>Vertical centre of the current</xs:documentation>
+                        <xs:appinfo>
+                            <units>m</units>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="minor_radius" type="xs:double">
+                    <xs:annotation>
+                        <xs:documentation>Radial semi-axis of the current</xs:documentation>
+                        <xs:appinfo>
+                            <units>m</units>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="elongation" type="xs:double">
+                    <xs:annotation>
+                        <xs:documentation>Elongation of the current</xs:documentation>
+                        <xs:appinfo>
+                            <units>1</units>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

@@ -1,10 +1,12 @@
-use crate::coils::Coils;
 use crate::greens::Greens;
-use crate::passives::Passives;
+use crate::pf_active::PfActive;
+use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
 use crate::plasma::Plasma;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use imas_rs::ids::pf_active::PfCoils;
+use imas_rs::ids::pf_passive::PfPassiveLoops;
 use ndarray::{Array1, Array2, Array3, Axis, array, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
@@ -128,22 +130,16 @@ impl StationaryPoint {
             .insert("include_dynamic", include_dynamic);
     }
 
-    /// Greens with coils
-    pub fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
-        // Change Python type into Rust
-        let coils_local: &Coils = &coils;
-
+    /// Greens with the PF coils
+    pub fn greens_with_pf_active(&mut self, pf_active: PyRef<PfActive>) {
         // Run the Rust method
-        self.greens_with_coils_rs(coils_local);
+        self.greens_with_pf_active_rs(&pf_active);
     }
 
-    /// Greens with passives
-    pub fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
-        // Change Python type into Rust
-        let passives_local: &Passives = &passives;
-
+    /// Greens with the passive conductors
+    pub fn greens_with_pf_passive(&mut self, pf_passive: PyRef<PfPassive>) {
         // Run the Rust method
-        self.greens_with_passives_rs(passives_local);
+        self.greens_with_pf_passive_rs(&pf_passive);
     }
 
     /// Greens with plasma
@@ -156,14 +152,12 @@ impl StationaryPoint {
     }
 
     // /// Calculate sensor values
-    // pub fn calculate_sensor_values(&mut self, coils: PyRef<Coils>, passives: PyRef<Passives>, plasma: PyRef<Plasma>) {
+    // pub fn calculate_sensor_values(&mut self, plasma: PyRef<Plasma>) {
     //     // Convert Python types into Rust
-    //     let coils_rs: &Coils = &coils;
-    //     let passives_rs: &Passives = &passives;
     //     let plasma_rs: &Plasma = &plasma;
 
     //     // Run the Rust method
-    //     self.calculate_sensor_values_rust(coils_rs, passives_rs, plasma_rs);
+    //     self.calculate_sensor_values_rust(plasma_rs);
     // }
 
     /// Print to screen, to be used within Python
@@ -234,7 +228,15 @@ impl StationaryPoint {
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
     /// For Isoflux sensors the static data is actually time-dependent.
     /// TODO: consider renaming `SensorsStatic`. Perhaps `SensorsGeometry` ?
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
+    ///
+    /// The Greens with the PF coils are gathered in the order of `pf_active_names`, and those with the passive conductors' degrees of
+    /// freedom in the order of `pf_passive_dof_names`, each a (passive conductor name, degree of freedom name) pair
+    pub fn split_into_static_and_dynamic(
+        &mut self,
+        times_to_reconstruct: &Array1<f64>,
+        pf_active_names: &[String],
+        pf_passive_dof_names: &[(String, String)],
+    ) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         // Define empty data arrays
         let results_static_empty: Arc<SensorsStatic> = Arc::new(SensorsStatic {
             greens_with_grid: Array2::zeros((0, 0)),
@@ -296,9 +298,22 @@ impl StationaryPoint {
             let fit_settings_expected_value: Array1<f64> = fit_settings_expected_value.select(Axis(0), &include_indices);
 
             // Greens
-            // With PF coils (TIMING: accessing greens_with_pf with unwrap_array3() takes ~50microseconds)
-            let greens_with_pf: Array3<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array3(); // shape = [n_time, n_pf, n_sensors]
-            let greens_with_pf: Array3<f64> = greens_with_pf.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_pf, n_sensors]
+            // With PF coils, at this time
+            // In the order of `pf_active_names`, the order of the PF coil currents, for the sensors needed. Found by name,
+            // because the sensors' own store sorts them by name
+            let n_pf: usize = pf_active_names.len();
+            let mut greens_with_pf: Array2<f64> = Array2::from_elem((n_pf, n_sensors), f64::NAN); // shape = [n_pf, n_sensors]
+            for i_pf in 0..n_pf {
+                for i_sensor in 0..n_sensors {
+                    greens_with_pf[[i_pf, i_sensor]] = self
+                        .results
+                        .get(&sensor_names[i_sensor])
+                        .get("greens")
+                        .get("pf")
+                        .get(&pf_active_names[i_pf])
+                        .unwrap_array1()[i_time];
+                }
+            }
 
             // With plasma
             let greens_with_grid: Array3<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors]
@@ -309,44 +324,29 @@ impl StationaryPoint {
             let greens_d_sensor_dz: Array3<f64> = greens_d_sensor_dz.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_z * n_r, n_sensors]
 
             // With passives
-            let passive_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").keys();
-            let n_passives: usize = passive_names.len();
-
-            // Count the number of degrees of freedom
-            let mut n_dof_total: usize = 0;
-            for passive_name in &passive_names {
-                let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys();
-                n_dof_total += dof_names.len();
-            }
-
-            // With passives
+            // In the order of `pf_passive_dof_names`, the order of the passive degrees of freedom, for the sensors needed. Found by
+            // name, because the sensors' own store sorts them by name
+            let n_dof_total: usize = pf_passive_dof_names.len();
             let mut greens_with_passives: Array3<f64> = Array3::from_elem((n_time, n_dof_total, n_sensors), f64::NAN);
-            for i_sensor in 0..n_sensors {
-                let mut i_dof_total: usize = 0;
-                for i_passive in 0..n_passives {
-                    let passive_name: &str = &passive_names[i_passive];
-                    let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                    for dof_name in &dof_names {
-                        let greens_with_passives_tmp: Array1<f64> = self
-                            .results
-                            .get(&sensor_names[i_sensor])
-                            .get("greens")
-                            .get("passives")
-                            .get(passive_name)
-                            .get(dof_name)
-                            .unwrap_array1(); // shape = [n_time]
-                        greens_with_passives.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
-
-                        // Keep count
-                        i_dof_total += 1;
-                    }
+            for i_dof_total in 0..n_dof_total {
+                let (passive_name, dof_name): &(String, String) = &pf_passive_dof_names[i_dof_total];
+                for i_sensor in 0..n_sensors {
+                    let greens_with_passives_tmp: Array1<f64> = self
+                        .results
+                        .get(&sensor_names[i_sensor])
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .unwrap_array1(); // shape = [n_time]
+                    greens_with_passives.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
                 }
             }
 
             // Create the `SensorsStatic` data
             let results_static_this_time_slice: SensorsStatic = SensorsStatic {
                 greens_with_grid: greens_with_grid.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
-                greens_with_pf: greens_with_pf.slice(s![i_time, .., ..]).to_owned(),
+                greens_with_pf,
                 greens_with_passives: greens_with_passives.slice(s![i_time, .., ..]).to_owned(),
                 greens_d_sensor_dz: greens_d_sensor_dz.slice(s![i_time, .., ..]).to_owned(),
                 fit_settings_weight: fit_settings_weight.clone(),
@@ -367,7 +367,11 @@ impl StationaryPoint {
         (results_static, results_dynamic)
     }
 
-    pub fn greens_with_coils_rs(&mut self, coils: &Coils) {
+    pub fn greens_with_pf_active_rs(&mut self, pf_active: &PfActive) {
+        // The PF coils, in the order of `pf_active/coil`
+        let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
+        let n_coil: usize = pf_active_coils.len();
+
         for sensor_name in self.results.keys() {
             // Get time
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("time").unwrap_array1();
@@ -377,11 +381,12 @@ impl StationaryPoint {
             let mag_axis_r: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("r").get("measured").unwrap_array1();
             let mag_axis_z: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("z").get("measured").unwrap_array1();
 
-            for pf_coil_name in coils.results.get("pf").keys() {
+            for i_coil in 0..n_coil {
+                let pf_coil_name: &str = &pf_active_coils[i_coil].name;
                 let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                 for i_time in 0..n_time {
-                    let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
-                    let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
+                    let coil_r: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.r.to_array();
+                    let coil_z: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.z.to_array();
                     let n_filaments: usize = coil_r.len();
 
                     let mag_axis_r_local: Array1<f64> = array![mag_axis_r[i_time]];
@@ -410,7 +415,7 @@ impl StationaryPoint {
                     .get_or_insert(&sensor_name)
                     .get_or_insert("greens")
                     .get_or_insert("pf")
-                    .insert(&pf_coil_name, g_vs_time); // shape = [n_time]
+                    .insert(pf_coil_name, g_vs_time); // shape = [n_time]
             }
         }
     }
@@ -472,7 +477,11 @@ impl StationaryPoint {
         }
     }
 
-    pub fn greens_with_passives_rs(&mut self, passives: &Passives) {
+    pub fn greens_with_pf_passive_rs(&mut self, pf_passive: &PfPassive) {
+        // The passive conductors, in the order of `pf_passive/loop`
+        let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive.pf_passive_ids.r#loop;
+        let n_loop: usize = pf_passive_loops.len();
+
         // Loop over sensors
         for sensor_name in self.results.keys() {
             // Get time
@@ -484,13 +493,15 @@ impl StationaryPoint {
             let mag_axis_z: Array1<f64> = self.results.get(&sensor_name).get("geometry").get("z").get("measured").unwrap_array1();
 
             // Calculate Greens with each passive degree of freedom
-            for passive_name in passives.results.keys() {
-                let dof_names_accumulator: DataTreeAccumulator<'_> = passives.results.get(&passive_name).get("dof");
-                let dof_names: Vec<String> = dof_names_accumulator.keys();
-                let passive_r: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
-                let passive_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
+            for i_loop in 0..n_loop {
+                let passive_name: &str = &pf_passive_loops[i_loop].name;
+                let filaments: PassiveFilaments = passive_filaments(&pf_passive_loops[i_loop].element);
+                let passive_r: Array1<f64> = filaments.r;
+                let passive_z: Array1<f64> = filaments.z;
 
-                for dof_name in dof_names {
+                let n_dof: usize = pf_passive_loops[i_loop].dof.len();
+                for i_dof in 0..n_dof {
+                    let dof_name: &str = &pf_passive_loops[i_loop].dof[i_dof].name;
                     let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                     for i_time in 0..n_time {
                         let greens_calculator: Greens = Greens::sensor_to_conductor(
@@ -505,15 +516,9 @@ impl StationaryPoint {
                         let g_br_full: Array2<f64> = greens_calculator.b_r(); // shape = [n_sensor, n_passive_filament]
 
                         // Current distribution
-                        let current_distribution: Array1<f64> = passives
-                            .results
-                            .get(&passive_name)
-                            .get("dof")
-                            .get(&dof_name)
-                            .get("current_distribution")
-                            .unwrap_array1();
+                        let current_distribution: &Array1<f64> = &pf_passive_loops[i_loop].dof[i_dof].current_distribution;
 
-                        let g_br_with_dof_full: Array2<f64> = g_br_full * &current_distribution; // shape = [n_passive_dof, n_filament]
+                        let g_br_with_dof_full: Array2<f64> = g_br_full * current_distribution; // shape = [n_passive_dof, n_filament]
 
                         // Sum over all filaments
                         let g_br: f64 = g_br_with_dof_full.sum(); // shape = [n_passive_dof]
@@ -526,8 +531,8 @@ impl StationaryPoint {
                         .get_or_insert(&sensor_name)
                         .get_or_insert("greens")
                         .get_or_insert("passives")
-                        .get_or_insert(&passive_name)
-                        .insert(&dof_name, g_vs_time); // shape = [n_time]
+                        .get_or_insert(passive_name)
+                        .insert(dof_name, g_vs_time); // shape = [n_time]
                 }
             }
         }

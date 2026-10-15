@@ -1,12 +1,12 @@
 import typing
 
 from gsfit_rs import BpProbes
-from gsfit_rs import Coils
 from gsfit_rs import Dialoop
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
-from gsfit_rs import Passives
+from gsfit_rs import PfActive
+from gsfit_rs import PfPassive
 from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import PulseSchedule
@@ -17,12 +17,12 @@ from gsfit_rs import Wall
 
 from ..interface import DatabaseReaderProtocol
 from .setup_bp_probes import setup_bp_probes
-from .setup_coils import setup_coils
 from .setup_dialoop import setup_dialoop
 from .setup_flux_loops import setup_flux_loops
 from .setup_isoflux_boundary_sensors import setup_isoflux_boundary_sensors
 from .setup_isoflux_sensors import setup_isoflux_sensors
-from .setup_passives import setup_passives
+from .setup_pf_active import setup_pf_active
+from .setup_pf_passive import setup_pf_passive
 from .setup_plasma import setup_plasma
 from .setup_pressure_sensors import setup_pressure_sensors
 from .setup_pulse_schedule import setup_pulse_schedule
@@ -44,8 +44,8 @@ class DatabaseReader(DatabaseReaderProtocol):
     def setup_bp_probes(self, *args: typing.Any, **kwargs: typing.Any) -> BpProbes:
         return setup_bp_probes(self, *args, **kwargs)
 
-    def setup_coils(self, *args: typing.Any, **kwargs: typing.Any) -> Coils:
-        return setup_coils(self, *args, **kwargs)
+    def setup_pf_active(self, *args: typing.Any, **kwargs: typing.Any) -> PfActive:
+        return setup_pf_active(self, *args, **kwargs)
 
     def setup_dialoop(self, *args: typing.Any, **kwargs: typing.Any) -> Dialoop:
         return setup_dialoop(self, *args, **kwargs)
@@ -68,8 +68,8 @@ class DatabaseReader(DatabaseReaderProtocol):
     def setup_wall(self, *args: typing.Any, **kwargs: typing.Any) -> Wall:
         return setup_wall(self, *args, **kwargs)
 
-    def setup_passives(self, *args: typing.Any, **kwargs: typing.Any) -> Passives:
-        return setup_passives(self, *args, **kwargs)
+    def setup_pf_passive(self, *args: typing.Any, **kwargs: typing.Any) -> PfPassive:
+        return setup_pf_passive(self, *args, **kwargs)
 
     def setup_plasma(self, *args: typing.Any, **kwargs: typing.Any) -> Plasma:
         return setup_plasma(self, *args, **kwargs)

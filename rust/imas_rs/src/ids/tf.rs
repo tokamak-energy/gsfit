@@ -9,9 +9,10 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, INT_1D, STR_0D, STR_1D};
-use ndarray::{Dimension, Ix1};
-use std::slice::SliceIndex;
+use crate::dd_base_types::{
+    Accumulator, ArrayOfStructuresElement, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, INT_1D, Named, STR_0D, STR_1D, Selection,
+};
+use ndarray::Dimension;
 
 // ============================================================================
 // Complex Types
@@ -772,6 +773,20 @@ impl<'a, D: Dimension> TfCoilConductorSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for TfCoilConductor {
+    type SliceView<'a, D>
+        = TfCoilConductorSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        TfCoilConductorSliceView::new(elements)
+    }
+}
+
 // --- GenericGridScalar View Types ---
 
 /// View over multiple GenericGridScalar with field accumulation
@@ -807,6 +822,20 @@ impl<'a, D: Dimension> GenericGridScalarSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridScalar> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridScalar {
+    type SliceView<'a, D>
+        = GenericGridScalarSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridScalarSliceView::new(elements)
     }
 }
 
@@ -885,36 +914,42 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `coordinates_type` under every element, e.g. `.coordinates_type(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `coordinates_type` under every element. A range, e.g. `.coordinates_type(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.coordinates_type(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn coordinates_type<R>(&self, range: R) -> IdentifierDynamicAos3SliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[IdentifierDynamicAos3], Output = [IdentifierDynamicAos3]> + Clone,
-    {
-        IdentifierDynamicAos3SliceView::new(self.slice_elements.nest(
-            "coordinates_type",
-            |item: &GenericGridDynamicSpace| item.coordinates_type.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn coordinates_type<S: Selection<'a, IdentifierDynamicAos3>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("coordinates_type", &self.slice_elements, |item: &GenericGridDynamicSpace| {
+            item.coordinates_type.as_slice()
+        })
     }
 
-    /// The slice view over a range of `objects_per_dimension` under every element, e.g. `.objects_per_dimension(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `objects_per_dimension` under every element. A range, e.g. `.objects_per_dimension(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn objects_per_dimension<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn objects_per_dimension<S: Selection<'a, GenericGridDynamicSpaceDimension>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("objects_per_dimension", &self.slice_elements, |item: &GenericGridDynamicSpace| {
+            item.objects_per_dimension.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpace {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicSpaceDimension], Output = [GenericGridDynamicSpaceDimension]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicSpaceDimensionSliceView::new(self.slice_elements.nest(
-            "objects_per_dimension",
-            |item: &GenericGridDynamicSpace| item.objects_per_dimension.as_slice(),
-            range,
-        ))
+        GenericGridDynamicSpaceSliceView::new(elements)
     }
 }
 
@@ -987,35 +1022,36 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElement], Output = [GenericGridDynamicGridSubsetElement]> + Clone,
-    {
-        GenericGridDynamicGridSubsetElementSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &GenericGridDynamicGridSubset| item.element.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, GenericGridDynamicGridSubsetElement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &GenericGridDynamicGridSubset| item.element.as_slice())
     }
 
-    /// The slice view over a range of `base` under every element, e.g. `.base(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `base` under every element. A range, e.g. `.base(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn base<R>(&self, range: R) -> GenericGridDynamicGridSubsetMetricSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn base<S: Selection<'a, GenericGridDynamicGridSubsetMetric>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("base", &self.slice_elements, |item: &GenericGridDynamicGridSubset| item.base.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubset {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicGridSubsetMetric], Output = [GenericGridDynamicGridSubsetMetric]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicGridSubsetMetricSliceView::new(
-            self.slice_elements
-                .nest("base", |item: &GenericGridDynamicGridSubset| item.base.as_slice(), range),
-        )
+        GenericGridDynamicGridSubsetSliceView::new(elements)
     }
 }
 
@@ -1134,19 +1170,27 @@ impl<'a, D: Dimension> CoilConductorSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `cross_section` under every element, e.g. `.cross_section(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `cross_section` under every element. A range, e.g. `.cross_section(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn cross_section<R>(&self, range: R) -> CoilCrossSectionSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn cross_section<S: Selection<'a, CoilCrossSection>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("cross_section", &self.slice_elements, |item: &CoilConductor| item.cross_section.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for CoilConductor {
+    type SliceView<'a, D>
+        = CoilConductorSliceView<'a, D>
     where
-        R: SliceIndex<[CoilCrossSection], Output = [CoilCrossSection]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        CoilCrossSectionSliceView::new(
-            self.slice_elements
-                .nest("cross_section", |item: &CoilConductor| item.cross_section.as_slice(), range),
-        )
+        CoilConductorSliceView::new(elements)
     }
 }
 
@@ -1196,6 +1240,26 @@ impl<'a, D: Dimension> LibrarySliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for Library {
+    type SliceView<'a, D>
+        = LibrarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        LibrarySliceView::new(elements)
+    }
+}
+
+impl Named for Library {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- IdentifierDynamicAos3 View Types ---
 
 /// View over multiple IdentifierDynamicAos3 with field accumulation
@@ -1233,6 +1297,26 @@ impl<'a, D: Dimension> IdentifierDynamicAos3SliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a IdentifierDynamicAos3> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for IdentifierDynamicAos3 {
+    type SliceView<'a, D>
+        = IdentifierDynamicAos3SliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        IdentifierDynamicAos3SliceView::new(elements)
+    }
+}
+
+impl Named for IdentifierDynamicAos3 {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1292,20 +1376,27 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `object` under every element, e.g. `.object(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `object` under every element. A range, e.g. `.object(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn object<S: Selection<'a, GenericGridDynamicSpaceDimensionObject>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("object", &self.slice_elements, |item: &GenericGridDynamicSpaceDimension| item.object.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpaceDimension {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceDimensionSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObject], Output = [GenericGridDynamicSpaceDimensionObject]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(self.slice_elements.nest(
-            "object",
-            |item: &GenericGridDynamicSpaceDimension| item.object.as_slice(),
-            range,
-        ))
+        GenericGridDynamicSpaceDimensionSliceView::new(elements)
     }
 }
 
@@ -1340,20 +1431,29 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetElementSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `object` under every element, e.g. `.object(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `object` under every element. A range, e.g. `.object(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementObjectSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn object<S: Selection<'a, GenericGridDynamicGridSubsetElementObject>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("object", &self.slice_elements, |item: &GenericGridDynamicGridSubsetElement| {
+            item.object.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubsetElement {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetElementSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElementObject], Output = [GenericGridDynamicGridSubsetElementObject]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(self.slice_elements.nest(
-            "object",
-            |item: &GenericGridDynamicGridSubsetElement| item.object.as_slice(),
-            range,
-        ))
+        GenericGridDynamicGridSubsetElementSliceView::new(elements)
     }
 }
 
@@ -1386,6 +1486,20 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetMetricSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubsetMetric> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubsetMetric {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetMetricSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridDynamicGridSubsetMetricSliceView::new(elements)
     }
 }
 
@@ -1465,6 +1579,20 @@ impl<'a, D: Dimension> CoilCrossSectionSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for CoilCrossSection {
+    type SliceView<'a, D>
+        = CoilCrossSectionSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        CoilCrossSectionSliceView::new(elements)
+    }
+}
+
 // --- GenericGridDynamicSpaceDimensionObject View Types ---
 
 /// View over multiple GenericGridDynamicSpaceDimensionObject with field accumulation
@@ -1500,20 +1628,29 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionObjectSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `boundary` under every element, e.g. `.boundary(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `boundary` under every element. A range, e.g. `.boundary(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn boundary<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn boundary<S: Selection<'a, GenericGridDynamicSpaceDimensionObjectBoundary>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("boundary", &self.slice_elements, |item: &GenericGridDynamicSpaceDimensionObject| {
+            item.boundary.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpaceDimensionObject {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceDimensionObjectSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObjectBoundary], Output = [GenericGridDynamicSpaceDimensionObjectBoundary]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(self.slice_elements.nest(
-            "boundary",
-            |item: &GenericGridDynamicSpaceDimensionObject| item.boundary.as_slice(),
-            range,
-        ))
+        GenericGridDynamicSpaceDimensionObjectSliceView::new(elements)
     }
 }
 
@@ -1557,6 +1694,20 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetElementObjectSliceView<'a, D>
     }
 }
 
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubsetElementObject {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetElementObjectSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridDynamicGridSubsetElementObjectSliceView::new(elements)
+    }
+}
+
 // --- GenericGridDynamicSpaceDimensionObjectBoundary View Types ---
 
 /// View over multiple GenericGridDynamicSpaceDimensionObjectBoundary with field accumulation
@@ -1590,6 +1741,20 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpaceDimensionObjectBoundary> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpaceDimensionObjectBoundary {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(elements)
     }
 }
 
@@ -1673,16 +1838,33 @@ impl<'a, D: Dimension> CoilSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `conductor` under every element, e.g. `.conductor(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `conductor` under every element. A range, e.g. `.conductor(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn conductor<R>(&self, range: R) -> CoilConductorSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn conductor<S: Selection<'a, CoilConductor>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("conductor", &self.slice_elements, |item: &Coil| item.conductor.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for Coil {
+    type SliceView<'a, D>
+        = CoilSliceView<'a, D>
     where
-        R: SliceIndex<[CoilConductor], Output = [CoilConductor]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        CoilConductorSliceView::new(self.slice_elements.nest("conductor", |item: &Coil| item.conductor.as_slice(), range))
+        CoilSliceView::new(elements)
+    }
+}
+
+impl Named for Coil {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1723,31 +1905,22 @@ impl<'a, D: Dimension> TfGgdGridView<'a, D> {
         }
     }
 
-    /// The slice view over a range of `grid.space` under every element, e.g. `.space(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `grid.space` under every element. A range, e.g. `.space(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn space<R>(&self, range: R) -> GenericGridDynamicSpaceSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridDynamicSpace], Output = [GenericGridDynamicSpace]> + Clone,
-    {
-        GenericGridDynamicSpaceSliceView::new(self.slice_elements.nest("grid.space", |item: &TfGgd| item.grid.space.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn space<S: Selection<'a, GenericGridDynamicSpace>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("grid.space", &self.slice_elements, |item: &TfGgd| item.grid.space.as_slice())
     }
 
-    /// The slice view over a range of `grid.grid_subset` under every element, e.g. `.grid_subset(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `grid.grid_subset` under every element. A range, e.g. `.grid_subset(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn grid_subset<R>(&self, range: R) -> GenericGridDynamicGridSubsetSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubset], Output = [GenericGridDynamicGridSubset]> + Clone,
-    {
-        GenericGridDynamicGridSubsetSliceView::new(
-            self.slice_elements
-                .nest("grid.grid_subset", |item: &TfGgd| item.grid.grid_subset.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn grid_subset<S: Selection<'a, GenericGridDynamicGridSubset>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("grid.grid_subset", &self.slice_elements, |item: &TfGgd| item.grid.grid_subset.as_slice())
     }
 }
 
@@ -1786,76 +1959,72 @@ impl<'a, D: Dimension> TfGgdSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `b_field_r` under every element, e.g. `.b_field_r(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `b_field_r` under every element. A range, e.g. `.b_field_r(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn b_field_r<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("b_field_r", |item: &TfGgd| item.b_field_r.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn b_field_r<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("b_field_r", &self.slice_elements, |item: &TfGgd| item.b_field_r.as_slice())
     }
 
-    /// The slice view over a range of `b_field_z` under every element, e.g. `.b_field_z(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `b_field_z` under every element. A range, e.g. `.b_field_z(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn b_field_z<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("b_field_z", |item: &TfGgd| item.b_field_z.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn b_field_z<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("b_field_z", &self.slice_elements, |item: &TfGgd| item.b_field_z.as_slice())
     }
 
-    /// The slice view over a range of `b_field_tor` under every element, e.g. `.b_field_tor(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `b_field_tor` under every element. A range, e.g. `.b_field_tor(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn b_field_tor<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("b_field_tor", |item: &TfGgd| item.b_field_tor.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn b_field_tor<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("b_field_tor", &self.slice_elements, |item: &TfGgd| item.b_field_tor.as_slice())
     }
 
-    /// The slice view over a range of `a_field_r` under every element, e.g. `.a_field_r(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `a_field_r` under every element. A range, e.g. `.a_field_r(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn a_field_r<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("a_field_r", |item: &TfGgd| item.a_field_r.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn a_field_r<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("a_field_r", &self.slice_elements, |item: &TfGgd| item.a_field_r.as_slice())
     }
 
-    /// The slice view over a range of `a_field_z` under every element, e.g. `.a_field_z(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `a_field_z` under every element. A range, e.g. `.a_field_z(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn a_field_z<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("a_field_z", |item: &TfGgd| item.a_field_z.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn a_field_z<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("a_field_z", &self.slice_elements, |item: &TfGgd| item.a_field_z.as_slice())
     }
 
-    /// The slice view over a range of `a_field_tor` under every element, e.g. `.a_field_tor(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `a_field_tor` under every element. A range, e.g. `.a_field_tor(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn a_field_tor<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn a_field_tor<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("a_field_tor", &self.slice_elements, |item: &TfGgd| item.a_field_tor.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for TfGgd {
+    type SliceView<'a, D>
+        = TfGgdSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("a_field_tor", |item: &TfGgd| item.a_field_tor.as_slice(), range))
+        TfGgdSliceView::new(elements)
     }
 }
 
@@ -1864,13 +2033,14 @@ impl<'a, D: Dimension> TfGgdSliceView<'a, D> {
 // ============================================================================
 
 impl TfCoil {
-    /// The slice view over a range of conductor, e.g. `.conductor(0..2)` or `.conductor(..)`,
-    /// whose leaves gather one value per element. A single element is `.conductor[i]`.
-    pub fn conductor<R>(&self, range: R) -> TfCoilConductorSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[TfCoilConductor], Output = [TfCoilConductor]>,
-    {
-        TfCoilConductorSliceView::new(Elements::from_slice(&self.conductor[range]))
+    /// Select from `conductor`. A range, e.g. `.conductor(0..2)` or `.conductor(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.conductor[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn conductor<'a, S: Selection<'a, TfCoilConductor>>(&'a self, selection: S) -> S::Output {
+        selection.select("conductor", &self.conductor)
     }
 
     /// Get the number of conductor elements
@@ -1880,13 +2050,14 @@ impl TfCoil {
 }
 
 impl TfGgd {
-    /// The slice view over a range of b_field_r, e.g. `.b_field_r(0..2)` or `.b_field_r(..)`,
-    /// whose leaves gather one value per element. A single element is `.b_field_r[i]`.
-    pub fn b_field_r<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.b_field_r[range]))
+    /// Select from `b_field_r`. A range, e.g. `.b_field_r(0..2)` or `.b_field_r(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.b_field_r[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn b_field_r<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_r", &self.b_field_r)
     }
 
     /// Get the number of b_field_r elements
@@ -1896,13 +2067,14 @@ impl TfGgd {
 }
 
 impl TfGgd {
-    /// The slice view over a range of b_field_z, e.g. `.b_field_z(0..2)` or `.b_field_z(..)`,
-    /// whose leaves gather one value per element. A single element is `.b_field_z[i]`.
-    pub fn b_field_z<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.b_field_z[range]))
+    /// Select from `b_field_z`. A range, e.g. `.b_field_z(0..2)` or `.b_field_z(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.b_field_z[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn b_field_z<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_z", &self.b_field_z)
     }
 
     /// Get the number of b_field_z elements
@@ -1912,13 +2084,14 @@ impl TfGgd {
 }
 
 impl TfGgd {
-    /// The slice view over a range of b_field_tor, e.g. `.b_field_tor(0..2)` or `.b_field_tor(..)`,
-    /// whose leaves gather one value per element. A single element is `.b_field_tor[i]`.
-    pub fn b_field_tor<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.b_field_tor[range]))
+    /// Select from `b_field_tor`. A range, e.g. `.b_field_tor(0..2)` or `.b_field_tor(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.b_field_tor[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn b_field_tor<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_tor", &self.b_field_tor)
     }
 
     /// Get the number of b_field_tor elements
@@ -1928,13 +2101,14 @@ impl TfGgd {
 }
 
 impl TfGgd {
-    /// The slice view over a range of a_field_r, e.g. `.a_field_r(0..2)` or `.a_field_r(..)`,
-    /// whose leaves gather one value per element. A single element is `.a_field_r[i]`.
-    pub fn a_field_r<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.a_field_r[range]))
+    /// Select from `a_field_r`. A range, e.g. `.a_field_r(0..2)` or `.a_field_r(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.a_field_r[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn a_field_r<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("a_field_r", &self.a_field_r)
     }
 
     /// Get the number of a_field_r elements
@@ -1944,13 +2118,14 @@ impl TfGgd {
 }
 
 impl TfGgd {
-    /// The slice view over a range of a_field_z, e.g. `.a_field_z(0..2)` or `.a_field_z(..)`,
-    /// whose leaves gather one value per element. A single element is `.a_field_z[i]`.
-    pub fn a_field_z<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.a_field_z[range]))
+    /// Select from `a_field_z`. A range, e.g. `.a_field_z(0..2)` or `.a_field_z(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.a_field_z[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn a_field_z<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("a_field_z", &self.a_field_z)
     }
 
     /// Get the number of a_field_z elements
@@ -1960,13 +2135,14 @@ impl TfGgd {
 }
 
 impl TfGgd {
-    /// The slice view over a range of a_field_tor, e.g. `.a_field_tor(0..2)` or `.a_field_tor(..)`,
-    /// whose leaves gather one value per element. A single element is `.a_field_tor[i]`.
-    pub fn a_field_tor<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.a_field_tor[range]))
+    /// Select from `a_field_tor`. A range, e.g. `.a_field_tor(0..2)` or `.a_field_tor(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.a_field_tor[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn a_field_tor<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("a_field_tor", &self.a_field_tor)
     }
 
     /// Get the number of a_field_tor elements
@@ -1976,13 +2152,14 @@ impl TfGgd {
 }
 
 impl GenericGridDynamic {
-    /// The slice view over a range of space, e.g. `.space(0..2)` or `.space(..)`,
-    /// whose leaves gather one value per element. A single element is `.space[i]`.
-    pub fn space<R>(&self, range: R) -> GenericGridDynamicSpaceSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpace], Output = [GenericGridDynamicSpace]>,
-    {
-        GenericGridDynamicSpaceSliceView::new(Elements::from_slice(&self.space[range]))
+    /// Select from `space`. A range, e.g. `.space(0..2)` or `.space(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.space[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn space<'a, S: Selection<'a, GenericGridDynamicSpace>>(&'a self, selection: S) -> S::Output {
+        selection.select("space", &self.space)
     }
 
     /// Get the number of space elements
@@ -1992,13 +2169,14 @@ impl GenericGridDynamic {
 }
 
 impl GenericGridDynamic {
-    /// The slice view over a range of grid_subset, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`,
-    /// whose leaves gather one value per element. A single element is `.grid_subset[i]`.
-    pub fn grid_subset<R>(&self, range: R) -> GenericGridDynamicGridSubsetSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubset], Output = [GenericGridDynamicGridSubset]>,
-    {
-        GenericGridDynamicGridSubsetSliceView::new(Elements::from_slice(&self.grid_subset[range]))
+    /// Select from `grid_subset`. A range, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.grid_subset[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn grid_subset<'a, S: Selection<'a, GenericGridDynamicGridSubset>>(&'a self, selection: S) -> S::Output {
+        selection.select("grid_subset", &self.grid_subset)
     }
 
     /// Get the number of grid_subset elements
@@ -2008,13 +2186,14 @@ impl GenericGridDynamic {
 }
 
 impl Coil {
-    /// The slice view over a range of conductor, e.g. `.conductor(0..2)` or `.conductor(..)`,
-    /// whose leaves gather one value per element. A single element is `.conductor[i]`.
-    pub fn conductor<R>(&self, range: R) -> CoilConductorSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[CoilConductor], Output = [CoilConductor]>,
-    {
-        CoilConductorSliceView::new(Elements::from_slice(&self.conductor[range]))
+    /// Select from `conductor`. A range, e.g. `.conductor(0..2)` or `.conductor(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.conductor[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn conductor<'a, S: Selection<'a, CoilConductor>>(&'a self, selection: S) -> S::Output {
+        selection.select("conductor", &self.conductor)
     }
 
     /// Get the number of conductor elements
@@ -2024,13 +2203,16 @@ impl Coil {
 }
 
 impl Code {
-    /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
-    /// whose leaves gather one value per element. A single element is `.library[i]`.
-    pub fn library<R>(&self, range: R) -> LibrarySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Library], Output = [Library]>,
-    {
-        LibrarySliceView::new(Elements::from_slice(&self.library[range]))
+    /// Select from `library`. A range, e.g. `.library(0..2)` or `.library(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.library(name)`, gives the one element with that `name`.
+    /// A single element is `.library[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn library<'a, S: Selection<'a, Library>>(&'a self, selection: S) -> S::Output {
+        selection.select("library", &self.library)
     }
 
     /// Get the number of library elements
@@ -2040,13 +2222,16 @@ impl Code {
 }
 
 impl GenericGridDynamicSpace {
-    /// The slice view over a range of coordinates_type, e.g. `.coordinates_type(0..2)` or `.coordinates_type(..)`,
-    /// whose leaves gather one value per element. A single element is `.coordinates_type[i]`.
-    pub fn coordinates_type<R>(&self, range: R) -> IdentifierDynamicAos3SliceView<'_, Ix1>
-    where
-        R: SliceIndex<[IdentifierDynamicAos3], Output = [IdentifierDynamicAos3]>,
-    {
-        IdentifierDynamicAos3SliceView::new(Elements::from_slice(&self.coordinates_type[range]))
+    /// Select from `coordinates_type`. A range, e.g. `.coordinates_type(0..2)` or `.coordinates_type(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.coordinates_type(name)`, gives the one element with that `name`.
+    /// A single element is `.coordinates_type[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn coordinates_type<'a, S: Selection<'a, IdentifierDynamicAos3>>(&'a self, selection: S) -> S::Output {
+        selection.select("coordinates_type", &self.coordinates_type)
     }
 
     /// Get the number of coordinates_type elements
@@ -2056,13 +2241,14 @@ impl GenericGridDynamicSpace {
 }
 
 impl GenericGridDynamicSpace {
-    /// The slice view over a range of objects_per_dimension, e.g. `.objects_per_dimension(0..2)` or `.objects_per_dimension(..)`,
-    /// whose leaves gather one value per element. A single element is `.objects_per_dimension[i]`.
-    pub fn objects_per_dimension<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpaceDimension], Output = [GenericGridDynamicSpaceDimension]>,
-    {
-        GenericGridDynamicSpaceDimensionSliceView::new(Elements::from_slice(&self.objects_per_dimension[range]))
+    /// Select from `objects_per_dimension`. A range, e.g. `.objects_per_dimension(0..2)` or `.objects_per_dimension(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.objects_per_dimension[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn objects_per_dimension<'a, S: Selection<'a, GenericGridDynamicSpaceDimension>>(&'a self, selection: S) -> S::Output {
+        selection.select("objects_per_dimension", &self.objects_per_dimension)
     }
 
     /// Get the number of objects_per_dimension elements
@@ -2072,13 +2258,14 @@ impl GenericGridDynamicSpace {
 }
 
 impl GenericGridDynamicGridSubset {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElement], Output = [GenericGridDynamicGridSubsetElement]>,
-    {
-        GenericGridDynamicGridSubsetElementSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, GenericGridDynamicGridSubsetElement>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -2088,13 +2275,14 @@ impl GenericGridDynamicGridSubset {
 }
 
 impl GenericGridDynamicGridSubset {
-    /// The slice view over a range of base, e.g. `.base(0..2)` or `.base(..)`,
-    /// whose leaves gather one value per element. A single element is `.base[i]`.
-    pub fn base<R>(&self, range: R) -> GenericGridDynamicGridSubsetMetricSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetMetric], Output = [GenericGridDynamicGridSubsetMetric]>,
-    {
-        GenericGridDynamicGridSubsetMetricSliceView::new(Elements::from_slice(&self.base[range]))
+    /// Select from `base`. A range, e.g. `.base(0..2)` or `.base(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.base[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn base<'a, S: Selection<'a, GenericGridDynamicGridSubsetMetric>>(&'a self, selection: S) -> S::Output {
+        selection.select("base", &self.base)
     }
 
     /// Get the number of base elements
@@ -2104,13 +2292,14 @@ impl GenericGridDynamicGridSubset {
 }
 
 impl CoilConductor {
-    /// The slice view over a range of cross_section, e.g. `.cross_section(0..2)` or `.cross_section(..)`,
-    /// whose leaves gather one value per element. A single element is `.cross_section[i]`.
-    pub fn cross_section<R>(&self, range: R) -> CoilCrossSectionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[CoilCrossSection], Output = [CoilCrossSection]>,
-    {
-        CoilCrossSectionSliceView::new(Elements::from_slice(&self.cross_section[range]))
+    /// Select from `cross_section`. A range, e.g. `.cross_section(0..2)` or `.cross_section(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.cross_section[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn cross_section<'a, S: Selection<'a, CoilCrossSection>>(&'a self, selection: S) -> S::Output {
+        selection.select("cross_section", &self.cross_section)
     }
 
     /// Get the number of cross_section elements
@@ -2120,13 +2309,14 @@ impl CoilConductor {
 }
 
 impl GenericGridDynamicSpaceDimension {
-    /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
-    /// whose leaves gather one value per element. A single element is `.object[i]`.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObject], Output = [GenericGridDynamicSpaceDimensionObject]>,
-    {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(Elements::from_slice(&self.object[range]))
+    /// Select from `object`. A range, e.g. `.object(0..2)` or `.object(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.object[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn object<'a, S: Selection<'a, GenericGridDynamicSpaceDimensionObject>>(&'a self, selection: S) -> S::Output {
+        selection.select("object", &self.object)
     }
 
     /// Get the number of object elements
@@ -2136,13 +2326,14 @@ impl GenericGridDynamicSpaceDimension {
 }
 
 impl GenericGridDynamicGridSubsetElement {
-    /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
-    /// whose leaves gather one value per element. A single element is `.object[i]`.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementObjectSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElementObject], Output = [GenericGridDynamicGridSubsetElementObject]>,
-    {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(Elements::from_slice(&self.object[range]))
+    /// Select from `object`. A range, e.g. `.object(0..2)` or `.object(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.object[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn object<'a, S: Selection<'a, GenericGridDynamicGridSubsetElementObject>>(&'a self, selection: S) -> S::Output {
+        selection.select("object", &self.object)
     }
 
     /// Get the number of object elements
@@ -2152,13 +2343,14 @@ impl GenericGridDynamicGridSubsetElement {
 }
 
 impl GenericGridDynamicSpaceDimensionObject {
-    /// The slice view over a range of boundary, e.g. `.boundary(0..2)` or `.boundary(..)`,
-    /// whose leaves gather one value per element. A single element is `.boundary[i]`.
-    pub fn boundary<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObjectBoundary], Output = [GenericGridDynamicSpaceDimensionObjectBoundary]>,
-    {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(Elements::from_slice(&self.boundary[range]))
+    /// Select from `boundary`. A range, e.g. `.boundary(0..2)` or `.boundary(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.boundary[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn boundary<'a, S: Selection<'a, GenericGridDynamicSpaceDimensionObjectBoundary>>(&'a self, selection: S) -> S::Output {
+        selection.select("boundary", &self.boundary)
     }
 
     /// Get the number of boundary elements
@@ -2168,13 +2360,16 @@ impl GenericGridDynamicSpaceDimensionObject {
 }
 
 impl Tf {
-    /// The slice view over a range of coil, e.g. `.coil(0..2)` or `.coil(..)`,
-    /// whose leaves gather one value per element. A single element is `.coil[i]`.
-    pub fn coil<R>(&self, range: R) -> CoilSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Coil], Output = [Coil]>,
-    {
-        CoilSliceView::new(Elements::from_slice(&self.coil[range]))
+    /// Select from `coil`. A range, e.g. `.coil(0..2)` or `.coil(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.coil(name)`, gives the one element with that `name`.
+    /// A single element is `.coil[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn coil<'a, S: Selection<'a, Coil>>(&'a self, selection: S) -> S::Output {
+        selection.select("coil", &self.coil)
     }
 
     /// Get the number of coil elements
@@ -2184,13 +2379,14 @@ impl Tf {
 }
 
 impl Tf {
-    /// The slice view over a range of field_map, e.g. `.field_map(0..2)` or `.field_map(..)`,
-    /// whose leaves gather one value per element. A single element is `.field_map[i]`.
-    pub fn field_map<R>(&self, range: R) -> TfGgdSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[TfGgd], Output = [TfGgd]>,
-    {
-        TfGgdSliceView::new(Elements::from_slice(&self.field_map[range]))
+    /// Select from `field_map`. A range, e.g. `.field_map(0..2)` or `.field_map(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.field_map[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn field_map<'a, S: Selection<'a, TfGgd>>(&'a self, selection: S) -> S::Output {
+        selection.select("field_map", &self.field_map)
     }
 
     /// Get the number of field_map elements

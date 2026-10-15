@@ -9,6 +9,7 @@ use super::boundary;
 use super::bp_sq_flux_surface_average;
 use super::constant_values::ConstantValues;
 use super::constraints;
+use super::contour_tree;
 use super::convergence;
 use super::dependency_sorter;
 use super::flux_surfaces;
@@ -22,8 +23,8 @@ use super::profiles_2d;
 use super::sol;
 use crate::source_functions::SharedSourceFunction;
 use imas_rs::Equilibrium;
+use imas_rs::EquilibriumLimiter;
 use imas_rs::EquilibriumTimeSlice;
-use imas_rs::ids::wall::Wall;
 use ndarray::Array1;
 use rayon::prelude::*;
 use std::f64::consts::PI;
@@ -58,14 +59,12 @@ fn entry(identifier: CI, calculator_function: CalculatorFunction, dependencies: 
 ///
 /// # Arguments
 /// * `equilibrium_ids` - the solved equilibrium IDS, one time-slice per reconstruction time.
-///   Taken mutably: the derived quantities are written back into it
-/// * `wall_ids` - the wall IDS, which supplies the vacuum vessel the scrape-off layer legs are
-///   traced up to
+///   Taken mutably: the derived quantities are written back into it. Its `limiter` supplies the
+///   vacuum vessel the scrape-off layer legs are traced up to
 /// * `p_prime_source_function` - the p' source function the reconstruction was run with
 /// * `ff_prime_source_function` - the FF' source function the reconstruction was run with
 pub fn equilibrium_post_processor(
     equilibrium_ids: &mut Equilibrium,
-    wall_ids: &Wall,
     p_prime_source_function: &SharedSourceFunction,
     ff_prime_source_function: &SharedSourceFunction,
 ) {
@@ -83,6 +82,8 @@ pub fn equilibrium_post_processor(
     let r0: f64 = equilibrium_ids.vacuum_toroidal_field.r0;
     // Vacuum toroidal field at reference radius
     let b0: &Array1<f64> = &equilibrium_ids.vacuum_toroidal_field.b0;
+    // The limiter, which is the same for every time-slice
+    let limiter: &EquilibriumLimiter = &equilibrium_ids.limiter;
 
     // The calculator table: one row per calculator, in whatever order reads best. The order they
     // run in comes from the `dependencies` column, via `dependency_sorter::sort` below
@@ -94,10 +95,12 @@ pub fn equilibrium_post_processor(
         entry(CI::boundary__outline__r__z,                                                     boundary::outline__r__z::calculate,                                                     &[]                                                                                                                                                 ),
         entry(CI::boundary__psi_norm__rho_tor,                                                 boundary::psi_norm__rho_tor::calculate,                                                 &[CI::profiles_1d__rho_tor]                                                                                                                         ),
         entry(CI::constraints__diamagnetic_flux_reconstructed,                                 constraints::diamagnetic_flux_reconstructed::calculate,                                 &[CI::intermediate_values__flux_surfaces, CI::profiles_1d__f, CI::profiles_1d__phi, CI::profiles_1d__psi]                                           ),
+        entry(CI::contour_tree__node_levelset__r__z,                                           contour_tree::node_levelset__r__z::calculate,                                           &[]                                                                                                                                                 ),
         entry(CI::convergence__grad_shafranov_deviation_expression__description__index__name,  convergence::grad_shafranov_deviation_expression__description__index__name::calculate,  &[]                                                                                                                                                 ),
         entry(CI::global_quantities__area__length_pol__surface__volume,                        global_quantities::area__length_pol__surface__volume::calculate,                        &[CI::boundary__outline__r__z, CI::profiles_1d__area__volume__derivatives]                                                                          ),
         entry(CI::global_quantities__beta_pol,                                                 global_quantities::beta_pol::calculate,                                                 &[CI::boundary__geometry, CI::global_quantities__energy_mhd, CI::intermediate_values__bp_sq_fs_avg, CI::profiles_1d__area__volume__derivatives]     ),
         entry(CI::global_quantities__beta_tor,                                                 global_quantities::beta_tor::calculate,                                                 &[CI::boundary__geometry, CI::global_quantities__bt_vac_at_r_geo, CI::global_quantities__energy_mhd, CI::profiles_1d__area__volume__derivatives]    ),
+        entry(CI::global_quantities__bp_omp,                                                   global_quantities::bp_omp::calculate,                                                   &[CI::profiles_1d__r_inboard__r_outboard]                                                                                                           ),
         entry(CI::global_quantities__bt_vac_at_r_geo,                                          global_quantities::bt_vac_at_r_geo::calculate,                                          &[CI::boundary__geometry]                                                                                                                           ),
         entry(CI::global_quantities__current_centre__r__velocity_z__z,                         global_quantities::current_centre__r__velocity_z__z::calculate,                         &[]                                                                                                                                                 ),
         entry(CI::global_quantities__delta_r_sep,                                              global_quantities::delta_r_sep::calculate,                                              &[CI::profiles_1d__r_inboard__r_outboard]                                                                                                           ),
@@ -172,9 +175,9 @@ pub fn equilibrium_post_processor(
             b0: b0[i_time],
             ff_prime_source_function,
             i_rod: 2.0 * PI * r0 * b0[i_time] / MU_0,
+            limiter,
             p_prime_source_function,
             r0,
-            wall_ids,
         };
         let mut intermediate_values: IntermediateValues = intermediate_values_placeholders();
 

@@ -1,0 +1,112 @@
+import typing
+from typing import TYPE_CHECKING
+
+import freegs4e
+import numpy as np
+import numpy.typing as npt
+from freegsnke.equilibrium_update import Equilibrium as FreeGsnkeEquilibrium
+from gsfit_rs import PfActive
+from gsfit_rs.dd_support import ParametersInput
+
+if TYPE_CHECKING:
+    from . import DatabaseReader
+
+
+def setup_pf_active(
+    self: "DatabaseReader",
+    pulseNo: int,
+    settings: dict[str, typing.Any],
+    time: npt.NDArray[np.float64],
+    freegsnke_eqs: list[FreeGsnkeEquilibrium],
+) -> PfActive:
+    """
+    This method initialises the Rust `PfActive` class, which holds an IMAS `pf_active` IDS.
+
+    :param pulseNo: Pulse number, used to read from the database
+    :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    :param time: Measured time vector
+    :param freegsnke_eqs: List of FreeGSNKE equilibrium objects, one for each time-slice
+
+    **This method is specific to FreeGSNKE.**
+
+    One `coil(i1)` is added for each coil in a FreeGSNKE circuit, with one `element(i2)` per filament, carrying the circuit's current at each time-slice.
+    Each filament's size is the coil's `dR` and `dZ`, which FreeGSNKE's `build_machine` sets.
+
+    See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
+    """
+
+    # Initialise the PfActive Rust class
+    # This reader still reads the JSON settings, so has no XML settings to record in `pf_active/code/parameters` yet
+    pf_active = PfActive(ParametersInput())
+
+    # We assume that the static data is not changing in time
+    freegsnke_tokamak = freegsnke_eqs[0].tokamak
+
+    # Get lengths
+    n_time = len(time)
+
+    # Count the number of PF coils
+    n_pf = 0
+    for current_carrying_object in freegsnke_tokamak.coils:
+        # `type(current_carrying_object) = (str, freegs4e.machine.Circuit) = (circuit_name, circuit)`.
+        # `current_carrying_object` can be either a PF coil or passive
+        circuit_name = current_carrying_object[0]
+        circuit = current_carrying_object[1]
+        if isinstance(circuit, freegs4e.machine.Circuit):
+            pf_coils = circuit.coils
+            n_pf = n_pf + len(pf_coils)
+
+    # Loop over time and get the currents
+    pf_coil_currents = np.full((n_time, n_pf), np.nan)
+    for i_time in range(0, n_time):
+        i_pf = 0
+        for current_carrying_object in freegsnke_eqs[i_time].tokamak.coils:
+            circuit_name = current_carrying_object[0]
+            circuit = current_carrying_object[1]
+            circuit_current = circuit.current
+            if isinstance(circuit, freegs4e.machine.Circuit):
+                pf_coils = circuit.coils
+                for pf_coil in pf_coils:
+                    # `type(pf_coils) = list[(str, freegs4e.multi_coil.MultiCoil)]`
+                    coil_name = pf_coil[0]
+                    coil_object = pf_coil[1]
+
+                    # Store the current
+                    # Note, there is a recent bug in FreeGSNKE/FreeGS4E where the `coil_object.current` is not updated, and currents are all zero.
+                    # pf_coil_currents[i_time, i_pf] = coil_object.current
+                    pf_coil_currents[i_time, i_pf] = circuit_current
+
+                    # set index for the next PF coil
+                    i_pf = i_pf + 1
+
+    # Add the PF coils
+    i_pf = 0
+    for current_carrying_object in freegsnke_tokamak.coils:
+        circuit_name = current_carrying_object[0]
+        circuit = current_carrying_object[1]
+        if isinstance(circuit, freegs4e.machine.Circuit):
+            pf_coils = circuit.coils
+            for pf_coil in pf_coils:
+                coil_name = pf_coil[0]
+                coil_object = pf_coil[1]
+
+                coil_r = np.array(coil_object.Rfil).astype(np.float64)
+                coil_z = np.array(coil_object.Zfil).astype(np.float64)
+                # Every filament in a FreeGSNKE coil is the same size
+                coil_width = np.full(coil_r.size, coil_object.dR, dtype=np.float64)
+                coil_height = np.full(coil_z.size, coil_object.dZ, dtype=np.float64)
+
+                pf_active.add_pf_coil(
+                    name=coil_name,
+                    r=coil_r,
+                    z=coil_z,
+                    width=coil_width,
+                    height=coil_height,
+                    time=time,
+                    current=pf_coil_currents[:, i_pf],
+                )
+
+                # set index for the next PF coil
+                i_pf = i_pf + 1
+
+    return pf_active

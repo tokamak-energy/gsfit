@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for rtgsfit_code_settings.xml: RTGSFit's own settings, which the rtgsfit_mdsplus database writer
+    stores under PRESHOT for RTGSFit to read.
+
+    See GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="rtgsfit_code_settings">
+        <xs:annotation><xs:documentation>RTGSFit's own settings. GSFit does not use them: the rtgsfit_mdsplus writer stores them under PRESHOT for RTGSFit</xs:documentation></xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="thresh" type="xs:double">
+                    <xs:annotation><xs:documentation>RTGSFit's `thresh`, stored as PRESHOT:THRESH</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="frac" type="xs:double">
+                    <xs:annotation><xs:documentation>RTGSFit's `frac`, stored as PRESHOT:FRAC</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="n_intrp" type="xs:nonNegativeInteger">
+                    <xs:annotation><xs:documentation>RTGSFit's `n_intrp`, stored as PRESHOT:N_INTRP</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="n_xpt_max" type="xs:nonNegativeInteger">
+                    <xs:annotation><xs:documentation>Maximum number of X-points RTGSFit handles, stored as PRESHOT:N_XPT_MAX</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="n_lcfs_max" type="xs:nonNegativeInteger">
+                    <xs:annotation><xs:documentation>Maximum number of points on RTGSFit's last closed flux surface, stored as PRESHOT:N_LCFS_MAX</xs:documentation></xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

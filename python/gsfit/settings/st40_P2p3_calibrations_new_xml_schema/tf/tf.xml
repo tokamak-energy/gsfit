@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tf_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/tf/tf.xsd">
+    <vacuum_toroidal_field_reference_radius>0.4</vacuum_toroidal_field_reference_radius>
+    <workflow href="../workflow.xml"/>
+    <st40_mdsplus>
+        <psu2coil>
+            <pulseNo xsi:nil="true"/>
+            <run_name>RUN06</run_name>
+            <usage>TF coil current</usage>
+        </psu2coil>
+    </st40_mdsplus>
+    <st40_astra_mdsplus>
+        <astra>
+            <pulseNo xsi:nil="true"/>
+            <run_name>RUN202</run_name>
+            <usage>Vacuum toroidal field</usage>
+        </astra>
+    </st40_astra_mdsplus>
+</tf_settings>

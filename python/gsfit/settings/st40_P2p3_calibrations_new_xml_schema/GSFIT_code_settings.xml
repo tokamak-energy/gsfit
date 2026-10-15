@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    GSFit's settings.
+
+    This file holds no settings itself: each element links to the file which holds one group of them.
+    A path is relative to the file holding the link, so a file from another settings directory can be used,
+    e.g. href="../default/wall/wall.xml". See ../../settings_schema/xsd/GSFIT_code_settings.xsd.
+-->
+<gsfit_code_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../settings_schema/xsd/GSFIT_code_settings.xsd">
+    <!-- The database reader and writer, for the whole run -->
+    <database_reader href="database_reader.xml"/>
+    <database_writer href="database_writer.xml"/>
+
+    <!-- The IDSs -->
+    <ids>
+        <!-- The IDS GSFit writes, built by GSFit -->
+        <equilibrium href="equilibrium/equilibrium.xml"/>
+
+        <!-- The IDSs GSFit reads, built by the database reader -->
+        <magnetics href="magnetics/magnetics.xml"/>
+        <pf_active href="pf_active/pf_active.xml"/>
+        <pf_passive href="pf_passive/pf_passive.xml"/>
+        <pulse_schedule href="pulse_schedule/pulse_schedule.xml"/>
+        <tf href="tf/tf.xml"/>
+        <thomson_scattering href="thomson_scattering/thomson_scattering.xml"/>
+        <wall href="wall/wall.xml"/>
+    </ids>
+</gsfit_code_settings>

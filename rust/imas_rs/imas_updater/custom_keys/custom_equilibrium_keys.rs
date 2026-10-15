@@ -171,6 +171,14 @@ pub struct EquilibriumGlobalQuantities {
     /// This is the closest of the three to the data dictionary's own `beta_pol`, which uses the
     /// vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
     pub beta_pol_3: FLT_0D,
+    /// Magnitude of the poloidal magnetic field at the outboard midplane,
+    /// `sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of
+    /// the magnetic axis on the outboard side. This is the same point `delta_r_sep` and `f_x`
+    /// use. Evaluated from the solver's bicubic interpolation of `psi`, not from the gridded
+    /// `profiles_2d/b_field_r` and `.../b_field_z`. NaN when the boundary does not cross that
+    /// height within the grid
+    /// Units: T
+    pub bp_omp: FLT_0D,
     /// Vacuum toroidal magnetic field at the plasma geometric axis,
     /// `vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
     /// `vacuum_toroidal_field/b0`, which is evaluated at the fixed machine reference radius
@@ -241,11 +249,52 @@ pub struct EquilibriumConvergence {
     pub flux_evaluations_n: INT_0D,
 }
 
-/// The IDS root. `greens` hangs off it rather than off `time_slice`, because the Greens tables
-/// are geometry and so are the same for every time-slice.
+/// The data dictionary uses this type for both `time_slice(itime)/constraints/pf_current(i1)` and
+/// `time_slice(itime)/constraints/ip`, so the key below is on `constraints/ip` too, where it is left empty.
+pub struct EquilibriumConstraints0dIpLike {
+    /// Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name`
+    /// for `constraints/pf_current(i1)`
+    pub name: STR_0D,
+}
+
+/// The keys below are for `time_slice(itime)/constraints/pf_passive_current(i1)`, the current in `pf_passive/loop(i1)`.
+/// GSFit does not measure that current: it fits it, as an amplitude for each of the loop's degrees of freedom, and the
+/// regularisations are what constrain the fit.
+///
+/// The data dictionary also uses this type for `b_field_tor_vacuum_r`, `faraday_angle(i1)`, `flux_loop(i1)`,
+/// `iron_core_segment(i1)/magnetization_r` and `.../magnetization_z`, `mse_polarization_angle(i1)` and `n_e_line(i1)`, so the
+/// keys below are on all of those too, where they are left empty.
+pub struct EquilibriumConstraints0d {
+    /// Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
+    /// `constraints/pf_passive_current(i1)`
+    pub name: STR_0D,
+    /// The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order
+    pub dof: Vec<EquilibriumConstraints0dDof>,
+    /// The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
+    /// regularisation, one coefficient for each `dof`; no rows for none.
+    /// Shape = `(n_regularisations, n_dof)`
+    pub regularisations: FLT_2D,
+    /// The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
+    /// `regularisations`
+    /// Units: dimensionless
+    pub regularisations_weight: FLT_1D,
+}
+
+/// One degree of freedom of a passive loop's current, a copy of `pf_passive/loop(i1)/dof(i2)`
+pub struct EquilibriumConstraints0dDof {
+    /// Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
+    pub name: STR_0D,
+}
+
+/// The IDS root. `greens` and `limiter` hang off it rather than off `time_slice`, because they are
+/// geometry and so are the same for every time-slice.
 pub struct Equilibrium {
     /// Greens tables: the poloidal flux and its derivatives per ampere in each current source
     pub greens: EquilibriumGreens,
+    /// The limiter: the immobile surfaces which bound the plasma. A copy of the `wall` IDS's
+    /// `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and
+    /// the post-processor read it from the equilibrium IDS rather than from the `wall` IDS
+    pub limiter: EquilibriumLimiter,
 }
 
 pub struct Code {
@@ -665,4 +714,40 @@ pub struct EquilibriumGreensGridGrid {
     /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
     /// Units: Wb.A^-1.m^-3
     pub d3_psi_d_z3: FLT_2D,
+}
+
+/// The limiter: the immobile surfaces which bound the plasma.
+///
+/// A copy of the `wall` IDS's `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`,
+/// with the same layout, so that `unit(i)` here is `unit(i)` there. The data dictionary has no place
+/// for the limiter in the equilibrium IDS, but an equilibrium cannot be found without one.
+///
+/// Like `greens`, it is geometry, so it is the same for every time-slice. That is why it hangs off the
+/// IDS root rather than off `time_slice`.
+pub struct EquilibriumLimiter {
+    /// Limiter units, in the same order as `wall/description_2d(0)/limiter/unit`. The order is part
+    /// of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region
+    /// the plasma is allowed to occupy, and only `unit(0)` is used as the vessel. `unit(1)`,
+    /// `unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the
+    /// vessel contour. The points of every unit are candidate limit points, so a plasma may be
+    /// limited on the vessel or on any of the tiles
+    pub unit: Vec<EquilibriumLimiterUnit>,
+}
+
+/// One limiter unit, a copy of `wall/description_2d(0)/limiter/unit(i)`
+pub struct EquilibriumLimiterUnit {
+    /// Short identifier for the unit, e.g. `"vacuum_vessel"`
+    pub name: STR_0D,
+    /// Outline of the limiting surface
+    pub outline: EquilibriumLimiterUnitOutline,
+}
+
+/// Outline of one limiter unit, a copy of `wall/description_2d(0)/limiter/unit(i)/outline`
+pub struct EquilibriumLimiterUnitOutline {
+    /// Major radius of each point along the outline
+    /// Units: m
+    pub r: FLT_1D,
+    /// Height of each point along the outline
+    /// Units: m
+    pub z: FLT_1D,
 }

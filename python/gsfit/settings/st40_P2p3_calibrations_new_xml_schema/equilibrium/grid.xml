@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grid xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/grid.xsd">
+    <n_r>81</n_r>
+    <n_z>161</n_z>
+    <r_min>0.01</r_min>
+    <r_max>1.01</r_max>
+    <z_min>-1.0</z_min>
+    <z_max>1.0</z_max>
+    <n_psi_n>100</n_psi_n>
+</grid>

@@ -1,12 +1,13 @@
-use crate::coils::Coils;
 use crate::greens::Greens;
-use crate::passives::PassiveGeometryAll;
-use crate::passives::Passives;
+use crate::pf_active::PfActive;
+use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
 use crate::plasma::Plasma;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::create_empty_sensor_data;
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use imas_rs::ids::pf_active::PfCoils;
+use imas_rs::ids::pf_passive::PfPassiveLoops;
 use ndarray::{Array1, Array2, Array3, Axis, array, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
@@ -111,22 +112,16 @@ impl BpProbes {
             .insert("value", measured_ndarray);
     }
 
-    /// Greens with coils
-    pub fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
-        // Change Python type into Rust
-        let coils_local: &Coils = &coils;
-
+    /// Greens with the PF coils
+    pub fn greens_with_pf_active(&mut self, pf_active: PyRef<PfActive>) {
         // Run the Rust method
-        self.greens_with_coils_rs(coils_local);
+        self.greens_with_pf_active_rs(&pf_active);
     }
 
-    /// Greens with passives
-    pub fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
-        // Change Python type into Rust
-        let passives_local: &Passives = &passives;
-
+    /// Greens with the passive conductors
+    pub fn greens_with_pf_passive(&mut self, pf_passive: PyRef<PfPassive>) {
         // Run the Rust method
-        self.greens_with_passives_rs(passives_local);
+        self.greens_with_pf_passive_rs(&pf_passive);
     }
 
     /// Greens with plasma
@@ -139,25 +134,43 @@ impl BpProbes {
     }
 
     /// Calculate sensor values
-    pub fn calculate_sensor_values(&mut self, coils: PyRef<Coils>, passives: PyRef<Passives>, plasma: PyRef<Plasma>) {
+    pub fn calculate_sensor_values(&mut self, plasma: PyRef<Plasma>) {
         // Convert Python types into Rust
-        let coils_rs: &Coils = &coils;
-        let passives_rs: &Passives = &passives;
         let plasma_rs: &Plasma = &plasma;
 
         // Run the Rust method
-        self.calculate_sensor_values_rs(coils_rs, passives_rs, plasma_rs);
+        self.calculate_sensor_values_rs(plasma_rs);
     }
 
     /// Calculate sensor values
-    pub fn calculate_sensor_values_vacuum(&mut self, coils: PyRef<Coils>, passives: PyRef<Passives>) {
+    pub fn calculate_sensor_values_vacuum(&mut self, pf_active: PyRef<PfActive>, pf_passive: PyRef<PfPassive>) {
         // TODO: this should be combined with `calculate_sensor_values`
 
-        let passives_geometry: PassiveGeometryAll = passives.get_all_passive_filament_geometry();
-        let passives_r: Array1<f64> = passives_geometry.r;
-        let passives_z: Array1<f64> = passives_geometry.z;
+        // Every passive filament, and its current, which `solve_circuit_equations` simulated, on the timebase it simulated the
+        // PF coil currents on
+        let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive.pf_passive_ids.r#loop;
+        let n_loop: usize = pf_passive_loops.len();
+        let mut passives_r_vec: Vec<f64> = Vec::new();
+        let mut passives_z_vec: Vec<f64> = Vec::new();
+        let mut passive_currents_vec: Vec<Array1<f64>> = Vec::new();
+        for i_loop in 0..n_loop {
+            let filaments: PassiveFilaments = passive_filaments(&pf_passive_loops[i_loop].element);
+            passives_r_vec.extend(filaments.r.iter());
+            passives_z_vec.extend(filaments.z.iter());
+            let n_element: usize = pf_passive_loops[i_loop].element.len();
+            for i_element in 0..n_element {
+                passive_currents_vec.push(pf_passive_loops[i_loop].element[i_element].current.clone());
+            }
+        }
+        let passives_r: Array1<f64> = Array1::from_vec(passives_r_vec);
+        let passives_z: Array1<f64> = Array1::from_vec(passives_z_vec);
+        let n_passive_filaments: usize = passive_currents_vec.len();
+        let n_time_passive: usize = if n_passive_filaments > 0 { passive_currents_vec[0].len() } else { 0 };
+        let mut passive_currents: Array2<f64> = Array2::from_elem((n_time_passive, n_passive_filaments), f64::NAN); // shape = (n_time, n_passive_filaments)
+        for i_filament in 0..n_passive_filaments {
+            passive_currents.slice_mut(s![.., i_filament]).assign(&passive_currents_vec[i_filament]);
+        }
 
-        let passive_currents: Array2<f64> = passives.get_passive_filament_currents_from_simulated();
         for sensor_name in &self.results.keys() {
             let sensor_r: f64 = self.results.get(sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(sensor_name).get("geometry").get("z").unwrap_f64();
@@ -179,14 +192,24 @@ impl BpProbes {
             let g_bz: Array1<f64> = g_bz_matrix.sum_axis(Axis(0));
             let g_with_passives: Array1<f64> = g_br * sensor_angle_pol.cos() + g_bz * sensor_angle_pol.sin(); // shape = (n_passives)
 
-            // Coils
-            let g_with_coils: Array1<f64> = self.results.get(sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = (n_pf)
-            let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("simulated").get("value").unwrap_array2(); // shape = (n_time, n_pf)
-            // let n_time: usize = coil_currents.len_of(Axis(0));
-
-            let pf_names: Vec<String> = coils.results.get("pf").keys();
-            let simulated_time: Array1<f64> = coils.results.get("pf").get(&pf_names[0]).get("i").get("simulated").get("time").unwrap_array1();
+            // The PF coils' currents, which share one timebase, e.g. the one `solve_circuit_equations` simulated them on,
+            // and this sensor's Greens with each coil, found by name
+            let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
+            let n_pf: usize = pf_active_coils.len();
+            let simulated_time: Array1<f64> = pf_active_coils[0].current.time.clone();
             let n_time: usize = simulated_time.len();
+            let mut g_with_coils: Array1<f64> = Array1::from_elem(n_pf, f64::NAN); // shape = (n_pf)
+            let mut coil_currents: Array2<f64> = Array2::from_elem((n_time, n_pf), f64::NAN); // shape = (n_time, n_pf)
+            for i_pf in 0..n_pf {
+                g_with_coils[i_pf] = self
+                    .results
+                    .get(sensor_name)
+                    .get("greens")
+                    .get("pf")
+                    .get(&pf_active_coils[i_pf].name)
+                    .unwrap_f64();
+                coil_currents.slice_mut(s![.., i_pf]).assign(&pf_active_coils[i_pf].current.data);
+            }
 
             // Loop over time
             let mut sensor_values: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -283,7 +306,15 @@ impl BpProbes {
     /// 1.) Static (non time-dependent) object. Note, it is here that the sensors are down-selected, based on ["fit_settings"]["include"]
     /// 2.) A Vec of time-dependent objects. Note, the length of the Vec is the number of time-slices we want to reconstruct
     /// TODO: change `SensorsStatic` to Vec<Arc<SensorsStatic>> to be consistent with other sensor types.
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
+    ///
+    /// The Greens with the PF coils are gathered in the order of `pf_active_names`, and those with the passive conductors' degrees of
+    /// freedom in the order of `pf_passive_dof_names`, each a (passive conductor name, degree of freedom name) pair
+    pub fn split_into_static_and_dynamic(
+        &mut self,
+        times_to_reconstruct: &Array1<f64>,
+        pf_active_names: &[String],
+        pf_passive_dof_names: &[(String, String)],
+    ) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         let n_time: usize = times_to_reconstruct.len();
 
         // Vector of boolean's to say if we use the sensor or not
@@ -322,8 +353,21 @@ impl BpProbes {
 
         // Greens
         // With PF coils
-        let greens_with_pf: Array2<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array2(); // shape = [n_pf, n_sensors]
-        let greens_with_pf: Array2<f64> = greens_with_pf.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_pf, n_sensors]
+        // In the order of `pf_active_names`, the order of the PF coil currents, for the sensors needed. Found by name,
+        // because the sensors' own store sorts them by name
+        let n_pf: usize = pf_active_names.len();
+        let mut greens_with_pf: Array2<f64> = Array2::from_elem((n_pf, n_sensors), f64::NAN); // shape = [n_pf, n_sensors]
+        for i_pf in 0..n_pf {
+            for i_sensor in 0..n_sensors {
+                greens_with_pf[[i_pf, i_sensor]] = self
+                    .results
+                    .get(&sensor_names[i_sensor])
+                    .get("greens")
+                    .get("pf")
+                    .get(&pf_active_names[i_pf])
+                    .unwrap_f64();
+            }
+        }
         // With plasma
         let greens_with_grid: Array2<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array2(); // shape = [n_z * n_r, n_sensors]
         let greens_with_grid: Array2<f64> = greens_with_grid.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_pf, n_sensors]
@@ -332,40 +376,21 @@ impl BpProbes {
         let greens_d_sensor_dz: Array2<f64> = greens_d_sensor_dz.select(Axis(1), &include_indices); // downselect to only the sensors needed; shape = [n_z * n_r, n_sensors]
 
         // With passives
-        let passive_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").keys();
-        let n_passives: usize = passive_names.len();
-
-        // Count the number of degrees of freedom
-        let mut n_dof_total: usize = 0;
-        for passive_name in &passive_names {
-            let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys();
-            n_dof_total += dof_names.len();
-        }
-
-        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_dof_total, n_sensors), f64::NAN);
-
-        // let mut dof_names_total: Vec<String> = Vec::with_capacity(n_dof_total);
-        for i_sensor in 0..n_sensors {
-            let mut i_dof_total: usize = 0;
-            for i_passive in 0..n_passives {
-                let passive_name: &str = &passive_names[i_passive];
-                let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                for dof_name in &dof_names {
-                    greens_with_passives[(i_dof_total, i_sensor)] = self
-                        .results
-                        .get(&sensor_names[i_sensor])
-                        .get("greens")
-                        .get("passives")
-                        .get(passive_name)
-                        .get(dof_name)
-                        .unwrap_f64();
-
-                    // Store the name
-                    // dof_names_total[i_dof_total] = dof_name;
-
-                    // Keep count
-                    i_dof_total += 1;
-                }
+        // In the order of `pf_passive_dof_names`, the order of the passive degrees of freedom, for the sensors needed. Found by
+        // name, because the sensors' own store sorts them by name
+        let n_dof_total: usize = pf_passive_dof_names.len();
+        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_dof_total, n_sensors), f64::NAN); // shape = [n_dof_total, n_sensors]
+        for i_dof_total in 0..n_dof_total {
+            let (passive_name, dof_name): &(String, String) = &pf_passive_dof_names[i_dof_total];
+            for i_sensor in 0..n_sensors {
+                greens_with_passives[(i_dof_total, i_sensor)] = self
+                    .results
+                    .get(&sensor_names[i_sensor])
+                    .get("greens")
+                    .get("passives")
+                    .get(passive_name)
+                    .get(dof_name)
+                    .unwrap_f64();
             }
         }
 
@@ -436,12 +461,46 @@ impl BpProbes {
     }
 
     /// Calculate sensor values
-    pub fn calculate_sensor_values_rs(&mut self, coils: &Coils, passives: &Passives, plasma: &Plasma) {
+    pub fn calculate_sensor_values_rs(&mut self, plasma: &Plasma) {
+        // The passive degrees of freedom, in the order of `greens/pf_passive`, which every time-slice's `passive_dof_values` follows
+        let mut pf_passive_dof_names: Vec<(String, String)> = Vec::new();
+        let n_pf_passive: usize = plasma.equilibrium_ids.greens.pf_passive.len();
+        for i_pf_passive in 0..n_pf_passive {
+            let n_dof: usize = plasma.equilibrium_ids.greens.pf_passive[i_pf_passive].dof.len();
+            for i_dof in 0..n_dof {
+                pf_passive_dof_names.push((
+                    plasma.equilibrium_ids.greens.pf_passive[i_pf_passive].name.clone(),
+                    plasma.equilibrium_ids.greens.pf_passive[i_pf_passive].dof[i_dof].name.clone(),
+                ));
+            }
+        }
+        let n_dof_total: usize = pf_passive_dof_names.len();
+
         for sensor_name in self.results.keys() {
-            // Coils
-            let g_with_coils: Array1<f64> = self.results.get(&sensor_name).get("greens").get("pf").get("*").unwrap_array1(); // shape = [n_pf]
-            let coil_currents: Array2<f64> = coils.results.get("pf").get("*").get("i").get("measured").get("value").unwrap_array2(); // shape = [n_time, n_pf]
+            // The PF coil currents, which `Plasma.copy_from_pf_active_ids` copied onto every time-slice, and this sensor's
+            // Greens with each of those coils, found by name
+            let pf_current_names: Vec<String> = plasma.equilibrium_ids.time_slice[0].constraints.pf_current(..).name.to_vec();
+            let n_pf: usize = pf_current_names.len();
+            let mut g_with_coils: Array1<f64> = Array1::from_elem(n_pf, f64::NAN); // shape = [n_pf]
+            for i_pf in 0..n_pf {
+                g_with_coils[i_pf] = self.results.get(&sensor_name).get("greens").get("pf").get(&pf_current_names[i_pf]).unwrap_f64();
+            }
+            let coil_currents: Array2<f64> = plasma.equilibrium_ids.time_slice(..).constraints.pf_current(..).measured.to_array(); // shape = [n_time, n_pf]
             // let n_time: usize = coil_currents.len_of(Axis(0));
+
+            // This sensor's Greens with each passive degree of freedom, found by name
+            let mut g_with_passives: Array1<f64> = Array1::from_elem(n_dof_total, f64::NAN); // shape = [n_dof_total]
+            for i_dof_total in 0..n_dof_total {
+                let (passive_name, dof_name): &(String, String) = &pf_passive_dof_names[i_dof_total];
+                g_with_passives[i_dof_total] = self
+                    .results
+                    .get(&sensor_name)
+                    .get("greens")
+                    .get("passives")
+                    .get(passive_name)
+                    .get(dof_name)
+                    .unwrap_f64();
+            }
 
             // Plasma
             let g_with_plasma: Array1<f64> = self.results.get(&sensor_name).get("greens").get("plasma").unwrap_array1(); // shape = [n_z*n_r]
@@ -457,24 +516,11 @@ impl BpProbes {
                 // PF coil
                 let sensor_values_from_coils: f64 = g_with_coils.dot(&coil_currents.slice(s![i_time, ..]));
 
-                // Passives
-                // TODO: this looks slow!
+                // Passives, with the degrees of freedom the reconstruction fitted, which are NaN on a time-slice which failed
+                let passive_dof_values: &Array1<f64> = &plasma.equilibrium_ids.time_slice[i_time].passive_dof_values;
                 let mut sensor_values_from_passives: f64 = 0.0;
-                let passive_names: Vec<String> = self.results.get(&sensor_name).get("greens").get("passives").keys();
-                for passive_name in passive_names {
-                    let dof_names: Vec<String> = self.results.get(&sensor_name).get("greens").get("passives").get(&passive_name).keys();
-                    for dof_name in dof_names {
-                        let g_with_passive: f64 = self
-                            .results
-                            .get(&sensor_name)
-                            .get("greens")
-                            .get("passives")
-                            .get(&passive_name)
-                            .get(&dof_name)
-                            .unwrap_f64();
-                        let passive_dof_value: f64 = passives.results.get(&passive_name).get("dof").get(&dof_name).get("calculated").unwrap_array1()[i_time];
-                        sensor_values_from_passives += g_with_passive * passive_dof_value;
-                    }
+                for i_dof_total in 0..n_dof_total {
+                    sensor_values_from_passives += g_with_passives[i_dof_total] * passive_dof_values[i_dof_total];
                 }
 
                 // Plasma
@@ -554,15 +600,20 @@ impl BpProbes {
             .insert("value", measured);
     }
 
-    pub fn greens_with_coils_rs(&mut self, coils: &Coils) {
+    pub fn greens_with_pf_active_rs(&mut self, pf_active: &PfActive) {
+        // The PF coils, in the order of `pf_active/coil`
+        let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
+        let n_coil: usize = pf_active_coils.len();
+
         for sensor_name in self.results.keys() {
             let sensor_angle_pol: f64 = self.results.get(&sensor_name).get("geometry").get("angle_pol").unwrap_f64();
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
             let sensor_z: f64 = self.results.get(&sensor_name).get("geometry").get("z").unwrap_f64();
 
-            for pf_coil_name in coils.results.get("pf").keys() {
-                let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
-                let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
+            for i_coil in 0..n_coil {
+                let pf_coil_name: &str = &pf_active_coils[i_coil].name;
+                let coil_r: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.r.to_array();
+                let coil_z: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.z.to_array();
 
                 let greens_calculator: Greens = Greens::sensor_to_conductor(
                     array![sensor_r],
@@ -588,7 +639,7 @@ impl BpProbes {
                     .get_or_insert(&sensor_name)
                     .get_or_insert("greens")
                     .get_or_insert("pf")
-                    .insert(&pf_coil_name, g);
+                    .insert(pf_coil_name, g);
             }
         }
     }
@@ -650,7 +701,11 @@ impl BpProbes {
         }
     }
 
-    pub fn greens_with_passives_rs(&mut self, passives: &Passives) {
+    pub fn greens_with_pf_passive_rs(&mut self, pf_passive: &PfPassive) {
+        // The passive conductors, in the order of `pf_passive/loop`
+        let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive.pf_passive_ids.r#loop;
+        let n_loop: usize = pf_passive_loops.len();
+
         // Loop over sensors
         for sensor_name in self.results.keys() {
             let sensor_r: f64 = self.results.get(&sensor_name).get("geometry").get("r").unwrap_f64();
@@ -658,11 +713,11 @@ impl BpProbes {
             let sensor_angle_pol: f64 = self.results.get(&sensor_name).get("geometry").get("angle_pol").unwrap_f64();
 
             // Calculate Greens with each passive degree of freedom
-            for passive_name in passives.results.keys() {
-                let passive_dofs: DataTreeAccumulator<'_> = passives.results.get(&passive_name).get("dof");
-                let dof_names: Vec<String> = passive_dofs.keys();
-                let passive_r: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
-                let passive_z: Array1<f64> = passives.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
+            for i_loop in 0..n_loop {
+                let passive_name: &str = &pf_passive_loops[i_loop].name;
+                let filaments: PassiveFilaments = passive_filaments(&pf_passive_loops[i_loop].element);
+                let passive_r: Array1<f64> = filaments.r;
+                let passive_z: Array1<f64> = filaments.z;
 
                 // These Green's tables depend on the sensor and this passive's filament geometry,
                 // not on the degree of freedom, so they are built once and re-used for every one
@@ -678,18 +733,15 @@ impl BpProbes {
                 let g_br_matrix: Array2<f64> = greens_calculator.b_r(); // shape() = (1, n_z*n_r)
                 let g_bz_matrix: Array2<f64> = greens_calculator.b_z(); // shape() = (1, n_z*n_r)
 
-                for dof_name in dof_names {
-                    // Current distribution
-                    let current_distribution: Array1<f64> = passives
-                        .results
-                        .get(&passive_name)
-                        .get("dof")
-                        .get(&dof_name)
-                        .get("current_distribution")
-                        .unwrap_array1();
+                let n_dof: usize = pf_passive_loops[i_loop].dof.len();
+                for i_dof in 0..n_dof {
+                    let dof_name: &str = &pf_passive_loops[i_loop].dof[i_dof].name;
 
-                    let g_br_with_dof_full: Array2<f64> = &g_br_matrix * &current_distribution; // shape = [n_passive_dof, n_filament]
-                    let g_bz_with_dof_full: Array2<f64> = &g_bz_matrix * &current_distribution; // shape = [n_passive_dof, n_filament]
+                    // Current distribution
+                    let current_distribution: &Array1<f64> = &pf_passive_loops[i_loop].dof[i_dof].current_distribution;
+
+                    let g_br_with_dof_full: Array2<f64> = &g_br_matrix * current_distribution; // shape = [n_passive_dof, n_filament]
+                    let g_bz_with_dof_full: Array2<f64> = &g_bz_matrix * current_distribution; // shape = [n_passive_dof, n_filament]
 
                     // Sum over all filaments
                     let g_br: f64 = g_br_with_dof_full.sum(); // shape = [n_passive_dof]
@@ -703,8 +755,8 @@ impl BpProbes {
                         .get_or_insert(&sensor_name)
                         .get_or_insert("greens")
                         .get_or_insert("passives")
-                        .get_or_insert(&passive_name)
-                        .insert(&dof_name, g);
+                        .get_or_insert(passive_name)
+                        .insert(dof_name, g);
                 }
             }
         }

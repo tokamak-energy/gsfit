@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<database_writer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../settings_schema/xsd/database_writer.xsd">
+    <method>tokamak_energy_mdsplus_new</method>
+</database_writer>

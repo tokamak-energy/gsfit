@@ -9,9 +9,8 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, EMPTY_INT, Elements, FLT_0D, FLT_1D, INT_0D, INT_1D, STR_0D, STR_1D};
-use ndarray::{Dimension, Ix1};
-use std::slice::SliceIndex;
+use crate::dd_base_types::{Accumulator, ArrayOfStructuresElement, EMPTY_INT, Elements, FLT_0D, FLT_1D, INT_0D, INT_1D, Named, STR_0D, STR_1D, Selection};
+use ndarray::Dimension;
 
 // ============================================================================
 // Complex Types
@@ -899,16 +898,33 @@ impl<'a, D: Dimension> GasMixtureConstantSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, PlasmaCompositionNeutralElementConstant>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &GasMixtureConstant| item.element.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for GasMixtureConstant {
+    type SliceView<'a, D>
+        = GasMixtureConstantSliceView<'a, D>
     where
-        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        PlasmaCompositionNeutralElementConstantSliceView::new(self.slice_elements.nest("element", |item: &GasMixtureConstant| item.element.as_slice(), range))
+        GasMixtureConstantSliceView::new(elements)
+    }
+}
+
+impl Named for GasMixtureConstant {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -991,19 +1007,35 @@ impl<'a, D: Dimension> PulseScheduleNbiUnitSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `species` under every element, e.g. `.species(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `species` under every element. A range, e.g. `.species(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.species(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn species<R>(&self, range: R) -> GasMixtureConstantSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn species<S: Selection<'a, GasMixtureConstant>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("species", &self.slice_elements, |item: &PulseScheduleNbiUnit| item.species.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for PulseScheduleNbiUnit {
+    type SliceView<'a, D>
+        = PulseScheduleNbiUnitSliceView<'a, D>
     where
-        R: SliceIndex<[GasMixtureConstant], Output = [GasMixtureConstant]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GasMixtureConstantSliceView::new(
-            self.slice_elements
-                .nest("species", |item: &PulseScheduleNbiUnit| item.species.as_slice(), range),
-        )
+        PulseScheduleNbiUnitSliceView::new(elements)
+    }
+}
+
+impl Named for PulseScheduleNbiUnit {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1126,6 +1158,26 @@ impl<'a, D: Dimension> PulseScheduleIcAntennaSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a PulseScheduleIcAntenna> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for PulseScheduleIcAntenna {
+    type SliceView<'a, D>
+        = PulseScheduleIcAntennaSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseScheduleIcAntennaSliceView::new(elements)
+    }
+}
+
+impl Named for PulseScheduleIcAntenna {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1269,6 +1321,26 @@ impl<'a, D: Dimension> PulseScheduleLhAntennaSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a PulseScheduleLhAntenna> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for PulseScheduleLhAntenna {
+    type SliceView<'a, D>
+        = PulseScheduleLhAntennaSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseScheduleLhAntennaSliceView::new(elements)
+    }
+}
+
+impl Named for PulseScheduleLhAntenna {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1417,6 +1489,26 @@ impl<'a, D: Dimension> PulseScheduleEcBeamSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for PulseScheduleEcBeam {
+    type SliceView<'a, D>
+        = PulseScheduleEcBeamSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseScheduleEcBeamSliceView::new(elements)
+    }
+}
+
+impl Named for PulseScheduleEcBeam {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- PlasmaCompositionNeutralElementConstant View Types ---
 
 /// View over multiple PlasmaCompositionNeutralElementConstant with field accumulation
@@ -1454,6 +1546,20 @@ impl<'a, D: Dimension> PlasmaCompositionNeutralElementConstantSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a PlasmaCompositionNeutralElementConstant> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for PlasmaCompositionNeutralElementConstant {
+    type SliceView<'a, D>
+        = PlasmaCompositionNeutralElementConstantSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PlasmaCompositionNeutralElementConstantSliceView::new(elements)
     }
 }
 
@@ -1517,19 +1623,37 @@ impl<'a, D: Dimension> PulseScheduleDensityControlValveSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `species` under every element, e.g. `.species(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `species` under every element. A range, e.g. `.species(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.species(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn species<R>(&self, range: R) -> GasMixtureConstantSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn species<S: Selection<'a, GasMixtureConstant>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("species", &self.slice_elements, |item: &PulseScheduleDensityControlValve| {
+            item.species.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for PulseScheduleDensityControlValve {
+    type SliceView<'a, D>
+        = PulseScheduleDensityControlValveSliceView<'a, D>
     where
-        R: SliceIndex<[GasMixtureConstant], Output = [GasMixtureConstant]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GasMixtureConstantSliceView::new(
-            self.slice_elements
-                .nest("species", |item: &PulseScheduleDensityControlValve| item.species.as_slice(), range),
-        )
+        PulseScheduleDensityControlValveSliceView::new(elements)
+    }
+}
+
+impl Named for PulseScheduleDensityControlValve {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1593,20 +1717,33 @@ impl<'a, D: Dimension> PulseScheduleDensityControlIonSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, PlasmaCompositionNeutralElementConstant>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &PulseScheduleDensityControlIon| item.element.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for PulseScheduleDensityControlIon {
+    type SliceView<'a, D>
+        = PulseScheduleDensityControlIonSliceView<'a, D>
     where
-        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        PlasmaCompositionNeutralElementConstantSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &PulseScheduleDensityControlIon| item.element.as_slice(),
-            range,
-        ))
+        PulseScheduleDensityControlIonSliceView::new(elements)
+    }
+}
+
+impl Named for PulseScheduleDensityControlIon {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1692,6 +1829,26 @@ impl<'a, D: Dimension> PulseSchedulePfActiveCoilSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for PulseSchedulePfActiveCoil {
+    type SliceView<'a, D>
+        = PulseSchedulePfActiveCoilSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseSchedulePfActiveCoilSliceView::new(elements)
+    }
+}
+
+impl Named for PulseSchedulePfActiveCoil {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- PulseSchedulePfActiveSupply View Types ---
 
 /// View over `voltage` (PulseScheduleReferencePfActive) across multiple PulseSchedulePfActiveSupply
@@ -1772,6 +1929,26 @@ impl<'a, D: Dimension> PulseSchedulePfActiveSupplySliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for PulseSchedulePfActiveSupply {
+    type SliceView<'a, D>
+        = PulseSchedulePfActiveSupplySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseSchedulePfActiveSupplySliceView::new(elements)
+    }
+}
+
+impl Named for PulseSchedulePfActiveSupply {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- PulseScheduleRz View Types ---
 
 /// View over `r` (PulseScheduleReferencePosition) across multiple PulseScheduleRz
@@ -1845,6 +2022,20 @@ impl<'a, D: Dimension> PulseScheduleRzSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a PulseScheduleRz> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for PulseScheduleRz {
+    type SliceView<'a, D>
+        = PulseScheduleRzSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseScheduleRzSliceView::new(elements)
     }
 }
 
@@ -1924,6 +2115,20 @@ impl<'a, D: Dimension> PulseScheduleOutlineSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for PulseScheduleOutline {
+    type SliceView<'a, D>
+        = PulseScheduleOutlineSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseScheduleOutlineSliceView::new(elements)
+    }
+}
+
 // --- PulseScheduleGap View Types ---
 
 /// View over `value` (PulseScheduleReferencePosition) across multiple PulseScheduleGap
@@ -1989,6 +2194,26 @@ impl<'a, D: Dimension> PulseScheduleGapSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for PulseScheduleGap {
+    type SliceView<'a, D>
+        = PulseScheduleGapSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseScheduleGapSliceView::new(elements)
+    }
+}
+
+impl Named for PulseScheduleGap {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- Library View Types ---
 
 /// View over multiple Library with field accumulation
@@ -2032,6 +2257,26 @@ impl<'a, D: Dimension> LibrarySliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a Library> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for Library {
+    type SliceView<'a, D>
+        = LibrarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        LibrarySliceView::new(elements)
+    }
+}
+
+impl Named for Library {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2140,18 +2385,35 @@ impl<'a, D: Dimension> PulseScheduleEventSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for PulseScheduleEvent {
+    type SliceView<'a, D>
+        = PulseScheduleEventSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseScheduleEventSliceView::new(elements)
+    }
+}
+
 // ============================================================================
 // Struct Impl Blocks for Vec Field Access
 // ============================================================================
 
 impl PulseScheduleNbiUnit {
-    /// The slice view over a range of species, e.g. `.species(0..2)` or `.species(..)`,
-    /// whose leaves gather one value per element. A single element is `.species[i]`.
-    pub fn species<R>(&self, range: R) -> GasMixtureConstantSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GasMixtureConstant], Output = [GasMixtureConstant]>,
-    {
-        GasMixtureConstantSliceView::new(Elements::from_slice(&self.species[range]))
+    /// Select from `species`. A range, e.g. `.species(0..2)` or `.species(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.species(name)`, gives the one element with that `name`.
+    /// A single element is `.species[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn species<'a, S: Selection<'a, GasMixtureConstant>>(&'a self, selection: S) -> S::Output {
+        selection.select("species", &self.species)
     }
 
     /// Get the number of species elements
@@ -2161,13 +2423,16 @@ impl PulseScheduleNbiUnit {
 }
 
 impl PulseScheduleNbi {
-    /// The slice view over a range of unit, e.g. `.unit(0..2)` or `.unit(..)`,
-    /// whose leaves gather one value per element. A single element is `.unit[i]`.
-    pub fn unit<R>(&self, range: R) -> PulseScheduleNbiUnitSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleNbiUnit], Output = [PulseScheduleNbiUnit]>,
-    {
-        PulseScheduleNbiUnitSliceView::new(Elements::from_slice(&self.unit[range]))
+    /// Select from `unit`. A range, e.g. `.unit(0..2)` or `.unit(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.unit(name)`, gives the one element with that `name`.
+    /// A single element is `.unit[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn unit<'a, S: Selection<'a, PulseScheduleNbiUnit>>(&'a self, selection: S) -> S::Output {
+        selection.select("unit", &self.unit)
     }
 
     /// Get the number of unit elements
@@ -2177,13 +2442,16 @@ impl PulseScheduleNbi {
 }
 
 impl PulseScheduleIc {
-    /// The slice view over a range of antenna, e.g. `.antenna(0..2)` or `.antenna(..)`,
-    /// whose leaves gather one value per element. A single element is `.antenna[i]`.
-    pub fn antenna<R>(&self, range: R) -> PulseScheduleIcAntennaSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleIcAntenna], Output = [PulseScheduleIcAntenna]>,
-    {
-        PulseScheduleIcAntennaSliceView::new(Elements::from_slice(&self.antenna[range]))
+    /// Select from `antenna`. A range, e.g. `.antenna(0..2)` or `.antenna(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.antenna(name)`, gives the one element with that `name`.
+    /// A single element is `.antenna[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn antenna<'a, S: Selection<'a, PulseScheduleIcAntenna>>(&'a self, selection: S) -> S::Output {
+        selection.select("antenna", &self.antenna)
     }
 
     /// Get the number of antenna elements
@@ -2193,13 +2461,16 @@ impl PulseScheduleIc {
 }
 
 impl PulseScheduleLh {
-    /// The slice view over a range of antenna, e.g. `.antenna(0..2)` or `.antenna(..)`,
-    /// whose leaves gather one value per element. A single element is `.antenna[i]`.
-    pub fn antenna<R>(&self, range: R) -> PulseScheduleLhAntennaSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleLhAntenna], Output = [PulseScheduleLhAntenna]>,
-    {
-        PulseScheduleLhAntennaSliceView::new(Elements::from_slice(&self.antenna[range]))
+    /// Select from `antenna`. A range, e.g. `.antenna(0..2)` or `.antenna(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.antenna(name)`, gives the one element with that `name`.
+    /// A single element is `.antenna[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn antenna<'a, S: Selection<'a, PulseScheduleLhAntenna>>(&'a self, selection: S) -> S::Output {
+        selection.select("antenna", &self.antenna)
     }
 
     /// Get the number of antenna elements
@@ -2209,13 +2480,16 @@ impl PulseScheduleLh {
 }
 
 impl PulseScheduleEc {
-    /// The slice view over a range of beam, e.g. `.beam(0..2)` or `.beam(..)`,
-    /// whose leaves gather one value per element. A single element is `.beam[i]`.
-    pub fn beam<R>(&self, range: R) -> PulseScheduleEcBeamSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleEcBeam], Output = [PulseScheduleEcBeam]>,
-    {
-        PulseScheduleEcBeamSliceView::new(Elements::from_slice(&self.beam[range]))
+    /// Select from `beam`. A range, e.g. `.beam(0..2)` or `.beam(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.beam(name)`, gives the one element with that `name`.
+    /// A single element is `.beam[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn beam<'a, S: Selection<'a, PulseScheduleEcBeam>>(&'a self, selection: S) -> S::Output {
+        selection.select("beam", &self.beam)
     }
 
     /// Get the number of beam elements
@@ -2225,13 +2499,14 @@ impl PulseScheduleEc {
 }
 
 impl PulseScheduleDensityControlIon {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]>,
-    {
-        PlasmaCompositionNeutralElementConstantSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, PlasmaCompositionNeutralElementConstant>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -2241,13 +2516,16 @@ impl PulseScheduleDensityControlIon {
 }
 
 impl PulseScheduleDensityControlValve {
-    /// The slice view over a range of species, e.g. `.species(0..2)` or `.species(..)`,
-    /// whose leaves gather one value per element. A single element is `.species[i]`.
-    pub fn species<R>(&self, range: R) -> GasMixtureConstantSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GasMixtureConstant], Output = [GasMixtureConstant]>,
-    {
-        GasMixtureConstantSliceView::new(Elements::from_slice(&self.species[range]))
+    /// Select from `species`. A range, e.g. `.species(0..2)` or `.species(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.species(name)`, gives the one element with that `name`.
+    /// A single element is `.species[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn species<'a, S: Selection<'a, GasMixtureConstant>>(&'a self, selection: S) -> S::Output {
+        selection.select("species", &self.species)
     }
 
     /// Get the number of species elements
@@ -2257,13 +2535,16 @@ impl PulseScheduleDensityControlValve {
 }
 
 impl PulseScheduleDensityControl {
-    /// The slice view over a range of valve, e.g. `.valve(0..2)` or `.valve(..)`,
-    /// whose leaves gather one value per element. A single element is `.valve[i]`.
-    pub fn valve<R>(&self, range: R) -> PulseScheduleDensityControlValveSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleDensityControlValve], Output = [PulseScheduleDensityControlValve]>,
-    {
-        PulseScheduleDensityControlValveSliceView::new(Elements::from_slice(&self.valve[range]))
+    /// Select from `valve`. A range, e.g. `.valve(0..2)` or `.valve(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.valve(name)`, gives the one element with that `name`.
+    /// A single element is `.valve[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn valve<'a, S: Selection<'a, PulseScheduleDensityControlValve>>(&'a self, selection: S) -> S::Output {
+        selection.select("valve", &self.valve)
     }
 
     /// Get the number of valve elements
@@ -2273,13 +2554,16 @@ impl PulseScheduleDensityControl {
 }
 
 impl PulseScheduleDensityControl {
-    /// The slice view over a range of ion, e.g. `.ion(0..2)` or `.ion(..)`,
-    /// whose leaves gather one value per element. A single element is `.ion[i]`.
-    pub fn ion<R>(&self, range: R) -> PulseScheduleDensityControlIonSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleDensityControlIon], Output = [PulseScheduleDensityControlIon]>,
-    {
-        PulseScheduleDensityControlIonSliceView::new(Elements::from_slice(&self.ion[range]))
+    /// Select from `ion`. A range, e.g. `.ion(0..2)` or `.ion(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.ion(name)`, gives the one element with that `name`.
+    /// A single element is `.ion[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn ion<'a, S: Selection<'a, PulseScheduleDensityControlIon>>(&'a self, selection: S) -> S::Output {
+        selection.select("ion", &self.ion)
     }
 
     /// Get the number of ion elements
@@ -2289,13 +2573,16 @@ impl PulseScheduleDensityControl {
 }
 
 impl PulseSchedulePfActive {
-    /// The slice view over a range of coil, e.g. `.coil(0..2)` or `.coil(..)`,
-    /// whose leaves gather one value per element. A single element is `.coil[i]`.
-    pub fn coil<R>(&self, range: R) -> PulseSchedulePfActiveCoilSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseSchedulePfActiveCoil], Output = [PulseSchedulePfActiveCoil]>,
-    {
-        PulseSchedulePfActiveCoilSliceView::new(Elements::from_slice(&self.coil[range]))
+    /// Select from `coil`. A range, e.g. `.coil(0..2)` or `.coil(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.coil(name)`, gives the one element with that `name`.
+    /// A single element is `.coil[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn coil<'a, S: Selection<'a, PulseSchedulePfActiveCoil>>(&'a self, selection: S) -> S::Output {
+        selection.select("coil", &self.coil)
     }
 
     /// Get the number of coil elements
@@ -2305,13 +2592,16 @@ impl PulseSchedulePfActive {
 }
 
 impl PulseSchedulePfActive {
-    /// The slice view over a range of supply, e.g. `.supply(0..2)` or `.supply(..)`,
-    /// whose leaves gather one value per element. A single element is `.supply[i]`.
-    pub fn supply<R>(&self, range: R) -> PulseSchedulePfActiveSupplySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseSchedulePfActiveSupply], Output = [PulseSchedulePfActiveSupply]>,
-    {
-        PulseSchedulePfActiveSupplySliceView::new(Elements::from_slice(&self.supply[range]))
+    /// Select from `supply`. A range, e.g. `.supply(0..2)` or `.supply(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.supply(name)`, gives the one element with that `name`.
+    /// A single element is `.supply[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn supply<'a, S: Selection<'a, PulseSchedulePfActiveSupply>>(&'a self, selection: S) -> S::Output {
+        selection.select("supply", &self.supply)
     }
 
     /// Get the number of supply elements
@@ -2321,13 +2611,14 @@ impl PulseSchedulePfActive {
 }
 
 impl PulseSchedulePosition {
-    /// The slice view over a range of x_point, e.g. `.x_point(0..2)` or `.x_point(..)`,
-    /// whose leaves gather one value per element. A single element is `.x_point[i]`.
-    pub fn x_point<R>(&self, range: R) -> PulseScheduleRzSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleRz], Output = [PulseScheduleRz]>,
-    {
-        PulseScheduleRzSliceView::new(Elements::from_slice(&self.x_point[range]))
+    /// Select from `x_point`. A range, e.g. `.x_point(0..2)` or `.x_point(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.x_point[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn x_point<'a, S: Selection<'a, PulseScheduleRz>>(&'a self, selection: S) -> S::Output {
+        selection.select("x_point", &self.x_point)
     }
 
     /// Get the number of x_point elements
@@ -2337,13 +2628,14 @@ impl PulseSchedulePosition {
 }
 
 impl PulseSchedulePosition {
-    /// The slice view over a range of strike_point, e.g. `.strike_point(0..2)` or `.strike_point(..)`,
-    /// whose leaves gather one value per element. A single element is `.strike_point[i]`.
-    pub fn strike_point<R>(&self, range: R) -> PulseScheduleRzSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleRz], Output = [PulseScheduleRz]>,
-    {
-        PulseScheduleRzSliceView::new(Elements::from_slice(&self.strike_point[range]))
+    /// Select from `strike_point`. A range, e.g. `.strike_point(0..2)` or `.strike_point(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.strike_point[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn strike_point<'a, S: Selection<'a, PulseScheduleRz>>(&'a self, selection: S) -> S::Output {
+        selection.select("strike_point", &self.strike_point)
     }
 
     /// Get the number of strike_point elements
@@ -2353,13 +2645,14 @@ impl PulseSchedulePosition {
 }
 
 impl PulseSchedulePosition {
-    /// The slice view over a range of boundary_outline, e.g. `.boundary_outline(0..2)` or `.boundary_outline(..)`,
-    /// whose leaves gather one value per element. A single element is `.boundary_outline[i]`.
-    pub fn boundary_outline<R>(&self, range: R) -> PulseScheduleOutlineSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleOutline], Output = [PulseScheduleOutline]>,
-    {
-        PulseScheduleOutlineSliceView::new(Elements::from_slice(&self.boundary_outline[range]))
+    /// Select from `boundary_outline`. A range, e.g. `.boundary_outline(0..2)` or `.boundary_outline(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.boundary_outline[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn boundary_outline<'a, S: Selection<'a, PulseScheduleOutline>>(&'a self, selection: S) -> S::Output {
+        selection.select("boundary_outline", &self.boundary_outline)
     }
 
     /// Get the number of boundary_outline elements
@@ -2369,13 +2662,16 @@ impl PulseSchedulePosition {
 }
 
 impl PulseSchedulePosition {
-    /// The slice view over a range of gap, e.g. `.gap(0..2)` or `.gap(..)`,
-    /// whose leaves gather one value per element. A single element is `.gap[i]`.
-    pub fn gap<R>(&self, range: R) -> PulseScheduleGapSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleGap], Output = [PulseScheduleGap]>,
-    {
-        PulseScheduleGapSliceView::new(Elements::from_slice(&self.gap[range]))
+    /// Select from `gap`. A range, e.g. `.gap(0..2)` or `.gap(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.gap(name)`, gives the one element with that `name`.
+    /// A single element is `.gap[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn gap<'a, S: Selection<'a, PulseScheduleGap>>(&'a self, selection: S) -> S::Output {
+        selection.select("gap", &self.gap)
     }
 
     /// Get the number of gap elements
@@ -2385,13 +2681,14 @@ impl PulseSchedulePosition {
 }
 
 impl GasMixtureConstant {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]>,
-    {
-        PlasmaCompositionNeutralElementConstantSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, PlasmaCompositionNeutralElementConstant>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -2401,13 +2698,16 @@ impl GasMixtureConstant {
 }
 
 impl Code {
-    /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
-    /// whose leaves gather one value per element. A single element is `.library[i]`.
-    pub fn library<R>(&self, range: R) -> LibrarySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Library], Output = [Library]>,
-    {
-        LibrarySliceView::new(Elements::from_slice(&self.library[range]))
+    /// Select from `library`. A range, e.g. `.library(0..2)` or `.library(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.library(name)`, gives the one element with that `name`.
+    /// A single element is `.library[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn library<'a, S: Selection<'a, Library>>(&'a self, selection: S) -> S::Output {
+        selection.select("library", &self.library)
     }
 
     /// Get the number of library elements
@@ -2417,13 +2717,14 @@ impl Code {
 }
 
 impl PulseSchedule {
-    /// The slice view over a range of event, e.g. `.event(0..2)` or `.event(..)`,
-    /// whose leaves gather one value per element. A single element is `.event[i]`.
-    pub fn event<R>(&self, range: R) -> PulseScheduleEventSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PulseScheduleEvent], Output = [PulseScheduleEvent]>,
-    {
-        PulseScheduleEventSliceView::new(Elements::from_slice(&self.event[range]))
+    /// Select from `event`. A range, e.g. `.event(0..2)` or `.event(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.event[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn event<'a, S: Selection<'a, PulseScheduleEvent>>(&'a self, selection: S) -> S::Output {
+        selection.select("event", &self.event)
     }
 
     /// Get the number of event elements

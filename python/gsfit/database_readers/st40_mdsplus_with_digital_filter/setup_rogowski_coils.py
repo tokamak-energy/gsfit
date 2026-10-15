@@ -6,6 +6,10 @@ import numpy.typing as npt
 from gsfit_rs import RogowskiCoils
 from st40_database import GetData
 
+from ...settings_schema.python.equilibrium.constraints_rogowski_coil import ConstraintsRogowskiCoil as ConstraintsRogowskiCoilSettings
+from ...settings_schema.python.equilibrium.constraints_rogowski_coil import RogowskiCoil
+from ...settings_schema.python.magnetics.magnetics import MagneticsSettings
+
 if TYPE_CHECKING:
     from . import DatabaseReader
 
@@ -13,13 +17,16 @@ if TYPE_CHECKING:
 def setup_rogowski_coils(
     self: "DatabaseReader",
     pulseNo: int,
-    settings: dict[str, typing.Any],
+    settings: MagneticsSettings,
+    settings_rogowski_coils: ConstraintsRogowskiCoilSettings,
 ) -> RogowskiCoils:
     """
     This method initialises the Rust `RogowskiCoils` class.
 
     :param pulseNo: Pulse number, used to read from the database
-    :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    :param settings: `MagneticsSettings` object, read from `magnetics/magnetics.xml`, whose `workflow` says which MAG run to read the Rogowski coils from
+    :param settings_rogowski_coils: `ConstraintsRogowskiCoil` object, read from `equilibrium/constraints_rogowski_coil.xml`, which holds each
+        Rogowski coil's fitting settings. A Rogowski coil which is not listed there is not included in the fit
 
     **This method is specific to ST40's experimental MDSplus database.**
 
@@ -29,9 +36,24 @@ def setup_rogowski_coils(
     # Initialise the RogowskiCoils Rust class
     rogowski_coils = RogowskiCoils()
 
+    # The MAG run to read, from the `workflow.xml` which `magnetics.xml` links to
+    workflow = settings.workflow
+    if workflow is None or workflow.mag is None:
+        raise ValueError("`magnetics.xml` must link to a `workflow.xml` holding `mag`, which says which MAG run to read the Rogowski coils from")
+    # A nil `pulseNo` reads the pulse being reconstructed
+    mag_settings = workflow.mag
+    if mag_settings.pulseNo is None:
+        mag_pulseNo = pulseNo
+    else:
+        mag_pulseNo = mag_settings.pulseNo
+
     # Read in mag data from MDSplus
-    mag_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus_with_digital_filter"]["workflow"]["mag"]["run_name"]
-    mag = GetData(pulseNo, f"MAG#{mag_run_name}", is_fail_quiet=False)
+    mag = GetData(mag_pulseNo, f"MAG#{mag_settings.run_name}", is_fail_quiet=False)
+
+    # The fitting settings of each Rogowski coil listed in `constraints_rogowski_coil.xml`, by name
+    sensors_fit_settings: dict[str, RogowskiCoil] = {}
+    for sensor_fit_settings in settings_rogowski_coils.rogowski_coil:
+        sensors_fit_settings[sensor_fit_settings.name] = sensor_fit_settings
 
     names_long = typing.cast(list[str], mag.get("ROG.ALL.NAMES"))
     sensors_names = np.char.replace(names_long, "ROG_", "")
@@ -39,7 +61,7 @@ def setup_rogowski_coils(
     paths_z = typing.cast(npt.NDArray[np.float32], mag.get("ROG.ALL.Z_PATH")).astype(np.float64)
 
     n_sensors = len(sensors_names)
-    for i_sensor in range(0, n_sensors):
+    for i_sensor in range(n_sensors):
         sensor_name = sensors_names[i_sensor]
         path_r = paths_r[i_sensor, :]
         path_z = paths_z[i_sensor, :]
@@ -51,11 +73,12 @@ def setup_rogowski_coils(
 
         # Don't store the "fake" Rogowski coils (e.g. the MC supports)
         if len(path_r) > 4:
-            if sensor_name in settings["sensor_weights_rogowski_coils.json"]:
-                fit_settings_comment = settings["sensor_weights_rogowski_coils.json"][sensor_name]["fit_settings"]["comment"]
-                fit_settings_expected_value = settings["sensor_weights_rogowski_coils.json"][sensor_name]["fit_settings"]["expected_value"]
-                fit_settings_include = settings["sensor_weights_rogowski_coils.json"][sensor_name]["fit_settings"]["include"]
-                fit_settings_weight = settings["sensor_weights_rogowski_coils.json"][sensor_name]["fit_settings"]["weight"]
+            if sensor_name in sensors_fit_settings:
+                sensor_fit_settings = sensors_fit_settings[sensor_name]
+                fit_settings_comment = sensor_fit_settings.comment
+                fit_settings_expected_value = sensor_fit_settings.expected_value
+                fit_settings_include = sensor_fit_settings.include
+                fit_settings_weight = sensor_fit_settings.weight
             else:
                 fit_settings_comment = ""
                 fit_settings_expected_value = np.nan

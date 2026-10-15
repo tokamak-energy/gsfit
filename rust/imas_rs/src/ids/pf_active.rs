@@ -9,9 +9,10 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, INT_0D, INT_1D, INT_2D, STR_0D};
-use ndarray::{Dimension, Ix1};
-use std::slice::SliceIndex;
+use crate::dd_base_types::{
+    Accumulator, ArrayOfStructuresElement, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, INT_0D, INT_1D, INT_2D, Named, STR_0D, Selection,
+};
+use ndarray::Dimension;
 
 // ============================================================================
 // Complex Types
@@ -169,6 +170,9 @@ pub struct PfCoils {
     /// Vertical crushing force applied on this coil (positive when compressive)
     /// Units: N
     pub force_vertical_crushing: SignalFlt1d,
+    /// Which of the coil's signals is prescribed: `current` (`index` 1) when `coil(i1)/current` is given, or `voltage` (`index` 2)
+    /// when `coil(i1)/voltage` is given and the current is calculated
+    pub prescribed: IdentifierStatic,
 }
 
 impl Default for PfCoils {
@@ -195,6 +199,7 @@ impl Default for PfCoils {
             force_vertical: SignalFlt1d::default(),
             force_radial_crushing: SignalFlt1d::default(),
             force_vertical_crushing: SignalFlt1d::default(),
+            prescribed: IdentifierStatic::default(),
         }
     }
 }
@@ -602,6 +607,26 @@ impl<'a, D: Dimension> IdentifierStaticSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for IdentifierStatic {
+    type SliceView<'a, D>
+        = IdentifierStaticSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        IdentifierStaticSliceView::new(elements)
+    }
+}
+
+impl Named for IdentifierStatic {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- PfCoilsElements View Types ---
 
 /// View over `geometry.outline` (Rz1dStatic) across multiple PfCoilsElements
@@ -815,6 +840,26 @@ impl<'a, D: Dimension> PfCoilsElementsSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for PfCoilsElements {
+    type SliceView<'a, D>
+        = PfCoilsElementsSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PfCoilsElementsSliceView::new(elements)
+    }
+}
+
+impl Named for PfCoilsElements {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- Library View Types ---
 
 /// View over multiple Library with field accumulation
@@ -858,6 +903,26 @@ impl<'a, D: Dimension> LibrarySliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a Library> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for Library {
+    type SliceView<'a, D>
+        = LibrarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        LibrarySliceView::new(elements)
+    }
+}
+
+impl Named for Library {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1131,6 +1196,25 @@ impl<'a, D: Dimension> PfCoilsForceVerticalCrushingView<'a, D> {
     }
 }
 
+/// View over `prescribed` (IdentifierStatic) across multiple PfCoils
+pub struct PfCoilsPrescribedView<'a, D> {
+    pub name: Accumulator<'a, PfCoils, STR_0D, D>,
+    pub index: Accumulator<'a, PfCoils, INT_0D, D>,
+    pub description: Accumulator<'a, PfCoils, STR_0D, D>,
+    slice_elements: Elements<'a, PfCoils, D>,
+}
+
+impl<'a, D: Dimension> PfCoilsPrescribedView<'a, D> {
+    pub fn new(elements: Elements<'a, PfCoils, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &PfCoils| item.prescribed.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &PfCoils| item.prescribed.index),
+            description: Accumulator::new(elements.clone(), |item: &PfCoils| item.prescribed.description.clone()),
+            slice_elements: elements,
+        }
+    }
+}
+
 /// View over multiple PfCoils with field accumulation
 pub struct PfCoilsSliceView<'a, D> {
     pub name: Accumulator<'a, PfCoils, STR_0D, D>,
@@ -1148,6 +1232,7 @@ pub struct PfCoilsSliceView<'a, D> {
     pub force_vertical: PfCoilsForceVerticalView<'a, D>,
     pub force_radial_crushing: PfCoilsForceRadialCrushingView<'a, D>,
     pub force_vertical_crushing: PfCoilsForceVerticalCrushingView<'a, D>,
+    pub prescribed: PfCoilsPrescribedView<'a, D>,
     slice_elements: Elements<'a, PfCoils, D>,
 }
 
@@ -1169,6 +1254,7 @@ impl<'a, D: Dimension> PfCoilsSliceView<'a, D> {
             force_vertical: PfCoilsForceVerticalView::new(elements.clone()),
             force_radial_crushing: PfCoilsForceRadialCrushingView::new(elements.clone()),
             force_vertical_crushing: PfCoilsForceVerticalCrushingView::new(elements.clone()),
+            prescribed: PfCoilsPrescribedView::new(elements.clone()),
             slice_elements: elements,
         }
     }
@@ -1192,28 +1278,46 @@ impl<'a, D: Dimension> PfCoilsSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `function` under every element, e.g. `.function(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `function` under every element. A range, e.g. `.function(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.function(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn function<R>(&self, range: R) -> IdentifierStaticSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[IdentifierStatic], Output = [IdentifierStatic]> + Clone,
-    {
-        IdentifierStaticSliceView::new(self.slice_elements.nest("function", |item: &PfCoils| item.function.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn function<S: Selection<'a, IdentifierStatic>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("function", &self.slice_elements, |item: &PfCoils| item.function.as_slice())
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.element(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PfCoilsElementsSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn element<S: Selection<'a, PfCoilsElements>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &PfCoils| item.element.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for PfCoils {
+    type SliceView<'a, D>
+        = PfCoilsSliceView<'a, D>
     where
-        R: SliceIndex<[PfCoilsElements], Output = [PfCoilsElements]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        PfCoilsElementsSliceView::new(self.slice_elements.nest("element", |item: &PfCoils| item.element.as_slice(), range))
+        PfCoilsSliceView::new(elements)
+    }
+}
+
+impl Named for PfCoils {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1280,6 +1384,26 @@ impl<'a, D: Dimension> PfCircuitsSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a PfCircuits> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for PfCircuits {
+    type SliceView<'a, D>
+        = PfCircuitsSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PfCircuitsSliceView::new(elements)
+    }
+}
+
+impl Named for PfCircuits {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1367,18 +1491,41 @@ impl<'a, D: Dimension> PfSuppliesSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for PfSupplies {
+    type SliceView<'a, D>
+        = PfSuppliesSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PfSuppliesSliceView::new(elements)
+    }
+}
+
+impl Named for PfSupplies {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // ============================================================================
 // Struct Impl Blocks for Vec Field Access
 // ============================================================================
 
 impl PfCoils {
-    /// The slice view over a range of function, e.g. `.function(0..2)` or `.function(..)`,
-    /// whose leaves gather one value per element. A single element is `.function[i]`.
-    pub fn function<R>(&self, range: R) -> IdentifierStaticSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[IdentifierStatic], Output = [IdentifierStatic]>,
-    {
-        IdentifierStaticSliceView::new(Elements::from_slice(&self.function[range]))
+    /// Select from `function`. A range, e.g. `.function(0..2)` or `.function(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.function(name)`, gives the one element with that `name`.
+    /// A single element is `.function[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn function<'a, S: Selection<'a, IdentifierStatic>>(&'a self, selection: S) -> S::Output {
+        selection.select("function", &self.function)
     }
 
     /// Get the number of function elements
@@ -1388,13 +1535,16 @@ impl PfCoils {
 }
 
 impl PfCoils {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PfCoilsElementsSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PfCoilsElements], Output = [PfCoilsElements]>,
-    {
-        PfCoilsElementsSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.element(name)`, gives the one element with that `name`.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn element<'a, S: Selection<'a, PfCoilsElements>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -1404,13 +1554,16 @@ impl PfCoils {
 }
 
 impl Code {
-    /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
-    /// whose leaves gather one value per element. A single element is `.library[i]`.
-    pub fn library<R>(&self, range: R) -> LibrarySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Library], Output = [Library]>,
-    {
-        LibrarySliceView::new(Elements::from_slice(&self.library[range]))
+    /// Select from `library`. A range, e.g. `.library(0..2)` or `.library(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.library(name)`, gives the one element with that `name`.
+    /// A single element is `.library[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn library<'a, S: Selection<'a, Library>>(&'a self, selection: S) -> S::Output {
+        selection.select("library", &self.library)
     }
 
     /// Get the number of library elements
@@ -1420,13 +1573,16 @@ impl Code {
 }
 
 impl PfActive {
-    /// The slice view over a range of coil, e.g. `.coil(0..2)` or `.coil(..)`,
-    /// whose leaves gather one value per element. A single element is `.coil[i]`.
-    pub fn coil<R>(&self, range: R) -> PfCoilsSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PfCoils], Output = [PfCoils]>,
-    {
-        PfCoilsSliceView::new(Elements::from_slice(&self.coil[range]))
+    /// Select from `coil`. A range, e.g. `.coil(0..2)` or `.coil(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.coil(name)`, gives the one element with that `name`.
+    /// A single element is `.coil[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn coil<'a, S: Selection<'a, PfCoils>>(&'a self, selection: S) -> S::Output {
+        selection.select("coil", &self.coil)
     }
 
     /// Get the number of coil elements
@@ -1436,13 +1592,16 @@ impl PfActive {
 }
 
 impl PfActive {
-    /// The slice view over a range of circuit, e.g. `.circuit(0..2)` or `.circuit(..)`,
-    /// whose leaves gather one value per element. A single element is `.circuit[i]`.
-    pub fn circuit<R>(&self, range: R) -> PfCircuitsSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PfCircuits], Output = [PfCircuits]>,
-    {
-        PfCircuitsSliceView::new(Elements::from_slice(&self.circuit[range]))
+    /// Select from `circuit`. A range, e.g. `.circuit(0..2)` or `.circuit(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.circuit(name)`, gives the one element with that `name`.
+    /// A single element is `.circuit[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn circuit<'a, S: Selection<'a, PfCircuits>>(&'a self, selection: S) -> S::Output {
+        selection.select("circuit", &self.circuit)
     }
 
     /// Get the number of circuit elements
@@ -1452,13 +1611,16 @@ impl PfActive {
 }
 
 impl PfActive {
-    /// The slice view over a range of supply, e.g. `.supply(0..2)` or `.supply(..)`,
-    /// whose leaves gather one value per element. A single element is `.supply[i]`.
-    pub fn supply<R>(&self, range: R) -> PfSuppliesSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PfSupplies], Output = [PfSupplies]>,
-    {
-        PfSuppliesSliceView::new(Elements::from_slice(&self.supply[range]))
+    /// Select from `supply`. A range, e.g. `.supply(0..2)` or `.supply(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.supply(name)`, gives the one element with that `name`.
+    /// A single element is `.supply[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn supply<'a, S: Selection<'a, PfSupplies>>(&'a self, selection: S) -> S::Output {
+        selection.select("supply", &self.supply)
     }
 
     /// Get the number of supply elements

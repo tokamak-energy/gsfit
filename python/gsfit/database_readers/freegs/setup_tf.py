@@ -5,6 +5,7 @@ import freegs
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Tf
+from gsfit_rs.dd_support import ParametersInput
 from scipy.constants import mu_0
 
 if TYPE_CHECKING:
@@ -34,7 +35,7 @@ def setup_tf(
     Two nodes are filled:
     1. `tf/r0`, the reference major radius the vacuum toroidal field is quoted at
     2. `tf/b_field_phi_vacuum_r`, the vacuum field times major radius, on the **experimental**
-       timebase. `solve_grad_shafranov` interpolates it onto the reconstruction times itself, so
+       timebase. `Plasma.copy_from_tf_ids` interpolates it onto the reconstruction times itself, so
        do not interpolate it here.
 
     `b_field_phi_vacuum_r` is signed: positive means counter-clockwise viewed from above.
@@ -43,7 +44,8 @@ def setup_tf(
     """
 
     # Initialise the Tf Rust class
-    tf = Tf()
+    # This reader still reads the JSON settings, so has no XML settings to record in `tf/code/parameters` yet
+    tf = Tf(ParametersInput())
 
     tf.set_r0(settings["GSFIT_code_settings.json"]["vacuum_toroidal_field_reference_radius"])
 

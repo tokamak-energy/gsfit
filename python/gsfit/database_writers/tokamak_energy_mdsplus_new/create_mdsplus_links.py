@@ -28,12 +28,12 @@ def create_mdsplus_links(pulseNo_write: int, run_name: str, tree_name: str = "gs
         for signal_name in signal_names:
             tdi_command = "Build_Signal(TRANSPOSE(["
             for sensor_name in sensor_names_on_mds:
-                tdi_command += f'DATA(GETNCI("\\\\{tree_name_upper}::TOP.{run_name}.CONSTRAINTS.{sensor_type}.{sensor_name}:{signal_name}", "record")), '
+                tdi_command += f'GETNCI("\\\\{tree_name_upper}::TOP.{run_name}.CONSTRAINTS.{sensor_type}.{sensor_name}:{signal_name}", "record"), '
             tdi_command = (
                 tdi_command[:-2]  # remove the last comma and space
                 + "]), "  # closing TRANSPOSE
                 + "*, "  # no data in "raw"
-                + f'DATA(GETNCI("\\\\{tree_name_upper}::TOP.{run_name}.CONSTRAINTS.{sensor_type}.ALL:NAMES", "record")), DATA(GETNCI("\\\\{tree_name_upper}::TOP.{run_name}:TIME", "record"))'
+                + f'GETNCI("\\\\{tree_name_upper}::TOP.{run_name}.CONSTRAINTS.{sensor_type}.ALL:NAMES", "record"), GETNCI("\\\\{tree_name_upper}::TOP.{run_name}:TIME", "record")'
                 + ")"
             )
             conn.put(f"\\{tree_name_upper}::TOP.{run_name}.CONSTRAINTS.{sensor_type}.ALL:{signal_name}", tdi_command)
@@ -51,12 +51,12 @@ def create_mdsplus_links(pulseNo_write: int, run_name: str, tree_name: str = "gs
         for signal_name in signal_names:
             tdi_command = "Build_Signal(["
             for sensor_name in sensor_names_on_mds:
-                tdi_command += f'DATA(GETNCI("\\\\{tree_name_upper}::TOP.{run_name}.CONSTRAINTS.{sensor_type}.{sensor_name}:{signal_name}", "record")), '
+                tdi_command += f'GETNCI("\\\\{tree_name_upper}::TOP.{run_name}.CONSTRAINTS.{sensor_type}.{sensor_name}:{signal_name}", "record"), '
             tdi_command = (
                 tdi_command[:-2]  # remove the last comma and space
                 + "], "  # closing TRANSPOSE
                 + "*, "  # no data in "raw"
-                + f'DATA(GETNCI("\\\\{tree_name_upper}::TOP.{run_name}.CONSTRAINTS.{sensor_type}.ALL:NAMES", "record")), DATA(GETNCI("\\\\{tree_name_upper}::TOP.{run_name}:TIME", "record"))'
+                + f'GETNCI("\\\\{tree_name_upper}::TOP.{run_name}.CONSTRAINTS.{sensor_type}.ALL:NAMES", "record"), GETNCI("\\\\{tree_name_upper}::TOP.{run_name}:TIME", "record")'
                 + ")"
             )
             conn.put(f"\\{tree_name_upper}::TOP.{run_name}.CONSTRAINTS.{sensor_type}.ALL:{signal_name}", tdi_command)

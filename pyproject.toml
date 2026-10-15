@@ -22,6 +22,7 @@ dependencies = [
     "scipy",
     "setuptools_git_versioning",
     "toml",
+    "xmlschema",
 ]
 description = "GSFit: Equilibrium reconstruction"
 dynamic = ["version"]
@@ -103,6 +104,7 @@ module = [
     "mdsthin.*",
     "f90nml.*",
     "imas.*",
+    "lxml.*",
 ]
 ignore_missing_imports = true
 
@@ -123,6 +125,7 @@ replace-imports-with-any = [
     "mdsthin", "mdsthin.**",
     "f90nml", "f90nml.**",
     "imas", "imas.**",
+    "lxml", "lxml.**",
 ]
 
 # We use `ruff` not `black`. Here we "try" to prevent `black` from running.

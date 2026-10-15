@@ -5,9 +5,10 @@
 //! data management.
 
 pub mod dd_base_types;
+pub mod dd_support;
 pub mod ids;
 
-/// The IMAS Data Dictionary version that the generated `src/ids/*.rs` files came from,
+/// The IMAS Data Dictionary version that the generated `src/ids/*.rs` and `src/dd_support/*.rs` files came from,
 /// e.g. `"4.1.1-60-gf5d44e8"`.
 ///
 /// `src/imas_dd_version.txt` is written by `imas_updater/build_ids.py` in the same run that
@@ -19,4 +20,5 @@ pub mod python;
 
 // Re-export commonly used types at crate root
 pub use dd_base_types::*;
+pub use dd_support::*;
 pub use ids::*;

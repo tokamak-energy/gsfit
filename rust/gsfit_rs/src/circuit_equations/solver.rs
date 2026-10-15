@@ -1,9 +1,11 @@
-use crate::coils::Coils;
-use crate::greens::mutual_inductance_finite_size_to_finite_size;
-use crate::passives::PassiveGeometryAll;
-use crate::passives::Passives;
+use crate::greens::{Greens, mutual_inductance_finite_size_to_finite_size};
+use crate::material_properties::copper_resistivity;
+use crate::pf_active::PfActive;
+use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
 use diffsol::{NalgebraMat, NalgebraVec, OdeBuilder, OdeSolverMethod, OdeSolverStopReason, Vector, VectorHost};
 use faer::linalg::solvers::Solve;
+use imas_rs::ids::pf_active::{PfCoils, SignalFlt1d};
+use imas_rs::ids::pf_passive::PfPassiveLoops;
 use ndarray::{Array1, Array2, Axis, concatenate, s};
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -44,10 +46,10 @@ struct StateIdentifier {
 struct CircuitEquationModel {
     state_space_matrix_a: Array2<f64>,
     state_space_matrix_b: Array2<f64>,
-    pf_current_controlled_current_interpolators: Vec<interpolation::Dim1Linear>, // I_PF_I
-    pf_current_controlled_current_derivative_interpolators: Vec<interpolation::Dim1Linear>, // d(I_PF_I)/d(t)
-    n_current_controlled: usize,
-    n_voltage_controlled: usize,
+    pf_current_prescribed_current_interpolators: Vec<interpolation::Dim1Linear>, // I_PF_I
+    pf_current_prescribed_current_derivative_interpolators: Vec<interpolation::Dim1Linear>, // d(I_PF_I)/d(t)
+    n_current_prescribed: usize,
+    n_voltage_prescribed: usize,
     n_passive_filaments: usize,
     n_plasma: usize,
     n_states: usize,
@@ -56,41 +58,46 @@ struct CircuitEquationModel {
 
 impl CircuitEquationModel {
     /// Constructor for CircuitEquationModel
-    fn new(coils: Coils, passives: Passives) -> Self {
-        // Find which PF coils are current controlled and which are voltage controlled
-        let pf_names: Vec<String> = coils.results.get("pf").keys();
-        let mut pf_current_controlled_names: Vec<String> = Vec::new();
-        let mut pf_voltage_controlled_names: Vec<String> = Vec::new();
-        for pf_name in pf_names {
-            let controlled_by: String = coils.results.get("pf").get(&pf_name).get("controlled_by").unwrap_string();
-            if controlled_by == "current" {
-                pf_current_controlled_names.push(pf_name.to_owned());
-            } else if controlled_by == "voltage" {
-                pf_voltage_controlled_names.push(pf_name.to_owned());
+    fn new(pf_active: &PfActive, pf_passive: &PfPassive) -> Self {
+        // Find which PF coils have their current prescribed and which their voltage, by name and by position in `pf_active/coil`
+        let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
+        let n_pf: usize = pf_active_coils.len();
+        let mut pf_current_prescribed_names: Vec<String> = Vec::new();
+        let mut pf_current_prescribed_indices: Vec<usize> = Vec::new();
+        let mut pf_voltage_prescribed_names: Vec<String> = Vec::new();
+        let mut pf_voltage_prescribed_indices: Vec<usize> = Vec::new();
+        for i_pf in 0..n_pf {
+            let prescribed: &str = &pf_active_coils[i_pf].prescribed.name;
+            if prescribed == "current" {
+                pf_current_prescribed_names.push(pf_active_coils[i_pf].name.clone());
+                pf_current_prescribed_indices.push(i_pf);
+            } else if prescribed == "voltage" {
+                pf_voltage_prescribed_names.push(pf_active_coils[i_pf].name.clone());
+                pf_voltage_prescribed_indices.push(i_pf);
             } else {
-                panic!("Unknown PF coil control type, controlled_by = {controlled_by}");
+                panic!("Unknown PF coil prescription, `pf_active/coil({i_pf})/prescribed/name` = {prescribed}");
             }
         }
-        let n_current_controlled: usize = pf_current_controlled_names.len();
-        let n_voltage_controlled: usize = pf_voltage_controlled_names.len();
+        let n_current_prescribed: usize = pf_current_prescribed_names.len();
+        let n_voltage_prescribed: usize = pf_voltage_prescribed_names.len();
 
-        // Collect I_PF_I (current controlled PF coils)
-        let mut pf_current_controlled_current_interpolators: Vec<interpolation::Dim1Linear> = Vec::with_capacity(n_current_controlled);
-        for pf_name in &pf_current_controlled_names {
-            let times: Array1<f64> = coils.results.get("pf").get(pf_name).get("i").get("experimental").get("time").unwrap_array1();
-            let currents: Array1<f64> = coils.results.get("pf").get(pf_name).get("i").get("experimental").get("value").unwrap_array1();
+        // Collect I_PF_I (current prescribed PF coils)
+        let mut pf_current_prescribed_current_interpolators: Vec<interpolation::Dim1Linear> = Vec::with_capacity(n_current_prescribed);
+        for pf_name in &pf_current_prescribed_names {
+            let times: Array1<f64> = pf_active.pf_active_ids.coil(pf_name).current.time.clone();
+            let currents: Array1<f64> = pf_active.pf_active_ids.coil(pf_name).current.data.clone();
 
             // Construct and store the interpolator, I_PF_I
             let current_interpolator: interpolation::Dim1Linear =
                 interpolation::Dim1Linear::new(times.clone(), currents.clone()).expect("Failed to create interpolator for: I_PF_I");
-            pf_current_controlled_current_interpolators.push(current_interpolator);
+            pf_current_prescribed_current_interpolators.push(current_interpolator);
         }
 
-        // Collect d(I_PF_I)/d(t) (current controlled PF coils)
-        let mut pf_current_controlled_current_derivative_interpolators: Vec<interpolation::Dim1Linear> = Vec::with_capacity(n_current_controlled);
-        for pf_name in &pf_current_controlled_names {
-            let pf_exp_time: Array1<f64> = coils.results.get("pf").get(pf_name).get("i").get("experimental").get("time").unwrap_array1();
-            let pf_exp_current: Array1<f64> = coils.results.get("pf").get(pf_name).get("i").get("experimental").get("value").unwrap_array1();
+        // Collect d(I_PF_I)/d(t) (current prescribed PF coils)
+        let mut pf_current_prescribed_current_derivative_interpolators: Vec<interpolation::Dim1Linear> = Vec::with_capacity(n_current_prescribed);
+        for pf_name in &pf_current_prescribed_names {
+            let pf_exp_time: Array1<f64> = pf_active.pf_active_ids.coil(pf_name).current.time.clone();
+            let pf_exp_current: Array1<f64> = pf_active.pf_active_ids.coil(pf_name).current.data.clone();
 
             let n_time: usize = pf_exp_time.len();
             let mut pf_exp_current_derivatives: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
@@ -114,36 +121,66 @@ impl CircuitEquationModel {
             let current_derivatives_interpolator: interpolation::Dim1Linear =
                 interpolation::Dim1Linear::new(pf_exp_time.clone(), pf_exp_current_derivatives.clone())
                     .expect("Failed to create interpolator for: d(I_PF_I)/d(t)");
-            pf_current_controlled_current_derivative_interpolators.push(current_derivatives_interpolator);
+            pf_current_prescribed_current_derivative_interpolators.push(current_derivatives_interpolator);
         }
 
-        // Get the number of passive filaments, note the data structure with each passive containing a different number of filaments makes this a bit tricky hence the method
-        let n_passive_filaments: usize = passives.get_n_passive_filaments();
+        // Every passive filament, in the order of `pf_passive/loop` and then of `loop(i1)/element`, described as the Greens functions
+        // describe them, with the resistivity of its passive conductor
+        let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive.pf_passive_ids.r#loop;
+        let n_loop: usize = pf_passive_loops.len();
+        let mut passive_r_vec: Vec<f64> = Vec::new();
+        let mut passive_z_vec: Vec<f64> = Vec::new();
+        let mut passive_d_r_vec: Vec<f64> = Vec::new();
+        let mut passive_d_z_vec: Vec<f64> = Vec::new();
+        let mut passive_angle_1_vec: Vec<f64> = Vec::new();
+        let mut passive_angle_2_vec: Vec<f64> = Vec::new();
+        let mut passive_resistivity_vec: Vec<f64> = Vec::new();
+        for i_loop in 0..n_loop {
+            let filaments: PassiveFilaments = passive_filaments(&pf_passive_loops[i_loop].element);
+            passive_r_vec.extend(filaments.r.iter());
+            passive_z_vec.extend(filaments.z.iter());
+            passive_d_r_vec.extend(filaments.d_r.iter());
+            passive_d_z_vec.extend(filaments.d_z.iter());
+            passive_angle_1_vec.extend(filaments.angle_1.iter());
+            passive_angle_2_vec.extend(filaments.angle_2.iter());
+            let n_element: usize = pf_passive_loops[i_loop].element.len();
+            for _i_element in 0..n_element {
+                passive_resistivity_vec.push(pf_passive_loops[i_loop].resistivity);
+            }
+        }
+        let passive_r: Array1<f64> = Array1::from_vec(passive_r_vec);
+        let passive_z: Array1<f64> = Array1::from_vec(passive_z_vec);
+        let passive_d_r: Array1<f64> = Array1::from_vec(passive_d_r_vec);
+        let passive_d_z: Array1<f64> = Array1::from_vec(passive_d_z_vec);
+        let passive_angle_1: Array1<f64> = Array1::from_vec(passive_angle_1_vec);
+        let passive_angle_2: Array1<f64> = Array1::from_vec(passive_angle_2_vec);
+        let passive_resistivity: Array1<f64> = Array1::from_vec(passive_resistivity_vec);
+        let n_passive_filaments: usize = passive_r.len();
 
         // Find if we are solving for the plasma current state or not
         let n_plasma: usize = 0; // TODO: temporarily **NOT** including plasma
 
         // Store the variable names we are solving for
-        let n_variables_solving: usize = n_voltage_controlled + n_passive_filaments + n_current_controlled + n_plasma;
+        let n_variables_solving: usize = n_voltage_prescribed + n_passive_filaments + n_current_prescribed + n_plasma;
         let mut state_identifiers: Vec<StateIdentifier> = Vec::with_capacity(n_variables_solving);
-        for pf_name in &pf_voltage_controlled_names {
+        for pf_name in &pf_voltage_prescribed_names {
             state_identifiers.push(StateIdentifier {
                 current_source_type: CurrentSourceType::PF,
                 circuit_name: pf_name.to_string(),
                 passive_filament_index: None,
             });
         }
-        for passive_name in &passives.results.keys() {
-            let n_filaments: usize = passives.results.get(passive_name).get("geometry").get("r").unwrap_array1().len();
-            for i_filament in 0..n_filaments {
+        for i_loop in 0..n_loop {
+            let n_element: usize = pf_passive_loops[i_loop].element.len();
+            for i_element in 0..n_element {
                 state_identifiers.push(StateIdentifier {
                     current_source_type: CurrentSourceType::Passive,
-                    circuit_name: passive_name.to_string(),
-                    passive_filament_index: Some(i_filament),
+                    circuit_name: pf_passive_loops[i_loop].name.clone(),
+                    passive_filament_index: Some(i_element),
                 });
             }
         }
-        for pf_name in &pf_current_controlled_names {
+        for pf_name in &pf_current_prescribed_names {
             state_identifiers.push(StateIdentifier {
                 current_source_type: CurrentSourceType::Alpha,
                 circuit_name: pf_name.to_string(),
@@ -160,106 +197,118 @@ impl CircuitEquationModel {
         }
 
         // Matrix dimensions are: (vertical, horizontal)
-        let mut mutual_11: Array2<f64> = Array2::from_elem((n_current_controlled, n_current_controlled), f64::NAN);
-        let mut mutual_12: Array2<f64> = Array2::from_elem((n_current_controlled, n_voltage_controlled), f64::NAN);
-        let mut mutual_13: Array2<f64> = Array2::from_elem((n_current_controlled, n_passive_filaments), f64::NAN);
-        let mut mutual_14: Array2<f64> = Array2::from_elem((n_current_controlled, n_plasma), f64::NAN); // plasma
+        let mut mutual_11: Array2<f64> = Array2::from_elem((n_current_prescribed, n_current_prescribed), f64::NAN);
+        let mut mutual_12: Array2<f64> = Array2::from_elem((n_current_prescribed, n_voltage_prescribed), f64::NAN);
+        let mut mutual_13: Array2<f64> = Array2::from_elem((n_current_prescribed, n_passive_filaments), f64::NAN);
+        let mut mutual_14: Array2<f64> = Array2::from_elem((n_current_prescribed, n_plasma), f64::NAN); // plasma
 
-        let mut mutual_21: Array2<f64> = Array2::from_elem((n_voltage_controlled, n_current_controlled), f64::NAN);
-        let mut mutual_22: Array2<f64> = Array2::from_elem((n_voltage_controlled, n_voltage_controlled), f64::NAN);
-        let mut mutual_23: Array2<f64> = Array2::from_elem((n_voltage_controlled, n_passive_filaments), f64::NAN);
-        let mut mutual_24: Array2<f64> = Array2::from_elem((n_voltage_controlled, n_plasma), f64::NAN); // plasma
+        let mut mutual_21: Array2<f64> = Array2::from_elem((n_voltage_prescribed, n_current_prescribed), f64::NAN);
+        let mut mutual_22: Array2<f64> = Array2::from_elem((n_voltage_prescribed, n_voltage_prescribed), f64::NAN);
+        let mut mutual_23: Array2<f64> = Array2::from_elem((n_voltage_prescribed, n_passive_filaments), f64::NAN);
+        let mut mutual_24: Array2<f64> = Array2::from_elem((n_voltage_prescribed, n_plasma), f64::NAN); // plasma
 
-        let mutual_31: Array2<f64>; // symmetric with mutual_13; shape = (n_passive_filaments, n_current_controlled)
-        let mutual_32: Array2<f64>; // symmetric with mutual_23; shape = (n_passive_filaments, n_voltage_controlled)
-        let mutual_33: Array2<f64> = passives.greens_with_self(); // shape = (n_passive_filaments, n_passive_filaments)
+        let mutual_31: Array2<f64>; // symmetric with mutual_13; shape = (n_passive_filaments, n_current_prescribed)
+        let mutual_32: Array2<f64>; // symmetric with mutual_23; shape = (n_passive_filaments, n_voltage_prescribed)
+        let mutual_33: Array2<f64> = mutual_inductance_finite_size_to_finite_size(
+            &passive_r,
+            &passive_z,
+            &passive_d_r,
+            &passive_d_z,
+            &passive_angle_1,
+            &passive_angle_2,
+            &passive_r,
+            &passive_z,
+            &passive_d_r,
+            &passive_d_z,
+            &passive_angle_1,
+            &passive_angle_2,
+        ); // shape = (n_passive_filaments, n_passive_filaments)
         let mut mutual_34: Array2<f64> = Array2::from_elem((n_passive_filaments, n_plasma), f64::NAN); // plasma
 
-        let mut mutual_41: Array2<f64> = Array2::from_elem((n_plasma, n_current_controlled), f64::NAN);
-        let mut mutual_42: Array2<f64> = Array2::from_elem((n_plasma, n_voltage_controlled), f64::NAN);
+        let mut mutual_41: Array2<f64> = Array2::from_elem((n_plasma, n_current_prescribed), f64::NAN);
+        let mut mutual_42: Array2<f64> = Array2::from_elem((n_plasma, n_voltage_prescribed), f64::NAN);
         let mut mutual_43: Array2<f64> = Array2::from_elem((n_plasma, n_passive_filaments), f64::NAN);
         let mut mutual_44: Array2<f64> = Array2::from_elem((n_plasma, n_plasma), f64::NAN); // plasma
 
-        let mut res_1: Array2<f64> = Array2::zeros((n_current_controlled, n_current_controlled)); // PF_I
-        let mut res_2: Array2<f64> = Array2::zeros((n_voltage_controlled, n_voltage_controlled)); // PF_V
+        let mut res_1: Array2<f64> = Array2::zeros((n_current_prescribed, n_current_prescribed)); // PF_I
+        let mut res_2: Array2<f64> = Array2::zeros((n_voltage_prescribed, n_voltage_prescribed)); // PF_V
         let mut res_3: Array2<f64> = Array2::zeros((n_passive_filaments, n_passive_filaments)); // passives
         let mut res_4: Array2<f64> = Array2::zeros((n_plasma, n_plasma)); // plasma
 
-        // Loop over current controlled PF coils (vertical index)
-        for (i_pf_current_controlled, pf_current_controlled_name) in pf_current_controlled_names.iter().enumerate() {
-            // Loop over current controlled PF coils (horizontal index)
-            for (j_pf_current_controlled, pf_current_controlled_name_2) in pf_current_controlled_names.iter().enumerate() {
-                mutual_11[[i_pf_current_controlled, j_pf_current_controlled]] = coils
-                    .results
-                    .get("pf")
-                    .get(pf_current_controlled_name)
-                    .get("greens")
-                    .get(pf_current_controlled_name_2)
-                    .unwrap_f64();
+        // Mutual inductance between every pair of PF coils, [henry]: the flux at the filaments of one coil, per ampere in the
+        // other's filaments, summed over both. It is the method of `coil(i1)/inductance`, which the diagonal repeats
+        let mut mutual_pf: Array2<f64> = Array2::from_elem((n_pf, n_pf), f64::NAN);
+        for i_pf in 0..n_pf {
+            let coil_r: Array1<f64> = pf_active_coils[i_pf].element(..).geometry.rectangle.r.to_array();
+            let coil_z: Array1<f64> = pf_active_coils[i_pf].element(..).geometry.rectangle.z.to_array();
+            for j_pf in 0..n_pf {
+                let greens_calculator: Greens = Greens::sensor_to_conductor(
+                    coil_r.clone(),
+                    coil_z.clone(),
+                    pf_active_coils[j_pf].element(..).geometry.rectangle.r.to_array(),
+                    pf_active_coils[j_pf].element(..).geometry.rectangle.z.to_array(),
+                    pf_active_coils[j_pf].element(..).geometry.rectangle.width.to_array(),
+                    pf_active_coils[j_pf].element(..).geometry.rectangle.height.to_array(),
+                );
+                mutual_pf[[i_pf, j_pf]] = greens_calculator.psi().sum();
+            }
+        }
+
+        // Resistance of each PF coil, [ohm]: its filaments in series, each a copper loop at 20 degrees C
+        let resistivity_copper_20c: f64 = copper_resistivity(293.15); // ~ 1.68e-8 ohm * metre
+        let mut resistance_pf: Array1<f64> = Array1::from_elem(n_pf, f64::NAN);
+        for i_pf in 0..n_pf {
+            let area: Array1<f64> =
+                pf_active_coils[i_pf].element(..).geometry.rectangle.width.to_array() * pf_active_coils[i_pf].element(..).geometry.rectangle.height.to_array();
+            let length: Array1<f64> = 2.0 * PI * pf_active_coils[i_pf].element(..).geometry.rectangle.r.to_array();
+            resistance_pf[i_pf] = (resistivity_copper_20c * length / area).sum();
+        }
+
+        // Loop over current prescribed PF coils (vertical index)
+        for i_pf_current_prescribed in 0..n_current_prescribed {
+            let i_pf: usize = pf_current_prescribed_indices[i_pf_current_prescribed];
+
+            // Loop over current prescribed PF coils (horizontal index)
+            for j_pf_current_prescribed in 0..n_current_prescribed {
+                mutual_11[[i_pf_current_prescribed, j_pf_current_prescribed]] = mutual_pf[[i_pf, pf_current_prescribed_indices[j_pf_current_prescribed]]];
             }
 
-            // Loop over voltage controlled PF coils (horizontal index)
-            for (j_pf_voltage_controlled, pf_voltage_controlled_name) in pf_voltage_controlled_names.iter().enumerate() {
-                mutual_12[[i_pf_current_controlled, j_pf_voltage_controlled]] = coils
-                    .results
-                    .get("pf")
-                    .get(pf_current_controlled_name)
-                    .get("greens")
-                    .get(pf_voltage_controlled_name)
-                    .unwrap_f64();
+            // Loop over voltage prescribed PF coils (horizontal index)
+            for j_pf_voltage_prescribed in 0..n_voltage_prescribed {
+                mutual_12[[i_pf_current_prescribed, j_pf_voltage_prescribed]] = mutual_pf[[i_pf, pf_voltage_prescribed_indices[j_pf_voltage_prescribed]]];
             }
 
             // Resistance matrix
-            res_1[(i_pf_current_controlled, i_pf_current_controlled)] = coils.results.get("pf").get(pf_current_controlled_name).get("resistance").unwrap_f64();
+            res_1[(i_pf_current_prescribed, i_pf_current_prescribed)] = resistance_pf[i_pf];
         }
 
-        // Loop over voltage controlled PF coils
-        for (i_pf_voltage_controlled, pf_voltage_controlled_name) in pf_voltage_controlled_names.iter().enumerate() {
-            // Loop over current controlled PF coils
-            for (j_pf_current_controlled, pf_current_controlled_name) in pf_current_controlled_names.iter().enumerate() {
-                mutual_21[[i_pf_voltage_controlled, j_pf_current_controlled]] = coils
-                    .results
-                    .get("pf")
-                    .get(pf_voltage_controlled_name)
-                    .get("greens")
-                    .get(pf_current_controlled_name)
-                    .unwrap_f64();
+        // Loop over voltage prescribed PF coils
+        for i_pf_voltage_prescribed in 0..n_voltage_prescribed {
+            let i_pf: usize = pf_voltage_prescribed_indices[i_pf_voltage_prescribed];
+
+            // Loop over current prescribed PF coils
+            for j_pf_current_prescribed in 0..n_current_prescribed {
+                mutual_21[[i_pf_voltage_prescribed, j_pf_current_prescribed]] = mutual_pf[[i_pf, pf_current_prescribed_indices[j_pf_current_prescribed]]];
             }
 
-            // Loop over voltage controlled PF coils
-            for (j_pf_voltage_controlled, pf_voltage_controlled_name_2) in pf_voltage_controlled_names.iter().enumerate() {
-                mutual_22[[i_pf_voltage_controlled, j_pf_voltage_controlled]] = coils
-                    .results
-                    .get("pf")
-                    .get(pf_voltage_controlled_name)
-                    .get("greens")
-                    .get(pf_voltage_controlled_name_2)
-                    .unwrap_f64();
+            // Loop over voltage prescribed PF coils
+            for j_pf_voltage_prescribed in 0..n_voltage_prescribed {
+                mutual_22[[i_pf_voltage_prescribed, j_pf_voltage_prescribed]] = mutual_pf[[i_pf, pf_voltage_prescribed_indices[j_pf_voltage_prescribed]]];
             }
 
             // Resistance matrix
-            res_2[(i_pf_voltage_controlled, i_pf_voltage_controlled)] = coils.results.get("pf").get(pf_voltage_controlled_name).get("resistance").unwrap_f64();
+            res_2[(i_pf_voltage_prescribed, i_pf_voltage_prescribed)] = resistance_pf[i_pf];
         }
-
-        // Get the passive filament geometry
-        let passive_geometry_all: PassiveGeometryAll = passives.get_all_passive_filament_geometry();
-        let passive_r: Array1<f64> = passive_geometry_all.r;
-        let passive_z: Array1<f64> = passive_geometry_all.z;
-        let passive_d_r: Array1<f64> = passive_geometry_all.d_r;
-        let passive_d_z: Array1<f64> = passive_geometry_all.d_z;
-        let passive_angle_1: Array1<f64> = passive_geometry_all.angle_1;
-        let passive_angle_2: Array1<f64> = passive_geometry_all.angle_2;
-        let passive_resistivity: Array1<f64> = passive_geometry_all.resistivity;
 
         // Mutual inductance between I_PF_I and passives
-        // mutual_13.shape = (n_current_controlled, n_passive_filaments)
-        for i_current_controlled in 0..n_current_controlled {
+        // mutual_13.shape = (n_current_prescribed, n_passive_filaments)
+        for i_current_prescribed in 0..n_current_prescribed {
             // Get the coil geometry
-            let coil_name: &String = &pf_current_controlled_names[i_current_controlled];
-            let coil_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
-            let coil_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
-            let coil_d_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("d_r").unwrap_array1();
-            let coil_d_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("d_z").unwrap_array1();
+            let coil: &PfCoils = pf_active.pf_active_ids.coil(&pf_current_prescribed_names[i_current_prescribed]);
+            let coil_r: Array1<f64> = coil.element(..).geometry.rectangle.r.to_array();
+            let coil_z: Array1<f64> = coil.element(..).geometry.rectangle.z.to_array();
+            let coil_d_r: Array1<f64> = coil.element(..).geometry.rectangle.width.to_array();
+            let coil_d_z: Array1<f64> = coil.element(..).geometry.rectangle.height.to_array();
             let n_coil_filaments: usize = coil_r.len();
             let coil_angle_1: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
             let coil_angle_2: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
@@ -283,20 +332,20 @@ impl CircuitEquationModel {
             let g_coil_passive_filaments = g_coil_filaments_passive_filaments.sum_axis(Axis(0)); // shape = [n_passive_filaments]
 
             // Store in mutual_13
-            mutual_13.slice_mut(s![i_current_controlled, ..]).assign(&g_coil_passive_filaments);
+            mutual_13.slice_mut(s![i_current_prescribed, ..]).assign(&g_coil_passive_filaments);
         }
         // mutual_31 is the transpose of mutual_13
         mutual_31 = mutual_13.t().to_owned();
 
         // Mutual inductance between I_PF_V and passives
-        // mutual_23.shape = (n_voltage_controlled, n_passive_filaments)
-        for i_voltage_controlled in 0..n_voltage_controlled {
+        // mutual_23.shape = (n_voltage_prescribed, n_passive_filaments)
+        for i_voltage_prescribed in 0..n_voltage_prescribed {
             // Get the coil geometry
-            let coil_name: &String = &pf_voltage_controlled_names[i_voltage_controlled];
-            let coil_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("r").unwrap_array1();
-            let coil_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("z").unwrap_array1();
-            let coil_d_r: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("d_r").unwrap_array1();
-            let coil_d_z: Array1<f64> = coils.results.get("pf").get(coil_name).get("geometry").get("d_z").unwrap_array1();
+            let coil: &PfCoils = pf_active.pf_active_ids.coil(&pf_voltage_prescribed_names[i_voltage_prescribed]);
+            let coil_r: Array1<f64> = coil.element(..).geometry.rectangle.r.to_array();
+            let coil_z: Array1<f64> = coil.element(..).geometry.rectangle.z.to_array();
+            let coil_d_r: Array1<f64> = coil.element(..).geometry.rectangle.width.to_array();
+            let coil_d_z: Array1<f64> = coil.element(..).geometry.rectangle.height.to_array();
             let n_coil_filaments: usize = coil_r.len();
             let coil_angle_1: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
             let coil_angle_2: Array1<f64> = Array1::from_elem(n_coil_filaments, 0.0);
@@ -320,7 +369,7 @@ impl CircuitEquationModel {
             let g_coil_passive_filaments = g_coil_filaments_passive_filaments.sum_axis(Axis(0)); // shape = [n_passive_filaments]
 
             // Store in mutual_23
-            mutual_23.slice_mut(s![i_voltage_controlled, ..]).assign(&g_coil_passive_filaments);
+            mutual_23.slice_mut(s![i_voltage_prescribed, ..]).assign(&g_coil_passive_filaments);
         }
         // mutual_32 is the transpose of mutual_23
         mutual_32 = mutual_23.t().to_owned();
@@ -345,10 +394,10 @@ impl CircuitEquationModel {
         let circuit_equation_matrix_1: Array2<f64> = concatenate(
             Axis(0),
             &[
-                concatenate(Axis(1), &[(-1.0 * &mutual_12).view(),   (-1.0 * &mutual_13).view(),   Array2::eye(n_current_controlled).view(),                       Array2::zeros((n_current_controlled, n_plasma)).view()]).unwrap().view(),
-                concatenate(Axis(1), &[(-1.0 * &mutual_22).view(),   (-1.0 * &mutual_23).view(),   Array2::zeros((n_voltage_controlled, n_current_controlled)).view(), Array2::zeros((n_voltage_controlled, n_plasma)).view()]).unwrap().view(),
-                concatenate(Axis(1), &[(-1.0 * &mutual_32).view(),   (-1.0 * &mutual_33).view(),   Array2::zeros((n_passive_filaments, n_current_controlled)).view(),       Array2::zeros((n_passive_filaments, n_plasma)).view()]).unwrap().view(),
-                concatenate(Axis(1), &[(-1.0 * &mutual_42).view(),   (-1.0 * &mutual_43).view(),   Array2::zeros((n_plasma, n_current_controlled)).view(),         Array2::eye(n_plasma).view()]).unwrap().view(),
+                concatenate(Axis(1), &[(-1.0 * &mutual_12).view(),   (-1.0 * &mutual_13).view(),   Array2::eye(n_current_prescribed).view(),                       Array2::zeros((n_current_prescribed, n_plasma)).view()]).unwrap().view(),
+                concatenate(Axis(1), &[(-1.0 * &mutual_22).view(),   (-1.0 * &mutual_23).view(),   Array2::zeros((n_voltage_prescribed, n_current_prescribed)).view(), Array2::zeros((n_voltage_prescribed, n_plasma)).view()]).unwrap().view(),
+                concatenate(Axis(1), &[(-1.0 * &mutual_32).view(),   (-1.0 * &mutual_33).view(),   Array2::zeros((n_passive_filaments, n_current_prescribed)).view(),       Array2::zeros((n_passive_filaments, n_plasma)).view()]).unwrap().view(),
+                concatenate(Axis(1), &[(-1.0 * &mutual_42).view(),   (-1.0 * &mutual_43).view(),   Array2::zeros((n_plasma, n_current_prescribed)).view(),         Array2::eye(n_plasma).view()]).unwrap().view(),
             ]
         ).unwrap();
 
@@ -357,10 +406,10 @@ impl CircuitEquationModel {
         let circuit_equation_matrix_2: Array2<f64> = concatenate(
             Axis(0),
             &[
-                concatenate(Axis(1), &[Array2::zeros((n_current_controlled, n_voltage_controlled)).view(),   Array2::zeros((n_current_controlled, n_passive_filaments)).view(),       Array2::zeros((n_current_controlled, n_current_controlled)).view(),       Array2::zeros((n_current_controlled, n_plasma)).view()]).unwrap().view(),
-                concatenate(Axis(1), &[res_2.view(),                                                 Array2::zeros((n_voltage_controlled, n_passive_filaments)).view(),       Array2::zeros((n_voltage_controlled, n_current_controlled)).view(),       Array2::zeros((n_voltage_controlled, n_plasma)).view()]).unwrap().view(),
-                concatenate(Axis(1), &[Array2::zeros((n_passive_filaments, n_voltage_controlled)).view(),         res_3.view(),                                               Array2::zeros((n_passive_filaments, n_current_controlled)).view(),             Array2::zeros((n_passive_filaments, n_plasma)).view()]).unwrap().view(),
-                concatenate(Axis(1), &[Array2::zeros((n_plasma, n_voltage_controlled)).view(),           Array2::zeros((n_plasma, n_passive_filaments)).view(),               Array2::zeros((n_plasma, n_current_controlled)).view(),               Array2::zeros((n_plasma, n_plasma)).view()]).unwrap().view(),
+                concatenate(Axis(1), &[Array2::zeros((n_current_prescribed, n_voltage_prescribed)).view(),   Array2::zeros((n_current_prescribed, n_passive_filaments)).view(),       Array2::zeros((n_current_prescribed, n_current_prescribed)).view(),       Array2::zeros((n_current_prescribed, n_plasma)).view()]).unwrap().view(),
+                concatenate(Axis(1), &[res_2.view(),                                                 Array2::zeros((n_voltage_prescribed, n_passive_filaments)).view(),       Array2::zeros((n_voltage_prescribed, n_current_prescribed)).view(),       Array2::zeros((n_voltage_prescribed, n_plasma)).view()]).unwrap().view(),
+                concatenate(Axis(1), &[Array2::zeros((n_passive_filaments, n_voltage_prescribed)).view(),         res_3.view(),                                               Array2::zeros((n_passive_filaments, n_current_prescribed)).view(),             Array2::zeros((n_passive_filaments, n_plasma)).view()]).unwrap().view(),
+                concatenate(Axis(1), &[Array2::zeros((n_plasma, n_voltage_prescribed)).view(),           Array2::zeros((n_plasma, n_passive_filaments)).view(),               Array2::zeros((n_plasma, n_current_prescribed)).view(),               Array2::zeros((n_plasma, n_plasma)).view()]).unwrap().view(),
             ]
         ).unwrap();
 
@@ -369,10 +418,10 @@ impl CircuitEquationModel {
         let circuit_equation_matrix_3: Array2<f64> = concatenate(
             Axis(0),
             &[
-                concatenate(Axis(1), &[res_1.view(),                                               Array2::zeros((n_current_controlled, n_voltage_controlled)).view(),     Array2::zeros((n_current_controlled, n_plasma)).view(),       mutual_11.view(),   mutual_14.view()]).unwrap().view(),
-                concatenate(Axis(1), &[Array2::zeros((n_voltage_controlled, n_current_controlled)).view(), (-1.0f64 * Array2::eye(n_voltage_controlled)).view(),               Array2::zeros((n_voltage_controlled, n_plasma)).view(),       mutual_21.view(),   mutual_24.view()]).unwrap().view(),
-                concatenate(Axis(1), &[Array2::zeros((n_passive_filaments, n_current_controlled)).view(),       Array2::zeros((n_passive_filaments, n_voltage_controlled)).view(),           Array2::zeros((n_passive_filaments, n_plasma)).view(),             mutual_31.view(),   mutual_34.view()]).unwrap().view(),
-                concatenate(Axis(1), &[Array2::zeros((n_plasma, n_current_controlled)).view(),         Array2::zeros((n_plasma, n_voltage_controlled)).view(),             res_4.view(),                                             mutual_41.view(),   mutual_44.view()]).unwrap().view(),
+                concatenate(Axis(1), &[res_1.view(),                                               Array2::zeros((n_current_prescribed, n_voltage_prescribed)).view(),     Array2::zeros((n_current_prescribed, n_plasma)).view(),       mutual_11.view(),   mutual_14.view()]).unwrap().view(),
+                concatenate(Axis(1), &[Array2::zeros((n_voltage_prescribed, n_current_prescribed)).view(), (-1.0f64 * Array2::eye(n_voltage_prescribed)).view(),               Array2::zeros((n_voltage_prescribed, n_plasma)).view(),       mutual_21.view(),   mutual_24.view()]).unwrap().view(),
+                concatenate(Axis(1), &[Array2::zeros((n_passive_filaments, n_current_prescribed)).view(),       Array2::zeros((n_passive_filaments, n_voltage_prescribed)).view(),           Array2::zeros((n_passive_filaments, n_plasma)).view(),             mutual_31.view(),   mutual_34.view()]).unwrap().view(),
+                concatenate(Axis(1), &[Array2::zeros((n_plasma, n_current_prescribed)).view(),         Array2::zeros((n_plasma, n_voltage_prescribed)).view(),             res_4.view(),                                             mutual_41.view(),   mutual_44.view()]).unwrap().view(),
             ]
         ).unwrap();
 
@@ -419,15 +468,15 @@ impl CircuitEquationModel {
         // * `stiffness_ratio = max(|Re(λ)|) / min(|Re(λ)|)`, if `stiffness_ratio >> 1` then the system is stiff
 
         CircuitEquationModel {
-            n_current_controlled,
-            n_voltage_controlled,
+            n_current_prescribed,
+            n_voltage_prescribed,
             n_passive_filaments,
             n_plasma,
-            n_states: n_voltage_controlled + n_passive_filaments + n_current_controlled + n_plasma,
+            n_states: n_voltage_prescribed + n_passive_filaments + n_current_prescribed + n_plasma,
             state_space_matrix_a,
             state_space_matrix_b,
-            pf_current_controlled_current_interpolators,
-            pf_current_controlled_current_derivative_interpolators,
+            pf_current_prescribed_current_interpolators,
+            pf_current_prescribed_current_derivative_interpolators,
             state_identifiers,
         }
     }
@@ -436,48 +485,48 @@ impl CircuitEquationModel {
     /// u = [I_PF_I; V_PF_V; Ip; d(I_PF_I)/d(t); d(Ip)/d(t)]
     fn compute_input_vector(&self, time_now: f64) -> Array1<f64> {
         // Get sizes
-        let n_pf_current_controlled: usize = self.n_current_controlled;
-        let n_pf_voltage_controlled: usize = self.n_voltage_controlled;
+        let n_pf_current_prescribed: usize = self.n_current_prescribed;
+        let n_pf_voltage_prescribed: usize = self.n_voltage_prescribed;
         let n_plasma: usize = self.n_plasma;
 
         // The control input vector u
         // `u = [I_PF_I; V_PF_V; Ip; d(I_PF_I)/d(t); d(Ip)/d(t)]`
-        let n_u: usize = n_pf_current_controlled + n_pf_voltage_controlled + n_plasma + n_pf_current_controlled + n_plasma;
+        let n_u: usize = n_pf_current_prescribed + n_pf_voltage_prescribed + n_plasma + n_pf_current_prescribed + n_plasma;
         let mut u: Array1<f64> = Array1::from_elem(n_u, f64::NAN);
 
         // Add I_PF_I to `u` vector
-        let mut pf_current_controlled_values: Array1<f64> = Array1::from_elem(n_pf_current_controlled, f64::NAN);
-        for i_pf in 0..n_pf_current_controlled {
-            let pf_current_controlled_interpolator: &interpolation::Dim1Linear = &self.pf_current_controlled_current_interpolators[i_pf];
+        let mut pf_current_prescribed_values: Array1<f64> = Array1::from_elem(n_pf_current_prescribed, f64::NAN);
+        for i_pf in 0..n_pf_current_prescribed {
+            let pf_current_prescribed_interpolator: &interpolation::Dim1Linear = &self.pf_current_prescribed_current_interpolators[i_pf];
 
             // Interpolate to get current at present time [ampere]
-            pf_current_controlled_values[i_pf] = pf_current_controlled_interpolator
+            pf_current_prescribed_values[i_pf] = pf_current_prescribed_interpolator
                 .interpolate_scalar(time_now)
                 .expect("Failed to interpolate PF current");
         }
-        u.slice_mut(s![0..n_pf_current_controlled]).assign(&pf_current_controlled_values);
+        u.slice_mut(s![0..n_pf_current_prescribed]).assign(&pf_current_prescribed_values);
 
         // Add V_PF_V to `u` vector
-        let pf_voltage_controlled_v: Array1<f64> = Array1::from_elem(n_pf_voltage_controlled, 0.0); // TODO: replace with actual values [volt]
-        u.slice_mut(s![n_pf_current_controlled..n_pf_current_controlled + n_pf_voltage_controlled])
-            .assign(&pf_voltage_controlled_v);
+        let pf_voltage_prescribed_v: Array1<f64> = Array1::from_elem(n_pf_voltage_prescribed, 0.0); // TODO: replace with actual values [volt]
+        u.slice_mut(s![n_pf_current_prescribed..n_pf_current_prescribed + n_pf_voltage_prescribed])
+            .assign(&pf_voltage_prescribed_v);
 
         // Add Ip to `u` vector
         // TODO: add plasma state
 
         // Add d(I_PF_I)/d(t) to `u` vector
-        let mut pf_current_controlled_derivative_values: Array1<f64> = Array1::from_elem(n_pf_current_controlled, f64::NAN);
-        for i_pf in 0..n_pf_current_controlled {
-            let pf_current_controlled_derivative_interpolator: &interpolation::Dim1Linear = &self.pf_current_controlled_current_derivative_interpolators[i_pf];
+        let mut pf_current_prescribed_derivative_values: Array1<f64> = Array1::from_elem(n_pf_current_prescribed, f64::NAN);
+        for i_pf in 0..n_pf_current_prescribed {
+            let pf_current_prescribed_derivative_interpolator: &interpolation::Dim1Linear = &self.pf_current_prescribed_current_derivative_interpolators[i_pf];
 
             // Interpolate to get derivative of current at present time [ampere / second]
-            pf_current_controlled_derivative_values[i_pf] = pf_current_controlled_derivative_interpolator
+            pf_current_prescribed_derivative_values[i_pf] = pf_current_prescribed_derivative_interpolator
                 .interpolate_scalar(time_now)
                 .expect("Failed to interpolate PF current derivative");
         }
-        u.slice_mut(s![n_pf_current_controlled + n_pf_voltage_controlled + n_plasma
-            ..n_pf_current_controlled + n_pf_voltage_controlled + n_plasma + n_pf_current_controlled])
-            .assign(&pf_current_controlled_derivative_values);
+        u.slice_mut(s![n_pf_current_prescribed + n_pf_voltage_prescribed + n_plasma
+            ..n_pf_current_prescribed + n_pf_voltage_prescribed + n_plasma + n_pf_current_prescribed])
+            .assign(&pf_current_prescribed_derivative_values);
 
         // Add d(Ip)/d(t) to `u` vector
         // TODO: Add plasma state
@@ -561,34 +610,35 @@ impl CircuitEquationModel {
 /// so `adaptive_time_stepping = false` should be used to avoid unwieldly large outputs
 ///
 /// # Arguments
-/// * `coils` - Coils data structure containing either current or voltage waveforms
-/// * `passives` - Passives
+/// * `pf_active` - The PF coils, each with its current or its voltage prescribed (`coil(i1)/prescribed`)
+/// * `pf_passive` - The passive conductors, whose filaments, `loop(i1)/element(i2)`, carry eddy currents
 /// * `times_to_solve` - Times to solve the circuit equations at, [second]
 /// * `adaptive_time_stepping` - The calculation is always uses adaptive time stepping, this flat interpolates results onto `times_to_solve`
 ///
 /// # Returns
-/// - None, but mutates `coils` and `passives` to add the simulated current and voltage waveforms
+/// - A copy of `pf_active`, whose `coil(i1)/current` is the simulated current, on the simulated timebase
+/// - A copy of `pf_passive`, whose `loop(i1)/element(i2)/current` is the simulated current, on the simulated timebase, `loop(i1)/time`
 ///
 #[pyfunction]
 pub fn solve_circuit_equations(
-    mut coils: PyRefMut<Coils>,
-    mut passives: PyRefMut<Passives>,
+    pf_active: PyRef<PfActive>,
+    pf_passive: PyRef<PfPassive>,
     times_to_solve: PyReadonlyArray1<f64>,
     adaptive_time_stepping: bool,
-) {
+) -> (PfActive, PfPassive) {
     let times_to_solve_ndarray: Array1<f64> = times_to_solve.to_owned_array();
     let time_start: f64 = times_to_solve_ndarray[0];
     let time_end: f64 = times_to_solve_ndarray.last().unwrap().to_owned();
 
     // Construct the circuit equation model
-    let model: CircuitEquationModel = CircuitEquationModel::new(coils.clone(), passives.clone());
+    let model: CircuitEquationModel = CircuitEquationModel::new(&pf_active, &pf_passive);
 
     // Solver tolerances [dimensionless]
     let rtol: f64 = 0.005; // Relative tolerance = 0.5% [dimensionless]
 
     // Absolute tolerance per state [multiple_units]
     // Different states have very different magnitudes:
-    //   - Voltage-controlled PF coil currents: typical scale ~10's of kA, so atol ~ 10 A is fine
+    //   - Voltage-prescribed PF coil currents: typical scale ~10's of kA, so atol ~ 10 A is fine
     //   - Passive filament eddy currents. In totality the vessel currents can be large, but since we have
     //     discretized into many filaments, each filament will be ~500A, so atol ~ 0.5 A
     //   - d(Alpha)/d(time) = V_PF; checking Alpha ~6 volt * second, so atol ~0.06
@@ -596,9 +646,9 @@ pub fn solve_circuit_equations(
     let mut atol: Vec<f64> = Vec::with_capacity(model.n_states);
     for state_identifier in &model.state_identifiers {
         match state_identifier.current_source_type {
-            CurrentSourceType::PF => atol.push(100.0),    // voltage-controlled PF coil current [ampere]
+            CurrentSourceType::PF => atol.push(100.0),    // voltage-prescribed PF coil current [ampere]
             CurrentSourceType::Passive => atol.push(0.5), // passive eddy current [ampere]
-            CurrentSourceType::Alpha => atol.push(0.06),  // auxiliary state for current-controlled PF [volt * second]
+            CurrentSourceType::Alpha => atol.push(0.06),  // auxiliary state for current-prescribed PF [volt * second]
             CurrentSourceType::Beta => atol.push(10.0),   // auxiliary state for plasma [TODO: set appropriately]
         }
     }
@@ -633,38 +683,30 @@ pub fn solve_circuit_equations(
     let calculated_times: Array1<f64> = Array1::from_vec(calculated_times_vec.clone());
     let n_time: usize = calculated_times.len();
 
-    // Allocate passive currents
-    for passive_name in passives.results.keys() {
-        let n_filaments: usize = passives.results.get(&passive_name).get("geometry").get("r").unwrap_array1().len();
+    // The simulated PF coils: a copy of `pf_active`, whose currents are replaced with the simulated ones below
+    let mut pf_active_simulated: PfActive = PfActive {
+        pf_active_ids: pf_active.pf_active_ids.clone(),
+        parameters_input: pf_active.parameters_input.clone(),
+    };
+    let n_pf: usize = pf_active_simulated.pf_active_ids.coil.len();
+    let simulated_time: Array1<f64> = if adaptive_time_stepping {
+        calculated_times.clone()
+    } else {
+        times_to_solve_ndarray.clone()
+    };
 
-        let n_time_store: usize = if adaptive_time_stepping { n_time } else { times_to_solve_ndarray.len() };
-
-        let current_simulated: Array2<f64> = Array2::from_elem((n_time_store, n_filaments), f64::NAN);
-        passives
-            .results
-            .get_or_insert(&passive_name)
-            .get_or_insert("i_filaments")
-            .get_or_insert("simulated")
-            .insert("value", current_simulated);
-
-        if adaptive_time_stepping {
-            passives
-                .results
-                .get_or_insert(&passive_name)
-                .get_or_insert("i_filaments")
-                .get_or_insert("simulated")
-                .insert("time", calculated_times.clone());
-        } else {
-            passives
-                .results
-                .get_or_insert(&passive_name)
-                .get_or_insert("i_filaments")
-                .get_or_insert("simulated")
-                .insert("time", times_to_solve_ndarray.clone());
-        }
+    // The simulated passive conductors: a copy of `pf_passive`, whose filaments are given the simulated currents below, on the
+    // simulated timebase
+    let mut pf_passive_simulated: PfPassive = PfPassive {
+        pf_passive_ids: pf_passive.pf_passive_ids.clone(),
+        parameters_input: pf_passive.parameters_input.clone(),
+    };
+    let n_loop: usize = pf_passive_simulated.pf_passive_ids.r#loop.len();
+    for i_loop in 0..n_loop {
+        pf_passive_simulated.pf_passive_ids.r#loop[i_loop].time = simulated_time.clone();
     }
 
-    // Store results into `Coils` and `Passives` structures
+    // Store results into the simulated PF coils and passive conductors
     let mut index_pf_current_counter: usize = 0;
     for (i_state, state_identifier) in model.state_identifiers.iter().enumerate() {
         match state_identifier.current_source_type {
@@ -688,33 +730,15 @@ pub fn solve_circuit_equations(
                     current_simulated = current_simulated_interpolated;
                 }
 
-                // Store simulated current back into Coils
-                coils
-                    .results
-                    .get_or_insert("pf")
-                    .get_or_insert(circuit_name)
-                    .get_or_insert("i")
-                    .get_or_insert("simulated")
-                    .insert("value", current_simulated);
-
-                if adaptive_time_stepping {
-                    // Store the calculated times
-                    coils
-                        .results
-                        .get_or_insert("pf")
-                        .get_or_insert(circuit_name)
-                        .get_or_insert("i")
-                        .get_or_insert("simulated")
-                        .insert("time", calculated_times.clone());
-                } else {
-                    // Store the original `times_to_solve` since we have interpolated results onto this time base
-                    coils
-                        .results
-                        .get_or_insert("pf")
-                        .get_or_insert(circuit_name)
-                        .get_or_insert("i")
-                        .get_or_insert("simulated")
-                        .insert("time", times_to_solve_ndarray.clone());
+                // Store the simulated current in the simulated PF coils, on the calculated times, or on `times_to_solve` when the
+                // results have been interpolated onto them
+                for i_pf in 0..n_pf {
+                    if pf_active_simulated.pf_active_ids.coil[i_pf].name == *circuit_name {
+                        pf_active_simulated.pf_active_ids.coil[i_pf].current = SignalFlt1d {
+                            data: current_simulated.clone(),
+                            time: simulated_time.clone(),
+                        };
+                    }
                 }
 
                 // TODO: store voltage
@@ -738,53 +762,24 @@ pub fn solve_circuit_equations(
                     current_simulated = current_simulated_interpolated;
                 }
 
-                // TODO: this looks slow because we are taking data out, modifying a relatively small amount, and then putting it all back in.
-                // Real world impact is actually quite small. Solving the ODE is still dominant.
-                let mut simulated_currents: Array2<f64> = passives
-                    .results
-                    .get(circuit_name)
-                    .get("i_filaments")
-                    .get("simulated")
-                    .get("value")
-                    .unwrap_array2();
-                simulated_currents
-                    .slice_mut(s![.., state_identifier.passive_filament_index.unwrap()])
-                    .assign(&current_simulated.to_owned());
-
-                passives
-                    .results
-                    .get_or_insert(circuit_name)
-                    .get_or_insert("i_filaments")
-                    .get_or_insert("simulated")
-                    .insert("value", simulated_currents);
-
-                if adaptive_time_stepping {
-                    // Store the calculated times
-                    passives
-                        .results
-                        .get_or_insert(circuit_name)
-                        .get_or_insert("i_filaments")
-                        .get_or_insert("simulated")
-                        .insert("time", calculated_times.clone());
-                } else {
-                    // Store the original `times_to_solve` since we have interpolated results onto this time base
-                    passives
-                        .results
-                        .get_or_insert(circuit_name)
-                        .get_or_insert("i_filaments")
-                        .get_or_insert("simulated")
-                        .insert("time", times_to_solve_ndarray.clone());
+                // Store the simulated current in the simulated passive conductor's filament, on `loop(i1)/time`, which is the calculated
+                // times, or `times_to_solve` when the results have been interpolated onto them
+                let i_element: usize = state_identifier.passive_filament_index.unwrap();
+                for i_loop in 0..n_loop {
+                    if pf_passive_simulated.pf_passive_ids.r#loop[i_loop].name == *circuit_name {
+                        pf_passive_simulated.pf_passive_ids.r#loop[i_loop].element[i_element].current = current_simulated.clone();
+                    }
                 }
             }
             CurrentSourceType::Alpha => {
-                // This is for current-controlled PF coils
+                // This is for current-prescribed PF coils
                 let circuit_name: &String = &state_identifier.circuit_name;
 
                 // Calculate the "simulated" current
                 // Note, the current is actually imposed, but we still want it on the simulation time-base
                 let mut current_simulated: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                 for i_time in 0..n_time {
-                    current_simulated[i_time] = model.pf_current_controlled_current_interpolators[index_pf_current_counter]
+                    current_simulated[i_time] = model.pf_current_prescribed_current_interpolators[index_pf_current_counter]
                         .interpolate_scalar(calculated_times[i_time])
                         .expect("Failed to interpolate PF current");
                 }
@@ -799,33 +794,15 @@ pub fn solve_circuit_equations(
                     current_simulated = current_simulated_interpolated;
                 }
 
-                // Store simulated current into Coils
-                coils
-                    .results
-                    .get_or_insert("pf")
-                    .get_or_insert(circuit_name)
-                    .get_or_insert("i")
-                    .get_or_insert("simulated")
-                    .insert("value", current_simulated);
-
-                if adaptive_time_stepping {
-                    // Store the calculated times
-                    coils
-                        .results
-                        .get_or_insert("pf")
-                        .get_or_insert(circuit_name)
-                        .get_or_insert("i")
-                        .get_or_insert("simulated")
-                        .insert("time", calculated_times.clone());
-                } else {
-                    // Store the original `times_to_solve` since we have interpolated results onto this time base
-                    coils
-                        .results
-                        .get_or_insert("pf")
-                        .get_or_insert(circuit_name)
-                        .get_or_insert("i")
-                        .get_or_insert("simulated")
-                        .insert("time", times_to_solve_ndarray.clone());
+                // Store the simulated current in the simulated PF coils, on the calculated times, or on `times_to_solve` when the
+                // results have been interpolated onto them
+                for i_pf in 0..n_pf {
+                    if pf_active_simulated.pf_active_ids.coil[i_pf].name == *circuit_name {
+                        pf_active_simulated.pf_active_ids.coil[i_pf].current = SignalFlt1d {
+                            data: current_simulated.clone(),
+                            time: simulated_time.clone(),
+                        };
+                    }
                 }
 
                 // TODO: calculate and store voltage
@@ -841,8 +818,10 @@ pub fn solve_circuit_equations(
             }
         }
     }
+
+    (pf_active_simulated, pf_passive_simulated)
 }
 
 // IDEAS FOR TESTING:
-// * If we have some PF coils voltage controlled = 0V; this will be the same as passives.
-// * Control a PF coil using current, then switch to voltage controlled using voltage from current controlled case.
+// * If we have some PF coils voltage prescribed = 0V; this will be the same as passives.
+// * Control a PF coil using current, then switch to voltage prescribed using voltage from current prescribed case.

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    GSFit's own settings, which make the equilibrium IDS.
+
+    This file holds no settings itself: each element links to the file which holds one group of them.
+    A path is relative to this file. See ../../../settings_schema/xsd/equilibrium/equilibrium.xsd.
+-->
+<equilibrium_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/equilibrium.xsd">
+    <!-- Code settings -->
+    <timeslices href="timeslices.xml"/>
+    <numerics href="numerics.xml"/>
+    <grid href="grid.xml"/>
+    <initial_guess href="initial_guess.xml"/>
+
+    <!-- Source functions -->
+    <source_function_p_prime href="source_function_p_prime.xml"/>
+    <source_function_ff_prime href="source_function_ff_prime.xml"/>
+
+    <!-- Passive structures -->
+    <passive_dof_regularisation href="passive_dof_regularisation.xml"/>
+
+    <!-- Constraints, named as in the IMAS Data Dictionary -->
+    <constraints>
+        <b_field_pol_probe href="constraints_b_field_pol_probe.xml"/>
+        <flux_loop href="constraints_flux_loop.xml"/>
+        <rogowski_coil href="constraints_rogowski_coil.xml"/>
+        <diamagnetic_flux href="constraints_diamagnetic_flux.xml"/>
+        <isoflux href="constraints_isoflux.xml"/>
+        <pressure href="constraints_pressure.xml"/>
+    </constraints>
+</equilibrium_settings>

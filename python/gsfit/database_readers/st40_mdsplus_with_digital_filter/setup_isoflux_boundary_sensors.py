@@ -1,9 +1,8 @@
-import typing
 from typing import TYPE_CHECKING
 
-import numpy as np
 from gsfit_rs import IsofluxBoundary
-from st40_database import GetData
+
+from ...settings_schema.python.magnetics.magnetics import MagneticsSettings
 
 if TYPE_CHECKING:
     from . import DatabaseReader
@@ -12,13 +11,13 @@ if TYPE_CHECKING:
 def setup_isoflux_boundary_sensors(
     self: "DatabaseReader",
     pulseNo: int,
-    settings: dict[str, typing.Any],
+    settings: MagneticsSettings,
 ) -> IsofluxBoundary:
     """
     This method initialises the Rust `IsofluxBoundary` class.
 
     :param pulseNo: Pulse number, used to read from the database
-    :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    :param settings: `MagneticsSettings` object, read from `magnetics/magnetics.xml`; not used
 
     **This method is specific to ST40's experimental MDSplus database.**
 

@@ -1,11 +1,13 @@
 use super::SensorsDynamic;
-use crate::coils::Coils;
 use crate::greens::Greens;
-use crate::passives::Passives;
+use crate::pf_active::PfActive;
+use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
 use crate::plasma::Plasma;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::SensorsStatic;
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
+use imas_rs::ids::pf_active::PfCoils;
+use imas_rs::ids::pf_passive::PfPassiveLoops;
 use ndarray::{Array1, Array2, Array3, Axis, array, s};
 use numpy::IntoPyArray;
 use numpy::PyArrayMethods;
@@ -111,10 +113,10 @@ impl IsofluxBoundary {
         // Interpolate all sensors to `times_to_reconstruct`
         // location_1_r
         let interpolator = interpolation::Dim1Linear::new(time_ndarray.clone(), location_1_r_ndarray.clone())
-            .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_r");
+            .expect("IsofluxBoundary.add_sensor: Can't do interpolation for location_1_r");
         let location_1_r_measured: Array1<f64> = interpolator
             .interpolate_array1(&times_to_reconstruct_ndarray)
-            .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_r");
+            .expect("IsofluxBoundary.add_sensor: Can't do interpolation for location_1_r");
         self.results
             .get_or_insert(name)
             .get_or_insert("isoflux_geometry")
@@ -123,10 +125,10 @@ impl IsofluxBoundary {
             .insert("measured", location_1_r_measured.clone());
         // location_1_z
         let interpolator = interpolation::Dim1Linear::new(time_ndarray.clone(), location_1_z_ndarray.clone())
-            .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_z");
+            .expect("IsofluxBoundary.add_sensor: Can't do interpolation for location_1_z");
         let location_1_z_measured: Array1<f64> = interpolator
             .interpolate_array1(&times_to_reconstruct_ndarray)
-            .expect("Isoflux.greens_with_coils: Can't do interpolation for location_1_z");
+            .expect("IsofluxBoundary.add_sensor: Can't do interpolation for location_1_z");
         self.results
             .get_or_insert(name)
             .get_or_insert("isoflux_geometry")
@@ -155,9 +157,10 @@ impl IsofluxBoundary {
     }
 
     ///
-    fn greens_with_coils(&mut self, coils: PyRef<Coils>) {
-        // Change Python type into Rust
-        let coils_local: &Coils = &coils;
+    fn greens_with_pf_active(&mut self, pf_active: PyRef<PfActive>) {
+        // The PF coils, in the order of `pf_active/coil`
+        let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
+        let n_coil: usize = pf_active_coils.len();
 
         for sensor_name in self.results.keys() {
             // Get the isoflux locations
@@ -182,9 +185,10 @@ impl IsofluxBoundary {
             let times_to_reconstruct: Array1<f64> = self.results.get(&sensor_name).get("isoflux_geometry").get("time").unwrap_array1();
             let n_time: usize = times_to_reconstruct.len();
 
-            for pf_coil_name in coils_local.results.get("pf").keys() {
-                let coil_r: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("r").unwrap_array1();
-                let coil_z: Array1<f64> = coils.results.get("pf").get(&pf_coil_name).get("geometry").get("z").unwrap_array1();
+            for i_coil in 0..n_coil {
+                let pf_coil_name: &str = &pf_active_coils[i_coil].name;
+                let coil_r: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.r.to_array();
+                let coil_z: Array1<f64> = pf_active_coils[i_coil].element(..).geometry.rectangle.z.to_array();
 
                 let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                 for i_time in 0..n_time {
@@ -208,15 +212,16 @@ impl IsofluxBoundary {
                     .get_or_insert(&sensor_name)
                     .get_or_insert("greens")
                     .get_or_insert("pf")
-                    .insert(&pf_coil_name, g_vs_time); // shape = [n_time]
+                    .insert(pf_coil_name, g_vs_time); // shape = [n_time]
             }
         }
     }
 
-    ///
-    fn greens_with_passives(&mut self, passives: PyRef<Passives>) {
-        // Change Python type into Rust
-        let passives_local: &Passives = &passives;
+    /// Greens with the passive conductors
+    fn greens_with_pf_passive(&mut self, pf_passive: PyRef<PfPassive>) {
+        // The passive conductors, in the order of `pf_passive/loop`
+        let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive.pf_passive_ids.r#loop;
+        let n_loop: usize = pf_passive_loops.len();
 
         for sensor_name in self.results.keys() {
             // Get the isoflux locations
@@ -242,14 +247,16 @@ impl IsofluxBoundary {
             let n_time: usize = times_to_reconstruct.len();
 
             // Calculate Greens with each passive degree of freedom
-            for passive_name in passives_local.results.keys() {
-                let _tmp: DataTreeAccumulator<'_> = passives_local.results.get(&passive_name).get("dof");
-                let dof_names: Vec<String> = _tmp.keys();
-                let passive_r: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("r").unwrap_array1();
-                let passive_z: Array1<f64> = passives_local.results.get(&passive_name).get("geometry").get("z").unwrap_array1();
+            for i_loop in 0..n_loop {
+                let passive_name: &str = &pf_passive_loops[i_loop].name;
+                let filaments: PassiveFilaments = passive_filaments(&pf_passive_loops[i_loop].element);
+                let passive_r: Array1<f64> = filaments.r;
+                let passive_z: Array1<f64> = filaments.z;
 
                 // Loop over all degrees of freedom
-                for dof_name in dof_names {
+                let n_dof: usize = pf_passive_loops[i_loop].dof.len();
+                for i_dof in 0..n_dof {
+                    let dof_name: &str = &pf_passive_loops[i_loop].dof[i_dof].name;
                     let mut g_vs_time: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
                     for i_time in 0..n_time {
                         // Location 1
@@ -264,15 +271,9 @@ impl IsofluxBoundary {
                         let g_full_location_1: Array2<f64> = greens_calculator.psi(); // shape = [1, n_z * n_r]
 
                         // Current distribution
-                        let current_distribution: Array1<f64> = passives
-                            .results
-                            .get(&passive_name)
-                            .get("dof")
-                            .get(&dof_name)
-                            .get("current_distribution")
-                            .unwrap_array1();
+                        let current_distribution: &Array1<f64> = &pf_passive_loops[i_loop].dof[i_dof].current_distribution;
 
-                        let g_with_dof_full_location_1: Array2<f64> = g_full_location_1 * &current_distribution; // shape = [n_r * n_z, n_filament]
+                        let g_with_dof_full_location_1: Array2<f64> = g_full_location_1 * current_distribution; // shape = [n_r * n_z, n_filament]
 
                         // Sum over all filaments
                         g_vs_time[i_time] = g_with_dof_full_location_1.sum();
@@ -283,8 +284,8 @@ impl IsofluxBoundary {
                         .get_or_insert(&sensor_name)
                         .get_or_insert("greens")
                         .get_or_insert("passives")
-                        .get_or_insert(&passive_name)
-                        .insert(&dof_name, g_vs_time); // shape = [n_time]
+                        .get_or_insert(passive_name)
+                        .insert(dof_name, g_vs_time); // shape = [n_time]
                 }
             }
         }
@@ -444,7 +445,15 @@ impl IsofluxBoundary {
 impl IsofluxBoundary {
     /// For IsofluxBoundary sensors the static data is actually time-dependent.
     /// TODO: consider renaming `SensorsStatic`. Perhaps `GeometricGreens` ?
-    pub fn split_into_static_and_dynamic(&mut self, times_to_reconstruct: &Array1<f64>) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
+    ///
+    /// The Greens with the PF coils are gathered in the order of `pf_active_names`, and those with the passive conductors' degrees of
+    /// freedom in the order of `pf_passive_dof_names`, each a (passive conductor name, degree of freedom name) pair
+    pub fn split_into_static_and_dynamic(
+        &mut self,
+        times_to_reconstruct: &Array1<f64>,
+        pf_active_names: &[String],
+        pf_passive_dof_names: &[(String, String)],
+    ) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         // Define empty data arrays
         let results_static_empty: Arc<SensorsStatic> = Arc::new(SensorsStatic {
             greens_with_grid: Array2::zeros((0, 0)),
@@ -507,9 +516,22 @@ impl IsofluxBoundary {
             let fit_settings_expected_value: Array1<f64> = fit_settings_expected_value.select(Axis(0), &include_indices);
 
             // Greens
-            // With PF coils (TIMING: accessing greens_with_pf with unwrap_array3() takes ~50microseconds)
-            let greens_with_pf: Array3<f64> = self.results.get("*").get("greens").get("pf").get("*").unwrap_array3(); // shape = [n_time, n_pf, n_sensors]
-            let greens_with_pf: Array3<f64> = greens_with_pf.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_pf, n_sensors]
+            // With PF coils, at this time
+            // In the order of `pf_active_names`, the order of the PF coil currents, for the sensors needed. Found by name,
+            // because the sensors' own store sorts them by name
+            let n_pf: usize = pf_active_names.len();
+            let mut greens_with_pf: Array2<f64> = Array2::from_elem((n_pf, n_sensors), f64::NAN); // shape = [n_pf, n_sensors]
+            for i_pf in 0..n_pf {
+                for i_sensor in 0..n_sensors {
+                    greens_with_pf[[i_pf, i_sensor]] = self
+                        .results
+                        .get(&sensor_names[i_sensor])
+                        .get("greens")
+                        .get("pf")
+                        .get(&pf_active_names[i_pf])
+                        .unwrap_array1()[i_time];
+                }
+            }
 
             // With plasma
             let greens_with_grid: Array3<f64> = self.results.get("*").get("greens").get("plasma").unwrap_array3(); // shape = [n_time, n_z * n_r, n_sensors]
@@ -520,44 +542,29 @@ impl IsofluxBoundary {
             let greens_d_sensor_dz: Array3<f64> = greens_d_sensor_dz.select(Axis(2), &include_indices); // downselect to only the sensors needed; shape = [n_time, n_z * n_r, n_sensors]
 
             // With passives
-            let passive_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").keys();
-            let n_passives: usize = passive_names.len();
-
-            // Count the number of degrees of freedom
-            let mut n_dof_total: usize = 0;
-            for passive_name in &passive_names {
-                let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys();
-                n_dof_total += dof_names.len();
-            }
-
-            // With passives
+            // In the order of `pf_passive_dof_names`, the order of the passive degrees of freedom, for the sensors needed. Found by
+            // name, because the sensors' own store sorts them by name
+            let n_dof_total: usize = pf_passive_dof_names.len();
             let mut greens_with_passives: Array3<f64> = Array3::from_elem((n_time, n_dof_total, n_sensors), f64::NAN);
-            for i_sensor in 0..n_sensors {
-                let mut i_dof_total: usize = 0;
-                for i_passive in 0..n_passives {
-                    let passive_name: &str = &passive_names[i_passive];
-                    let dof_names: Vec<String> = self.results.get(&sensor_names[0]).get("greens").get("passives").get(passive_name).keys(); // something like ["eig01", "eig02", ...]
-                    for dof_name in &dof_names {
-                        let greens_with_passives_tmp: Array1<f64> = self
-                            .results
-                            .get(&sensor_names[i_sensor])
-                            .get("greens")
-                            .get("passives")
-                            .get(passive_name)
-                            .get(dof_name)
-                            .unwrap_array1(); // shape = [n_time]
-                        greens_with_passives.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
-
-                        // Keep count
-                        i_dof_total += 1;
-                    }
+            for i_dof_total in 0..n_dof_total {
+                let (passive_name, dof_name): &(String, String) = &pf_passive_dof_names[i_dof_total];
+                for i_sensor in 0..n_sensors {
+                    let greens_with_passives_tmp: Array1<f64> = self
+                        .results
+                        .get(&sensor_names[i_sensor])
+                        .get("greens")
+                        .get("passives")
+                        .get(passive_name)
+                        .get(dof_name)
+                        .unwrap_array1(); // shape = [n_time]
+                    greens_with_passives.slice_mut(s![.., i_dof_total, i_sensor]).assign(&greens_with_passives_tmp);
                 }
             }
 
             // Create the `SensorsStatic` data
             let results_static_this_time_slice: SensorsStatic = SensorsStatic {
                 greens_with_grid: greens_with_grid.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
-                greens_with_pf: greens_with_pf.slice(s![i_time, .., ..]).to_owned(),
+                greens_with_pf,
                 greens_with_passives: greens_with_passives.slice(s![i_time, .., ..]).to_owned(),
                 greens_d_sensor_dz: greens_d_sensor_dz.slice(s![i_time, .., ..]).to_owned(),
                 fit_settings_weight: fit_settings_weight.clone(),

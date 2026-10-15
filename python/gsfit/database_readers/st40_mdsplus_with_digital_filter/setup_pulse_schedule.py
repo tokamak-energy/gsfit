@@ -3,8 +3,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+from diagnostic_and_simulation_base.xml_reader_and_writer import serialise_python_dataclass_to_imas_parameters_input
 from gsfit_rs import PulseSchedule
 from st40_database import GetData
+
+from ...settings_schema import XSD_DIRECTORY_PATH
+from ...settings_schema.python.pulse_schedule.pulse_schedule import PulseScheduleSettings
+from ...settings_schema.python.workflow import Workflow
 
 if TYPE_CHECKING:
     from . import DatabaseReader
@@ -13,18 +18,19 @@ if TYPE_CHECKING:
 def setup_pulse_schedule(
     self: "DatabaseReader",
     pulseNo: int,
-    settings: dict[str, typing.Any],
+    settings: PulseScheduleSettings,
 ) -> PulseSchedule:
     """
     This method initialises the Rust `PulseSchedule` class, which holds an IMAS `pulse_schedule` IDS.
 
     :param pulseNo: Pulse number, used to read from the database
-    :param settings: Dictionary containing the JSON settings read from the `settings` directory
+    :param settings: `PulseScheduleSettings` object containing the XML settings read from the `settings` directory, whose `workflow` says which ELMAG
+        run to read
 
     **This method is specific to ST40's experimental MDSplus database, with a digital filter.**
 
     Only the gap definitions are filled, `pulse_schedule/position_control/gap(i)/name`, `.../r`, `.../z` and `.../angle`.
-    `solve_grad_shafranov` copies them onto the equilibrium IDS and calculates the value of each gap.
+    `Plasma.copy_from_pulse_schedule_ids` copies them onto the equilibrium IDS, and `solve_grad_shafranov` calculates the value of each gap.
 
     **The angle is converted.**
     ELMAG stores `GAPS.ANGLE` counter-clockwise from the outward major radius, in the usual plot with `R` to the right and `Z` upwards.
@@ -34,8 +40,26 @@ def setup_pulse_schedule(
     See `python/gsfit/database_readers/interface.py` for more details on how a new database_reader should be implemented.
     """
 
-    elmag_run_name = settings["GSFIT_code_settings.json"]["database_reader"]["st40_mdsplus_with_digital_filter"]["workflow"]["elmag"]["run_name"]
-    elmag = GetData(pulseNo, f"ELMAG#{elmag_run_name}", is_fail_quiet=False)
+    # The ELMAG run to read the gaps from, from the `workflow.xml` which `pulse_schedule.xml` links to
+    workflow = settings.workflow
+    if workflow is None or workflow.elmag is None:
+        raise ValueError("`pulse_schedule.xml` must link to a `workflow.xml` holding `elmag`, which says which ELMAG run to read the gaps from")
+    # A nil `pulseNo` reads the pulse being reconstructed
+    elmag_settings = workflow.elmag
+    if elmag_settings.pulseNo is None:
+        elmag_pulseNo = pulseNo
+    else:
+        elmag_pulseNo = elmag_settings.pulseNo
+    elmag_run_name = elmag_settings.run_name
+
+    # Serialise the settings, which the pulse schedule records in `pulse_schedule/code/parameters`: `pulse_schedule.xml` holding only the run which
+    # built the gaps
+    settings_xml = serialise_python_dataclass_to_imas_parameters_input(
+        settings=PulseScheduleSettings(workflow=Workflow(elmag=elmag_settings)),
+        xsd_directory_path=XSD_DIRECTORY_PATH,
+    )
+
+    elmag = GetData(elmag_pulseNo, f"ELMAG#{elmag_run_name}", is_fail_quiet=False)
     gaps_angle_counter_clockwise = typing.cast(npt.NDArray[np.float64], elmag.get("GAPS.ANGLE"))  # [radian]
     gaps_name = typing.cast(list[str], elmag.get("GAPS.NAMES"))
     gaps_r = typing.cast(npt.NDArray[np.float64], elmag.get("GAPS.R_ORIGIN"))  # [metre]
@@ -52,7 +76,7 @@ def setup_pulse_schedule(
         )
 
     # Initialise the PulseSchedule Rust class
-    pulse_schedule = PulseSchedule()
+    pulse_schedule = PulseSchedule(settings_xml)
 
     # A run with no gaps leaves the pulse schedule without any, which is allowed
     for i_gap in range(n_gaps):

@@ -9,9 +9,8 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, EMPTY_INT, Elements, FLT_0D, FLT_1D, INT_0D, INT_1D, INT_2D, STR_0D};
-use ndarray::{Dimension, Ix1};
-use std::slice::SliceIndex;
+use crate::dd_base_types::{Accumulator, ArrayOfStructuresElement, EMPTY_INT, Elements, FLT_0D, FLT_1D, INT_0D, INT_1D, INT_2D, Named, STR_0D, Selection};
+use ndarray::Dimension;
 
 // ============================================================================
 // Complex Types
@@ -500,6 +499,20 @@ impl<'a, D: Dimension> Rphiz0dStaticSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for Rphiz0dStatic {
+    type SliceView<'a, D>
+        = Rphiz0dStaticSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        Rphiz0dStaticSliceView::new(elements)
+    }
+}
+
 // --- Library View Types ---
 
 /// View over multiple Library with field accumulation
@@ -546,6 +559,26 @@ impl<'a, D: Dimension> LibrarySliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for Library {
+    type SliceView<'a, D>
+        = LibrarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        LibrarySliceView::new(elements)
+    }
+}
+
+impl Named for Library {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- MagneticsFluxLoopGreensPfActive View Types ---
 
 /// View over multiple MagneticsFluxLoopGreensPfActive with field accumulation
@@ -581,6 +614,26 @@ impl<'a, D: Dimension> MagneticsFluxLoopGreensPfActiveSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a MagneticsFluxLoopGreensPfActive> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for MagneticsFluxLoopGreensPfActive {
+    type SliceView<'a, D>
+        = MagneticsFluxLoopGreensPfActiveSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        MagneticsFluxLoopGreensPfActiveSliceView::new(elements)
+    }
+}
+
+impl Named for MagneticsFluxLoopGreensPfActive {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -645,20 +698,17 @@ impl<'a, D: Dimension> MagneticsFluxLoopGreensView<'a, D> {
         Self { slice_elements: elements }
     }
 
-    /// The slice view over a range of `greens.pf_active` under every element, e.g. `.pf_active(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `greens.pf_active` under every element. A range, e.g. `.pf_active(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.pf_active(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn pf_active<R>(&self, range: R) -> MagneticsFluxLoopGreensPfActiveSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[MagneticsFluxLoopGreensPfActive], Output = [MagneticsFluxLoopGreensPfActive]> + Clone,
-    {
-        MagneticsFluxLoopGreensPfActiveSliceView::new(self.slice_elements.nest(
-            "greens.pf_active",
-            |item: &MagneticsFluxLoop| item.greens.pf_active.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn pf_active<S: Selection<'a, MagneticsFluxLoopGreensPfActive>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("greens.pf_active", &self.slice_elements, |item: &MagneticsFluxLoop| {
+            item.greens.pf_active.as_slice()
+        })
     }
 }
 
@@ -709,16 +759,33 @@ impl<'a, D: Dimension> MagneticsFluxLoopSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `position` under every element, e.g. `.position(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `position` under every element. A range, e.g. `.position(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn position<R>(&self, range: R) -> Rphiz0dStaticSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn position<S: Selection<'a, Rphiz0dStatic>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("position", &self.slice_elements, |item: &MagneticsFluxLoop| item.position.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for MagneticsFluxLoop {
+    type SliceView<'a, D>
+        = MagneticsFluxLoopSliceView<'a, D>
     where
-        R: SliceIndex<[Rphiz0dStatic], Output = [Rphiz0dStatic]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        Rphiz0dStaticSliceView::new(self.slice_elements.nest("position", |item: &MagneticsFluxLoop| item.position.as_slice(), range))
+        MagneticsFluxLoopSliceView::new(elements)
+    }
+}
+
+impl Named for MagneticsFluxLoop {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -859,6 +926,26 @@ impl<'a, D: Dimension> MagneticsBpolProbeSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for MagneticsBpolProbe {
+    type SliceView<'a, D>
+        = MagneticsBpolProbeSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        MagneticsBpolProbeSliceView::new(elements)
+    }
+}
+
+impl Named for MagneticsBpolProbe {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- MagneticsRogowski View Types ---
 
 /// View over `measured_quantity` (IdentifierStatic) across multiple MagneticsRogowski
@@ -938,16 +1025,33 @@ impl<'a, D: Dimension> MagneticsRogowskiSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `position` under every element, e.g. `.position(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `position` under every element. A range, e.g. `.position(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn position<R>(&self, range: R) -> Rphiz0dStaticSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn position<S: Selection<'a, Rphiz0dStatic>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("position", &self.slice_elements, |item: &MagneticsRogowski| item.position.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for MagneticsRogowski {
+    type SliceView<'a, D>
+        = MagneticsRogowskiSliceView<'a, D>
     where
-        R: SliceIndex<[Rphiz0dStatic], Output = [Rphiz0dStatic]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        Rphiz0dStaticSliceView::new(self.slice_elements.nest("position", |item: &MagneticsRogowski| item.position.as_slice(), range))
+        MagneticsRogowskiSliceView::new(elements)
+    }
+}
+
+impl Named for MagneticsRogowski {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1067,6 +1171,26 @@ impl<'a, D: Dimension> MagneticsShuntSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for MagneticsShunt {
+    type SliceView<'a, D>
+        = MagneticsShuntSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        MagneticsShuntSliceView::new(elements)
+    }
+}
+
+impl Named for MagneticsShunt {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- MagneticsMethodDistinct View Types ---
 
 /// View over multiple MagneticsMethodDistinct with field accumulation
@@ -1103,18 +1227,33 @@ impl<'a, D: Dimension> MagneticsMethodDistinctSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for MagneticsMethodDistinct {
+    type SliceView<'a, D>
+        = MagneticsMethodDistinctSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        MagneticsMethodDistinctSliceView::new(elements)
+    }
+}
+
 // ============================================================================
 // Struct Impl Blocks for Vec Field Access
 // ============================================================================
 
 impl MagneticsRogowski {
-    /// The slice view over a range of position, e.g. `.position(0..2)` or `.position(..)`,
-    /// whose leaves gather one value per element. A single element is `.position[i]`.
-    pub fn position<R>(&self, range: R) -> Rphiz0dStaticSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Rphiz0dStatic], Output = [Rphiz0dStatic]>,
-    {
-        Rphiz0dStaticSliceView::new(Elements::from_slice(&self.position[range]))
+    /// Select from `position`. A range, e.g. `.position(0..2)` or `.position(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.position[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn position<'a, S: Selection<'a, Rphiz0dStatic>>(&'a self, selection: S) -> S::Output {
+        selection.select("position", &self.position)
     }
 
     /// Get the number of position elements
@@ -1124,13 +1263,14 @@ impl MagneticsRogowski {
 }
 
 impl MagneticsFluxLoop {
-    /// The slice view over a range of position, e.g. `.position(0..2)` or `.position(..)`,
-    /// whose leaves gather one value per element. A single element is `.position[i]`.
-    pub fn position<R>(&self, range: R) -> Rphiz0dStaticSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Rphiz0dStatic], Output = [Rphiz0dStatic]>,
-    {
-        Rphiz0dStaticSliceView::new(Elements::from_slice(&self.position[range]))
+    /// Select from `position`. A range, e.g. `.position(0..2)` or `.position(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.position[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn position<'a, S: Selection<'a, Rphiz0dStatic>>(&'a self, selection: S) -> S::Output {
+        selection.select("position", &self.position)
     }
 
     /// Get the number of position elements
@@ -1140,13 +1280,16 @@ impl MagneticsFluxLoop {
 }
 
 impl Code {
-    /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
-    /// whose leaves gather one value per element. A single element is `.library[i]`.
-    pub fn library<R>(&self, range: R) -> LibrarySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Library], Output = [Library]>,
-    {
-        LibrarySliceView::new(Elements::from_slice(&self.library[range]))
+    /// Select from `library`. A range, e.g. `.library(0..2)` or `.library(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.library(name)`, gives the one element with that `name`.
+    /// A single element is `.library[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn library<'a, S: Selection<'a, Library>>(&'a self, selection: S) -> S::Output {
+        selection.select("library", &self.library)
     }
 
     /// Get the number of library elements
@@ -1156,13 +1299,16 @@ impl Code {
 }
 
 impl MagneticsFluxLoopGreens {
-    /// The slice view over a range of pf_active, e.g. `.pf_active(0..2)` or `.pf_active(..)`,
-    /// whose leaves gather one value per element. A single element is `.pf_active[i]`.
-    pub fn pf_active<R>(&self, range: R) -> MagneticsFluxLoopGreensPfActiveSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[MagneticsFluxLoopGreensPfActive], Output = [MagneticsFluxLoopGreensPfActive]>,
-    {
-        MagneticsFluxLoopGreensPfActiveSliceView::new(Elements::from_slice(&self.pf_active[range]))
+    /// Select from `pf_active`. A range, e.g. `.pf_active(0..2)` or `.pf_active(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.pf_active(name)`, gives the one element with that `name`.
+    /// A single element is `.pf_active[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn pf_active<'a, S: Selection<'a, MagneticsFluxLoopGreensPfActive>>(&'a self, selection: S) -> S::Output {
+        selection.select("pf_active", &self.pf_active)
     }
 
     /// Get the number of pf_active elements
@@ -1172,13 +1318,16 @@ impl MagneticsFluxLoopGreens {
 }
 
 impl Magnetics {
-    /// The slice view over a range of flux_loop, e.g. `.flux_loop(0..2)` or `.flux_loop(..)`,
-    /// whose leaves gather one value per element. A single element is `.flux_loop[i]`.
-    pub fn flux_loop<R>(&self, range: R) -> MagneticsFluxLoopSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[MagneticsFluxLoop], Output = [MagneticsFluxLoop]>,
-    {
-        MagneticsFluxLoopSliceView::new(Elements::from_slice(&self.flux_loop[range]))
+    /// Select from `flux_loop`. A range, e.g. `.flux_loop(0..2)` or `.flux_loop(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.flux_loop(name)`, gives the one element with that `name`.
+    /// A single element is `.flux_loop[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn flux_loop<'a, S: Selection<'a, MagneticsFluxLoop>>(&'a self, selection: S) -> S::Output {
+        selection.select("flux_loop", &self.flux_loop)
     }
 
     /// Get the number of flux_loop elements
@@ -1188,13 +1337,16 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// The slice view over a range of b_field_pol_probe, e.g. `.b_field_pol_probe(0..2)` or `.b_field_pol_probe(..)`,
-    /// whose leaves gather one value per element. A single element is `.b_field_pol_probe[i]`.
-    pub fn b_field_pol_probe<R>(&self, range: R) -> MagneticsBpolProbeSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[MagneticsBpolProbe], Output = [MagneticsBpolProbe]>,
-    {
-        MagneticsBpolProbeSliceView::new(Elements::from_slice(&self.b_field_pol_probe[range]))
+    /// Select from `b_field_pol_probe`. A range, e.g. `.b_field_pol_probe(0..2)` or `.b_field_pol_probe(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.b_field_pol_probe(name)`, gives the one element with that `name`.
+    /// A single element is `.b_field_pol_probe[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn b_field_pol_probe<'a, S: Selection<'a, MagneticsBpolProbe>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_pol_probe", &self.b_field_pol_probe)
     }
 
     /// Get the number of b_field_pol_probe elements
@@ -1204,13 +1356,16 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// The slice view over a range of b_field_phi_probe, e.g. `.b_field_phi_probe(0..2)` or `.b_field_phi_probe(..)`,
-    /// whose leaves gather one value per element. A single element is `.b_field_phi_probe[i]`.
-    pub fn b_field_phi_probe<R>(&self, range: R) -> MagneticsBpolProbeSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[MagneticsBpolProbe], Output = [MagneticsBpolProbe]>,
-    {
-        MagneticsBpolProbeSliceView::new(Elements::from_slice(&self.b_field_phi_probe[range]))
+    /// Select from `b_field_phi_probe`. A range, e.g. `.b_field_phi_probe(0..2)` or `.b_field_phi_probe(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.b_field_phi_probe(name)`, gives the one element with that `name`.
+    /// A single element is `.b_field_phi_probe[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn b_field_phi_probe<'a, S: Selection<'a, MagneticsBpolProbe>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_phi_probe", &self.b_field_phi_probe)
     }
 
     /// Get the number of b_field_phi_probe elements
@@ -1220,13 +1375,16 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// The slice view over a range of rogowski_coil, e.g. `.rogowski_coil(0..2)` or `.rogowski_coil(..)`,
-    /// whose leaves gather one value per element. A single element is `.rogowski_coil[i]`.
-    pub fn rogowski_coil<R>(&self, range: R) -> MagneticsRogowskiSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[MagneticsRogowski], Output = [MagneticsRogowski]>,
-    {
-        MagneticsRogowskiSliceView::new(Elements::from_slice(&self.rogowski_coil[range]))
+    /// Select from `rogowski_coil`. A range, e.g. `.rogowski_coil(0..2)` or `.rogowski_coil(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.rogowski_coil(name)`, gives the one element with that `name`.
+    /// A single element is `.rogowski_coil[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn rogowski_coil<'a, S: Selection<'a, MagneticsRogowski>>(&'a self, selection: S) -> S::Output {
+        selection.select("rogowski_coil", &self.rogowski_coil)
     }
 
     /// Get the number of rogowski_coil elements
@@ -1236,13 +1394,16 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// The slice view over a range of shunt, e.g. `.shunt(0..2)` or `.shunt(..)`,
-    /// whose leaves gather one value per element. A single element is `.shunt[i]`.
-    pub fn shunt<R>(&self, range: R) -> MagneticsShuntSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[MagneticsShunt], Output = [MagneticsShunt]>,
-    {
-        MagneticsShuntSliceView::new(Elements::from_slice(&self.shunt[range]))
+    /// Select from `shunt`. A range, e.g. `.shunt(0..2)` or `.shunt(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.shunt(name)`, gives the one element with that `name`.
+    /// A single element is `.shunt[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn shunt<'a, S: Selection<'a, MagneticsShunt>>(&'a self, selection: S) -> S::Output {
+        selection.select("shunt", &self.shunt)
     }
 
     /// Get the number of shunt elements
@@ -1252,13 +1413,14 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// The slice view over a range of ip, e.g. `.ip(0..2)` or `.ip(..)`,
-    /// whose leaves gather one value per element. A single element is `.ip[i]`.
-    pub fn ip<R>(&self, range: R) -> MagneticsMethodDistinctSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[MagneticsMethodDistinct], Output = [MagneticsMethodDistinct]>,
-    {
-        MagneticsMethodDistinctSliceView::new(Elements::from_slice(&self.ip[range]))
+    /// Select from `ip`. A range, e.g. `.ip(0..2)` or `.ip(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.ip[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn ip<'a, S: Selection<'a, MagneticsMethodDistinct>>(&'a self, selection: S) -> S::Output {
+        selection.select("ip", &self.ip)
     }
 
     /// Get the number of ip elements
@@ -1268,13 +1430,14 @@ impl Magnetics {
 }
 
 impl Magnetics {
-    /// The slice view over a range of diamagnetic_flux, e.g. `.diamagnetic_flux(0..2)` or `.diamagnetic_flux(..)`,
-    /// whose leaves gather one value per element. A single element is `.diamagnetic_flux[i]`.
-    pub fn diamagnetic_flux<R>(&self, range: R) -> MagneticsMethodDistinctSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[MagneticsMethodDistinct], Output = [MagneticsMethodDistinct]>,
-    {
-        MagneticsMethodDistinctSliceView::new(Elements::from_slice(&self.diamagnetic_flux[range]))
+    /// Select from `diamagnetic_flux`. A range, e.g. `.diamagnetic_flux(0..2)` or `.diamagnetic_flux(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.diamagnetic_flux[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn diamagnetic_flux<'a, S: Selection<'a, MagneticsMethodDistinct>>(&'a self, selection: S) -> S::Output {
+        selection.select("diamagnetic_flux", &self.diamagnetic_flux)
     }
 
     /// Get the number of diamagnetic_flux elements

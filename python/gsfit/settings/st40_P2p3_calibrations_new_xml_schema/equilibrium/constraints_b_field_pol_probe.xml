@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<constraints__b_field_pol_probe xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd">
+    <b_field_pol_probe>
+        <name>P101</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P102</name>
+        <comment>very good tf removal, and started with very little tf pickup</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P103</name>
+        <comment>non-physical wiggles in TF vacuum shot</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P104</name>
+        <comment>ok tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P105</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P106</name>
+        <comment>good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P107</name>
+        <comment>very good tf removal; under HFSPSRT divertor, bad match</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P108</name>
+        <comment>ok tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P109</name>
+        <comment>ok tf removal, but a bit non-physical</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P110</name>
+        <comment>good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P111</name>
+        <comment>very good tf removal, but poor dynamic range</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P112</name>
+        <comment>very poor tf removal, non-physical</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>0.5</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P113</name>
+        <comment>good tf removal, started with very low tf pickup; doesnt match other sensors in reconstruction</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P114</name>
+        <comment>ok tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P115</name>
+        <comment>ok tf removal, started with very low tf pickup</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P116</name>
+        <comment>ok tf removal, but a little non-physical</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P117</name>
+        <comment>ok tf removal, but a little non-physical</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P118</name>
+        <comment>good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P119</name>
+        <comment>very good tf removal; doesn't match other sensors in reconstruction</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P120</name>
+        <comment>ok tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P121</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P122</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P123</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P124</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P125</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P126</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P127</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P128</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P129</name>
+        <comment>very good tf removal; under HFSPSRB divertor, bad match</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P130</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P131</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P132</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P133</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P134</name>
+        <comment>very good tf removal, and started with very little tf pickup</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P318</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P501</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P502</name>
+        <comment>ok tf removal, but a little non-physical</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P503</name>
+        <comment>ok tf removal, but a bit non-physical</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P504</name>
+        <comment>ok tf removal, but a bit non-physical</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P505</name>
+        <comment>good tf removal, a little non-physical, but started with low tf pickup</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P506</name>
+        <comment>ok tf removal; seems to be broken!</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P507</name>
+        <comment>ok tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P508</name>
+        <comment>good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>0.5</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P509</name>
+        <comment>good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P510</name>
+        <comment>good tf removal; seems to be broken!</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P511</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>0.5</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P512</name>
+        <comment>good tf removal, but poor dynamic range; bad match to other sensors in reconstruction</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P513</name>
+        <comment>good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P514</name>
+        <comment>good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P515</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P516</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P517</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P518</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P519</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P520</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P521</name>
+        <comment>NO SIGNAL</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P522</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P523</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P524</name>
+        <comment>non-physical wiggles in TF vacuum removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P525</name>
+        <comment>very good tf removal, but large pickup</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P526</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P527</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P528</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P529</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P530</name>
+        <comment>very good tf removal, but poor dynamic range</comment>
+        <expected_value>0.01</expected_value>
+        <include>false</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P531</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P532</name>
+        <comment>ok pickup, but poor dynamic range</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P533</name>
+        <comment>ok pickup, but poor dynamic range</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P534</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+    <b_field_pol_probe>
+        <name>P718</name>
+        <comment>very good tf removal</comment>
+        <expected_value>0.01</expected_value>
+        <include>true</include>
+        <weight>1.0</weight>
+    </b_field_pol_probe>
+</constraints__b_field_pol_probe>

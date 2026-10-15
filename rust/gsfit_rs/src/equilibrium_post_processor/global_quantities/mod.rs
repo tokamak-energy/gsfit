@@ -4,6 +4,7 @@
 pub(super) mod area__length_pol__surface__volume;
 pub(super) mod beta_pol;
 pub(super) mod beta_tor;
+pub(super) mod bp_omp;
 pub(super) mod bt_vac_at_r_geo;
 #[expect(non_snake_case, reason = "double underscores separate IDS node names")]
 pub(super) mod current_centre__r__velocity_z__z;

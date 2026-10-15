@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for magnetics.xml: how the database reader builds the magnetics IDS, the geometry and measurements of the magnetic sensors.
+
+    The root element is `magnetics_settings`, the IDS's name followed by `_settings`.
+    `workflow` links to workflow.xml, the central list of the codes which the database reader reads from, and which run of each.
+    The st40_mdsplus_with_digital_filter reader reads the magnetic sensors from its MAG, and the diamagnetic flux from its DIALOOP.
+    The other readers still have one optional element each, named after the reader. The reader picked by `method` in
+    database_reader.xml reads only its own element, which must then be present. The freegs and freegsnke
+    readers take the magnetic sensors from what is passed to `Gsfit.run`, so have no element.
+    XmlPath, Link, WorkflowEntry and MockWorkflowEntry are the same in each IDS's schema, as is WorkflowEntry in
+    workflow.xsd, so change them all together.
+    See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= Link to workflow.xml ================================= -->
+
+    <xs:simpleType name="XmlPath">
+        <xs:annotation><xs:documentation>Path of an XML file, relative to the file holding the link</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:anyURI">
+            <xs:pattern value="\S+\.xml"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="Link">
+        <xs:annotation><xs:documentation>A link to the file holding these settings</xs:documentation></xs:annotation>
+        <xs:attribute name="href" type="XmlPath" use="required">
+            <xs:annotation><xs:documentation>Path of the linked file, relative to the file holding the link, e.g. "../workflow.xml"</xs:documentation></xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <!-- ================================= Complex types ================================= -->
+
+    <xs:complexType name="WorkflowEntry">
+        <xs:annotation><xs:documentation>Which run of an MDSplus tree to read. The tree is named by the element holding this, e.g. `elmag` for ELMAG</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="pulseNo" type="xs:int" nillable="true">
+                <xs:annotation><xs:documentation>The pulse to read the tree from; nil for the pulse being reconstructed</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="run_name" type="xs:string">
+                <xs:annotation><xs:documentation>The run of the tree to read, e.g. "BEST" or "RUN16"</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="usage" type="xs:string">
+                <xs:annotation><xs:documentation>What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from</xs:documentation></xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="MockWorkflowEntry">
+        <xs:annotation><xs:documentation>Which mocked MDSplus tree, pulse and run to read. The read is named by the element holding this, e.g. `elmag`. Reads are named separately from trees, so that one tree can be read more than once, e.g. from a different pulse</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="tree_name" type="xs:string">
+                <xs:annotation><xs:documentation>The mocked MDSplus tree, e.g. "ELMAG" or "MAG". Its data is read from `mdsplus_mock_[tree_name]_[pulseNo].npz` in `mock_dir`, in database_reader.xml, with the tree name in lower case</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="pulseNo" type="xs:int" nillable="true">
+                <xs:annotation><xs:documentation>The pulse to read the tree from; nil for the pulse being reconstructed</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="run_name" type="xs:string">
+                <xs:annotation><xs:documentation>The run to read, which must be the run the mock was captured from, e.g. "BEST" or "RUN16"</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="usage" type="xs:string">
+                <xs:annotation><xs:documentation>What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from</xs:documentation></xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="MagneticsSt40Mdsplus">
+        <xs:annotation><xs:documentation>Where the st40_mdsplus reader reads the magnetic sensors from</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="mag" type="WorkflowEntry">
+                <xs:annotation><xs:documentation>The MAG run holding the geometry and measurements of the poloidal field probes, flux loops and Rogowski coils, and the geometry of the diamagnetic loop</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="dialoop" type="WorkflowEntry">
+                <xs:annotation><xs:documentation>The DIALOOP run holding the diamagnetic flux measurement, GLOBAL.PHI_DIA</xs:documentation></xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="MagneticsSt40AstraMdsplus">
+        <xs:annotation><xs:documentation>Where the st40_astra_mdsplus reader reads the magnetic sensors from. Their geometry is read from pf_probe.dat, fl_loop.dat and rogpath.dat, in python/gsfit/database_readers/st40_astra_mdsplus/</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="astra" type="WorkflowEntry">
+                <xs:annotation><xs:documentation>The ASTRA run holding the synthetic measurements of the poloidal field probes, flux loops and Rogowski coils</xs:documentation></xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="MagneticsSt40SpiderMdsplus">
+        <xs:annotation><xs:documentation>Where the st40_spider_mdsplus reader reads the magnetic sensors from</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="spider" type="WorkflowEntry">
+                <xs:annotation><xs:documentation>The SPIDER run holding the synthetic measurements of the poloidal field probes, flux loops and Rogowski coils</xs:documentation></xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="MagneticsMockSt40Mdsplus">
+        <xs:annotation><xs:documentation>Where the mock_st40_mdsplus reader reads the magnetic sensors from</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="mag" type="MockWorkflowEntry">
+                <xs:annotation><xs:documentation>The mocked MAG tree holding the geometry and measurements of the poloidal field probes, flux loops and Rogowski coils</xs:documentation></xs:annotation>
+            </xs:element>
+            <xs:element name="rog_gaps" type="MockWorkflowEntry" minOccurs="0">
+                <xs:annotation><xs:documentation>The mocked MAG tree holding the gaps of the Rogowski coil INIVC000, the only one with gaps. Needed when the mocked MAG tree holds INIVC000</xs:documentation></xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="magnetics_settings">
+        <xs:annotation><xs:documentation>How the database reader builds the magnetics IDS: the geometry and measurements of the magnetic sensors. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`; the other readers read only the element named after them</xs:documentation></xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="workflow" type="Link" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>A link to workflow.xml, the central list of the codes which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the poloidal field probes, flux loops and Rogowski coils, and the diamagnetic loop's geometry, from its `mag`, and the diamagnetic flux from its `dialoop`, GLOBAL.PHI_DIA</xs:documentation>
+                        <xs:appinfo>
+                            <schema>../workflow.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="st40_mdsplus" type="MagneticsSt40Mdsplus" minOccurs="0">
+                    <xs:annotation><xs:documentation>Where the st40_mdsplus reader reads the magnetic sensors from</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="st40_astra_mdsplus" type="MagneticsSt40AstraMdsplus" minOccurs="0">
+                    <xs:annotation><xs:documentation>Where the st40_astra_mdsplus reader reads the magnetic sensors from</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="st40_spider_mdsplus" type="MagneticsSt40SpiderMdsplus" minOccurs="0">
+                    <xs:annotation><xs:documentation>Where the st40_spider_mdsplus reader reads the magnetic sensors from</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="mock_st40_mdsplus" type="MagneticsMockSt40Mdsplus" minOccurs="0">
+                    <xs:annotation><xs:documentation>Where the mock_st40_mdsplus reader reads the magnetic sensors from</xs:documentation></xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

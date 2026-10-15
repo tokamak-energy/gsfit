@@ -3,9 +3,12 @@ from typing import TypeVar
 import numpy as np
 import numpy.typing as npt
 
+from .dd_support import ParametersInput
 from .imas import Equilibrium
 from .imas import Magnetics as MagneticsIds
 from .imas import Path
+from .imas import PfActive as PfActiveIds
+from .imas import PfPassive as PfPassiveIds
 from .imas import PulseSchedule as PulseScheduleIds
 from .imas import Tf as TfIds
 from .imas import Wall as WallIds
@@ -70,10 +73,6 @@ class DataTreeAccessor:
 
 def solve_grad_shafranov(
     plasma: Plasma,
-    wall: Wall,
-    tf: Tf,
-    coils: Coils,
-    passives: Passives,
     bp_probes: BpProbes,
     flux_loops: FluxLoops,
     rogowski_coils: RogowskiCoils,
@@ -82,14 +81,14 @@ def solve_grad_shafranov(
     pressure_sensors: Pressure,
     stationary_point: StationaryPoint,
     dialoop: Dialoop,
-    pulse_schedule: PulseSchedule | None = None,
 ) -> None:
     """
-    :param plasma: Plasma object, note this is mutated and contains the solution
-    :param wall: Wall object, supplying the limiter points and the vacuum vessel contour
-    :param tf: Tf object, supplying the reference major radius and the vacuum toroidal field
-    :param coils: Coils object
-    :param passives: Passives object, note this is mutated and contains the solution
+    :param plasma: Plasma object, note this is mutated and contains the solution. Its equilibrium IDS supplies the limiter,
+        the vacuum toroidal field, the PF coil currents, the passive loops' regularisations and any gaps, so
+        `Plasma.copy_from_wall_ids`, `Plasma.copy_from_tf_ids`, `Plasma.copy_from_pf_active_ids` and `Plasma.copy_from_pf_passive_ids`
+        have to have been called first. `Plasma.copy_from_pulse_schedule_ids` is optional: without it the equilibrium has no gaps.
+        The passive loops have to be the ones the Greens tables, `greens/pf_passive`, were calculated with, by `Plasma.greens_with_pf_passive`.
+        The fitted passive degrees of freedom are written to every time-slice's `passive_dof_values`, in the order of `greens/pf_passive`
     :param bp_probes: BpProbes object, note this is mutated and contains the solution
     :param flux_loops: FluxLoops object, note this is mutated and contains the solution
     :param rogowski_coils: RogowskiCoils object, note this is mutated and contains the solution
@@ -98,8 +97,6 @@ def solve_grad_shafranov(
     :param pressure_sensors: Pressure object, note this is mutated and contains the solution
     :param stationary_point: StationaryPoint object, note this is mutated and contains the solution
     :param dialoop: Dialoop object, note this is mutated and contains the solution
-    :param pulse_schedule: (optional) PulseSchedule object, supplying the gap definitions. Its gaps are copied onto every
-        time-slice's `boundary/gap` and their values calculated. `None`, the default, gives an equilibrium with no gaps
 
     The times to reconstruct are read from `plasma`, which was built with one equilibrium
     time-slice per time.
@@ -107,21 +104,23 @@ def solve_grad_shafranov(
     ...
 
 def solve_circuit_equations(
-    coils: Coils,
-    passives: Passives,
+    pf_active: PfActive,
+    pf_passive: PfPassive,
     times_to_solve: npt.NDArray[np.float64],
     adaptive_time_stepping: bool,
-) -> None:
+) -> tuple[PfActive, PfPassive]:
     """
     Solves the circuit equations
 
     Note: the adaptive time-stepping can produce a lot of simulated time-points,
     so `adaptive_time_stepping = False` should be used to avoid unwieldly large outputs
 
-    :param coils: Coils data structure containing either current or voltage waveforms, note this is mutated and contains the solution
-    :param passives: Passives object, note this is mutated and contains the solution
+    :param pf_active: The PF coils, each with its current or its voltage prescribed (`coil(i1)/prescribed`)
+    :param pf_passive: The passive conductors, whose filaments, `loop(i1)/element(i2)`, carry eddy currents
     :param times_to_solve: Times to solve the circuit equations at [second]
     :param adaptive_time_stepping: The calculation always uses adaptive time stepping, this flag interpolates results onto `times_to_solve`
+    :return: A copy of `pf_active`, whose `coil(i1)/current` is the simulated current, on the simulated timebase; and a copy of
+        `pf_passive`, whose `loop(i1)/element(i2)/current` is the simulated current, on the simulated timebase, `loop(i1)/time`
     """
     ...
 
@@ -317,76 +316,53 @@ def greens_d3_psi_d_r_d_z2(
     """
     ...
 
-class Coils(DataTreeAccessor):
-    """Coils class to hold PF and TF coils data"""
-    def __new__(
-        cls,
-    ) -> Coils: ...
-    def add_pf_coil(
-        cls,
-        name: str,
-        r: npt.NDArray[np.float64],
-        z: npt.NDArray[np.float64],
-        d_r: npt.NDArray[np.float64],
-        d_z: npt.NDArray[np.float64],
-        time: npt.NDArray[np.float64],
-        measured: npt.NDArray[np.float64],
-    ) -> None:
-        """
-        :param name: PF coil name
-        :param r: PF coil radial positions [metre]
-        :param z: PF coil vertical positions [metre]
-        :param d_r: PF coil radial widths (note, area = d_r * d_z) [metre]
-        :param d_z: PF coil vertical heights [metre]
-        :param time: Experimental time [second]
-        :param measured: Experimental PF coil current [ampere]
-        :param angle1: Angle of the PF coil from the vertical ("DIII-D" parallelogram type) [radians]
-        :param angle2: Angle of the PF coil from the horizontal ("DIII-D" parallelogram type) [radians]
-        """
-        ...
-    def greens_with_self(
-        cls,
-    ) -> None:
-        """
-        Calculate the coil self and mutual inductance matrices, [henry]
-        """
-        ...
-    def calculate_coil_resistance(
-        cls,
-    ) -> None:
-        """
-        Calculate the coil resistance matrix, a diagonal matrix, [ohm]
-        """
-        ...
-    def set_pf_voltage_controlled(
-        cls,
-        name: str,
-        time: npt.NDArray[np.float64],
-        measured_voltage: npt.NDArray[np.float64],
-    ) -> None:
-        """
-        :param name: PF coil name
-        :param time: Experimental time [second]
-        :param measured_voltage: Experimental PF coil voltage [volt]
-        """
-        ...
+class PfPassive:
+    """The machine's passive conductors, e.g. the vacuum vessel, the passive plates and the PF coil cases, stored as an IMAS
+    `pf_passive` IDS.
 
-class Passives(DataTreeAccessor):
-    """Contains the toroidally conducting strucutres, such as the vacuum vessel and passive plates.
-    `passives` also contains the degrees of freedom allowed for the passive conductors
+    For each passive conductor, `loop(i1)`: `name`; `resistivity`; one `element(i2)` per filament, a parallelogram
+    (`geometry/oblique/r`, `z`, `length_alpha`, `length_beta`, `alpha` and `beta`) of one turn (`turns_with_sign` = 1), with its `area`;
+    and the custom keys `current_distribution_type`, `dof`, `regularisations` and `regularisations_weight`.
+
+    The data dictionary describes a parallelogram from one of its corners, the reference point `oblique/r` and `z`. One side,
+    `length_alpha` long, leaves it at angle `alpha` counter-clockwise from the R axis; the other, `length_beta` long, leaves it at angle
+    `beta` counter-clockwise from the Z axis.
+
+    The passive currents are fitted, as the amplitudes of a few current distributions, `dof(i2)`, for each loop.
+    `current_distribution_type` is an identifier, saying which: `constant_current_density` (`index` 1), one degree of freedom with the same
+    current density in every element; or `eig` (`index` 2), the loop's `n_dof` slowest decaying eigenmodes. The degrees of freedom of every
+    loop, in the order of `loop` and then of `dof`, are the order the reconstruction fits them in.
+
+    `Plasma.copy_from_pf_passive_ids` copies each loop's degrees of freedom and regularisations onto every time-slice of the equilibrium
+    IDS, as `constraints/pf_passive_current(i1)`, which is where the solver reads the regularisations from.
+
+    Read it back through `pf_passive_ids` and a path from `gsfit_rs.imas.pf_passive_paths`.
+
+    The passive conductors are constructed with the settings they are built from, which are kept in `parameters_input`,
+    and whose XML is also written to `pf_passive/code/parameters`.
     """
-    def __new__(
-        cls,
-    ) -> Passives: ...
-    def add_passive(
-        cls,
+
+    def __new__(cls, parameters_input: ParametersInput) -> PfPassive:
+        """
+        Construct empty passive conductors, ready for `add_loop` to be called.
+
+        :param parameters_input: The settings the passive conductors are built from, e.g. which run of which database they
+            are read from. Their XML is written to `pf_passive/code/parameters`
+        """
+        ...
+    @property
+    def parameters_input(self) -> ParametersInput:
+        """The settings the passive conductors were built from. This is a copy: changing it does not change the passive conductors."""
+        ...
+    def add_loop(
+        self,
         name: str,
         r: npt.NDArray[np.float64],
         z: npt.NDArray[np.float64],
-        d_r: npt.NDArray[np.float64],
-        d_z: npt.NDArray[np.float64],
-        angle_1: npt.NDArray[np.float64],
-        angle_2: npt.NDArray[np.float64],
+        length_alpha: npt.NDArray[np.float64],
+        length_beta: npt.NDArray[np.float64],
+        alpha: npt.NDArray[np.float64],
+        beta: npt.NDArray[np.float64],
         resistivity: float,
         current_distribution_type: str,
         n_dof: int,
@@ -394,18 +370,38 @@ class Passives(DataTreeAccessor):
         regularisations_weight: npt.NDArray[np.float64],
     ) -> None:
         """
-        :param name: Passive name
-        :param r: Radial centroid location for each filament [metre]
-        :param z: Vertical centroid location for each filament [metre]
-        :param d_r: Radial the widths of the filaments (note, area = d_r * d_z) [metre]
-        :param d_z: Radial the heights of the filaments [metre]
-        :param angle_1: Angle of the filament from the vertical ("DIII-D" parallelogram type) [radians]
-        :param angle_2: Angle of the filament from the horizontal ("DIII-D" parallelogram type) [radians]
-        :param resistivity: Resistivity of this passive (same for all filaments) [ohm * metre]
-        :param current_distribution_type: "constant_current_density" or "eig"
-        :param n_dof: number of degrees of freedom; if current_distribution_type=="constant_current_density", then n_dof=1; if current_distribution_type=="eig", then n_dof is the number of eigenvalues
-        :param regularisations: A 2D array of size [n_regularisations, n_dof] with the regularisation values
-        :param regularisations_weight: A 1D array of size [n_regularisations] which contains the regularisation weights
+        Append a passive conductor to `pf_passive/loop`.
+
+        :param name: short identifier for the passive conductor, unique within the passive conductors, e.g. `"IVC"`
+        :param r: major radius of each filament's reference point, the corner which `alpha` and `beta` are measured from [metre]
+        :param z: height of each filament's reference point [metre]
+        :param length_alpha: length of each filament's side inclined at `alpha` [metre]
+        :param length_beta: length of each filament's side inclined at `beta` [metre]
+        :param alpha: inclination of each filament's first side, counter-clockwise from the R axis [radian]
+        :param beta: inclination of each filament's second side, counter-clockwise from the Z axis [radian]
+        :param resistivity: resistivity of the conductor, the same for every filament [ohm * metre]
+        :param current_distribution_type: `"constant_current_density"` or `"eig"`
+        :param n_dof: number of degrees of freedom: 1 for `"constant_current_density"`, the number of eigenmodes for `"eig"`
+        :param regularisations: the regularisations of the degrees of freedom, shape = [n_regularisations, n_dof]; no rows for none
+        :param regularisations_weight: the weight of each regularisation, shape = [n_regularisations] [dimensionless]
+
+        Each filament becomes one `element(i2)`: a parallelogram of one turn, with a positive `r` and positive lengths.
+        """
+        ...
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path`, from `gsfit_rs.imas.pf_passive_paths`, straight out of the pf_passive IDS.
+
+        This is how the data is read: a path holds no data, so the IDS is only borrowed for the
+        read, never copied. The shape of the result follows the shape of the index; see
+        `gsfit_rs.imas.PfPassive.get`.
+        """
+        ...
+    @property
+    def pf_passive_ids(self) -> PfPassiveIds:
+        """A copy of the whole pf_passive IDS, read with `gsfit_rs.imas.pf_passive_paths`.
+
+        Read the data with `get` instead: this copies the IDS on every access. It is for when a
+        detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
         """
         ...
 
@@ -480,13 +476,101 @@ class Plasma(DataTreeAccessor):
         :param times_to_reconstruct: Times the equilibrium will be solved at; one equilibrium time-slice is allocated per time [second]
         """
         ...
-    def greens_with_coils(
+    def copy_from_wall_ids(self, wall: Wall) -> None:
+        """
+        Copy the limiter from the wall IDS into the equilibrium IDS.
+
+        Copies `wall/description_2d(0)/limiter/unit(i)` into `equilibrium/limiter/unit(i)`, in the same order, so `unit(0)` is
+        still the vacuum vessel contour. The solver and the post-processor read the limiter from the equilibrium IDS, so this has
+        to be called before `solve_grad_shafranov`.
+
+        Any limiter already in the equilibrium IDS is replaced, so calling this twice does not repeat the units.
+
+        :param wall: The wall, holding the limiter
+        :raises ValueError: When the wall has no limiter units
+        """
+        ...
+    def copy_from_tf_ids(self, tf: Tf) -> None:
+        """
+        Copy the vacuum toroidal field from the tf IDS into the equilibrium IDS.
+
+        Fills `equilibrium/vacuum_toroidal_field/r0` from `tf/r0`, and `equilibrium/vacuum_toroidal_field/b0` from
+        `tf/b_field_phi_vacuum_r`. That is on the experimental timebase, so it is interpolated onto the reconstruction times, the
+        times of the time-slices `Plasma` was built with, and divided by `r0`. The solver and the post-processor read the vacuum
+        toroidal field from the equilibrium IDS, so this has to be called before `solve_grad_shafranov`.
+
+        Any vacuum toroidal field already in the equilibrium IDS is replaced.
+
+        :param tf: The toroidal field
+        :raises ValueError: When `tf/r0` or `tf/b_field_phi_vacuum_r` is unset, or when `tf/b_field_phi_vacuum_r` cannot be
+            interpolated onto the reconstruction times, e.g. because its timebase does not cover them
+        """
+        ...
+    def copy_from_pf_active_ids(self, pf_active: PfActive) -> None:
+        """
+        Copy the PF coil currents from the pf_active IDS onto every time-slice of the equilibrium IDS.
+
+        Fills, for every coil `pf_active/coil(i1)`, in the same order, on every time-slice:
+        `equilibrium/time_slice(itime)/constraints/pf_current(i1)/name`, a custom key, from `pf_active/coil(i1)/name`;
+        `.../measured`, `pf_active/coil(i1)/current` interpolated onto the time-slice's time [ampere];
+        `.../source`, the path `pf_active/coil(i1)/current`; and `.../time_measurement`, the time-slice's own time [second].
+
+        The solver reads the PF coil currents from the equilibrium IDS, so this has to be called before `solve_grad_shafranov`.
+        The solver multiplies them by the Greens tables, `greens/pf_active(i1)`, so the coils have to be in the same order as
+        those, which the solver checks by name.
+
+        Any PF coil currents already on a time-slice are replaced, so calling this twice does not repeat them.
+
+        :param pf_active: The PF coils, holding their currents
+        :raises ValueError: When `pf_active/coil` is empty, or when a coil's current cannot be interpolated onto the
+            reconstruction times, e.g. because its timebase does not cover them
+        """
+        ...
+    def copy_from_pf_passive_ids(self, pf_passive: PfPassive) -> None:
+        """
+        Copy the passive loops' degrees of freedom, and their regularisations, from the pf_passive IDS onto every time-slice of the
+        equilibrium IDS.
+
+        Fills, for every loop `pf_passive/loop(i1)`, in the same order, on every time-slice, these custom keys:
+        `equilibrium/time_slice(itime)/constraints/pf_passive_current(i1)/name`, from `pf_passive/loop(i1)/name`;
+        `.../dof(i2)/name`, from `pf_passive/loop(i1)/dof(i2)/name`; `.../regularisations`, from `pf_passive/loop(i1)/regularisations`,
+        shape = (n_regularisations, n_dof); and `.../regularisations_weight`, from `pf_passive/loop(i1)/regularisations_weight` [dimensionless].
+
+        `pf_passive_current(i1)` is where the data dictionary puts the current in `pf_passive/loop(i1)`. GSFit does not measure that
+        current: it fits it, as an amplitude for each of the loop's degrees of freedom, and the regularisations are what constrain the
+        fit. So `measured`, `source` and `time_measurement` are left unset.
+
+        The solver reads the regularisations from the equilibrium IDS, so this has to be called before `solve_grad_shafranov`. It fits
+        the amplitudes with the Greens tables, `greens/pf_passive(i1)/dof(i2)`, so the loops and their degrees of freedom have to be in
+        the same order as those, which the solver checks by name.
+
+        A pf_passive IDS with no loops is allowed: the equilibrium then has no passive conductors. Any passive loops already on a
+        time-slice are replaced, so calling this twice does not repeat them.
+
+        :param pf_passive: The passive conductors, holding their degrees of freedom and regularisations
+        """
+        ...
+    def copy_from_pulse_schedule_ids(self, pulse_schedule: PulseSchedule) -> None:
+        """
+        Copy the gap definitions from the pulse_schedule IDS onto every time-slice of the equilibrium IDS.
+
+        Fills `equilibrium/time_slice(itime)/boundary/gap(i)/name`, `.../description`, `.../r`, `.../z` and `.../angle` from
+        `pulse_schedule/position_control/gap(i)`, in the same order, on every time-slice. `.../value` is left unset, for the
+        equilibrium post-processor to calculate. A time-slice which does not converge keeps the definitions, with its values unset.
+
+        The pulse schedule is optional: without this call, or with a pulse schedule which has no gaps, the equilibrium has no gaps.
+        Any gaps already on a time-slice are replaced, so calling this twice does not repeat them.
+
+        :param pulse_schedule: The pulse schedule, holding the gap definitions
+        """
+        ...
+    def greens_with_pf_active(
         cls,
-        coils: Coils,
+        pf_active: PfActive,
     ) -> None: ...
-    def greens_with_passives(
+    def greens_with_pf_passive(
         cls,
-        passives: Passives,
+        pf_passive: PfPassive,
     ) -> None: ...
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path`, from `gsfit_rs.imas.equilibrium_paths`, straight out of the equilibrium IDS.
@@ -521,10 +605,22 @@ class Tf:
     It is signed: positive means counter-clockwise viewed from above.
 
     Read it back through `tf_ids` and a path from `gsfit_rs.imas.tf_paths`.
+
+    The toroidal field is constructed with the settings it is built from, which are kept in `parameters_input`,
+    and whose XML is also written to `tf/code/parameters`.
     """
 
-    def __new__(cls) -> Tf:
-        """Construct an empty toroidal field, ready for `set_r0` and `set_b_field_phi_vacuum_r`."""
+    def __new__(cls, parameters_input: ParametersInput) -> Tf:
+        """
+        Construct an empty toroidal field, ready for `set_r0` and `set_b_field_phi_vacuum_r`.
+
+        :param parameters_input: The settings the toroidal field is built from, e.g. the reference major radius, and which
+            run of which database the field is read from. Their XML is written to `tf/code/parameters`
+        """
+        ...
+    @property
+    def parameters_input(self) -> ParametersInput:
+        """The settings the toroidal field was built from. This is a copy: changing it does not change the toroidal field."""
         ...
     def set_r0(self, r0: float) -> None:
         """
@@ -532,8 +628,8 @@ class Tf:
 
         :param r0: reference major radius the vacuum toroidal field is quoted at [metre]
 
-        The solver copies this onto `equilibrium/vacuum_toroidal_field/r0`, so that the two
-        IDSs cannot disagree.
+        `Plasma.copy_from_tf_ids` copies this onto `equilibrium/vacuum_toroidal_field/r0`, so that
+        the two IDSs cannot disagree.
         """
         ...
     def set_b_field_phi_vacuum_r(
@@ -548,7 +644,7 @@ class Tf:
         :param data: vacuum toroidal field times major radius [tesla * metre]
 
         Store the **experimental** signal, not one interpolated onto the reconstruction
-        times: `solve_grad_shafranov` interpolates it itself.
+        times: `Plasma.copy_from_tf_ids` interpolates it itself.
         """
         ...
     def get(self, path: Path[_T]) -> _T:
@@ -574,15 +670,29 @@ class Wall:
     Only the limiter is filled so far:
     `wall/description_2d(0)/limiter/unit(i)/outline/r` and `.../z`.
 
-    The order units are added in is part of the contract: `unit(0)` is the vacuum vessel
-    contour, and the solver uses that one, and only that one, as the region the plasma is
-    allowed to occupy. Every unit contributes candidate limit points.
+    `Plasma.copy_from_wall_ids` copies the units into the equilibrium IDS, as
+    `equilibrium/limiter/unit(i)`, in the same order, and the solver reads them from there by
+    position. So the order units are added in is part of the contract: `unit(0)` is the vacuum
+    vessel contour, and the solver uses that one, and only that one, as the region the plasma
+    is allowed to occupy. Every unit contributes candidate limit points.
 
     Read it back through `wall_ids` and a path from `gsfit_rs.imas.wall_paths`.
+
+    The wall is constructed with the settings it is built from, which are kept in `parameters_input`,
+    and whose XML is also written to `wall/code/parameters`.
     """
 
-    def __new__(cls) -> Wall:
-        """Construct an empty wall, ready for `add_limiter_unit` to be called."""
+    def __new__(cls, parameters_input: ParametersInput) -> Wall:
+        """
+        Construct an empty wall, ready for `add_limiter_unit` to be called.
+
+        :param parameters_input: The settings the wall is built from, e.g. which run of which database the
+            limiter is read from. Their XML is written to `wall/code/parameters`
+        """
+        ...
+    @property
+    def parameters_input(self) -> ParametersInput:
+        """The settings the wall was built from. This is a copy: changing it does not change the wall."""
         ...
     def add_limiter_unit(
         self,
@@ -623,19 +733,32 @@ class PulseSchedule:
     Only the gap definitions are filled so far:
     `pulse_schedule/position_control/gap(i)/name`, `.../r`, `.../z` and `.../angle`.
 
-    A gap is a reference point and a direction. `solve_grad_shafranov` copies the definitions onto
-    every time-slice's `equilibrium/time_slice(itime)/boundary/gap`, and calculates each value: the
-    distance from the reference point to the plasma boundary along that direction.
+    A gap is a reference point and a direction. `Plasma.copy_from_pulse_schedule_ids` copies the
+    definitions onto every time-slice's `equilibrium/time_slice(itime)/boundary/gap`, and
+    `solve_grad_shafranov` calculates each value: the distance from the reference point to the
+    plasma boundary along that direction.
 
     The angle is stored in the equilibrium IDS's convention, clockwise from `grad(R)` in the usual
     plot with `R` to the right and `Z` upwards, so the gap points along
     `(cos(angle), -sin(angle))`. A database reader holding a counter-clockwise angle must convert it.
 
     Read it back through `pulse_schedule_ids` and a path from `gsfit_rs.imas.pulse_schedule_paths`.
+
+    The pulse schedule is constructed with the settings it is built from, which are kept in `parameters_input`,
+    and whose XML is also written to `pulse_schedule/code/parameters`.
     """
 
-    def __new__(cls) -> PulseSchedule:
-        """Construct an empty pulse schedule, with no gaps, ready for `add_gap` to be called."""
+    def __new__(cls, parameters_input: ParametersInput) -> PulseSchedule:
+        """
+        Construct an empty pulse schedule, with no gaps, ready for `add_gap` to be called.
+
+        :param parameters_input: The settings the pulse schedule is built from, e.g. which run of which database the
+            gaps are read from. Their XML is written to `pulse_schedule/code/parameters`
+        """
+        ...
+    @property
+    def parameters_input(self) -> ParametersInput:
+        """The settings the pulse schedule was built from. This is a copy: changing it does not change the pulse schedule."""
         ...
     def add_gap(
         self,
@@ -664,6 +787,105 @@ class PulseSchedule:
     @property
     def pulse_schedule_ids(self) -> PulseScheduleIds:
         """A copy of the whole pulse_schedule IDS, read with `gsfit_rs.imas.pulse_schedule_paths`.
+
+        Read the data with `get` instead: this copies the IDS on every access. It is for when a
+        detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
+        """
+        ...
+
+class PfActive:
+    """The machine's active poloidal field (PF) coils, stored as an IMAS `pf_active` IDS.
+
+    For each coil, `coil(i1)`: `name`; one `element(i2)` per filament, a rectangle
+    (`geometry/rectangle/r`, `z`, `width` and `height`) of one turn (`turns_with_sign` = 1);
+    `inductance`, the self-inductance calculated from the filaments; `current`, per turn, on the
+    experimental timebase; `voltage`, only when the coil's voltage is prescribed; and `prescribed`,
+    a custom key.
+
+    `coil(i1)/prescribed` is an identifier, saying which of the coil's signals is given: `current`
+    (`index` 1), set by `add_pf_coil`, or `voltage` (`index` 2), set by `set_pf_voltage_prescribed`,
+    when the current is calculated.
+
+    `coil(i1)/current` is signed: positive means counter-clockwise viewed from above.
+
+    The circuits and supplies are left empty: a power supply which feeds several coils in series is
+    described by giving each coil its current.
+
+    `Plasma.copy_from_pf_active_ids` copies each coil's current onto every time-slice of the equilibrium
+    IDS, as `constraints/pf_current(i1)`, interpolated onto the reconstruction times.
+
+    Read it back through `pf_active_ids` and a path from `gsfit_rs.imas.pf_active_paths`.
+
+    The PF coils are constructed with the settings they are built from, which are kept in `parameters_input`,
+    and whose XML is also written to `pf_active/code/parameters`.
+    """
+
+    def __new__(cls, parameters_input: ParametersInput) -> PfActive:
+        """
+        Construct empty PF coils, ready for `add_pf_coil` to be called.
+
+        :param parameters_input: The settings the PF coils are built from, e.g. which run of which database the
+            coils are read from. Their XML is written to `pf_active/code/parameters`
+        """
+        ...
+    @property
+    def parameters_input(self) -> ParametersInput:
+        """The settings the PF coils were built from. This is a copy: changing it does not change the PF coils."""
+        ...
+    def add_pf_coil(
+        self,
+        name: str,
+        r: npt.NDArray[np.float64],
+        z: npt.NDArray[np.float64],
+        width: npt.NDArray[np.float64],
+        height: npt.NDArray[np.float64],
+        time: npt.NDArray[np.float64],
+        current: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        Append a coil to `pf_active/coil`, with its current prescribed.
+
+        :param name: short identifier for the coil, unique within the PF coils, e.g. `"BVL"`
+        :param r: major radius of each filament's centre [metre]
+        :param z: height of each filament's centre [metre]
+        :param width: radial full width of each filament [metre]
+        :param height: vertical full height of each filament [metre]
+        :param time: the experimental timebase [second]
+        :param current: the current per turn [ampere]
+
+        Each filament becomes one `element(i2)`: a rectangle of one turn, with a positive `r`, `width` and `height`.
+        The coil's self-inductance, `coil(i1)/inductance`, is calculated from them.
+        Store the **experimental** current, not one interpolated onto the reconstruction times:
+        `Plasma.copy_from_pf_active_ids` interpolates it itself. A single time holds the current at that time only.
+        """
+        ...
+    def set_pf_voltage_prescribed(
+        self,
+        name: str,
+        time: npt.NDArray[np.float64],
+        voltage: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        Prescribe a coil's voltage, rather than its current.
+
+        :param name: the coil, as named in `add_pf_coil`
+        :param time: the experimental timebase [second]
+        :param voltage: voltage on the coil terminals [volt]
+
+        Writes `coil(i1)/voltage`, and sets `coil(i1)/prescribed` to `voltage`. The coil's `current` is kept.
+        """
+        ...
+    def get(self, path: Path[_T]) -> _T:
+        """Read the data at `path`, from `gsfit_rs.imas.pf_active_paths`, straight out of the pf_active IDS.
+
+        This is how the data is read: a path holds no data, so the IDS is only borrowed for the
+        read, never copied. The shape of the result follows the shape of the index; see
+        `gsfit_rs.imas.PfActive.get`.
+        """
+        ...
+    @property
+    def pf_active_ids(self) -> PfActiveIds:
+        """A copy of the whole pf_active IDS, read with `gsfit_rs.imas.pf_active_paths`.
 
         Read the data with `get` instead: this copies the IDS on every access. It is for when a
         detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
@@ -755,7 +977,7 @@ class Configuration:
 class GuazzottoFreidberg:
     """Guazzotto-Freidberg analytic Grad-Shafranov equilibrium.
 
-    Solves the analytic equilibrium and produces a `Coils` object whose PF-coil
+    Solves the analytic equilibrium and produces a `PfActive` object whose PF-coil
     currents reproduce the vacuum field consistent with the solution, i.e. a
     self-consistent free-boundary test case for GSFit to reconstruct.
 
@@ -802,12 +1024,12 @@ class GuazzottoFreidberg:
     ) -> None:
         """Solve the eigenvalue `alpha` and evaluate the analytic flux and plasma mask over the (R, Z) grid."""
         ...
-    def get_coils(
+    def get_pf_active(
         self,
         coil_regularisation_weight: float,
         control_points: npt.NDArray[np.float64],
         wall: Wall,
-    ) -> Coils:
+    ) -> PfActive:
         """
         Fit the PF-coil currents on the (R, Z) grid boundary so that, with the plasma's own field, they reproduce
         the analytic flux at `control_points`. Then store the free-boundary equilibrium in `equilibrium_ids` and
@@ -819,26 +1041,26 @@ class GuazzottoFreidberg:
 
         :param coil_regularisation_weight: Tikhonov weight on the coil-current magnitude [dimensionless]
         :param control_points: (n_control_point, 2) array of (r, z) points where the flux is matched [metre]
-        :param wall: The wall: its limiter and vacuum vessel bound a diverted plasma, and the post-processor traces
-            the scrape-off layer legs up to it
-        :return: One single-filament PF coil per boundary node, carrying the fitted current
+        :param wall: The wall: its limiter is copied into `equilibrium_ids`, where its limiter and vacuum vessel bound a
+            diverted plasma, and the post-processor traces the scrape-off layer legs up to it
+        :return: One single-filament PF coil per boundary node, carrying the fitted current, at the single time 0
         """
         ...
     def get_sensor_values(
         self,
         bp_probes: BpProbes,
         flux_loops: FluxLoops,
-        coils: Coils,
+        pf_active: PfActive,
     ) -> None:
         """
         Fill each BP probe (tesla) and flux loop (weber) `experimental` value with the field the analytic plasma
-        current plus `coils` produce at that sensor. Mutates `bp_probes` and `flux_loops` in place. Requires `solve` first.
+        current plus `pf_active` produce at that sensor. Mutates `bp_probes` and `flux_loops` in place. Requires `solve` first.
 
         Each coil filament carries its coil's current at the first time of its experimental timebase.
 
         :param bp_probes: BpProbes with geometry already set; their measurements are overwritten
         :param flux_loops: FluxLoops with geometry already set; their measurements are overwritten
-        :param coils: The PF coils, typically the ones `get_coils` returned
+        :param pf_active: The PF coils, typically the ones `get_pf_active` returned
         """
         ...
     def model_surface(
@@ -935,7 +1157,7 @@ class GuazzottoFreidberg:
         ...
     @property
     def equilibrium_ids(self) -> Equilibrium:
-        """The free-boundary equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`. Empty until `get_coils` has run.
+        """The free-boundary equilibrium IDS, read with `gsfit_rs.imas.equilibrium_paths`. Empty until `get_pf_active` has run.
 
         The IDS is copied into the returned object, so it is a snapshot: changes made on the Rust side afterwards
         are not seen by it.
@@ -974,39 +1196,37 @@ class BpProbes(DataTreeAccessor):
         ...
     def calculate_sensor_values(
         cls,
-        coils: Coils,
-        passives: Passives,
         plasma: Plasma,
     ) -> None:
         """
-        Calculate the sensor values from the coils, passives and plasma.
+        Calculate the sensor values from the PF coil currents and the fitted passive degrees of freedom on the plasma's
+        equilibrium IDS, and the plasma.
         Mutates self
 
-        :param coils: Coils object
-        :param passives: Passives object
         :param plasma: Plasma object
         """
         ...
     def calculate_sensor_values_vacuum(
         cls,
-        coils: Coils,
-        passives: Passives,
+        pf_active: PfActive,
+        pf_passive: PfPassive,
     ) -> None:
         """
-        Calculate the sensor values from the coils and passives.
+        Calculate the sensor values from the PF coils and the passive conductors.
         Mutates self
 
-        :param coils: Coils object
-        :param passives: Passives object
+        :param pf_active: The PF coils, whose currents share one timebase, e.g. the ones `solve_circuit_equations` returned
+        :param pf_passive: The passive conductors, whose filaments' currents, `loop(i1)/element(i2)/current`, are on the PF coils' timebase,
+            e.g. the ones `solve_circuit_equations` returned
         """
         ...
-    def greens_with_coils(
+    def greens_with_pf_active(
         cls,
-        coils: Coils,
+        pf_active: PfActive,
     ) -> None: ...
-    def greens_with_passives(
+    def greens_with_pf_passive(
         cls,
-        passives: Passives,
+        pf_passive: PfPassive,
     ) -> None: ...
     def greens_with_plasma(
         cls,
@@ -1043,30 +1263,29 @@ class FluxLoops(DataTreeAccessor):
         ...
     def calculate_sensor_values(
         cls,
-        coils: Coils,
-        passives: Passives,
         plasma: Plasma,
     ) -> None: ...
     def calculate_sensor_values_vacuum(
         cls,
-        coils: Coils,
-        passives: Passives,
+        pf_active: PfActive,
+        pf_passive: PfPassive,
     ) -> None:
         """
-        Calculate the sensor values from the coils and passives.
+        Calculate the sensor values from the PF coils and the passive conductors.
         Mutates self
 
-        :param coils: Coils object
-        :param passives: Passives object
+        :param pf_active: The PF coils, whose currents share one timebase, e.g. the ones `solve_circuit_equations` returned
+        :param pf_passive: The passive conductors, whose filaments' currents, `loop(i1)/element(i2)/current`, are on the PF coils' timebase,
+            e.g. the ones `solve_circuit_equations` returned
         """
         ...
-    def greens_with_coils(
+    def greens_with_pf_active(
         cls,
-        coils: Coils,
+        pf_active: PfActive,
     ) -> None: ...
-    def greens_with_passives(
+    def greens_with_pf_passive(
         cls,
-        passives: Passives,
+        pf_passive: PfPassive,
     ) -> None: ...
     def greens_with_plasma(
         cls,
@@ -1111,13 +1330,13 @@ class RogowskiCoils(DataTreeAccessor):
         :param gaps_name: A list of the names of the gaps
         """
         ...
-    def greens_with_coils(
+    def greens_with_pf_active(
         cls,
-        coils: Coils,
+        pf_active: PfActive,
     ) -> None: ...
-    def greens_with_passives(
+    def greens_with_pf_passive(
         cls,
-        passives: Passives,
+        pf_passive: PfPassive,
     ) -> None: ...
     def greens_with_plasma(
         cls,
@@ -1125,8 +1344,6 @@ class RogowskiCoils(DataTreeAccessor):
     ) -> None: ...
     def calculate_sensor_values(
         cls,
-        coils: Coils,
-        passives: Passives,
         plasma: Plasma,
     ) -> None: ...
 
@@ -1147,13 +1364,13 @@ class Isoflux(DataTreeAccessor):
         location_2_z: npt.NDArray[np.float64],
         times_to_reconstruct: npt.NDArray[np.float64],
     ) -> None: ...
-    def greens_with_coils(
+    def greens_with_pf_active(
         cls,
-        coils: Coils,
+        pf_active: PfActive,
     ) -> None: ...
-    def greens_with_passives(
+    def greens_with_pf_passive(
         cls,
-        passives: Passives,
+        pf_passive: PfPassive,
     ) -> None: ...
     def greens_with_plasma(
         cls,
@@ -1162,8 +1379,6 @@ class Isoflux(DataTreeAccessor):
 
     # def calculate_sensor_values(
     # cls,
-    #     coils: "Coils",
-    #     passives: "Passives",
     #     plasma: "Plasma",
     # ) -> None: ...
 
@@ -1182,13 +1397,13 @@ class IsofluxBoundary(DataTreeAccessor):
         location_1_z: npt.NDArray[np.float64],
         times_to_reconstruct: npt.NDArray[np.float64],
     ) -> None: ...
-    def greens_with_coils(
+    def greens_with_pf_active(
         cls,
-        coils: Coils,
+        pf_active: PfActive,
     ) -> None: ...
-    def greens_with_passives(
+    def greens_with_pf_passive(
         cls,
-        passives: Passives,
+        pf_passive: PfPassive,
     ) -> None: ...
     def greens_with_plasma(
         cls,
@@ -1197,8 +1412,6 @@ class IsofluxBoundary(DataTreeAccessor):
 
     # def calculate_sensor_values(
     # cls,
-    #     coils: "Coils",
-    #     passives: "Passives",
     #     plasma: "Plasma",
     # ) -> None: ...
 
@@ -1218,13 +1431,13 @@ class StationaryPoint:
         mag_axis_z: npt.NDArray[np.float64],
         times_to_reconstruct: npt.NDArray[np.float64],
     ) -> None: ...
-    def greens_with_coils(
+    def greens_with_pf_active(
         cls,
-        coils: Coils,
+        pf_active: PfActive,
     ) -> None: ...
-    def greens_with_passives(
+    def greens_with_pf_passive(
         cls,
-        passives: Passives,
+        pf_passive: PfPassive,
     ) -> None: ...
     def greens_with_plasma(
         cls,
@@ -1247,13 +1460,13 @@ class Pressure(DataTreeAccessor):
         time: npt.NDArray[np.float64],
         measured: npt.NDArray[np.float64],
     ) -> None: ...
-    def greens_with_coils(
+    def greens_with_pf_active(
         cls,
-        coils: Coils,
+        pf_active: PfActive,
     ) -> None: ...
-    def greens_with_passives(
+    def greens_with_pf_passive(
         cls,
-        passives: Passives,
+        pf_passive: PfPassive,
     ) -> None: ...
     def greens_with_plasma(
         cls,

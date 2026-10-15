@@ -8,6 +8,7 @@ from diagnostic_and_simulation_base import DiagnosticAndSimulationBase
 
 from .database_readers import get_database_reader
 from .database_writers import get_database_writer
+from .settings_schema.python.gsfit_code_settings import GsfitCodeSettings
 
 if typing.TYPE_CHECKING:
     from imas.ids_toplevel import IDSToplevel
@@ -15,7 +16,7 @@ if typing.TYPE_CHECKING:
 np.set_printoptions(linewidth=200)
 
 
-class Gsfit(DiagnosticAndSimulationBase):
+class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
     """
     GSFit: Grad-Shafranov Fit
 
@@ -41,8 +42,11 @@ class Gsfit(DiagnosticAndSimulationBase):
     ```
     """
 
-    coils: gsfit_rs.Coils
-    passives: gsfit_rs.Passives
+    # The dataclass which `GSFIT_code_settings.xml`, and the XML files it links to, are read into, as `self.settings_xml`
+    settings_xml_class = GsfitCodeSettings
+
+    pf_active: gsfit_rs.PfActive
+    pf_passive: gsfit_rs.PfPassive
     plasma: gsfit_rs.Plasma
     bp_probes: gsfit_rs.BpProbes
     flux_loops: gsfit_rs.FluxLoops
@@ -97,7 +101,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         2. Set the environment variables
         3. Setup the timeslices to reconstruct
         4. Read in all the machine settings and initalise the following Rust implementations:
-            `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+            `pf_active`, `pf_passive`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
             and the optional `pulse_schedule`
         5. Initialise the Greens functions
         6. Solve the GS equation
@@ -123,7 +127,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.setup_timeslices()
 
         # Read in all the machine settings and initalise the following Rust implementations:
-        # `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+        # `pf_active`, `pf_passive`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
         # and the optional `pulse_schedule`
         self.setup_objects(**kwargs)
 
@@ -131,12 +135,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         self.calculate_greens()
 
         # Solve the GS equation
-        if self.settings["GSFIT_code_settings.json"]["type_of_run"]["inverse"]:
-            self.inverse_solver_rust()
-        elif self.settings["GSFIT_code_settings.json"]["type_of_run"]["forward"]:
-            self.logger.warning("Forward GS solver not implemented yet. Skipping forward run!!")
-        else:
-            raise ValueError(f"Unknown type_of_run={self.settings['GSFIT_code_settings.json']['type_of_run']}")
+        self.inverse_solver_rust()
 
         self.write_results_to_database()
 
@@ -150,7 +149,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         else in `run`, in step with the writing that happens at the end.
         """
 
-        database_writer_method = self.settings["GSFIT_code_settings.json"]["database_writer"]["method"]
+        database_writer_method = self.settings_xml.database_reader.method
 
         return self.write_to_mds and database_writer_method != "imas"
 
@@ -169,26 +168,27 @@ class Gsfit(DiagnosticAndSimulationBase):
 
         # Map the results to the database structure.
         # For the MDSplus writers `self.results` is a 1:1 mapping to MDSplus
-        database_writer_method = self.settings["GSFIT_code_settings.json"]["database_writer"]["method"]
-        database_writer = get_database_writer(database_writer_method)
-        if database_writer_method != "imas":
-            database_writer.map_results_to_database(self)
-        else:
-            self.equilibrium_ids = database_writer.map_results_to_database(self)
-            self.logger.info("IMAS IDS populated; access it via `self.equilibrium_ids`")
+        database_writer_methods = self.settings_xml.database_writer.method
+        for database_writer_method in database_writer_methods:
+            database_writer = get_database_writer(database_writer_method)
+            if database_writer_method != "imas":
+                database_writer.map_results_to_database(self)
+            else:
+                self.equilibrium_ids = database_writer.map_results_to_database(self)
+                self.logger.info("IMAS IDS populated; access it via `self.equilibrium_ids`")
 
-        # Do the writing to MDSplus
-        self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
-        if self.writes_to_mdsplus():
-            # The nodes must exist, and must have been created without error, before we write into them
-            self.wait_for_mds_node_creation(workflows=self.get_workflow_names())
+            # Do the writing to MDSplus
+            self.logger.info(f"pulseNo = {self.pulseNo} pulseNo_write = {self.pulseNo_write} run_name = {self.run_name}")
+            if self.writes_to_mdsplus():
+                # The nodes must exist, and must have been created without error, before we write into them
+                self.wait_for_mds_node_creation(workflows=self.get_workflow_names())
 
-            self.logger.info("Writing to database")
-            self._write_data_to_mds()
-            if database_writer_method == "tokamak_energy_mdsplus_new":
-                from .database_writers.tokamak_energy_mdsplus_new.create_mdsplus_links import create_mdsplus_links
+                self.logger.info("Writing to database")
+                self._write_data_to_mds()
+                if database_writer_method == "tokamak_energy_mdsplus_new":
+                    from .database_writers.tokamak_energy_mdsplus_new.create_mdsplus_links import create_mdsplus_links
 
-                create_mdsplus_links(pulseNo_write=self.pulseNo_write, run_name=self.run_name, tree_name=self.analysis_name)
+                    create_mdsplus_links(pulseNo_write=self.pulseNo_write, run_name=self.run_name, tree_name=self.analysis_name)
 
     def get_workflow_names(self) -> list[str]:
         """
@@ -201,8 +201,11 @@ class Gsfit(DiagnosticAndSimulationBase):
         created before GSFit has read any data.
         """
 
-        database_writer_method = self.settings["GSFIT_code_settings.json"]["database_writer"]["method"]
-        database_writer = get_database_writer(database_writer_method)
+        database_writer_methods = self.settings_xml.database_writer.method
+        # TODO: need to fix this for multiple database writers...
+        for database_writer_method in database_writer_methods:
+            # import pdb; pdb.set_trace()
+            database_writer = get_database_writer(database_writer_method)
 
         return database_writer.get_workflow_names(self)
 
@@ -212,32 +215,34 @@ class Gsfit(DiagnosticAndSimulationBase):
         """
 
         # Extract the timeslice settings from the JSON file
-        timeslices_settings = self.settings["GSFIT_code_settings.json"]["timeslices"]
+        timeslices_settings = self.settings_xml.ids.equilibrium.timeslices
 
         # Calculate the timeslices
-        match timeslices_settings["method"]:
+        match timeslices_settings.method:
             case "arange":
                 time = np.arange(
-                    timeslices_settings["arange"]["time_start"],
-                    timeslices_settings["arange"]["time_end"],
-                    timeslices_settings["arange"]["dt"],
+                    timeslices_settings.arange.time_start,
+                    timeslices_settings.arange.time_end,
+                    timeslices_settings.arange.dt,
                 )
             case "linspace":
                 time = np.linspace(
-                    timeslices_settings["linspace"]["time_start"],
-                    timeslices_settings["linspace"]["time_end"],
-                    timeslices_settings["linspace"]["n_time"],
+                    timeslices_settings.linspace.time_start,
+                    timeslices_settings.linspace.time_end,
+                    timeslices_settings.linspace.n_time,
                 )
             case "user_defined":
-                time = np.array(timeslices_settings["user_defined"])
+                time = np.array(timeslices_settings.user_defined)
             case "good_pressure_sensors":
-                # Reconstruct only the time-slices where the pressure sensors are "good".
-                # The `BAD_MA` reading lives in the `st40_mdsplus_with_digital_filter` reader.
-                from .database_readers.st40_mdsplus_with_digital_filter.setup_pressure_sensors import get_good_pressure_sensor_times
+                # TODO: needs implementing...
+                raise ValueError("Needs implementing...")
+                # # Reconstruct only the time-slices where the pressure sensors are "good".
+                # # The `BAD_MA` reading lives in the `st40_mdsplus_with_digital_filter` reader.
+                # from .database_readers.st40_mdsplus_with_digital_filter.setup_pressure_sensors import get_good_pressure_sensor_times
 
-                time = get_good_pressure_sensor_times(pulseNo=self.pulseNo, settings=self.settings)
+                # time = get_good_pressure_sensor_times(pulseNo=self.pulseNo, settings=self.settings)
             case _:
-                raise ValueError(f"Unknown timeslices method: {timeslices_settings['method']}")
+                raise ValueError(f"Unknown timeslices method: {timeslices_settings.method}")
 
         # Store the times to reconstruct
         self.results["TIME"] = time
@@ -249,7 +254,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         """
 
         # Set the number of cores (for Rayon, Rust's parallelisation library)
-        n_rayon_threads: int = self.settings["GSFIT_code_settings.json"]["RAYON_NUM_THREADS"]
+        n_rayon_threads: int = self.settings_xml.ids.equilibrium.numerics.RAYON_NUM_THREADS
         os.environ["RAYON_NUM_THREADS"] = str(n_rayon_threads)
         self.logger.info(msg=f"RAYON_NUM_THREADS = {n_rayon_threads}")
 
@@ -259,11 +264,7 @@ class Gsfit(DiagnosticAndSimulationBase):
         """
 
         # Extract objects from class
-        coils = self.coils
-        passives = self.passives
         plasma = self.plasma
-        tf = self.tf
-        wall = self.wall
         bp_probes = self.bp_probes
         flux_loops = self.flux_loops
         rogowski_coils = self.rogowski_coils
@@ -272,17 +273,12 @@ class Gsfit(DiagnosticAndSimulationBase):
         pressure_sensors = self.pressure_sensors
         stationary_point = self.stationary_point
         dialoop = self.dialoop
-        pulse_schedule = self.pulse_schedule
 
         self.logger.info(msg="About to call: `gsfit_rs.solve_grad_shafranov`")
-        # Note: the solution to the GS equation is stored inside: `plasma`, `passives`, `bp_probes`, `flux_loops`, and `rogowski_coils`
+        # Note: the solution to the GS equation is stored inside: `plasma`, `bp_probes`, `flux_loops`, and `rogowski_coils`
         tic = time_py.time()
         gsfit_rs.solve_grad_shafranov(
             plasma,
-            wall,
-            tf,
-            coils,
-            passives,
             bp_probes,
             flux_loops,
             rogowski_coils,
@@ -291,7 +287,6 @@ class Gsfit(DiagnosticAndSimulationBase):
             pressure_sensors,
             stationary_point,
             dialoop,
-            pulse_schedule=pulse_schedule,
         )
         toc = time_py.time()
         self.logger.info(msg=f"Finished: `gsfit_rs.solve_inverse_problem` time = {(toc - tic) * 1e3:,.2f}ms")
@@ -302,8 +297,8 @@ class Gsfit(DiagnosticAndSimulationBase):
         """
 
         # Get Rust classes out of self
-        coils = self.coils
-        passives = self.passives
+        pf_active = self.pf_active
+        pf_passive = self.pf_passive
         plasma = self.plasma
         bp_probes = self.bp_probes
         flux_loops = self.flux_loops
@@ -313,31 +308,31 @@ class Gsfit(DiagnosticAndSimulationBase):
         pressure_sensors = self.pressure_sensors
         stationary_point = self.stationary_point
 
-        # Greens with coils
+        # Greens with the PF coils
         tic = time_py.time()
-        plasma.greens_with_coils(coils)
-        bp_probes.greens_with_coils(coils)
-        flux_loops.greens_with_coils(coils)
-        rogowski_coils.greens_with_coils(coils)
-        isoflux.greens_with_coils(coils)
-        isoflux_boundary.greens_with_coils(coils)
-        pressure_sensors.greens_with_coils(coils)
-        stationary_point.greens_with_coils(coils)
+        plasma.greens_with_pf_active(pf_active)
+        bp_probes.greens_with_pf_active(pf_active)
+        flux_loops.greens_with_pf_active(pf_active)
+        rogowski_coils.greens_with_pf_active(pf_active)
+        isoflux.greens_with_pf_active(pf_active)
+        isoflux_boundary.greens_with_pf_active(pf_active)
+        pressure_sensors.greens_with_pf_active(pf_active)
+        stationary_point.greens_with_pf_active(pf_active)
         toc = time_py.time()
-        self.logger.info(f"Finished Greens with coils;  {(toc - tic) * 1e3:,.2f}ms")
+        self.logger.info(f"Finished Greens with the PF coils;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # Greens with passives
+        # Greens with the passive conductors
         tic = time_py.time()
-        plasma.greens_with_passives(passives)
-        bp_probes.greens_with_passives(passives)
-        flux_loops.greens_with_passives(passives)
-        rogowski_coils.greens_with_passives(passives)
-        isoflux.greens_with_passives(passives)
-        isoflux_boundary.greens_with_passives(passives)
-        pressure_sensors.greens_with_passives(passives)
-        stationary_point.greens_with_passives(passives)
+        plasma.greens_with_pf_passive(pf_passive)
+        bp_probes.greens_with_pf_passive(pf_passive)
+        flux_loops.greens_with_pf_passive(pf_passive)
+        rogowski_coils.greens_with_pf_passive(pf_passive)
+        isoflux.greens_with_pf_passive(pf_passive)
+        isoflux_boundary.greens_with_pf_passive(pf_passive)
+        pressure_sensors.greens_with_pf_passive(pf_passive)
+        stationary_point.greens_with_pf_passive(pf_passive)
         toc = time_py.time()
-        self.logger.info(f"Finished Greens with passives;  {(toc - tic) * 1e3:,.2f}ms")
+        self.logger.info(f"Finished Greens with the passive conductors;  {(toc - tic) * 1e3:,.2f}ms")
 
         # Greens with plasma
         tic = time_py.time()
@@ -354,7 +349,7 @@ class Gsfit(DiagnosticAndSimulationBase):
     def setup_objects(self, **kwargs: dict[str, typing.Any]) -> None:
         """
         Initialises the Rust objects needed to run the GSFit inverse solver:
-        `coils`, `passives`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+        `pf_active`, `pf_passive`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
         and the optional `pulse_schedule`, which is `None` unless the `database_reader` implements `setup_pulse_schedule`
 
         Different machines will use different data stores (e.g. MDSplus, or FreeGNSKE object).
@@ -365,88 +360,110 @@ class Gsfit(DiagnosticAndSimulationBase):
         """
 
         # Get the database_reader
-        database_reader_method = self.settings["GSFIT_code_settings.json"]["database_reader"]["method"]
+        database_reader_method = self.settings_xml.database_reader.method
         database_reader = get_database_reader(database_reader_method)
+        settings_xml = self.settings_xml
 
-        # Initialise and store the Rust implementations
+        # `wall` is in IDS structure
         tic = time_py.time()
-        self.coils = database_reader.setup_coils(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        self.wall = database_reader.setup_wall(pulseNo=self.pulseNo, settings=settings_xml.ids.wall, **kwargs)
         toc = time_py.time()
-        self.logger.info(msg=f"`coils`  initialised;  {(toc - tic) * 1e3:,.2f}ms")
+        self.logger.info(msg=f"`wall` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
+        # `tf` is in IDS structure
         tic = time_py.time()
-        self.bp_probes = database_reader.setup_bp_probes(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        self.tf = database_reader.setup_tf(pulseNo=self.pulseNo, settings=settings_xml.ids.tf, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`tf` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        # `pulse_schedule` is in IDS structure
+        tic = time_py.time()
+        self.pulse_schedule = database_reader.setup_pulse_schedule(pulseNo=self.pulseNo, settings=settings_xml.ids.pulse_schedule, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`pulse_schedule` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+
+        # `pf_passive` is in IDS structure
+        tic = time_py.time()
+        self.pf_passive = database_reader.setup_pf_passive(pulseNo=self.pulseNo, settings=self.settings_xml.ids.pf_passive, settings_equilibrium=self.settings_xml.ids.equilibrium, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`pf_passive` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        # `pf_active` is in IDS structure
+        tic = time_py.time()
+        self.pf_active = database_reader.setup_pf_active(pulseNo=self.pulseNo, settings=self.settings_xml.ids.pf_active, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`pf_active` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+
+        # TODO: change to `magnetics`
+        tic = time_py.time()
+        self.bp_probes = database_reader.setup_bp_probes(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, settings_bp_probes=self.settings_xml.ids.equilibrium.constraints.b_field_pol_probe, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`bp_probes` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
-        self.flux_loops = database_reader.setup_flux_loops(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        self.flux_loops = database_reader.setup_flux_loops(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, settings_flux_loops=self.settings_xml.ids.equilibrium.constraints.flux_loop, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`flux_loops` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
-        self.rogowski_coils = database_reader.setup_rogowski_coils(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        self.rogowski_coils = database_reader.setup_rogowski_coils(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, settings_rogowski_coils=self.settings_xml.ids.equilibrium.constraints.rogowski_coil, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`rogowski_coils` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
-        self.passives = database_reader.setup_passives(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        self.dialoop = database_reader.setup_dialoop(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, settings_dialoop=self.settings_xml.ids.equilibrium.constraints.diamagnetic_flux, **kwargs)
         toc = time_py.time()
-        self.logger.info(msg=f"`passives` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+        self.logger.info(msg=f"`dialoop` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         times_to_reconstruct = self.results["TIME"]
 
         tic = time_py.time()
-        self.plasma = database_reader.setup_plasma(
-            pulseNo=self.pulseNo, settings=self.settings, times_to_reconstruct=times_to_reconstruct, **kwargs
-        )
-        toc = time_py.time()
-        self.logger.info(msg=f"`plasma` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
-        tic = time_py.time()
-        self.wall = database_reader.setup_wall(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
-        toc = time_py.time()
-        self.logger.info(msg=f"`wall` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
-        tic = time_py.time()
-        self.tf = database_reader.setup_tf(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
-        toc = time_py.time()
-        self.logger.info(msg=f"`tf` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
-        tic = time_py.time()
-        self.isoflux = database_reader.setup_isoflux_sensors(pulseNo=self.pulseNo, settings=self.settings, times_to_reconstruct=times_to_reconstruct, **kwargs)
+        self.isoflux = database_reader.setup_isoflux_sensors(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, settings_isoflux_sensors=self.settings_xml.ids.equilibrium.constraints.isoflux, times_to_reconstruct=times_to_reconstruct, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`isoflux` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
-        self.isoflux_boundary = database_reader.setup_isoflux_boundary_sensors(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        self.isoflux_boundary = database_reader.setup_isoflux_boundary_sensors(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`isoflux_boundary` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
-        self.pressure_sensors = database_reader.setup_pressure_sensors(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        self.pressure_sensors = database_reader.setup_pressure_sensors(pulseNo=self.pulseNo, settings=self.settings_xml.ids.thomson_scattering, settings_pressure_sensors=self.settings_xml.ids.equilibrium.constraints.pressure, **kwargs)
         toc = time_py.time()
         self.logger.info(msg=f"`pressure_sensors` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         tic = time_py.time()
-        self.stationary_point = database_reader.setup_stationary_point_sensors(
-            pulseNo=self.pulseNo,
-            settings=self.settings,
-            times_to_reconstruct=times_to_reconstruct,
-            **kwargs,
-        )
+        # TODO: temporary removal
+        from gsfit_rs import StationaryPoint
+        self.stationary_point = StationaryPoint()
+        # self.stationary_point = database_reader.setup_stationary_point_sensors(
+        #     pulseNo=self.pulseNo,
+        #     settings=self.settings,
+        #     times_to_reconstruct=times_to_reconstruct,
+        #     **kwargs,
+        # )
         toc = time_py.time()
         self.logger.info(msg=f"`stationary_point` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
+        # TODO: change to `equilibrium` IDS
         tic = time_py.time()
-        self.dialoop = database_reader.setup_dialoop(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
+        self.plasma = database_reader.setup_plasma(
+            pulseNo=self.pulseNo, settings=self.settings_xml.ids.equilibrium, times_to_reconstruct=times_to_reconstruct, **kwargs
+        )
         toc = time_py.time()
-        self.logger.info(msg=f"`dialoop` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+        self.logger.info(msg=f"`plasma` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        tic = time_py.time()
-        self.pulse_schedule = database_reader.setup_pulse_schedule(pulseNo=self.pulseNo, settings=self.settings, **kwargs)
-        toc = time_py.time()
-        if self.pulse_schedule is None:
-            self.logger.info(msg=f"`pulse_schedule` not used by this database_reader, so there are no gaps;  {(toc - tic) * 1e3:,.2f}ms")
-        else:
-            self.logger.info(msg=f"`pulse_schedule` initialised;  {(toc - tic) * 1e3:,.2f}ms")
+        # Copy IDS data into the plasma object
+        self.plasma.copy_from_wall_ids(self.wall)
+        self.plasma.copy_from_tf_ids(self.tf)
+        self.plasma.copy_from_pf_active_ids(self.pf_active)
+        self.plasma.copy_from_pf_passive_ids(self.pf_passive)
+        # `pulse_schedule` is optional. Only copy it in if it is not None
+        if self.pulse_schedule is not None:
+            # is this ever None?
+            self.plasma.copy_from_pulse_schedule_ids(self.pulse_schedule)
+
+
+
+        # import pdb; pdb.set_trace()

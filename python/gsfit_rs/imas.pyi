@@ -1248,6 +1248,28 @@ class _EquilibriumConstraints0dItem:
 
         Units: 1
         """
+    @property
+    def name(self) -> Path[str]:
+        """Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
+`constraints/pf_passive_current(i1)`
+        """
+    @property
+    def dof(self) -> _EquilibriumConstraints0dDofArrayFromItem:
+        """The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order
+        """
+    @property
+    def regularisations(self) -> Path[npt.NDArray[np.float64]]:
+        """The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
+regularisation, one coefficient for each `dof`; no rows for none.
+Shape = `(n_regularisations, n_dof)`
+        """
+    @property
+    def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
+        """The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
+`regularisations`
+
+        Units: dimensionless
+        """
 
 class _EquilibriumConstraints0dMany:
     """Scalar constraint with no sign convention transformation
@@ -1296,6 +1318,28 @@ class _EquilibriumConstraints0dMany:
         """Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
 
         Units: 1
+        """
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
+`constraints/pf_passive_current(i1)`
+        """
+    @property
+    def dof(self) -> _EquilibriumConstraints0dDofArrayFromMany:
+        """The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order
+        """
+    @property
+    def regularisations(self) -> Path[npt.NDArray[np.float64]]:
+        """The regularisations of the degrees of freedom, `pf_passive/loop(i1)/regularisations`: one row of coefficients for each
+regularisation, one coefficient for each `dof`; no rows for none.
+Shape = `(n_regularisations, n_dof)`
+        """
+    @property
+    def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
+        """The weight of each regularisation in the fit, `pf_passive/loop(i1)/regularisations_weight`, one for each row of
+`regularisations`
+
+        Units: dimensionless
         """
 
 class _EquilibriumConstraints0dB0LikeItem:
@@ -1396,6 +1440,24 @@ class _EquilibriumConstraints0dB0LikeMany:
         Units: 1
         """
 
+class _EquilibriumConstraints0dDofItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
+        """
+
+class _EquilibriumConstraints0dDofMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
+        """
+
 class _EquilibriumConstraints0dIpLikeItem:
     """Scalar constraint with plasma-current-like sign convention
     """
@@ -1443,6 +1505,11 @@ class _EquilibriumConstraints0dIpLikeItem:
         """Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
 
         Units: 1
+        """
+    @property
+    def name(self) -> Path[str]:
+        """Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name`
+for `constraints/pf_current(i1)`
         """
 
 class _EquilibriumConstraints0dIpLikeMany:
@@ -1492,6 +1559,11 @@ class _EquilibriumConstraints0dIpLikeMany:
         """Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
 
         Units: 1
+        """
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name`
+for `constraints/pf_current(i1)`
         """
 
 class _EquilibriumConstraints0dOneLikeItem:
@@ -2461,6 +2533,17 @@ This is the closest of the three to the data dictionary's own `beta_pol`, which 
 vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
         """
     @property
+    def bp_omp(self) -> Path[float]:
+        """Magnitude of the poloidal magnetic field at the outboard midplane,
+`sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of
+the magnetic axis on the outboard side. This is the same point `delta_r_sep` and `f_x`
+use. Evaluated from the solver's bicubic interpolation of `psi`, not from the gridded
+`profiles_2d/b_field_r` and `.../b_field_z`. NaN when the boundary does not cross that
+height within the grid
+
+        Units: T
+        """
+    @property
     def bt_vac_at_r_geo(self) -> Path[float]:
         """Vacuum toroidal magnetic field at the plasma geometric axis,
 `vacuum_toroidal_field/r0 * b0 / boundary/geometric_axis/r`. Distinct from
@@ -2650,6 +2733,17 @@ flux-surface average
 `4 * int(p dV) / (mu_0 * ip ** 2 * boundary/geometric_axis/r)`
 This is the closest of the three to the data dictionary's own `beta_pol`, which uses the
 vacuum toroidal field reference radius `vacuum_toroidal_field/r0` instead
+        """
+    @property
+    def bp_omp(self) -> Path[npt.NDArray[np.float64]]:
+        """Magnitude of the poloidal magnetic field at the outboard midplane,
+`sqrt(b_field_r ** 2 + b_field_z ** 2)`, where the plasma boundary crosses the height of
+the magnetic axis on the outboard side. This is the same point `delta_r_sep` and `f_x`
+use. Evaluated from the solver's bicubic interpolation of `psi`, not from the gridded
+`profiles_2d/b_field_r` and `.../b_field_z`. NaN when the boundary does not cross that
+height within the grid
+
+        Units: T
         """
     @property
     def bt_vac_at_r_geo(self) -> Path[npt.NDArray[np.float64]]:
@@ -3516,6 +3610,94 @@ Shape = `(n_z * n_r)`
 Shape = `(n_z * n_r)`
 
         Units: Wb.A^-1.m^-3
+        """
+
+class _EquilibriumLimiterItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def unit(self) -> _EquilibriumLimiterUnitArrayFromItem:
+        """Limiter units, in the same order as `wall/description_2d(0)/limiter/unit`. The order is part
+of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region
+the plasma is allowed to occupy, and only `unit(0)` is used as the vessel. `unit(1)`,
+`unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the
+vessel contour. The points of every unit are candidate limit points, so a plasma may be
+limited on the vessel or on any of the tiles
+        """
+
+class _EquilibriumLimiterMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def unit(self) -> _EquilibriumLimiterUnitArrayFromMany:
+        """Limiter units, in the same order as `wall/description_2d(0)/limiter/unit`. The order is part
+of the contract: `unit(0)` is the vacuum vessel contour, the closed polygon bounding the region
+the plasma is allowed to occupy, and only `unit(0)` is used as the vessel. `unit(1)`,
+`unit(2)`, ... are other plasma facing components, such as tiles which protrude inside the
+vessel contour. The points of every unit are candidate limit points, so a plasma may be
+limited on the vessel or on any of the tiles
+        """
+
+class _EquilibriumLimiterUnitItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short identifier for the unit, e.g. `"vacuum_vessel"`
+        """
+    @property
+    def outline(self) -> _EquilibriumLimiterUnitOutlineItem:
+        """Outline of the limiting surface
+        """
+
+class _EquilibriumLimiterUnitMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short identifier for the unit, e.g. `"vacuum_vessel"`
+        """
+    @property
+    def outline(self) -> _EquilibriumLimiterUnitOutlineMany:
+        """Outline of the limiting surface
+        """
+
+class _EquilibriumLimiterUnitOutlineItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of each point along the outline
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of each point along the outline
+
+        Units: m
+        """
+
+class _EquilibriumLimiterUnitOutlineMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def r(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of each point along the outline
+
+        Units: m
+        """
+    @property
+    def z(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of each point along the outline
+
+        Units: m
         """
 
 class _EquilibriumProfiles1dItem:
@@ -5629,6 +5811,17 @@ class _EquilibriumConstraints0dArrayFromMany:
     # the values are still gathered.
     def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dMany: ...
 
+class _EquilibriumConstraints0dDofArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _EquilibriumConstraints0dDofItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _EquilibriumConstraints0dDofMany: ...
+
+class _EquilibriumConstraints0dDofArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumConstraints0dDofMany: ...
+
 class _EquilibriumConstraints0dIpLikeArrayFromItem:
     @overload
     def __getitem__(self, index: int) -> _EquilibriumConstraints0dIpLikeItem: ...
@@ -5760,6 +5953,17 @@ class _EquilibriumGreensPfPassiveDofArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
     def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensPfPassiveDofMany: ...
+
+class _EquilibriumLimiterUnitArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _EquilibriumLimiterUnitItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _EquilibriumLimiterUnitMany: ...
+
+class _EquilibriumLimiterUnitArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumLimiterUnitMany: ...
 
 class _EquilibriumProfiles2dArrayFromItem:
     @overload
@@ -5951,6 +6155,12 @@ class _EquilibriumPaths:
     @property
     def greens(self) -> _EquilibriumGreensItem:
         """Greens tables: the poloidal flux and its derivatives per ampere in each current source
+        """
+    @property
+    def limiter(self) -> _EquilibriumLimiterItem:
+        """The limiter: the immobile surfaces which bound the plasma. A copy of the `wall` IDS's
+`wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and
+the post-processor read it from the equilibrium IDS rather than from the `wall` IDS
         """
 
 equilibrium_paths: _EquilibriumPaths
@@ -6582,6 +6792,11 @@ class _PfActivePfCoilsItem:
 
         Units: N
         """
+    @property
+    def prescribed(self) -> _PfActiveIdentifierStaticItem:
+        """Which of the coil's signals is prescribed: `current` (`index` 1) when `coil(i1)/current` is given, or `voltage` (`index` 2)
+when `coil(i1)/voltage` is given and the current is calculated
+        """
 
 class _PfActivePfCoilsMany:
     """Active PF coils
@@ -6702,6 +6917,11 @@ class _PfActivePfCoilsMany:
         """Vertical crushing force applied on this coil (positive when compressive)
 
         Units: N
+        """
+    @property
+    def prescribed(self) -> _PfActiveIdentifierStaticMany:
+        """Which of the coil's signals is prescribed: `current` (`index` 1) when `coil(i1)/current` is given, or `voltage` (`index` 2)
+when `coil(i1)/voltage` is given and the current is calculated
         """
 
 class _PfActivePfCoilsElementsItem:
@@ -7544,6 +7764,40 @@ class _PfPassiveCodeMany:
         """List of external libraries used by the code that has produced this IDS
         """
 
+class _PfPassiveIdentifierStaticItem:
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[int]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Verbose description
+        """
+
+class _PfPassiveIdentifierStaticMany:
+    """Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier
+        """
+    @property
+    def index(self) -> Path[npt.NDArray[np.int32]]:
+        """Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Verbose description
+        """
+
 class _PfPassiveLibraryItem:
     """Library used by the code that has produced this IDS
     """
@@ -7778,6 +8032,12 @@ class _PfPassivePfCoilsElementsItem:
     def geometry(self) -> _PfPassiveOutline2dGeometryStaticItem:
         """Cross-sectional shape of the element
         """
+    @property
+    def current(self) -> Path[npt.NDArray[np.float64]]:
+        """The current in this element, on the loop's timebase, `loop(i1)/time`. Only set by `solve_circuit_equations`, which simulates it
+
+        Units: A
+        """
 
 class _PfPassivePfCoilsElementsMany:
     """Each PF coil is comprised of a number of cross-section elements described  individually
@@ -7806,6 +8066,12 @@ class _PfPassivePfCoilsElementsMany:
     @property
     def geometry(self) -> _PfPassiveOutline2dGeometryStaticMany:
         """Cross-sectional shape of the element
+        """
+    @property
+    def current(self) -> Path[npt.NDArray[np.float64]]:
+        """The current in this element, on the loop's timebase, `loop(i1)/time`. Only set by `solve_circuit_equations`, which simulates it
+
+        Units: A
         """
 
 class _PfPassiveLoopsItem:
@@ -7846,6 +8112,27 @@ class _PfPassiveLoopsItem:
 
         Units: s
         """
+    @property
+    def current_distribution_type(self) -> _PfPassiveIdentifierStaticItem:
+        """How the loop's current is distributed over its elements, which sets its degrees of freedom, `dof`:
+`constant_current_density` (`index` 1), one degree of freedom with the same current density in every element; or
+`eig` (`index` 2), one degree of freedom for each of the loop's slowest decaying eigenmodes
+        """
+    @property
+    def dof(self) -> _PfPassiveLoopsDofArrayFromItem:
+        """The loop's degrees of freedom: the current distributions whose amplitudes the equilibrium reconstruction fits
+        """
+    @property
+    def regularisations(self) -> Path[npt.NDArray[np.float64]]:
+        """The regularisations of the degrees of freedom, one row of `n_dof` coefficients for each regularisation; no rows for none.
+Shape = `(n_regularisations, n_dof)`
+        """
+    @property
+    def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
+        """The weight of each regularisation in the fit, one for each row of `regularisations`
+
+        Units: dimensionless
+        """
 
 class _PfPassiveLoopsMany:
     """Passive axisymmetric conductor description in the form of non-connected loops; any connected loops are expressed as active coil circuits with no power supply attached.
@@ -7882,6 +8169,67 @@ class _PfPassiveLoopsMany:
     @property
     def time(self) -> Path[npt.NDArray[np.float64]]:
         """Timebase for the dynamic nodes of this loop located at this level of the IDS structure
+
+        Units: s
+        """
+    @property
+    def current_distribution_type(self) -> _PfPassiveIdentifierStaticMany:
+        """How the loop's current is distributed over its elements, which sets its degrees of freedom, `dof`:
+`constant_current_density` (`index` 1), one degree of freedom with the same current density in every element; or
+`eig` (`index` 2), one degree of freedom for each of the loop's slowest decaying eigenmodes
+        """
+    @property
+    def dof(self) -> _PfPassiveLoopsDofArrayFromMany:
+        """The loop's degrees of freedom: the current distributions whose amplitudes the equilibrium reconstruction fits
+        """
+    @property
+    def regularisations(self) -> Path[npt.NDArray[np.float64]]:
+        """The regularisations of the degrees of freedom, one row of `n_dof` coefficients for each regularisation; no rows for none.
+Shape = `(n_regularisations, n_dof)`
+        """
+    @property
+    def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
+        """The weight of each regularisation in the fit, one for each row of `regularisations`
+
+        Units: dimensionless
+        """
+
+class _PfPassiveLoopsDofItem:
+    """Custom (non-IMAS) structure, declared in custom_pf_passive_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first
+        """
+    @property
+    def current_distribution(self) -> Path[npt.NDArray[np.float64]]:
+        """The current in each element, in the order of `element`, for a unit amplitude of this degree of freedom.
+For `constant_current_density` it is the element's area, so that the amplitude is the current density
+        """
+    @property
+    def time_constant(self) -> Path[float]:
+        """The eigenmode's time constant, the ratio of its inductance to its resistance. Only set for `eig`
+
+        Units: s
+        """
+
+class _PfPassiveLoopsDofMany:
+    """Custom (non-IMAS) structure, declared in custom_pf_passive_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first
+        """
+    @property
+    def current_distribution(self) -> Path[npt.NDArray[np.float64]]:
+        """The current in each element, in the order of `element`, for a unit amplitude of this degree of freedom.
+For `constant_current_density` it is the element's area, so that the amplitude is the current density
+        """
+    @property
+    def time_constant(self) -> Path[npt.NDArray[np.float64]]:
+        """The eigenmode's time constant, the ratio of its inductance to its resistance. Only set for `eig`
 
         Units: s
         """
@@ -8086,6 +8434,17 @@ class _PfPassiveLoopsArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
     def __getitem__(self, index: int | slice | list[int]) -> _PfPassiveLoopsMany: ...
+
+class _PfPassiveLoopsDofArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PfPassiveLoopsDofItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PfPassiveLoopsDofMany: ...
+
+class _PfPassiveLoopsDofArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PfPassiveLoopsDofMany: ...
 
 # --------------------------------------------------------------------------
 # pf_passive root

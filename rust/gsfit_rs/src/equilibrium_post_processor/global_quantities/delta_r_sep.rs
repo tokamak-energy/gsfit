@@ -2,11 +2,10 @@
 
 use super::super::constant_values::ConstantValues;
 use super::super::intermediate_values::IntermediateValues;
+use crate::limiter::vacuum_vessel_outline;
 use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
-use crate::wall::vacuum_vessel_outline;
 use geo::{Contains, Coord, LineString, Point, Polygon};
 use imas_rs::EquilibriumTimeSlice;
-use imas_rs::ids::wall::Wall as WallIds;
 use ndarray::{Array1, Array2, s};
 
 // Convention taken from: https://doi.org/10.1088/1741-4326/aac006
@@ -35,13 +34,11 @@ use ndarray::{Array1, Array2, s};
 ///
 /// # Arguments
 /// * `time_slice` - the solved time-slice; `global_quantities/delta_r_sep` is written into it
-/// * `constant_values` - the constant values; `wall_ids`, which supplies the vacuum vessel the
+/// * `constant_values` - the constant values; `limiter`, which supplies the vacuum vessel the
 ///   X-points must lie inside, is read
 ///
 /// NaN when the plasma is limited, or when no second X-point was found.
 pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &ConstantValues, _intermediate_values: &mut IntermediateValues) {
-    let wall_ids: &WallIds = constant_values.wall_ids;
-
     time_slice.global_quantities.delta_r_sep = f64::NAN;
 
     // `boundary/type` is 0 for a limited plasma and 1 for a diverted one. A limited plasma has no
@@ -55,7 +52,7 @@ pub fn calculate(time_slice: &mut EquilibriumTimeSlice, constant_values: &Consta
     let mag_z: f64 = time_slice.global_quantities.magnetic_axis.z;
     let psi_b: f64 = time_slice.boundary.psi;
 
-    let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(wall_ids).unwrap();
+    let (vessel_r, vessel_z): (Array1<f64>, Array1<f64>) = vacuum_vessel_outline(constant_values.limiter).unwrap();
     let vessel_coordinates: Vec<Coord<f64>> = vessel_r.iter().zip(vessel_z.iter()).map(|(&x, &y)| Coord { x, y }).collect();
     let vessel_polygon: Polygon = Polygon::new(
         LineString::from(vessel_coordinates),

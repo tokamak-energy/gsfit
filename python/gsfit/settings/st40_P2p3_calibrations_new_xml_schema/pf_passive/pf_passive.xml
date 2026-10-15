@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pf_passive_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/pf_passive/pf_passive.xsd">
+    <workflow href="../workflow.xml"/>
+    <st40_mdsplus>
+        <elmag>
+            <pulseNo xsi:nil="true"/>
+            <run_name>RUN16</run_name>
+            <usage>Vessel geometry and resistance</usage>
+        </elmag>
+    </st40_mdsplus>
+</pf_passive_settings>

@@ -1,5 +1,6 @@
-use imas_rs::ids::tf::{SignalFlt1d, Tf as TfIds};
-use imas_rs::python::{PyPath, PyTf, read_path};
+use imas_rs::dd_support::parameters_input::ParametersInput;
+use imas_rs::ids::tf::{Code, SignalFlt1d, Tf as TfIds};
+use imas_rs::python::{PyParametersInput, PyPath, PyTf, read_path};
 use ndarray::Array1;
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
@@ -32,24 +33,50 @@ use pyo3::prelude::*;
 /// The coil geometry (`tf/coil`), the field map (`tf/field_map`) and the periodicity flags are
 /// deliberately left empty: GSFit models the toroidal field as axisymmetric and needs only the
 /// two nodes above.
+///
+/// # Settings
+///
+/// The toroidal field is constructed with the settings it is built from, e.g. the reference major
+/// radius, and which run of which database the field is read from, as an IMAS `parameters_input`.
+/// They are kept in `parameters_input`, and their XML is also written to `tf/code/parameters`,
+/// where IMAS records the parameters of the code which made an IDS.
 #[pyclass(module = "gsfit_rs")]
 pub struct Tf {
     pub tf_ids: TfIds,
-}
-
-impl Default for Tf {
-    fn default() -> Self {
-        Self::new()
-    }
+    /// The settings the toroidal field is built from: their XML, the XML schema they follow, and the defaults
+    pub parameters_input: ParametersInput,
 }
 
 /// Python accessible methods
 #[pymethods]
 impl Tf {
     /// Construct an empty toroidal field, ready for `set_r0` and `set_b_field_phi_vacuum_r`.
+    ///
+    /// # Arguments
+    /// * `parameters_input` - the settings the toroidal field is built from, as a
+    ///   `gsfit_rs.dd_support.ParametersInput`; their XML is written to `tf/code/parameters`
     #[new]
-    pub fn new() -> Self {
-        Self { tf_ids: TfIds::default() }
+    pub fn new(parameters_input: &PyParametersInput) -> Self {
+        let tf_ids: TfIds = TfIds {
+            code: Code {
+                parameters: parameters_input.inner.parameters_value.clone(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        Self {
+            tf_ids,
+            parameters_input: parameters_input.inner.clone(),
+        }
+    }
+
+    /// The settings the toroidal field was built from, as a `gsfit_rs.dd_support.ParametersInput`.
+    ///
+    /// This is a copy: changing it does not change the toroidal field.
+    #[getter]
+    fn parameters_input(&self) -> PyParametersInput {
+        PyParametersInput::new(self.parameters_input.clone())
     }
 
     /// Set `tf/r0`, the reference major radius.
@@ -58,8 +85,8 @@ impl Tf {
     /// * `r0` - reference major radius the vacuum toroidal field is quoted at, [metre]
     ///
     /// This is the machine's official reference radius, typically the middle of the vessel at
-    /// the equatorial midplane. It is copied onto `equilibrium/vacuum_toroidal_field/r0` by the
-    /// solver, so that the two IDSs cannot disagree.
+    /// the equatorial midplane. It is copied onto `equilibrium/vacuum_toroidal_field/r0` by
+    /// `Plasma.copy_from_tf_ids`, so that the two IDSs cannot disagree.
     pub fn set_r0(&mut self, r0: f64) -> PyResult<()> {
         if !r0.is_finite() || r0 <= 0.0 {
             return Err(PyValueError::new_err(format!("`tf/r0` must be a positive major radius, got {r0}")));
@@ -77,7 +104,7 @@ impl Tf {
     /// * `data` - vacuum toroidal field times major radius (1d array), [tesla * metre]
     ///
     /// Store the **experimental** signal here, not one interpolated onto the reconstruction
-    /// times: `solve_grad_shafranov` interpolates it itself, so that changing the reconstruction
+    /// times: `Plasma.copy_from_tf_ids` interpolates it itself, so that changing the reconstruction
     /// times does not require re-reading the database.
     ///
     /// `data` is signed; see the `Tf` documentation. A reader holding a rod current instead
@@ -160,5 +187,25 @@ impl Tf {
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
         string_output
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_settings_are_kept_and_their_xml_written_to_code_parameters() {
+        let parameters_input: ParametersInput = ParametersInput {
+            parameters_value: "<tf_settings/>".to_string(),
+            parameters_default: String::new(),
+            schema: "<xs:schema/>".to_string(),
+        };
+
+        let tf: Tf = Tf::new(&PyParametersInput::new(parameters_input));
+
+        assert_eq!(tf.tf_ids.code.parameters, "<tf_settings/>");
+        assert_eq!(tf.parameters_input.parameters_value, "<tf_settings/>");
+        assert_eq!(tf.parameters_input.schema, "<xs:schema/>");
     }
 }

@@ -2,13 +2,13 @@ import numpy as np
 from scipy.constants import mu_0
 
 from gsfit_rs import BpProbes
-from gsfit_rs import Coils
 from gsfit_rs import Dialoop
 from gsfit_rs import EfitPolynomial
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
-from gsfit_rs import Passives
+from gsfit_rs import PfActive
+from gsfit_rs import PfPassive
 from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import RogowskiCoils
@@ -16,6 +16,7 @@ from gsfit_rs import StationaryPoint
 from gsfit_rs import Tf
 from gsfit_rs import Wall
 from gsfit_rs import solve_grad_shafranov
+from gsfit_rs.dd_support import ParametersInput
 from gsfit_rs.imas import equilibrium_paths as ep
 
 # DOF: 3 dof's
@@ -30,16 +31,17 @@ from gsfit_rs.imas import equilibrium_paths as ep
 
 
 def run() -> None:
-    # Make a Helmholtz PF coil
-    coils = Coils()
-    coils.add_pf_coil(
+    # Make a Helmholtz PF coil. Its filaments are 0.1 m squares: `PfActive` needs a positive size, for the coil's self-inductance.
+    # The self test reads no settings, so has none to record in `pf_active/code/parameters`
+    pf_active = PfActive(ParametersInput())
+    pf_active.add_pf_coil(
         name="helmholtz_01",
         r=np.array([15.123, 15.223]),
         z=np.array([-15.123, 15.223]),
-        d_r=np.array([0.0, 0.0]),
-        d_z=np.array([0.0, 0.0]),
+        width=np.array([0.1, 0.1]),
+        height=np.array([0.1, 0.1]),
         time=np.array([0.0, 1.0]),
-        measured=np.array([100.0e3, 100.0e3]),
+        current=np.array([100.0e3, 100.0e3]),
     )
 
     limit_pts_r = np.array([10.0, 10.0, 10.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 10.0, 10.0, 10.0])
@@ -147,39 +149,55 @@ def run() -> None:
     # the two with a tolerance rather than exactly
     i_rod = 2.0e3  # [ampere]
     f_vac = mu_0 * i_rod / (2.0 * np.pi)  # [tesla * metre]
-    tf = Tf()
+    # The self test reads no settings, so has none to record in `tf/code/parameters`
+    tf = Tf(ParametersInput())
     tf.set_r0(10.5)
     tf.set_b_field_phi_vacuum_r(
         time=np.array([0.0, 1.0]),
         data=np.array([f_vac, f_vac]),
     )
 
+    # The solver reads the vacuum toroidal field from the equilibrium IDS, so it is copied in from the toroidal field
+    plasma.copy_from_tf_ids(tf)
+
     # Wall. `unit(0)` is the vacuum vessel contour; here it is the only limiter unit
-    wall = Wall()
+    # The self test reads no settings, so has none to record in `wall/code/parameters`
+    wall = Wall(ParametersInput())
     wall.add_limiter_unit(name="vacuum_vessel", r=limit_pts_r, z=limit_pts_z)
 
-    passives = Passives()
+    # The solver reads the limiter from the equilibrium IDS, so it is copied in from the wall
+    plasma.copy_from_wall_ids(wall)
+
+    # The solver reads the PF coil current from the equilibrium IDS, so it is copied in from the PF coils
+    plasma.copy_from_pf_active_ids(pf_active)
+
+    # No passive conductors. This test reads no settings, so has none to record in `pf_passive/code/parameters`
+    pf_passive = PfPassive(ParametersInput())
+
+    # The solver reads the passive loops' regularisations from the equilibrium IDS, so they are copied in from the passive conductors
+    plasma.copy_from_pf_passive_ids(pf_passive)
+
     pressure_sensors = Pressure()
 
-    # Greens with coils
-    plasma.greens_with_coils(coils)
-    bp_probes.greens_with_coils(coils)
-    flux_loops.greens_with_coils(coils)
-    rogowski_coils.greens_with_coils(coils)
-    isoflux.greens_with_coils(coils)
-    isoflux_boundary.greens_with_coils(coils)
-    pressure_sensors.greens_with_coils(coils)
-    stationary_point.greens_with_coils(coils)
+    # Greens with the PF coils
+    plasma.greens_with_pf_active(pf_active)
+    bp_probes.greens_with_pf_active(pf_active)
+    flux_loops.greens_with_pf_active(pf_active)
+    rogowski_coils.greens_with_pf_active(pf_active)
+    isoflux.greens_with_pf_active(pf_active)
+    isoflux_boundary.greens_with_pf_active(pf_active)
+    pressure_sensors.greens_with_pf_active(pf_active)
+    stationary_point.greens_with_pf_active(pf_active)
 
-    # Greens with passives
-    plasma.greens_with_passives(passives)
-    bp_probes.greens_with_passives(passives)
-    flux_loops.greens_with_passives(passives)
-    rogowski_coils.greens_with_passives(passives)
-    isoflux.greens_with_passives(passives)
-    isoflux_boundary.greens_with_passives(passives)
-    pressure_sensors.greens_with_passives(passives)
-    stationary_point.greens_with_passives(passives)
+    # Greens with the passive conductors
+    plasma.greens_with_pf_passive(pf_passive)
+    bp_probes.greens_with_pf_passive(pf_passive)
+    flux_loops.greens_with_pf_passive(pf_passive)
+    rogowski_coils.greens_with_pf_passive(pf_passive)
+    isoflux.greens_with_pf_passive(pf_passive)
+    isoflux_boundary.greens_with_pf_passive(pf_passive)
+    pressure_sensors.greens_with_pf_passive(pf_passive)
+    stationary_point.greens_with_pf_passive(pf_passive)
 
     # Greens with plasma
     bp_probes.greens_with_plasma(plasma)
@@ -192,10 +210,6 @@ def run() -> None:
 
     solve_grad_shafranov(
         plasma=plasma,
-        wall=wall,
-        tf=tf,
-        coils=coils,
-        passives=passives,
         bp_probes=bp_probes,
         flux_loops=flux_loops,
         rogowski_coils=rogowski_coils,

@@ -13,4 +13,4 @@ class DatabaseWriterTokamakEnergyMDSplusNew(DatabaseWriterProtocol):
         return map_results_to_database(self, gsfit_controller)
 
     def get_workflow_names(self, gsfit_controller: "Gsfit") -> list[str]:
-        return workflow_names_from_settings(gsfit_controller.settings)
+        return workflow_names_from_settings(gsfit_controller.settings_xml)

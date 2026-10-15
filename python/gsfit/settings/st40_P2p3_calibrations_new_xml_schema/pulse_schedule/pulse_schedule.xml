@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pulse_schedule_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/pulse_schedule/pulse_schedule.xsd">
+    <workflow href="../workflow.xml"/>
+</pulse_schedule_settings>

@@ -11,6 +11,12 @@ mod boundary;
 mod bp_sq_flux_surface_average;
 mod constant_values;
 mod constraints;
+/// Calculations written to `time_slice(itime)/contour_tree`. Declared here rather than in a
+/// `contour_tree/mod.rs` of its own while it holds a single calculator
+mod contour_tree {
+    #[expect(non_snake_case, reason = "double underscores separate IDS node names")]
+    pub(super) mod node_levelset__r__z;
+}
 mod convergence;
 mod dependency_sorter;
 mod equilibrium_post_processor;
@@ -23,6 +29,7 @@ mod profiles_1d;
 mod profiles_1d_r_midplane;
 mod profiles_1d_r_midplane_h;
 mod profiles_2d;
+mod psi_interpolator;
 mod sol;
 
 pub use equilibrium_post_processor::equilibrium_post_processor;
@@ -40,10 +47,12 @@ pub enum CalculatorIdentifier {
     boundary__outline__r__z,
     boundary__psi_norm__rho_tor,
     constraints__diamagnetic_flux_reconstructed,
+    contour_tree__node_levelset__r__z,
     convergence__grad_shafranov_deviation_expression__description__index__name,
     global_quantities__area__length_pol__surface__volume,
     global_quantities__beta_pol,
     global_quantities__beta_tor,
+    global_quantities__bp_omp,
     global_quantities__bt_vac_at_r_geo,
     global_quantities__current_centre__r__velocity_z__z,
     global_quantities__delta_r_sep,

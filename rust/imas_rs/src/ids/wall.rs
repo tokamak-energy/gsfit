@@ -9,9 +9,10 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, INT_1D, STR_0D, STR_1D};
-use ndarray::{Dimension, Ix1};
-use std::slice::SliceIndex;
+use crate::dd_base_types::{
+    Accumulator, ArrayOfStructuresElement, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, INT_1D, Named, STR_0D, STR_1D, Selection,
+};
+use ndarray::Dimension;
 
 // ============================================================================
 // Complex Types
@@ -1588,6 +1589,20 @@ impl<'a, D: Dimension> PlasmaCompositionNeutralElementConstantSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for PlasmaCompositionNeutralElementConstant {
+    type SliceView<'a, D>
+        = PlasmaCompositionNeutralElementConstantSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PlasmaCompositionNeutralElementConstantSliceView::new(elements)
+    }
+}
+
 // --- WallGlobalQuantititesNeutralOrigin View Types ---
 
 /// View over multiple WallGlobalQuantititesNeutralOrigin with field accumulation
@@ -1623,20 +1638,35 @@ impl<'a, D: Dimension> WallGlobalQuantititesNeutralOriginSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, PlasmaCompositionNeutralElementConstant>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &WallGlobalQuantititesNeutralOrigin| {
+            item.element.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for WallGlobalQuantititesNeutralOrigin {
+    type SliceView<'a, D>
+        = WallGlobalQuantititesNeutralOriginSliceView<'a, D>
     where
-        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        PlasmaCompositionNeutralElementConstantSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &WallGlobalQuantititesNeutralOrigin| item.element.as_slice(),
-            range,
-        ))
+        WallGlobalQuantititesNeutralOriginSliceView::new(elements)
+    }
+}
+
+impl Named for WallGlobalQuantititesNeutralOrigin {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1675,36 +1705,46 @@ impl<'a, D: Dimension> WallGlobalQuantititesNeutralSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]> + Clone,
-    {
-        PlasmaCompositionNeutralElementConstantSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &WallGlobalQuantititesNeutral| item.element.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, PlasmaCompositionNeutralElementConstant>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &WallGlobalQuantititesNeutral| item.element.as_slice())
     }
 
-    /// The slice view over a range of `incident_species` under every element, e.g. `.incident_species(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `incident_species` under every element. A range, e.g. `.incident_species(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.incident_species(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident_species<R>(&self, range: R) -> WallGlobalQuantititesNeutralOriginSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn incident_species<S: Selection<'a, WallGlobalQuantititesNeutralOrigin>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("incident_species", &self.slice_elements, |item: &WallGlobalQuantititesNeutral| {
+            item.incident_species.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for WallGlobalQuantititesNeutral {
+    type SliceView<'a, D>
+        = WallGlobalQuantititesNeutralSliceView<'a, D>
     where
-        R: SliceIndex<[WallGlobalQuantititesNeutralOrigin], Output = [WallGlobalQuantititesNeutralOrigin]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        WallGlobalQuantititesNeutralOriginSliceView::new(self.slice_elements.nest(
-            "incident_species",
-            |item: &WallGlobalQuantititesNeutral| item.incident_species.as_slice(),
-            range,
-        ))
+        WallGlobalQuantititesNeutralSliceView::new(elements)
+    }
+}
+
+impl Named for WallGlobalQuantititesNeutral {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1810,6 +1850,26 @@ impl<'a, D: Dimension> Wall2dLimiterUnitSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for Wall2dLimiterUnit {
+    type SliceView<'a, D>
+        = Wall2dLimiterUnitSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        Wall2dLimiterUnitSliceView::new(elements)
+    }
+}
+
+impl Named for Wall2dLimiterUnit {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- Rz1dDynamicAosTime View Types ---
 
 /// View over multiple Rz1dDynamicAosTime with field accumulation
@@ -1843,6 +1903,20 @@ impl<'a, D: Dimension> Rz1dDynamicAosTimeSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a Rz1dDynamicAosTime> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for Rz1dDynamicAosTime {
+    type SliceView<'a, D>
+        = Rz1dDynamicAosTimeSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        Rz1dDynamicAosTimeSliceView::new(elements)
     }
 }
 
@@ -1883,16 +1957,33 @@ impl<'a, D: Dimension> Wall2dMobileUnitSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `outline` under every element, e.g. `.outline(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `outline` under every element. A range, e.g. `.outline(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn outline<R>(&self, range: R) -> Rz1dDynamicAosTimeSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn outline<S: Selection<'a, Rz1dDynamicAosTime>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("outline", &self.slice_elements, |item: &Wall2dMobileUnit| item.outline.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for Wall2dMobileUnit {
+    type SliceView<'a, D>
+        = Wall2dMobileUnitSliceView<'a, D>
     where
-        R: SliceIndex<[Rz1dDynamicAosTime], Output = [Rz1dDynamicAosTime]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        Rz1dDynamicAosTimeSliceView::new(self.slice_elements.nest("outline", |item: &Wall2dMobileUnit| item.outline.as_slice(), range))
+        Wall2dMobileUnitSliceView::new(elements)
+    }
+}
+
+impl Named for Wall2dMobileUnit {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1934,6 +2025,20 @@ impl<'a, D: Dimension> GenericGridScalarSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for GenericGridScalar {
+    type SliceView<'a, D>
+        = GenericGridScalarSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridScalarSliceView::new(elements)
+    }
+}
+
 // --- PlasmaCompositionNeutralElement View Types ---
 
 /// View over multiple PlasmaCompositionNeutralElement with field accumulation
@@ -1971,6 +2076,20 @@ impl<'a, D: Dimension> PlasmaCompositionNeutralElementSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a PlasmaCompositionNeutralElement> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for PlasmaCompositionNeutralElement {
+    type SliceView<'a, D>
+        = PlasmaCompositionNeutralElementSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PlasmaCompositionNeutralElementSliceView::new(elements)
     }
 }
 
@@ -2040,34 +2159,46 @@ impl<'a, D: Dimension> WallDescriptionGgdEnergyNeutralStateSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("incident", |item: &WallDescriptionGgdEnergyNeutralState| item.incident.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("incident", &self.slice_elements, |item: &WallDescriptionGgdEnergyNeutralState| {
+            item.incident.as_slice()
+        })
     }
 
-    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("emitted", &self.slice_elements, |item: &WallDescriptionGgdEnergyNeutralState| {
+            item.emitted.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdEnergyNeutralState {
+    type SliceView<'a, D>
+        = WallDescriptionGgdEnergyNeutralStateSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("emitted", |item: &WallDescriptionGgdEnergyNeutralState| item.emitted.as_slice(), range),
-        )
+        WallDescriptionGgdEnergyNeutralStateSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdEnergyNeutralState {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2116,34 +2247,46 @@ impl<'a, D: Dimension> WallDescriptionGgdEnergyIonStateSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("incident", |item: &WallDescriptionGgdEnergyIonState| item.incident.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("incident", &self.slice_elements, |item: &WallDescriptionGgdEnergyIonState| {
+            item.incident.as_slice()
+        })
     }
 
-    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("emitted", &self.slice_elements, |item: &WallDescriptionGgdEnergyIonState| {
+            item.emitted.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdEnergyIonState {
+    type SliceView<'a, D>
+        = WallDescriptionGgdEnergyIonStateSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("emitted", |item: &WallDescriptionGgdEnergyIonState| item.emitted.as_slice(), range),
-        )
+        WallDescriptionGgdEnergyIonStateSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdEnergyIonState {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2188,64 +2331,62 @@ impl<'a, D: Dimension> WallDescriptionGgdEnergyIonSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(
-            self.slice_elements
-                .nest("element", |item: &WallDescriptionGgdEnergyIon| item.element.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, PlasmaCompositionNeutralElement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &WallDescriptionGgdEnergyIon| item.element.as_slice())
     }
 
-    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("incident", |item: &WallDescriptionGgdEnergyIon| item.incident.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("incident", &self.slice_elements, |item: &WallDescriptionGgdEnergyIon| item.incident.as_slice())
     }
 
-    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("emitted", |item: &WallDescriptionGgdEnergyIon| item.emitted.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("emitted", &self.slice_elements, |item: &WallDescriptionGgdEnergyIon| item.emitted.as_slice())
     }
 
-    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `state` under every element. A range, e.g. `.state(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.state(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdEnergyIonStateSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn state<S: Selection<'a, WallDescriptionGgdEnergyIonState>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("state", &self.slice_elements, |item: &WallDescriptionGgdEnergyIon| item.state.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdEnergyIon {
+    type SliceView<'a, D>
+        = WallDescriptionGgdEnergyIonSliceView<'a, D>
     where
-        R: SliceIndex<[WallDescriptionGgdEnergyIonState], Output = [WallDescriptionGgdEnergyIonState]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        WallDescriptionGgdEnergyIonStateSliceView::new(
-            self.slice_elements
-                .nest("state", |item: &WallDescriptionGgdEnergyIon| item.state.as_slice(), range),
-        )
+        WallDescriptionGgdEnergyIonSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdEnergyIon {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2288,66 +2429,68 @@ impl<'a, D: Dimension> WallDescriptionGgdEnergyNeutralSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &WallDescriptionGgdEnergyNeutral| item.element.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, PlasmaCompositionNeutralElement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &WallDescriptionGgdEnergyNeutral| {
+            item.element.as_slice()
+        })
     }
 
-    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("incident", |item: &WallDescriptionGgdEnergyNeutral| item.incident.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("incident", &self.slice_elements, |item: &WallDescriptionGgdEnergyNeutral| {
+            item.incident.as_slice()
+        })
     }
 
-    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("emitted", |item: &WallDescriptionGgdEnergyNeutral| item.emitted.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("emitted", &self.slice_elements, |item: &WallDescriptionGgdEnergyNeutral| {
+            item.emitted.as_slice()
+        })
     }
 
-    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `state` under every element. A range, e.g. `.state(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.state(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralStateSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn state<S: Selection<'a, WallDescriptionGgdEnergyNeutralState>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("state", &self.slice_elements, |item: &WallDescriptionGgdEnergyNeutral| item.state.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdEnergyNeutral {
+    type SliceView<'a, D>
+        = WallDescriptionGgdEnergyNeutralSliceView<'a, D>
     where
-        R: SliceIndex<[WallDescriptionGgdEnergyNeutralState], Output = [WallDescriptionGgdEnergyNeutralState]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        WallDescriptionGgdEnergyNeutralStateSliceView::new(self.slice_elements.nest(
-            "state",
-            |item: &WallDescriptionGgdEnergyNeutral| item.state.as_slice(),
-            range,
-        ))
+        WallDescriptionGgdEnergyNeutralSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdEnergyNeutral {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2417,34 +2560,46 @@ impl<'a, D: Dimension> WallDescriptionGgdParticleNeutralStateSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("incident", |item: &WallDescriptionGgdParticleNeutralState| item.incident.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("incident", &self.slice_elements, |item: &WallDescriptionGgdParticleNeutralState| {
+            item.incident.as_slice()
+        })
     }
 
-    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("emitted", &self.slice_elements, |item: &WallDescriptionGgdParticleNeutralState| {
+            item.emitted.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdParticleNeutralState {
+    type SliceView<'a, D>
+        = WallDescriptionGgdParticleNeutralStateSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("emitted", |item: &WallDescriptionGgdParticleNeutralState| item.emitted.as_slice(), range),
-        )
+        WallDescriptionGgdParticleNeutralStateSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdParticleNeutralState {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2495,34 +2650,46 @@ impl<'a, D: Dimension> WallDescriptionGgdParticleIonStateSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("incident", |item: &WallDescriptionGgdParticleIonState| item.incident.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("incident", &self.slice_elements, |item: &WallDescriptionGgdParticleIonState| {
+            item.incident.as_slice()
+        })
     }
 
-    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("emitted", &self.slice_elements, |item: &WallDescriptionGgdParticleIonState| {
+            item.emitted.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdParticleIonState {
+    type SliceView<'a, D>
+        = WallDescriptionGgdParticleIonStateSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("emitted", |item: &WallDescriptionGgdParticleIonState| item.emitted.as_slice(), range),
-        )
+        WallDescriptionGgdParticleIonStateSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdParticleIonState {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2567,65 +2734,64 @@ impl<'a, D: Dimension> WallDescriptionGgdParticleIonSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &WallDescriptionGgdParticleIon| item.element.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, PlasmaCompositionNeutralElement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &WallDescriptionGgdParticleIon| item.element.as_slice())
     }
 
-    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("incident", |item: &WallDescriptionGgdParticleIon| item.incident.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("incident", &self.slice_elements, |item: &WallDescriptionGgdParticleIon| {
+            item.incident.as_slice()
+        })
     }
 
-    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("emitted", |item: &WallDescriptionGgdParticleIon| item.emitted.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("emitted", &self.slice_elements, |item: &WallDescriptionGgdParticleIon| item.emitted.as_slice())
     }
 
-    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `state` under every element. A range, e.g. `.state(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.state(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdParticleIonStateSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn state<S: Selection<'a, WallDescriptionGgdParticleIonState>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("state", &self.slice_elements, |item: &WallDescriptionGgdParticleIon| item.state.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdParticleIon {
+    type SliceView<'a, D>
+        = WallDescriptionGgdParticleIonSliceView<'a, D>
     where
-        R: SliceIndex<[WallDescriptionGgdParticleIonState], Output = [WallDescriptionGgdParticleIonState]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        WallDescriptionGgdParticleIonStateSliceView::new(
-            self.slice_elements
-                .nest("state", |item: &WallDescriptionGgdParticleIon| item.state.as_slice(), range),
-        )
+        WallDescriptionGgdParticleIonSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdParticleIon {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2668,66 +2834,68 @@ impl<'a, D: Dimension> WallDescriptionGgdParticleNeutralSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &WallDescriptionGgdParticleNeutral| item.element.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, PlasmaCompositionNeutralElement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &WallDescriptionGgdParticleNeutral| {
+            item.element.as_slice()
+        })
     }
 
-    /// The slice view over a range of `incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("incident", |item: &WallDescriptionGgdParticleNeutral| item.incident.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("incident", &self.slice_elements, |item: &WallDescriptionGgdParticleNeutral| {
+            item.incident.as_slice()
+        })
     }
 
-    /// The slice view over a range of `emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("emitted", |item: &WallDescriptionGgdParticleNeutral| item.emitted.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("emitted", &self.slice_elements, |item: &WallDescriptionGgdParticleNeutral| {
+            item.emitted.as_slice()
+        })
     }
 
-    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `state` under every element. A range, e.g. `.state(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.state(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdParticleNeutralStateSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn state<S: Selection<'a, WallDescriptionGgdParticleNeutralState>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("state", &self.slice_elements, |item: &WallDescriptionGgdParticleNeutral| item.state.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdParticleNeutral {
+    type SliceView<'a, D>
+        = WallDescriptionGgdParticleNeutralSliceView<'a, D>
     where
-        R: SliceIndex<[WallDescriptionGgdParticleNeutralState], Output = [WallDescriptionGgdParticleNeutralState]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        WallDescriptionGgdParticleNeutralStateSliceView::new(self.slice_elements.nest(
-            "state",
-            |item: &WallDescriptionGgdParticleNeutral| item.state.as_slice(),
-            range,
-        ))
+        WallDescriptionGgdParticleNeutralSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdParticleNeutral {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2799,20 +2967,35 @@ impl<'a, D: Dimension> WallDescriptionGgdRecyclingNeutralStateSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `coefficient` under every element, e.g. `.coefficient(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `coefficient` under every element. A range, e.g. `.coefficient(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn coefficient<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("coefficient", &self.slice_elements, |item: &WallDescriptionGgdRecyclingNeutralState| {
+            item.coefficient.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdRecyclingNeutralState {
+    type SliceView<'a, D>
+        = WallDescriptionGgdRecyclingNeutralStateSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridScalarSliceView::new(self.slice_elements.nest(
-            "coefficient",
-            |item: &WallDescriptionGgdRecyclingNeutralState| item.coefficient.as_slice(),
-            range,
-        ))
+        WallDescriptionGgdRecyclingNeutralStateSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdRecyclingNeutralState {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2863,20 +3046,35 @@ impl<'a, D: Dimension> WallDescriptionGgdRecyclingIonStateSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `coefficient` under every element, e.g. `.coefficient(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `coefficient` under every element. A range, e.g. `.coefficient(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn coefficient<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("coefficient", &self.slice_elements, |item: &WallDescriptionGgdRecyclingIonState| {
+            item.coefficient.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdRecyclingIonState {
+    type SliceView<'a, D>
+        = WallDescriptionGgdRecyclingIonStateSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridScalarSliceView::new(self.slice_elements.nest(
-            "coefficient",
-            |item: &WallDescriptionGgdRecyclingIonState| item.coefficient.as_slice(),
-            range,
-        ))
+        WallDescriptionGgdRecyclingIonStateSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdRecyclingIonState {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -2921,51 +3119,55 @@ impl<'a, D: Dimension> WallDescriptionGgdRecyclingIonSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &WallDescriptionGgdRecyclingIon| item.element.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, PlasmaCompositionNeutralElement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &WallDescriptionGgdRecyclingIon| item.element.as_slice())
     }
 
-    /// The slice view over a range of `coefficient` under every element, e.g. `.coefficient(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `coefficient` under every element. A range, e.g. `.coefficient(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("coefficient", |item: &WallDescriptionGgdRecyclingIon| item.coefficient.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn coefficient<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("coefficient", &self.slice_elements, |item: &WallDescriptionGgdRecyclingIon| {
+            item.coefficient.as_slice()
+        })
     }
 
-    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `state` under every element. A range, e.g. `.state(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.state(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdRecyclingIonStateSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn state<S: Selection<'a, WallDescriptionGgdRecyclingIonState>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("state", &self.slice_elements, |item: &WallDescriptionGgdRecyclingIon| item.state.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdRecyclingIon {
+    type SliceView<'a, D>
+        = WallDescriptionGgdRecyclingIonSliceView<'a, D>
     where
-        R: SliceIndex<[WallDescriptionGgdRecyclingIonState], Output = [WallDescriptionGgdRecyclingIonState]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        WallDescriptionGgdRecyclingIonStateSliceView::new(self.slice_elements.nest(
-            "state",
-            |item: &WallDescriptionGgdRecyclingIon| item.state.as_slice(),
-            range,
-        ))
+        WallDescriptionGgdRecyclingIonSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdRecyclingIon {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -3008,51 +3210,57 @@ impl<'a, D: Dimension> WallDescriptionGgdRecyclingNeutralSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]> + Clone,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &WallDescriptionGgdRecyclingNeutral| item.element.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, PlasmaCompositionNeutralElement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &WallDescriptionGgdRecyclingNeutral| {
+            item.element.as_slice()
+        })
     }
 
-    /// The slice view over a range of `coefficient` under every element, e.g. `.coefficient(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `coefficient` under every element. A range, e.g. `.coefficient(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("coefficient", |item: &WallDescriptionGgdRecyclingNeutral| item.coefficient.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn coefficient<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("coefficient", &self.slice_elements, |item: &WallDescriptionGgdRecyclingNeutral| {
+            item.coefficient.as_slice()
+        })
     }
 
-    /// The slice view over a range of `state` under every element, e.g. `.state(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `state` under every element. A range, e.g. `.state(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.state(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdRecyclingNeutralStateSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn state<S: Selection<'a, WallDescriptionGgdRecyclingNeutralState>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("state", &self.slice_elements, |item: &WallDescriptionGgdRecyclingNeutral| item.state.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdRecyclingNeutral {
+    type SliceView<'a, D>
+        = WallDescriptionGgdRecyclingNeutralSliceView<'a, D>
     where
-        R: SliceIndex<[WallDescriptionGgdRecyclingNeutralState], Output = [WallDescriptionGgdRecyclingNeutralState]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        WallDescriptionGgdRecyclingNeutralStateSliceView::new(self.slice_elements.nest(
-            "state",
-            |item: &WallDescriptionGgdRecyclingNeutral| item.state.as_slice(),
-            range,
-        ))
+        WallDescriptionGgdRecyclingNeutralSliceView::new(elements)
+    }
+}
+
+impl Named for WallDescriptionGgdRecyclingNeutral {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -3091,6 +3299,20 @@ impl<'a, D: Dimension> GenericGridVectorComponentsRphizSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridVectorComponentsRphiz> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridVectorComponentsRphiz {
+    type SliceView<'a, D>
+        = GenericGridVectorComponentsRphizSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridVectorComponentsRphizSliceView::new(elements)
     }
 }
 
@@ -3145,6 +3367,20 @@ impl<'a, D: Dimension> GenericGridIdentifierSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for GenericGridIdentifier {
+    type SliceView<'a, D>
+        = GenericGridIdentifierSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridIdentifierSliceView::new(elements)
+    }
+}
+
 // --- GenericGridVector View Types ---
 
 /// View over multiple GenericGridVector with field accumulation
@@ -3180,6 +3416,20 @@ impl<'a, D: Dimension> GenericGridVectorSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridVector> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridVector {
+    type SliceView<'a, D>
+        = GenericGridVectorSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridVectorSliceView::new(elements)
     }
 }
 
@@ -3242,6 +3492,20 @@ impl<'a, D: Dimension> GenericGridIdentifierSingleSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for GenericGridIdentifierSingle {
+    type SliceView<'a, D>
+        = GenericGridIdentifierSingleSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridIdentifierSingleSliceView::new(elements)
+    }
+}
+
 // --- GenericGridAos3Root View Types ---
 
 /// View over `identifier` (IdentifierDynamicAos3) across multiple GenericGridAos3Root
@@ -3300,31 +3564,36 @@ impl<'a, D: Dimension> GenericGridAos3RootSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `space` under every element, e.g. `.space(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `space` under every element. A range, e.g. `.space(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn space<R>(&self, range: R) -> GenericGridDynamicSpaceSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridDynamicSpace], Output = [GenericGridDynamicSpace]> + Clone,
-    {
-        GenericGridDynamicSpaceSliceView::new(self.slice_elements.nest("space", |item: &GenericGridAos3Root| item.space.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn space<S: Selection<'a, GenericGridDynamicSpace>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("space", &self.slice_elements, |item: &GenericGridAos3Root| item.space.as_slice())
     }
 
-    /// The slice view over a range of `grid_subset` under every element, e.g. `.grid_subset(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `grid_subset` under every element. A range, e.g. `.grid_subset(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn grid_subset<R>(&self, range: R) -> GenericGridDynamicGridSubsetSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn grid_subset<S: Selection<'a, GenericGridDynamicGridSubset>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("grid_subset", &self.slice_elements, |item: &GenericGridAos3Root| item.grid_subset.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridAos3Root {
+    type SliceView<'a, D>
+        = GenericGridAos3RootSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicGridSubset], Output = [GenericGridDynamicGridSubset]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicGridSubsetSliceView::new(
-            self.slice_elements
-                .nest("grid_subset", |item: &GenericGridAos3Root| item.grid_subset.as_slice(), range),
-        )
+        GenericGridAos3RootSliceView::new(elements)
     }
 }
 
@@ -3363,19 +3632,29 @@ impl<'a, D: Dimension> WallDescriptionGgdMaterialSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `grid_subset` under every element, e.g. `.grid_subset(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `grid_subset` under every element. A range, e.g. `.grid_subset(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn grid_subset<R>(&self, range: R) -> GenericGridIdentifierSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn grid_subset<S: Selection<'a, GenericGridIdentifier>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("grid_subset", &self.slice_elements, |item: &WallDescriptionGgdMaterial| {
+            item.grid_subset.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdMaterial {
+    type SliceView<'a, D>
+        = WallDescriptionGgdMaterialSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridIdentifier], Output = [GenericGridIdentifier]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridIdentifierSliceView::new(
-            self.slice_elements
-                .nest("grid_subset", |item: &WallDescriptionGgdMaterial| item.grid_subset.as_slice(), range),
-        )
+        WallDescriptionGgdMaterialSliceView::new(elements)
     }
 }
 
@@ -3414,19 +3693,27 @@ impl<'a, D: Dimension> WallDescriptionGgdComponentSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `type` under every element, e.g. `.r#type(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `type` under every element. A range, e.g. `.r#type(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn r#type<R>(&self, range: R) -> GenericGridIdentifierSingleSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn r#type<S: Selection<'a, GenericGridIdentifierSingle>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("type", &self.slice_elements, |item: &WallDescriptionGgdComponent| item.r#type.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdComponent {
+    type SliceView<'a, D>
+        = WallDescriptionGgdComponentSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridIdentifierSingle], Output = [GenericGridIdentifierSingle]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridIdentifierSingleSliceView::new(
-            self.slice_elements
-                .nest("type", |item: &WallDescriptionGgdComponent| item.r#type.as_slice(), range),
-        )
+        WallDescriptionGgdComponentSliceView::new(elements)
     }
 }
 
@@ -3465,19 +3752,29 @@ impl<'a, D: Dimension> WallDescriptionGgdThicknessSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `grid_subset` under every element, e.g. `.grid_subset(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `grid_subset` under every element. A range, e.g. `.grid_subset(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn grid_subset<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn grid_subset<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("grid_subset", &self.slice_elements, |item: &WallDescriptionGgdThickness| {
+            item.grid_subset.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdThickness {
+    type SliceView<'a, D>
+        = WallDescriptionGgdThicknessSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("grid_subset", |item: &WallDescriptionGgdThickness| item.grid_subset.as_slice(), range),
-        )
+        WallDescriptionGgdThicknessSliceView::new(elements)
     }
 }
 
@@ -3516,31 +3813,36 @@ impl<'a, D: Dimension> WallDescriptionGgdBrdfSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `type` under every element, e.g. `.r#type(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `type` under every element. A range, e.g. `.r#type(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn r#type<R>(&self, range: R) -> GenericGridIdentifierSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridIdentifier], Output = [GenericGridIdentifier]> + Clone,
-    {
-        GenericGridIdentifierSliceView::new(self.slice_elements.nest("type", |item: &WallDescriptionGgdBrdf| item.r#type.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn r#type<S: Selection<'a, GenericGridIdentifier>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("type", &self.slice_elements, |item: &WallDescriptionGgdBrdf| item.r#type.as_slice())
     }
 
-    /// The slice view over a range of `parameters` under every element, e.g. `.parameters(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `parameters` under every element. A range, e.g. `.parameters(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn parameters<R>(&self, range: R) -> GenericGridVectorSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn parameters<S: Selection<'a, GenericGridVector>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("parameters", &self.slice_elements, |item: &WallDescriptionGgdBrdf| item.parameters.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdBrdf {
+    type SliceView<'a, D>
+        = WallDescriptionGgdBrdfSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridVector], Output = [GenericGridVector]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridVectorSliceView::new(
-            self.slice_elements
-                .nest("parameters", |item: &WallDescriptionGgdBrdf| item.parameters.as_slice(), range),
-        )
+        WallDescriptionGgdBrdfSliceView::new(elements)
     }
 }
 
@@ -3556,36 +3858,30 @@ impl<'a, D: Dimension> WallDescriptionGgdGgdRecyclingView<'a, D> {
         Self { slice_elements: elements }
     }
 
-    /// The slice view over a range of `recycling.ion` under every element, e.g. `.ion(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `recycling.ion` under every element. A range, e.g. `.ion(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.ion(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdRecyclingIonSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdRecyclingIon], Output = [WallDescriptionGgdRecyclingIon]> + Clone,
-    {
-        WallDescriptionGgdRecyclingIonSliceView::new(self.slice_elements.nest(
-            "recycling.ion",
-            |item: &WallDescriptionGgdGgd| item.recycling.ion.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn ion<S: Selection<'a, WallDescriptionGgdRecyclingIon>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("recycling.ion", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.recycling.ion.as_slice()
+        })
     }
 
-    /// The slice view over a range of `recycling.neutral` under every element, e.g. `.neutral(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `recycling.neutral` under every element. A range, e.g. `.neutral(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.neutral(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdRecyclingNeutralSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdRecyclingNeutral], Output = [WallDescriptionGgdRecyclingNeutral]> + Clone,
-    {
-        WallDescriptionGgdRecyclingNeutralSliceView::new(self.slice_elements.nest(
-            "recycling.neutral",
-            |item: &WallDescriptionGgdGgd| item.recycling.neutral.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn neutral<S: Selection<'a, WallDescriptionGgdRecyclingNeutral>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("recycling.neutral", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.recycling.neutral.as_slice()
+        })
     }
 }
 
@@ -3599,36 +3895,26 @@ impl<'a, D: Dimension> WallDescriptionGgdGgdParticleFluxesElectronsView<'a, D> {
         Self { slice_elements: elements }
     }
 
-    /// The slice view over a range of `particle_fluxes.electrons.incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `particle_fluxes.electrons.incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest(
-            "particle_fluxes.electrons.incident",
-            |item: &WallDescriptionGgdGgd| item.particle_fluxes.electrons.incident.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("particle_fluxes.electrons.incident", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.particle_fluxes.electrons.incident.as_slice()
+        })
     }
 
-    /// The slice view over a range of `particle_fluxes.electrons.emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `particle_fluxes.electrons.emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest(
-            "particle_fluxes.electrons.emitted",
-            |item: &WallDescriptionGgdGgd| item.particle_fluxes.electrons.emitted.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("particle_fluxes.electrons.emitted", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.particle_fluxes.electrons.emitted.as_slice()
+        })
     }
 }
 
@@ -3646,36 +3932,30 @@ impl<'a, D: Dimension> WallDescriptionGgdGgdParticleFluxesView<'a, D> {
         }
     }
 
-    /// The slice view over a range of `particle_fluxes.ion` under every element, e.g. `.ion(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `particle_fluxes.ion` under every element. A range, e.g. `.ion(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.ion(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdParticleIonSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdParticleIon], Output = [WallDescriptionGgdParticleIon]> + Clone,
-    {
-        WallDescriptionGgdParticleIonSliceView::new(self.slice_elements.nest(
-            "particle_fluxes.ion",
-            |item: &WallDescriptionGgdGgd| item.particle_fluxes.ion.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn ion<S: Selection<'a, WallDescriptionGgdParticleIon>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("particle_fluxes.ion", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.particle_fluxes.ion.as_slice()
+        })
     }
 
-    /// The slice view over a range of `particle_fluxes.neutral` under every element, e.g. `.neutral(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `particle_fluxes.neutral` under every element. A range, e.g. `.neutral(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.neutral(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdParticleNeutralSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdParticleNeutral], Output = [WallDescriptionGgdParticleNeutral]> + Clone,
-    {
-        WallDescriptionGgdParticleNeutralSliceView::new(self.slice_elements.nest(
-            "particle_fluxes.neutral",
-            |item: &WallDescriptionGgdGgd| item.particle_fluxes.neutral.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn neutral<S: Selection<'a, WallDescriptionGgdParticleNeutral>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("particle_fluxes.neutral", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.particle_fluxes.neutral.as_slice()
+        })
     }
 }
 
@@ -3689,36 +3969,26 @@ impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesRadiationView<'a, D> {
         Self { slice_elements: elements }
     }
 
-    /// The slice view over a range of `energy_fluxes.radiation.incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `energy_fluxes.radiation.incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest(
-            "energy_fluxes.radiation.incident",
-            |item: &WallDescriptionGgdGgd| item.energy_fluxes.radiation.incident.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("energy_fluxes.radiation.incident", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.energy_fluxes.radiation.incident.as_slice()
+        })
     }
 
-    /// The slice view over a range of `energy_fluxes.radiation.emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `energy_fluxes.radiation.emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest(
-            "energy_fluxes.radiation.emitted",
-            |item: &WallDescriptionGgdGgd| item.energy_fluxes.radiation.emitted.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("energy_fluxes.radiation.emitted", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.energy_fluxes.radiation.emitted.as_slice()
+        })
     }
 }
 
@@ -3732,36 +4002,26 @@ impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesCurrentView<'a, D> {
         Self { slice_elements: elements }
     }
 
-    /// The slice view over a range of `energy_fluxes.current.incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `energy_fluxes.current.incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest(
-            "energy_fluxes.current.incident",
-            |item: &WallDescriptionGgdGgd| item.energy_fluxes.current.incident.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("energy_fluxes.current.incident", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.energy_fluxes.current.incident.as_slice()
+        })
     }
 
-    /// The slice view over a range of `energy_fluxes.current.emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `energy_fluxes.current.emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest(
-            "energy_fluxes.current.emitted",
-            |item: &WallDescriptionGgdGgd| item.energy_fluxes.current.emitted.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("energy_fluxes.current.emitted", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.energy_fluxes.current.emitted.as_slice()
+        })
     }
 }
 
@@ -3775,36 +4035,30 @@ impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesRecombinationView<'a, D>
         Self { slice_elements: elements }
     }
 
-    /// The slice view over a range of `energy_fluxes.recombination.ion` under every element, e.g. `.ion(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `energy_fluxes.recombination.ion` under every element. A range, e.g. `.ion(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.ion(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdEnergyIonSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdEnergyIon], Output = [WallDescriptionGgdEnergyIon]> + Clone,
-    {
-        WallDescriptionGgdEnergyIonSliceView::new(self.slice_elements.nest(
-            "energy_fluxes.recombination.ion",
-            |item: &WallDescriptionGgdGgd| item.energy_fluxes.recombination.ion.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn ion<S: Selection<'a, WallDescriptionGgdEnergyIon>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("energy_fluxes.recombination.ion", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.energy_fluxes.recombination.ion.as_slice()
+        })
     }
 
-    /// The slice view over a range of `energy_fluxes.recombination.neutral` under every element, e.g. `.neutral(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `energy_fluxes.recombination.neutral` under every element. A range, e.g. `.neutral(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.neutral(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdEnergyNeutral], Output = [WallDescriptionGgdEnergyNeutral]> + Clone,
-    {
-        WallDescriptionGgdEnergyNeutralSliceView::new(self.slice_elements.nest(
-            "energy_fluxes.recombination.neutral",
-            |item: &WallDescriptionGgdGgd| item.energy_fluxes.recombination.neutral.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn neutral<S: Selection<'a, WallDescriptionGgdEnergyNeutral>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("energy_fluxes.recombination.neutral", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.energy_fluxes.recombination.neutral.as_slice()
+        })
     }
 }
 
@@ -3818,36 +4072,30 @@ impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesKineticElectronsView<'a,
         Self { slice_elements: elements }
     }
 
-    /// The slice view over a range of `energy_fluxes.kinetic.electrons.incident` under every element, e.g. `.incident(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `energy_fluxes.kinetic.electrons.incident` under every element. A range, e.g. `.incident(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest(
+    /// If a range does not select the same number of elements under every element.
+    pub fn incident<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested(
             "energy_fluxes.kinetic.electrons.incident",
+            &self.slice_elements,
             |item: &WallDescriptionGgdGgd| item.energy_fluxes.kinetic.electrons.incident.as_slice(),
-            range,
-        ))
+        )
     }
 
-    /// The slice view over a range of `energy_fluxes.kinetic.electrons.emitted` under every element, e.g. `.emitted(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `energy_fluxes.kinetic.electrons.emitted` under every element. A range, e.g. `.emitted(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest(
+    /// If a range does not select the same number of elements under every element.
+    pub fn emitted<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested(
             "energy_fluxes.kinetic.electrons.emitted",
+            &self.slice_elements,
             |item: &WallDescriptionGgdGgd| item.energy_fluxes.kinetic.electrons.emitted.as_slice(),
-            range,
-        ))
+        )
     }
 }
 
@@ -3865,36 +4113,30 @@ impl<'a, D: Dimension> WallDescriptionGgdGgdEnergyFluxesKineticView<'a, D> {
         }
     }
 
-    /// The slice view over a range of `energy_fluxes.kinetic.ion` under every element, e.g. `.ion(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `energy_fluxes.kinetic.ion` under every element. A range, e.g. `.ion(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.ion(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdEnergyIonSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdEnergyIon], Output = [WallDescriptionGgdEnergyIon]> + Clone,
-    {
-        WallDescriptionGgdEnergyIonSliceView::new(self.slice_elements.nest(
-            "energy_fluxes.kinetic.ion",
-            |item: &WallDescriptionGgdGgd| item.energy_fluxes.kinetic.ion.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn ion<S: Selection<'a, WallDescriptionGgdEnergyIon>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("energy_fluxes.kinetic.ion", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.energy_fluxes.kinetic.ion.as_slice()
+        })
     }
 
-    /// The slice view over a range of `energy_fluxes.kinetic.neutral` under every element, e.g. `.neutral(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `energy_fluxes.kinetic.neutral` under every element. A range, e.g. `.neutral(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.neutral(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdEnergyNeutral], Output = [WallDescriptionGgdEnergyNeutral]> + Clone,
-    {
-        WallDescriptionGgdEnergyNeutralSliceView::new(self.slice_elements.nest(
-            "energy_fluxes.kinetic.neutral",
-            |item: &WallDescriptionGgdGgd| item.energy_fluxes.kinetic.neutral.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn neutral<S: Selection<'a, WallDescriptionGgdEnergyNeutral>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("energy_fluxes.kinetic.neutral", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.energy_fluxes.kinetic.neutral.as_slice()
+        })
     }
 }
 
@@ -3958,167 +4200,123 @@ impl<'a, D: Dimension> WallDescriptionGgdGgdSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `power_density` under every element, e.g. `.power_density(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `power_density` under every element. A range, e.g. `.power_density(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn power_density<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("power_density", |item: &WallDescriptionGgdGgd| item.power_density.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn power_density<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("power_density", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.power_density.as_slice()
+        })
     }
 
-    /// The slice view over a range of `temperature` under every element, e.g. `.temperature(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `temperature` under every element. A range, e.g. `.temperature(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn temperature<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("temperature", |item: &WallDescriptionGgdGgd| item.temperature.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn temperature<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("temperature", &self.slice_elements, |item: &WallDescriptionGgdGgd| item.temperature.as_slice())
     }
 
-    /// The slice view over a range of `v_biasing` under every element, e.g. `.v_biasing(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `v_biasing` under every element. A range, e.g. `.v_biasing(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn v_biasing<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("v_biasing", |item: &WallDescriptionGgdGgd| item.v_biasing.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn v_biasing<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("v_biasing", &self.slice_elements, |item: &WallDescriptionGgdGgd| item.v_biasing.as_slice())
     }
 
-    /// The slice view over a range of `j_total` under every element, e.g. `.j_total(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `j_total` under every element. A range, e.g. `.j_total(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn j_total<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]> + Clone,
-    {
-        GenericGridVectorComponentsRphizSliceView::new(
-            self.slice_elements
-                .nest("j_total", |item: &WallDescriptionGgdGgd| item.j_total.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn j_total<S: Selection<'a, GenericGridVectorComponentsRphiz>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("j_total", &self.slice_elements, |item: &WallDescriptionGgdGgd| item.j_total.as_slice())
     }
 
-    /// The slice view over a range of `b_field` under every element, e.g. `.b_field(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `b_field` under every element. A range, e.g. `.b_field(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn b_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]> + Clone,
-    {
-        GenericGridVectorComponentsRphizSliceView::new(
-            self.slice_elements
-                .nest("b_field", |item: &WallDescriptionGgdGgd| item.b_field.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn b_field<S: Selection<'a, GenericGridVectorComponentsRphiz>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("b_field", &self.slice_elements, |item: &WallDescriptionGgdGgd| item.b_field.as_slice())
     }
 
-    /// The slice view over a range of `em_force_density` under every element, e.g. `.em_force_density(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `em_force_density` under every element. A range, e.g. `.em_force_density(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn em_force_density<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]> + Clone,
-    {
-        GenericGridVectorComponentsRphizSliceView::new(self.slice_elements.nest(
-            "em_force_density",
-            |item: &WallDescriptionGgdGgd| item.em_force_density.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn em_force_density<S: Selection<'a, GenericGridVectorComponentsRphiz>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("em_force_density", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.em_force_density.as_slice()
+        })
     }
 
-    /// The slice view over a range of `e_field` under every element, e.g. `.e_field(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `e_field` under every element. A range, e.g. `.e_field(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn e_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]> + Clone,
-    {
-        GenericGridVectorComponentsRphizSliceView::new(
-            self.slice_elements
-                .nest("e_field", |item: &WallDescriptionGgdGgd| item.e_field.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn e_field<S: Selection<'a, GenericGridVectorComponentsRphiz>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("e_field", &self.slice_elements, |item: &WallDescriptionGgdGgd| item.e_field.as_slice())
     }
 
-    /// The slice view over a range of `a_field` under every element, e.g. `.a_field(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `a_field` under every element. A range, e.g. `.a_field(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn a_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]> + Clone,
-    {
-        GenericGridVectorComponentsRphizSliceView::new(
-            self.slice_elements
-                .nest("a_field", |item: &WallDescriptionGgdGgd| item.a_field.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn a_field<S: Selection<'a, GenericGridVectorComponentsRphiz>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("a_field", &self.slice_elements, |item: &WallDescriptionGgdGgd| item.a_field.as_slice())
     }
 
-    /// The slice view over a range of `psi` under every element, e.g. `.psi(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `psi` under every element. A range, e.g. `.psi(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn psi<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(self.slice_elements.nest("psi", |item: &WallDescriptionGgdGgd| item.psi.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn psi<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("psi", &self.slice_elements, |item: &WallDescriptionGgdGgd| item.psi.as_slice())
     }
 
-    /// The slice view over a range of `phi_potential` under every element, e.g. `.phi_potential(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `phi_potential` under every element. A range, e.g. `.phi_potential(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn phi_potential<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
-    {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("phi_potential", |item: &WallDescriptionGgdGgd| item.phi_potential.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn phi_potential<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("phi_potential", &self.slice_elements, |item: &WallDescriptionGgdGgd| {
+            item.phi_potential.as_slice()
+        })
     }
 
-    /// The slice view over a range of `resistivity` under every element, e.g. `.resistivity(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `resistivity` under every element. A range, e.g. `.resistivity(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn resistivity<R>(&self, range: R) -> GenericGridScalarSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn resistivity<S: Selection<'a, GenericGridScalar>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("resistivity", &self.slice_elements, |item: &WallDescriptionGgdGgd| item.resistivity.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgdGgd {
+    type SliceView<'a, D>
+        = WallDescriptionGgdGgdSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridScalarSliceView::new(
-            self.slice_elements
-                .nest("resistivity", |item: &WallDescriptionGgdGgd| item.resistivity.as_slice(), range),
-        )
+        WallDescriptionGgdGgdSliceView::new(elements)
     }
 }
 
@@ -4215,28 +4413,46 @@ impl<'a, D: Dimension> Vessel2dUnitSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.element(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> Vessel2dElementSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[Vessel2dElement], Output = [Vessel2dElement]> + Clone,
-    {
-        Vessel2dElementSliceView::new(self.slice_elements.nest("element", |item: &Vessel2dUnit| item.element.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn element<S: Selection<'a, Vessel2dElement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &Vessel2dUnit| item.element.as_slice())
     }
 
-    /// The slice view over a range of `material` under every element, e.g. `.material(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `material` under every element. A range, e.g. `.material(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.material(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn material<R>(&self, range: R) -> IdentifierStaticSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn material<S: Selection<'a, IdentifierStatic>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("material", &self.slice_elements, |item: &Vessel2dUnit| item.material.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for Vessel2dUnit {
+    type SliceView<'a, D>
+        = Vessel2dUnitSliceView<'a, D>
     where
-        R: SliceIndex<[IdentifierStatic], Output = [IdentifierStatic]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        IdentifierStaticSliceView::new(self.slice_elements.nest("material", |item: &Vessel2dUnit| item.material.as_slice(), range))
+        Vessel2dUnitSliceView::new(elements)
+    }
+}
+
+impl Named for Vessel2dUnit {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -4315,36 +4531,42 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `coordinates_type` under every element, e.g. `.coordinates_type(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `coordinates_type` under every element. A range, e.g. `.coordinates_type(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.coordinates_type(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn coordinates_type<R>(&self, range: R) -> IdentifierDynamicAos3SliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[IdentifierDynamicAos3], Output = [IdentifierDynamicAos3]> + Clone,
-    {
-        IdentifierDynamicAos3SliceView::new(self.slice_elements.nest(
-            "coordinates_type",
-            |item: &GenericGridDynamicSpace| item.coordinates_type.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn coordinates_type<S: Selection<'a, IdentifierDynamicAos3>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("coordinates_type", &self.slice_elements, |item: &GenericGridDynamicSpace| {
+            item.coordinates_type.as_slice()
+        })
     }
 
-    /// The slice view over a range of `objects_per_dimension` under every element, e.g. `.objects_per_dimension(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `objects_per_dimension` under every element. A range, e.g. `.objects_per_dimension(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn objects_per_dimension<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn objects_per_dimension<S: Selection<'a, GenericGridDynamicSpaceDimension>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("objects_per_dimension", &self.slice_elements, |item: &GenericGridDynamicSpace| {
+            item.objects_per_dimension.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpace {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicSpaceDimension], Output = [GenericGridDynamicSpaceDimension]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicSpaceDimensionSliceView::new(self.slice_elements.nest(
-            "objects_per_dimension",
-            |item: &GenericGridDynamicSpace| item.objects_per_dimension.as_slice(),
-            range,
-        ))
+        GenericGridDynamicSpaceSliceView::new(elements)
     }
 }
 
@@ -4417,35 +4639,36 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElement], Output = [GenericGridDynamicGridSubsetElement]> + Clone,
-    {
-        GenericGridDynamicGridSubsetElementSliceView::new(self.slice_elements.nest(
-            "element",
-            |item: &GenericGridDynamicGridSubset| item.element.as_slice(),
-            range,
-        ))
+    /// If a range does not select the same number of elements under every element.
+    pub fn element<S: Selection<'a, GenericGridDynamicGridSubsetElement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &GenericGridDynamicGridSubset| item.element.as_slice())
     }
 
-    /// The slice view over a range of `base` under every element, e.g. `.base(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `base` under every element. A range, e.g. `.base(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn base<R>(&self, range: R) -> GenericGridDynamicGridSubsetMetricSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn base<S: Selection<'a, GenericGridDynamicGridSubsetMetric>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("base", &self.slice_elements, |item: &GenericGridDynamicGridSubset| item.base.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubset {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicGridSubsetMetric], Output = [GenericGridDynamicGridSubsetMetric]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicGridSubsetMetricSliceView::new(
-            self.slice_elements
-                .nest("base", |item: &GenericGridDynamicGridSubset| item.base.as_slice(), range),
-        )
+        GenericGridDynamicGridSubsetSliceView::new(elements)
     }
 }
 
@@ -4492,6 +4715,26 @@ impl<'a, D: Dimension> LibrarySliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a Library> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for Library {
+    type SliceView<'a, D>
+        = LibrarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        LibrarySliceView::new(elements)
+    }
+}
+
+impl Named for Library {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -4550,6 +4793,26 @@ impl<'a, D: Dimension> Vessel2dElementSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for Vessel2dElement {
+    type SliceView<'a, D>
+        = Vessel2dElementSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        Vessel2dElementSliceView::new(elements)
+    }
+}
+
+impl Named for Vessel2dElement {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- IdentifierStatic View Types ---
 
 /// View over multiple IdentifierStatic with field accumulation
@@ -4590,6 +4853,26 @@ impl<'a, D: Dimension> IdentifierStaticSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for IdentifierStatic {
+    type SliceView<'a, D>
+        = IdentifierStaticSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        IdentifierStaticSliceView::new(elements)
+    }
+}
+
+impl Named for IdentifierStatic {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- IdentifierDynamicAos3 View Types ---
 
 /// View over multiple IdentifierDynamicAos3 with field accumulation
@@ -4627,6 +4910,26 @@ impl<'a, D: Dimension> IdentifierDynamicAos3SliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a IdentifierDynamicAos3> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for IdentifierDynamicAos3 {
+    type SliceView<'a, D>
+        = IdentifierDynamicAos3SliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        IdentifierDynamicAos3SliceView::new(elements)
+    }
+}
+
+impl Named for IdentifierDynamicAos3 {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -4686,20 +4989,27 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `object` under every element, e.g. `.object(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `object` under every element. A range, e.g. `.object(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn object<S: Selection<'a, GenericGridDynamicSpaceDimensionObject>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("object", &self.slice_elements, |item: &GenericGridDynamicSpaceDimension| item.object.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpaceDimension {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceDimensionSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObject], Output = [GenericGridDynamicSpaceDimensionObject]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(self.slice_elements.nest(
-            "object",
-            |item: &GenericGridDynamicSpaceDimension| item.object.as_slice(),
-            range,
-        ))
+        GenericGridDynamicSpaceDimensionSliceView::new(elements)
     }
 }
 
@@ -4734,20 +5044,29 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetElementSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `object` under every element, e.g. `.object(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `object` under every element. A range, e.g. `.object(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementObjectSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn object<S: Selection<'a, GenericGridDynamicGridSubsetElementObject>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("object", &self.slice_elements, |item: &GenericGridDynamicGridSubsetElement| {
+            item.object.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubsetElement {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetElementSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElementObject], Output = [GenericGridDynamicGridSubsetElementObject]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(self.slice_elements.nest(
-            "object",
-            |item: &GenericGridDynamicGridSubsetElement| item.object.as_slice(),
-            range,
-        ))
+        GenericGridDynamicGridSubsetElementSliceView::new(elements)
     }
 }
 
@@ -4780,6 +5099,20 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetMetricSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicGridSubsetMetric> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubsetMetric {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetMetricSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridDynamicGridSubsetMetricSliceView::new(elements)
     }
 }
 
@@ -4818,20 +5151,29 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionObjectSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `boundary` under every element, e.g. `.boundary(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `boundary` under every element. A range, e.g. `.boundary(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn boundary<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn boundary<S: Selection<'a, GenericGridDynamicSpaceDimensionObjectBoundary>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("boundary", &self.slice_elements, |item: &GenericGridDynamicSpaceDimensionObject| {
+            item.boundary.as_slice()
+        })
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpaceDimensionObject {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceDimensionObjectSliceView<'a, D>
     where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObjectBoundary], Output = [GenericGridDynamicSpaceDimensionObjectBoundary]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(self.slice_elements.nest(
-            "boundary",
-            |item: &GenericGridDynamicSpaceDimensionObject| item.boundary.as_slice(),
-            range,
-        ))
+        GenericGridDynamicSpaceDimensionObjectSliceView::new(elements)
     }
 }
 
@@ -4875,6 +5217,20 @@ impl<'a, D: Dimension> GenericGridDynamicGridSubsetElementObjectSliceView<'a, D>
     }
 }
 
+impl ArrayOfStructuresElement for GenericGridDynamicGridSubsetElementObject {
+    type SliceView<'a, D>
+        = GenericGridDynamicGridSubsetElementObjectSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridDynamicGridSubsetElementObjectSliceView::new(elements)
+    }
+}
+
 // --- GenericGridDynamicSpaceDimensionObjectBoundary View Types ---
 
 /// View over multiple GenericGridDynamicSpaceDimensionObjectBoundary with field accumulation
@@ -4908,6 +5264,20 @@ impl<'a, D: Dimension> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a GenericGridDynamicSpaceDimensionObjectBoundary> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for GenericGridDynamicSpaceDimensionObjectBoundary {
+    type SliceView<'a, D>
+        = GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(elements)
     }
 }
 
@@ -4965,16 +5335,15 @@ impl<'a, D: Dimension> Wall2dLimiterView<'a, D> {
         }
     }
 
-    /// The slice view over a range of `limiter.unit` under every element, e.g. `.unit(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `limiter.unit` under every element. A range, e.g. `.unit(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.unit(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn unit<R>(&self, range: R) -> Wall2dLimiterUnitSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[Wall2dLimiterUnit], Output = [Wall2dLimiterUnit]> + Clone,
-    {
-        Wall2dLimiterUnitSliceView::new(self.slice_elements.nest("limiter.unit", |item: &Wall2d| item.limiter.unit.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn unit<S: Selection<'a, Wall2dLimiterUnit>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("limiter.unit", &self.slice_elements, |item: &Wall2d| item.limiter.unit.as_slice())
     }
 }
 
@@ -5011,16 +5380,15 @@ impl<'a, D: Dimension> Wall2dMobileView<'a, D> {
         }
     }
 
-    /// The slice view over a range of `mobile.unit` under every element, e.g. `.unit(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `mobile.unit` under every element. A range, e.g. `.unit(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.unit(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn unit<R>(&self, range: R) -> Wall2dMobileUnitSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[Wall2dMobileUnit], Output = [Wall2dMobileUnit]> + Clone,
-    {
-        Wall2dMobileUnitSliceView::new(self.slice_elements.nest("mobile.unit", |item: &Wall2d| item.mobile.unit.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn unit<S: Selection<'a, Wall2dMobileUnit>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("mobile.unit", &self.slice_elements, |item: &Wall2d| item.mobile.unit.as_slice())
     }
 }
 
@@ -5057,16 +5425,15 @@ impl<'a, D: Dimension> Wall2dVesselView<'a, D> {
         }
     }
 
-    /// The slice view over a range of `vessel.unit` under every element, e.g. `.unit(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `vessel.unit` under every element. A range, e.g. `.unit(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.unit(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn unit<R>(&self, range: R) -> Vessel2dUnitSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[Vessel2dUnit], Output = [Vessel2dUnit]> + Clone,
-    {
-        Vessel2dUnitSliceView::new(self.slice_elements.nest("vessel.unit", |item: &Wall2d| item.vessel.unit.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn unit<S: Selection<'a, Vessel2dUnit>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("vessel.unit", &self.slice_elements, |item: &Wall2d| item.vessel.unit.as_slice())
     }
 }
 
@@ -5107,6 +5474,20 @@ impl<'a, D: Dimension> Wall2dSliceView<'a, D> {
     /// Every element, in path order: the first array of structures on the path varies slowest
     pub fn iter(&self) -> impl Iterator<Item = &'a Wall2d> + '_ {
         self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for Wall2d {
+    type SliceView<'a, D>
+        = Wall2dSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        Wall2dSliceView::new(elements)
     }
 }
 
@@ -5164,88 +5545,72 @@ impl<'a, D: Dimension> WallDescriptionGgdSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `grid_ggd` under every element, e.g. `.grid_ggd(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `grid_ggd` under every element. A range, e.g. `.grid_ggd(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn grid_ggd<R>(&self, range: R) -> GenericGridAos3RootSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[GenericGridAos3Root], Output = [GenericGridAos3Root]> + Clone,
-    {
-        GenericGridAos3RootSliceView::new(
-            self.slice_elements
-                .nest("grid_ggd", |item: &WallDescriptionGgd| item.grid_ggd.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn grid_ggd<S: Selection<'a, GenericGridAos3Root>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("grid_ggd", &self.slice_elements, |item: &WallDescriptionGgd| item.grid_ggd.as_slice())
     }
 
-    /// The slice view over a range of `material` under every element, e.g. `.material(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `material` under every element. A range, e.g. `.material(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn material<R>(&self, range: R) -> WallDescriptionGgdMaterialSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdMaterial], Output = [WallDescriptionGgdMaterial]> + Clone,
-    {
-        WallDescriptionGgdMaterialSliceView::new(
-            self.slice_elements
-                .nest("material", |item: &WallDescriptionGgd| item.material.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn material<S: Selection<'a, WallDescriptionGgdMaterial>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("material", &self.slice_elements, |item: &WallDescriptionGgd| item.material.as_slice())
     }
 
-    /// The slice view over a range of `component` under every element, e.g. `.component(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `component` under every element. A range, e.g. `.component(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn component<R>(&self, range: R) -> WallDescriptionGgdComponentSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdComponent], Output = [WallDescriptionGgdComponent]> + Clone,
-    {
-        WallDescriptionGgdComponentSliceView::new(
-            self.slice_elements
-                .nest("component", |item: &WallDescriptionGgd| item.component.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn component<S: Selection<'a, WallDescriptionGgdComponent>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("component", &self.slice_elements, |item: &WallDescriptionGgd| item.component.as_slice())
     }
 
-    /// The slice view over a range of `thickness` under every element, e.g. `.thickness(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `thickness` under every element. A range, e.g. `.thickness(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn thickness<R>(&self, range: R) -> WallDescriptionGgdThicknessSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdThickness], Output = [WallDescriptionGgdThickness]> + Clone,
-    {
-        WallDescriptionGgdThicknessSliceView::new(
-            self.slice_elements
-                .nest("thickness", |item: &WallDescriptionGgd| item.thickness.as_slice(), range),
-        )
+    /// If a range does not select the same number of elements under every element.
+    pub fn thickness<S: Selection<'a, WallDescriptionGgdThickness>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("thickness", &self.slice_elements, |item: &WallDescriptionGgd| item.thickness.as_slice())
     }
 
-    /// The slice view over a range of `brdf` under every element, e.g. `.brdf(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `brdf` under every element. A range, e.g. `.brdf(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn brdf<R>(&self, range: R) -> WallDescriptionGgdBrdfSliceView<'a, D::Larger>
-    where
-        R: SliceIndex<[WallDescriptionGgdBrdf], Output = [WallDescriptionGgdBrdf]> + Clone,
-    {
-        WallDescriptionGgdBrdfSliceView::new(self.slice_elements.nest("brdf", |item: &WallDescriptionGgd| item.brdf.as_slice(), range))
+    /// If a range does not select the same number of elements under every element.
+    pub fn brdf<S: Selection<'a, WallDescriptionGgdBrdf>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("brdf", &self.slice_elements, |item: &WallDescriptionGgd| item.brdf.as_slice())
     }
 
-    /// The slice view over a range of `ggd` under every element, e.g. `.ggd(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `ggd` under every element. A range, e.g. `.ggd(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn ggd<R>(&self, range: R) -> WallDescriptionGgdGgdSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    pub fn ggd<S: Selection<'a, WallDescriptionGgdGgd>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("ggd", &self.slice_elements, |item: &WallDescriptionGgd| item.ggd.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for WallDescriptionGgd {
+    type SliceView<'a, D>
+        = WallDescriptionGgdSliceView<'a, D>
     where
-        R: SliceIndex<[WallDescriptionGgdGgd], Output = [WallDescriptionGgdGgd]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        WallDescriptionGgdGgdSliceView::new(self.slice_elements.nest("ggd", |item: &WallDescriptionGgd| item.ggd.as_slice(), range))
+        WallDescriptionGgdSliceView::new(elements)
     }
 }
 
@@ -5254,13 +5619,14 @@ impl<'a, D: Dimension> WallDescriptionGgdSliceView<'a, D> {
 // ============================================================================
 
 impl WallGlobalQuantititesNeutralOrigin {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]>,
-    {
-        PlasmaCompositionNeutralElementConstantSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, PlasmaCompositionNeutralElementConstant>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -5270,13 +5636,14 @@ impl WallGlobalQuantititesNeutralOrigin {
 }
 
 impl WallGlobalQuantititesNeutral {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementConstantSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElementConstant], Output = [PlasmaCompositionNeutralElementConstant]>,
-    {
-        PlasmaCompositionNeutralElementConstantSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, PlasmaCompositionNeutralElementConstant>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -5286,13 +5653,16 @@ impl WallGlobalQuantititesNeutral {
 }
 
 impl WallGlobalQuantititesNeutral {
-    /// The slice view over a range of incident_species, e.g. `.incident_species(0..2)` or `.incident_species(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident_species[i]`.
-    pub fn incident_species<R>(&self, range: R) -> WallGlobalQuantititesNeutralOriginSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallGlobalQuantititesNeutralOrigin], Output = [WallGlobalQuantititesNeutralOrigin]>,
-    {
-        WallGlobalQuantititesNeutralOriginSliceView::new(Elements::from_slice(&self.incident_species[range]))
+    /// Select from `incident_species`. A range, e.g. `.incident_species(0..2)` or `.incident_species(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.incident_species(name)`, gives the one element with that `name`.
+    /// A single element is `.incident_species[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn incident_species<'a, S: Selection<'a, WallGlobalQuantititesNeutralOrigin>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident_species", &self.incident_species)
     }
 
     /// Get the number of incident_species elements
@@ -5302,13 +5672,16 @@ impl WallGlobalQuantititesNeutral {
 }
 
 impl WallGlobalQuantitites {
-    /// The slice view over a range of neutral, e.g. `.neutral(0..2)` or `.neutral(..)`,
-    /// whose leaves gather one value per element. A single element is `.neutral[i]`.
-    pub fn neutral<R>(&self, range: R) -> WallGlobalQuantititesNeutralSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallGlobalQuantititesNeutral], Output = [WallGlobalQuantititesNeutral]>,
-    {
-        WallGlobalQuantititesNeutralSliceView::new(Elements::from_slice(&self.neutral[range]))
+    /// Select from `neutral`. A range, e.g. `.neutral(0..2)` or `.neutral(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.neutral(name)`, gives the one element with that `name`.
+    /// A single element is `.neutral[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn neutral<'a, S: Selection<'a, WallGlobalQuantititesNeutral>>(&'a self, selection: S) -> S::Output {
+        selection.select("neutral", &self.neutral)
     }
 
     /// Get the number of neutral elements
@@ -5318,13 +5691,16 @@ impl WallGlobalQuantitites {
 }
 
 impl Wall2dLimiter {
-    /// The slice view over a range of unit, e.g. `.unit(0..2)` or `.unit(..)`,
-    /// whose leaves gather one value per element. A single element is `.unit[i]`.
-    pub fn unit<R>(&self, range: R) -> Wall2dLimiterUnitSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Wall2dLimiterUnit], Output = [Wall2dLimiterUnit]>,
-    {
-        Wall2dLimiterUnitSliceView::new(Elements::from_slice(&self.unit[range]))
+    /// Select from `unit`. A range, e.g. `.unit(0..2)` or `.unit(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.unit(name)`, gives the one element with that `name`.
+    /// A single element is `.unit[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn unit<'a, S: Selection<'a, Wall2dLimiterUnit>>(&'a self, selection: S) -> S::Output {
+        selection.select("unit", &self.unit)
     }
 
     /// Get the number of unit elements
@@ -5334,13 +5710,14 @@ impl Wall2dLimiter {
 }
 
 impl Wall2dMobileUnit {
-    /// The slice view over a range of outline, e.g. `.outline(0..2)` or `.outline(..)`,
-    /// whose leaves gather one value per element. A single element is `.outline[i]`.
-    pub fn outline<R>(&self, range: R) -> Rz1dDynamicAosTimeSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Rz1dDynamicAosTime], Output = [Rz1dDynamicAosTime]>,
-    {
-        Rz1dDynamicAosTimeSliceView::new(Elements::from_slice(&self.outline[range]))
+    /// Select from `outline`. A range, e.g. `.outline(0..2)` or `.outline(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.outline[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn outline<'a, S: Selection<'a, Rz1dDynamicAosTime>>(&'a self, selection: S) -> S::Output {
+        selection.select("outline", &self.outline)
     }
 
     /// Get the number of outline elements
@@ -5350,13 +5727,16 @@ impl Wall2dMobileUnit {
 }
 
 impl Wall2dMobile {
-    /// The slice view over a range of unit, e.g. `.unit(0..2)` or `.unit(..)`,
-    /// whose leaves gather one value per element. A single element is `.unit[i]`.
-    pub fn unit<R>(&self, range: R) -> Wall2dMobileUnitSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Wall2dMobileUnit], Output = [Wall2dMobileUnit]>,
-    {
-        Wall2dMobileUnitSliceView::new(Elements::from_slice(&self.unit[range]))
+    /// Select from `unit`. A range, e.g. `.unit(0..2)` or `.unit(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.unit(name)`, gives the one element with that `name`.
+    /// A single element is `.unit[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn unit<'a, S: Selection<'a, Wall2dMobileUnit>>(&'a self, selection: S) -> S::Output {
+        selection.select("unit", &self.unit)
     }
 
     /// Get the number of unit elements
@@ -5366,13 +5746,14 @@ impl Wall2dMobile {
 }
 
 impl WallDescriptionGgdEnergySimple {
-    /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
+    /// Select from `incident`. A range, e.g. `.incident(0..2)` or `.incident(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.incident[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn incident<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident", &self.incident)
     }
 
     /// Get the number of incident elements
@@ -5382,13 +5763,14 @@ impl WallDescriptionGgdEnergySimple {
 }
 
 impl WallDescriptionGgdEnergySimple {
-    /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
-    /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
+    /// Select from `emitted`. A range, e.g. `.emitted(0..2)` or `.emitted(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.emitted[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn emitted<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("emitted", &self.emitted)
     }
 
     /// Get the number of emitted elements
@@ -5398,13 +5780,14 @@ impl WallDescriptionGgdEnergySimple {
 }
 
 impl WallDescriptionGgdEnergyNeutralState {
-    /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
+    /// Select from `incident`. A range, e.g. `.incident(0..2)` or `.incident(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.incident[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn incident<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident", &self.incident)
     }
 
     /// Get the number of incident elements
@@ -5414,13 +5797,14 @@ impl WallDescriptionGgdEnergyNeutralState {
 }
 
 impl WallDescriptionGgdEnergyNeutralState {
-    /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
-    /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
+    /// Select from `emitted`. A range, e.g. `.emitted(0..2)` or `.emitted(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.emitted[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn emitted<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("emitted", &self.emitted)
     }
 
     /// Get the number of emitted elements
@@ -5430,13 +5814,14 @@ impl WallDescriptionGgdEnergyNeutralState {
 }
 
 impl WallDescriptionGgdEnergyNeutral {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, PlasmaCompositionNeutralElement>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -5446,13 +5831,14 @@ impl WallDescriptionGgdEnergyNeutral {
 }
 
 impl WallDescriptionGgdEnergyNeutral {
-    /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
+    /// Select from `incident`. A range, e.g. `.incident(0..2)` or `.incident(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.incident[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn incident<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident", &self.incident)
     }
 
     /// Get the number of incident elements
@@ -5462,13 +5848,14 @@ impl WallDescriptionGgdEnergyNeutral {
 }
 
 impl WallDescriptionGgdEnergyNeutral {
-    /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
-    /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
+    /// Select from `emitted`. A range, e.g. `.emitted(0..2)` or `.emitted(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.emitted[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn emitted<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("emitted", &self.emitted)
     }
 
     /// Get the number of emitted elements
@@ -5478,13 +5865,16 @@ impl WallDescriptionGgdEnergyNeutral {
 }
 
 impl WallDescriptionGgdEnergyNeutral {
-    /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
-    /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralStateSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdEnergyNeutralState], Output = [WallDescriptionGgdEnergyNeutralState]>,
-    {
-        WallDescriptionGgdEnergyNeutralStateSliceView::new(Elements::from_slice(&self.state[range]))
+    /// Select from `state`. A range, e.g. `.state(0..2)` or `.state(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.state(name)`, gives the one element with that `name`.
+    /// A single element is `.state[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn state<'a, S: Selection<'a, WallDescriptionGgdEnergyNeutralState>>(&'a self, selection: S) -> S::Output {
+        selection.select("state", &self.state)
     }
 
     /// Get the number of state elements
@@ -5494,13 +5884,14 @@ impl WallDescriptionGgdEnergyNeutral {
 }
 
 impl WallDescriptionGgdEnergyIonState {
-    /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
+    /// Select from `incident`. A range, e.g. `.incident(0..2)` or `.incident(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.incident[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn incident<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident", &self.incident)
     }
 
     /// Get the number of incident elements
@@ -5510,13 +5901,14 @@ impl WallDescriptionGgdEnergyIonState {
 }
 
 impl WallDescriptionGgdEnergyIonState {
-    /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
-    /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
+    /// Select from `emitted`. A range, e.g. `.emitted(0..2)` or `.emitted(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.emitted[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn emitted<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("emitted", &self.emitted)
     }
 
     /// Get the number of emitted elements
@@ -5526,13 +5918,14 @@ impl WallDescriptionGgdEnergyIonState {
 }
 
 impl WallDescriptionGgdEnergyIon {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, PlasmaCompositionNeutralElement>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -5542,13 +5935,14 @@ impl WallDescriptionGgdEnergyIon {
 }
 
 impl WallDescriptionGgdEnergyIon {
-    /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
+    /// Select from `incident`. A range, e.g. `.incident(0..2)` or `.incident(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.incident[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn incident<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident", &self.incident)
     }
 
     /// Get the number of incident elements
@@ -5558,13 +5952,14 @@ impl WallDescriptionGgdEnergyIon {
 }
 
 impl WallDescriptionGgdEnergyIon {
-    /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
-    /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
+    /// Select from `emitted`. A range, e.g. `.emitted(0..2)` or `.emitted(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.emitted[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn emitted<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("emitted", &self.emitted)
     }
 
     /// Get the number of emitted elements
@@ -5574,13 +5969,16 @@ impl WallDescriptionGgdEnergyIon {
 }
 
 impl WallDescriptionGgdEnergyIon {
-    /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
-    /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdEnergyIonStateSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdEnergyIonState], Output = [WallDescriptionGgdEnergyIonState]>,
-    {
-        WallDescriptionGgdEnergyIonStateSliceView::new(Elements::from_slice(&self.state[range]))
+    /// Select from `state`. A range, e.g. `.state(0..2)` or `.state(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.state(name)`, gives the one element with that `name`.
+    /// A single element is `.state[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn state<'a, S: Selection<'a, WallDescriptionGgdEnergyIonState>>(&'a self, selection: S) -> S::Output {
+        selection.select("state", &self.state)
     }
 
     /// Get the number of state elements
@@ -5590,13 +5988,16 @@ impl WallDescriptionGgdEnergyIon {
 }
 
 impl WallDescriptionGgdKinetic {
-    /// The slice view over a range of ion, e.g. `.ion(0..2)` or `.ion(..)`,
-    /// whose leaves gather one value per element. A single element is `.ion[i]`.
-    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdEnergyIonSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdEnergyIon], Output = [WallDescriptionGgdEnergyIon]>,
-    {
-        WallDescriptionGgdEnergyIonSliceView::new(Elements::from_slice(&self.ion[range]))
+    /// Select from `ion`. A range, e.g. `.ion(0..2)` or `.ion(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.ion(name)`, gives the one element with that `name`.
+    /// A single element is `.ion[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn ion<'a, S: Selection<'a, WallDescriptionGgdEnergyIon>>(&'a self, selection: S) -> S::Output {
+        selection.select("ion", &self.ion)
     }
 
     /// Get the number of ion elements
@@ -5606,13 +6007,16 @@ impl WallDescriptionGgdKinetic {
 }
 
 impl WallDescriptionGgdKinetic {
-    /// The slice view over a range of neutral, e.g. `.neutral(0..2)` or `.neutral(..)`,
-    /// whose leaves gather one value per element. A single element is `.neutral[i]`.
-    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdEnergyNeutral], Output = [WallDescriptionGgdEnergyNeutral]>,
-    {
-        WallDescriptionGgdEnergyNeutralSliceView::new(Elements::from_slice(&self.neutral[range]))
+    /// Select from `neutral`. A range, e.g. `.neutral(0..2)` or `.neutral(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.neutral(name)`, gives the one element with that `name`.
+    /// A single element is `.neutral[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn neutral<'a, S: Selection<'a, WallDescriptionGgdEnergyNeutral>>(&'a self, selection: S) -> S::Output {
+        selection.select("neutral", &self.neutral)
     }
 
     /// Get the number of neutral elements
@@ -5622,13 +6026,16 @@ impl WallDescriptionGgdKinetic {
 }
 
 impl WallDescriptionGgdRecombination {
-    /// The slice view over a range of ion, e.g. `.ion(0..2)` or `.ion(..)`,
-    /// whose leaves gather one value per element. A single element is `.ion[i]`.
-    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdEnergyIonSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdEnergyIon], Output = [WallDescriptionGgdEnergyIon]>,
-    {
-        WallDescriptionGgdEnergyIonSliceView::new(Elements::from_slice(&self.ion[range]))
+    /// Select from `ion`. A range, e.g. `.ion(0..2)` or `.ion(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.ion(name)`, gives the one element with that `name`.
+    /// A single element is `.ion[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn ion<'a, S: Selection<'a, WallDescriptionGgdEnergyIon>>(&'a self, selection: S) -> S::Output {
+        selection.select("ion", &self.ion)
     }
 
     /// Get the number of ion elements
@@ -5638,13 +6045,16 @@ impl WallDescriptionGgdRecombination {
 }
 
 impl WallDescriptionGgdRecombination {
-    /// The slice view over a range of neutral, e.g. `.neutral(0..2)` or `.neutral(..)`,
-    /// whose leaves gather one value per element. A single element is `.neutral[i]`.
-    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdEnergyNeutralSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdEnergyNeutral], Output = [WallDescriptionGgdEnergyNeutral]>,
-    {
-        WallDescriptionGgdEnergyNeutralSliceView::new(Elements::from_slice(&self.neutral[range]))
+    /// Select from `neutral`. A range, e.g. `.neutral(0..2)` or `.neutral(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.neutral(name)`, gives the one element with that `name`.
+    /// A single element is `.neutral[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn neutral<'a, S: Selection<'a, WallDescriptionGgdEnergyNeutral>>(&'a self, selection: S) -> S::Output {
+        selection.select("neutral", &self.neutral)
     }
 
     /// Get the number of neutral elements
@@ -5654,13 +6064,14 @@ impl WallDescriptionGgdRecombination {
 }
 
 impl WallDescriptionGgdParticleNeutralState {
-    /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
+    /// Select from `incident`. A range, e.g. `.incident(0..2)` or `.incident(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.incident[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn incident<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident", &self.incident)
     }
 
     /// Get the number of incident elements
@@ -5670,13 +6081,14 @@ impl WallDescriptionGgdParticleNeutralState {
 }
 
 impl WallDescriptionGgdParticleNeutralState {
-    /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
-    /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
+    /// Select from `emitted`. A range, e.g. `.emitted(0..2)` or `.emitted(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.emitted[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn emitted<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("emitted", &self.emitted)
     }
 
     /// Get the number of emitted elements
@@ -5686,13 +6098,14 @@ impl WallDescriptionGgdParticleNeutralState {
 }
 
 impl WallDescriptionGgdParticleNeutral {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, PlasmaCompositionNeutralElement>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -5702,13 +6115,14 @@ impl WallDescriptionGgdParticleNeutral {
 }
 
 impl WallDescriptionGgdParticleNeutral {
-    /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
+    /// Select from `incident`. A range, e.g. `.incident(0..2)` or `.incident(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.incident[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn incident<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident", &self.incident)
     }
 
     /// Get the number of incident elements
@@ -5718,13 +6132,14 @@ impl WallDescriptionGgdParticleNeutral {
 }
 
 impl WallDescriptionGgdParticleNeutral {
-    /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
-    /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
+    /// Select from `emitted`. A range, e.g. `.emitted(0..2)` or `.emitted(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.emitted[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn emitted<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("emitted", &self.emitted)
     }
 
     /// Get the number of emitted elements
@@ -5734,13 +6149,16 @@ impl WallDescriptionGgdParticleNeutral {
 }
 
 impl WallDescriptionGgdParticleNeutral {
-    /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
-    /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdParticleNeutralStateSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdParticleNeutralState], Output = [WallDescriptionGgdParticleNeutralState]>,
-    {
-        WallDescriptionGgdParticleNeutralStateSliceView::new(Elements::from_slice(&self.state[range]))
+    /// Select from `state`. A range, e.g. `.state(0..2)` or `.state(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.state(name)`, gives the one element with that `name`.
+    /// A single element is `.state[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn state<'a, S: Selection<'a, WallDescriptionGgdParticleNeutralState>>(&'a self, selection: S) -> S::Output {
+        selection.select("state", &self.state)
     }
 
     /// Get the number of state elements
@@ -5750,13 +6168,14 @@ impl WallDescriptionGgdParticleNeutral {
 }
 
 impl WallDescriptionGgdParticleIonState {
-    /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
+    /// Select from `incident`. A range, e.g. `.incident(0..2)` or `.incident(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.incident[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn incident<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident", &self.incident)
     }
 
     /// Get the number of incident elements
@@ -5766,13 +6185,14 @@ impl WallDescriptionGgdParticleIonState {
 }
 
 impl WallDescriptionGgdParticleIonState {
-    /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
-    /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
+    /// Select from `emitted`. A range, e.g. `.emitted(0..2)` or `.emitted(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.emitted[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn emitted<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("emitted", &self.emitted)
     }
 
     /// Get the number of emitted elements
@@ -5782,13 +6202,14 @@ impl WallDescriptionGgdParticleIonState {
 }
 
 impl WallDescriptionGgdParticleIon {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, PlasmaCompositionNeutralElement>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -5798,13 +6219,14 @@ impl WallDescriptionGgdParticleIon {
 }
 
 impl WallDescriptionGgdParticleIon {
-    /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
+    /// Select from `incident`. A range, e.g. `.incident(0..2)` or `.incident(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.incident[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn incident<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident", &self.incident)
     }
 
     /// Get the number of incident elements
@@ -5814,13 +6236,14 @@ impl WallDescriptionGgdParticleIon {
 }
 
 impl WallDescriptionGgdParticleIon {
-    /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
-    /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
+    /// Select from `emitted`. A range, e.g. `.emitted(0..2)` or `.emitted(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.emitted[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn emitted<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("emitted", &self.emitted)
     }
 
     /// Get the number of emitted elements
@@ -5830,13 +6253,16 @@ impl WallDescriptionGgdParticleIon {
 }
 
 impl WallDescriptionGgdParticleIon {
-    /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
-    /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdParticleIonStateSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdParticleIonState], Output = [WallDescriptionGgdParticleIonState]>,
-    {
-        WallDescriptionGgdParticleIonStateSliceView::new(Elements::from_slice(&self.state[range]))
+    /// Select from `state`. A range, e.g. `.state(0..2)` or `.state(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.state(name)`, gives the one element with that `name`.
+    /// A single element is `.state[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn state<'a, S: Selection<'a, WallDescriptionGgdParticleIonState>>(&'a self, selection: S) -> S::Output {
+        selection.select("state", &self.state)
     }
 
     /// Get the number of state elements
@@ -5846,13 +6272,14 @@ impl WallDescriptionGgdParticleIon {
 }
 
 impl WallDescriptionGgdParticleEl {
-    /// The slice view over a range of incident, e.g. `.incident(0..2)` or `.incident(..)`,
-    /// whose leaves gather one value per element. A single element is `.incident[i]`.
-    pub fn incident<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.incident[range]))
+    /// Select from `incident`. A range, e.g. `.incident(0..2)` or `.incident(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.incident[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn incident<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("incident", &self.incident)
     }
 
     /// Get the number of incident elements
@@ -5862,13 +6289,14 @@ impl WallDescriptionGgdParticleEl {
 }
 
 impl WallDescriptionGgdParticleEl {
-    /// The slice view over a range of emitted, e.g. `.emitted(0..2)` or `.emitted(..)`,
-    /// whose leaves gather one value per element. A single element is `.emitted[i]`.
-    pub fn emitted<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.emitted[range]))
+    /// Select from `emitted`. A range, e.g. `.emitted(0..2)` or `.emitted(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.emitted[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn emitted<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("emitted", &self.emitted)
     }
 
     /// Get the number of emitted elements
@@ -5878,13 +6306,16 @@ impl WallDescriptionGgdParticleEl {
 }
 
 impl WallDescriptionGgdParticle {
-    /// The slice view over a range of ion, e.g. `.ion(0..2)` or `.ion(..)`,
-    /// whose leaves gather one value per element. A single element is `.ion[i]`.
-    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdParticleIonSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdParticleIon], Output = [WallDescriptionGgdParticleIon]>,
-    {
-        WallDescriptionGgdParticleIonSliceView::new(Elements::from_slice(&self.ion[range]))
+    /// Select from `ion`. A range, e.g. `.ion(0..2)` or `.ion(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.ion(name)`, gives the one element with that `name`.
+    /// A single element is `.ion[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn ion<'a, S: Selection<'a, WallDescriptionGgdParticleIon>>(&'a self, selection: S) -> S::Output {
+        selection.select("ion", &self.ion)
     }
 
     /// Get the number of ion elements
@@ -5894,13 +6325,16 @@ impl WallDescriptionGgdParticle {
 }
 
 impl WallDescriptionGgdParticle {
-    /// The slice view over a range of neutral, e.g. `.neutral(0..2)` or `.neutral(..)`,
-    /// whose leaves gather one value per element. A single element is `.neutral[i]`.
-    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdParticleNeutralSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdParticleNeutral], Output = [WallDescriptionGgdParticleNeutral]>,
-    {
-        WallDescriptionGgdParticleNeutralSliceView::new(Elements::from_slice(&self.neutral[range]))
+    /// Select from `neutral`. A range, e.g. `.neutral(0..2)` or `.neutral(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.neutral(name)`, gives the one element with that `name`.
+    /// A single element is `.neutral[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn neutral<'a, S: Selection<'a, WallDescriptionGgdParticleNeutral>>(&'a self, selection: S) -> S::Output {
+        selection.select("neutral", &self.neutral)
     }
 
     /// Get the number of neutral elements
@@ -5910,13 +6344,14 @@ impl WallDescriptionGgdParticle {
 }
 
 impl WallDescriptionGgdRecyclingNeutralState {
-    /// The slice view over a range of coefficient, e.g. `.coefficient(0..2)` or `.coefficient(..)`,
-    /// whose leaves gather one value per element. A single element is `.coefficient[i]`.
-    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.coefficient[range]))
+    /// Select from `coefficient`. A range, e.g. `.coefficient(0..2)` or `.coefficient(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.coefficient[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn coefficient<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("coefficient", &self.coefficient)
     }
 
     /// Get the number of coefficient elements
@@ -5926,13 +6361,14 @@ impl WallDescriptionGgdRecyclingNeutralState {
 }
 
 impl WallDescriptionGgdRecyclingNeutral {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, PlasmaCompositionNeutralElement>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -5942,13 +6378,14 @@ impl WallDescriptionGgdRecyclingNeutral {
 }
 
 impl WallDescriptionGgdRecyclingNeutral {
-    /// The slice view over a range of coefficient, e.g. `.coefficient(0..2)` or `.coefficient(..)`,
-    /// whose leaves gather one value per element. A single element is `.coefficient[i]`.
-    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.coefficient[range]))
+    /// Select from `coefficient`. A range, e.g. `.coefficient(0..2)` or `.coefficient(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.coefficient[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn coefficient<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("coefficient", &self.coefficient)
     }
 
     /// Get the number of coefficient elements
@@ -5958,13 +6395,16 @@ impl WallDescriptionGgdRecyclingNeutral {
 }
 
 impl WallDescriptionGgdRecyclingNeutral {
-    /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
-    /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdRecyclingNeutralStateSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdRecyclingNeutralState], Output = [WallDescriptionGgdRecyclingNeutralState]>,
-    {
-        WallDescriptionGgdRecyclingNeutralStateSliceView::new(Elements::from_slice(&self.state[range]))
+    /// Select from `state`. A range, e.g. `.state(0..2)` or `.state(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.state(name)`, gives the one element with that `name`.
+    /// A single element is `.state[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn state<'a, S: Selection<'a, WallDescriptionGgdRecyclingNeutralState>>(&'a self, selection: S) -> S::Output {
+        selection.select("state", &self.state)
     }
 
     /// Get the number of state elements
@@ -5974,13 +6414,14 @@ impl WallDescriptionGgdRecyclingNeutral {
 }
 
 impl WallDescriptionGgdRecyclingIonState {
-    /// The slice view over a range of coefficient, e.g. `.coefficient(0..2)` or `.coefficient(..)`,
-    /// whose leaves gather one value per element. A single element is `.coefficient[i]`.
-    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.coefficient[range]))
+    /// Select from `coefficient`. A range, e.g. `.coefficient(0..2)` or `.coefficient(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.coefficient[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn coefficient<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("coefficient", &self.coefficient)
     }
 
     /// Get the number of coefficient elements
@@ -5990,13 +6431,14 @@ impl WallDescriptionGgdRecyclingIonState {
 }
 
 impl WallDescriptionGgdRecyclingIon {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PlasmaCompositionNeutralElementSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PlasmaCompositionNeutralElement], Output = [PlasmaCompositionNeutralElement]>,
-    {
-        PlasmaCompositionNeutralElementSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, PlasmaCompositionNeutralElement>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -6006,13 +6448,14 @@ impl WallDescriptionGgdRecyclingIon {
 }
 
 impl WallDescriptionGgdRecyclingIon {
-    /// The slice view over a range of coefficient, e.g. `.coefficient(0..2)` or `.coefficient(..)`,
-    /// whose leaves gather one value per element. A single element is `.coefficient[i]`.
-    pub fn coefficient<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.coefficient[range]))
+    /// Select from `coefficient`. A range, e.g. `.coefficient(0..2)` or `.coefficient(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.coefficient[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn coefficient<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("coefficient", &self.coefficient)
     }
 
     /// Get the number of coefficient elements
@@ -6022,13 +6465,16 @@ impl WallDescriptionGgdRecyclingIon {
 }
 
 impl WallDescriptionGgdRecyclingIon {
-    /// The slice view over a range of state, e.g. `.state(0..2)` or `.state(..)`,
-    /// whose leaves gather one value per element. A single element is `.state[i]`.
-    pub fn state<R>(&self, range: R) -> WallDescriptionGgdRecyclingIonStateSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdRecyclingIonState], Output = [WallDescriptionGgdRecyclingIonState]>,
-    {
-        WallDescriptionGgdRecyclingIonStateSliceView::new(Elements::from_slice(&self.state[range]))
+    /// Select from `state`. A range, e.g. `.state(0..2)` or `.state(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.state(name)`, gives the one element with that `name`.
+    /// A single element is `.state[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn state<'a, S: Selection<'a, WallDescriptionGgdRecyclingIonState>>(&'a self, selection: S) -> S::Output {
+        selection.select("state", &self.state)
     }
 
     /// Get the number of state elements
@@ -6038,13 +6484,16 @@ impl WallDescriptionGgdRecyclingIon {
 }
 
 impl WallDescriptionGgdRecycling {
-    /// The slice view over a range of ion, e.g. `.ion(0..2)` or `.ion(..)`,
-    /// whose leaves gather one value per element. A single element is `.ion[i]`.
-    pub fn ion<R>(&self, range: R) -> WallDescriptionGgdRecyclingIonSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdRecyclingIon], Output = [WallDescriptionGgdRecyclingIon]>,
-    {
-        WallDescriptionGgdRecyclingIonSliceView::new(Elements::from_slice(&self.ion[range]))
+    /// Select from `ion`. A range, e.g. `.ion(0..2)` or `.ion(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.ion(name)`, gives the one element with that `name`.
+    /// A single element is `.ion[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn ion<'a, S: Selection<'a, WallDescriptionGgdRecyclingIon>>(&'a self, selection: S) -> S::Output {
+        selection.select("ion", &self.ion)
     }
 
     /// Get the number of ion elements
@@ -6054,13 +6503,16 @@ impl WallDescriptionGgdRecycling {
 }
 
 impl WallDescriptionGgdRecycling {
-    /// The slice view over a range of neutral, e.g. `.neutral(0..2)` or `.neutral(..)`,
-    /// whose leaves gather one value per element. A single element is `.neutral[i]`.
-    pub fn neutral<R>(&self, range: R) -> WallDescriptionGgdRecyclingNeutralSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdRecyclingNeutral], Output = [WallDescriptionGgdRecyclingNeutral]>,
-    {
-        WallDescriptionGgdRecyclingNeutralSliceView::new(Elements::from_slice(&self.neutral[range]))
+    /// Select from `neutral`. A range, e.g. `.neutral(0..2)` or `.neutral(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.neutral(name)`, gives the one element with that `name`.
+    /// A single element is `.neutral[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn neutral<'a, S: Selection<'a, WallDescriptionGgdRecyclingNeutral>>(&'a self, selection: S) -> S::Output {
+        selection.select("neutral", &self.neutral)
     }
 
     /// Get the number of neutral elements
@@ -6070,13 +6522,14 @@ impl WallDescriptionGgdRecycling {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of power_density, e.g. `.power_density(0..2)` or `.power_density(..)`,
-    /// whose leaves gather one value per element. A single element is `.power_density[i]`.
-    pub fn power_density<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.power_density[range]))
+    /// Select from `power_density`. A range, e.g. `.power_density(0..2)` or `.power_density(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.power_density[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn power_density<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("power_density", &self.power_density)
     }
 
     /// Get the number of power_density elements
@@ -6086,13 +6539,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of temperature, e.g. `.temperature(0..2)` or `.temperature(..)`,
-    /// whose leaves gather one value per element. A single element is `.temperature[i]`.
-    pub fn temperature<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.temperature[range]))
+    /// Select from `temperature`. A range, e.g. `.temperature(0..2)` or `.temperature(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.temperature[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn temperature<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("temperature", &self.temperature)
     }
 
     /// Get the number of temperature elements
@@ -6102,13 +6556,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of v_biasing, e.g. `.v_biasing(0..2)` or `.v_biasing(..)`,
-    /// whose leaves gather one value per element. A single element is `.v_biasing[i]`.
-    pub fn v_biasing<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.v_biasing[range]))
+    /// Select from `v_biasing`. A range, e.g. `.v_biasing(0..2)` or `.v_biasing(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.v_biasing[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn v_biasing<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("v_biasing", &self.v_biasing)
     }
 
     /// Get the number of v_biasing elements
@@ -6118,13 +6573,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of j_total, e.g. `.j_total(0..2)` or `.j_total(..)`,
-    /// whose leaves gather one value per element. A single element is `.j_total[i]`.
-    pub fn j_total<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]>,
-    {
-        GenericGridVectorComponentsRphizSliceView::new(Elements::from_slice(&self.j_total[range]))
+    /// Select from `j_total`. A range, e.g. `.j_total(0..2)` or `.j_total(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.j_total[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn j_total<'a, S: Selection<'a, GenericGridVectorComponentsRphiz>>(&'a self, selection: S) -> S::Output {
+        selection.select("j_total", &self.j_total)
     }
 
     /// Get the number of j_total elements
@@ -6134,13 +6590,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of b_field, e.g. `.b_field(0..2)` or `.b_field(..)`,
-    /// whose leaves gather one value per element. A single element is `.b_field[i]`.
-    pub fn b_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]>,
-    {
-        GenericGridVectorComponentsRphizSliceView::new(Elements::from_slice(&self.b_field[range]))
+    /// Select from `b_field`. A range, e.g. `.b_field(0..2)` or `.b_field(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.b_field[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn b_field<'a, S: Selection<'a, GenericGridVectorComponentsRphiz>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field", &self.b_field)
     }
 
     /// Get the number of b_field elements
@@ -6150,13 +6607,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of em_force_density, e.g. `.em_force_density(0..2)` or `.em_force_density(..)`,
-    /// whose leaves gather one value per element. A single element is `.em_force_density[i]`.
-    pub fn em_force_density<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]>,
-    {
-        GenericGridVectorComponentsRphizSliceView::new(Elements::from_slice(&self.em_force_density[range]))
+    /// Select from `em_force_density`. A range, e.g. `.em_force_density(0..2)` or `.em_force_density(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.em_force_density[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn em_force_density<'a, S: Selection<'a, GenericGridVectorComponentsRphiz>>(&'a self, selection: S) -> S::Output {
+        selection.select("em_force_density", &self.em_force_density)
     }
 
     /// Get the number of em_force_density elements
@@ -6166,13 +6624,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of e_field, e.g. `.e_field(0..2)` or `.e_field(..)`,
-    /// whose leaves gather one value per element. A single element is `.e_field[i]`.
-    pub fn e_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]>,
-    {
-        GenericGridVectorComponentsRphizSliceView::new(Elements::from_slice(&self.e_field[range]))
+    /// Select from `e_field`. A range, e.g. `.e_field(0..2)` or `.e_field(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.e_field[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn e_field<'a, S: Selection<'a, GenericGridVectorComponentsRphiz>>(&'a self, selection: S) -> S::Output {
+        selection.select("e_field", &self.e_field)
     }
 
     /// Get the number of e_field elements
@@ -6182,13 +6641,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of a_field, e.g. `.a_field(0..2)` or `.a_field(..)`,
-    /// whose leaves gather one value per element. A single element is `.a_field[i]`.
-    pub fn a_field<R>(&self, range: R) -> GenericGridVectorComponentsRphizSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridVectorComponentsRphiz], Output = [GenericGridVectorComponentsRphiz]>,
-    {
-        GenericGridVectorComponentsRphizSliceView::new(Elements::from_slice(&self.a_field[range]))
+    /// Select from `a_field`. A range, e.g. `.a_field(0..2)` or `.a_field(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.a_field[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn a_field<'a, S: Selection<'a, GenericGridVectorComponentsRphiz>>(&'a self, selection: S) -> S::Output {
+        selection.select("a_field", &self.a_field)
     }
 
     /// Get the number of a_field elements
@@ -6198,13 +6658,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of psi, e.g. `.psi(0..2)` or `.psi(..)`,
-    /// whose leaves gather one value per element. A single element is `.psi[i]`.
-    pub fn psi<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.psi[range]))
+    /// Select from `psi`. A range, e.g. `.psi(0..2)` or `.psi(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.psi[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn psi<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("psi", &self.psi)
     }
 
     /// Get the number of psi elements
@@ -6214,13 +6675,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of phi_potential, e.g. `.phi_potential(0..2)` or `.phi_potential(..)`,
-    /// whose leaves gather one value per element. A single element is `.phi_potential[i]`.
-    pub fn phi_potential<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.phi_potential[range]))
+    /// Select from `phi_potential`. A range, e.g. `.phi_potential(0..2)` or `.phi_potential(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.phi_potential[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn phi_potential<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("phi_potential", &self.phi_potential)
     }
 
     /// Get the number of phi_potential elements
@@ -6230,13 +6692,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdGgd {
-    /// The slice view over a range of resistivity, e.g. `.resistivity(0..2)` or `.resistivity(..)`,
-    /// whose leaves gather one value per element. A single element is `.resistivity[i]`.
-    pub fn resistivity<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.resistivity[range]))
+    /// Select from `resistivity`. A range, e.g. `.resistivity(0..2)` or `.resistivity(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.resistivity[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn resistivity<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("resistivity", &self.resistivity)
     }
 
     /// Get the number of resistivity elements
@@ -6246,13 +6709,14 @@ impl WallDescriptionGgdGgd {
 }
 
 impl WallDescriptionGgdThickness {
-    /// The slice view over a range of grid_subset, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`,
-    /// whose leaves gather one value per element. A single element is `.grid_subset[i]`.
-    pub fn grid_subset<R>(&self, range: R) -> GenericGridScalarSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridScalar], Output = [GenericGridScalar]>,
-    {
-        GenericGridScalarSliceView::new(Elements::from_slice(&self.grid_subset[range]))
+    /// Select from `grid_subset`. A range, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.grid_subset[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn grid_subset<'a, S: Selection<'a, GenericGridScalar>>(&'a self, selection: S) -> S::Output {
+        selection.select("grid_subset", &self.grid_subset)
     }
 
     /// Get the number of grid_subset elements
@@ -6262,13 +6726,14 @@ impl WallDescriptionGgdThickness {
 }
 
 impl WallDescriptionGgdBrdf {
-    /// The slice view over a range of r#type, e.g. `.r#type(0..2)` or `.r#type(..)`,
-    /// whose leaves gather one value per element. A single element is `.r#type[i]`.
-    pub fn r#type<R>(&self, range: R) -> GenericGridIdentifierSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridIdentifier], Output = [GenericGridIdentifier]>,
-    {
-        GenericGridIdentifierSliceView::new(Elements::from_slice(&self.r#type[range]))
+    /// Select from `type`. A range, e.g. `.r#type(0..2)` or `.r#type(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.r#type[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn r#type<'a, S: Selection<'a, GenericGridIdentifier>>(&'a self, selection: S) -> S::Output {
+        selection.select("type", &self.r#type)
     }
 
     /// Get the number of r#type elements
@@ -6278,13 +6743,14 @@ impl WallDescriptionGgdBrdf {
 }
 
 impl WallDescriptionGgdBrdf {
-    /// The slice view over a range of parameters, e.g. `.parameters(0..2)` or `.parameters(..)`,
-    /// whose leaves gather one value per element. A single element is `.parameters[i]`.
-    pub fn parameters<R>(&self, range: R) -> GenericGridVectorSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridVector], Output = [GenericGridVector]>,
-    {
-        GenericGridVectorSliceView::new(Elements::from_slice(&self.parameters[range]))
+    /// Select from `parameters`. A range, e.g. `.parameters(0..2)` or `.parameters(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.parameters[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn parameters<'a, S: Selection<'a, GenericGridVector>>(&'a self, selection: S) -> S::Output {
+        selection.select("parameters", &self.parameters)
     }
 
     /// Get the number of parameters elements
@@ -6294,13 +6760,14 @@ impl WallDescriptionGgdBrdf {
 }
 
 impl WallDescriptionGgdMaterial {
-    /// The slice view over a range of grid_subset, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`,
-    /// whose leaves gather one value per element. A single element is `.grid_subset[i]`.
-    pub fn grid_subset<R>(&self, range: R) -> GenericGridIdentifierSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridIdentifier], Output = [GenericGridIdentifier]>,
-    {
-        GenericGridIdentifierSliceView::new(Elements::from_slice(&self.grid_subset[range]))
+    /// Select from `grid_subset`. A range, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.grid_subset[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn grid_subset<'a, S: Selection<'a, GenericGridIdentifier>>(&'a self, selection: S) -> S::Output {
+        selection.select("grid_subset", &self.grid_subset)
     }
 
     /// Get the number of grid_subset elements
@@ -6310,13 +6777,14 @@ impl WallDescriptionGgdMaterial {
 }
 
 impl WallDescriptionGgdComponent {
-    /// The slice view over a range of r#type, e.g. `.r#type(0..2)` or `.r#type(..)`,
-    /// whose leaves gather one value per element. A single element is `.r#type[i]`.
-    pub fn r#type<R>(&self, range: R) -> GenericGridIdentifierSingleSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridIdentifierSingle], Output = [GenericGridIdentifierSingle]>,
-    {
-        GenericGridIdentifierSingleSliceView::new(Elements::from_slice(&self.r#type[range]))
+    /// Select from `type`. A range, e.g. `.r#type(0..2)` or `.r#type(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.r#type[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn r#type<'a, S: Selection<'a, GenericGridIdentifierSingle>>(&'a self, selection: S) -> S::Output {
+        selection.select("type", &self.r#type)
     }
 
     /// Get the number of r#type elements
@@ -6326,13 +6794,14 @@ impl WallDescriptionGgdComponent {
 }
 
 impl WallDescriptionGgd {
-    /// The slice view over a range of grid_ggd, e.g. `.grid_ggd(0..2)` or `.grid_ggd(..)`,
-    /// whose leaves gather one value per element. A single element is `.grid_ggd[i]`.
-    pub fn grid_ggd<R>(&self, range: R) -> GenericGridAos3RootSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridAos3Root], Output = [GenericGridAos3Root]>,
-    {
-        GenericGridAos3RootSliceView::new(Elements::from_slice(&self.grid_ggd[range]))
+    /// Select from `grid_ggd`. A range, e.g. `.grid_ggd(0..2)` or `.grid_ggd(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.grid_ggd[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn grid_ggd<'a, S: Selection<'a, GenericGridAos3Root>>(&'a self, selection: S) -> S::Output {
+        selection.select("grid_ggd", &self.grid_ggd)
     }
 
     /// Get the number of grid_ggd elements
@@ -6342,13 +6811,14 @@ impl WallDescriptionGgd {
 }
 
 impl WallDescriptionGgd {
-    /// The slice view over a range of material, e.g. `.material(0..2)` or `.material(..)`,
-    /// whose leaves gather one value per element. A single element is `.material[i]`.
-    pub fn material<R>(&self, range: R) -> WallDescriptionGgdMaterialSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdMaterial], Output = [WallDescriptionGgdMaterial]>,
-    {
-        WallDescriptionGgdMaterialSliceView::new(Elements::from_slice(&self.material[range]))
+    /// Select from `material`. A range, e.g. `.material(0..2)` or `.material(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.material[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn material<'a, S: Selection<'a, WallDescriptionGgdMaterial>>(&'a self, selection: S) -> S::Output {
+        selection.select("material", &self.material)
     }
 
     /// Get the number of material elements
@@ -6358,13 +6828,14 @@ impl WallDescriptionGgd {
 }
 
 impl WallDescriptionGgd {
-    /// The slice view over a range of component, e.g. `.component(0..2)` or `.component(..)`,
-    /// whose leaves gather one value per element. A single element is `.component[i]`.
-    pub fn component<R>(&self, range: R) -> WallDescriptionGgdComponentSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdComponent], Output = [WallDescriptionGgdComponent]>,
-    {
-        WallDescriptionGgdComponentSliceView::new(Elements::from_slice(&self.component[range]))
+    /// Select from `component`. A range, e.g. `.component(0..2)` or `.component(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.component[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn component<'a, S: Selection<'a, WallDescriptionGgdComponent>>(&'a self, selection: S) -> S::Output {
+        selection.select("component", &self.component)
     }
 
     /// Get the number of component elements
@@ -6374,13 +6845,14 @@ impl WallDescriptionGgd {
 }
 
 impl WallDescriptionGgd {
-    /// The slice view over a range of thickness, e.g. `.thickness(0..2)` or `.thickness(..)`,
-    /// whose leaves gather one value per element. A single element is `.thickness[i]`.
-    pub fn thickness<R>(&self, range: R) -> WallDescriptionGgdThicknessSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdThickness], Output = [WallDescriptionGgdThickness]>,
-    {
-        WallDescriptionGgdThicknessSliceView::new(Elements::from_slice(&self.thickness[range]))
+    /// Select from `thickness`. A range, e.g. `.thickness(0..2)` or `.thickness(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.thickness[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn thickness<'a, S: Selection<'a, WallDescriptionGgdThickness>>(&'a self, selection: S) -> S::Output {
+        selection.select("thickness", &self.thickness)
     }
 
     /// Get the number of thickness elements
@@ -6390,13 +6862,14 @@ impl WallDescriptionGgd {
 }
 
 impl WallDescriptionGgd {
-    /// The slice view over a range of brdf, e.g. `.brdf(0..2)` or `.brdf(..)`,
-    /// whose leaves gather one value per element. A single element is `.brdf[i]`.
-    pub fn brdf<R>(&self, range: R) -> WallDescriptionGgdBrdfSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdBrdf], Output = [WallDescriptionGgdBrdf]>,
-    {
-        WallDescriptionGgdBrdfSliceView::new(Elements::from_slice(&self.brdf[range]))
+    /// Select from `brdf`. A range, e.g. `.brdf(0..2)` or `.brdf(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.brdf[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn brdf<'a, S: Selection<'a, WallDescriptionGgdBrdf>>(&'a self, selection: S) -> S::Output {
+        selection.select("brdf", &self.brdf)
     }
 
     /// Get the number of brdf elements
@@ -6406,13 +6879,14 @@ impl WallDescriptionGgd {
 }
 
 impl WallDescriptionGgd {
-    /// The slice view over a range of ggd, e.g. `.ggd(0..2)` or `.ggd(..)`,
-    /// whose leaves gather one value per element. A single element is `.ggd[i]`.
-    pub fn ggd<R>(&self, range: R) -> WallDescriptionGgdGgdSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgdGgd], Output = [WallDescriptionGgdGgd]>,
-    {
-        WallDescriptionGgdGgdSliceView::new(Elements::from_slice(&self.ggd[range]))
+    /// Select from `ggd`. A range, e.g. `.ggd(0..2)` or `.ggd(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.ggd[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn ggd<'a, S: Selection<'a, WallDescriptionGgdGgd>>(&'a self, selection: S) -> S::Output {
+        selection.select("ggd", &self.ggd)
     }
 
     /// Get the number of ggd elements
@@ -6422,13 +6896,16 @@ impl WallDescriptionGgd {
 }
 
 impl Vessel2d {
-    /// The slice view over a range of unit, e.g. `.unit(0..2)` or `.unit(..)`,
-    /// whose leaves gather one value per element. A single element is `.unit[i]`.
-    pub fn unit<R>(&self, range: R) -> Vessel2dUnitSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Vessel2dUnit], Output = [Vessel2dUnit]>,
-    {
-        Vessel2dUnitSliceView::new(Elements::from_slice(&self.unit[range]))
+    /// Select from `unit`. A range, e.g. `.unit(0..2)` or `.unit(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.unit(name)`, gives the one element with that `name`.
+    /// A single element is `.unit[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn unit<'a, S: Selection<'a, Vessel2dUnit>>(&'a self, selection: S) -> S::Output {
+        selection.select("unit", &self.unit)
     }
 
     /// Get the number of unit elements
@@ -6438,13 +6915,14 @@ impl Vessel2d {
 }
 
 impl GenericGridAos3Root {
-    /// The slice view over a range of space, e.g. `.space(0..2)` or `.space(..)`,
-    /// whose leaves gather one value per element. A single element is `.space[i]`.
-    pub fn space<R>(&self, range: R) -> GenericGridDynamicSpaceSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpace], Output = [GenericGridDynamicSpace]>,
-    {
-        GenericGridDynamicSpaceSliceView::new(Elements::from_slice(&self.space[range]))
+    /// Select from `space`. A range, e.g. `.space(0..2)` or `.space(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.space[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn space<'a, S: Selection<'a, GenericGridDynamicSpace>>(&'a self, selection: S) -> S::Output {
+        selection.select("space", &self.space)
     }
 
     /// Get the number of space elements
@@ -6454,13 +6932,14 @@ impl GenericGridAos3Root {
 }
 
 impl GenericGridAos3Root {
-    /// The slice view over a range of grid_subset, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`,
-    /// whose leaves gather one value per element. A single element is `.grid_subset[i]`.
-    pub fn grid_subset<R>(&self, range: R) -> GenericGridDynamicGridSubsetSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubset], Output = [GenericGridDynamicGridSubset]>,
-    {
-        GenericGridDynamicGridSubsetSliceView::new(Elements::from_slice(&self.grid_subset[range]))
+    /// Select from `grid_subset`. A range, e.g. `.grid_subset(0..2)` or `.grid_subset(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.grid_subset[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn grid_subset<'a, S: Selection<'a, GenericGridDynamicGridSubset>>(&'a self, selection: S) -> S::Output {
+        selection.select("grid_subset", &self.grid_subset)
     }
 
     /// Get the number of grid_subset elements
@@ -6470,13 +6949,16 @@ impl GenericGridAos3Root {
 }
 
 impl Code {
-    /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
-    /// whose leaves gather one value per element. A single element is `.library[i]`.
-    pub fn library<R>(&self, range: R) -> LibrarySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Library], Output = [Library]>,
-    {
-        LibrarySliceView::new(Elements::from_slice(&self.library[range]))
+    /// Select from `library`. A range, e.g. `.library(0..2)` or `.library(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.library(name)`, gives the one element with that `name`.
+    /// A single element is `.library[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn library<'a, S: Selection<'a, Library>>(&'a self, selection: S) -> S::Output {
+        selection.select("library", &self.library)
     }
 
     /// Get the number of library elements
@@ -6486,13 +6968,16 @@ impl Code {
 }
 
 impl Vessel2dUnit {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> Vessel2dElementSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Vessel2dElement], Output = [Vessel2dElement]>,
-    {
-        Vessel2dElementSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.element(name)`, gives the one element with that `name`.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn element<'a, S: Selection<'a, Vessel2dElement>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -6502,13 +6987,16 @@ impl Vessel2dUnit {
 }
 
 impl Vessel2dUnit {
-    /// The slice view over a range of material, e.g. `.material(0..2)` or `.material(..)`,
-    /// whose leaves gather one value per element. A single element is `.material[i]`.
-    pub fn material<R>(&self, range: R) -> IdentifierStaticSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[IdentifierStatic], Output = [IdentifierStatic]>,
-    {
-        IdentifierStaticSliceView::new(Elements::from_slice(&self.material[range]))
+    /// Select from `material`. A range, e.g. `.material(0..2)` or `.material(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.material(name)`, gives the one element with that `name`.
+    /// A single element is `.material[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn material<'a, S: Selection<'a, IdentifierStatic>>(&'a self, selection: S) -> S::Output {
+        selection.select("material", &self.material)
     }
 
     /// Get the number of material elements
@@ -6518,13 +7006,16 @@ impl Vessel2dUnit {
 }
 
 impl GenericGridDynamicSpace {
-    /// The slice view over a range of coordinates_type, e.g. `.coordinates_type(0..2)` or `.coordinates_type(..)`,
-    /// whose leaves gather one value per element. A single element is `.coordinates_type[i]`.
-    pub fn coordinates_type<R>(&self, range: R) -> IdentifierDynamicAos3SliceView<'_, Ix1>
-    where
-        R: SliceIndex<[IdentifierDynamicAos3], Output = [IdentifierDynamicAos3]>,
-    {
-        IdentifierDynamicAos3SliceView::new(Elements::from_slice(&self.coordinates_type[range]))
+    /// Select from `coordinates_type`. A range, e.g. `.coordinates_type(0..2)` or `.coordinates_type(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.coordinates_type(name)`, gives the one element with that `name`.
+    /// A single element is `.coordinates_type[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn coordinates_type<'a, S: Selection<'a, IdentifierDynamicAos3>>(&'a self, selection: S) -> S::Output {
+        selection.select("coordinates_type", &self.coordinates_type)
     }
 
     /// Get the number of coordinates_type elements
@@ -6534,13 +7025,14 @@ impl GenericGridDynamicSpace {
 }
 
 impl GenericGridDynamicSpace {
-    /// The slice view over a range of objects_per_dimension, e.g. `.objects_per_dimension(0..2)` or `.objects_per_dimension(..)`,
-    /// whose leaves gather one value per element. A single element is `.objects_per_dimension[i]`.
-    pub fn objects_per_dimension<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpaceDimension], Output = [GenericGridDynamicSpaceDimension]>,
-    {
-        GenericGridDynamicSpaceDimensionSliceView::new(Elements::from_slice(&self.objects_per_dimension[range]))
+    /// Select from `objects_per_dimension`. A range, e.g. `.objects_per_dimension(0..2)` or `.objects_per_dimension(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.objects_per_dimension[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn objects_per_dimension<'a, S: Selection<'a, GenericGridDynamicSpaceDimension>>(&'a self, selection: S) -> S::Output {
+        selection.select("objects_per_dimension", &self.objects_per_dimension)
     }
 
     /// Get the number of objects_per_dimension elements
@@ -6550,13 +7042,14 @@ impl GenericGridDynamicSpace {
 }
 
 impl GenericGridDynamicGridSubset {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElement], Output = [GenericGridDynamicGridSubsetElement]>,
-    {
-        GenericGridDynamicGridSubsetElementSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn element<'a, S: Selection<'a, GenericGridDynamicGridSubsetElement>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -6566,13 +7059,14 @@ impl GenericGridDynamicGridSubset {
 }
 
 impl GenericGridDynamicGridSubset {
-    /// The slice view over a range of base, e.g. `.base(0..2)` or `.base(..)`,
-    /// whose leaves gather one value per element. A single element is `.base[i]`.
-    pub fn base<R>(&self, range: R) -> GenericGridDynamicGridSubsetMetricSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetMetric], Output = [GenericGridDynamicGridSubsetMetric]>,
-    {
-        GenericGridDynamicGridSubsetMetricSliceView::new(Elements::from_slice(&self.base[range]))
+    /// Select from `base`. A range, e.g. `.base(0..2)` or `.base(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.base[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn base<'a, S: Selection<'a, GenericGridDynamicGridSubsetMetric>>(&'a self, selection: S) -> S::Output {
+        selection.select("base", &self.base)
     }
 
     /// Get the number of base elements
@@ -6582,13 +7076,14 @@ impl GenericGridDynamicGridSubset {
 }
 
 impl GenericGridDynamicSpaceDimension {
-    /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
-    /// whose leaves gather one value per element. A single element is `.object[i]`.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObject], Output = [GenericGridDynamicSpaceDimensionObject]>,
-    {
-        GenericGridDynamicSpaceDimensionObjectSliceView::new(Elements::from_slice(&self.object[range]))
+    /// Select from `object`. A range, e.g. `.object(0..2)` or `.object(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.object[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn object<'a, S: Selection<'a, GenericGridDynamicSpaceDimensionObject>>(&'a self, selection: S) -> S::Output {
+        selection.select("object", &self.object)
     }
 
     /// Get the number of object elements
@@ -6598,13 +7093,14 @@ impl GenericGridDynamicSpaceDimension {
 }
 
 impl GenericGridDynamicGridSubsetElement {
-    /// The slice view over a range of object, e.g. `.object(0..2)` or `.object(..)`,
-    /// whose leaves gather one value per element. A single element is `.object[i]`.
-    pub fn object<R>(&self, range: R) -> GenericGridDynamicGridSubsetElementObjectSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicGridSubsetElementObject], Output = [GenericGridDynamicGridSubsetElementObject]>,
-    {
-        GenericGridDynamicGridSubsetElementObjectSliceView::new(Elements::from_slice(&self.object[range]))
+    /// Select from `object`. A range, e.g. `.object(0..2)` or `.object(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.object[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn object<'a, S: Selection<'a, GenericGridDynamicGridSubsetElementObject>>(&'a self, selection: S) -> S::Output {
+        selection.select("object", &self.object)
     }
 
     /// Get the number of object elements
@@ -6614,13 +7110,14 @@ impl GenericGridDynamicGridSubsetElement {
 }
 
 impl GenericGridDynamicSpaceDimensionObject {
-    /// The slice view over a range of boundary, e.g. `.boundary(0..2)` or `.boundary(..)`,
-    /// whose leaves gather one value per element. A single element is `.boundary[i]`.
-    pub fn boundary<R>(&self, range: R) -> GenericGridDynamicSpaceDimensionObjectBoundarySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[GenericGridDynamicSpaceDimensionObjectBoundary], Output = [GenericGridDynamicSpaceDimensionObjectBoundary]>,
-    {
-        GenericGridDynamicSpaceDimensionObjectBoundarySliceView::new(Elements::from_slice(&self.boundary[range]))
+    /// Select from `boundary`. A range, e.g. `.boundary(0..2)` or `.boundary(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.boundary[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn boundary<'a, S: Selection<'a, GenericGridDynamicSpaceDimensionObjectBoundary>>(&'a self, selection: S) -> S::Output {
+        selection.select("boundary", &self.boundary)
     }
 
     /// Get the number of boundary elements
@@ -6630,13 +7127,14 @@ impl GenericGridDynamicSpaceDimensionObject {
 }
 
 impl Wall {
-    /// The slice view over a range of description_2d, e.g. `.description_2d(0..2)` or `.description_2d(..)`,
-    /// whose leaves gather one value per element. A single element is `.description_2d[i]`.
-    pub fn description_2d<R>(&self, range: R) -> Wall2dSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Wall2d], Output = [Wall2d]>,
-    {
-        Wall2dSliceView::new(Elements::from_slice(&self.description_2d[range]))
+    /// Select from `description_2d`. A range, e.g. `.description_2d(0..2)` or `.description_2d(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.description_2d[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn description_2d<'a, S: Selection<'a, Wall2d>>(&'a self, selection: S) -> S::Output {
+        selection.select("description_2d", &self.description_2d)
     }
 
     /// Get the number of description_2d elements
@@ -6646,13 +7144,14 @@ impl Wall {
 }
 
 impl Wall {
-    /// The slice view over a range of description_ggd, e.g. `.description_ggd(0..2)` or `.description_ggd(..)`,
-    /// whose leaves gather one value per element. A single element is `.description_ggd[i]`.
-    pub fn description_ggd<R>(&self, range: R) -> WallDescriptionGgdSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[WallDescriptionGgd], Output = [WallDescriptionGgd]>,
-    {
-        WallDescriptionGgdSliceView::new(Elements::from_slice(&self.description_ggd[range]))
+    /// Select from `description_ggd`. A range, e.g. `.description_ggd(0..2)` or `.description_ggd(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.description_ggd[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn description_ggd<'a, S: Selection<'a, WallDescriptionGgd>>(&'a self, selection: S) -> S::Output {
+        selection.select("description_ggd", &self.description_ggd)
     }
 
     /// Get the number of description_ggd elements

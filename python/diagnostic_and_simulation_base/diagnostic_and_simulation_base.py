@@ -15,7 +15,9 @@ import f90nml
 from . import version_storage
 from .nested_dictionary import NestedDict
 from .utility import logging as util_logging
+from .utility.make_settings_from_xml_xsd import make_settings_from_xml_xsd
 from .utility.make_settings_json import make_settings_json
+from .xml_reader_and_writer.read_to_python_dataclasses import read_xml_settings_to_dataclasses
 
 
 def _create_script_nodes(
@@ -68,10 +70,31 @@ def _create_script_nodes_in_child(connection: Connection, **keyword_arguments: t
         connection.close()
 
 
-class DiagnosticAndSimulationBase:
+# The dataclass which a code's *.xml settings are read into, e.g. GSFit's settings
+SettingsXmlT = typing.TypeVar("SettingsXmlT")
+
+
+class DiagnosticAndSimulationBase(typing.Generic[SettingsXmlT]):
     """Class for creating Diagnostic Analysis codes, such as: `Gas`, `Efit`, `Ppts`, `Zeff_pi`"""
 
     log_records: list[logging.LogRecord] = []
+
+    # The dataclass to read `GSFIT_code_settings.xml`, and the XML files it links to, into, with one field per link.
+    # Every code must set it, e.g. `class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings])` with `settings_xml_class = GsfitCodeSettings`,
+    # so that this package does not depend on any one code's settings
+    settings_xml_class: type[SettingsXmlT] | None = None
+
+    # The *.xml settings, read into `settings_xml_class` by `_load_settings_from_files`. They can be changed in Python until the analysis starts, e.g.
+    # `gsfit_controller.settings_xml.ids.equilibrium.timeslices.method = "user_defined"`
+    settings_xml: SettingsXmlT
+
+    # The path of each *.xml file read into `settings_xml`, by where its settings are, e.g. `("ids", "wall")` for `settings_xml.ids.wall`;
+    # see `read_xml_settings_to_dataclasses`. The dataclasses hold no file names, so this names the files when the settings are written to MDSplus
+    settings_xml_file_paths: dict[tuple[str, ...], Path]
+
+    # The XML schemas of the *.xml settings, as text, by their path relative to the code's `settings_schema/xsd/`, e.g. "wall/wall.xsd",
+    # which are written to MDSplus with the settings
+    settings_xsd: dict[str, str]
 
     @property
     def log_string(self) -> str:
@@ -199,7 +222,10 @@ class DiagnosticAndSimulationBase:
 
     def _load_settings_from_files(self) -> None:
         """Look in the "settings_path" directory and load all settings files.
-        Will recursively load *.json and *.nml files
+        Will recursively load *.json and *.nml files.
+        Will also read `GSFIT_code_settings.xml`, which every settings directory must have, and the *.xml files
+        it links to, into `settings_xml_class`, stored as `self.settings_xml`, with the path of each *.xml file in
+        `self.settings_xml_file_paths`, and the XML schemas, as text, in `self.settings_xsd`
 
         TODO: add *.csv reader #SUNDAR - is ths even needed?
         """
@@ -229,6 +255,30 @@ class DiagnosticAndSimulationBase:
                 except Exception as exception_obj:
                     self.logger.exception(msg=step_name)
                     raise exception_obj
+
+        # Load *.xml settings, which every settings directory must have.
+        # `GSFIT_code_settings.xml` holds no settings itself: each element with an `href` links to the XML file which holds one group of them
+        gsfit_code_settings_path: Path = Path(settings_path) / "GSFIT_code_settings.xml"
+        if self.settings_xml_class is None:
+            raise TypeError(f"`{type(self).__name__}` sets no `settings_xml_class`, so cannot read {gsfit_code_settings_path}")
+
+        # The XML schemas are part of the code, not of the settings, so the files are checked against what this version of the code reads
+        xsd_directory_path: Path = Path(f"{resources_py.files(self.code_name.lower())}/settings_schema/xsd")
+
+        step_name: str = f'Loading settings from: "{gsfit_code_settings_path.name}", and the XML files it links to'
+
+        self.settings_xml, self.settings_xml_file_paths = read_xml_settings_to_dataclasses(
+            xml_file_path=gsfit_code_settings_path,
+            xsd_directory_path=xsd_directory_path,
+            settings_class=self.settings_xml_class,
+        )
+
+        # Store the *.xsd files as text strings, by their path relative to `xsd_directory_path`, as `XSD_PATH` gives it; later these will get written into MDSplus
+        self.settings_xsd = {}
+        for xsd_file_path in sorted(xsd_directory_path.glob("**/*.xsd")):
+            self.settings_xsd[xsd_file_path.relative_to(xsd_directory_path).as_posix()] = xsd_file_path.read_text(encoding="utf-8")
+
+        self.logger.info(msg=step_name)
 
     def _get_pulseNo_cal(self) -> int | None:
         """The calibration pulse number, taken from this code's MDSplus settings file.
@@ -301,7 +351,15 @@ class DiagnosticAndSimulationBase:
 
         # Add settings files to results.
         # We do this right at the end, as they can be programatially changed, e.g. for scans
-        self.results["INPUT"]["SETTINGS"] = make_settings_json(data=self.settings, json_indent=2)
+        # self.results["INPUT"]["SETTINGS"] = make_settings_json(data=self.settings, json_indent=2)
+
+        # Dump the *.xml settings, written from `self.settings_xml` so that any changes made in Python are included, and the *.xsd files they follow,
+        # into the results input, as one string, `{"file_path.xml": "xml contents", "file_path.xsd": "xsd contents"}`
+        self.results["INPUT"]["SETTINGS"] = make_settings_from_xml_xsd(
+            settings_xml=self.settings_xml,
+            settings_xsd=self.settings_xsd,
+            settings_xml_file_paths=self.settings_xml_file_paths,
+        )
 
         util.write_script_data(
             script_name=self.analysis_name,

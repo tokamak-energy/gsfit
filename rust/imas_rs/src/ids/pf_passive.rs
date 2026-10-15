@@ -9,9 +9,8 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
-use crate::dd_base_types::{Accumulator, EMPTY_INT, Elements, FLT_0D, FLT_1D, INT_0D, INT_1D, STR_0D};
-use ndarray::{Dimension, Ix1};
-use std::slice::SliceIndex;
+use crate::dd_base_types::{Accumulator, ArrayOfStructuresElement, EMPTY_INT, Elements, FLT_0D, FLT_1D, FLT_2D, INT_0D, INT_1D, Named, STR_0D, Selection};
+use ndarray::Dimension;
 
 // ============================================================================
 // Complex Types
@@ -37,6 +36,18 @@ pub struct PfPassiveLoops {
     /// Timebase for the dynamic nodes of this loop located at this level of the IDS structure
     /// Units: s
     pub time: FLT_1D,
+    /// How the loop's current is distributed over its elements, which sets its degrees of freedom, `dof`:
+    /// `constant_current_density` (`index` 1), one degree of freedom with the same current density in every element; or
+    /// `eig` (`index` 2), one degree of freedom for each of the loop's slowest decaying eigenmodes
+    pub current_distribution_type: IdentifierStatic,
+    /// The loop's degrees of freedom: the current distributions whose amplitudes the equilibrium reconstruction fits
+    pub dof: Vec<PfPassiveLoopsDof>,
+    /// The regularisations of the degrees of freedom, one row of `n_dof` coefficients for each regularisation; no rows for none.
+    /// Shape = `(n_regularisations, n_dof)`
+    pub regularisations: FLT_2D,
+    /// The weight of each regularisation in the fit, one for each row of `regularisations`
+    /// Units: dimensionless
+    pub regularisations_weight: FLT_1D,
 }
 
 impl Default for PfPassiveLoops {
@@ -49,6 +60,10 @@ impl Default for PfPassiveLoops {
             element: Vec::new(),
             current: Default::default(),
             time: Default::default(),
+            current_distribution_type: IdentifierStatic::default(),
+            dof: Vec::new(),
+            regularisations: Default::default(),
+            regularisations_weight: Default::default(),
         }
     }
 }
@@ -67,6 +82,9 @@ pub struct PfCoilsElements {
     pub area: FLT_0D,
     /// Cross-sectional shape of the element
     pub geometry: Outline2dGeometryStatic,
+    /// The current in this element, on the loop's timebase, `loop(i1)/time`. Only set by `solve_circuit_equations`, which simulates it
+    /// Units: A
+    pub current: FLT_1D,
 }
 
 impl Default for PfCoilsElements {
@@ -77,6 +95,7 @@ impl Default for PfCoilsElements {
             turns_with_sign: f64::NAN,
             area: f64::NAN,
             geometry: Outline2dGeometryStatic::default(),
+            current: Default::default(),
         }
     }
 }
@@ -305,6 +324,50 @@ pub struct Rz0dStatic {
 impl Default for Rz0dStatic {
     fn default() -> Self {
         Self { r: f64::NAN, z: f64::NAN }
+    }
+}
+
+/// Custom (non-IMAS) structure, declared in custom_pf_passive_keys.rs
+#[derive(Debug, Clone)]
+pub struct PfPassiveLoopsDof {
+    /// Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first
+    pub name: STR_0D,
+    /// The current in each element, in the order of `element`, for a unit amplitude of this degree of freedom.
+    /// For `constant_current_density` it is the element's area, so that the amplitude is the current density
+    pub current_distribution: FLT_1D,
+    /// The eigenmode's time constant, the ratio of its inductance to its resistance. Only set for `eig`
+    /// Units: s
+    pub time_constant: FLT_0D,
+}
+
+impl Default for PfPassiveLoopsDof {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            current_distribution: Default::default(),
+            time_constant: f64::NAN,
+        }
+    }
+}
+
+/// Standard type for identifiers (static). The three fields: name, index and description are all representations of the same information. Associated with each application of this identifier-type, there should be a translation table defining the three fields for all objects to be identified.
+#[derive(Debug, Clone)]
+pub struct IdentifierStatic {
+    /// Short string identifier
+    pub name: STR_0D,
+    /// Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.
+    pub index: INT_0D,
+    /// Verbose description
+    pub description: STR_0D,
+}
+
+impl Default for IdentifierStatic {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            index: EMPTY_INT,
+            description: String::new(),
+        }
     }
 }
 
@@ -537,6 +600,84 @@ impl<'a, D: Dimension> PfCoilsElementsSliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for PfCoilsElements {
+    type SliceView<'a, D>
+        = PfCoilsElementsSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PfCoilsElementsSliceView::new(elements)
+    }
+}
+
+impl Named for PfCoilsElements {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- PfPassiveLoopsDof View Types ---
+
+/// View over multiple PfPassiveLoopsDof with field accumulation
+pub struct PfPassiveLoopsDofSliceView<'a, D> {
+    pub name: Accumulator<'a, PfPassiveLoopsDof, STR_0D, D>,
+    pub time_constant: Accumulator<'a, PfPassiveLoopsDof, FLT_0D, D>,
+    slice_elements: Elements<'a, PfPassiveLoopsDof, D>,
+}
+
+impl<'a, D: Dimension> PfPassiveLoopsDofSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, PfPassiveLoopsDof, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &PfPassiveLoopsDof| item.name.clone()),
+            time_constant: Accumulator::new(elements.clone(), |item: &PfPassiveLoopsDof| item.time_constant),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a PfPassiveLoopsDof> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for PfPassiveLoopsDof {
+    type SliceView<'a, D>
+        = PfPassiveLoopsDofSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PfPassiveLoopsDofSliceView::new(elements)
+    }
+}
+
+impl Named for PfPassiveLoopsDof {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- Library View Types ---
 
 /// View over multiple Library with field accumulation
@@ -583,7 +724,46 @@ impl<'a, D: Dimension> LibrarySliceView<'a, D> {
     }
 }
 
+impl ArrayOfStructuresElement for Library {
+    type SliceView<'a, D>
+        = LibrarySliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        LibrarySliceView::new(elements)
+    }
+}
+
+impl Named for Library {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- PfPassiveLoops View Types ---
+
+/// View over `current_distribution_type` (IdentifierStatic) across multiple PfPassiveLoops
+pub struct PfPassiveLoopsCurrentDistributionTypeView<'a, D> {
+    pub name: Accumulator<'a, PfPassiveLoops, STR_0D, D>,
+    pub index: Accumulator<'a, PfPassiveLoops, INT_0D, D>,
+    pub description: Accumulator<'a, PfPassiveLoops, STR_0D, D>,
+    slice_elements: Elements<'a, PfPassiveLoops, D>,
+}
+
+impl<'a, D: Dimension> PfPassiveLoopsCurrentDistributionTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, PfPassiveLoops, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &PfPassiveLoops| item.current_distribution_type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &PfPassiveLoops| item.current_distribution_type.index),
+            description: Accumulator::new(elements.clone(), |item: &PfPassiveLoops| item.current_distribution_type.description.clone()),
+            slice_elements: elements,
+        }
+    }
+}
 
 /// View over multiple PfPassiveLoops with field accumulation
 pub struct PfPassiveLoopsSliceView<'a, D> {
@@ -591,6 +771,7 @@ pub struct PfPassiveLoopsSliceView<'a, D> {
     pub description: Accumulator<'a, PfPassiveLoops, STR_0D, D>,
     pub resistance: Accumulator<'a, PfPassiveLoops, FLT_0D, D>,
     pub resistivity: Accumulator<'a, PfPassiveLoops, FLT_0D, D>,
+    pub current_distribution_type: PfPassiveLoopsCurrentDistributionTypeView<'a, D>,
     slice_elements: Elements<'a, PfPassiveLoops, D>,
 }
 
@@ -601,6 +782,7 @@ impl<'a, D: Dimension> PfPassiveLoopsSliceView<'a, D> {
             description: Accumulator::new(elements.clone(), |item: &PfPassiveLoops| item.description.clone()),
             resistance: Accumulator::new(elements.clone(), |item: &PfPassiveLoops| item.resistance),
             resistivity: Accumulator::new(elements.clone(), |item: &PfPassiveLoops| item.resistivity),
+            current_distribution_type: PfPassiveLoopsCurrentDistributionTypeView::new(elements.clone()),
             slice_elements: elements,
         }
     }
@@ -624,16 +806,46 @@ impl<'a, D: Dimension> PfPassiveLoopsSliceView<'a, D> {
         self.slice_elements.iter()
     }
 
-    /// The slice view over a range of `element` under every element, e.g. `.element(..)`.
-    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.
+    /// Select from `element` under every element. A range, e.g. `.element(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.element(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
-    /// If `range` does not select the same number of elements under every element.
-    pub fn element<R>(&self, range: R) -> PfCoilsElementsSliceView<'a, D::Larger>
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn element<S: Selection<'a, PfCoilsElements>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("element", &self.slice_elements, |item: &PfPassiveLoops| item.element.as_slice())
+    }
+
+    /// Select from `dof` under every element. A range, e.g. `.dof(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.dof(name)`, takes the one element with that `name` under every element, and adds none.
+    ///
+    /// # Panics
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn dof<S: Selection<'a, PfPassiveLoopsDof>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("dof", &self.slice_elements, |item: &PfPassiveLoops| item.dof.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for PfPassiveLoops {
+    type SliceView<'a, D>
+        = PfPassiveLoopsSliceView<'a, D>
     where
-        R: SliceIndex<[PfCoilsElements], Output = [PfCoilsElements]> + Clone,
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
     {
-        PfCoilsElementsSliceView::new(self.slice_elements.nest("element", |item: &PfPassiveLoops| item.element.as_slice(), range))
+        PfPassiveLoopsSliceView::new(elements)
+    }
+}
+
+impl Named for PfPassiveLoops {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -642,13 +854,16 @@ impl<'a, D: Dimension> PfPassiveLoopsSliceView<'a, D> {
 // ============================================================================
 
 impl PfPassiveLoops {
-    /// The slice view over a range of element, e.g. `.element(0..2)` or `.element(..)`,
-    /// whose leaves gather one value per element. A single element is `.element[i]`.
-    pub fn element<R>(&self, range: R) -> PfCoilsElementsSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PfCoilsElements], Output = [PfCoilsElements]>,
-    {
-        PfCoilsElementsSliceView::new(Elements::from_slice(&self.element[range]))
+    /// Select from `element`. A range, e.g. `.element(0..2)` or `.element(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.element(name)`, gives the one element with that `name`.
+    /// A single element is `.element[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn element<'a, S: Selection<'a, PfCoilsElements>>(&'a self, selection: S) -> S::Output {
+        selection.select("element", &self.element)
     }
 
     /// Get the number of element elements
@@ -657,14 +872,36 @@ impl PfPassiveLoops {
     }
 }
 
+impl PfPassiveLoops {
+    /// Select from `dof`. A range, e.g. `.dof(0..2)` or `.dof(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.dof(name)`, gives the one element with that `name`.
+    /// A single element is `.dof[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn dof<'a, S: Selection<'a, PfPassiveLoopsDof>>(&'a self, selection: S) -> S::Output {
+        selection.select("dof", &self.dof)
+    }
+
+    /// Get the number of dof elements
+    pub fn dof_len(&self) -> usize {
+        self.dof.len()
+    }
+}
+
 impl Code {
-    /// The slice view over a range of library, e.g. `.library(0..2)` or `.library(..)`,
-    /// whose leaves gather one value per element. A single element is `.library[i]`.
-    pub fn library<R>(&self, range: R) -> LibrarySliceView<'_, Ix1>
-    where
-        R: SliceIndex<[Library], Output = [Library]>,
-    {
-        LibrarySliceView::new(Elements::from_slice(&self.library[range]))
+    /// Select from `library`. A range, e.g. `.library(0..2)` or `.library(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.library(name)`, gives the one element with that `name`.
+    /// A single element is `.library[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn library<'a, S: Selection<'a, Library>>(&'a self, selection: S) -> S::Output {
+        selection.select("library", &self.library)
     }
 
     /// Get the number of library elements
@@ -674,13 +911,16 @@ impl Code {
 }
 
 impl PfPassive {
-    /// The slice view over a range of r#loop, e.g. `.r#loop(0..2)` or `.r#loop(..)`,
-    /// whose leaves gather one value per element. A single element is `.r#loop[i]`.
-    pub fn r#loop<R>(&self, range: R) -> PfPassiveLoopsSliceView<'_, Ix1>
-    where
-        R: SliceIndex<[PfPassiveLoops], Output = [PfPassiveLoops]>,
-    {
-        PfPassiveLoopsSliceView::new(Elements::from_slice(&self.r#loop[range]))
+    /// Select from `loop`. A range, e.g. `.r#loop(0..2)` or `.r#loop(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.r#loop(name)`, gives the one element with that `name`.
+    /// A single element is `.r#loop[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn r#loop<'a, S: Selection<'a, PfPassiveLoops>>(&'a self, selection: S) -> S::Output {
+        selection.select("loop", &self.r#loop)
     }
 
     /// Get the number of r#loop elements

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<passive_dof_regularisation xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/passive_dof_regularisation.xsd">
+    <passive>
+        <name>BVLTCASE</name>
+        <current_distribution_type>constant_current_density</current_distribution_type>
+        <include>true</include>
+        <n_dof>1</n_dof>
+        <regularisations/>
+        <regularisations_weight/>
+    </passive>
+    <passive>
+        <name>BVLBCASE</name>
+        <current_distribution_type>constant_current_density</current_distribution_type>
+        <include>true</include>
+        <n_dof>1</n_dof>
+        <regularisations/>
+        <regularisations_weight/>
+    </passive>
+    <passive>
+        <name>DIVPSRT</name>
+        <current_distribution_type>constant_current_density</current_distribution_type>
+        <include>true</include>
+        <n_dof>1</n_dof>
+        <regularisations/>
+        <regularisations_weight/>
+    </passive>
+    <passive>
+        <name>DIVPSRB</name>
+        <current_distribution_type>constant_current_density</current_distribution_type>
+        <include>true</include>
+        <n_dof>1</n_dof>
+        <regularisations/>
+        <regularisations_weight/>
+    </passive>
+    <passive>
+        <name>HFSPSRT</name>
+        <current_distribution_type>constant_current_density</current_distribution_type>
+        <include>true</include>
+        <n_dof>1</n_dof>
+        <regularisations/>
+        <regularisations_weight/>
+    </passive>
+    <passive>
+        <name>HFSPSRB</name>
+        <current_distribution_type>constant_current_density</current_distribution_type>
+        <include>true</include>
+        <n_dof>1</n_dof>
+        <regularisations/>
+        <regularisations_weight/>
+    </passive>
+    <passive>
+        <name>IVC</name>
+        <current_distribution_type>eig</current_distribution_type>
+        <include>true</include>
+        <n_dof>15</n_dof>
+        <regularisations>
+            <row>1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0</row>
+            <row>0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0</row>
+        </regularisations>
+        <regularisations_weight>15.0 250.0 15.0 250.0 15.0 250.0 15.0 250.0 15.0 250.0 50.0 250.0 50.0 250.0 50.0</regularisations_weight>
+    </passive>
+    <passive>
+        <name>OVC</name>
+        <current_distribution_type>constant_current_density</current_distribution_type>
+        <include>true</include>
+        <n_dof>1</n_dof>
+        <regularisations>
+            <row>1.0</row>
+        </regularisations>
+        <regularisations_weight>0.1</regularisations_weight>
+    </passive>
+</passive_dof_regularisation>

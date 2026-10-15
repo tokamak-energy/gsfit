@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for GSFIT_code_settings.xml, the file GSFit reads its settings from.
+
+    GSFIT_code_settings.xml holds no settings itself. It links to the files which do, one element per
+    file, with the file's path in `href`: database_reader.xml and database_writer.xml, which pick the
+    database reader and writer for the whole run, then, inside `ids`, one file per IDS, each in its own
+    directory.
+
+    Conventions shared by every schema in this directory, and its sub-directories:
+    * The schemas are laid out as a settings directory is, so the schema of a settings file has the same
+      path, e.g. wall/wall.xsd for wall/wall.xml, and equilibrium/grid.xsd for equilibrium/grid.xml.
+    * Each IDS has its own directory and file, named as in the IMAS Data Dictionary, e.g. wall/wall.xml,
+      linked from `ids` in GSFIT_code_settings.xml.
+      * The IDSs GSFit reads, e.g. wall, pf_active and magnetics, are built by the database reader, which
+        `method` in database_reader.xml picks. Which run of which code to read, e.g. ELMAG's RUN16, is set
+        once, in workflow.xml, the central list of the codes which the database reader reads from. Each
+        IDS's file links to it, in `workflow`, e.g. `<workflow href="../workflow.xml"/>` in
+        pf_active/pf_active.xml, and the reader reads the codes it needs from it. So far only the
+        st40_mdsplus_with_digital_filter reader does. The other readers still read their runs from their
+        own optional element in each IDS's file, named after the reader, so switching between them is a
+        change of `method` alone. A reader which needs nothing to build an IDS has no element in that
+        IDS's file. Settings which every reader needs, such as tf's reference radius, sit beside the
+        readers' elements.
+      * The IDS GSFit writes, equilibrium, is built by GSFit itself. equilibrium/equilibrium.xml links to
+        GSFit's own settings, e.g. the grid and the constraints, in the same directory.
+    * A link's path is relative to the file holding the link, so a settings directory can use a file
+      from another directory, e.g. href="../default/wall/wall.xml".
+    * A link names the schema of the file it links to in `xs:appinfo/schema`, relative to the schema
+      holding the link, e.g. `<schema>wall/wall.xsd</schema>`. So a linked file is checked against the
+      right schema wherever it is, e.g. href="../default/wall/wall.xml".
+    * A linked file's root element is the link's path below the root element of the file holding the
+      link, with `__` for `/`, e.g. `database_reader`, and `constraints__flux_loop` for
+      `constraints/flux_loop` in equilibrium.xml, so that the files, and the Python classes generated
+      from them, do not share names. The exception is an IDS's file, whose root element is the IDS's
+      name followed by `_settings`, e.g. `wall_settings`. So its Python class, `WallSettings`, is not
+      mistaken for the IDS, or for GSFit's object holding it, `gsfit_rs.Wall`.
+    * The constraints are named as in the IMAS Data Dictionary, e.g. `b_field_pol_probe` and
+      `diamagnetic_flux` as in the equilibrium IDS's time_slice[:]/constraints, and `rogowski_coil` as in
+      the magnetics IDS. `isoflux` is not in the Data Dictionary, so keeps GSFit's name.
+    * Each schema stands alone, with no `xs:include` or `xs:import`, because the XML Form Editor does not
+      follow them. Types used by several schemas are repeated in each, and must be the same in each: when
+      the settings are recorded in an IDS's code/parameters, each linked file is written in its link's
+      place, and its schema is merged into the linking one, e.g. workflow.xsd into pf_active/pf_active.xsd.
+    * Every element and enum value is described by an `xs:documentation`, which editors show on hover.
+    * Units are in `xs:appinfo/units`, as in the IMAS Data Dictionary: SI symbols such as m, s and A, and 1
+      for dimensionless. Counts have no units.
+    * The "method" elements are enums. Each value names the sibling element that holds that method's
+      settings. The exception is `method` in database_reader.xml, whose value names an element in each
+      IDS's file.
+    * Types follow the Rust side: usize -> xs:nonNegativeInteger, f64 -> xs:double, bool -> xs:boolean.
+    * JSON's `null` is `xsi:nil="true"` on an element declared `nillable="true"`.
+    * An array of numbers is a space-separated list, e.g. "0.1 0.2 0.3", such as the times in
+      equilibrium/timeslices.xml. A matrix is an element holding only
+      a repeated `row`, one per row, each a list of numbers. It is read into a 2D numpy array, of shape
+      [n_rows, n_columns]: no `row` is shape (0, 0), and an empty `row` or rows of different lengths are an error.
+    * A list of named items, such as the constraints, is one element per item, with its name in `name`.
+      The element is named as a single item, e.g. one `flux_loop` per flux loop.
+    * Children are in `xs:all` groups, so their order does not matter, except in a list.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= Types ================================= -->
+
+    <xs:simpleType name="XmlPath">
+        <xs:annotation><xs:documentation>Path of an XML file, relative to the file holding the link</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:anyURI">
+            <xs:pattern value="\S+\.xml"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="Link">
+        <xs:annotation><xs:documentation>A link to the file holding these settings</xs:documentation></xs:annotation>
+        <xs:attribute name="href" type="XmlPath" use="required">
+            <xs:annotation><xs:documentation>Path of the linked file, relative to GSFIT_code_settings.xml, e.g. "wall/wall.xml" or "../default/wall/wall.xml"</xs:documentation></xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="GsfitCodeSettingsIds">
+        <xs:annotation><xs:documentation>Settings needed to build IDSs. These settings will be stored within the IDSs once built.</xs:documentation></xs:annotation>
+        <xs:all>
+            <!-- The IDS GSFit writes, built by GSFit -->
+            <xs:element name="equilibrium" type="Link">
+                <xs:annotation>
+                    <xs:documentation>Settings needed to build `equilibrium` IDS; e.g. times to reconstruct, the numerical grid, ...</xs:documentation>
+                    <xs:appinfo>
+                        <schema>equilibrium/equilibrium.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+
+            <!-- The IDSs GSFit reads, built by the database reader -->
+            <xs:element name="magnetics" type="Link">
+                <xs:annotation>
+                    <xs:documentation>Settings needed to build `magnetics` IDS; e.g. where to read data from.</xs:documentation>
+                    <xs:appinfo>
+                        <schema>magnetics/magnetics.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="pf_active" type="Link">
+                <xs:annotation>
+                    <xs:documentation>Settings needed to build `pf_active` IDS; e.g. where to read data from.</xs:documentation>
+                    <xs:appinfo>
+                        <schema>pf_active/pf_active.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="pf_passive" type="Link">
+                <xs:annotation>
+                    <xs:documentation>Settings needed to build `pf_passive` IDS; e.g. where to read data from.</xs:documentation>
+                    <xs:appinfo>
+                        <schema>pf_passive/pf_passive.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="pulse_schedule" type="Link" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Settings needed to build `pulse_schedule` IDS; e.g. where to read data from.</xs:documentation>
+                    <xs:appinfo>
+                        <schema>pulse_schedule/pulse_schedule.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="tf" type="Link">
+                <xs:annotation>
+                    <xs:documentation>Settings needed to build `tf` IDS; e.g. where to read data from, and reference radius for toroidal vacuum field.</xs:documentation>
+                    <xs:appinfo>
+                        <schema>tf/tf.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="thomson_scattering" type="Link" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Settings needed to build `thomson_scattering` IDS; e.g. where to read data from, and which time-sices/channels have trustworthy data.</xs:documentation>
+                    <xs:appinfo>
+                        <schema>thomson_scattering/thomson_scattering.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="wall" type="Link">
+                <xs:annotation>
+                    <xs:documentation>Settings needed to build `wall` IDS; e.g. where to read data from.</xs:documentation>
+                    <xs:appinfo>
+                        <schema>wall/wall.xsd</schema>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="gsfit_code_settings">
+        <xs:annotation><xs:documentation>GSFit's settings. This file holds no settings itself: each element links to the file which holds one group of them</xs:documentation></xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <!-- The database reader and writer, for the whole run -->
+                <xs:element name="database_reader" type="Link">
+                    <xs:annotation>
+                        <xs:documentation>The database reader the whole run uses, which builds the IDSs GSFit reads</xs:documentation>
+                        <xs:appinfo>
+                            <schema>database_reader.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="database_writer" type="Link">
+                    <xs:annotation>
+                        <xs:documentation>Where the results are written</xs:documentation>
+                        <xs:appinfo>
+                            <schema>database_writer.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+
+                <!-- The IDSs -->
+                <xs:element name="ids" type="GsfitCodeSettingsIds">
+                    <xs:annotation><xs:documentation>Settings needed to build IDSs. These settings will be stored within the IDSs once built.</xs:documentation></xs:annotation>
+                </xs:element>
+
+                <!-- RTGSFit: only read by the rtgsfit_mdsplus database writer -->
+                <xs:element name="rtgsfit_code_settings" type="Link" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>RTGSFit's own settings, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer</xs:documentation>
+                        <xs:appinfo>
+                            <schema>rtgsfit_code_settings.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="rtgsfit_initial_conditions" type="Link" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>The equilibrium RTGSFit starts from, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer</xs:documentation>
+                        <xs:appinfo>
+                            <schema>rtgsfit_initial_conditions.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="sensor_replacement" type="Link" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>The constraints which RTGSFit makes from other sensors. Optional, and only read by the rtgsfit_mdsplus writer</xs:documentation>
+                        <xs:appinfo>
+                            <schema>sensor_replacement.xsd</schema>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

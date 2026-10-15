@@ -252,7 +252,7 @@ def _copy_gaps(
 ) -> None:
     """Copy `boundary/gap`, one element at a time.
 
-    There are only gaps when `solve_grad_shafranov` was given a pulse schedule defining some, so an
+    There are only gaps when `Plasma.copy_from_pulse_schedule_ids` was given a pulse schedule defining some, so an
     empty array is the usual case and leaves the node empty. Every time-slice carries the same gaps,
     whether or not it converged; one which did not has each `value` unset.
     """

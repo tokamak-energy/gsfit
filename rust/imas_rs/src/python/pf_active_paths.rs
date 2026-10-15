@@ -1343,6 +1343,51 @@ static NODES_COIL_FORCE_VERTICAL_CRUSHING: &[Node] = &[
     },
 ];
 
+static NODES_COIL_PRESCRIBED: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Short string identifier",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
+                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
+                    pf_active.coil[at[0]].prescribed.name.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "index",
+        documentation: "Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
+                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> INT_0D {
+                    pf_active.coil[at[0]].prescribed.index.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "description",
+        documentation: "Verbose description",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_active: &PfActive = ids.downcast_ref().ok_or_else(|| "not a pf_active IDS".to_string())?;
+                gather(pf_active, indices, 1, lengths_coil, |pf_active: &PfActive, at: &[usize]| -> STR_0D {
+                    pf_active.coil[at[0]].prescribed.description.clone()
+                })
+            },
+        }),
+    },
+];
+
 static NODES_COIL: &[Node] = &[
     Node {
         name: "name",
@@ -1541,6 +1586,13 @@ static NODES_COIL: &[Node] = &[
         documentation: "Vertical crushing force applied on this coil (positive when compressive)",
         units: "N",
         kind: NodeKind::Structure(NODES_COIL_FORCE_VERTICAL_CRUSHING),
+    },
+    Node {
+        name: "prescribed",
+        documentation: "Which of the coil's signals is prescribed: `current` (`index` 1) when `coil(i1)/current` is given, or `voltage` (`index` 2)
+when `coil(i1)/voltage` is given and the current is calculated",
+        units: "",
+        kind: NodeKind::Structure(NODES_COIL_PRESCRIBED),
     },
 ];
 

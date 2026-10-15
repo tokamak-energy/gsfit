@@ -2,6 +2,11 @@
 
 This file provides guidance when working with code in this repository.
 
+## Keeping the code understandable
+* Having many small functions can make the code difficult to follow and understand.
+* If a function is only ever used once in a single place then it might be better to inline it rather than creating a separate function.
+* Using implementations for input / output types can help with understanding, for example returning `Array1<f64>` with two elements representing (R, Z) is not as clear as returning a struct with named fields.
+
 ## Variable naming
 ### Hierarchical variable naming
 Variables should be named using a "hierarchical" structure.
@@ -233,6 +238,10 @@ mds_path = r"\GSFIT::TOP.BEST.GLOBAL:IP"
 # This is correct
 mds_path = "\\GSFIT::TOP.BEST.GLOBAL:IP"
 ```
+
+# Numpy vs math
+We should use `numpy` for most things.
+Do not use `math` for anything!
 
 # GSFit conventions
 ## Equilibrium post processor

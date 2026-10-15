@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for database_reader.xml: the database reader the whole run uses.
+
+    `method` picks the reader. What it needs to build each IDS is in that IDS's file, e.g. wall/wall.xml.
+    Which run of which MDSplus tree to read is in workflow.xml, which each IDS's file links to, for the
+    st40_mdsplus_with_digital_filter reader, and in the element named after the reader for the others.
+    What a reader needs whichever IDS it is building is here, in the element named after the reader.
+    Only the mock_st40_mdsplus reader needs anything.
+    See GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ===================================== Enums ===================================== -->
+
+    <xs:simpleType name="DatabaseReaderMethod">
+        <xs:annotation><xs:documentation>The database readers, from `get_database_reader` in python/gsfit/database_readers/__init__.py</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="st40_mdsplus">
+                <xs:annotation><xs:documentation>ST40's experimental MDSplus database</xs:documentation></xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="st40_mdsplus_with_digital_filter">
+                <xs:annotation><xs:documentation>ST40's experimental MDSplus database, with a digital filter</xs:documentation></xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="st40_astra_mdsplus">
+                <xs:annotation><xs:documentation>ST40, with synthetic measurements from an ASTRA simulation</xs:documentation></xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="st40_spider_mdsplus">
+                <xs:annotation><xs:documentation>ST40, with synthetic measurements from a SPIDER simulation</xs:documentation></xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="freegs">
+                <xs:annotation><xs:documentation>Synthetic measurements from FreeGS equilibria, which are passed to `Gsfit.run`</xs:documentation></xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="freegsnke">
+                <xs:annotation><xs:documentation>Synthetic measurements from FreeGSNKE equilibria, which are passed to `Gsfit.run`</xs:documentation></xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="mock_st40_mdsplus">
+                <xs:annotation><xs:documentation>A mock of ST40's MDSplus database, frozen to a single time-slice, so that a reconstruction can run without a live database (e.g. in CI)</xs:documentation></xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= Complex types ================================= -->
+
+    <xs:complexType name="MockSt40Mdsplus">
+        <xs:annotation><xs:documentation>What the mock_st40_mdsplus reader needs whichever IDS it is building</xs:documentation></xs:annotation>
+        <xs:all>
+            <xs:element name="mock_dir" type="xs:string">
+                <xs:annotation><xs:documentation>The directory holding the mocked trees, the `mdsplus_mock_*.npz` files</xs:documentation></xs:annotation>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="database_reader">
+        <xs:annotation><xs:documentation>The database reader the whole run uses, which builds the IDSs GSFit reads</xs:documentation></xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="method" type="DatabaseReaderMethod">
+                    <xs:annotation><xs:documentation>The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml. The other readers read the element named after them from each IDS's file, which must be present where they need one</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="mock_st40_mdsplus" type="MockSt40Mdsplus" minOccurs="0">
+                    <xs:annotation><xs:documentation>What the mock_st40_mdsplus reader needs whichever IDS it is building. Needed by the mock_st40_mdsplus reader. See tests/test_02_delta_z_shift_greater_than_d_z for an example</xs:documentation></xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

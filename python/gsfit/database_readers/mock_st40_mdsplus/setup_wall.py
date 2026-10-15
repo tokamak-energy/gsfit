@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 from gsfit_rs import Wall
+from gsfit_rs.dd_support import ParametersInput
 
 from .mock_get_data import MockGetData
 
@@ -42,7 +43,8 @@ def setup_wall(
     vacuum_vessel_z = typing.cast(npt.NDArray[np.float64], elmag.get("LIMITER.LIMIT_PTS.Z"))
 
     # Initialise the Wall Rust class
-    wall = Wall()
+    # This reader still reads the JSON settings, so has no XML settings to record in `wall/code/parameters` yet
+    wall = Wall(ParametersInput())
 
     # `unit(0)` must be the vacuum vessel contour: the solver reads the limiter units by
     # position, and uses the first one, and only the first one, as the region the plasma is

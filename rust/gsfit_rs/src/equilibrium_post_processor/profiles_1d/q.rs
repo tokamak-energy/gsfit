@@ -3,10 +3,9 @@
 use super::super::constant_values::ConstantValues;
 use super::super::flux_surfaces::FluxSurface;
 use super::super::intermediate_values::IntermediateValues;
-use crate::plasma_geometry::bicubic_interpolator::{BicubicInterpolator, BicubicValueAndDerivatives};
-use crate::plasma_geometry::hessian;
+use super::super::psi_interpolator::{PsiDerivatives, PsiInterpolator};
 use imas_rs::EquilibriumTimeSlice;
-use ndarray::{Array1, Array2, s};
+use ndarray::{Array1, Array2};
 
 const MU_0: f64 = physical_constants::VACUUM_MAG_PERMEABILITY;
 const GAUSS_LEGENDRE_ABSCISSA: f64 = 0.5773502691896258;
@@ -64,18 +63,18 @@ pub(in crate::equilibrium_post_processor) fn q_profile(
     assert_eq!(psi_norm.len(), n_psi_norm);
     assert_eq!(f_profile.len(), n_psi_norm);
 
-    let psi_gradient_interpolator: PsiGradientInterpolator = PsiGradientInterpolator::new(time_slice);
+    let psi_interpolator: PsiInterpolator = PsiInterpolator::new(time_slice);
     let mut q_profile: Array1<f64> = Array1::from_elem(n_psi_norm, f64::NAN);
     for i_psi_norm in 1..n_psi_norm {
         if psi_norm[i_psi_norm] == 1.0 {
             continue;
         }
 
-        q_profile[i_psi_norm] = q_on_flux_surface(&flux_surfaces[i_psi_norm], f_profile[i_psi_norm], &psi_gradient_interpolator).unwrap_or(f64::NAN);
+        q_profile[i_psi_norm] = q_on_flux_surface(&flux_surfaces[i_psi_norm], f_profile[i_psi_norm], &psi_interpolator).unwrap_or(f64::NAN);
     }
 
     if n_psi_norm > 0 && psi_norm[0] != 1.0 {
-        q_profile[0] = q_axis(time_slice, f_profile, &psi_gradient_interpolator);
+        q_profile[0] = q_axis(time_slice, f_profile, &psi_interpolator);
     }
 
     q_profile
@@ -83,8 +82,8 @@ pub(in crate::equilibrium_post_processor) fn q_profile(
 
 /// Calculate the safety factor directly on one supplied flux surface.
 pub(in crate::equilibrium_post_processor) fn calculate_on_flux_surface(time_slice: &EquilibriumTimeSlice, flux_surface: &FluxSurface, f_here: f64) -> f64 {
-    let psi_gradient_interpolator: PsiGradientInterpolator = PsiGradientInterpolator::new(time_slice);
-    q_on_flux_surface(flux_surface, f_here, &psi_gradient_interpolator).unwrap_or(f64::NAN)
+    let psi_interpolator: PsiInterpolator = PsiInterpolator::new(time_slice);
+    q_on_flux_surface(flux_surface, f_here, &psi_interpolator).unwrap_or(f64::NAN)
 }
 
 /// Integrate `q` around one piecewise-linear flux surface.
@@ -93,7 +92,7 @@ pub(in crate::equilibrium_post_processor) fn calculate_on_flux_surface(time_slic
 /// two-point Gauss-Legendre quadrature evaluates the field at interior points rather than at the
 /// grid-edge crossings. For a smooth integrand this is fourth-order along the segment; the overall
 /// accuracy can still be limited by representing the curved flux surface with straight chords.
-fn q_on_flux_surface(flux_surface: &FluxSurface, f_here: f64, psi_gradient_interpolator: &PsiGradientInterpolator) -> Option<f64> {
+fn q_on_flux_surface(flux_surface: &FluxSurface, f_here: f64, psi_interpolator: &PsiInterpolator) -> Option<f64> {
     let fs_r: &Array1<f64> = &flux_surface.r;
     let fs_z: &Array1<f64> = &flux_surface.z;
     let n_fs: usize = fs_r.len();
@@ -116,8 +115,8 @@ fn q_on_flux_surface(flux_surface: &FluxSurface, f_here: f64, psi_gradient_inter
         let offset_r: f64 = 0.5 * GAUSS_LEGENDRE_ABSCISSA * delta_r;
         let offset_z: f64 = 0.5 * GAUSS_LEGENDRE_ABSCISSA * delta_z;
 
-        let integrand_minus: f64 = q_integrand_at(midpoint_r - offset_r, midpoint_z - offset_z, psi_gradient_interpolator)?;
-        let integrand_plus: f64 = q_integrand_at(midpoint_r + offset_r, midpoint_z + offset_z, psi_gradient_interpolator)?;
+        let integrand_minus: f64 = q_integrand_at(midpoint_r - offset_r, midpoint_z - offset_z, psi_interpolator)?;
+        let integrand_plus: f64 = q_integrand_at(midpoint_r + offset_r, midpoint_z + offset_z, psi_interpolator)?;
         let contribution: f64 = 0.5 * delta_ell * (integrand_minus + integrand_plus);
 
         // Compensated summation keeps round-off below the interpolation and contour errors.
@@ -131,8 +130,8 @@ fn q_on_flux_surface(flux_surface: &FluxSurface, f_here: f64, psi_gradient_inter
 }
 
 /// Evaluate `1 / (r * |grad(psi)|)` at one quadrature point.
-fn q_integrand_at(r_here: f64, z_here: f64, psi_gradient_interpolator: &PsiGradientInterpolator) -> Option<f64> {
-    let psi_derivatives: PsiDerivatives = psi_gradient_interpolator.interpolate(r_here, z_here)?;
+fn q_integrand_at(r_here: f64, z_here: f64, psi_interpolator: &PsiInterpolator) -> Option<f64> {
+    let psi_derivatives: PsiDerivatives = psi_interpolator.derivatives(r_here, z_here)?;
     let grad_psi: f64 = psi_derivatives.d_psi_d_r.hypot(psi_derivatives.d_psi_d_z);
     if r_here <= 0.0 || !grad_psi.is_finite() || grad_psi == 0.0 {
         return None;
@@ -151,20 +150,20 @@ fn q_integrand_at(r_here: f64, z_here: f64, psi_gradient_interpolator: &PsiGradi
 /// # Arguments
 /// * `time_slice` - the solved time-slice, read only
 /// * `f_profile` - the `f = R * B_phi` profile to integrate with [tesla metre]
-/// * `psi_gradient_interpolator` - the bicubic model of `grad(psi)` built from `time_slice`
+/// * `psi_interpolator` - the bicubic model of `psi` and `grad(psi)` built from `time_slice`
 ///
 /// # Returns
 /// * `q_axis` - the safety factor on the magnetic axis [dimensionless]
-fn q_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, psi_gradient_interpolator: &PsiGradientInterpolator) -> f64 {
+fn q_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, psi_interpolator: &PsiInterpolator) -> f64 {
     let j_2d: &Array2<f64> = &time_slice.profiles_2d[0].j_phi;
 
     let r_mag: f64 = time_slice.global_quantities.magnetic_axis.r;
     let z_mag: f64 = time_slice.global_quantities.magnetic_axis.z;
 
-    let Some((_hessian_matrix, hessian_determinant, hessian_trace)) = psi_gradient_interpolator.hessian_matrix(r_mag, z_mag) else {
+    let Some((_hessian_matrix, hessian_determinant, hessian_trace)) = psi_interpolator.hessian_matrix(r_mag, z_mag) else {
         return f64::NAN;
     };
-    let Some(j_phi) = psi_gradient_interpolator.interpolate_bilinear(j_2d, r_mag, z_mag) else {
+    let Some(j_phi) = psi_interpolator.interpolate_bilinear(j_2d, r_mag, z_mag) else {
         return f64::NAN;
     };
     if hessian_determinant <= 0.0 || j_phi == 0.0 {
@@ -174,198 +173,6 @@ fn q_axis(time_slice: &EquilibriumTimeSlice, f_profile: &Array1<f64>, psi_gradie
     let q_axis: f64 = hessian_trace.abs() / hessian_determinant.sqrt() * f_profile[0] / (MU_0 * r_mag.powi(2) * j_phi);
 
     q_axis
-}
-
-/// Calculate the Hessian matrix of `psi` at an arbitrary point on the grid.
-///
-/// The two components of `grad(psi)` are modelled independently with bicubic interpolation, then
-/// differentiated at the requested point. This is the same construction used to refine stationary
-/// points in the Grad-Shafranov solver and avoids differentiating an interpolated scalar `psi`
-/// inside the discretised plasma-current region.
-///
-/// # Arguments
-/// * `time_slice` - the solved time-slice, read only
-/// * `r_point`, `z_point` - the position to evaluate [metre]
-///
-/// # Returns
-/// * `hessian_matrix` - the 2x2 Hessian matrix [weber per metre ** 2]
-/// * `hessian_determinant` - its determinant
-/// * `hessian_trace` - its trace
-pub(super) fn hessian_matrix(time_slice: &EquilibriumTimeSlice, r_point: f64, z_point: f64) -> Option<(Array2<f64>, f64, f64)> {
-    return PsiGradientInterpolator::new(time_slice).hessian_matrix(r_point, z_point);
-}
-
-/// Values of `grad(psi)` and the Hessian interpolated at one point.
-struct PsiDerivatives {
-    d_psi_d_r: f64,
-    d_psi_d_z: f64,
-    d2_psi_d_r2: f64,
-    d2_psi_d_r_d_z: f64,
-    d2_psi_d_z2: f64,
-}
-
-/// Cell coordinates for one point on the rectangular grid.
-struct GridCellCoordinates {
-    i_r_left: usize,
-    i_z_lower: usize,
-    x: f64,
-    y: f64,
-}
-
-/// Independently bicubic models of `d(psi)/d(r)` and `d(psi)/d(z)` on the solved grid.
-///
-/// The bicubic model of each component needs that component's value, its two first derivatives,
-/// and its mixed second derivative at every grid point. The first derivatives are the stored
-/// Hessian of `psi`. The mixed derivatives are third derivatives of `psi`; they are obtained by
-/// second-order finite differences of the Hessian in `z`, matching the established stationary-
-/// point interpolation without requiring Green's tables at arbitrary `(r, z)` positions.
-struct PsiGradientInterpolator<'a> {
-    r: &'a Array1<f64>,
-    z: &'a Array1<f64>,
-    d_psi_d_r_2d: &'a Array2<f64>,
-    d_psi_d_z_2d: &'a Array2<f64>,
-    d2_psi_d_r2_2d: &'a Array2<f64>,
-    d2_psi_d_r_d_z_2d: &'a Array2<f64>,
-    d2_psi_d_z2_2d: &'a Array2<f64>,
-    d3_psi_d_r2_d_z_2d: Array2<f64>,
-    d3_psi_d_r_d_z2_2d: Array2<f64>,
-    d_r: f64,
-    d_z: f64,
-}
-
-impl<'a> PsiGradientInterpolator<'a> {
-    fn new(time_slice: &'a EquilibriumTimeSlice) -> Self {
-        // `profiles_2d[0]` because GSFit solves on one rectangular (R, Z) grid.
-        let r: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim1;
-        let z: &Array1<f64> = &time_slice.profiles_2d[0].grid.dim2;
-        let d_psi_d_r_2d: &Array2<f64> = &time_slice.profiles_2d[0].d_psi_d_r;
-        let d_psi_d_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].d_psi_d_z;
-        let d2_psi_d_r2_2d: &Array2<f64> = &time_slice.profiles_2d[0].d2_psi_d_r2;
-        let d2_psi_d_r_d_z_2d: &Array2<f64> = &time_slice.profiles_2d[0].d2_psi_d_r_d_z;
-        let d2_psi_d_z2_2d: &Array2<f64> = &time_slice.profiles_2d[0].d2_psi_d_z2;
-
-        let n_r: usize = r.len();
-        let n_z: usize = z.len();
-        assert!(n_r >= 2);
-        assert!(n_z >= 3);
-        assert_eq!(d_psi_d_r_2d.dim(), (n_z, n_r));
-        assert_eq!(d_psi_d_z_2d.dim(), (n_z, n_r));
-        assert_eq!(d2_psi_d_r2_2d.dim(), (n_z, n_r));
-        assert_eq!(d2_psi_d_r_d_z_2d.dim(), (n_z, n_r));
-        assert_eq!(d2_psi_d_z2_2d.dim(), (n_z, n_r));
-
-        let d_r: f64 = r[1] - r[0];
-        let d_z: f64 = z[1] - z[0];
-        let d3_psi_d_r2_d_z_2d: Array2<f64> = derivative_in_z(d2_psi_d_r2_2d, d_z);
-        let d3_psi_d_r_d_z2_2d: Array2<f64> = derivative_in_z(d2_psi_d_r_d_z_2d, d_z);
-
-        Self {
-            r,
-            z,
-            d_psi_d_r_2d,
-            d_psi_d_z_2d,
-            d2_psi_d_r2_2d,
-            d2_psi_d_r_d_z_2d,
-            d2_psi_d_z2_2d,
-            d3_psi_d_r2_d_z_2d,
-            d3_psi_d_r_d_z2_2d,
-            d_r,
-            d_z,
-        }
-    }
-
-    fn interpolate(&self, r_point: f64, z_point: f64) -> Option<PsiDerivatives> {
-        let cell: GridCellCoordinates = self.cell_coordinates(r_point, z_point)?;
-        let i_r_left: usize = cell.i_r_left;
-        let i_z_lower: usize = cell.i_z_lower;
-
-        let d_psi_d_r_interpolator: BicubicInterpolator = BicubicInterpolator::new(
-            self.d_r,
-            self.d_z,
-            self.d_psi_d_r_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d2_psi_d_r2_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d2_psi_d_r_d_z_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d3_psi_d_r2_d_z_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-        );
-        let d_psi_d_z_interpolator: BicubicInterpolator = BicubicInterpolator::new(
-            self.d_r,
-            self.d_z,
-            self.d_psi_d_z_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d2_psi_d_r_d_z_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d2_psi_d_z2_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-            self.d3_psi_d_r_d_z2_2d.slice(s![i_z_lower..=i_z_lower + 1, i_r_left..=i_r_left + 1]),
-        );
-
-        let d_psi_d_r: BicubicValueAndDerivatives = d_psi_d_r_interpolator.value_and_derivatives(cell.x, cell.y);
-        let d_psi_d_z: BicubicValueAndDerivatives = d_psi_d_z_interpolator.value_and_derivatives(cell.x, cell.y);
-
-        Some(PsiDerivatives {
-            d_psi_d_r: d_psi_d_r.f,
-            d_psi_d_z: d_psi_d_z.f,
-            d2_psi_d_r2: d_psi_d_r.d_f_d_x / self.d_r,
-            d2_psi_d_r_d_z: 0.5 * (d_psi_d_r.d_f_d_y / self.d_z + d_psi_d_z.d_f_d_x / self.d_r),
-            d2_psi_d_z2: d_psi_d_z.d_f_d_y / self.d_z,
-        })
-    }
-
-    fn hessian_matrix(&self, r_point: f64, z_point: f64) -> Option<(Array2<f64>, f64, f64)> {
-        let psi_derivatives: PsiDerivatives = self.interpolate(r_point, z_point)?;
-        let mut hessian_matrix: Array2<f64> = Array2::from_elem((2, 2), f64::NAN);
-        hessian_matrix[(0, 0)] = psi_derivatives.d2_psi_d_r2;
-        hessian_matrix[(0, 1)] = psi_derivatives.d2_psi_d_r_d_z;
-        hessian_matrix[(1, 0)] = psi_derivatives.d2_psi_d_r_d_z;
-        hessian_matrix[(1, 1)] = psi_derivatives.d2_psi_d_z2;
-
-        let (hessian_determinant, hessian_trace): (f64, f64) =
-            hessian(psi_derivatives.d2_psi_d_r2, psi_derivatives.d2_psi_d_r_d_z, psi_derivatives.d2_psi_d_z2);
-        Some((hessian_matrix, hessian_determinant, hessian_trace))
-    }
-
-    fn interpolate_bilinear(&self, values: &Array2<f64>, r_point: f64, z_point: f64) -> Option<f64> {
-        let cell: GridCellCoordinates = self.cell_coordinates(r_point, z_point)?;
-        let i_r_left: usize = cell.i_r_left;
-        let i_z_lower: usize = cell.i_z_lower;
-
-        let value_lower: f64 = (1.0 - cell.x) * values[(i_z_lower, i_r_left)] + cell.x * values[(i_z_lower, i_r_left + 1)];
-        let value_upper: f64 = (1.0 - cell.x) * values[(i_z_lower + 1, i_r_left)] + cell.x * values[(i_z_lower + 1, i_r_left + 1)];
-        Some((1.0 - cell.y) * value_lower + cell.y * value_upper)
-    }
-
-    fn cell_coordinates(&self, r_point: f64, z_point: f64) -> Option<GridCellCoordinates> {
-        if !r_point.is_finite()
-            || !z_point.is_finite()
-            || r_point < self.r[0]
-            || r_point > self.r[self.r.len() - 1]
-            || z_point < self.z[0]
-            || z_point > self.z[self.z.len() - 1]
-        {
-            return None;
-        }
-
-        let i_r_left: usize = (((r_point - self.r[0]) / self.d_r).floor() as usize).min(self.r.len() - 2);
-        let i_z_lower: usize = (((z_point - self.z[0]) / self.d_z).floor() as usize).min(self.z.len() - 2);
-        let x: f64 = ((r_point - self.r[i_r_left]) / self.d_r).clamp(0.0, 1.0);
-        let y: f64 = ((z_point - self.z[i_z_lower]) / self.d_z).clamp(0.0, 1.0);
-
-        Some(GridCellCoordinates { i_r_left, i_z_lower, x, y })
-    }
-}
-
-/// Differentiate a grid quantity in `z` with second-order finite differences.
-fn derivative_in_z(values: &Array2<f64>, d_z: f64) -> Array2<f64> {
-    let (n_z, n_r): (usize, usize) = values.dim();
-    assert!(n_z >= 3);
-
-    let mut derivative: Array2<f64> = Array2::from_elem((n_z, n_r), f64::NAN);
-    for i_r in 0..n_r {
-        derivative[(0, i_r)] = (-3.0 * values[(0, i_r)] + 4.0 * values[(1, i_r)] - values[(2, i_r)]) / (2.0 * d_z);
-        for i_z in 1..n_z - 1 {
-            derivative[(i_z, i_r)] = (values[(i_z + 1, i_r)] - values[(i_z - 1, i_r)]) / (2.0 * d_z);
-        }
-        derivative[(n_z - 1, i_r)] = (3.0 * values[(n_z - 1, i_r)] - 4.0 * values[(n_z - 2, i_r)] + values[(n_z - 3, i_r)]) / (2.0 * d_z);
-    }
-
-    derivative
 }
 
 #[cfg(test)]
@@ -500,8 +307,8 @@ mod tests {
         time_slice.profiles_2d = vec![profiles_2d];
 
         let f_profile: Array1<f64> = Array1::from_vec(vec![f_axis]);
-        let psi_gradient_interpolator: PsiGradientInterpolator = PsiGradientInterpolator::new(&time_slice);
-        let q_axis: f64 = q_axis(&time_slice, &f_profile, &psi_gradient_interpolator);
+        let psi_interpolator: PsiInterpolator = PsiInterpolator::new(&time_slice);
+        let q_axis: f64 = q_axis(&time_slice, &f_profile, &psi_interpolator);
         let q_axis_expected: f64 = (psi_rr_axis + psi_zz_axis).abs() / (psi_rr_axis * psi_zz_axis).sqrt() * f_axis / (MU_0 * mag_r.powi(2) * j_phi_axis);
 
         assert_abs_diff_eq!(q_axis, q_axis_expected, epsilon = 1e-12);

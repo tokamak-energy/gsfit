@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for rtgsfit_initial_conditions.xml: the equilibrium RTGSFit starts from, which the rtgsfit_mdsplus
+    database writer stores under PRESHOT.INITIAL_COND for RTGSFit to read.
+
+    See GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="DoubleList">
+        <xs:annotation><xs:documentation>An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"</xs:documentation></xs:annotation>
+        <xs:list itemType="xs:double"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="ZeroOrOne">
+        <xs:annotation><xs:documentation>0 or 1</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:int">
+            <xs:minInclusive value="0"/>
+            <xs:maxInclusive value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="ZeroOrOneList">
+        <xs:annotation><xs:documentation>An array of 0s and 1s, written as a space-separated list, e.g. "0 1 1 0"</xs:documentation></xs:annotation>
+        <xs:list itemType="ZeroOrOne"/>
+    </xs:simpleType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="rtgsfit_initial_conditions">
+        <xs:annotation><xs:documentation>The equilibrium RTGSFit starts from. GSFit does not use it: the rtgsfit_mdsplus writer stores it under PRESHOT.INITIAL_COND for RTGSFit. Each array holds one value per point of the grid in grid.xml, flattened with R varying fastest: n_z rows of n_r values</xs:documentation></xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="description" type="xs:string">
+                    <xs:annotation><xs:documentation>Where the equilibrium comes from, e.g. its pulse and time. Not stored</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="flux_norm" type="DoubleList">
+                    <xs:annotation>
+                        <xs:documentation>The normalised poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:FLUX_NORM</xs:documentation>
+                        <xs:appinfo>
+                            <units>1</units>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="mask" type="ZeroOrOneList">
+                    <xs:annotation><xs:documentation>1 at the grid points inside the plasma and 0 elsewhere, stored as PRESHOT.INITIAL_COND:MASK</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="psi_total" type="DoubleList">
+                    <xs:annotation><xs:documentation>The poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:PSI_TOTAL</xs:documentation></xs:annotation>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

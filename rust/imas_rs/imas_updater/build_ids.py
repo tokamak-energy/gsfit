@@ -501,38 +501,62 @@ def scalar_accumulator_field(
     return decl, init
 
 
-def nested_slice_method(f: Field, field_name: str, parent_type_name: str, field_path: str) -> list[str]:
-    """Return the method which slices a nested array of structures from inside a view.
+def element_has_name(ct: ComplexType) -> bool:
+    """Whether elements of this type have a string `name`, so that an accessor can select one by it.
+
+    The data dictionary defines `name` as a "short string identifier (unique for a given device)".
+    """
+    for f in ct.fields:
+        if f.name == "name" and f.rust_type == "STR_0D":
+            return True
+    return False
+
+
+def nested_slice_method(
+    f: Field, field_name: str, parent_type_name: str, field_path: str, element_is_named: bool
+) -> list[str]:
+    """Return the method which selects from a nested array of structures from inside a view.
 
     This is what makes `flux_loop(..).greens.pf_active(..)` possible: `greens` is a view over every
     flux loop, and `pf_active(..)` slices the `pf_active` array under each of them, adding one
     dimension after the flux loop's: `flux_loop(..).greens.pf_active(..).value` is `(n_flux_loop, n_pf)`.
+    Where the elements have a `name`, `pf_active(name)` instead takes the element with that name under
+    every flux loop, adding no dimension: `flux_loop(..).greens.pf_active(name).value` is `(n_flux_loop)`.
+    The method takes any `Selection`; see `dd_base_types.rs`.
 
     Args:
         f: The array-of-structures field.
         field_name: The Rust-safe field name.
         parent_type_name: The array-of-structures element type the view gathers over.
         field_path: Path to the field from the parent (e.g. "greens.pf_active").
+        element_is_named: Whether the field's elements have a `name`, so can be selected by it.
     """
     inner_type: str = f.inner_type
-    slice_view_name: str = f"{inner_type}SliceView"
-    return [
-        f"    /// The slice view over a range of `{field_path}` under every element, e.g. `.{field_name}(..)`.",
-        f"    /// It adds one dimension, after those of the levels sliced above it and before the leaf's own.",
-        f"    ///",
-        f"    /// # Panics",
-        f"    /// If `range` does not select the same number of elements under every element.",
-        f"    pub fn {field_name}<R>(&self, range: R) -> {slice_view_name}<'a, D::Larger>",
-        f"    where",
-        f"        R: SliceIndex<[{inner_type}], Output = [{inner_type}]> + Clone,",
-        f"    {{",
-        f"        {slice_view_name}::new(self.slice_elements.nest(",
-        f"            {rust_string_literal(field_path)},",
-        f"            |item: &{parent_type_name}| item.{sanitize_field_path(field_path)}.as_slice(),",
-        f"            range,",
-        f"        ))",
-        f"    }}",
+    lines: list[str] = [
+        f"    /// Select from `{field_path}` under every element. A range, e.g. `.{field_name}(..)`, adds one dimension,",
+        "    /// after those of the levels sliced above it and before the leaf's own.",
     ]
+    if element_is_named:
+        lines.append(
+            f"    /// A name, `.{field_name}(name)`, takes the one element with that `name` under every element, and adds none."
+        )
+    lines += [
+        "    ///",
+        "    /// # Panics",
+        "    /// If a range does not select the same number of elements under every element.",
+    ]
+    if element_is_named:
+        lines.append("    /// If, under any element, no element or more than one has the name.")
+    lines += [
+        f"    pub fn {field_name}<S: Selection<'a, {inner_type}>>(&self, selection: S) -> S::NestedOutput<D> {{",
+        "        selection.select_nested(",
+        f"            {rust_string_literal(field_path)},",
+        "            &self.slice_elements,",
+        f"            |item: &{parent_type_name}| item.{sanitize_field_path(field_path)}.as_slice(),",
+        "        )",
+        "    }",
+    ]
+    return lines
 
 
 # What every view already uses for itself: the private field holding the elements it gathers
@@ -604,7 +628,9 @@ def collect_view_members(
                 nested_code.append(nested_struct_code)
 
         elif f.is_array and f.inner_type in type_map:
-            methods.append(nested_slice_method(f, field_name, parent_type_name, field_path))
+            methods.append(
+                nested_slice_method(f, field_name, parent_type_name, field_path, element_has_name(type_map[f.inner_type]))
+            )
 
     return field_defs, field_inits, methods, nested_code
 
@@ -733,39 +759,73 @@ def generate_slice_view(
         common_methods + methods,
     )
 
+    # What lets an accessor's `Selection` build this slice view, and, where the elements have a `name`,
+    # select one by it; see `dd_base_types.rs`
+    lines += [
+        f"impl ArrayOfStructuresElement for {type_name} {{",
+        f"    type SliceView<'a, D> = {type_name}SliceView<'a, D> where Self: 'a;",
+        "",
+        "    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>",
+        "    where",
+        "        Self: 'a,",
+        "    {",
+        f"        {type_name}SliceView::new(elements)",
+        "    }",
+        "}",
+        "",
+    ]
+    if element_has_name(ct):
+        lines += [
+            f"impl Named for {type_name} {{",
+            "    fn name(&self) -> &str {",
+            "        &self.name",
+            "    }",
+            "}",
+            "",
+        ]
+
     return "\n".join(nested_code + lines)
 
 
-def generate_vec_field_impl(parent_ct: ComplexType, field: Field) -> str:
+def generate_vec_field_impl(parent_ct: ComplexType, field: Field, element_is_named: bool) -> str:
     """
-    Generate the impl block for a Vec<T> field: the `.field(range)` slice view and `.field_len()`.
+    Generate the impl block for a Vec<T> field: the `.field(selection)` accessor and `.field_len()`.
 
+    The accessor takes any `Selection` (see `dd_base_types.rs`): a range gives the slice view over
+    those elements, and, where the elements have a `name`, a name gives the element with that name.
     A single element is reached with ordinary indexing, `.field[i]`, so nothing is generated for
-    it. The `Output = [T]` bound is what keeps it that way: `usize` indexes a slice to one `T`,
-    so it does not satisfy the bound, and there is no second spelling of `.field[i]`.
+    it, and a single position is not a `Selection`, so there is no second spelling of `.field[i]`.
     """
     inner_type: str = field.inner_type
     field_name: str = sanitize_rust_identifier(field.name)
     parent_name: str = snake_to_pascal_case(parent_ct.name)
-    slice_view_name: str = f"{inner_type}SliceView"
 
     lines = [
         f"impl {parent_name} {{",
-        f"    /// The slice view over a range of {field_name}, e.g. `.{field_name}(0..2)` or `.{field_name}(..)`,",
-        f"    /// whose leaves gather one value per element. A single element is `.{field_name}[i]`.",
-        f"    pub fn {field_name}<R>(&self, range: R) -> {slice_view_name}<'_, Ix1>",
-        f"    where",
-        f"        R: SliceIndex<[{inner_type}], Output = [{inner_type}]>,",
-        f"    {{",
-        f"        {slice_view_name}::new(Elements::from_slice(&self.{field_name}[range]))",
-        f"    }}",
-        f"",
+        f"    /// Select from `{field.name}`. A range, e.g. `.{field_name}(0..2)` or `.{field_name}(..)`, gives the slice view over",
+        "    /// those elements, whose leaves gather one value per element.",
+    ]
+    if element_is_named:
+        lines.append(f"    /// A name, `.{field_name}(name)`, gives the one element with that `name`.")
+    lines += [
+        f"    /// A single element is `.{field_name}[i]`.",
+        "    ///",
+        "    /// # Panics",
+        "    /// If a range is out of bounds.",
+    ]
+    if element_is_named:
+        lines.append("    /// If no element, or more than one, has the name.")
+    lines += [
+        f"    pub fn {field_name}<'a, S: Selection<'a, {inner_type}>>(&'a self, selection: S) -> S::Output {{",
+        f"        selection.select({rust_string_literal(field.name)}, &self.{field_name})",
+        "    }",
+        "",
         f"    /// Get the number of {field_name} elements",
         f"    pub fn {field_name}_len(&self) -> usize {{",
         f"        self.{field_name}.len()",
-        f"    }}",
-        f"}}",
-        f"",
+        "    }",
+        "}",
+        "",
     ]
     return "\n".join(lines)
 
@@ -805,7 +865,7 @@ def generate_all_views_and_accessors(
         for ct in all_types:
             for f in ct.fields:
                 if f.is_array and f.inner_type in vec_types:
-                    lines.append(generate_vec_field_impl(ct, f))
+                    lines.append(generate_vec_field_impl(ct, f, element_has_name(vec_types[f.inner_type])))
 
     return "\n".join(lines)
 
@@ -1803,15 +1863,26 @@ def generate_rust_file(
     for gathering_type in ("Accumulator", "Elements"):
         if re.search(rf"\b{gathering_type}(::|<)", views_code):
             imported.add(gathering_type)
+    # Every accessor takes a `Selection`, every element type builds its slice view for one, and every element
+    # type with a `name` can be selected by it
+    for selection_type, pattern in (
+        ("Selection", r"\bSelection<"),
+        ("ArrayOfStructuresElement", r"\bimpl ArrayOfStructuresElement for\b"),
+        ("Named", r"\bimpl Named for\b"),
+    ):
+        if re.search(pattern, views_code):
+            imported.add(selection_type)
     # The generated `Default` impls initialise every integer leaf to `EMPTY_INT`
     if "INT_0D" in imported:
         imported.add("EMPTY_INT")
     if imported:
         lines.append(f"use crate::dd_base_types::{{{', '.join(sorted(imported))}}};")
-    # The views are generic over the rank they gather, and are sliced by any range
+    # The views are generic over the rank they gather
     if views_code:
-        lines.append("use ndarray::{Dimension, Ix1};")
-        lines.append("use std::slice::SliceIndex;")
+        ndarray_imports: list[str] = ["Dimension"]
+        if re.search(r"\bIx1\b", views_code):
+            ndarray_imports.append("Ix1")
+        lines.append(f"use ndarray::{{{', '.join(ndarray_imports)}}};")
     if imported or views_code:
         lines.append("")
 
@@ -1993,6 +2064,75 @@ def build_ids(
     return None
 
 
+def build_dd_support(element_name: str, path_to_dd_support_schema: Path, path_to_rust_file: Path) -> None:
+    """
+    Build the Rust struct for a global element of `dd_support.xsd` which is not an IDS.
+
+    `dd_support.xsd` mostly holds structures shared by the IDSs, which `build_ids` pulls into each
+    IDS module as needed. A few of its global elements appear in no IDS, e.g. `parameters_input`, the
+    code parameters block "passed from the wrapper to the subroutine", which the Data Dictionary
+    declares for the Fortran and C++ type definitions. Each of these gets a module of its own in
+    `src/dd_support/`.
+
+    Args:
+        element_name: Name of the global element, e.g. "parameters_input"
+        path_to_dd_support_schema: Path to `dd_support.xsd`
+        path_to_rust_file: Path where the generated Rust file will be written, e.g. `src/dd_support/parameters_input.rs`
+    """
+    print(f"Parsing: {path_to_dd_support_schema} <{element_name}>")
+    schema_root = ET.parse(path_to_dd_support_schema).getroot()
+    known_types: set[str] = {ct.get("name") for ct in schema_root.findall(f"{XS_NS}complexType") if ct.get("name")}
+
+    element_type: ComplexType | None = None
+    for element in schema_root.findall(f"{XS_NS}element"):
+        inline_complex = element.find(f"{XS_NS}complexType")
+        if element.get("name") == element_name and inline_complex is not None:
+            element_type = parse_complex_type(inline_complex, known_types)
+            element_type.name = element_name
+            element_type.documentation = extract_documentation(element)
+    if element_type is None:
+        raise ValueError(f"{path_to_dd_support_schema.name} has no global element <{element_name}> holding a complexType")
+
+    # Only fields of the base types are handled: a field holding another structure would need that structure generated too
+    for f in element_type.fields:
+        if not f.is_base_type:
+            raise NotImplementedError(f"<{element_name}>/{f.name} is a `{f.rust_type}`, but only the data dictionary base types are handled")
+
+    base_types: list[str] = sorted({f.rust_type for f in element_type.fields})
+    lines: list[str] = [
+        f"//! IMAS `{element_name}`",
+        "//!",
+        "//! **WARNING** This file is autogenerated by `rust/imas_rs/imas_updater/build_ids.py`.",
+        "//! Any changes will be overwritten.",
+        "//!",
+        f"//! This module defines `{element_name}`, generated from `dd_support.xsd` in the IMAS Data Dictionary.",
+        "//! It is not an IDS, and does not appear in any IDS.",
+        "",
+        f"use crate::dd_base_types::{{{', '.join(base_types)}}};",
+        "",
+        generate_rust_struct(element_type),
+    ]
+
+    output_path = Path(path_to_rust_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines))
+    print(f"Generated: {output_path}")
+
+    # Format, so that the committed file matches what `cargo fmt` would produce
+    subprocess.run(
+        [
+            "rustfmt",
+            "--edition",
+            RUST_EDITION,
+            "--config-path",
+            str(WORKSPACE_DIR),
+            str(output_path),
+        ],
+        check=True,
+    )
+    print(f"Formatted: {output_path}")
+
+
 def get_imas_dd_version() -> str:
     """
     The version of the local IMAS Data Dictionary clone, as `git describe` reports it,
@@ -2038,6 +2178,17 @@ if __name__ == "__main__":
         )
         if section is not None:
             stub_sections.append(section)
+
+    # The global elements of `dd_support.xsd` which are not IDSs, each generated into `src/dd_support/`.
+    # Adding one here also needs a matching `pub mod <name>;` in `src/dd_support/mod.rs`.
+    dd_support_element_names: list[str] = ["parameters_input"]
+
+    for dd_support_element_name in dd_support_element_names:
+        build_dd_support(
+            element_name=dd_support_element_name,
+            path_to_dd_support_schema=DATA_DICTIONARY_DIR / "schemas" / "utilities" / "dd_support.xsd",
+            path_to_rust_file=CRATE_DIR / "src" / "dd_support" / f"{dd_support_element_name}.rs",
+        )
 
     PYTHON_STUB_FILE.parent.mkdir(parents=True, exist_ok=True)
     PYTHON_STUB_FILE.write_text("\n".join(stub_sections))

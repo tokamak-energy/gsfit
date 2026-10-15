@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Schema for numerics.xml: the settings of the Grad-Shafranov solve, and the number of threads it runs on.
+
+    See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+
+    <!-- ===================================== Enums ===================================== -->
+
+    <xs:simpleType name="NonlinearSolverMethod">
+        <xs:annotation><xs:documentation>The nonlinear solvers for the Grad-Shafranov equation</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="picard">
+                <xs:annotation><xs:documentation>Picard iterations, optionally with Anderson mixing</xs:documentation></xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="newton_krylov">
+                <xs:annotation><xs:documentation>Jacobian-free Newton-Krylov</xs:documentation></xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="newton_picard">
+                <xs:annotation><xs:documentation>Newton-Picard, the recursive projection method (RPM): Newton's method in the few directions in which Picard converges slowly or diverges, and Picard everywhere else</xs:documentation></xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="PositiveDouble">
+        <xs:annotation><xs:documentation>A number greater than 0</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:minExclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ================================= The settings file ================================= -->
+
+    <xs:element name="numerics">
+        <xs:annotation><xs:documentation>Settings for the Grad-Shafranov solve, and the number of threads it runs on</xs:documentation></xs:annotation>
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="RAYON_NUM_THREADS" type="xs:nonNegativeInteger">
+                    <xs:annotation><xs:documentation>Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="n_iter_max" type="xs:nonNegativeInteger">
+                    <xs:annotation><xs:documentation>Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="grad_shafranov_deviation_tolerance" type="xs:double">
+                    <xs:annotation>
+                        <xs:documentation>The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this</xs:documentation>
+                        <xs:appinfo>
+                            <units>1</units>
+                        </xs:appinfo>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="n_iter_min" type="xs:nonNegativeInteger">
+                    <xs:annotation><xs:documentation>Minimum number of nonlinear solver iterations before the convergence test may pass</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="save_unconverged" type="xs:boolean">
+                    <xs:annotation><xs:documentation>Not read by the code at present</xs:documentation></xs:annotation>
+                </xs:element>
+                <xs:element name="nonlinear_solver">
+                    <xs:annotation><xs:documentation>The nonlinear solver for the Grad-Shafranov equation</xs:documentation></xs:annotation>
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="method" type="NonlinearSolverMethod">
+                                <xs:annotation><xs:documentation>The solver to use. Its settings are in the element of the same name, below</xs:documentation></xs:annotation>
+                            </xs:element>
+                            <xs:element name="picard">
+                                <xs:annotation><xs:documentation>Settings for Picard iterations</xs:documentation></xs:annotation>
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="n_iter_no_vertical_feedback" type="xs:nonNegativeInteger">
+                                            <xs:annotation><xs:documentation>Number of initial iterations with the vertical feedback (the fit of delta_z) switched off</xs:documentation></xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="apply_anderson_mixing" type="xs:boolean">
+                                            <xs:annotation><xs:documentation>Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals</xs:documentation></xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="anderson_n_history" type="xs:nonNegativeInteger">
+                                            <xs:annotation><xs:documentation>Maximum number of previous iterations Anderson mixing combines</xs:documentation></xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="anderson_mixing" type="PositiveDouble">
+                                            <xs:annotation>
+                                                <xs:documentation>Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it. Must be greater than 0, which `Plasma::new` checks too</xs:documentation>
+                                                <xs:appinfo>
+                                                    <units>1</units>
+                                                </xs:appinfo>
+                                            </xs:annotation>
+                                        </xs:element>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="newton_krylov">
+                                <xs:annotation><xs:documentation>Settings for Jacobian-free Newton-Krylov</xs:documentation></xs:annotation>
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="picard_handover" type="xs:double">
+                                            <xs:annotation>
+                                                <xs:documentation>Grad-Shafranov deviation below which it hands over from Picard to Newton iterations</xs:documentation>
+                                                <xs:appinfo>
+                                                    <units>1</units>
+                                                </xs:appinfo>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="n_krylov_max" type="xs:nonNegativeInteger">
+                                            <xs:annotation><xs:documentation>Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work</xs:documentation></xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="krylov_tolerance" type="xs:double">
+                                            <xs:annotation>
+                                                <xs:documentation>The Krylov solve stops once the linearised residual is this fraction of the residual</xs:documentation>
+                                                <xs:appinfo>
+                                                    <units>1</units>
+                                                </xs:appinfo>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="finite_difference_step" type="xs:double">
+                                            <xs:annotation>
+                                                <xs:documentation>Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual</xs:documentation>
+                                                <xs:appinfo>
+                                                    <units>1</units>
+                                                </xs:appinfo>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="verbose" type="xs:boolean">
+                                            <xs:annotation><xs:documentation>Whether to print the progress of each Newton iteration</xs:documentation></xs:annotation>
+                                        </xs:element>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="newton_picard">
+                                <xs:annotation><xs:documentation>Settings for Newton-Picard, the recursive projection method (RPM)</xs:documentation></xs:annotation>
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="n_basis_max" type="xs:nonNegativeInteger">
+                                            <xs:annotation><xs:documentation>Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add</xs:documentation></xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="contraction_threshold" type="xs:double">
+                                            <xs:annotation>
+                                                <xs:documentation>A direction is added when the residual outside them shrinks by less than this factor per iteration</xs:documentation>
+                                                <xs:appinfo>
+                                                    <units>1</units>
+                                                </xs:appinfo>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="finite_difference_step" type="xs:double">
+                                            <xs:annotation>
+                                                <xs:documentation>Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual</xs:documentation>
+                                                <xs:appinfo>
+                                                    <units>1</units>
+                                                </xs:appinfo>
+                                            </xs:annotation>
+                                        </xs:element>
+                                        <xs:element name="verbose" type="xs:boolean">
+                                            <xs:annotation><xs:documentation>Whether to print the progress of each Newton-Picard iteration</xs:documentation></xs:annotation>
+                                        </xs:element>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

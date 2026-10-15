@@ -4,11 +4,12 @@ use pyo3::prelude::*;
 // Load modules
 mod analytic_grad_shafranov;
 mod circuit_equations;
-mod coils;
 mod equilibrium_post_processor;
 mod grad_shafranov;
+mod limiter;
 mod magnetics;
-mod passives;
+mod pf_active;
+mod pf_passive;
 mod plasma;
 mod pulse_schedule;
 mod sensors;
@@ -19,7 +20,6 @@ mod wall;
 // Load structs and functions
 use analytic_grad_shafranov::{Configuration, GuazzottoFreidberg, Symmetry};
 use circuit_equations::solve_circuit_equations;
-use coils::Coils;
 use grad_shafranov::solve_grad_shafranov;
 use greens::{
     greens_d_psi_d_r, greens_d_psi_d_z, greens_d2_psi_d_r_d_z, greens_d2_psi_d_r2, greens_d2_psi_d_z2, greens_d3_psi_d_r_d_z2, greens_d3_psi_d_r2_d_z,
@@ -27,7 +27,8 @@ use greens::{
 };
 use magnetics::Magnetics;
 mod material_properties;
-use passives::Passives;
+use pf_active::PfActive;
+use pf_passive::PfPassive;
 use plasma::Plasma;
 use pulse_schedule::PulseSchedule;
 mod python_pickling_methods;
@@ -68,8 +69,8 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(solve_circuit_equations, m)?)?;
 
     // Expose current source classes
-    m.add_class::<Coils>()?;
-    m.add_class::<Passives>()?;
+    m.add_class::<PfActive>()?;
+    m.add_class::<PfPassive>()?;
     m.add_class::<Plasma>()?;
     m.add_class::<Tf>()?;
     m.add_class::<Wall>()?;
@@ -109,6 +110,13 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // `add_submodule` only sets the attribute; registering in `sys.modules` is what makes
     // `from gsfit_rs.imas import equilibrium_paths` work.
     py.import("sys")?.getattr("modules")?.set_item("gsfit_rs.imas", &imas)?;
+
+    // Expose the data dictionary structures which are not IDSs, e.g. `ParametersInput`, as the
+    // `gsfit_rs.dd_support` submodule, in the same way
+    let dd_support: Bound<'_, PyModule> = PyModule::new(py, "dd_support")?;
+    imas_rs::python::register_dd_support(&dd_support)?;
+    m.add_submodule(&dd_support)?;
+    py.import("sys")?.getattr("modules")?.set_item("gsfit_rs.dd_support", &dd_support)?;
 
     Ok(())
 }

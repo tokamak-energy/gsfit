@@ -9,4 +9,5 @@ def plot() -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     ax.set_xlim(left=0.0, right=None)
     ax.set_xlabel("R [m]")
     ax.set_ylabel("Z [m]")
+    ax.grid(True)
     return fig, ax

@@ -11,7 +11,7 @@
 #![allow(clippy::all)]
 
 use super::{IndexSpec, Leaf, Node, NodeKind, gather, no_levels};
-use crate::dd_base_types::{FLT_0D, FLT_1D, INT_0D, INT_1D, STR_0D};
+use crate::dd_base_types::{FLT_0D, FLT_1D, FLT_2D, INT_0D, INT_1D, STR_0D};
 use crate::ids::pf_passive::PfPassive;
 use std::any::Any;
 
@@ -31,6 +31,15 @@ fn lengths_code_library(pf_passive: &PfPassive, level: usize, _at: &[usize]) -> 
 fn lengths_loop(pf_passive: &PfPassive, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
         0 => return Some(pf_passive.r#loop.len()),
+        _ => return None,
+    }
+}
+
+/// Length of each array-of-structures level along `loop_dof`.
+fn lengths_loop_dof(pf_passive: &PfPassive, level: usize, at: &[usize]) -> Option<usize> {
+    match level {
+        0 => return Some(pf_passive.r#loop.len()),
+        1 => return Some(pf_passive.r#loop[at[0]].dof.len()),
         _ => return None,
     }
 }
@@ -536,6 +545,111 @@ static NODES_LOOP_ELEMENT: &[Node] = &[
         units: "",
         kind: NodeKind::Structure(NODES_LOOP_ELEMENT_GEOMETRY),
     },
+    Node {
+        name: "current",
+        documentation: "The current in this element, on the loop's timebase, `loop(i1)/time`. Only set by `solve_circuit_equations`, which simulates it",
+        units: "A",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
+                gather(pf_passive, indices, 2, lengths_loop_element, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
+                    pf_passive.r#loop[at[0]].element[at[1]].current.clone()
+                })
+            },
+        }),
+    },
+];
+
+static NODES_LOOP_CURRENT_DISTRIBUTION_TYPE: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Short string identifier",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
+                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
+                    pf_passive.r#loop[at[0]].current_distribution_type.name.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "index",
+        documentation: "Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
+                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> INT_0D {
+                    pf_passive.r#loop[at[0]].current_distribution_type.index.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "description",
+        documentation: "Verbose description",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
+                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
+                    pf_passive.r#loop[at[0]].current_distribution_type.description.clone()
+                })
+            },
+        }),
+    },
+];
+
+static NODES_LOOP_DOF: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Name of the degree of freedom: `constant_current_density`, or `eig_01`, `eig_02`, ... for the eigenmodes, slowest decaying first",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
+                gather(pf_passive, indices, 2, lengths_loop_dof, |pf_passive: &PfPassive, at: &[usize]| -> STR_0D {
+                    pf_passive.r#loop[at[0]].dof[at[1]].name.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "current_distribution",
+        documentation: "The current in each element, in the order of `element`, for a unit amplitude of this degree of freedom.
+For `constant_current_density` it is the element's area, so that the amplitude is the current density",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
+                gather(pf_passive, indices, 2, lengths_loop_dof, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
+                    pf_passive.r#loop[at[0]].dof[at[1]].current_distribution.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "time_constant",
+        documentation: "The eigenmode's time constant, the ratio of its inductance to its resistance. Only set for `eig`",
+        units: "s",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
+                gather(pf_passive, indices, 2, lengths_loop_dof, |pf_passive: &PfPassive, at: &[usize]| -> FLT_0D {
+                    pf_passive.r#loop[at[0]].dof[at[1]].time_constant.clone()
+                })
+            },
+        }),
+    },
 ];
 
 static NODES_LOOP: &[Node] = &[
@@ -625,6 +739,49 @@ static NODES_LOOP: &[Node] = &[
                 let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
                 gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
                     pf_passive.r#loop[at[0]].time.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "current_distribution_type",
+        documentation: "How the loop's current is distributed over its elements, which sets its degrees of freedom, `dof`:
+`constant_current_density` (`index` 1), one degree of freedom with the same current density in every element; or
+`eig` (`index` 2), one degree of freedom for each of the loop's slowest decaying eigenmodes",
+        units: "",
+        kind: NodeKind::Structure(NODES_LOOP_CURRENT_DISTRIBUTION_TYPE),
+    },
+    Node {
+        name: "dof",
+        documentation: "The loop's degrees of freedom: the current distributions whose amplitudes the equilibrium reconstruction fits",
+        units: "",
+        kind: NodeKind::ArrayOfStructures(NODES_LOOP_DOF),
+    },
+    Node {
+        name: "regularisations",
+        documentation: "The regularisations of the degrees of freedom, one row of `n_dof` coefficients for each regularisation; no rows for none.
+Shape = `(n_regularisations, n_dof)`",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_2D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
+                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> FLT_2D {
+                    pf_passive.r#loop[at[0]].regularisations.clone()
+                })
+            },
+        }),
+    },
+    Node {
+        name: "regularisations_weight",
+        documentation: "The weight of each regularisation in the fit, one for each row of `regularisations`",
+        units: "dimensionless",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pf_passive: &PfPassive = ids.downcast_ref().ok_or_else(|| "not a pf_passive IDS".to_string())?;
+                gather(pf_passive, indices, 1, lengths_loop, |pf_passive: &PfPassive, at: &[usize]| -> FLT_1D {
+                    pf_passive.r#loop[at[0]].regularisations_weight.clone()
                 })
             },
         }),
