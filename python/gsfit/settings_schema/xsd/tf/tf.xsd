@@ -42,13 +42,24 @@
 
     <!-- ================================= Other simple types ================================= -->
 
-    <xs:simpleType name="PositiveDouble">
+    <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                A number greater than 0
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FinitePositiveDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
             <xs:minExclusive value="0.0"/>
         </xs:restriction>
     </xs:simpleType>
@@ -63,13 +74,13 @@
         </xs:annotation>
         <xs:complexType>
             <xs:all>
-                <xs:element name="vacuum_toroidal_field_reference_radius" type="PositiveDouble">
+                <xs:element name="vacuum_toroidal_field_reference_radius" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
                             Reference major radius at which the vacuum toroidal field is quoted, for every reader. Sets `tf/r0`, which is copied to equilibrium/vacuum_toroidal_field/r0. Must be greater than 0, which `Tf::set_r0` checks too
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>m</units>
+                            <units>metre</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>

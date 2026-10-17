@@ -35,8 +35,8 @@ class Pressure:
 
     :param include: Whether to fit pressure. When false, nothing else in this file is read
     :param sensor_name_prefix: The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true
-    :param expected_value: The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead [Pa]
-    :param weight: Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true [1]
+    :param expected_value: The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead [pascal]
+    :param weight: Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true [dimensionless]
     :param comment: Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true
     :param thomson_scattering: Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true
     :param synthetic: Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true
@@ -44,8 +44,8 @@ class Pressure:
 
     include: bool
     sensor_name_prefix: str | None = None
-    expected_value: float | None = None  # [Pa]
-    weight: float | None = None  # [1]
+    expected_value: float | None = None  # [pascal]
+    weight: float | None = None  # [dimensionless]
     comment: str | None = None
     thomson_scattering: PressureThomsonScattering | None = None
     synthetic: Synthetic | None = None
@@ -56,12 +56,12 @@ class PressureThomsonScattering:
     """
     Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader
 
-    :param pressure_multiplier: Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature [1]
-    :param minimum_pressure: Total pressures at or below this are ignored. A channel with none above it gets no constraint [Pa]
+    :param pressure_multiplier: Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature [dimensionless]
+    :param minimum_pressure: Total pressures at or below this are ignored. A channel with none above it gets no constraint [pascal]
     """
 
-    pressure_multiplier: float  # [1]
-    minimum_pressure: float  # [Pa]
+    pressure_multiplier: float  # [dimensionless]
+    minimum_pressure: float  # [pascal]
 
 
 @dataclass(kw_only=True)
@@ -69,13 +69,13 @@ class Synthetic:
     """
     Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader
 
-    :param r_start: Major radius of the first sensor, relative to the magnetic axis [m]
-    :param r_end: Major radius of the last sensor, relative to the magnetic axis [m]
+    :param r_start: Major radius of the first sensor, relative to the magnetic axis [metre]
+    :param r_end: Major radius of the last sensor, relative to the magnetic axis [metre]
     :param n_sensors: Number of sensors, evenly spaced from r_start to r_end
-    :param minimum_pressure: Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint [Pa]
+    :param minimum_pressure: Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint [pascal]
     """
 
-    r_start: float  # [m]
-    r_end: float  # [m]
+    r_start: float  # [metre]
+    r_end: float  # [metre]
     n_sensors: int
-    minimum_pressure: float  # [Pa]
+    minimum_pressure: float  # [pascal]

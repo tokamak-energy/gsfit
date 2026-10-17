@@ -5,12 +5,12 @@
     Named as in the IMAS Data Dictionary: equilibrium time_slice[:]/constraints/flux_loop[:], and
     magnetics flux_loop[:].
     The root element is `constraints__flux_loop`, the path of this file's link in equilibrium.xml
-    with `__` for `/`, and each `flux_loop` element has the type `flux_loop`. Neither these names nor the
+    with `__` for `/`, and each `flux_loop` element has the type `FluxLoop`. Neither these names nor the
     Python classes generated from them then clash with those of the other constraints files.
 
     constraints_flux_loop.xsd, constraints_rogowski_coil.xsd, constraints_diamagnetic_flux.xsd and
     constraints_isoflux.xsd are the same apart from their names, documentation, units and number of
-    elements, so change them all together.
+    elements, and the diamagnetic flux having no `name`, so change them all together.
     See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
@@ -20,29 +20,30 @@
     <xs:element name="constraints__flux_loop">
         <xs:annotation>
             <xs:documentation>
-                How each flux loop is fitted, one `flux_loop` per loop. A loop the database has but this file does not list is not fitted, and a listed loop the database does not have is ignored
+                Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
+                A flux loop read by the `database_reader` which is not listed here is not included in the fit.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="flux_loop" type="flux_loop" minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="flux_loop" type="FluxLoop" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:documentation>
-                            One flux loop, which measures the poloidal flux
+                            Fitting settings for one flux loop.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
             </xs:sequence>
         </xs:complexType>
-        <xs:unique name="constraints_flux_loop_unique_name">
+        <xs:key name="flux_loop_name_key">
             <xs:annotation>
                 <xs:documentation>
-                    Each flux_loop is listed at most once
+                    Each flux loop's `name` must be unique.
                 </xs:documentation>
             </xs:annotation>
             <xs:selector xpath="flux_loop"/>
             <xs:field xpath="name"/>
-        </xs:unique>
+        </xs:key>
     </xs:element>
 
     <!-- ================================= Other simple types ================================= -->
@@ -50,7 +51,7 @@
     <xs:simpleType name="Name">
         <xs:annotation>
             <xs:documentation>
-                A name, with no spaces
+                A non-empty name without any whitespace.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
@@ -58,64 +59,87 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="NonNegativeDouble">
+    <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                A number greater than or equal to 0
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteNonNegativeDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than or equal to 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
             <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TrueOrFalse">
+        <xs:annotation>
+            <xs:documentation>
+                A boolean written as `true` or `false`; `xs:boolean` alone would also accept `1` and `0`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:boolean">
+            <xs:pattern value="true|false"/>
         </xs:restriction>
     </xs:simpleType>
 
     <!-- ================================= Complex types ================================= -->
 
-    <xs:complexType name="flux_loop">
+    <xs:complexType name="FluxLoop">
         <xs:annotation>
             <xs:documentation>
-                One flux loop, which measures the poloidal flux
+                Fitting settings for one flux loop.
             </xs:documentation>
         </xs:annotation>
         <xs:all>
             <xs:element name="name" type="Name">
                 <xs:annotation>
                     <xs:documentation>
-                        The loop's name in the database, e.g. "L001"
+                        Name of the flux loop, e.g. `L001`.
+                        Must be unique, and must match the name of a flux loop stored in `flux_loop(i1)/name`.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="expected_value" type="xs:double">
+            <xs:element name="expected_value" type="FiniteDouble">
                 <xs:annotation>
                     <xs:documentation>
                         Expected magnitude of the measurement, used to normalise the measurement.
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>Wb</units>
+                        <units>weber</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="weight" type="NonNegativeDouble">
+            <xs:element name="weight" type="FiniteNonNegativeDouble">
                 <xs:annotation>
                     <xs:documentation>
-                        Relative weight of the constraint in the least-squares fit.
+                        Relative weight of the flux loop in the least-squares fit.
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>1</units>
+                        <units>dimensionless</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="include" type="xs:boolean">
+            <xs:element name="include" type="TrueOrFalse">
                 <xs:annotation>
                     <xs:documentation>
-                        Whether the constraint is fitted
+                        Whether to include the flux loop in the fit.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="comment" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>
-                        Free text, e.g. why the constraint is not included; not used by the fit
+                        Free-text comment, e.g. on the quality of the signal; may be empty.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>

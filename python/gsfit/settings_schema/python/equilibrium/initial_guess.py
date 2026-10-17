@@ -19,18 +19,18 @@ class InitialGuess:
     """
     The initial guess of the plasma current: an ellipse of current
 
-    :param ip: Plasma current [A]
-    :param cur_r: Radial centre of the current [m]
-    :param cur_z: Vertical centre of the current [m]
-    :param minor_radius: Radial semi-axis of the current [m]
-    :param elongation: Elongation of the current [1]
+    :param ip: Plasma current [ampere]
+    :param cur_r: Radial centre of the current [metre]
+    :param cur_z: Vertical centre of the current [metre]
+    :param minor_radius: Radial semi-axis of the current [metre]
+    :param elongation: Elongation of the current [dimensionless]
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "equilibrium/initial_guess.xsd"
 
-    ip: float  # [A]
-    cur_r: float  # [m]
-    cur_z: float  # [m]
-    minor_radius: float  # [m]
-    elongation: float  # [1]
+    ip: float  # [ampere]
+    cur_r: float  # [metre]
+    cur_z: float  # [metre]
+    minor_radius: float  # [metre]
+    elongation: float  # [dimensionless]

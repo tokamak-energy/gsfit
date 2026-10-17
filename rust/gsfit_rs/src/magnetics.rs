@@ -23,10 +23,13 @@ use pyo3::prelude::*;
 /// * `current` - the measured current, on the experimental timebase
 /// * `gaps(i2)/name`, `r_start`, `r_end`, `z_start` and `z_end` - a custom key, the stretches of the contour which have no winding
 ///
-/// For the diamagnetic flux, `diamagnetic_flux(i1)`, and the plasma current, `ip(i1)`, one entry for each method of calculating
-/// them:
+/// For the diamagnetic flux, `diamagnetic_flux(0)`, and the plasma current, `ip(i1)`:
 /// * `method_name`
 /// * `data` and `time` - on the experimental timebase
+///
+/// The data dictionary allows one entry for each method of calculating them. GSFit takes the plasma current's first, generally
+/// recommended, method, but accepts only one diamagnetic flux, as the equilibrium IDS has a single diamagnetic flux constraint, so the
+/// signals of several diamagnetic loops are averaged into one before it is added.
 ///
 /// Nothing else is filled, e.g. each position's `phi`, the probes' `toroidal_angle`, `area` and `turns`, and the loops' `area`:
 /// GSFit does not use them.

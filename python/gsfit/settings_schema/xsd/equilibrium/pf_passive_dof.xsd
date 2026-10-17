@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Schema for passive_dof_regularisation.xml: the degrees of freedom of the currents in the passive
+    Schema for pf_passive_dof.xml: the degrees of freedom of the currents in the passive
     structures, and their regularisation. One `passive` per passive structure, named as in the database.
 
     See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
@@ -38,7 +38,7 @@
     <xs:simpleType name="Name">
         <xs:annotation>
             <xs:documentation>
-                A name, with no spaces
+                A non-empty name without any whitespace.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
@@ -46,13 +46,55 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="DoubleList">
+    <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
             </xs:documentation>
         </xs:annotation>
-        <xs:list itemType="xs:double"/>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteNonNegativeDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than or equal to 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteDoubleList">
+        <xs:annotation>
+            <xs:documentation>
+                A list of finite numbers, written space-separated, e.g. "0.1 0.2 0.3".
+            </xs:documentation>
+        </xs:annotation>
+        <xs:list itemType="FiniteDouble"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteNonNegativeDoubleList">
+        <xs:annotation>
+            <xs:documentation>
+                A list of finite numbers greater than or equal to 0, written space-separated, e.g. "0.1 0.2 0.3".
+            </xs:documentation>
+        </xs:annotation>
+        <xs:list itemType="FiniteNonNegativeDouble"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="TrueOrFalse">
+        <xs:annotation>
+            <xs:documentation>
+                A boolean written as `true` or `false`; `xs:boolean` alone would also accept `1` and `0`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:boolean">
+            <xs:pattern value="true|false"/>
+        </xs:restriction>
     </xs:simpleType>
 
     <!-- ================================= Complex types ================================= -->
@@ -64,7 +106,7 @@
             </xs:documentation>
         </xs:annotation>
         <xs:sequence>
-            <xs:element name="row" type="DoubleList" minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="row" type="FiniteDoubleList" minOccurs="0" maxOccurs="unbounded">
                 <xs:annotation>
                     <xs:documentation>
                         One regularisation: a coefficient for each degree of freedom, as a space-separated list
@@ -95,14 +137,14 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="include" type="xs:boolean">
+            <xs:element name="include" type="TrueOrFalse">
                 <xs:annotation>
                     <xs:documentation>
                         Whether the passive is included. Not read at present
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="n_dof" type="xs:nonNegativeInteger">
+            <xs:element name="n_dof" type="xs:positiveInteger">
                 <xs:annotation>
                     <xs:documentation>
                         Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig
@@ -116,13 +158,13 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="regularisations_weight" type="DoubleList">
+            <xs:element name="regularisations_weight" type="FiniteNonNegativeDoubleList">
                 <xs:annotation>
                     <xs:documentation>
                         The weight of each regularisation in the fit: one per `row` of `regularisations`
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>1</units>
+                        <units>dimensionless</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
@@ -131,7 +173,7 @@
 
     <!-- ================================= The settings file ================================= -->
 
-    <xs:element name="passive_dof_regularisation">
+    <xs:element name="pf_passive_dof">
         <xs:annotation>
             <xs:documentation>
                 The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it
@@ -148,7 +190,7 @@
                 </xs:element>
             </xs:sequence>
         </xs:complexType>
-        <xs:unique name="passive_dof_regularisation_unique_name">
+        <xs:unique name="pf_passive_dof_unique_name">
             <xs:annotation>
                 <xs:documentation>
                     Each passive is listed at most once

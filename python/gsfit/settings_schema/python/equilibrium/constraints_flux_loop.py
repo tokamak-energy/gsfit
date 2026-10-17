@@ -20,9 +20,10 @@ from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 @dataclass(kw_only=True)
 class ConstraintsFluxLoop:
     """
-    How each flux loop is fitted, one `flux_loop` per loop. A loop the database has but this file does not list is not fitted, and a listed loop the database does not have is ignored
+    Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
+    A flux loop read by the `database_reader` which is not listed here is not included in the fit.
 
-    :param flux_loop: One flux loop, which measures the poloidal flux. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `flux_loop[name]`
+    :param flux_loop: Fitting settings for one flux loop. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `flux_loop[name]`
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -34,20 +35,20 @@ class ConstraintsFluxLoop:
 @dataclass(kw_only=True)
 class FluxLoop:
     """
-    One flux loop, which measures the poloidal flux
+    Fitting settings for one flux loop.
 
-    :param name: The loop's name in the database, e.g. "L001"
-    :param expected_value: Expected magnitude of the measurement, used to normalise the measurement. [Wb]
-    :param weight: Relative weight of the constraint in the least-squares fit. [1]
-    :param include: Whether the constraint is fitted
-    :param comment: Free text, e.g. why the constraint is not included; not used by the fit
+    :param name: Name of the flux loop, e.g. `L001`. Must be unique, and must match the name of a flux loop stored in `flux_loop(i1)/name`.
+    :param expected_value: Expected magnitude of the measurement, used to normalise the measurement. [weber]
+    :param weight: Relative weight of the flux loop in the least-squares fit. [dimensionless]
+    :param include: Whether to include the flux loop in the fit.
+    :param comment: Free-text comment, e.g. on the quality of the signal; may be empty.
     """
 
     # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique
     KEY: typing.ClassVar[str] = "name"
 
     name: str
-    expected_value: float  # [Wb]
-    weight: float  # [1]
+    expected_value: float  # [weber]
+    weight: float  # [dimensionless]
     include: bool
     comment: str

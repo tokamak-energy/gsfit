@@ -17,9 +17,14 @@ from dataclasses import dataclass
 @dataclass(kw_only=True)
 class ConstraintsDiamagneticFlux:
     """
-    How the diamagnetic loop is fitted: a `diamagnetic_flux` named DIALOOP, or none. With none it is not fitted. Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers
+    Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
+    GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
+    A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
+    Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
+    With one, the magnetics IDS must hold the diamagnetic flux.
+    Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
 
-    :param diamagnetic_flux: The diamagnetic loop, which measures the toroidal flux from the plasma
+    :param diamagnetic_flux: Fitting settings for the diamagnetic flux.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -31,17 +36,15 @@ class ConstraintsDiamagneticFlux:
 @dataclass(kw_only=True)
 class DiamagneticFlux:
     """
-    The diamagnetic loop, which measures the toroidal flux from the plasma
+    Fitting settings for the diamagnetic flux.
 
-    :param name: The loop's name, which the readers expect to be "DIALOOP"
-    :param expected_value: The typical size of the loop's measured diamagnetic flux. The fit divides the residual by it [Wb]
-    :param weight: Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value [1]
-    :param include: Whether the constraint is fitted
-    :param comment: Free text, e.g. why the constraint is not included; not used by the fit
+    :param expected_value: Expected magnitude of the measurement, used to normalise the measurement. [weber]
+    :param weight: Relative weight of the diamagnetic flux in the least-squares fit. [dimensionless]
+    :param include: Whether to include the diamagnetic flux in the fit.
+    :param comment: Free-text comment, e.g. on the quality of the signal; may be empty.
     """
 
-    name: str
-    expected_value: float  # [Wb]
-    weight: float  # [1]
+    expected_value: float  # [weber]
+    weight: float  # [dimensionless]
     include: bool
     comment: str

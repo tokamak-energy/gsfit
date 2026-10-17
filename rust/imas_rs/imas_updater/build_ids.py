@@ -1286,7 +1286,9 @@ PARAMETERS_PARSED_XSD_FILES: dict[str, Path] = {
 # `xs:boolean` is stored as an integer, 1 for true and 0 for false, as it does for e.g. `constraints/ip/exact`
 XSD_BUILT_IN_LEAF_TYPES: dict[str, tuple[str, str]] = {
     "xs:double": ("FLT_0D", "read_double"),
+    "xs:integer": ("INT_0D", "read_integer"),
     "xs:nonNegativeInteger": ("INT_0D", "read_integer"),
+    "xs:positiveInteger": ("INT_0D", "read_integer"),
     "xs:boolean": ("INT_0D", "read_boolean"),
     "xs:string": ("STR_0D", "read_string"),
 }
@@ -1353,7 +1355,7 @@ def resolve_settings_leaf_type(type_name: str, schema: SettingsSchema) -> tuple[
     """
     The base type a leaf of the settings is stored as, the function reading it, and its enumeration values, if it has any.
 
-    A simple type is resolved through its restrictions to the built-in type it restricts, e.g. `NonNegativeDouble` to
+    A simple type is resolved through its restrictions to the built-in type it restricts, e.g. `FiniteNonNegativeDouble` to
     `xs:double`. A space-separated list of numbers, an `xs:list` of `xs:double`, is a `FLT_1D`.
     """
 

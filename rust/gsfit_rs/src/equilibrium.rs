@@ -6,6 +6,7 @@ use crate::pulse_schedule::PulseSchedule;
 use crate::source_functions::{EfitPolynomial, SharedSourceFunction, TensionedCubicBSpline};
 use crate::tf::Tf;
 use crate::wall::Wall;
+use imas_rs::EMPTY_INT;
 use imas_rs::ids::equilibrium::{
     Code, Equilibrium as EquilibriumIds, EquilibriumCodeParametersParsed, EquilibriumCodeParametersParsedEfitPolynomial,
     EquilibriumCodeParametersParsedEquilibriumConstraints, EquilibriumCodeParametersParsedGrid, EquilibriumCodeParametersParsedTensionedCubicBSpline,
@@ -306,11 +307,10 @@ impl Equilibrium {
                 ..Default::default()
             });
         }
-        // The data dictionary has a single diamagnetic flux constraint. Its settings are optional, and their `name` is required, so it is
-        // empty only when they are left out
+        // The data dictionary has a single diamagnetic flux constraint, which has no name. Its settings are optional, and their `include` is
+        // required, so it is unset only when they are left out
         let mut diamagnetic_flux_constraint: EquilibriumConstraints0dB0Like = EquilibriumConstraints0dB0Like::default();
-        if !constraints_settings.diamagnetic_flux.diamagnetic_flux.name.is_empty() {
-            diamagnetic_flux_constraint.name = constraints_settings.diamagnetic_flux.diamagnetic_flux.name.clone();
+        if constraints_settings.diamagnetic_flux.diamagnetic_flux.include != EMPTY_INT {
             diamagnetic_flux_constraint.weight = constraints_settings.diamagnetic_flux.diamagnetic_flux.weight;
         }
 
@@ -626,22 +626,24 @@ impl Equilibrium {
     /// * `magnetics/flux_loop(i1)/flux` fills `.../constraints/flux_loop(i1)`, [weber]
     /// * `magnetics/rogowski_coil(i1)/current` fills `.../constraints/rogowski_coil(i1)`, a custom key, as the data dictionary has
     ///   no constraint for Rogowski coils, [ampere]
-    /// * `magnetics/diamagnetic_flux(i1)/data`, of the `method_name` the fit settings name, fills `.../constraints/diamagnetic_flux`,
-    ///   [weber]
+    /// * `magnetics/diamagnetic_flux(0)/data` fills `.../constraints/diamagnetic_flux`, [weber]
     /// * `magnetics/ip(0)/data` fills `.../constraints/ip`, [ampere]
     ///
     /// Each constraint gets:
-    /// * `name` - a custom key: the sensor's `name`, or the `method_name` for `diamagnetic_flux` and `ip`
+    /// * `name` - a custom key: the sensor's `name`, or the `method_name` for `ip`. `diamagnetic_flux` has none, as in the data
+    ///   dictionary, because there is only one
     /// * `measured` - the measurement, interpolated onto the time-slice's time
     /// * `source` - the path the measurement was read from, e.g. `magnetics/b_field_pol_probe(i1)/field`
     /// * `time_measurement` - the time-slice's own time, because the measurement is interpolated rather than taken at one of the
     ///   times it was measured, [second]
     ///
-    /// `diamagnetic_flux` and `ip` are single constraints, whereas the magnetics IDS holds one entry for each method of calculating
-    /// them. The diamagnetic flux is the one the fit settings name, and is left unset without fit settings for it. The plasma current,
-    /// which has no fit settings, is the generally recommended method, the first, and is left unset when the magnetics IDS has none.
+    /// `diamagnetic_flux` and `ip` are single constraints. GSFit accepts a single diamagnetic flux, `magnetics/diamagnetic_flux(0)`, so
+    /// the signals of several diamagnetic loops are averaged into one before it is added to the magnetics IDS. It is left unset without
+    /// fit settings for it. The plasma current, which has no fit settings, is the magnetics IDS's generally recommended method of
+    /// calculating it, the first, and is left unset when the magnetics IDS has none.
     ///
-    /// Each constraint also keeps what `Equilibrium::new` set from the sensor's fit settings, found by the sensor's name: its `weight`.
+    /// Each constraint also keeps what `Equilibrium::new` set from the sensor's fit settings, found by the sensor's name, or for the
+    /// diamagnetic flux, from its own: its `weight`.
     ///
     /// Any magnetic constraints already on a time-slice are replaced, so calling this twice does not repeat them.
     ///
@@ -649,8 +651,9 @@ impl Equilibrium {
     /// * `magnetics` - The Magnetics object (a Rust implementation, initialised in Python)
     ///
     /// # Errors
-    /// A `ValueError` when a sensor in the fit settings is not in the magnetics IDS, or when a measurement cannot be interpolated onto
-    /// the reconstruction times, e.g. because its timebase does not cover them.
+    /// A `ValueError` when a sensor in the fit settings is not in the magnetics IDS, when the magnetics IDS holds more than one
+    /// diamagnetic flux, or when a measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not
+    /// cover them.
     pub fn copy_from_magnetics_ids(&mut self, magnetics: PyRef<Magnetics>) -> PyResult<()> {
         // Change Python types into Rust types
         let magnetics_rs: &Magnetics = &magnetics;

@@ -1,4 +1,4 @@
-use imas_rs::{EquilibriumCodeParametersParsed, EquilibriumTimeSlice};
+use imas_rs::{EMPTY_INT, EquilibriumCodeParametersParsed, EquilibriumTimeSlice};
 use ndarray::Array1;
 
 /// The sensors of one kind which are fitted on a time-slice, read from the equilibrium IDS.
@@ -7,7 +7,8 @@ use ndarray::Array1;
 /// sensors are in the order of their constraints, `time_slice(itime)/constraints/<sensor>`, which is the order of the magnetics IDS.
 #[derive(Clone, Debug)]
 pub struct FittedSensors {
-    /// The name of each fitted sensor, its constraint's `name`
+    /// The name of each fitted sensor, its constraint's `name`. The diamagnetic flux's constraint has no name, as there is only one, so
+    /// it is called `diamagnetic_flux`
     pub names: Vec<String>,
     /// Each fitted sensor's measurement, its constraint's `measured`, which `Equilibrium.copy_from_magnetics_ids` copied in
     pub measured: Array1<f64>,
@@ -66,7 +67,9 @@ impl FittedMagneticSensors {
     ///
     /// Each constraint, in `time_slice(itime)/constraints/<sensor>`, is fitted if the fit settings of the sensor of the same name, in
     /// `code/parameters_parsed/constraints/<sensor>/<sensor>(i1)`, include it. A sensor without fit settings is not fitted, nor is one
-    /// whose `include` is unset. The weight is the constraint's, and the expected value the fit settings'.
+    /// whose `include` is unset. The diamagnetic flux, a single constraint with no name, is fitted if its own fit settings,
+    /// `code/parameters_parsed/constraints/diamagnetic_flux/diamagnetic_flux`, include it. The weight is the constraint's, and the
+    /// expected value the fit settings'.
     ///
     /// # Arguments
     /// * `time_slice` - the time-slice, whose constraints hold the sensors' measurements and weights
@@ -147,15 +150,15 @@ impl FittedMagneticSensors {
             ));
         }
 
-        // The diamagnetic flux: a single constraint, which is unset, and so has no name, when the magnetics IDS has no diamagnetic flux
+        // The diamagnetic flux: a single constraint, as the data dictionary has one, with no name. Its fit settings are optional, and their
+        // `include` is required, so it is unset only when they are left out
         let settings_diamagnetic_flux = &parameters_parsed.constraints.diamagnetic_flux.diamagnetic_flux;
         let constraint = &time_slice.constraints.diamagnetic_flux;
         let mut diamagnetic_flux_constraints: Vec<(String, bool, f64, f64, f64, String)> = Vec::new();
-        if !constraint.name.is_empty() {
-            let include: bool = settings_diamagnetic_flux.name == constraint.name && settings_diamagnetic_flux.include == 1;
+        if settings_diamagnetic_flux.include != EMPTY_INT {
             diamagnetic_flux_constraints.push((
-                constraint.name.clone(),
-                include,
+                "diamagnetic_flux".to_string(),
+                settings_diamagnetic_flux.include == 1,
                 constraint.measured,
                 constraint.weight,
                 settings_diamagnetic_flux.expected_value,

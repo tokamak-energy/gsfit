@@ -230,7 +230,7 @@ def dataclass_to_element(
         as `make_settings_from_xml_xsd` writes it. `xsd_element` is then from the XML schema of this XML file alone
     * a 2D numpy array is written as a matrix, one `<row>` per row; see `matrix_row_element`
     * any other value is written as text, by the XML schema type of its element, e.g. `False` -> "false" or `[0.1, 0.2]` -> "0.1 0.2",
-      which also checks it against that type, e.g. that a `PositiveDouble` is greater than 0
+      which also checks it against that type, e.g. that a `FinitePositiveDouble` is greater than 0
 
     :param settings: Dataclass of the element, e.g. `WorkflowTree`
     :param xsd_element: The element, as declared in the XML schema

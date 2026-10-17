@@ -32,11 +32,11 @@ from .wall.wall import WallSettings
 @dataclass(kw_only=True)
 class GsfitCodeSettings:
     """
-    GSFit's settings. This file holds no settings itself: each element links to the file which holds one group of them
+    GSFit's settings. This file holds no settings itself; instead it links to different *.xml's.
 
-    :param database_reader: The database reader the whole run uses, which builds the IDSs GSFit reads
-    :param database_writer: Where the results are written
-    :param ids: Settings needed to build IDSs. These settings will be stored within the IDSs once built.
+    :param database_reader: The Python `database_reader` to use for the whole run.
+    :param database_writer: List of Python `database_writer` to write to after the run completes.
+    :param ids: Settings needed to build IDSs.
     :param rtgsfit_code_settings: RTGSFit's own settings, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer
     :param rtgsfit_initial_conditions: The equilibrium RTGSFit starts from, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer
     :param sensor_replacement: The constraints which RTGSFit makes from other sensors. Optional, and only read by the rtgsfit_mdsplus writer
@@ -58,7 +58,7 @@ class GsfitCodeSettingsIds:
     """
     Settings needed to build IDSs. These settings will be stored within the IDSs once built.
 
-    :param equilibrium: Settings needed to build `equilibrium` IDS; e.g. times to reconstruct, the numerical grid, ...
+    :param equilibrium: Settings needed to build `equilibrium` IDS; e.g. `time_slices`, the numerical grid, ...
     :param magnetics: Settings needed to build `magnetics` IDS; e.g. where to read data from.
     :param pf_active: Settings needed to build `pf_active` IDS; e.g. where to read data from.
     :param pf_passive: Settings needed to build `pf_passive` IDS; e.g. where to read data from.

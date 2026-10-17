@@ -8,13 +8,35 @@
 
     <!-- ================================= Other simple types ================================= -->
 
-    <xs:simpleType name="PositiveDouble">
+    <xs:simpleType name="NumberOfGridPoints">
         <xs:annotation>
             <xs:documentation>
-                A number greater than 0
+                A number of evenly spaced grid points: at least 2, so that they have a spacing.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:positiveInteger">
+            <xs:minInclusive value="2"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FinitePositiveDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
             <xs:minExclusive value="0.0"/>
         </xs:restriction>
     </xs:simpleType>
@@ -29,64 +51,64 @@
         </xs:annotation>
         <xs:complexType>
             <xs:all>
-                <xs:element name="n_r" type="xs:nonNegativeInteger">
+                <xs:element name="n_r" type="NumberOfGridPoints">
                     <xs:annotation>
                         <xs:documentation>
                             Number of radial grid points
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="n_z" type="xs:nonNegativeInteger">
+                <xs:element name="n_z" type="NumberOfGridPoints">
                     <xs:annotation>
                         <xs:documentation>
                             Number of vertical grid points
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="r_min" type="PositiveDouble">
+                <xs:element name="r_min" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Minimum major radius
+                            Lower radial bound of the grid
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>m</units>
+                            <units>metre</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="r_max" type="PositiveDouble">
+                <xs:element name="r_max" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Maximum major radius
+                            Upper radial bound of the grid
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>m</units>
+                            <units>metre</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="z_min" type="xs:double">
+                <xs:element name="z_min" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Minimum vertical position
+                            Lower vertical bound of the grid
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>m</units>
+                            <units>metre</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="z_max" type="xs:double">
+                <xs:element name="z_max" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Maximum vertical position
+                            Upper vertical bound of the grid
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>m</units>
+                            <units>metre</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="n_psi_norm" type="xs:nonNegativeInteger">
+                <xs:element name="n_psi_norm" type="NumberOfGridPoints">
                     <xs:annotation>
                         <xs:documentation>
-                            Number of points in the normalised poloidal flux, psi_norm, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given
+                            Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>

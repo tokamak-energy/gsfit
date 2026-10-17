@@ -6,6 +6,30 @@
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
 
+    <!-- ================================= Other simple types ================================= -->
+
+    <xs:simpleType name="FiniteDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FinitePositiveDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minExclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="initial_guess">
@@ -16,53 +40,53 @@
         </xs:annotation>
         <xs:complexType>
             <xs:all>
-                <xs:element name="ip" type="xs:double">
+                <xs:element name="ip" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
                             Plasma current
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>A</units>
+                            <units>ampere</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="cur_r" type="xs:double">
+                <xs:element name="cur_r" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
                             Radial centre of the current
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>m</units>
+                            <units>metre</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="cur_z" type="xs:double">
+                <xs:element name="cur_z" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
                             Vertical centre of the current
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>m</units>
+                            <units>metre</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="minor_radius" type="xs:double">
+                <xs:element name="minor_radius" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
                             Radial semi-axis of the current
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>m</units>
+                            <units>metre</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="elongation" type="xs:double">
+                <xs:element name="elongation" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
                             Elongation of the current
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>1</units>
+                            <units>dimensionless</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>

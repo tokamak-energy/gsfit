@@ -17,7 +17,7 @@ from . import equilibrium
 from . import grid
 from . import initial_guess
 from . import numerics
-from . import passive_dof_regularisation
+from . import pf_passive_dof
 from . import source_function_ff_prime
 from . import source_function_p_prime
 from . import timeslices
@@ -33,7 +33,7 @@ __all__ = [
     "grid",
     "initial_guess",
     "numerics",
-    "passive_dof_regularisation",
+    "pf_passive_dof",
     "source_function_ff_prime",
     "source_function_p_prime",
     "timeslices",

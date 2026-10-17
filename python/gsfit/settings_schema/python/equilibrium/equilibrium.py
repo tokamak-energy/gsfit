@@ -23,7 +23,7 @@ from .constraints_rogowski_coil import ConstraintsRogowskiCoil
 from .grid import Grid
 from .initial_guess import InitialGuess
 from .numerics import Numerics
-from .passive_dof_regularisation import PassiveDofRegularisation
+from .pf_passive_dof import PfPassiveDof
 from .source_function_ff_prime import SourceFunctionFfPrime
 from .source_function_p_prime import SourceFunctionPPrime
 from .timeslices import Timeslices
@@ -32,16 +32,16 @@ from .timeslices import Timeslices
 @dataclass(kw_only=True)
 class EquilibriumSettings:
     """
-    GSFit's own settings, which make the equilibrium IDS. This file holds no settings itself: each element links to the file which holds one group of them
+    Settings to make the equilibrium IDS.
 
     :param timeslices: The times to reconstruct
     :param numerics: Settings for the Grad-Shafranov solve, and the number of threads it runs on
     :param grid: The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
-    :param initial_guess: The initial guess of the plasma current
+    :param initial_guess: Initial guess for first iteration
     :param source_function_p_prime: The p' source function: its basis functions and their regularisation
     :param source_function_ff_prime: The ff' source function: its basis functions and their regularisation
-    :param passive_dof_regularisation: The degrees of freedom of the currents in the passive structures, and their regularisation
-    :param constraints: The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+    :param pf_passive_dof: The degrees of freedom of the currents in the passive structures, and their regularisation
+    :param constraints: Constraints used in the least-squares fit.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -53,7 +53,7 @@ class EquilibriumSettings:
     initial_guess: InitialGuess
     source_function_p_prime: SourceFunctionPPrime
     source_function_ff_prime: SourceFunctionFfPrime
-    passive_dof_regularisation: PassiveDofRegularisation
+    pf_passive_dof: PfPassiveDof
     constraints: EquilibriumConstraints
 
 
@@ -62,12 +62,12 @@ class EquilibriumConstraints:
     """
     The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
 
-    :param b_field_pol_probe: How each poloidal field probe (Mirnov coil) is fitted. IMAS: equilibrium time_slice[:]/constraints/b_field_pol_probe[:]
-    :param flux_loop: How each flux loop is fitted. IMAS: equilibrium time_slice[:]/constraints/flux_loop[:]
-    :param rogowski_coil: How each Rogowski coil is fitted. IMAS: magnetics rogowski_coil[:]; the equilibrium IDS has no Rogowski coil constraint
-    :param diamagnetic_flux: How the diamagnetic loop is fitted. IMAS: equilibrium time_slice[:]/constraints/diamagnetic_flux
-    :param isoflux: The isoflux constraints: pairs of points on the same flux surface. Not in the IMAS Data Dictionary
-    :param pressure: Whether pressure is fitted, and how the pressure constraints are made. IMAS: equilibrium time_slice[:]/constraints/pressure[:]
+    :param b_field_pol_probe: How each poloidal field probe (Mirnov coil) is fitted.
+    :param flux_loop: How each flux loop is fitted.
+    :param rogowski_coil: How each Rogowski coil is fitted.
+    :param diamagnetic_flux: How the diamagnetic loop is fitted.
+    :param isoflux: The isoflux constraints: pairs of points on the same flux surface.
+    :param pressure: How pressure sensors are fitted.
     """
 
     b_field_pol_probe: ConstraintsBFieldPolProbe

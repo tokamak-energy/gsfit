@@ -19,7 +19,13 @@ def add_to_magnetics_diamagnetic_flux(
 
     **This method is specific to ST40's experimental MDSplus database.**
 
-    Not every pulse has a DIALOOP run. When MDSplus cannot read it, nothing is added, and the reconstruction runs without the diamagnetic flux.
+    GSFit accepts only one diamagnetic flux, as the equilibrium IDS has a single diamagnetic flux constraint, so a machine with several
+    diamagnetic loops averages their signals into one before adding it. The DIALOOP run holds a single diamagnetic flux, `GLOBAL.PHI_DIA`,
+    which is added as it is.
+
+    Not every pulse has a DIALOOP run. When MDSplus cannot read it, nothing is added, so the reconstruction can only run without the diamagnetic
+    flux: `equilibrium/constraints_diamagnetic_flux.xml` must then have no `diamagnetic_flux` element, as `Equilibrium.copy_from_magnetics_ids`
+    raises a `ValueError` for a diamagnetic flux in the fit settings which the magnetics IDS does not have.
 
     The diamagnetic loop's path is not added: `magnetics/diamagnetic_flux` has no node for it.
     """

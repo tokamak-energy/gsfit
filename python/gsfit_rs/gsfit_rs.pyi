@@ -526,21 +526,23 @@ class Equilibrium:
         time-slice, for every sensor in the fit settings, in the order of the magnetics IDS: `magnetics/b_field_pol_probe(i1)/field` fills
         `equilibrium/time_slice(itime)/constraints/b_field_pol_probe(i1)` [tesla]; `magnetics/flux_loop(i1)/flux` fills
         `.../constraints/flux_loop(i1)` [weber]; `magnetics/rogowski_coil(i1)/current` fills `.../constraints/rogowski_coil(i1)`, a custom
-        key, as the data dictionary has no constraint for Rogowski coils [ampere]; `magnetics/diamagnetic_flux(i1)/data`, of the
-        `method_name` the fit settings name, fills `.../constraints/diamagnetic_flux` [weber]; and `magnetics/ip(0)/data` fills
-        `.../constraints/ip` [ampere].
+        key, as the data dictionary has no constraint for Rogowski coils [ampere]; `magnetics/diamagnetic_flux(0)/data` fills
+        `.../constraints/diamagnetic_flux` [weber]; and `magnetics/ip(0)/data` fills `.../constraints/ip` [ampere].
 
-        Each constraint gets `name`, a custom key: the sensor's `name`, or the `method_name` for `diamagnetic_flux` and `ip`; `measured`,
-        the measurement interpolated onto the time-slice's time; `source`, the path the measurement was read from; and `time_measurement`,
-        the time-slice's own time [second]. `diamagnetic_flux` is left unset without fit settings for it. `ip`, which has no fit settings,
-        takes the magnetics IDS's first, generally recommended, method, and is left unset when it has none. Each sensor keeps the `weight`
-        `Equilibrium` was made with, from its fit settings, found by its name.
+        Each constraint gets `name`, a custom key: the sensor's `name`, or the `method_name` for `ip`, while `diamagnetic_flux` has none, as
+        in the data dictionary, because there is only one; `measured`, the measurement interpolated onto the time-slice's time; `source`,
+        the path the measurement was read from; and `time_measurement`, the time-slice's own time [second]. GSFit accepts a single
+        diamagnetic flux, so the signals of several diamagnetic loops are averaged into one before it is added to the magnetics IDS; it is
+        left unset without fit settings for it. `ip`, which has no fit settings, takes the magnetics IDS's first, generally recommended,
+        method, and is left unset when it has none. Each sensor keeps the `weight` `Equilibrium` was made with, from its fit settings, found
+        by its name, or for the diamagnetic flux, from its own.
 
         Any magnetic constraints already on a time-slice are replaced, so calling this twice does not repeat them.
 
         :param magnetics: The magnetic sensors, holding their measurements
-        :raises ValueError: When a sensor in the fit settings is not in the magnetics IDS, or when a measurement cannot be interpolated
-            onto the reconstruction times, e.g. because its timebase does not cover them
+        :raises ValueError: When a sensor in the fit settings is not in the magnetics IDS, when the magnetics IDS holds more than one
+            diamagnetic flux, or when a measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does
+            not cover them
         """
         ...
     def greens_with_pf_active(self, pf_active: PfActive) -> None:
@@ -912,8 +914,11 @@ class Magnetics:
     current, on the experimental timebase; and `gaps(i2)/name`, `r_start`, `r_end`, `z_start` and `z_end`, a custom key, the stretches of
     the contour which have no winding.
 
-    For the diamagnetic flux, `diamagnetic_flux(i1)`, and the plasma current, `ip(i1)`, one entry for each method of calculating
-    them: `method_name`, `data` and `time`.
+    For the diamagnetic flux, `diamagnetic_flux(0)`: `method_name`, `data` and `time`. The data dictionary allows one entry for each
+    method of calculating it, but GSFit accepts only one, as the equilibrium IDS has a single diamagnetic flux constraint, so the
+    signals of several diamagnetic loops are averaged into one before it is added.
+
+    For the plasma current, `ip(i1)`, one entry for each method of calculating it: `method_name`, `data` and `time`.
 
     For now, `b_field_pol_probe(i1)/poloidal_angle` keeps GSFit's present definition, COCOS 13, as MDSplus stores it: counter-clockwise
     from `grad(R)`, in the usual plot with `R` to the right and `Z` upwards, so the probe's normal is
@@ -1020,13 +1025,17 @@ class Magnetics:
         data: npt.NDArray[np.float64],
     ) -> None:
         """
-        Append a diamagnetic flux to `magnetics/diamagnetic_flux`, one for each method of calculating it.
+        Add the diamagnetic flux to `magnetics/diamagnetic_flux`, as `magnetics/diamagnetic_flux(0)`.
 
-        :param method_name: name of the method the diamagnetic flux is calculated with, unique within the diamagnetic fluxes, e.g. `"DIALOOP"`
+        GSFit accepts only one diamagnetic flux, as the equilibrium IDS has a single diamagnetic flux constraint,
+        `time_slice(itime)/constraints/diamagnetic_flux`. A machine with several diamagnetic loops averages their signals into one before
+        adding it.
+
+        :param method_name: name of the method the diamagnetic flux is calculated with, e.g. `"DIALOOP"`
         :param time: the experimental timebase [second]
         :param data: the diamagnetic flux, positive counter-clockwise viewed from above [weber]
-
-        The data dictionary asks for the generally recommended method to be added first.
+        :raises ValueError: When a diamagnetic flux has been added already, `method_name` is empty, or `data` does not have one value per
+            time
         """
         ...
     def add_ip(

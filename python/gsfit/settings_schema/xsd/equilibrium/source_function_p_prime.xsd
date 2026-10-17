@@ -83,13 +83,55 @@
 
     <!-- ================================= Other simple types ================================= -->
 
-    <xs:simpleType name="DoubleList">
+    <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
             </xs:documentation>
         </xs:annotation>
-        <xs:list itemType="xs:double"/>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteNonNegativeDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than or equal to 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteDoubleList">
+        <xs:annotation>
+            <xs:documentation>
+                A list of finite numbers, written space-separated, e.g. "0.1 0.2 0.3".
+            </xs:documentation>
+        </xs:annotation>
+        <xs:list itemType="FiniteDouble"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteNonNegativeDoubleList">
+        <xs:annotation>
+            <xs:documentation>
+                A list of finite numbers greater than or equal to 0, written space-separated, e.g. "0.1 0.2 0.3".
+            </xs:documentation>
+        </xs:annotation>
+        <xs:list itemType="FiniteNonNegativeDouble"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="TrueOrFalse">
+        <xs:annotation>
+            <xs:documentation>
+                A boolean written as `true` or `false`; `xs:boolean` alone would also accept `1` and `0`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:boolean">
+            <xs:pattern value="true|false"/>
+        </xs:restriction>
     </xs:simpleType>
 
     <!-- ================================= Complex types ================================= -->
@@ -101,7 +143,7 @@
             </xs:documentation>
         </xs:annotation>
         <xs:sequence>
-            <xs:element name="row" type="DoubleList" minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="row" type="FiniteDoubleList" minOccurs="0" maxOccurs="unbounded">
                 <xs:annotation>
                     <xs:documentation>
                         One regularisation: a coefficient for each degree of freedom, as a space-separated list
@@ -132,14 +174,14 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="exact" type="xs:boolean" minOccurs="0">
+            <xs:element name="exact" type="TrueOrFalse" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>
                         When true, the coefficients are not fitted but fixed to `coefficients`. False when absent
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="coefficients" type="DoubleList" minOccurs="0">
+            <xs:element name="coefficients" type="FiniteDoubleList" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>
                         The fixed coefficients, one per polynomial, used when `exact` is true
@@ -156,13 +198,13 @@
             </xs:documentation>
         </xs:annotation>
         <xs:all>
-            <xs:element name="regularisation_scale" type="xs:double">
+            <xs:element name="regularisation_scale" type="FiniteNonNegativeDouble">
                 <xs:annotation>
                     <xs:documentation>
                         Multiplies the rows which regularise the bulk of the profile
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>1</units>
+                        <units>dimensionless</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
@@ -180,13 +222,13 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="left_boundary_weight" type="xs:double">
+            <xs:element name="left_boundary_weight" type="FiniteNonNegativeDouble">
                 <xs:annotation>
                     <xs:documentation>
                         Weight of the boundary condition at psi_n = 0. Not used when it is free
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>1</units>
+                        <units>dimensionless</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
@@ -197,13 +239,13 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="right_boundary_weight" type="xs:double">
+            <xs:element name="right_boundary_weight" type="FiniteNonNegativeDouble">
                 <xs:annotation>
                     <xs:documentation>
                         Weight of the boundary condition at psi_n = 1. Not used when it is free
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>1</units>
+                        <units>dimensionless</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
@@ -224,27 +266,27 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="interior_knots" type="DoubleList">
+            <xs:element name="interior_knots" type="FiniteDoubleList">
                 <xs:annotation>
                     <xs:documentation>
                         The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>1</units>
+                        <units>dimensionless</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="interval_tensions" type="DoubleList">
+            <xs:element name="interval_tensions" type="FiniteNonNegativeDoubleList">
                 <xs:annotation>
                     <xs:documentation>
                         The tension over each interval between neighbouring knots: one more than the number of interior knots
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>1</units>
+                        <units>dimensionless</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="make_cubic_spline_regularisations" type="xs:boolean" minOccurs="0">
+            <xs:element name="make_cubic_spline_regularisations" type="TrueOrFalse" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>
                         When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent

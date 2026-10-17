@@ -35,11 +35,11 @@ class ConstraintsBFieldPolProbe:
 @dataclass(kw_only=True)
 class BFieldPolProbe:
     """
-    :param name: Name of the probe, e.g. `P101`. Must be unique, and match the name read by the `database_reader`.
+    :param name: Name of the probe, e.g. `P101`. Must be unique, and must match the name of a probe stored in `b_field_pol_probe(i1)/name`.
     :param comment: Free-text comment, e.g. on the quality of the signal; may be empty.
     :param expected_value: Expected magnitude of the measurement, used to normalise the measurement. [tesla]
     :param include: Whether to include the probe in the fit.
-    :param weight: Relative weight of the probe in the fit. [dimensionless]
+    :param weight: Relative weight of the probe in the least-squares fit. [dimensionless]
     """
 
     # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique

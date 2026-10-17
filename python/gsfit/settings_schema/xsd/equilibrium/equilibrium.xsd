@@ -47,7 +47,7 @@
             <xs:element name="b_field_pol_probe" type="Link">
                 <xs:annotation>
                     <xs:documentation>
-                        How each poloidal field probe (Mirnov coil) is fitted. IMAS: equilibrium time_slice[:]/constraints/b_field_pol_probe[:]
+                        How each poloidal field probe (Mirnov coil) is fitted.
                     </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_b_field_pol_probe.xsd</schema>
@@ -57,7 +57,7 @@
             <xs:element name="flux_loop" type="Link">
                 <xs:annotation>
                     <xs:documentation>
-                        How each flux loop is fitted. IMAS: equilibrium time_slice[:]/constraints/flux_loop[:]
+                        How each flux loop is fitted.
                     </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_flux_loop.xsd</schema>
@@ -67,7 +67,7 @@
             <xs:element name="rogowski_coil" type="Link">
                 <xs:annotation>
                     <xs:documentation>
-                        How each Rogowski coil is fitted. IMAS: magnetics rogowski_coil[:]; the equilibrium IDS has no Rogowski coil constraint
+                        How each Rogowski coil is fitted.
                     </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_rogowski_coil.xsd</schema>
@@ -77,7 +77,7 @@
             <xs:element name="diamagnetic_flux" type="Link">
                 <xs:annotation>
                     <xs:documentation>
-                        How the diamagnetic loop is fitted. IMAS: equilibrium time_slice[:]/constraints/diamagnetic_flux
+                        How the diamagnetic loop is fitted.
                     </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_diamagnetic_flux.xsd</schema>
@@ -87,7 +87,7 @@
             <xs:element name="isoflux" type="Link">
                 <xs:annotation>
                     <xs:documentation>
-                        The isoflux constraints: pairs of points on the same flux surface. Not in the IMAS Data Dictionary
+                        The isoflux constraints: pairs of points on the same flux surface.
                     </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_isoflux.xsd</schema>
@@ -97,7 +97,7 @@
             <xs:element name="pressure" type="Link">
                 <xs:annotation>
                     <xs:documentation>
-                        Whether pressure is fitted, and how the pressure constraints are made. IMAS: equilibrium time_slice[:]/constraints/pressure[:]
+                        How pressure sensors are fitted.
                     </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_pressure.xsd</schema>
@@ -112,7 +112,7 @@
     <xs:element name="equilibrium_settings">
         <xs:annotation>
             <xs:documentation>
-                GSFit's own settings, which make the equilibrium IDS. This file holds no settings itself: each element links to the file which holds one group of them
+                Settings to make the equilibrium IDS.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -151,7 +151,7 @@
                 <xs:element name="initial_guess" type="Link">
                     <xs:annotation>
                         <xs:documentation>
-                            The initial guess of the plasma current
+                            Initial guess for first iteration
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>initial_guess.xsd</schema>
@@ -182,13 +182,13 @@
                 </xs:element>
 
                 <!-- Passive structures -->
-                <xs:element name="passive_dof_regularisation" type="Link">
+                <xs:element name="pf_passive_dof" type="Link">
                     <xs:annotation>
                         <xs:documentation>
                             The degrees of freedom of the currents in the passive structures, and their regularisation
                         </xs:documentation>
                         <xs:appinfo>
-                            <schema>passive_dof_regularisation.xsd</schema>
+                            <schema>pf_passive_dof.xsd</schema>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
@@ -197,7 +197,7 @@
                 <xs:element name="constraints" type="EquilibriumConstraints">
                     <xs:annotation>
                         <xs:documentation>
-                            The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+                            Constraints used in the least-squares fit.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>

@@ -270,13 +270,6 @@ pub struct EquilibriumConstraints0dOneLike {
     pub name: STR_0D,
 }
 
-/// The data dictionary uses this type for `time_slice(itime)/constraints/diamagnetic_flux` only.
-pub struct EquilibriumConstraints0dB0Like {
-    /// Name of the method the diamagnetic flux is calculated with, matching `magnetics/diamagnetic_flux(0)/method_name`,
-    /// e.g. `"DIALOOP"`
-    pub name: STR_0D,
-}
-
 /// The keys below are for `time_slice(itime)/constraints/pf_passive_current(i1)`, the current in `pf_passive/loop(i1)`.
 /// GSFit does not measure that current: it fits it, as an amplitude for each of the loop's degrees of freedom, and the
 /// regularisations are what constrain the fit.

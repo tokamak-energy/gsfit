@@ -9,13 +9,24 @@
 
     <!-- ================================= Other simple types ================================= -->
 
-    <xs:simpleType name="DoubleList">
+    <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
             </xs:documentation>
         </xs:annotation>
-        <xs:list itemType="xs:double"/>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteDoubleList">
+        <xs:annotation>
+            <xs:documentation>
+                A list of finite numbers, written space-separated, e.g. "0.1 0.2 0.3".
+            </xs:documentation>
+        </xs:annotation>
+        <xs:list itemType="FiniteDouble"/>
     </xs:simpleType>
 
     <xs:simpleType name="ZeroOrOne">
@@ -56,13 +67,13 @@
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="flux_norm" type="DoubleList">
+                <xs:element name="flux_norm" type="FiniteDoubleList">
                     <xs:annotation>
                         <xs:documentation>
                             The normalised poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:FLUX_NORM
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>1</units>
+                            <units>dimensionless</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
@@ -73,7 +84,7 @@
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="psi_total" type="DoubleList">
+                <xs:element name="psi_total" type="FiniteDoubleList">
                     <xs:annotation>
                         <xs:documentation>
                             The poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:PSI_TOTAL

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <constraints__diamagnetic_flux xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd">
     <diamagnetic_flux>
-        <name>DIALOOP</name>
         <expected_value>0.005</expected_value>
         <weight>1.0e2</weight>
         <include>false</include>

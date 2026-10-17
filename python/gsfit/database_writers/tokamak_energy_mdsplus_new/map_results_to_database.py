@@ -391,10 +391,11 @@ def map_results_to_database(
         results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["RECONSTRUCT"] = rogowski_coil_reconstructed[:, i_rogowski_coil]
         results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["WEIGHT"] = float(rogowski_coil_weight[i_rogowski_coil])
 
-    # Diamagnetic flux (single diamagnetic flux loop "DIALOOP"), from `constraints/diamagnetic_flux`, whose `reconstructed` the equilibrium
-    # post-processor calculates. Its name is empty when the fit settings have no diamagnetic flux
-    diamagnetic_flux_name: str = str(equilibrium.get(ep.time_slice[0].constraints.diamagnetic_flux.name))
-    if diamagnetic_flux_name != "":
+    # Diamagnetic flux, from `constraints/diamagnetic_flux`, whose `reconstructed` the equilibrium post-processor calculates. GSFit fits a
+    # single diamagnetic flux, `magnetics/diamagnetic_flux(0)`, which `Equilibrium.copy_from_magnetics_ids` copies in only when the fit
+    # settings have a diamagnetic flux, recording where from in `source`
+    diamagnetic_flux_source: str = str(equilibrium.get(ep.time_slice[0].constraints.diamagnetic_flux.source))
+    if diamagnetic_flux_source != "":
         diamagnetic_flux_include: int = equilibrium.get(ep.code.parameters_parsed.constraints.diamagnetic_flux.diamagnetic_flux.include)
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["INCLUDE"] = np.int32(diamagnetic_flux_include == 1)
         results["CONSTRAINTS"]["DIAMAG_FLUX"]["MEASURED"] = equilibrium.get(ep.time_slice[:].constraints.diamagnetic_flux.measured)

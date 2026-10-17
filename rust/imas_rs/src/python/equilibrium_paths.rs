@@ -59,10 +59,10 @@ fn lengths_code_parameters_parsed_constraints_rogowski_coil_rogowski_coil(equili
     }
 }
 
-/// Length of each array-of-structures level along `code_parameters_parsed_passive_dof_regularisation_passive`.
-fn lengths_code_parameters_parsed_passive_dof_regularisation_passive(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
+/// Length of each array-of-structures level along `code_parameters_parsed_pf_passive_dof_passive`.
+fn lengths_code_parameters_parsed_pf_passive_dof_passive(equilibrium: &Equilibrium, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
-        0 => return Some(equilibrium.code.parameters_parsed.passive_dof_regularisation.passive.len()),
+        0 => return Some(equilibrium.code.parameters_parsed.pf_passive_dof.passive.len()),
         _ => return None,
     }
 }
@@ -2917,25 +2917,6 @@ static NODES_TIME_SLICE_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[
                     1,
                     lengths_time_slice,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.chi_squared.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "name",
-        documentation: "Name of the method the diamagnetic flux is calculated with, matching `magnetics/diamagnetic_flux(0)/method_name`,
-e.g. `\"DIALOOP\"`",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(
-                    equilibrium,
-                    indices,
-                    1,
-                    lengths_time_slice,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.time_slice[at[0]].constraints.diamagnetic_flux.name.clone() },
                 )
             },
         }),
@@ -11579,7 +11560,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_ARANGE: &[Node] = &[
     Node {
         name: "time_start",
         documentation: "First time",
-        units: "s",
+        units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11593,7 +11574,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_ARANGE: &[Node] = &[
     Node {
         name: "time_end",
         documentation: "End of the times, which is not included",
-        units: "s",
+        units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11607,7 +11588,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_ARANGE: &[Node] = &[
     Node {
         name: "dt",
         documentation: "Step between times",
-        units: "s",
+        units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11624,7 +11605,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_LINSPACE: &[Node] = &[
     Node {
         name: "time_start",
         documentation: "First time",
-        units: "s",
+        units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11638,7 +11619,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_LINSPACE: &[Node] = &[
     Node {
         name: "time_end",
         documentation: "Last time",
-        units: "s",
+        units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11695,8 +11676,8 @@ One of: \"arange\", \"linspace\", \"user_defined\", \"good_pressure_sensors\"",
     },
     Node {
         name: "user_defined",
-        documentation: "The times, in the order they are given",
-        units: "s",
+        documentation: "User defined time-slices, space-separated list, e.g. \"80.e-3 100.0e-3 120.0e-3\"",
+        units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11768,8 +11749,8 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_PICARD: &[Node] = 
     },
     Node {
         name: "anderson_mixing",
-        documentation: "Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it. Must be greater than 0, which `Plasma::new` checks too",
-        units: "1",
+        documentation: "Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it.",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11786,7 +11767,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[N
     Node {
         name: "picard_handover",
         documentation: "Grad-Shafranov deviation below which it hands over from Picard to Newton iterations",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11821,7 +11802,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[N
     Node {
         name: "krylov_tolerance",
         documentation: "The Krylov solve stops once the linearised residual is this fraction of the residual",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11842,7 +11823,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[N
     Node {
         name: "finite_difference_step",
         documentation: "Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11894,7 +11875,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD: &[N
     Node {
         name: "contraction_threshold",
         documentation: "A direction is added when the residual outside them shrinks by less than this factor per iteration",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -11915,7 +11896,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD: &[N
     Node {
         name: "finite_difference_step",
         documentation: "Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12017,7 +11998,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS: &[Node] = &[
     Node {
         name: "grad_shafranov_deviation_tolerance",
         documentation: "The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12095,8 +12076,8 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     },
     Node {
         name: "r_min",
-        documentation: "Minimum major radius",
-        units: "m",
+        documentation: "Lower radial bound of the grid",
+        units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12109,8 +12090,8 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     },
     Node {
         name: "r_max",
-        documentation: "Maximum major radius",
-        units: "m",
+        documentation: "Upper radial bound of the grid",
+        units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12123,8 +12104,8 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     },
     Node {
         name: "z_min",
-        documentation: "Minimum vertical position",
-        units: "m",
+        documentation: "Lower vertical bound of the grid",
+        units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12137,8 +12118,8 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     },
     Node {
         name: "z_max",
-        documentation: "Maximum vertical position",
-        units: "m",
+        documentation: "Upper vertical bound of the grid",
+        units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12151,7 +12132,7 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     },
     Node {
         name: "n_psi_norm",
-        documentation: "Number of points in the normalised poloidal flux, psi_norm, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given",
+        documentation: "Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -12169,7 +12150,7 @@ static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
     Node {
         name: "ip",
         documentation: "Plasma current",
-        units: "A",
+        units: "ampere",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12183,7 +12164,7 @@ static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
     Node {
         name: "cur_r",
         documentation: "Radial centre of the current",
-        units: "m",
+        units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12197,7 +12178,7 @@ static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
     Node {
         name: "cur_z",
         documentation: "Vertical centre of the current",
-        units: "m",
+        units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12211,7 +12192,7 @@ static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
     Node {
         name: "minor_radius",
         documentation: "Radial semi-axis of the current",
-        units: "m",
+        units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12225,7 +12206,7 @@ static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
     Node {
         name: "elongation",
         documentation: "Elongation of the current",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12310,7 +12291,7 @@ static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_TENSIONED_CUBIC_B_SP
     Node {
         name: "regularisation_scale",
         documentation: "Multiplies the rows which regularise the bulk of the profile",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12375,7 +12356,7 @@ One of: \"free\", \"dirichlet\", \"neumann\"",
     Node {
         name: "left_boundary_weight",
         documentation: "Weight of the boundary condition at psi_n = 0. Not used when it is free",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12418,7 +12399,7 @@ One of: \"free\", \"dirichlet\", \"neumann\"",
     Node {
         name: "right_boundary_weight",
         documentation: "Weight of the boundary condition at psi_n = 1. Not used when it is free",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12465,7 +12446,7 @@ Optional in the settings: unset when it is left out",
     Node {
         name: "interior_knots",
         documentation: "The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12485,7 +12466,7 @@ Optional in the settings: unset when it is left out",
     Node {
         name: "interval_tensions",
         documentation: "The tension over each interval between neighbouring knots: one more than the number of interior knots",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12636,7 +12617,7 @@ static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_TENSIONED_CUBIC_B_S
     Node {
         name: "regularisation_scale",
         documentation: "Multiplies the rows which regularise the bulk of the profile",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12701,7 +12682,7 @@ One of: \"free\", \"dirichlet\", \"neumann\"",
     Node {
         name: "left_boundary_weight",
         documentation: "Weight of the boundary condition at psi_n = 0. Not used when it is free",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12744,7 +12725,7 @@ One of: \"free\", \"dirichlet\", \"neumann\"",
     Node {
         name: "right_boundary_weight",
         documentation: "Weight of the boundary condition at psi_n = 1. Not used when it is free",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12791,7 +12772,7 @@ Optional in the settings: unset when it is left out",
     Node {
         name: "interior_knots",
         documentation: "The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12811,7 +12792,7 @@ Optional in the settings: unset when it is left out",
     Node {
         name: "interval_tensions",
         documentation: "The tension over each interval between neighbouring knots: one more than the number of interior knots",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -12890,7 +12871,7 @@ Optional in the settings: unset when it is left out",
     },
 ];
 
-static NODES_CODE_PARAMETERS_PARSED_PASSIVE_DOF_REGULARISATION_PASSIVE: &[Node] = &[
+static NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF_PASSIVE: &[Node] = &[
     Node {
         name: "name",
         documentation: "The passive's name in the database, e.g. \"IVC\"",
@@ -12903,10 +12884,8 @@ static NODES_CODE_PARAMETERS_PARSED_PASSIVE_DOF_REGULARISATION_PASSIVE: &[Node] 
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_passive_dof_regularisation_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.passive_dof_regularisation.passive[at[0]].name.clone()
-                    },
+                    lengths_code_parameters_parsed_pf_passive_dof_passive,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D { equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]].name.clone() },
                 )
             },
         }),
@@ -12924,9 +12903,9 @@ One of: \"constant_current_density\", \"eig\"",
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_passive_dof_regularisation_passive,
+                    lengths_code_parameters_parsed_pf_passive_dof_passive,
                     |equilibrium: &Equilibrium, at: &[usize]| -> STR_0D {
-                        equilibrium.code.parameters_parsed.passive_dof_regularisation.passive[at[0]]
+                        equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]]
                             .current_distribution_type
                             .clone()
                     },
@@ -12946,10 +12925,8 @@ One of: \"constant_current_density\", \"eig\"",
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_passive_dof_regularisation_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
-                        equilibrium.code.parameters_parsed.passive_dof_regularisation.passive[at[0]].include.clone()
-                    },
+                    lengths_code_parameters_parsed_pf_passive_dof_passive,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]].include.clone() },
                 )
             },
         }),
@@ -12966,10 +12943,8 @@ One of: \"constant_current_density\", \"eig\"",
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_passive_dof_regularisation_passive,
-                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D {
-                        equilibrium.code.parameters_parsed.passive_dof_regularisation.passive[at[0]].n_dof.clone()
-                    },
+                    lengths_code_parameters_parsed_pf_passive_dof_passive,
+                    |equilibrium: &Equilibrium, at: &[usize]| -> INT_0D { equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]].n_dof.clone() },
                 )
             },
         }),
@@ -12987,11 +12962,9 @@ Shape [n_rows, n_columns], one row per `row` element",
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_passive_dof_regularisation_passive,
+                    lengths_code_parameters_parsed_pf_passive_dof_passive,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_2D {
-                        equilibrium.code.parameters_parsed.passive_dof_regularisation.passive[at[0]]
-                            .regularisations
-                            .clone()
+                        equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]].regularisations.clone()
                     },
                 )
             },
@@ -13000,7 +12973,7 @@ Shape [n_rows, n_columns], one row per `row` element",
     Node {
         name: "regularisations_weight",
         documentation: "The weight of each regularisation in the fit: one per `row` of `regularisations`",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13009,11 +12982,9 @@ Shape [n_rows, n_columns], one row per `row` element",
                     equilibrium,
                     indices,
                     1,
-                    lengths_code_parameters_parsed_passive_dof_regularisation_passive,
+                    lengths_code_parameters_parsed_pf_passive_dof_passive,
                     |equilibrium: &Equilibrium, at: &[usize]| -> FLT_1D {
-                        equilibrium.code.parameters_parsed.passive_dof_regularisation.passive[at[0]]
-                            .regularisations_weight
-                            .clone()
+                        equilibrium.code.parameters_parsed.pf_passive_dof.passive[at[0]].regularisations_weight.clone()
                     },
                 )
             },
@@ -13021,19 +12992,19 @@ Shape [n_rows, n_columns], one row per `row` element",
     },
 ];
 
-static NODES_CODE_PARAMETERS_PARSED_PASSIVE_DOF_REGULARISATION: &[Node] = &[Node {
+static NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF: &[Node] = &[Node {
     name: "passive",
     documentation: "One passive structure
 Optional in the settings: unset when it is left out",
     units: "",
-    kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_PASSIVE_DOF_REGULARISATION_PASSIVE),
+    kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF_PASSIVE),
 }];
 
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE_B_FIELD_POL_PROBE: &[Node] = &[
     Node {
         name: "name",
         documentation: "Name of the probe, e.g. `P101`.
-                        Must be unique, and match the name read by the `database_reader`.",
+                        Must be unique, and must match the name of a probe stored in `b_field_pol_probe(i1)/name`.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -13121,7 +13092,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE_B_FIELD_POL_PR
     },
     Node {
         name: "weight",
-        documentation: "Relative weight of the probe in the fit.",
+        documentation: "Relative weight of the probe in the least-squares fit.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -13154,7 +13125,8 @@ Optional in the settings: unset when it is left out",
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &[
     Node {
         name: "name",
-        documentation: "The loop's name in the database, e.g. \"L001\"",
+        documentation: "Name of the flux loop, e.g. `L001`.
+                        Must be unique, and must match the name of a flux loop stored in `flux_loop(i1)/name`.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -13175,7 +13147,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &
     Node {
         name: "expected_value",
         documentation: "Expected magnitude of the measurement, used to normalise the measurement.",
-        units: "Wb",
+        units: "weber",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13194,8 +13166,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &
     },
     Node {
         name: "weight",
-        documentation: "Relative weight of the constraint in the least-squares fit.",
-        units: "1",
+        documentation: "Relative weight of the flux loop in the least-squares fit.",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13214,7 +13186,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &
     },
     Node {
         name: "include",
-        documentation: "Whether the constraint is fitted",
+        documentation: "Whether to include the flux loop in the fit.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -13234,7 +13206,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &
     },
     Node {
         name: "comment",
-        documentation: "Free text, e.g. why the constraint is not included; not used by the fit",
+        documentation: "Free-text comment, e.g. on the quality of the signal; may be empty.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -13256,7 +13228,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP: &[Node] = &
 
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP: &[Node] = &[Node {
     name: "flux_loop",
-    documentation: "One flux loop, which measures the poloidal flux
+    documentation: "Fitting settings for one flux loop.
 Optional in the settings: unset when it is left out",
     units: "",
     kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP_FLUX_LOOP),
@@ -13265,7 +13237,8 @@ Optional in the settings: unset when it is left out",
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[Node] = &[
     Node {
         name: "name",
-        documentation: "The coil's name in the database, e.g. \"INIVC000\" or \"BVLT\"",
+        documentation: "Name of the Rogowski coil, e.g. `INIVC000` or `BVLT`.
+                        Must be unique, and must match the name of a Rogowski coil stored in `rogowski_coil(i1)/name`.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -13285,8 +13258,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[N
     },
     Node {
         name: "expected_value",
-        documentation: "The typical size of the coil's measurement. The fit divides the residual by it",
-        units: "A",
+        documentation: "Expected magnitude of the measurement, used to normalise the measurement.",
+        units: "ampere",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13307,8 +13280,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[N
     },
     Node {
         name: "weight",
-        documentation: "Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value",
-        units: "1",
+        documentation: "Relative weight of the Rogowski coil in the least-squares fit.",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13327,7 +13300,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[N
     },
     Node {
         name: "include",
-        documentation: "Whether the constraint is fitted",
+        documentation: "Whether to include the Rogowski coil in the fit.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -13349,7 +13322,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[N
     },
     Node {
         name: "comment",
-        documentation: "Free text, e.g. why the constraint is not included; not used by the fit",
+        documentation: "Free-text comment, e.g. on the quality of the signal; may be empty.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -13373,7 +13346,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL: &[N
 
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL: &[Node] = &[Node {
     name: "rogowski_coil",
-    documentation: "One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses
+    documentation: "Fitting settings for one Rogowski coil.
 Optional in the settings: unset when it is left out",
     units: "",
     kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL_ROGOWSKI_COIL),
@@ -13381,23 +13354,9 @@ Optional in the settings: unset when it is left out",
 
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLUX: &[Node] = &[
     Node {
-        name: "name",
-        documentation: "The loop's name, which the readers expect to be \"DIALOOP\"",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let equilibrium: &Equilibrium = ids.downcast_ref().ok_or_else(|| "not a equilibrium IDS".to_string())?;
-                gather(equilibrium, indices, 0, no_levels, |equilibrium: &Equilibrium, _at: &[usize]| -> STR_0D {
-                    equilibrium.code.parameters_parsed.constraints.diamagnetic_flux.diamagnetic_flux.name.clone()
-                })
-            },
-        }),
-    },
-    Node {
         name: "expected_value",
-        documentation: "The typical size of the loop's measured diamagnetic flux. The fit divides the residual by it",
-        units: "Wb",
+        documentation: "Expected magnitude of the measurement, used to normalise the measurement.",
+        units: "weber",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13417,8 +13376,8 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLU
     },
     Node {
         name: "weight",
-        documentation: "Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value",
-        units: "1",
+        documentation: "Relative weight of the diamagnetic flux in the least-squares fit.",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13431,7 +13390,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLU
     },
     Node {
         name: "include",
-        documentation: "Whether the constraint is fitted",
+        documentation: "Whether to include the diamagnetic flux in the fit.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -13445,7 +13404,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLU
     },
     Node {
         name: "comment",
-        documentation: "Free text, e.g. why the constraint is not included; not used by the fit",
+        documentation: "Free-text comment, e.g. on the quality of the signal; may be empty.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -13461,7 +13420,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLU
 
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX: &[Node] = &[Node {
     name: "diamagnetic_flux",
-    documentation: "The diamagnetic loop, which measures the toroidal flux from the plasma
+    documentation: "Fitting settings for the diamagnetic flux.
 Optional in the settings: unset when it is left out",
     units: "",
     kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX_DIAMAGNETIC_FLUX),
@@ -13509,7 +13468,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
     Node {
         name: "weight",
         documentation: "Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13580,7 +13539,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTE
     Node {
         name: "pressure_multiplier",
         documentation: "Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13602,7 +13561,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTE
     Node {
         name: "minimum_pressure",
         documentation: "Total pressures at or below this are ignored. A channel with none above it gets no constraint",
-        units: "Pa",
+        units: "pascal",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13627,7 +13586,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
     Node {
         name: "r_start",
         documentation: "Major radius of the first sensor, relative to the magnetic axis",
-        units: "m",
+        units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13641,7 +13600,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
     Node {
         name: "r_end",
         documentation: "Major radius of the last sensor, relative to the magnetic axis",
-        units: "m",
+        units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13669,7 +13628,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
     Node {
         name: "minimum_pressure",
         documentation: "Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint",
-        units: "Pa",
+        units: "pascal",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13736,7 +13695,7 @@ Optional in the settings: unset when it is left out",
         name: "expected_value",
         documentation: "The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead
 Optional in the settings: unset when it is left out",
-        units: "Pa",
+        units: "pascal",
         kind: NodeKind::Leaf(Leaf {
                 data_type: "FLT_0D",
                 read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13757,7 +13716,7 @@ Optional in the settings: unset when it is left out",
         name: "weight",
         documentation: "Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true
 Optional in the settings: unset when it is left out",
-        units: "1",
+        units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
                 data_type: "FLT_0D",
                 read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -13821,37 +13780,37 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE: &[Node] = &[Node {
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS: &[Node] = &[
     Node {
         name: "b_field_pol_probe",
-        documentation: "How each poloidal field probe (Mirnov coil) is fitted. IMAS: equilibrium time_slice[:]/constraints/b_field_pol_probe[:]",
+        documentation: "How each poloidal field probe (Mirnov coil) is fitted.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_B_FIELD_POL_PROBE),
     },
     Node {
         name: "flux_loop",
-        documentation: "How each flux loop is fitted. IMAS: equilibrium time_slice[:]/constraints/flux_loop[:]",
+        documentation: "How each flux loop is fitted.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_FLUX_LOOP),
     },
     Node {
         name: "rogowski_coil",
-        documentation: "How each Rogowski coil is fitted. IMAS: magnetics rogowski_coil[:]; the equilibrium IDS has no Rogowski coil constraint",
+        documentation: "How each Rogowski coil is fitted.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ROGOWSKI_COIL),
     },
     Node {
         name: "diamagnetic_flux",
-        documentation: "How the diamagnetic loop is fitted. IMAS: equilibrium time_slice[:]/constraints/diamagnetic_flux",
+        documentation: "How the diamagnetic loop is fitted.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_DIAMAGNETIC_FLUX),
     },
     Node {
         name: "isoflux",
-        documentation: "The isoflux constraints: pairs of points on the same flux surface. Not in the IMAS Data Dictionary",
+        documentation: "The isoflux constraints: pairs of points on the same flux surface.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX),
     },
     Node {
         name: "pressure",
-        documentation: "Whether pressure is fitted, and how the pressure constraints are made. IMAS: equilibrium time_slice[:]/constraints/pressure[:]",
+        documentation: "How pressure sensors are fitted.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE),
     },
@@ -13878,7 +13837,7 @@ static NODES_CODE_PARAMETERS_PARSED: &[Node] = &[
     },
     Node {
         name: "initial_guess",
-        documentation: "The initial guess of the plasma current",
+        documentation: "Initial guess for first iteration",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS),
     },
@@ -13895,14 +13854,14 @@ static NODES_CODE_PARAMETERS_PARSED: &[Node] = &[
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME),
     },
     Node {
-        name: "passive_dof_regularisation",
+        name: "pf_passive_dof",
         documentation: "The degrees of freedom of the currents in the passive structures, and their regularisation",
         units: "",
-        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_PASSIVE_DOF_REGULARISATION),
+        kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF),
     },
     Node {
         name: "constraints",
-        documentation: "The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`",
+        documentation: "Constraints used in the least-squares fit.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS),
     },

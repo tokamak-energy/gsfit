@@ -38,7 +38,7 @@ class Isoflux:
 
     :param name: The constraint's name
     :param expected_value: The typical size of the flux difference between the two points. The fit divides the residual by it
-    :param weight: Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value [1]
+    :param weight: Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value [dimensionless]
     :param include: Whether the constraint is fitted
     :param comment: Free text, e.g. why the constraint is not included; not used by the fit
     """
@@ -48,6 +48,6 @@ class Isoflux:
 
     name: str
     expected_value: float
-    weight: float  # [1]
+    weight: float  # [dimensionless]
     include: bool
     comment: str

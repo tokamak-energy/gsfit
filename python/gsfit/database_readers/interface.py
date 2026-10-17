@@ -252,11 +252,11 @@ class DatabaseReaderProtocol(Protocol):
 
         :param pulseNo: Pulse number, used to read from the database
         :param settings: `PfPassiveSettings` object containing the XML settings read from the `settings` directory
-        :param settings_equilibrium: `EquilibriumSettings` object, whose `passive_dof_regularisation` says which passive conductors to fit, and how
+        :param settings_equilibrium: `EquilibriumSettings` object, whose `pf_passive_dof` says which passive conductors to fit, and how
         :param kwargs: Additional objects, such as FreeGSNKE object
 
         Initialising requires reading data from two locations:
-        1. `equilibrium/passive_dof_regularisation.xml`: Which specifies how the conductor should be represented (e.g. constant current density,
+        1. `equilibrium/pf_passive_dof.xml`: Which specifies how the conductor should be represented (e.g. constant current density,
            or eigenmode decomposition)
         2. Database reading (e.g. MDSplus, or FreeGSNKE object): Which contains the coordinates where the passive conductors are located
 
@@ -282,7 +282,7 @@ class DatabaseReaderProtocol(Protocol):
         # Add all of the passive toroidal conductors
         for i_passive in range(n_passives):
             pf_passive.add_loop(
-                name=...,                       # need to be same in database and `passive_dof_regularisation.xml` file
+                name=...,                       # need to be same in database and `pf_passive_dof.xml` file
                 r=...,                          # read from a database, one value per filament
                 z=...,                          # read from a database, one value per filament
                 length_alpha=...,               # read from a database, one value per filament
@@ -290,10 +290,10 @@ class DatabaseReaderProtocol(Protocol):
                 alpha=...,                      # read from a database, one value per filament
                 beta=...,                       # read from a database, one value per filament
                 resistivity=...,                # read from a database
-                current_distribution_type=...,  # read from `passive_dof_regularisation.xml` file
-                n_dof=...,                      # read from `passive_dof_regularisation.xml` file
-                regularisations=...,            # read from `passive_dof_regularisation.xml` file
-                regularisations_weight=...,     # read from `passive_dof_regularisation.xml` file
+                current_distribution_type=...,  # read from `pf_passive_dof.xml` file
+                n_dof=...,                      # read from `pf_passive_dof.xml` file
+                regularisations=...,            # read from `pf_passive_dof.xml` file
+                regularisations_weight=...,     # read from `pf_passive_dof.xml` file
             )
 
         return pf_passive
@@ -461,8 +461,9 @@ class DatabaseReaderProtocol(Protocol):
                 gaps_z_end=...,    # (optional) read from a database
             )
 
+        # GSFit accepts only one diamagnetic flux, so the signals of several diamagnetic loops are averaged into one before it is added
         magnetics.add_diamagnetic_flux(
-            method_name=...,  # need to be same in database and `constraints_diamagnetic_flux.xml` file
+            method_name=...,  # how the diamagnetic flux is calculated, e.g. "DIALOOP"
             time=...,         # read from a database
             data=...,         # read from a database
         )

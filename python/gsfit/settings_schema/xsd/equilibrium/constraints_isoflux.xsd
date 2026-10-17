@@ -4,12 +4,12 @@
 
     The IMAS Data Dictionary has no isoflux constraint, so this keeps GSFit's name.
     The root element is `constraints__isoflux`, the path of this file's link in equilibrium.xml
-    with `__` for `/`, and each `isoflux` element has the type `isoflux`. Neither these names nor the
+    with `__` for `/`, and each `isoflux` element has the type `Isoflux`. Neither these names nor the
     Python classes generated from them then clash with those of the other constraints files.
 
     constraints_flux_loop.xsd, constraints_rogowski_coil.xsd, constraints_diamagnetic_flux.xsd and
     constraints_isoflux.xsd are the same apart from their names, documentation, units and number of
-    elements, so change them all together.
+    elements, and the diamagnetic flux having no `name`, so change them all together.
     See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
@@ -24,7 +24,7 @@
         </xs:annotation>
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="isoflux" type="isoflux" minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="isoflux" type="Isoflux" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:documentation>
                             One isoflux constraint
@@ -33,7 +33,7 @@
                 </xs:element>
             </xs:sequence>
         </xs:complexType>
-        <xs:unique name="constraints_isoflux_unique_name">
+        <xs:key name="isoflux_name_key">
             <xs:annotation>
                 <xs:documentation>
                     Each isoflux is listed at most once
@@ -41,7 +41,7 @@
             </xs:annotation>
             <xs:selector xpath="isoflux"/>
             <xs:field xpath="name"/>
-        </xs:unique>
+        </xs:key>
     </xs:element>
 
     <!-- ================================= Other simple types ================================= -->
@@ -49,7 +49,7 @@
     <xs:simpleType name="Name">
         <xs:annotation>
             <xs:documentation>
-                A name, with no spaces
+                A non-empty name without any whitespace.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
@@ -57,20 +57,42 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="NonNegativeDouble">
+    <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                A number greater than or equal to 0
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteNonNegativeDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than or equal to 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
             <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TrueOrFalse">
+        <xs:annotation>
+            <xs:documentation>
+                A boolean written as `true` or `false`; `xs:boolean` alone would also accept `1` and `0`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:boolean">
+            <xs:pattern value="true|false"/>
         </xs:restriction>
     </xs:simpleType>
 
     <!-- ================================= Complex types ================================= -->
 
-    <xs:complexType name="isoflux">
+    <xs:complexType name="Isoflux">
         <xs:annotation>
             <xs:documentation>
                 One isoflux constraint
@@ -84,24 +106,24 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="expected_value" type="xs:double">
+            <xs:element name="expected_value" type="FiniteDouble">
                 <xs:annotation>
                     <xs:documentation>
                         The typical size of the flux difference between the two points. The fit divides the residual by it
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="weight" type="NonNegativeDouble">
+            <xs:element name="weight" type="FiniteNonNegativeDouble">
                 <xs:annotation>
                     <xs:documentation>
                         Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>1</units>
+                        <units>dimensionless</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="include" type="xs:boolean">
+            <xs:element name="include" type="TrueOrFalse">
                 <xs:annotation>
                     <xs:documentation>
                         Whether the constraint is fitted

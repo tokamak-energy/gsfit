@@ -30,7 +30,7 @@ class Timeslices:
     :param method: How the times are chosen. Its settings are in the element of the same name, below
     :param arange: Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
     :param linspace: n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
-    :param user_defined: The times, in the order they are given [s]
+    :param user_defined: User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3" [second]
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -39,7 +39,7 @@ class Timeslices:
     method: TimeslicesMethod
     arange: Arange
     linspace: Linspace
-    user_defined: list[float]  # [s]
+    user_defined: list[float]  # [second]
 
 
 @dataclass(kw_only=True)
@@ -47,14 +47,14 @@ class Arange:
     """
     Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
 
-    :param time_start: First time [s]
-    :param time_end: End of the times, which is not included [s]
-    :param dt: Step between times [s]
+    :param time_start: First time [second]
+    :param time_end: End of the times, which is not included [second]
+    :param dt: Step between times [second]
     """
 
-    time_start: float  # [s]
-    time_end: float  # [s]
-    dt: float  # [s]
+    time_start: float  # [second]
+    time_end: float  # [second]
+    dt: float  # [second]
 
 
 @dataclass(kw_only=True)
@@ -62,11 +62,11 @@ class Linspace:
     """
     n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
 
-    :param time_start: First time [s]
-    :param time_end: Last time [s]
+    :param time_start: First time [second]
+    :param time_end: Last time [second]
     :param n_time: Number of times
     """
 
-    time_start: float  # [s]
-    time_end: float  # [s]
+    time_start: float  # [second]
+    time_end: float  # [second]
     n_time: int

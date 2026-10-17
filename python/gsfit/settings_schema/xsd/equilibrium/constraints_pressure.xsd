@@ -38,7 +38,7 @@
     <xs:simpleType name="Name">
         <xs:annotation>
             <xs:documentation>
-                A name, with no spaces
+                A non-empty name without any whitespace.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
@@ -46,14 +46,47 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="NonNegativeDouble">
+    <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                A number greater than or equal to 0
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FinitePositiveDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
+            <xs:minExclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteNonNegativeDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than or equal to 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
             <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TrueOrFalse">
+        <xs:annotation>
+            <xs:documentation>
+                A boolean written as `true` or `false`; `xs:boolean` alone would also accept `1` and `0`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:boolean">
+            <xs:pattern value="true|false"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -66,23 +99,23 @@
             </xs:documentation>
         </xs:annotation>
         <xs:all>
-            <xs:element name="pressure_multiplier" type="xs:double">
+            <xs:element name="pressure_multiplier" type="FinitePositiveDouble">
                 <xs:annotation>
                     <xs:documentation>
                         Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>1</units>
+                        <units>dimensionless</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="minimum_pressure" type="xs:double">
+            <xs:element name="minimum_pressure" type="FiniteNonNegativeDouble">
                 <xs:annotation>
                     <xs:documentation>
                         Total pressures at or below this are ignored. A channel with none above it gets no constraint
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>Pa</units>
+                        <units>pascal</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
@@ -96,23 +129,23 @@
             </xs:documentation>
         </xs:annotation>
         <xs:all>
-            <xs:element name="r_start" type="xs:double">
+            <xs:element name="r_start" type="FiniteDouble">
                 <xs:annotation>
                     <xs:documentation>
                         Major radius of the first sensor, relative to the magnetic axis
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>m</units>
+                        <units>metre</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="r_end" type="xs:double">
+            <xs:element name="r_end" type="FiniteDouble">
                 <xs:annotation>
                     <xs:documentation>
                         Major radius of the last sensor, relative to the magnetic axis
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>m</units>
+                        <units>metre</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
@@ -123,13 +156,13 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="minimum_pressure" type="xs:double">
+            <xs:element name="minimum_pressure" type="FiniteNonNegativeDouble">
                 <xs:annotation>
                     <xs:documentation>
                         Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>Pa</units>
+                        <units>pascal</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
@@ -143,7 +176,7 @@
             </xs:documentation>
         </xs:annotation>
         <xs:all>
-            <xs:element name="include" type="xs:boolean">
+            <xs:element name="include" type="TrueOrFalse">
                 <xs:annotation>
                     <xs:documentation>
                         Whether to fit pressure. When false, nothing else in this file is read
@@ -157,23 +190,23 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="expected_value" type="xs:double" minOccurs="0">
+            <xs:element name="expected_value" type="FiniteDouble" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>
                         The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>Pa</units>
+                        <units>pascal</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="weight" type="NonNegativeDouble" minOccurs="0">
+            <xs:element name="weight" type="FiniteNonNegativeDouble" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>
                         Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true
                     </xs:documentation>
                     <xs:appinfo>
-                        <units>1</units>
+                        <units>dimensionless</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>

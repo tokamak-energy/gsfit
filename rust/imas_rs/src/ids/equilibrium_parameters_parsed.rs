@@ -14,11 +14,11 @@ use super::equilibrium::{
     EquilibriumCodeParametersParsedFluxLoop, EquilibriumCodeParametersParsedGrid, EquilibriumCodeParametersParsedInitialGuess,
     EquilibriumCodeParametersParsedIsoflux, EquilibriumCodeParametersParsedNumerics, EquilibriumCodeParametersParsedNumericsNonlinearSolver,
     EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylov, EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicard,
-    EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard, EquilibriumCodeParametersParsedPassive,
-    EquilibriumCodeParametersParsedPassiveDofRegularisation, EquilibriumCodeParametersParsedPressure, EquilibriumCodeParametersParsedPressureThomsonScattering,
-    EquilibriumCodeParametersParsedRegularisationBuilder, EquilibriumCodeParametersParsedRogowskiCoil, EquilibriumCodeParametersParsedSourceFunctionFfPrime,
-    EquilibriumCodeParametersParsedSourceFunctionPPrime, EquilibriumCodeParametersParsedSynthetic, EquilibriumCodeParametersParsedTensionedCubicBSpline,
-    EquilibriumCodeParametersParsedTimeslices, EquilibriumCodeParametersParsedTimeslicesArange, EquilibriumCodeParametersParsedTimeslicesLinspace,
+    EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard, EquilibriumCodeParametersParsedPassive, EquilibriumCodeParametersParsedPfPassiveDof,
+    EquilibriumCodeParametersParsedPressure, EquilibriumCodeParametersParsedPressureThomsonScattering, EquilibriumCodeParametersParsedRegularisationBuilder,
+    EquilibriumCodeParametersParsedRogowskiCoil, EquilibriumCodeParametersParsedSourceFunctionFfPrime, EquilibriumCodeParametersParsedSourceFunctionPPrime,
+    EquilibriumCodeParametersParsedSynthetic, EquilibriumCodeParametersParsedTensionedCubicBSpline, EquilibriumCodeParametersParsedTimeslices,
+    EquilibriumCodeParametersParsedTimeslicesArange, EquilibriumCodeParametersParsedTimeslicesLinspace,
 };
 use crate::parameters_parsed::{child_elements, read_boolean, read_double, read_double_list, read_integer, read_matrix, read_string, unexpected_element};
 use roxmltree::{Document, Node};
@@ -66,10 +66,7 @@ fn read_equilibrium_code_parameters_parsed(node: Node<'_, '_>, path: &str) -> Re
                 parsed.source_function_ff_prime =
                     read_equilibrium_code_parameters_parsed_source_function_ff_prime(child, &format!("{path}/source_function_ff_prime"))?
             }
-            "passive_dof_regularisation" => {
-                parsed.passive_dof_regularisation =
-                    read_equilibrium_code_parameters_parsed_passive_dof_regularisation(child, &format!("{path}/passive_dof_regularisation"))?
-            }
+            "pf_passive_dof" => parsed.pf_passive_dof = read_equilibrium_code_parameters_parsed_pf_passive_dof(child, &format!("{path}/pf_passive_dof"))?,
             "constraints" => parsed.constraints = read_equilibrium_code_parameters_parsed_equilibrium_constraints(child, &format!("{path}/constraints"))?,
             _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),
         }
@@ -390,12 +387,9 @@ fn read_equilibrium_code_parameters_parsed_source_function_ff_prime(
     Ok(parsed)
 }
 
-/// Read `EquilibriumCodeParametersParsedPassiveDofRegularisation` from its XML element, whose path is `path`
-fn read_equilibrium_code_parameters_parsed_passive_dof_regularisation(
-    node: Node<'_, '_>,
-    path: &str,
-) -> Result<EquilibriumCodeParametersParsedPassiveDofRegularisation, String> {
-    let mut parsed: EquilibriumCodeParametersParsedPassiveDofRegularisation = EquilibriumCodeParametersParsedPassiveDofRegularisation::default();
+/// Read `EquilibriumCodeParametersParsedPfPassiveDof` from its XML element, whose path is `path`
+fn read_equilibrium_code_parameters_parsed_pf_passive_dof(node: Node<'_, '_>, path: &str) -> Result<EquilibriumCodeParametersParsedPfPassiveDof, String> {
+    let mut parsed: EquilibriumCodeParametersParsedPfPassiveDof = EquilibriumCodeParametersParsedPfPassiveDof::default();
     for child in child_elements(node, path)? {
         let child_name: &str = child.tag_name().name();
         match child_name {
@@ -605,7 +599,6 @@ fn read_equilibrium_code_parameters_parsed_diamagnetic_flux(node: Node<'_, '_>, 
     for child in child_elements(node, path)? {
         let child_name: &str = child.tag_name().name();
         match child_name {
-            "name" => parsed.name = read_string(child, &format!("{path}/name"))?,
             "expected_value" => parsed.expected_value = read_double(child, &format!("{path}/expected_value"))?,
             "weight" => parsed.weight = read_double(child, &format!("{path}/weight"))?,
             "include" => parsed.include = read_boolean(child, &format!("{path}/include"))?,

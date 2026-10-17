@@ -18,6 +18,17 @@
 
     <!-- ================================= Simple types ================================= -->
 
+    <xs:simpleType name="Name">
+        <xs:annotation>
+            <xs:documentation>
+                A non-empty name without any whitespace.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="TreeName">
         <xs:annotation>
             <xs:documentation>
@@ -45,14 +56,14 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="pulseNo" type="xs:int" nillable="true">
+            <xs:element name="pulseNo" type="xs:integer" nillable="true">
                 <xs:annotation>
                     <xs:documentation>
-                        The pulse to read the tree from; nil for the pulse being reconstructed
+                        The pulse to read the tree from; nil for the pulse being reconstructed. As in MDSplus, 0 is the most recent pulse and -1 the model tree
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="run_name" type="xs:string">
+            <xs:element name="run_name" type="Name">
                 <xs:annotation>
                     <xs:documentation>
                         The run of the tree to read, e.g. "BEST" or "RUN16"

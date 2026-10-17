@@ -58,7 +58,9 @@ BUILTIN_TYPES: dict[str, str] = {
     "boolean": "bool",
     "double": "float",
     "int": "int",
+    "integer": "int",
     "nonNegativeInteger": "int",
+    "positiveInteger": "int",
     "string": "str",
 }
 

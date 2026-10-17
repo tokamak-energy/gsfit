@@ -20,9 +20,12 @@ from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 @dataclass(kw_only=True)
 class ConstraintsRogowskiCoil:
     """
-    How each Rogowski coil is fitted, one `rogowski_coil` per coil. A coil the database has but this file does not list is not fitted, and a listed coil the database does not have is ignored. Not read by the freegs reader
+    Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil.
+    A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses.
+    A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit.
+    Not read by the freegs reader.
 
-    :param rogowski_coil: One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `rogowski_coil[name]`
+    :param rogowski_coil: Fitting settings for one Rogowski coil. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `rogowski_coil[name]`
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -34,20 +37,20 @@ class ConstraintsRogowskiCoil:
 @dataclass(kw_only=True)
 class RogowskiCoil:
     """
-    One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses
+    Fitting settings for one Rogowski coil.
 
-    :param name: The coil's name in the database, e.g. "INIVC000" or "BVLT"
-    :param expected_value: The typical size of the coil's measurement. The fit divides the residual by it [A]
-    :param weight: Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value [1]
-    :param include: Whether the constraint is fitted
-    :param comment: Free text, e.g. why the constraint is not included; not used by the fit
+    :param name: Name of the Rogowski coil, e.g. `INIVC000` or `BVLT`. Must be unique, and must match the name of a Rogowski coil stored in `rogowski_coil(i1)/name`.
+    :param expected_value: Expected magnitude of the measurement, used to normalise the measurement. [ampere]
+    :param weight: Relative weight of the Rogowski coil in the least-squares fit. [dimensionless]
+    :param include: Whether to include the Rogowski coil in the fit.
+    :param comment: Free-text comment, e.g. on the quality of the signal; may be empty.
     """
 
     # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique
     KEY: typing.ClassVar[str] = "name"
 
     name: str
-    expected_value: float  # [A]
-    weight: float  # [1]
+    expected_value: float  # [ampere]
+    weight: float  # [dimensionless]
     include: bool
     comment: str

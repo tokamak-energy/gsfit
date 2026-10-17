@@ -74,15 +74,15 @@ class TensionedCubicBSpline:
     Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom
 
     :param regularisations: The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false
-    :param interior_knots: The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included [1]
-    :param interval_tensions: The tension over each interval between neighbouring knots: one more than the number of interior knots [1]
+    :param interior_knots: The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included [dimensionless]
+    :param interval_tensions: The tension over each interval between neighbouring knots: one more than the number of interior knots [dimensionless]
     :param make_cubic_spline_regularisations: When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent
     :param regularisation_builder: How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true
     """
 
     regularisations: npt.NDArray[np.float64] | None = None
-    interior_knots: list[float]  # [1]
-    interval_tensions: list[float]  # [1]
+    interior_knots: list[float]  # [dimensionless]
+    interval_tensions: list[float]  # [dimensionless]
     make_cubic_spline_regularisations: bool | None = None
     regularisation_builder: RegularisationBuilder | None = None
 
@@ -92,17 +92,17 @@ class RegularisationBuilder:
     """
     How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free)
 
-    :param regularisation_scale: Multiplies the rows which regularise the bulk of the profile [1]
+    :param regularisation_scale: Multiplies the rows which regularise the bulk of the profile [dimensionless]
     :param regularisation_mode: How the bulk of the profile is regularised
     :param left_boundary_condition: The boundary condition at psi_n = 0, the magnetic axis
-    :param left_boundary_weight: Weight of the boundary condition at psi_n = 0. Not used when it is free [1]
+    :param left_boundary_weight: Weight of the boundary condition at psi_n = 0. Not used when it is free [dimensionless]
     :param right_boundary_condition: The boundary condition at psi_n = 1, the plasma boundary
-    :param right_boundary_weight: Weight of the boundary condition at psi_n = 1. Not used when it is free [1]
+    :param right_boundary_weight: Weight of the boundary condition at psi_n = 1. Not used when it is free [dimensionless]
     """
 
-    regularisation_scale: float  # [1]
+    regularisation_scale: float  # [dimensionless]
     regularisation_mode: RegularisationMode
     left_boundary_condition: BoundaryCondition
-    left_boundary_weight: float  # [1]
+    left_boundary_weight: float  # [dimensionless]
     right_boundary_condition: BoundaryCondition
-    right_boundary_weight: float  # [1]
+    right_boundary_weight: float  # [dimensionless]

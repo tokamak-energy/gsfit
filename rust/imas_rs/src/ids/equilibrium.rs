@@ -580,9 +580,6 @@ pub struct EquilibriumConstraints0dB0Like {
     pub reconstructed: FLT_0D,
     /// Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
     pub chi_squared: FLT_0D,
-    /// Name of the method the diamagnetic flux is calculated with, matching `magnetics/diamagnetic_flux(0)/method_name`,
-    /// e.g. `"DIALOOP"`
-    pub name: STR_0D,
 }
 
 impl Default for EquilibriumConstraints0dB0Like {
@@ -596,7 +593,6 @@ impl Default for EquilibriumConstraints0dB0Like {
             sigma: f64::NAN,
             reconstructed: f64::NAN,
             chi_squared: f64::NAN,
-            name: String::new(),
         }
     }
 }
@@ -1964,7 +1960,7 @@ pub struct EquilibriumLimiterUnitOutline {
     pub z: FLT_1D,
 }
 
-/// GSFit's own settings, which make the equilibrium IDS. This file holds no settings itself: each element links to the file which holds one group of them
+/// Settings to make the equilibrium IDS.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsed {
@@ -1974,15 +1970,15 @@ pub struct EquilibriumCodeParametersParsed {
     pub numerics: EquilibriumCodeParametersParsedNumerics,
     /// The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
     pub grid: EquilibriumCodeParametersParsedGrid,
-    /// The initial guess of the plasma current
+    /// Initial guess for first iteration
     pub initial_guess: EquilibriumCodeParametersParsedInitialGuess,
     /// The p' source function: its basis functions and their regularisation
     pub source_function_p_prime: EquilibriumCodeParametersParsedSourceFunctionPPrime,
     /// The ff' source function: its basis functions and their regularisation
     pub source_function_ff_prime: EquilibriumCodeParametersParsedSourceFunctionFfPrime,
     /// The degrees of freedom of the currents in the passive structures, and their regularisation
-    pub passive_dof_regularisation: EquilibriumCodeParametersParsedPassiveDofRegularisation,
-    /// The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+    pub pf_passive_dof: EquilibriumCodeParametersParsedPfPassiveDof,
+    /// Constraints used in the least-squares fit.
     pub constraints: EquilibriumCodeParametersParsedEquilibriumConstraints,
 }
 
@@ -1997,8 +1993,8 @@ pub struct EquilibriumCodeParametersParsedTimeslices {
     pub arange: EquilibriumCodeParametersParsedTimeslicesArange,
     /// n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
     pub linspace: EquilibriumCodeParametersParsedTimeslicesLinspace,
-    /// The times, in the order they are given
-    /// Units: s
+    /// User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3"
+    /// Units: second
     pub user_defined: FLT_1D,
 }
 
@@ -2007,13 +2003,13 @@ pub struct EquilibriumCodeParametersParsedTimeslices {
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedTimeslicesArange {
     /// First time
-    /// Units: s
+    /// Units: second
     pub time_start: FLT_0D,
     /// End of the times, which is not included
-    /// Units: s
+    /// Units: second
     pub time_end: FLT_0D,
     /// Step between times
-    /// Units: s
+    /// Units: second
     pub dt: FLT_0D,
 }
 
@@ -2032,10 +2028,10 @@ impl Default for EquilibriumCodeParametersParsedTimeslicesArange {
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedTimeslicesLinspace {
     /// First time
-    /// Units: s
+    /// Units: second
     pub time_start: FLT_0D,
     /// Last time
-    /// Units: s
+    /// Units: second
     pub time_end: FLT_0D,
     /// Number of times
     pub n_time: INT_0D,
@@ -2061,6 +2057,7 @@ pub struct EquilibriumCodeParametersParsedNumerics {
     /// Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed
     pub n_iter_max: INT_0D,
     /// The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this
+    /// Units: dimensionless
     pub grad_shafranov_deviation_tolerance: FLT_0D,
     /// Minimum number of nonlinear solver iterations before the convergence test may pass
     pub n_iter_min: INT_0D,
@@ -2108,7 +2105,8 @@ pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard {
     pub apply_anderson_mixing: INT_0D,
     /// Maximum number of previous iterations Anderson mixing combines
     pub anderson_n_history: INT_0D,
-    /// Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it. Must be greater than 0, which `Plasma::new` checks too
+    /// Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it.
+    /// Units: dimensionless
     pub anderson_mixing: FLT_0D,
 }
 
@@ -2128,12 +2126,15 @@ impl Default for EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard {
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylov {
     /// Grad-Shafranov deviation below which it hands over from Picard to Newton iterations
+    /// Units: dimensionless
     pub picard_handover: FLT_0D,
     /// Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work
     pub n_krylov_max: INT_0D,
     /// The Krylov solve stops once the linearised residual is this fraction of the residual
+    /// Units: dimensionless
     pub krylov_tolerance: FLT_0D,
     /// Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
+    /// Units: dimensionless
     pub finite_difference_step: FLT_0D,
     /// Whether to print the progress of each Newton iteration
     pub verbose: INT_0D,
@@ -2158,8 +2159,10 @@ pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicard {
     /// Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add
     pub n_basis_max: INT_0D,
     /// A direction is added when the residual outside them shrinks by less than this factor per iteration
+    /// Units: dimensionless
     pub contraction_threshold: FLT_0D,
     /// Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
+    /// Units: dimensionless
     pub finite_difference_step: FLT_0D,
     /// Whether to print the progress of each Newton-Picard iteration
     pub verbose: INT_0D,
@@ -2184,19 +2187,19 @@ pub struct EquilibriumCodeParametersParsedGrid {
     pub n_r: INT_0D,
     /// Number of vertical grid points
     pub n_z: INT_0D,
-    /// Minimum major radius
-    /// Units: m
+    /// Lower radial bound of the grid
+    /// Units: metre
     pub r_min: FLT_0D,
-    /// Maximum major radius
-    /// Units: m
+    /// Upper radial bound of the grid
+    /// Units: metre
     pub r_max: FLT_0D,
-    /// Minimum vertical position
-    /// Units: m
+    /// Lower vertical bound of the grid
+    /// Units: metre
     pub z_min: FLT_0D,
-    /// Maximum vertical position
-    /// Units: m
+    /// Upper vertical bound of the grid
+    /// Units: metre
     pub z_max: FLT_0D,
-    /// Number of points in the normalised poloidal flux, psi_norm, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given
+    /// Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given.
     pub n_psi_norm: INT_0D,
 }
 
@@ -2219,18 +2222,19 @@ impl Default for EquilibriumCodeParametersParsedGrid {
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedInitialGuess {
     /// Plasma current
-    /// Units: A
+    /// Units: ampere
     pub ip: FLT_0D,
     /// Radial centre of the current
-    /// Units: m
+    /// Units: metre
     pub cur_r: FLT_0D,
     /// Vertical centre of the current
-    /// Units: m
+    /// Units: metre
     pub cur_z: FLT_0D,
     /// Radial semi-axis of the current
-    /// Units: m
+    /// Units: metre
     pub minor_radius: FLT_0D,
     /// Elongation of the current
+    /// Units: dimensionless
     pub elongation: FLT_0D,
 }
 
@@ -2298,8 +2302,10 @@ pub struct EquilibriumCodeParametersParsedTensionedCubicBSpline {
     /// Optional in the settings: unset when it is left out
     pub regularisations: FLT_2D,
     /// The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included
+    /// Units: dimensionless
     pub interior_knots: FLT_1D,
     /// The tension over each interval between neighbouring knots: one more than the number of interior knots
+    /// Units: dimensionless
     pub interval_tensions: FLT_1D,
     /// When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent
     /// Optional in the settings: unset when it is left out
@@ -2326,6 +2332,7 @@ impl Default for EquilibriumCodeParametersParsedTensionedCubicBSpline {
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedRegularisationBuilder {
     /// Multiplies the rows which regularise the bulk of the profile
+    /// Units: dimensionless
     pub regularisation_scale: FLT_0D,
     /// How the bulk of the profile is regularised
     /// One of: "second_derivative_zero"
@@ -2334,11 +2341,13 @@ pub struct EquilibriumCodeParametersParsedRegularisationBuilder {
     /// One of: "free", "dirichlet", "neumann"
     pub left_boundary_condition: STR_0D,
     /// Weight of the boundary condition at psi_n = 0. Not used when it is free
+    /// Units: dimensionless
     pub left_boundary_weight: FLT_0D,
     /// The boundary condition at psi_n = 1, the plasma boundary
     /// One of: "free", "dirichlet", "neumann"
     pub right_boundary_condition: STR_0D,
     /// Weight of the boundary condition at psi_n = 1. Not used when it is free
+    /// Units: dimensionless
     pub right_boundary_weight: FLT_0D,
 }
 
@@ -2371,16 +2380,16 @@ pub struct EquilibriumCodeParametersParsedSourceFunctionFfPrime {
 }
 
 /// The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it
-/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/passive_dof_regularisation.xsd`
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
 #[derive(Debug, Clone, Default)]
-pub struct EquilibriumCodeParametersParsedPassiveDofRegularisation {
+pub struct EquilibriumCodeParametersParsedPfPassiveDof {
     /// One passive structure
     /// Optional in the settings: unset when it is left out
     pub passive: Vec<EquilibriumCodeParametersParsedPassive>,
 }
 
 /// The degrees of freedom of one passive structure's current, and their regularisation
-/// Generated from the XML schema type `Passive`, in `python/gsfit/settings_schema/xsd/equilibrium/passive_dof_regularisation.xsd`
+/// Generated from the XML schema type `Passive`, in `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedPassive {
     /// The passive's name in the database, e.g. "IVC"
@@ -2396,6 +2405,7 @@ pub struct EquilibriumCodeParametersParsedPassive {
     /// Shape [n_rows, n_columns], one row per `row` element
     pub regularisations: FLT_2D,
     /// The weight of each regularisation in the fit: one per `row` of `regularisations`
+    /// Units: dimensionless
     pub regularisations_weight: FLT_1D,
 }
 
@@ -2416,17 +2426,17 @@ impl Default for EquilibriumCodeParametersParsedPassive {
 /// Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedEquilibriumConstraints {
-    /// How each poloidal field probe (Mirnov coil) is fitted. IMAS: equilibrium time_slice[:]/constraints/b_field_pol_probe[:]
+    /// How each poloidal field probe (Mirnov coil) is fitted.
     pub b_field_pol_probe: EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe,
-    /// How each flux loop is fitted. IMAS: equilibrium time_slice[:]/constraints/flux_loop[:]
+    /// How each flux loop is fitted.
     pub flux_loop: EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop,
-    /// How each Rogowski coil is fitted. IMAS: magnetics rogowski_coil[:]; the equilibrium IDS has no Rogowski coil constraint
+    /// How each Rogowski coil is fitted.
     pub rogowski_coil: EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil,
-    /// How the diamagnetic loop is fitted. IMAS: equilibrium time_slice[:]/constraints/diamagnetic_flux
+    /// How the diamagnetic loop is fitted.
     pub diamagnetic_flux: EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux,
-    /// The isoflux constraints: pairs of points on the same flux surface. Not in the IMAS Data Dictionary
+    /// The isoflux constraints: pairs of points on the same flux surface.
     pub isoflux: EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux,
-    /// Whether pressure is fitted, and how the pressure constraints are made. IMAS: equilibrium time_slice[:]/constraints/pressure[:]
+    /// How pressure sensors are fitted.
     pub pressure: EquilibriumCodeParametersParsedEquilibriumConstraintsPressure,
 }
 
@@ -2441,11 +2451,11 @@ pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe {
 }
 
 /// Fitting settings for one probe.
-/// Generated from the XML schema type `b_field_pol_probe`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
+/// Generated from the XML schema type `BFieldPolProbe`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedBFieldPolProbe {
     /// Name of the probe, e.g. `P101`.
-    /// Must be unique, and match the name read by the `database_reader`.
+    /// Must be unique, and must match the name of a probe stored in `b_field_pol_probe(i1)/name`.
     pub name: STR_0D,
     /// Free-text comment, e.g. on the quality of the signal; may be empty.
     pub comment: STR_0D,
@@ -2454,7 +2464,7 @@ pub struct EquilibriumCodeParametersParsedBFieldPolProbe {
     pub expected_value: FLT_0D,
     /// Whether to include the probe in the fit.
     pub include: INT_0D,
-    /// Relative weight of the probe in the fit.
+    /// Relative weight of the probe in the least-squares fit.
     /// Units: dimensionless
     pub weight: FLT_0D,
 }
@@ -2471,29 +2481,32 @@ impl Default for EquilibriumCodeParametersParsedBFieldPolProbe {
     }
 }
 
-/// How each flux loop is fitted, one `flux_loop` per loop. A loop the database has but this file does not list is not fitted, and a listed loop the database does not have is ignored
+/// Fitting settings for the flux loops, which measure the poloidal flux, with one `flux_loop` element per flux loop.
+/// A flux loop read by the `database_reader` which is not listed here is not included in the fit.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop {
-    /// One flux loop, which measures the poloidal flux
+    /// Fitting settings for one flux loop.
     /// Optional in the settings: unset when it is left out
     pub flux_loop: Vec<EquilibriumCodeParametersParsedFluxLoop>,
 }
 
-/// One flux loop, which measures the poloidal flux
-/// Generated from the XML schema type `flux_loop`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
+/// Fitting settings for one flux loop.
+/// Generated from the XML schema type `FluxLoop`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedFluxLoop {
-    /// The loop's name in the database, e.g. "L001"
+    /// Name of the flux loop, e.g. `L001`.
+    /// Must be unique, and must match the name of a flux loop stored in `flux_loop(i1)/name`.
     pub name: STR_0D,
     /// Expected magnitude of the measurement, used to normalise the measurement.
-    /// Units: Wb
+    /// Units: weber
     pub expected_value: FLT_0D,
-    /// Relative weight of the constraint in the least-squares fit.
+    /// Relative weight of the flux loop in the least-squares fit.
+    /// Units: dimensionless
     pub weight: FLT_0D,
-    /// Whether the constraint is fitted
+    /// Whether to include the flux loop in the fit.
     pub include: INT_0D,
-    /// Free text, e.g. why the constraint is not included; not used by the fit
+    /// Free-text comment, e.g. on the quality of the signal; may be empty.
     pub comment: STR_0D,
 }
 
@@ -2509,29 +2522,34 @@ impl Default for EquilibriumCodeParametersParsedFluxLoop {
     }
 }
 
-/// How each Rogowski coil is fitted, one `rogowski_coil` per coil. A coil the database has but this file does not list is not fitted, and a listed coil the database does not have is ignored. Not read by the freegs reader
+/// Fitting settings for the Rogowski coils, with one `rogowski_coil` element per Rogowski coil.
+/// A Rogowski coil measures the current through it: the plasma current and the currents in the structures it encloses.
+/// A Rogowski coil read by the `database_reader` which is not listed here is not included in the fit.
+/// Not read by the freegs reader.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil {
-    /// One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses
+    /// Fitting settings for one Rogowski coil.
     /// Optional in the settings: unset when it is left out
     pub rogowski_coil: Vec<EquilibriumCodeParametersParsedRogowskiCoil>,
 }
 
-/// One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses
-/// Generated from the XML schema type `rogowski_coil`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
+/// Fitting settings for one Rogowski coil.
+/// Generated from the XML schema type `RogowskiCoil`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedRogowskiCoil {
-    /// The coil's name in the database, e.g. "INIVC000" or "BVLT"
+    /// Name of the Rogowski coil, e.g. `INIVC000` or `BVLT`.
+    /// Must be unique, and must match the name of a Rogowski coil stored in `rogowski_coil(i1)/name`.
     pub name: STR_0D,
-    /// The typical size of the coil's measurement. The fit divides the residual by it
-    /// Units: A
+    /// Expected magnitude of the measurement, used to normalise the measurement.
+    /// Units: ampere
     pub expected_value: FLT_0D,
-    /// Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+    /// Relative weight of the Rogowski coil in the least-squares fit.
+    /// Units: dimensionless
     pub weight: FLT_0D,
-    /// Whether the constraint is fitted
+    /// Whether to include the Rogowski coil in the fit.
     pub include: INT_0D,
-    /// Free text, e.g. why the constraint is not included; not used by the fit
+    /// Free-text comment, e.g. on the quality of the signal; may be empty.
     pub comment: STR_0D,
 }
 
@@ -2547,36 +2565,39 @@ impl Default for EquilibriumCodeParametersParsedRogowskiCoil {
     }
 }
 
-/// How the diamagnetic loop is fitted: a `diamagnetic_flux` named DIALOOP, or none. With none it is not fitted. Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers
+/// Fitting settings for the diamagnetic flux, the toroidal flux from the plasma, with at most one `diamagnetic_flux` element.
+/// GSFit fits a single diamagnetic flux measurement, `magnetics/diamagnetic_flux(0)`, as the IMAS equilibrium IDS has a single constraint for it, `time_slice(itime)/constraints/diamagnetic_flux`.
+/// A machine with several diamagnetic loops must average their signals into one, in the `database_reader`, before supplying it.
+/// Without a `diamagnetic_flux` element, the diamagnetic flux is not copied from the magnetics IDS, and is not included in the fit.
+/// With one, the magnetics IDS must hold the diamagnetic flux.
+/// Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux {
-    /// The diamagnetic loop, which measures the toroidal flux from the plasma
+    /// Fitting settings for the diamagnetic flux.
     /// Optional in the settings: unset when it is left out
     pub diamagnetic_flux: EquilibriumCodeParametersParsedDiamagneticFlux,
 }
 
-/// The diamagnetic loop, which measures the toroidal flux from the plasma
-/// Generated from the XML schema type `diamagnetic_flux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
+/// Fitting settings for the diamagnetic flux.
+/// Generated from the XML schema type `DiamagneticFlux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedDiamagneticFlux {
-    /// The loop's name, which the readers expect to be "DIALOOP"
-    pub name: STR_0D,
-    /// The typical size of the loop's measured diamagnetic flux. The fit divides the residual by it
-    /// Units: Wb
+    /// Expected magnitude of the measurement, used to normalise the measurement.
+    /// Units: weber
     pub expected_value: FLT_0D,
-    /// Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+    /// Relative weight of the diamagnetic flux in the least-squares fit.
+    /// Units: dimensionless
     pub weight: FLT_0D,
-    /// Whether the constraint is fitted
+    /// Whether to include the diamagnetic flux in the fit.
     pub include: INT_0D,
-    /// Free text, e.g. why the constraint is not included; not used by the fit
+    /// Free-text comment, e.g. on the quality of the signal; may be empty.
     pub comment: STR_0D,
 }
 
 impl Default for EquilibriumCodeParametersParsedDiamagneticFlux {
     fn default() -> Self {
         Self {
-            name: String::new(),
             expected_value: f64::NAN,
             weight: f64::NAN,
             include: EMPTY_INT,
@@ -2595,7 +2616,7 @@ pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux {
 }
 
 /// One isoflux constraint
-/// Generated from the XML schema type `isoflux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
+/// Generated from the XML schema type `Isoflux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedIsoflux {
     /// The constraint's name
@@ -2603,6 +2624,7 @@ pub struct EquilibriumCodeParametersParsedIsoflux {
     /// The typical size of the flux difference between the two points. The fit divides the residual by it
     pub expected_value: FLT_0D,
     /// Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+    /// Units: dimensionless
     pub weight: FLT_0D,
     /// Whether the constraint is fitted
     pub include: INT_0D,
@@ -2641,10 +2663,11 @@ pub struct EquilibriumCodeParametersParsedPressure {
     pub sensor_name_prefix: STR_0D,
     /// The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead
     /// Optional in the settings: unset when it is left out
-    /// Units: Pa
+    /// Units: pascal
     pub expected_value: FLT_0D,
     /// Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true
     /// Optional in the settings: unset when it is left out
+    /// Units: dimensionless
     pub weight: FLT_0D,
     /// Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true
     /// Optional in the settings: unset when it is left out
@@ -2676,9 +2699,10 @@ impl Default for EquilibriumCodeParametersParsedPressure {
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedPressureThomsonScattering {
     /// Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature
+    /// Units: dimensionless
     pub pressure_multiplier: FLT_0D,
     /// Total pressures at or below this are ignored. A channel with none above it gets no constraint
-    /// Units: Pa
+    /// Units: pascal
     pub minimum_pressure: FLT_0D,
 }
 
@@ -2696,15 +2720,15 @@ impl Default for EquilibriumCodeParametersParsedPressureThomsonScattering {
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedSynthetic {
     /// Major radius of the first sensor, relative to the magnetic axis
-    /// Units: m
+    /// Units: metre
     pub r_start: FLT_0D,
     /// Major radius of the last sensor, relative to the magnetic axis
-    /// Units: m
+    /// Units: metre
     pub r_end: FLT_0D,
     /// Number of sensors, evenly spaced from r_start to r_end
     pub n_sensors: INT_0D,
     /// Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint
-    /// Units: Pa
+    /// Units: pascal
     pub minimum_pressure: FLT_0D,
 }
 
@@ -5708,7 +5732,6 @@ pub struct EquilibriumTimeSliceConstraintsDiamagneticFluxView<'a, D> {
     pub sigma: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub reconstructed: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub chi_squared: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
-    pub name: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
     slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
@@ -5725,7 +5748,6 @@ impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsDiamagneticFluxView<'a, D>
             sigma: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.sigma),
             reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.reconstructed),
             chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.chi_squared),
-            name: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.name.clone()),
             slice_elements: elements,
         }
     }
@@ -7435,7 +7457,7 @@ impl EquilibriumLimiter {
     }
 }
 
-impl EquilibriumCodeParametersParsedPassiveDofRegularisation {
+impl EquilibriumCodeParametersParsedPfPassiveDof {
     /// Select from `passive`. A range, e.g. `.passive(0..2)` or `.passive(..)`, gives the slice view over
     /// those elements, whose leaves gather one value per element.
     /// A name, `.passive(name)`, gives the one element with that `name`.

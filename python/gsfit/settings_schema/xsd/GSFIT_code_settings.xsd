@@ -41,12 +41,22 @@
       the settings are recorded in an IDS's code/parameters, each linked file is written in its link's
       place, and its schema is merged into the linking one, e.g. workflow.xsd into pf_active/pf_active.xsd.
     * Every element and enum value is described by an `xs:documentation`, which editors show on hover.
-    * Units are in `xs:appinfo/units`, as in the IMAS Data Dictionary: SI symbols such as m, s and A, and 1
-      for dimensionless. Counts have no units.
+    * Units are in `xs:appinfo/units`, as the full names of SI units, such as metre, second, ampere and
+      tesla, and dimensionless for a quantity with no dimensions. Counts have no units. This differs from
+      the IMAS Data Dictionary, which uses the SI symbols, such as m, s, A and T, and 1 for dimensionless.
     * The "method" elements are enums. Each value names the sibling element that holds that method's
       settings. The exception is `method` in database_reader.xml, which has no sibling elements: the reader
       it picks reads each IDS's file, and the workflow.xml they link to.
-    * Types follow the Rust side: usize -> xs:nonNegativeInteger, f64 -> xs:double, bool -> xs:boolean.
+    * Named types are UpperCamelCase, e.g. `FiniteDouble`, and elements are snake_case. The same kind of value
+      has the same type in every schema, following the Rust side:
+      * f64 -> `FiniteDouble`, which excludes NaN, INF and -INF, or `FinitePositiveDouble` or
+        `FiniteNonNegativeDouble` where the sign is fixed, e.g. a radius, a tolerance or a weight
+      * a list of f64 -> `FiniteDoubleList`, or `FiniteNonNegativeDoubleList` for weights and tensions
+      * usize -> xs:nonNegativeInteger, or xs:positiveInteger where 0 is not allowed, or a type of its own
+        for a larger minimum, e.g. `NumberOfGridPoints`, at least 2
+      * a signed integer, e.g. a pulse number, where MDSplus gives 0 and -1 a meaning -> xs:integer
+      * bool -> `TrueOrFalse`, which, unlike xs:boolean, does not accept 1 and 0
+      * a name, e.g. of a sensor or a run -> `Name`, which has no whitespace; free text, e.g. a comment -> xs:string
     * JSON's `null` is `xsi:nil="true"` on an element declared `nillable="true"`.
     * An array of numbers is a space-separated list, e.g. "0.1 0.2 0.3", such as the times in
       equilibrium/timeslices.xml. A matrix is an element holding only
@@ -97,7 +107,7 @@
             <xs:element name="equilibrium" type="Link">
                 <xs:annotation>
                     <xs:documentation>
-                        Settings needed to build `equilibrium` IDS; e.g. `time_slices` to reconstruct, the numerical grid, ...
+                        Settings needed to build `equilibrium` IDS; e.g. `time_slices`, the numerical grid, ...
                     </xs:documentation>
                     <xs:appinfo>
                         <schema>equilibrium/equilibrium.xsd</schema>

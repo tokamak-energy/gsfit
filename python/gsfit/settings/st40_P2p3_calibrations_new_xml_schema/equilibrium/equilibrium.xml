@@ -17,7 +17,7 @@
     <source_function_ff_prime href="source_function_ff_prime.xml"/>
 
     <!-- Passive structures -->
-    <passive_dof_regularisation href="passive_dof_regularisation.xml"/>
+    <pf_passive_dof href="pf_passive_dof.xml"/>
 
     <!-- Constraints, named as in the IMAS Data Dictionary -->
     <constraints>

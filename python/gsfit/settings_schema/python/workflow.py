@@ -44,7 +44,7 @@ class WorkflowTree:
     Which run of an MDSplus tree to read, and from which pulse
 
     :param tree_name: The MDSplus tree, e.g. "ELMAG" or "MAG", which the database reader selects it by. Must be unique
-    :param pulseNo: The pulse to read the tree from; nil for the pulse being reconstructed
+    :param pulseNo: The pulse to read the tree from; nil for the pulse being reconstructed. As in MDSplus, 0 is the most recent pulse and -1 the model tree
     :param run_name: The run of the tree to read, e.g. "BEST" or "RUN16"
     :param usage: What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree_name].USAGE), to record where the inputs came from
     """

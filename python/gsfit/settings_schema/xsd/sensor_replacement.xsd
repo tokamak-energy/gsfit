@@ -12,12 +12,32 @@
     <xs:simpleType name="Name">
         <xs:annotation>
             <xs:documentation>
-                A name, with no spaces
+                A non-empty name without any whitespace.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:pattern value="\S+"/>
         </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FiniteDoubleList">
+        <xs:annotation>
+            <xs:documentation>
+                A list of finite numbers, written space-separated, e.g. "0.1 0.2 0.3".
+            </xs:documentation>
+        </xs:annotation>
+        <xs:list itemType="FiniteDouble"/>
     </xs:simpleType>
 
     <xs:simpleType name="NameList">
@@ -27,15 +47,6 @@
             </xs:documentation>
         </xs:annotation>
         <xs:list itemType="Name"/>
-    </xs:simpleType>
-
-    <xs:simpleType name="DoubleList">
-        <xs:annotation>
-            <xs:documentation>
-                An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"
-            </xs:documentation>
-        </xs:annotation>
-        <xs:list itemType="xs:double"/>
     </xs:simpleType>
 
     <!-- ================================= Complex types ================================= -->
@@ -61,7 +72,7 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="coefficients" type="DoubleList">
+            <xs:element name="coefficients" type="FiniteDoubleList">
                 <xs:annotation>
                     <xs:documentation>
                         The coefficient of each sensor in `replacements`, in the same order

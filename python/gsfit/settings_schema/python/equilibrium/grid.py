@@ -21,11 +21,11 @@ class Grid:
 
     :param n_r: Number of radial grid points
     :param n_z: Number of vertical grid points
-    :param r_min: Minimum major radius [m]
-    :param r_max: Maximum major radius [m]
-    :param z_min: Minimum vertical position [m]
-    :param z_max: Maximum vertical position [m]
-    :param n_psi_norm: Number of points in the normalised poloidal flux, psi_norm, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given
+    :param r_min: Lower radial bound of the grid [metre]
+    :param r_max: Upper radial bound of the grid [metre]
+    :param z_min: Lower vertical bound of the grid [metre]
+    :param z_max: Upper vertical bound of the grid [metre]
+    :param n_psi_norm: Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -33,8 +33,8 @@ class Grid:
 
     n_r: int
     n_z: int
-    r_min: float  # [m]
-    r_max: float  # [m]
-    z_min: float  # [m]
-    z_max: float  # [m]
+    r_min: float  # [metre]
+    r_max: float  # [metre]
+    z_min: float  # [metre]
+    z_max: float  # [metre]
     n_psi_norm: int

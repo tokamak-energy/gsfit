@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<passive_dof_regularisation xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/passive_dof_regularisation.xsd">
+<pf_passive_dof xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/equilibrium/pf_passive_dof.xsd">
     <passive>
         <name>BVLTCASE</name>
         <current_distribution_type>constant_current_density</current_distribution_type>
@@ -82,4 +82,4 @@
         </regularisations>
         <regularisations_weight>0.1</regularisations_weight>
     </passive>
-</passive_dof_regularisation>
+</pf_passive_dof>

@@ -28,12 +28,12 @@ def setup_pf_passive(
 
     :param pulseNo: Pulse number, used to read from the database
     :param settings: `PfPassiveSettings` object containing the XML settings read from the `settings` directory, whose `workflow` says which ELMAG run to read
-    :param settings_equilibrium: `EquilibriumSettings` object, read from `equilibrium/equilibrium.xml`, whose `passive_dof_regularisation` says which
+    :param settings_equilibrium: `EquilibriumSettings` object, read from `equilibrium/equilibrium.xml`, whose `pf_passive_dof` says which
         passive structures to fit, and how
 
     **This method is specific to ST40's experimental MDSplus database, with a digital filter.**
 
-    One `loop(i1)` is added for each passive structure listed in `passive_dof_regularisation`, in that order, with one `element(i2)` per filament.
+    One `loop(i1)` is added for each passive structure listed in `pf_passive_dof`, in that order, with one `element(i2)` per filament.
 
     ELMAG describes each filament as EFIT does: by its centre, its radial width and vertical height, and the angles of its sides from the R axis,
     where an angle of zero means that pair of sides is not sheared (see `python/gsfit/plotting/filament_corners.py`). The data dictionary describes
@@ -57,7 +57,7 @@ def setup_pf_passive(
         elmag_pulseNo = elmag_settings.pulseNo
 
     # Serialise the settings, which the passive structures record in `pf_passive/code/parameters`: `pf_passive.xml` holding only the run which
-    # built the passive structures. The equilibrium's `passive_dof_regularisation` is not recorded there; what it sets is stored in the IDS itself,
+    # built the passive structures. The equilibrium's `pf_passive_dof` is not recorded there; what it sets is stored in the IDS itself,
     # as each loop's `current_distribution_type`, `dof`, `regularisations` and `regularisations_weight`
     settings_xml = serialise_python_dataclass_to_imas_parameters_input(
         settings=PfPassiveSettings(workflow=Workflow(tree=KeyedList([elmag_settings]))),
@@ -121,7 +121,7 @@ def setup_pf_passive(
         else:
             oblique_beta[i_filament] = np.arctan2(-side_beta_r, vessel_d_z[i_filament])
 
-    for pf_passive_to_fit in settings_equilibrium.passive_dof_regularisation.passive:
+    for pf_passive_to_fit in settings_equilibrium.pf_passive_dof.passive:
         passive_name = pf_passive_to_fit.name
         current_distribution_type = pf_passive_to_fit.current_distribution_type
         n_dof = pf_passive_to_fit.n_dof

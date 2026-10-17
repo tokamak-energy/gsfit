@@ -28,7 +28,7 @@ class Numerics:
 
     :param RAYON_NUM_THREADS: Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU
     :param n_iter_max: Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed
-    :param grad_shafranov_deviation_tolerance: The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this [1]
+    :param grad_shafranov_deviation_tolerance: The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this [dimensionless]
     :param n_iter_min: Minimum number of nonlinear solver iterations before the convergence test may pass
     :param save_unconverged: Not read by the code at present
     :param nonlinear_solver: The nonlinear solver for the Grad-Shafranov equation
@@ -39,7 +39,7 @@ class Numerics:
 
     RAYON_NUM_THREADS: int
     n_iter_max: int
-    grad_shafranov_deviation_tolerance: float  # [1]
+    grad_shafranov_deviation_tolerance: float  # [dimensionless]
     n_iter_min: int
     save_unconverged: bool
     nonlinear_solver: NonlinearSolver
@@ -70,13 +70,13 @@ class Picard:
     :param n_iter_no_vertical_feedback: Number of initial iterations with the vertical feedback (the fit of delta_z) switched off
     :param apply_anderson_mixing: Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals
     :param anderson_n_history: Maximum number of previous iterations Anderson mixing combines
-    :param anderson_mixing: Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it. Must be greater than 0, which `Plasma::new` checks too [1]
+    :param anderson_mixing: Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it. [dimensionless]
     """
 
     n_iter_no_vertical_feedback: int
     apply_anderson_mixing: bool
     anderson_n_history: int
-    anderson_mixing: float  # [1]
+    anderson_mixing: float  # [dimensionless]
 
 
 @dataclass(kw_only=True)
@@ -84,17 +84,17 @@ class NewtonKrylov:
     """
     Settings for Jacobian-free Newton-Krylov
 
-    :param picard_handover: Grad-Shafranov deviation below which it hands over from Picard to Newton iterations [1]
+    :param picard_handover: Grad-Shafranov deviation below which it hands over from Picard to Newton iterations [dimensionless]
     :param n_krylov_max: Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work
-    :param krylov_tolerance: The Krylov solve stops once the linearised residual is this fraction of the residual [1]
-    :param finite_difference_step: Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual [1]
+    :param krylov_tolerance: The Krylov solve stops once the linearised residual is this fraction of the residual [dimensionless]
+    :param finite_difference_step: Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual [dimensionless]
     :param verbose: Whether to print the progress of each Newton iteration
     """
 
-    picard_handover: float  # [1]
+    picard_handover: float  # [dimensionless]
     n_krylov_max: int
-    krylov_tolerance: float  # [1]
-    finite_difference_step: float  # [1]
+    krylov_tolerance: float  # [dimensionless]
+    finite_difference_step: float  # [dimensionless]
     verbose: bool
 
 
@@ -104,12 +104,12 @@ class NewtonPicard:
     Settings for Newton-Picard, the recursive projection method (RPM)
 
     :param n_basis_max: Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add
-    :param contraction_threshold: A direction is added when the residual outside them shrinks by less than this factor per iteration [1]
-    :param finite_difference_step: Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual [1]
+    :param contraction_threshold: A direction is added when the residual outside them shrinks by less than this factor per iteration [dimensionless]
+    :param finite_difference_step: Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual [dimensionless]
     :param verbose: Whether to print the progress of each Newton-Picard iteration
     """
 
     n_basis_max: int
-    contraction_threshold: float  # [1]
-    finite_difference_step: float  # [1]
+    contraction_threshold: float  # [dimensionless]
+    finite_difference_step: float  # [dimensionless]
     verbose: bool

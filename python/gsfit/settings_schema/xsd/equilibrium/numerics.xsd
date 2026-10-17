@@ -41,14 +41,36 @@
 
     <!-- ================================= Other simple types ================================= -->
 
-    <xs:simpleType name="PositiveDouble">
+    <xs:simpleType name="FiniteDouble">
         <xs:annotation>
             <xs:documentation>
-                A number greater than 0
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
+            <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="FinitePositiveDouble">
+        <xs:annotation>
+            <xs:documentation>
+                A finite number greater than 0.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="FiniteDouble">
             <xs:minExclusive value="0.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TrueOrFalse">
+        <xs:annotation>
+            <xs:documentation>
+                A boolean written as `true` or `false`; `xs:boolean` alone would also accept `1` and `0`.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:boolean">
+            <xs:pattern value="true|false"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -69,20 +91,20 @@
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="n_iter_max" type="xs:nonNegativeInteger">
+                <xs:element name="n_iter_max" type="xs:positiveInteger">
                     <xs:annotation>
                         <xs:documentation>
                             Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="grad_shafranov_deviation_tolerance" type="xs:double">
+                <xs:element name="grad_shafranov_deviation_tolerance" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
                             The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this
                         </xs:documentation>
                         <xs:appinfo>
-                            <units>1</units>
+                            <units>dimensionless</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
@@ -93,7 +115,7 @@
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="save_unconverged" type="xs:boolean">
+                <xs:element name="save_unconverged" type="TrueOrFalse">
                     <xs:annotation>
                         <xs:documentation>
                             Not read by the code at present
@@ -130,7 +152,7 @@
                                                 </xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element name="apply_anderson_mixing" type="xs:boolean">
+                                        <xs:element name="apply_anderson_mixing" type="TrueOrFalse">
                                             <xs:annotation>
                                                 <xs:documentation>
                                                     Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals
@@ -144,13 +166,13 @@
                                                 </xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element name="anderson_mixing" type="PositiveDouble">
+                                        <xs:element name="anderson_mixing" type="FinitePositiveDouble">
                                             <xs:annotation>
                                                 <xs:documentation>
-                                                    Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it. Must be greater than 0, which `Plasma::new` checks too
+                                                    Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it.
                                                 </xs:documentation>
                                                 <xs:appinfo>
-                                                    <units>1</units>
+                                                    <units>dimensionless</units>
                                                 </xs:appinfo>
                                             </xs:annotation>
                                         </xs:element>
@@ -165,44 +187,44 @@
                                 </xs:annotation>
                                 <xs:complexType>
                                     <xs:all>
-                                        <xs:element name="picard_handover" type="xs:double">
+                                        <xs:element name="picard_handover" type="FinitePositiveDouble">
                                             <xs:annotation>
                                                 <xs:documentation>
                                                     Grad-Shafranov deviation below which it hands over from Picard to Newton iterations
                                                 </xs:documentation>
                                                 <xs:appinfo>
-                                                    <units>1</units>
+                                                    <units>dimensionless</units>
                                                 </xs:appinfo>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element name="n_krylov_max" type="xs:nonNegativeInteger">
+                                        <xs:element name="n_krylov_max" type="xs:positiveInteger">
                                             <xs:annotation>
                                                 <xs:documentation>
                                                     Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work
                                                 </xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element name="krylov_tolerance" type="xs:double">
+                                        <xs:element name="krylov_tolerance" type="FinitePositiveDouble">
                                             <xs:annotation>
                                                 <xs:documentation>
                                                     The Krylov solve stops once the linearised residual is this fraction of the residual
                                                 </xs:documentation>
                                                 <xs:appinfo>
-                                                    <units>1</units>
+                                                    <units>dimensionless</units>
                                                 </xs:appinfo>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element name="finite_difference_step" type="xs:double">
+                                        <xs:element name="finite_difference_step" type="FinitePositiveDouble">
                                             <xs:annotation>
                                                 <xs:documentation>
                                                     Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
                                                 </xs:documentation>
                                                 <xs:appinfo>
-                                                    <units>1</units>
+                                                    <units>dimensionless</units>
                                                 </xs:appinfo>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element name="verbose" type="xs:boolean">
+                                        <xs:element name="verbose" type="TrueOrFalse">
                                             <xs:annotation>
                                                 <xs:documentation>
                                                     Whether to print the progress of each Newton iteration
@@ -227,27 +249,27 @@
                                                 </xs:documentation>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element name="contraction_threshold" type="xs:double">
+                                        <xs:element name="contraction_threshold" type="FinitePositiveDouble">
                                             <xs:annotation>
                                                 <xs:documentation>
                                                     A direction is added when the residual outside them shrinks by less than this factor per iteration
                                                 </xs:documentation>
                                                 <xs:appinfo>
-                                                    <units>1</units>
+                                                    <units>dimensionless</units>
                                                 </xs:appinfo>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element name="finite_difference_step" type="xs:double">
+                                        <xs:element name="finite_difference_step" type="FinitePositiveDouble">
                                             <xs:annotation>
                                                 <xs:documentation>
                                                     Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
                                                 </xs:documentation>
                                                 <xs:appinfo>
-                                                    <units>1</units>
+                                                    <units>dimensionless</units>
                                                 </xs:appinfo>
                                             </xs:annotation>
                                         </xs:element>
-                                        <xs:element name="verbose" type="xs:boolean">
+                                        <xs:element name="verbose" type="TrueOrFalse">
                                             <xs:annotation>
                                                 <xs:documentation>
                                                     Whether to print the progress of each Newton-Picard iteration
