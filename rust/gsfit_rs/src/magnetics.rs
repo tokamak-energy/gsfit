@@ -35,8 +35,8 @@ use pyo3::prelude::*;
 ///
 /// **For now, `b_field_pol_probe(i1)/poloidal_angle` keeps GSFit's present definition, COCOS 13, as MDSplus stores it.** It is
 /// measured counter-clockwise from `grad(R)`, in the usual plot with `R` to the right and `Z` upwards, so the probe's normal is
-/// `cos(poloidal_angle) * grad(R) + sin(poloidal_angle) * grad(Z)`, and an angle of `PI / 2` points towards `+Z`. It is the same
-/// angle as `BpProbes`'s `angle_pol`, and is stored as given, without being wrapped into a range.
+/// `cos(poloidal_angle) * grad(R) + sin(poloidal_angle) * grad(Z)`, and an angle of `PI / 2` points towards `+Z`. It is the angle
+/// GSFit has always called `angle_pol`, and is stored as given, without being wrapped into a range.
 ///
 /// This is **not** the data dictionary's definition. Its COCOS 17 measures the angle clockwise, so that the normal is
 /// `cos(poloidal_angle) * grad(R) - sin(poloidal_angle) * grad(Z)`, and keeps it within [0, 2 * PI].

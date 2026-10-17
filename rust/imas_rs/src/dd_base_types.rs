@@ -605,7 +605,7 @@ pub use num_complex::Complex64 as Complex;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ids::equilibrium::{Equilibrium, EquilibriumGreensPfPassive, EquilibriumGreensPfPassiveDof};
+    use crate::ids::equilibrium::Equilibrium;
     use crate::ids::magnetics::{Magnetics, MagneticsFluxLoop, MagneticsFluxLoopGreensPfActive};
 
     /// A distinct value for every (flux loop, PF coil) pair, so that a transposed or mis-ordered
@@ -735,27 +735,6 @@ mod tests {
 
         let values: Array2<f64> = magnetics.flux_loop(..).greens.pf_active(..).value.to_array();
         assert_eq!(values.dim(), (0, 0));
-    }
-
-    /// A nested array of structures under a nested array of structures, as in the equilibrium Greens tables.
-    #[test]
-    fn greens_passive_degrees_of_freedom_gather_over_two_levels() {
-        let n_passive: usize = 2;
-        let n_dof: usize = 3;
-        let mut equilibrium: Equilibrium = Equilibrium::default();
-        equilibrium.greens.pf_passive = vec![EquilibriumGreensPfPassive::default(); n_passive];
-        for i_passive in 0..n_passive {
-            equilibrium.greens.pf_passive[i_passive].dof = vec![EquilibriumGreensPfPassiveDof::default(); n_dof];
-            for i_dof in 0..n_dof {
-                equilibrium.greens.pf_passive[i_passive].dof[i_dof].name = format!("P{i_passive}_EIG_{i_dof:02}");
-            }
-        }
-
-        // `dof` has no numeric scalar leaf to gather, so the two-level view is checked by its shape
-        assert_eq!(equilibrium.greens.pf_passive(..).dof(..).shape(), vec![n_passive, n_dof]);
-
-        let dof_names: Vec<String> = equilibrium.greens.pf_passive[1].dof(..).name.to_vec();
-        assert_eq!(dof_names, vec!["P1_EIG_00".to_string(), "P1_EIG_01".to_string(), "P1_EIG_02".to_string()]);
     }
 
     /// One sliced level is unchanged: a scalar leaf gathers into an `Array1`.

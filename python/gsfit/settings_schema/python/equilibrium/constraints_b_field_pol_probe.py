@@ -37,7 +37,7 @@ class BFieldPolProbe:
     """
     :param name: Name of the probe, e.g. `P101`. Must be unique, and match the name read by the `database_reader`.
     :param comment: Free-text comment, e.g. on the quality of the signal; may be empty.
-    :param expected_value: Expected magnitude of the measurement, used for normalisation. In the fit the probe is weighted by `weight / expected_value`. [tesla]
+    :param expected_value: Expected magnitude of the measurement, used to normalise the measurement. [tesla]
     :param include: Whether to include the probe in the fit.
     :param weight: Relative weight of the probe in the fit. [dimensionless]
     """

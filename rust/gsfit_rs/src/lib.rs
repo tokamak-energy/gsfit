@@ -4,6 +4,7 @@ use pyo3::prelude::*;
 // Load modules
 mod analytic_grad_shafranov;
 mod circuit_equations;
+mod equilibrium;
 mod equilibrium_post_processor;
 mod grad_shafranov;
 mod limiter;
@@ -11,7 +12,6 @@ mod magnetic_sensors;
 mod magnetics;
 mod pf_active;
 mod pf_passive;
-mod plasma;
 mod pulse_schedule;
 mod sensors;
 mod source_functions;
@@ -21,6 +21,7 @@ mod wall;
 // Load structs and functions
 use analytic_grad_shafranov::{Configuration, GuazzottoFreidberg, Symmetry};
 use circuit_equations::solve_circuit_equations;
+use equilibrium::Equilibrium;
 use grad_shafranov::solve_grad_shafranov;
 use greens::{
     greens_d_psi_d_r, greens_d_psi_d_z, greens_d2_psi_d_r_d_z, greens_d2_psi_d_r2, greens_d2_psi_d_z2, greens_d3_psi_d_r_d_z2, greens_d3_psi_d_r2_d_z,
@@ -30,10 +31,9 @@ use magnetics::Magnetics;
 mod material_properties;
 use pf_active::PfActive;
 use pf_passive::PfPassive;
-use plasma::Plasma;
 use pulse_schedule::PulseSchedule;
 mod python_pickling_methods;
-use sensors::{BpProbes, Dialoop, FluxLoops, Isoflux, IsofluxBoundary, Pressure, RogowskiCoils, StationaryPoint};
+use sensors::{Isoflux, IsofluxBoundary, Pressure, StationaryPoint};
 use source_functions::{EfitPolynomial, TensionedCubicBSpline};
 use tf::Tf;
 use wall::Wall;
@@ -70,9 +70,9 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(solve_circuit_equations, m)?)?;
 
     // Expose current source classes
+    m.add_class::<Equilibrium>()?;
     m.add_class::<PfActive>()?;
     m.add_class::<PfPassive>()?;
-    m.add_class::<Plasma>()?;
     m.add_class::<Tf>()?;
     m.add_class::<Wall>()?;
 
@@ -80,14 +80,10 @@ fn gsfit_rs(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PulseSchedule>()?;
 
     // Expose sensor classes
-    m.add_class::<BpProbes>()?;
-    m.add_class::<Dialoop>()?;
-    m.add_class::<FluxLoops>()?;
     m.add_class::<Isoflux>()?;
     m.add_class::<IsofluxBoundary>()?;
     m.add_class::<Magnetics>()?;
     m.add_class::<StationaryPoint>()?;
-    m.add_class::<RogowskiCoils>()?;
     m.add_class::<Pressure>()?;
 
     // Expose source functions

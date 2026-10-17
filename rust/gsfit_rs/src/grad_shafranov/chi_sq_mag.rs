@@ -1,100 +1,55 @@
-use crate::sensors::{BpProbes, Dialoop, FluxLoops, RogowskiCoils};
-use ndarray::{Array1, Array2};
+use super::fitted_magnetic_sensors::FittedMagneticSensors;
+use imas_rs::{EquilibriumConstraints, EquilibriumConstraints0d, EquilibriumConstraints0dIpLike, EquilibriumConstraints0dOneLike, EquilibriumTimeSlice};
 
-pub fn epp_chi_sq_mag(bp_probes: &BpProbes, flux_loops: &FluxLoops, rogowski_coils: &RogowskiCoils, dialoop: &Dialoop, n_time: usize) -> Array1<f64> {
-    // Loop over all time-slices and calculate `chi_sq_mag`
-    let mut chi_sq_mag_result: Array1<f64> = Array1::zeros(n_time);
+/// Calculate the fitted magnetic sensors' chi squared on every time-slice, and store it as `constraints/chi_squared_reduced`.
+///
+/// Each fitted sensor adds `((measured - reconstructed) / sigma) ** 2`, where `measured` and `reconstructed` are its constraint's,
+/// found by name in `time_slice(itime)/constraints/<sensor>`, and `sigma = expected_value / weight`. A fitted diamagnetic loop uses
+/// `constraints/diamagnetic_flux`.
+///
+/// # Arguments
+/// * `time_slices` - the solved time-slices, whose `reconstructed` the equilibrium post-processor has filled;
+///   `constraints/chi_squared_reduced` is written into each
+/// * `fitted_magnetic_sensors` - the magnetic sensors fitted on each time-slice, with their weights and expected values, one entry per
+///   time-slice: the ones the solver fitted with
+pub fn epp_chi_sq_mag(time_slices: &mut [EquilibriumTimeSlice], fitted_magnetic_sensors: &[FittedMagneticSensors]) {
+    let n_time: usize = time_slices.len();
+    for i_time in 0..n_time {
+        let constraints: &EquilibriumConstraints = &time_slices[i_time].constraints;
+        let fitted: &FittedMagneticSensors = &fitted_magnetic_sensors[i_time];
+        let mut chi_sq_mag: f64 = 0.0;
 
-    // Only included sensors contribute. A sensor type with none included is skipped outright: its
-    // `measured` values are only stored when at least one sensor is included (see
-    // `split_into_static_and_dynamic`), which is not the case in a forward solve
-
-    let bp_probe_names: Vec<String> = bp_probes.results.keys();
-    let n_bp_probes: usize = bp_probe_names.len();
-    if n_bp_probes > 0 && bp_probes.results.get("*").get("fit_settings").get("include").unwrap_vec_bool().contains(&true) {
-        let bp_probes_measured: Array2<f64> = bp_probes.results.get("*").get("b").get("measured").get("value").unwrap_array2();
-        let bp_probes_calculated: Array2<f64> = bp_probes.results.get("*").get("b").get("calculated").get("value").unwrap_array2();
-        let bp_probes_weight: Array1<f64> = bp_probes.results.get("*").get("fit_settings").get("weight").unwrap_array1();
-        let bp_probes_expected_value: Array1<f64> = bp_probes.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
-        let bp_probes_include: Vec<bool> = bp_probes.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
-        for i_time in 0..n_time {
-            // bp_probes
-            for i_bp_probe in 0..n_bp_probes {
-                if bp_probes_include[i_bp_probe] {
-                    let sigma: f64 = bp_probes_expected_value[i_bp_probe] / bp_probes_weight[i_bp_probe];
-                    chi_sq_mag_result[i_time] +=
-                        (bp_probes_measured[(i_time, i_bp_probe)] - bp_probes_calculated[(i_time, i_bp_probe)]).powi(2) / sigma.powi(2);
-                }
-            }
+        // bp_probes
+        let n_bp_probe: usize = fitted.b_field_pol_probe.names.len();
+        for i_bp_probe in 0..n_bp_probe {
+            let constraint: &EquilibriumConstraints0dOneLike = constraints.b_field_pol_probe(&fitted.b_field_pol_probe.names[i_bp_probe]);
+            let sigma: f64 = fitted.b_field_pol_probe.expected_values[i_bp_probe] / fitted.b_field_pol_probe.weights[i_bp_probe];
+            chi_sq_mag += (constraint.measured - constraint.reconstructed).powi(2) / sigma.powi(2);
         }
-    }
 
-    let flux_loop_names: Vec<String> = flux_loops.results.keys();
-    let n_flux_loops: usize = flux_loop_names.len();
-    if n_flux_loops > 0 && flux_loops.results.get("*").get("fit_settings").get("include").unwrap_vec_bool().contains(&true) {
-        let flux_loops_measured: Array2<f64> = flux_loops.results.get("*").get("psi").get("measured").get("value").unwrap_array2();
-        let flux_loops_calculated: Array2<f64> = flux_loops.results.get("*").get("psi").get("calculated").get("value").unwrap_array2();
-        let flux_loops_weight: Array1<f64> = flux_loops.results.get("*").get("fit_settings").get("weight").unwrap_array1();
-        let flux_loops_expected_value: Array1<f64> = flux_loops.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
-        let flux_loops_include: Vec<bool> = flux_loops.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
-        for i_time in 0..n_time {
-            // flux_loops
-            for i_flux_loop in 0..n_flux_loops {
-                if flux_loops_include[i_flux_loop] {
-                    let sigma: f64 = flux_loops_expected_value[i_flux_loop] / flux_loops_weight[i_flux_loop];
-                    chi_sq_mag_result[i_time] +=
-                        (flux_loops_measured[(i_time, i_flux_loop)] - flux_loops_calculated[(i_time, i_flux_loop)]).powi(2) / sigma.powi(2);
-                }
-            }
+        // flux_loops
+        let n_flux_loop: usize = fitted.flux_loop.names.len();
+        for i_flux_loop in 0..n_flux_loop {
+            let constraint: &EquilibriumConstraints0d = constraints.flux_loop(&fitted.flux_loop.names[i_flux_loop]);
+            let sigma: f64 = fitted.flux_loop.expected_values[i_flux_loop] / fitted.flux_loop.weights[i_flux_loop];
+            chi_sq_mag += (constraint.measured - constraint.reconstructed).powi(2) / sigma.powi(2);
         }
-    }
 
-    let rogowski_coil_names: Vec<String> = rogowski_coils.results.keys();
-    let n_rogowski_coils: usize = rogowski_coil_names.len();
-    if n_rogowski_coils > 0
-        && rogowski_coils
-            .results
-            .get("*")
-            .get("fit_settings")
-            .get("include")
-            .unwrap_vec_bool()
-            .contains(&true)
-    {
-        let rogowski_coils_measured: Array2<f64> = rogowski_coils.results.get("*").get("i").get("measured").get("value").unwrap_array2();
-        let rogowski_coils_calculated: Array2<f64> = rogowski_coils.results.get("*").get("i").get("calculated").get("value").unwrap_array2();
-        let rogowski_coils_weight: Array1<f64> = rogowski_coils.results.get("*").get("fit_settings").get("weight").unwrap_array1();
-        let rogowski_coils_expected_value: Array1<f64> = rogowski_coils.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
-        let rogowski_coils_include: Vec<bool> = rogowski_coils.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
-        for i_time in 0..n_time {
-            // rogowski_coils
-            for i_rogowski_coil in 0..n_rogowski_coils {
-                if rogowski_coils_include[i_rogowski_coil] {
-                    let sigma: f64 = rogowski_coils_expected_value[i_rogowski_coil] / rogowski_coils_weight[i_rogowski_coil];
-                    chi_sq_mag_result[i_time] +=
-                        (rogowski_coils_measured[(i_time, i_rogowski_coil)] - rogowski_coils_calculated[(i_time, i_rogowski_coil)]).powi(2) / sigma.powi(2);
-                }
-            }
+        // rogowski_coils
+        let n_rogowski_coil: usize = fitted.rogowski_coil.names.len();
+        for i_rogowski_coil in 0..n_rogowski_coil {
+            let constraint: &EquilibriumConstraints0dIpLike = constraints.rogowski_coil(&fitted.rogowski_coil.names[i_rogowski_coil]);
+            let sigma: f64 = fitted.rogowski_coil.expected_values[i_rogowski_coil] / fitted.rogowski_coil.weights[i_rogowski_coil];
+            chi_sq_mag += (constraint.measured - constraint.reconstructed).powi(2) / sigma.powi(2);
         }
-    }
 
-    let dialoop_names: Vec<String> = dialoop.results.keys();
-    let n_dialoop: usize = dialoop_names.len();
-    if n_dialoop > 0 && dialoop.results.get("*").get("fit_settings").get("include").unwrap_vec_bool().contains(&true) {
-        let dialoop_measured: Array2<f64> = dialoop.results.get("*").get("b").get("measured").get("value").unwrap_array2();
-        let dialoop_calculated: Array2<f64> = dialoop.results.get("*").get("b").get("calculated").get("value").unwrap_array2();
-        let dialoop_weight: Array1<f64> = dialoop.results.get("*").get("fit_settings").get("weight").unwrap_array1();
-        let dialoop_expected_value: Array1<f64> = dialoop.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
-        let dialoop_include: Vec<bool> = dialoop.results.get("*").get("fit_settings").get("include").unwrap_vec_bool();
-        for i_time in 0..n_time {
-            // dialoop
-            for i_dialoop in 0..n_dialoop {
-                if dialoop_include[i_dialoop] {
-                    let sigma: f64 = dialoop_expected_value[i_dialoop] / dialoop_weight[i_dialoop];
-                    chi_sq_mag_result[i_time] += (dialoop_measured[(i_time, i_dialoop)] - dialoop_calculated[(i_time, i_dialoop)]).powi(2) / sigma.powi(2);
-                }
-            }
+        // dialoop: the data dictionary has a single diamagnetic flux constraint, so at most one diamagnetic loop is fitted
+        let n_dialoop: usize = fitted.diamagnetic_flux.names.len();
+        for i_dialoop in 0..n_dialoop {
+            let sigma: f64 = fitted.diamagnetic_flux.expected_values[i_dialoop] / fitted.diamagnetic_flux.weights[i_dialoop];
+            chi_sq_mag += (constraints.diamagnetic_flux.measured - constraints.diamagnetic_flux.reconstructed).powi(2) / sigma.powi(2);
         }
-    }
 
-    chi_sq_mag_result
+        time_slices[i_time].constraints.chi_squared_reduced = chi_sq_mag;
+    }
 }

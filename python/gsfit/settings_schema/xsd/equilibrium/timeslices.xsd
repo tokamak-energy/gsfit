@@ -9,19 +9,39 @@
     <!-- ===================================== Enums ===================================== -->
 
     <xs:simpleType name="TimeslicesMethod">
-        <xs:annotation><xs:documentation>The ways of choosing the times to reconstruct, from `Gsfit.setup_timeslices` in python/gsfit/gsfit.py</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The ways of choosing the times to reconstruct, from `Gsfit.setup_timeslices` in python/gsfit/gsfit.py
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="arange">
-                <xs:annotation><xs:documentation>Evenly spaced times, set by a step (numpy.arange)</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Evenly spaced times, set by a step (numpy.arange)
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="linspace">
-                <xs:annotation><xs:documentation>Evenly spaced times, set by their number (numpy.linspace)</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Evenly spaced times, set by their number (numpy.linspace)
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="user_defined">
-                <xs:annotation><xs:documentation>A list of times</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        A list of times
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="good_pressure_sensors">
-                <xs:annotation><xs:documentation>The times at which the pressure sensors are good (BAD_MA is false in the PPTS tree), for ST40's experimental MDSplus database. It has no settings: the PPTS run is `ppts` in thomson_scattering.xml, in the element of the database reader in use</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The times at which the pressure sensors are good (BAD_MA is false in the PPTS tree), for ST40's experimental MDSplus database. It has no settings: the PPTS run is `ppts` in thomson_scattering.xml, in the element of the database reader in use
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
@@ -29,26 +49,44 @@
     <!-- ================================= Other simple types ================================= -->
 
     <xs:simpleType name="DoubleList">
-        <xs:annotation><xs:documentation>An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"
+            </xs:documentation>
+        </xs:annotation>
         <xs:list itemType="xs:double"/>
     </xs:simpleType>
 
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="timeslices">
-        <xs:annotation><xs:documentation>The times to reconstruct</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The times to reconstruct
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:all>
                 <xs:element name="method" type="TimeslicesMethod">
-                    <xs:annotation><xs:documentation>How the times are chosen. Its settings are in the element of the same name, below</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            How the times are chosen. Its settings are in the element of the same name, below
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
                 <xs:element name="arange">
-                    <xs:annotation><xs:documentation>Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
+                        </xs:documentation>
+                    </xs:annotation>
                     <xs:complexType>
                         <xs:all>
                             <xs:element name="time_start" type="xs:double">
                                 <xs:annotation>
-                                    <xs:documentation>First time</xs:documentation>
+                                    <xs:documentation>
+                                        First time
+                                    </xs:documentation>
                                     <xs:appinfo>
                                         <units>s</units>
                                     </xs:appinfo>
@@ -56,7 +94,9 @@
                             </xs:element>
                             <xs:element name="time_end" type="xs:double">
                                 <xs:annotation>
-                                    <xs:documentation>End of the times, which is not included</xs:documentation>
+                                    <xs:documentation>
+                                        End of the times, which is not included
+                                    </xs:documentation>
                                     <xs:appinfo>
                                         <units>s</units>
                                     </xs:appinfo>
@@ -64,7 +104,9 @@
                             </xs:element>
                             <xs:element name="dt" type="xs:double">
                                 <xs:annotation>
-                                    <xs:documentation>Step between times</xs:documentation>
+                                    <xs:documentation>
+                                        Step between times
+                                    </xs:documentation>
                                     <xs:appinfo>
                                         <units>s</units>
                                     </xs:appinfo>
@@ -74,12 +116,18 @@
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="linspace">
-                    <xs:annotation><xs:documentation>n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
+                        </xs:documentation>
+                    </xs:annotation>
                     <xs:complexType>
                         <xs:all>
                             <xs:element name="time_start" type="xs:double">
                                 <xs:annotation>
-                                    <xs:documentation>First time</xs:documentation>
+                                    <xs:documentation>
+                                        First time
+                                    </xs:documentation>
                                     <xs:appinfo>
                                         <units>s</units>
                                     </xs:appinfo>
@@ -87,21 +135,29 @@
                             </xs:element>
                             <xs:element name="time_end" type="xs:double">
                                 <xs:annotation>
-                                    <xs:documentation>Last time</xs:documentation>
+                                    <xs:documentation>
+                                        Last time
+                                    </xs:documentation>
                                     <xs:appinfo>
                                         <units>s</units>
                                     </xs:appinfo>
                                 </xs:annotation>
                             </xs:element>
                             <xs:element name="n_time" type="xs:nonNegativeInteger">
-                                <xs:annotation><xs:documentation>Number of times</xs:documentation></xs:annotation>
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Number of times
+                                    </xs:documentation>
+                                </xs:annotation>
                             </xs:element>
                         </xs:all>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="user_defined" type="DoubleList">
                     <xs:annotation>
-                        <xs:documentation>The times, in the order they are given</xs:documentation>
+                        <xs:documentation>
+                            The times, in the order they are given
+                        </xs:documentation>
                         <xs:appinfo>
                             <units>s</units>
                         </xs:appinfo>

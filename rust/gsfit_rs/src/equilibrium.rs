@@ -3,152 +3,176 @@ use crate::magnetics::Magnetics;
 use crate::pf_active::PfActive;
 use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
 use crate::pulse_schedule::PulseSchedule;
-use crate::source_functions::SharedSourceFunction;
-use crate::source_functions::extract_source_function;
+use crate::source_functions::{EfitPolynomial, SharedSourceFunction, TensionedCubicBSpline};
 use crate::tf::Tf;
 use crate::wall::Wall;
+use imas_rs::ids::equilibrium::{
+    Code, Equilibrium as EquilibriumIds, EquilibriumCodeParametersParsed, EquilibriumCodeParametersParsedEfitPolynomial,
+    EquilibriumCodeParametersParsedEquilibriumConstraints, EquilibriumCodeParametersParsedGrid, EquilibriumCodeParametersParsedTensionedCubicBSpline,
+    EquilibriumCodeParametersParsedTimeslices, EquilibriumConstraints0d, EquilibriumConstraints0dB0Like, EquilibriumConstraints0dDof,
+    EquilibriumConstraints0dIpLike, EquilibriumConstraints0dOneLike, EquilibriumGap, EquilibriumGreensGridPfActive, EquilibriumGreensGridPfPassive,
+    EquilibriumGreensGridPfPassiveDof, EquilibriumGreensGridPlasma, EquilibriumLimiterUnit, EquilibriumLimiterUnitOutline, EquilibriumProfiles2d,
+};
 use imas_rs::ids::pf_active::PfCoils;
 use imas_rs::ids::pf_passive::PfPassiveLoops;
 use imas_rs::ids::pulse_schedule::PulseScheduleGap;
 use imas_rs::ids::wall::Wall2dLimiterUnit;
-use imas_rs::python::{PyEquilibrium, PyPath, read_path};
-use imas_rs::{
-    Equilibrium, EquilibriumConstraints0d, EquilibriumConstraints0dDof, EquilibriumConstraints0dIpLike, EquilibriumGap, EquilibriumGreensGridPfActive,
-    EquilibriumGreensGridPfPassive, EquilibriumGreensGridPfPassiveDof, EquilibriumGreensGridPlasma, EquilibriumLimiterUnit, EquilibriumLimiterUnitOutline,
-    EquilibriumProfiles2d,
-};
+use imas_rs::python::{PyEquilibrium, PyParametersInput, PyPath, read_path};
 use ndarray::{Array1, Array2, ArrayView2, Axis, MeshIndex, meshgrid, s};
-use numpy::PyArrayMethods;
-use numpy::borrow::PyReadonlyArray1;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use rayon::prelude::*;
+use std::sync::Arc;
 
-#[derive(Clone)]
-#[pyclass(skip_from_py_object)]
-pub struct Plasma {
-    /// The equilibrium IDS. Empty until `initialise_equilibrium_ids` is called, which happens once
-    /// the reconstruction times are known
-    pub equilibrium_ids: Equilibrium,
+/// The equilibrium, stored as an IMAS `equilibrium` IDS.
+///
+/// It is built from GSFit's settings alone:
+/// * `code/parameters` - GSFit's settings, as XML text, which is where IMAS records the parameters of the code which made an IDS
+/// * `code/parameters_parsed` - the same settings read into structs, e.g. `code/parameters_parsed/grid/n_r`, which everything
+///   below is built from
+/// * `time_slice(itime)` - one per time to reconstruct, each holding its `time`, the (R, Z) grid in `profiles_2d(0)`, the
+///   normalised poloidal flux grid of the 1D profiles, `profiles_1d/psi_norm`, and the weight of each magnetic sensor in the
+///   settings, in `constraints/<sensor>(i1)/weight`
+/// * `greens/grid/plasma` - the Greens tables between the grid points
+///
+/// The source functions, p' and ff', are not data, so are held alongside the IDS rather than in it.
+///
+/// The other IDSs are then copied in, by `copy_from_wall_ids`, `copy_from_tf_ids`, `copy_from_pf_active_ids`,
+/// `copy_from_pf_passive_ids`, `copy_from_pulse_schedule_ids` and `copy_from_magnetics_ids`, and the Greens tables with the PF coils,
+/// the passive conductors and the magnetic sensors are calculated, by `greens_with_pf_active`, `greens_with_pf_passive` and
+/// `greens_with_magnetics`, before `solve_grad_shafranov` solves it.
+///
+/// Read the data back through `get`, or `equilibrium_ids`, and a path from `gsfit_rs.imas.equilibrium_paths`; there are no
+/// bespoke accessors.
+///
+/// # Settings
+///
+/// The equilibrium is constructed with GSFit's settings, `equilibrium.xml` with each file it links to written in its link's
+/// place, as an IMAS `parameters_input`. Only their XML is kept: it is written to `code/parameters`, and read into
+/// `code/parameters_parsed`, whose structs are generated from the settings' XML schema,
+/// `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`. The rest of the `parameters_input`, the XML schema and the
+/// defaults, which are empty, is not kept: the data dictionary has no node for either.
+#[pyclass(module = "gsfit_rs")]
+pub struct Equilibrium {
+    pub equilibrium_ids: EquilibriumIds,
+    /// The p' source function, made from `code/parameters_parsed/source_function_p_prime`
     pub p_prime_source_function: SharedSourceFunction,
+    /// The ff' source function, made from `code/parameters_parsed/source_function_ff_prime`
     pub ff_prime_source_function: SharedSourceFunction,
 }
 
-// Python accessible methods
+/// Python accessible methods
 #[pymethods]
-impl Plasma {
-    /// Create a new Plasma instance
+impl Equilibrium {
+    /// Construct the equilibrium from GSFit's settings.
+    ///
+    /// The settings are read into `code/parameters_parsed`, and everything else is made from them: the time-slices, the grid, the
+    /// magnetic sensors' weights, the Greens tables between the grid points, and the source functions. See `Equilibrium`.
     ///
     /// # Arguments
-    /// * `n_r` - number of radial points, [dimensionless]
-    /// * `n_z` - number of vertical points, [dimensionless]
-    /// * `r_min` - minimum radial coordinate, [metre]
-    /// * `r_max` - maximum radial coordinate, [metre]
-    /// * `z_min` - minimum vertical coordinate, [metre]
-    /// * `z_max` - maximum vertical coordinate, [metre]
-    /// * `psi_norm` - normalized poloidal flux points (1d array), [dimensionless]
-    /// * `p_prime_source_function` - pressure source function (a Rust implementation, initialised in Python)
-    /// * `ff_prime_source_function` - ff_prime source function (a Rust implementation, initialised in Python)
-    /// * `initial_guess_ip` - initial total plasma current, [ampere]
-    /// * `initial_guess_cur_r` - radial centre of the initial current distribution, [metre]
-    /// * `initial_guess_cur_z` - vertical centre of the initial current distribution, [metre]
-    /// * `initial_guess_minor_radius` - radial semi-axis of the initial current distribution, [metre]
-    /// * `initial_guess_elongation` - elongation of the initial current distribution, [dimensionless]
-    /// * `n_iter_max` - maximum number of nonlinear solver iterations, [dimensionless]
-    /// * `n_iter_min` - minimum number of nonlinear solver iterations before the convergence test may pass, [dimensionless]
-    /// * `grad_shafranov_deviation_tolerance` - Grad-Shafranov deviation below which the solution is taken as converged, [mixed]
-    /// * `nonlinear_solver_method` - either "picard", "newton_krylov" or "newton_picard"
-    /// * `picard_n_iter_no_vertical_feedback` - number of initial Picard iterations with the vertical feedback off, [dimensionless]
-    /// * `picard_apply_anderson_mixing` - whether the Picard iterations use Anderson mixing
-    /// * `picard_anderson_n_history` - maximum number of previous iterations Anderson mixing combines, [dimensionless]
-    /// * `picard_anderson_mixing` - fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it, [dimensionless]
-    /// * `newton_krylov_picard_handover` - Grad-Shafranov deviation below which Newton-Krylov hands over from Picard to Newton iterations, [mixed]
-    /// * `newton_krylov_n_krylov_max` - maximum number of Krylov directions per Newton iteration, [dimensionless]
-    /// * `newton_krylov_krylov_tolerance` - fraction of the residual the Krylov solve must leave unexplained before it stops, [dimensionless]
-    /// * `newton_krylov_finite_difference_step` - Jacobian-vector product step, as a multiple of the residual size, [dimensionless]
-    /// * `newton_krylov_verbose` - whether to print the progress of each Newton iteration
-    /// * `newton_picard_n_basis_max` - maximum number of directions in which Newton-Picard uses Newton's method, [dimensionless]
-    /// * `newton_picard_contraction_threshold` - a direction is added when the residual outside them shrinks by less than this factor per iteration, [dimensionless]
-    /// * `newton_picard_finite_difference_step` - Jacobian-vector product step, as a multiple of the residual size, [dimensionless]
-    /// * `newton_picard_verbose` - whether to print the progress of each Newton-Picard iteration
-    /// * `times_to_reconstruct` - the times the equilibrium will be solved at (1d array), [second].
-    ///   One equilibrium time-slice is allocated per time, so that the IDS is fully formed before
-    ///   the Green's tables are built
+    /// * `parameters_input` - GSFit's settings, as a `gsfit_rs.dd_support.ParametersInput`, whose XML is `equilibrium.xml` with
+    ///   each file it links to written in its link's place; it is written to `code/parameters`, and read into
+    ///   `code/parameters_parsed`
     ///
-    /// # Returns
-    /// * `self` - a new instance of the Plasma struct
-    ///
+    /// # Errors
+    /// `ValueError` if the XML cannot be read into `code/parameters_parsed`: it is not well-formed, it is not `equilibrium.xml`,
+    /// it holds an element which is not in the XML schema `code/parameters_parsed` was generated from, or a value cannot be read
+    /// as its type. Or if the settings cannot make an equilibrium, e.g. a grid with fewer than two points in a direction
     #[new]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        n_r: usize,
-        n_z: usize,
-        r_min: f64,
-        r_max: f64,
-        z_min: f64,
-        z_max: f64,
-        psi_norm: PyReadonlyArray1<f64>,
-        p_prime_source_function: &Bound<'_, PyAny>,  // Any Python object, because Python doesn't know about types
-        ff_prime_source_function: &Bound<'_, PyAny>, // Any Python object, because Python doesn't know about types
-        initial_guess_ip: f64,
-        initial_guess_cur_r: f64,
-        initial_guess_cur_z: f64,
-        initial_guess_minor_radius: f64,
-        initial_guess_elongation: f64,
-        n_iter_max: usize,
-        n_iter_min: usize,
-        grad_shafranov_deviation_tolerance: f64,
-        nonlinear_solver_method: String,
-        picard_n_iter_no_vertical_feedback: usize,
-        picard_apply_anderson_mixing: bool,
-        picard_anderson_n_history: usize,
-        picard_anderson_mixing: f64,
-        newton_krylov_picard_handover: f64,
-        newton_krylov_n_krylov_max: usize,
-        newton_krylov_krylov_tolerance: f64,
-        newton_krylov_finite_difference_step: f64,
-        newton_krylov_verbose: bool,
-        newton_picard_n_basis_max: usize,
-        newton_picard_contraction_threshold: f64,
-        newton_picard_finite_difference_step: f64,
-        newton_picard_verbose: bool,
-        times_to_reconstruct: PyReadonlyArray1<f64>,
-    ) -> Self {
-        // Change Python types into Rust types
-        let psi_norm_ndarray: Array1<f64> = psi_norm.to_owned_array();
+    pub fn new(parameters_input: &PyParametersInput) -> PyResult<Self> {
+        // GSFit's settings, read into `code/parameters_parsed`
+        let parameters_value: &str = &parameters_input.inner.parameters_value;
+        let parameters_parsed: EquilibriumCodeParametersParsed = EquilibriumCodeParametersParsed::from_xml(parameters_value)
+            .map_err(|error| PyValueError::new_err(format!("GSFit's settings cannot be read into `equilibrium/code/parameters_parsed`: {error}")))?;
 
-        // `p_prime_source_function` and `ff_prime_source_function` come into Rust as a Python PyAny type, so we have no idea what type they are.
-        // In `extract_source_function` we attempt to convert into a known Rust type and panic if we can't.
-        // This is a "bit ugly", but it is a known limitation of PyO3 because of how Python types work.
-        let p_prime_source_function_arc: SharedSourceFunction = extract_source_function(p_prime_source_function);
-        let ff_prime_source_function_arc: SharedSourceFunction = extract_source_function(ff_prime_source_function);
+        // The times to reconstruct. They are calculated step by step as numpy calculates them in `Gsfit.setup_timeslices`, so that
+        // they are the same to the bit
+        let timeslices: &EquilibriumCodeParametersParsedTimeslices = &parameters_parsed.timeslices;
+        let times_to_reconstruct: Array1<f64> = match timeslices.method.as_str() {
+            "arange" => {
+                // `numpy.arange(time_start, time_end, dt)`: ceil((time_end - time_start) / dt) times, of which the first two are
+                // `time_start` and `time_start + dt`, and the rest `time_start + i_time * delta`, with `delta` the difference
+                // between the first two
+                let time_start: f64 = timeslices.arange.time_start;
+                let time_end: f64 = timeslices.arange.time_end;
+                let dt: f64 = timeslices.arange.dt;
+                let n_time_ceil: f64 = ((time_end - time_start) / dt).ceil();
+                if !n_time_ceil.is_finite() {
+                    return Err(PyValueError::new_err(format!(
+                        "`code/parameters_parsed/timeslices/arange` gives no number of times: time_start = {time_start}, time_end = {time_end}, dt = {dt}"
+                    )));
+                }
+                let n_time: usize = n_time_ceil.max(0.0) as usize;
+                let mut times: Array1<f64> = Array1::from_elem(n_time, f64::NAN);
+                if n_time > 0 {
+                    times[0] = time_start;
+                }
+                if n_time > 1 {
+                    times[1] = time_start + dt;
+                    let delta: f64 = times[1] - times[0];
+                    for i_time in 2..n_time {
+                        times[i_time] = time_start + (i_time as f64) * delta;
+                    }
+                }
+                times
+            }
+            "linspace" => {
+                // `numpy.linspace(time_start, time_end, n_time)`, which, unlike `Array1::linspace`, ends at exactly `time_end`
+                let time_start: f64 = timeslices.linspace.time_start;
+                let time_end: f64 = timeslices.linspace.time_end;
+                let n_time: usize = usize::try_from(timeslices.linspace.n_time).map_err(|_| {
+                    PyValueError::new_err(format!(
+                        "`code/parameters_parsed/timeslices/linspace/n_time` is {}, but it must be a number of times",
+                        timeslices.linspace.n_time
+                    ))
+                })?;
+                let mut times: Array1<f64> = Array1::linspace(time_start, time_end, n_time);
+                if n_time > 1 {
+                    times[n_time - 1] = time_end;
+                }
+                times
+            }
+            "user_defined" => timeslices.user_defined.clone(),
+            // "good_pressure_sensors" is in the XML schema, but, as in `Gsfit.setup_timeslices`, is not implemented yet
+            method => {
+                return Err(PyValueError::new_err(format!(
+                    "`code/parameters_parsed/timeslices/method` is \"{method}\", but only \"arange\", \"linspace\" and \"user_defined\" are implemented"
+                )));
+            }
+        };
 
-        // Create storage
-
-        // Create (r, z) grids
-        let r: Array1<f64> = Array1::linspace(r_min, r_max, n_r);
-        let z: Array1<f64> = Array1::linspace(z_min, z_max, n_z);
+        // The (R, Z) grid. An unset number of points is negative
+        let grid: &EquilibriumCodeParametersParsedGrid = &parameters_parsed.grid;
+        if grid.n_r < 2 || grid.n_z < 2 || grid.n_psi_norm < 2 {
+            return Err(PyValueError::new_err(format!(
+                "`code/parameters_parsed/grid` has n_r = {}, n_z = {} and n_psi_norm = {}, but each must be at least 2",
+                grid.n_r, grid.n_z, grid.n_psi_norm
+            )));
+        }
+        if !(grid.r_min.is_finite() && grid.r_max.is_finite() && grid.z_min.is_finite() && grid.z_max.is_finite()) {
+            return Err(PyValueError::new_err(format!(
+                "`code/parameters_parsed/grid` has r_min = {}, r_max = {}, z_min = {} and z_max = {}, but each must be a number",
+                grid.r_min, grid.r_max, grid.z_min, grid.z_max
+            )));
+        }
+        let n_r: usize = grid.n_r as usize;
+        let n_z: usize = grid.n_z as usize;
+        let r: Array1<f64> = Array1::linspace(grid.r_min, grid.r_max, n_r);
+        let z: Array1<f64> = Array1::linspace(grid.z_min, grid.z_max, n_z);
 
         // Grid spacing
         let d_r: f64 = r[1] - r[0];
         let d_z: f64 = z[1] - z[0];
         let d_area: f64 = d_r * d_z;
 
-        // Check the nonlinear solver is one `EquilibriumSolver::solve` knows
-        if !["picard", "newton_krylov", "newton_picard"].contains(&nonlinear_solver_method.as_str()) {
-            panic!("plasma.new: nonlinear_solver_method = \"{nonlinear_solver_method}\"; it must be \"picard\", \"newton_krylov\" or \"newton_picard\"");
-        }
-
-        // Anderson mixing takes a positive fraction of the residual
-        if picard_anderson_mixing.is_nan() || picard_anderson_mixing <= 0.0 {
-            panic!("plasma.new: picard_anderson_mixing = {picard_anderson_mixing}; it must be positive");
-        }
-
         // Check that the R grid doesn't go negative
         // Note, we allow cells to touch the axis (R=0), which would be excluded by `r_min - d_r / 2.0 <= 0.0`
         // but we do not allow cells to go negative.
-        if r_min - d_r / 2.0 < 0.0 {
-            panic!("plasma.new: r_min - d_r / 2.0 < 0.0; the radial grid must not go negative");
+        if grid.r_min - d_r / 2.0 < 0.0 {
+            return Err(PyValueError::new_err(format!(
+                "`code/parameters_parsed/grid` has r_min - d_r / 2 = {}, so the radial grid goes negative",
+                grid.r_min - d_r / 2.0
+            )));
         }
 
         // 2d (r, z) mesh
@@ -156,157 +180,186 @@ impl Plasma {
         let mesh_z: Array2<f64> = mesh_z_view.to_owned(); // shape = (n_z, n_r)
         let mesh_r: Array2<f64> = mesh_r_view.to_owned(); // shape = (n_z, n_r)
 
-        // Flatten 2d mesh
+        // The normalised poloidal flux grid of the 1D profiles, which the source functions are evaluated on. It is
+        // `numpy.linspace(0.0, 1.0, n_psi_norm)`, which, unlike `Array1::linspace`, ends at exactly 1.0
+        let n_psi_norm: usize = grid.n_psi_norm as usize;
+        let mut psi_norm: Array1<f64> = Array1::linspace(0.0, 1.0, n_psi_norm);
+        psi_norm[n_psi_norm - 1] = 1.0;
+
+        // Check the nonlinear solver is one `EquilibriumSolver::solve` knows
+        let nonlinear_solver_method: &str = &parameters_parsed.numerics.nonlinear_solver.method;
+        if !["picard", "newton_krylov", "newton_picard"].contains(&nonlinear_solver_method) {
+            return Err(PyValueError::new_err(format!(
+                "`code/parameters_parsed/numerics/nonlinear_solver/method` is \"{nonlinear_solver_method}\", but it must be \"picard\", \"newton_krylov\" or \"newton_picard\""
+            )));
+        }
+
+        // Anderson mixing takes a positive fraction of the residual
+        let anderson_mixing: f64 = parameters_parsed.numerics.nonlinear_solver.picard.anderson_mixing;
+        if anderson_mixing.is_nan() || anderson_mixing <= 0.0 {
+            return Err(PyValueError::new_err(format!(
+                "`code/parameters_parsed/numerics/nonlinear_solver/picard/anderson_mixing` is {anderson_mixing}, but it must be positive"
+            )));
+        }
+
+        // The source functions
+        let p_prime_source_function: SharedSourceFunction = source_function_from_settings(
+            &parameters_parsed.source_function_p_prime.method,
+            &parameters_parsed.source_function_p_prime.efit_polynomial,
+            &parameters_parsed.source_function_p_prime.tensioned_cubic_b_spline,
+            "code/parameters_parsed/source_function_p_prime",
+        )?;
+        let ff_prime_source_function: SharedSourceFunction = source_function_from_settings(
+            &parameters_parsed.source_function_ff_prime.method,
+            &parameters_parsed.source_function_ff_prime.efit_polynomial,
+            &parameters_parsed.source_function_ff_prime.tensioned_cubic_b_spline,
+            "code/parameters_parsed/source_function_ff_prime",
+        )?;
+
+        // The Greens tables between the grid points, `greens/grid/plasma`. The observers are every grid point, row by row, and the
+        // sources the points of the lowest row, so each table is calculated with shape (n_z * n_r, n_r). An observer's row is its
+        // offset above the source, so the table is (i_offset_z, i_r, i_r_source)
         let flat_r: Array1<f64> = mesh_r.flatten().to_owned();
         let flat_z: Array1<f64> = mesh_z.flatten().to_owned();
-
-        // Calculate the grid-grid Greens
         let flat_d_r: Array1<f64> = &r * 0.0 + d_r;
         let flat_d_z: Array1<f64> = &r * 0.0 + d_z;
-        let greens_calculator: Greens = Greens::sensor_to_conductor(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0], flat_d_r, flat_d_z);
+        let greens_calculator: Greens = Greens::sensor_to_conductor(flat_r, flat_z, r.clone(), 0.0 * r.clone() + z[0], flat_d_r, flat_d_z);
         let g_psi: Array2<f64> = greens_calculator.psi();
-
-        // d2_g_d_r2
-        let mut g_d2_psi_d_r2: Array2<f64> = greens_calculator.d2_psi_d_r2();
-        for i_r in 0..n_r {
-            for i_rz in 0..n_r * n_z {
-                if g_d2_psi_d_r2[(i_rz, i_r)].is_nan() {
-                    g_d2_psi_d_r2[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
-                }
-            }
-        }
-
-        // d2_g_d_r_d_z
-        let mut g_d2_psi_d_r_d_z: Array2<f64> = greens_calculator.d2_psi_d_r_d_z();
-        for i_r in 0..n_r {
-            for i_rz in 0..n_r * n_z {
-                if g_d2_psi_d_r_d_z[(i_rz, i_r)].is_nan() {
-                    g_d2_psi_d_r_d_z[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
-                }
-            }
-        }
-
-        // d_g_d_r and d_g_d_z
         let mut g_d_psi_d_r: Array2<f64> = greens_calculator.d_psi_d_r();
         let mut g_d_psi_d_z: Array2<f64> = greens_calculator.d_psi_d_z();
-        for i_r in 0..n_r {
-            for i_rz in 0..n_r * n_z {
-                if g_d_psi_d_r[(i_rz, i_r)].is_nan() {
-                    g_d_psi_d_r[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
-                }
-                if g_d_psi_d_z[(i_rz, i_r)].is_nan() {
-                    g_d_psi_d_z[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
-                }
-            }
-        }
-
-        // Second and third z-derivatives (needed by `calculate_psi_and_derivatives` and its `delta_z` shifts)
+        let mut g_d2_psi_d_r2: Array2<f64> = greens_calculator.d2_psi_d_r2();
+        let mut g_d2_psi_d_r_d_z: Array2<f64> = greens_calculator.d2_psi_d_r_d_z();
         let mut g_d2_psi_d_z2: Array2<f64> = greens_calculator.d2_psi_d_z2();
         let mut g_d3_psi_d_r2_d_z: Array2<f64> = greens_calculator.d3_psi_d_r2_d_z();
         let mut g_d3_psi_d_r_d_z2: Array2<f64> = greens_calculator.d3_psi_d_r_d_z2();
         let mut g_d3_psi_d_z3: Array2<f64> = greens_calculator.d3_psi_d_z3();
-        for i_r in 0..n_r {
-            for i_rz in 0..n_r * n_z {
-                if g_d2_psi_d_z2[(i_rz, i_r)].is_nan() {
-                    g_d2_psi_d_z2[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
-                }
-                if g_d3_psi_d_r2_d_z[(i_rz, i_r)].is_nan() {
-                    g_d3_psi_d_r2_d_z[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
-                }
-                if g_d3_psi_d_r_d_z2[(i_rz, i_r)].is_nan() {
-                    g_d3_psi_d_r_d_z2[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
-                }
-                if g_d3_psi_d_z3[(i_rz, i_r)].is_nan() {
-                    g_d3_psi_d_z3[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
-                }
-            }
+        // A derivative which could not be calculated is NaN, and is taken as 0
+        for g_derivative in [
+            &mut g_d_psi_d_r,
+            &mut g_d_psi_d_z,
+            &mut g_d2_psi_d_r2,
+            &mut g_d2_psi_d_r_d_z,
+            &mut g_d2_psi_d_z2,
+            &mut g_d3_psi_d_r2_d_z,
+            &mut g_d3_psi_d_r_d_z2,
+            &mut g_d3_psi_d_z3,
+        ] {
+            g_derivative.mapv_inplace(|value: f64| if value.is_nan() { 0.0 } else { value });
         }
-
-        // Store the grid-to-grid Greens tables in the equilibrium IDS, as `greens/grid/plasma`. They are geometry, so they are the
-        // same for every time-slice and hang off the IDS root rather than off `time_slice`. Each table was calculated with shape
-        // (n_z * n_r, n_r): the observers are every grid point, row by row, and the sources the lowest row, so an observer's row is
-        // its offset above the source, and the table is (i_offset_z, i_r, i_r_source)
         let greens_grid_plasma: EquilibriumGreensGridPlasma = EquilibriumGreensGridPlasma {
             psi: g_psi
                 .into_shape_with_order((n_z, n_r, n_r))
-                .expect("plasma.new: failed to reshape `g_psi` into (n_z, n_r, n_r)"),
+                .expect("Equilibrium::new: failed to reshape `g_psi` into (n_z, n_r, n_r)"),
             d_psi_d_r: g_d_psi_d_r
                 .into_shape_with_order((n_z, n_r, n_r))
-                .expect("plasma.new: failed to reshape `g_d_psi_d_r` into (n_z, n_r, n_r)"),
+                .expect("Equilibrium::new: failed to reshape `g_d_psi_d_r` into (n_z, n_r, n_r)"),
             d_psi_d_z: g_d_psi_d_z
                 .into_shape_with_order((n_z, n_r, n_r))
-                .expect("plasma.new: failed to reshape `g_d_psi_d_z` into (n_z, n_r, n_r)"),
+                .expect("Equilibrium::new: failed to reshape `g_d_psi_d_z` into (n_z, n_r, n_r)"),
             d2_psi_d_r2: g_d2_psi_d_r2
                 .into_shape_with_order((n_z, n_r, n_r))
-                .expect("plasma.new: failed to reshape `g_d2_psi_d_r2` into (n_z, n_r, n_r)"),
+                .expect("Equilibrium::new: failed to reshape `g_d2_psi_d_r2` into (n_z, n_r, n_r)"),
             d2_psi_d_r_d_z: g_d2_psi_d_r_d_z
                 .into_shape_with_order((n_z, n_r, n_r))
-                .expect("plasma.new: failed to reshape `g_d2_psi_d_r_d_z` into (n_z, n_r, n_r)"),
+                .expect("Equilibrium::new: failed to reshape `g_d2_psi_d_r_d_z` into (n_z, n_r, n_r)"),
             d2_psi_d_z2: g_d2_psi_d_z2
                 .into_shape_with_order((n_z, n_r, n_r))
-                .expect("plasma.new: failed to reshape `g_d2_psi_d_z2` into (n_z, n_r, n_r)"),
+                .expect("Equilibrium::new: failed to reshape `g_d2_psi_d_z2` into (n_z, n_r, n_r)"),
             d3_psi_d_r2_d_z: g_d3_psi_d_r2_d_z
                 .into_shape_with_order((n_z, n_r, n_r))
-                .expect("plasma.new: failed to reshape `g_d3_psi_d_r2_d_z` into (n_z, n_r, n_r)"),
+                .expect("Equilibrium::new: failed to reshape `g_d3_psi_d_r2_d_z` into (n_z, n_r, n_r)"),
             d3_psi_d_r_d_z2: g_d3_psi_d_r_d_z2
                 .into_shape_with_order((n_z, n_r, n_r))
-                .expect("plasma.new: failed to reshape `g_d3_psi_d_r_d_z2` into (n_z, n_r, n_r)"),
+                .expect("Equilibrium::new: failed to reshape `g_d3_psi_d_r_d_z2` into (n_z, n_r, n_r)"),
             d3_psi_d_z3: g_d3_psi_d_z3
                 .into_shape_with_order((n_z, n_r, n_r))
-                .expect("plasma.new: failed to reshape `g_d3_psi_d_z3` into (n_z, n_r, n_r)"),
+                .expect("Equilibrium::new: failed to reshape `g_d3_psi_d_z3` into (n_z, n_r, n_r)"),
         };
 
-        // The equilibrium IDS. `initialise_equilibrium_ids` fills in the time-slices below; what is
-        // set here is the machine-level data which does not depend on them
-        let mut equilibrium_ids: Equilibrium = Equilibrium::default();
+        // The magnetic sensors' weights, from their fit settings, `code/parameters_parsed/constraints`: one constraint for each sensor in
+        // the settings, with its `name` and `weight`. `copy_from_magnetics_ids` adds each sensor's measurement, found by its name
+        let constraints_settings: &EquilibriumCodeParametersParsedEquilibriumConstraints = &parameters_parsed.constraints;
+        let n_b_field_pol_probe: usize = constraints_settings.b_field_pol_probe.b_field_pol_probe.len();
+        let mut b_field_pol_probe_constraints: Vec<EquilibriumConstraints0dOneLike> = Vec::with_capacity(n_b_field_pol_probe);
+        for i_b_field_pol_probe in 0..n_b_field_pol_probe {
+            b_field_pol_probe_constraints.push(EquilibriumConstraints0dOneLike {
+                name: constraints_settings.b_field_pol_probe.b_field_pol_probe[i_b_field_pol_probe].name.clone(),
+                weight: constraints_settings.b_field_pol_probe.b_field_pol_probe[i_b_field_pol_probe].weight,
+                ..Default::default()
+            });
+        }
+        let n_flux_loop: usize = constraints_settings.flux_loop.flux_loop.len();
+        let mut flux_loop_constraints: Vec<EquilibriumConstraints0d> = Vec::with_capacity(n_flux_loop);
+        for i_flux_loop in 0..n_flux_loop {
+            flux_loop_constraints.push(EquilibriumConstraints0d {
+                name: constraints_settings.flux_loop.flux_loop[i_flux_loop].name.clone(),
+                weight: constraints_settings.flux_loop.flux_loop[i_flux_loop].weight,
+                ..Default::default()
+            });
+        }
+        let n_rogowski_coil: usize = constraints_settings.rogowski_coil.rogowski_coil.len();
+        let mut rogowski_coil_constraints: Vec<EquilibriumConstraints0dIpLike> = Vec::with_capacity(n_rogowski_coil);
+        for i_rogowski_coil in 0..n_rogowski_coil {
+            rogowski_coil_constraints.push(EquilibriumConstraints0dIpLike {
+                name: constraints_settings.rogowski_coil.rogowski_coil[i_rogowski_coil].name.clone(),
+                weight: constraints_settings.rogowski_coil.rogowski_coil[i_rogowski_coil].weight,
+                ..Default::default()
+            });
+        }
+        // The data dictionary has a single diamagnetic flux constraint. Its settings are optional, and their `name` is required, so it is
+        // empty only when they are left out
+        let mut diamagnetic_flux_constraint: EquilibriumConstraints0dB0Like = EquilibriumConstraints0dB0Like::default();
+        if !constraints_settings.diamagnetic_flux.diamagnetic_flux.name.is_empty() {
+            diamagnetic_flux_constraint.name = constraints_settings.diamagnetic_flux.diamagnetic_flux.name.clone();
+            diamagnetic_flux_constraint.weight = constraints_settings.diamagnetic_flux.diamagnetic_flux.weight;
+        }
 
-        // Store values
-        equilibrium_ids.code.grid.n_r = n_r as i32;
-        equilibrium_ids.code.grid.n_z = n_z as i32;
-        equilibrium_ids.code.grid.r_min = r_min;
-        equilibrium_ids.code.grid.r_max = r_max;
-        equilibrium_ids.code.grid.z_min = z_min;
-        equilibrium_ids.code.grid.z_max = z_max;
-
-        equilibrium_ids.code.initial_guess.ip = initial_guess_ip;
-        equilibrium_ids.code.initial_guess.cur_r = initial_guess_cur_r;
-        equilibrium_ids.code.initial_guess.cur_z = initial_guess_cur_z;
-        equilibrium_ids.code.initial_guess.minor_radius = initial_guess_minor_radius;
-        equilibrium_ids.code.initial_guess.elongation = initial_guess_elongation;
-
-        equilibrium_ids.code.numerics.iterations.n_max = n_iter_max as i32;
-        equilibrium_ids.code.numerics.iterations.n_min = n_iter_min as i32;
-        equilibrium_ids.code.numerics.grad_shafranov_deviation_tolerance = grad_shafranov_deviation_tolerance;
-
-        equilibrium_ids.code.numerics.nonlinear_solver.method = nonlinear_solver_method;
-        equilibrium_ids.code.numerics.nonlinear_solver.picard.n_iter_no_vertical_feedback = picard_n_iter_no_vertical_feedback as i32;
-        // The data dictionary has no boolean base type, so the flag is stored as 0 or 1
-        equilibrium_ids.code.numerics.nonlinear_solver.picard.apply_anderson_mixing = picard_apply_anderson_mixing as i32;
-        equilibrium_ids.code.numerics.nonlinear_solver.picard.anderson_n_history = picard_anderson_n_history as i32;
-        equilibrium_ids.code.numerics.nonlinear_solver.picard.anderson_mixing = picard_anderson_mixing;
-        equilibrium_ids.code.numerics.nonlinear_solver.newton_krylov.picard_handover = newton_krylov_picard_handover;
-        equilibrium_ids.code.numerics.nonlinear_solver.newton_krylov.n_krylov_max = newton_krylov_n_krylov_max as i32;
-        equilibrium_ids.code.numerics.nonlinear_solver.newton_krylov.krylov_tolerance = newton_krylov_krylov_tolerance;
-        equilibrium_ids.code.numerics.nonlinear_solver.newton_krylov.finite_difference_step = newton_krylov_finite_difference_step;
-        equilibrium_ids.code.numerics.nonlinear_solver.newton_krylov.verbose = newton_krylov_verbose as i32;
-        equilibrium_ids.code.numerics.nonlinear_solver.newton_picard.n_basis_max = newton_picard_n_basis_max as i32;
-        equilibrium_ids.code.numerics.nonlinear_solver.newton_picard.contraction_threshold = newton_picard_contraction_threshold;
-        equilibrium_ids.code.numerics.nonlinear_solver.newton_picard.finite_difference_step = newton_picard_finite_difference_step;
-        equilibrium_ids.code.numerics.nonlinear_solver.newton_picard.verbose = newton_picard_verbose as i32;
-
+        let mut equilibrium_ids: EquilibriumIds = EquilibriumIds {
+            code: Code {
+                parameters: parameters_value.to_string(),
+                parameters_parsed,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        // They are geometry, so they are the same for every time-slice, and hang off the IDS root rather than off `time_slice`
         equilibrium_ids.greens.grid.plasma = greens_grid_plasma;
 
-        let mut plasma: Self = Self {
+        // One time-slice per time to reconstruct, each holding the grid. The data dictionary has no IDS-level grid: `grid`,
+        // `grid_type` and the (R, Z) positions all live inside `time_slice(itime)/profiles_2d`
+        equilibrium_ids.allocate_time_slices(&times_to_reconstruct);
+        for time_slice in equilibrium_ids.time_slice.iter_mut() {
+            // GSFit solves on a single rectangular (R, Z) grid, so there is exactly one entry in this array of structures
+            let mut profiles_2d: EquilibriumProfiles2d = EquilibriumProfiles2d::default();
+
+            // `rectangular` is index 1 of the data dictionary's poloidal plane coordinates
+            // enumeration: "Cylindrical R,Z ala eqdsk (R=dim1, Z=dim2)"
+            profiles_2d.grid_type.name = "rectangular".to_string();
+            profiles_2d.grid_type.index = 1;
+            profiles_2d.grid_type.description = "Cylindrical R,Z ala eqdsk (R=dim1, Z=dim2)".to_string();
+
+            profiles_2d.grid.dim1 = r.clone();
+            profiles_2d.grid.dim2 = z.clone();
+            profiles_2d.grid.d_area = d_area;
+            profiles_2d.r = mesh_r.clone();
+            profiles_2d.z = mesh_z.clone();
+            time_slice.profiles_2d = vec![profiles_2d];
+
+            // The psi_norm grid the source functions are defined on
+            time_slice.profiles_1d.psi_norm = psi_norm.clone();
+
+            // The magnetic sensors' weights
+            time_slice.constraints.b_field_pol_probe = b_field_pol_probe_constraints.clone();
+            time_slice.constraints.flux_loop = flux_loop_constraints.clone();
+            time_slice.constraints.rogowski_coil = rogowski_coil_constraints.clone();
+            time_slice.constraints.diamagnetic_flux = diamagnetic_flux_constraint.clone();
+        }
+
+        Ok(Self {
             equilibrium_ids,
-            p_prime_source_function: p_prime_source_function_arc,
-            ff_prime_source_function: ff_prime_source_function_arc,
-        };
-
-        // The equilibrium IDS is allocated here, rather than once the solve starts, because the
-        // grid it carries is read before then: the Green's tables are built from it
-        plasma.initialise_equilibrium_ids(&times_to_reconstruct.to_owned_array(), &r, &z, &mesh_r, &mesh_z, &psi_norm_ndarray, d_area);
-
-        plasma
+            p_prime_source_function,
+            ff_prime_source_function,
+        })
     }
 
     /// Copy the limiter from the wall IDS into the equilibrium IDS.
@@ -355,7 +408,7 @@ impl Plasma {
     ///
     /// Fills `equilibrium/vacuum_toroidal_field/r0` from `tf/r0`, and `equilibrium/vacuum_toroidal_field/b0`
     /// from `tf/b_field_phi_vacuum_r`. That is on the experimental timebase, so it is interpolated onto the
-    /// reconstruction times, which are the times of the time-slices `Plasma::new` allocated, and divided by
+    /// reconstruction times, which are the times of the time-slices `Equilibrium::new` allocated, and divided by
     /// `r0`. The solver and the post-processor read the vacuum toroidal field from the equilibrium IDS, so
     /// this has to be called before `solve_grad_shafranov`.
     ///
@@ -380,7 +433,7 @@ impl Plasma {
         }
 
         // `b_field_phi_vacuum_r` is on the experimental timebase, so it is interpolated onto the times of
-        // the time-slices `Plasma::new` allocated
+        // the time-slices `Equilibrium::new` allocated
         let times_to_reconstruct: Array1<f64> = self.equilibrium_ids.time_slice(..).time.to_array();
         let interpolator: interpolation::Dim1Linear =
             interpolation::Dim1Linear::new(b_field_phi_vacuum_r_time.to_owned(), b_field_phi_vacuum_r_data.to_owned())
@@ -400,7 +453,7 @@ impl Plasma {
 
     /// Copy the PF coil currents from the pf_active IDS onto every time-slice of the equilibrium IDS.
     ///
-    /// Fills, for every coil in `pf_active/coil(i1)`, in the same order, on every time-slice `Plasma::new` allocated:
+    /// Fills, for every coil in `pf_active/coil(i1)`, in the same order, on every time-slice `Equilibrium::new` allocated:
     /// * `equilibrium/time_slice(itime)/constraints/pf_current(i1)/name` - a custom key: `pf_active/coil(i1)/name`
     /// * `.../measured` - `pf_active/coil(i1)/current`, which is on the experimental timebase, interpolated onto the
     ///   time-slice's time, [ampere]
@@ -428,7 +481,7 @@ impl Plasma {
         }
 
         // Each coil's current is on the experimental timebase, so it is interpolated onto the times of the
-        // time-slices `Plasma::new` allocated
+        // time-slices `Equilibrium::new` allocated
         let times_to_reconstruct: Array1<f64> = self.equilibrium_ids.time_slice(..).time.to_array();
         let n_time: usize = times_to_reconstruct.len();
         let mut pf_currents_measured: Array2<f64> = Array2::from_elem((n_time, n_coil), f64::NAN);
@@ -470,7 +523,7 @@ impl Plasma {
     /// Copy the passive loops' degrees of freedom, and their regularisations, from the pf_passive IDS onto every time-slice of
     /// the equilibrium IDS.
     ///
-    /// Fills, for every loop in `pf_passive/loop(i1)`, in the same order, on every time-slice `Plasma::new` allocated:
+    /// Fills, for every loop in `pf_passive/loop(i1)`, in the same order, on every time-slice `Equilibrium::new` allocated:
     /// * `equilibrium/time_slice(itime)/constraints/pf_passive_current(i1)/name` - a custom key: `pf_passive/loop(i1)/name`
     /// * `.../dof(i2)/name` - a custom key: `pf_passive/loop(i1)/dof(i2)/name`, one for each degree of freedom the loop's current
     ///   is fitted with
@@ -526,7 +579,7 @@ impl Plasma {
     ///
     /// Fills `equilibrium/time_slice(itime)/boundary/gap(i)/name`, `.../description`, `.../r`, `.../z` and
     /// `.../angle` from `pulse_schedule/position_control/gap(i)`, in the same order, on every time-slice
-    /// `Plasma::new` allocated. `.../value` is left unset, for the equilibrium post-processor to calculate.
+    /// `Equilibrium::new` allocated. `.../value` is left unset, for the equilibrium post-processor to calculate.
     ///
     /// Every time-slice gets the definitions, including one which does not converge: where the gaps are
     /// measured from is known whether or not the plasma is found, and it keeps the gap array the same
@@ -566,13 +619,15 @@ impl Plasma {
 
     /// Copy the magnetic sensors' measurements from the magnetics IDS onto every time-slice of the equilibrium IDS.
     ///
-    /// Each measurement is on the experimental timebase, so it is interpolated onto the time-slice's time. On every time-slice
-    /// `Plasma::new` allocated, for every sensor, in the same order as in the magnetics IDS:
+    /// Only the sensors in the fit settings, `code/parameters_parsed/constraints`, are copied, and each of them has to be in the magnetics
+    /// IDS. Each measurement is on the experimental timebase, so it is interpolated onto the time-slice's time. On every time-slice
+    /// `Equilibrium::new` allocated, for every sensor in the fit settings, in the order of the magnetics IDS:
     /// * `magnetics/b_field_pol_probe(i1)/field` fills `equilibrium/time_slice(itime)/constraints/b_field_pol_probe(i1)`, [tesla]
     /// * `magnetics/flux_loop(i1)/flux` fills `.../constraints/flux_loop(i1)`, [weber]
     /// * `magnetics/rogowski_coil(i1)/current` fills `.../constraints/rogowski_coil(i1)`, a custom key, as the data dictionary has
     ///   no constraint for Rogowski coils, [ampere]
-    /// * `magnetics/diamagnetic_flux(0)/data` fills `.../constraints/diamagnetic_flux`, [weber]
+    /// * `magnetics/diamagnetic_flux(i1)/data`, of the `method_name` the fit settings name, fills `.../constraints/diamagnetic_flux`,
+    ///   [weber]
     /// * `magnetics/ip(0)/data` fills `.../constraints/ip`, [ampere]
     ///
     /// Each constraint gets:
@@ -583,9 +638,10 @@ impl Plasma {
     ///   times it was measured, [second]
     ///
     /// `diamagnetic_flux` and `ip` are single constraints, whereas the magnetics IDS holds one entry for each method of calculating
-    /// them, the generally recommended method first, so that one is copied. Each is left unset when the magnetics IDS has none.
+    /// them. The diamagnetic flux is the one the fit settings name, and is left unset without fit settings for it. The plasma current,
+    /// which has no fit settings, is the generally recommended method, the first, and is left unset when the magnetics IDS has none.
     ///
-    /// Which sensors are fitted, and their weights, are not set here.
+    /// Each constraint also keeps what `Equilibrium::new` set from the sensor's fit settings, found by the sensor's name: its `weight`.
     ///
     /// Any magnetic constraints already on a time-slice are replaced, so calling this twice does not repeat them.
     ///
@@ -593,8 +649,8 @@ impl Plasma {
     /// * `magnetics` - The Magnetics object (a Rust implementation, initialised in Python)
     ///
     /// # Errors
-    /// A `ValueError` when a measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not
-    /// cover them.
+    /// A `ValueError` when a sensor in the fit settings is not in the magnetics IDS, or when a measurement cannot be interpolated onto
+    /// the reconstruction times, e.g. because its timebase does not cover them.
     pub fn copy_from_magnetics_ids(&mut self, magnetics: PyRef<Magnetics>) -> PyResult<()> {
         // Change Python types into Rust types
         let magnetics_rs: &Magnetics = &magnetics;
@@ -618,15 +674,15 @@ impl Plasma {
     ///
     fn greens_with_pf_active(&mut self, pf_active: PyRef<PfActive>) {
         // Unpack from self
-        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
+        let n_r: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_z as usize;
         let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let flat_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
         // Greens tables for the equilibrium IDS, one for each PF coil, in the order of `pf_active/coil`, which is
-        // the order `Plasma.copy_from_pf_active_ids` copies the PF coil currents in
+        // the order `Equilibrium.copy_from_pf_active_ids` copies the PF coil currents in
         let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
         let n_coil: usize = pf_active_coils.len();
         let mut greens_pf_active: Vec<EquilibriumGreensGridPfActive> = Vec::with_capacity(n_coil);
@@ -662,47 +718,47 @@ impl Plasma {
             let g_psi: Array2<f64> = g_psi_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `g_psi_filaments` into (n_z, n_r)")
+                .expect("Equilibrium.greens_with_pf_active: Failed to reshape `g_psi_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d_psi_d_r: Array2<f64> = g_d_psi_d_r_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `g_d_psi_d_r_filaments` into (n_z, n_r)")
+                .expect("Equilibrium.greens_with_pf_active: Failed to reshape `g_d_psi_d_r_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d_psi_d_z: Array2<f64> = g_d_psi_d_z_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `g_d_psi_d_z_filaments` into (n_z, n_r)")
+                .expect("Equilibrium.greens_with_pf_active: Failed to reshape `g_d_psi_d_z_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d2_psi_d_r2: Array2<f64> = d2_g_d_r2_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `d2_g_d_r2_all_filaments` into (n_z, n_r)")
+                .expect("Equilibrium.greens_with_pf_active: Failed to reshape `d2_g_d_r2_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d2_psi_d_r_d_z: Array2<f64> = d2_g_d_r_d_z_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `d2_g_d_r_d_z_all_filaments` into (n_z, n_r)")
+                .expect("Equilibrium.greens_with_pf_active: Failed to reshape `d2_g_d_r_d_z_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d2_psi_d_z2: Array2<f64> = d2_g_d_z2_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `d2_g_d_z2_all_filaments` into (n_z, n_r)")
+                .expect("Equilibrium.greens_with_pf_active: Failed to reshape `d2_g_d_z2_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d3_psi_d_r2_d_z: Array2<f64> = d3_g_d_r2_d_z_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `d3_g_d_r2_d_z_all_filaments` into (n_z, n_r)")
+                .expect("Equilibrium.greens_with_pf_active: Failed to reshape `d3_g_d_r2_d_z_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d3_psi_d_r_d_z2: Array2<f64> = d3_g_d_r_d_z2_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `d3_g_d_r_d_z2_all_filaments` into (n_z, n_r)")
+                .expect("Equilibrium.greens_with_pf_active: Failed to reshape `d3_g_d_r_d_z2_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d3_psi_d_z3: Array2<f64> = d3_g_d_z3_all_filaments
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `d3_g_d_z3_all_filaments` into (n_z, n_r)")
+                .expect("Equilibrium.greens_with_pf_active: Failed to reshape `d3_g_d_z3_all_filaments` into (n_z, n_r)")
                 .to_owned();
 
             // Store in the equilibrium IDS
@@ -744,8 +800,8 @@ impl Plasma {
         // Get variables out of self
         // `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives the
         // flattened grid
-        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
+        let n_r: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_z as usize;
         let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
@@ -811,47 +867,47 @@ impl Plasma {
                         .column(i_dof)
                         .to_owned()
                         .into_shape_with_order((n_z, n_r))
-                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_psi_with_dof` into (n_z, n_r)"),
+                        .expect("Equilibrium.greens_with_pf_passive: failed to reshape `g_psi_with_dof` into (n_z, n_r)"),
                     d_psi_d_r: g_d_psi_d_r_with_dof
                         .column(i_dof)
                         .to_owned()
                         .into_shape_with_order((n_z, n_r))
-                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d_psi_d_r_with_dof` into (n_z, n_r)"),
+                        .expect("Equilibrium.greens_with_pf_passive: failed to reshape `g_d_psi_d_r_with_dof` into (n_z, n_r)"),
                     d_psi_d_z: g_d_psi_d_z_with_dof
                         .column(i_dof)
                         .to_owned()
                         .into_shape_with_order((n_z, n_r))
-                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d_psi_d_z_with_dof` into (n_z, n_r)"),
+                        .expect("Equilibrium.greens_with_pf_passive: failed to reshape `g_d_psi_d_z_with_dof` into (n_z, n_r)"),
                     d2_psi_d_r2: g_d2_psi_d_r2_with_dof
                         .column(i_dof)
                         .to_owned()
                         .into_shape_with_order((n_z, n_r))
-                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d2_psi_d_r2_with_dof` into (n_z, n_r)"),
+                        .expect("Equilibrium.greens_with_pf_passive: failed to reshape `g_d2_psi_d_r2_with_dof` into (n_z, n_r)"),
                     d2_psi_d_r_d_z: g_d2_psi_d_r_d_z_with_dof
                         .column(i_dof)
                         .to_owned()
                         .into_shape_with_order((n_z, n_r))
-                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d2_psi_d_r_d_z_with_dof` into (n_z, n_r)"),
+                        .expect("Equilibrium.greens_with_pf_passive: failed to reshape `g_d2_psi_d_r_d_z_with_dof` into (n_z, n_r)"),
                     d2_psi_d_z2: g_d2_psi_d_z2_with_dof
                         .column(i_dof)
                         .to_owned()
                         .into_shape_with_order((n_z, n_r))
-                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d2_psi_d_z2_with_dof` into (n_z, n_r)"),
+                        .expect("Equilibrium.greens_with_pf_passive: failed to reshape `g_d2_psi_d_z2_with_dof` into (n_z, n_r)"),
                     d3_psi_d_r2_d_z: g_d3_psi_d_r2_d_z_with_dof
                         .column(i_dof)
                         .to_owned()
                         .into_shape_with_order((n_z, n_r))
-                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d3_psi_d_r2_d_z_with_dof` into (n_z, n_r)"),
+                        .expect("Equilibrium.greens_with_pf_passive: failed to reshape `g_d3_psi_d_r2_d_z_with_dof` into (n_z, n_r)"),
                     d3_psi_d_r_d_z2: g_d3_psi_d_r_d_z2_with_dof
                         .column(i_dof)
                         .to_owned()
                         .into_shape_with_order((n_z, n_r))
-                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d3_psi_d_r_d_z2_with_dof` into (n_z, n_r)"),
+                        .expect("Equilibrium.greens_with_pf_passive: failed to reshape `g_d3_psi_d_r_d_z2_with_dof` into (n_z, n_r)"),
                     d3_psi_d_z3: g_d3_psi_d_z3_with_dof
                         .column(i_dof)
                         .to_owned()
                         .into_shape_with_order((n_z, n_r))
-                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d3_psi_d_z3_with_dof` into (n_z, n_r)"),
+                        .expect("Equilibrium.greens_with_pf_passive: failed to reshape `g_d3_psi_d_z3_with_dof` into (n_z, n_r)"),
                 });
             }
 
@@ -868,15 +924,16 @@ impl Plasma {
 
     /// Calculate the magnetic sensors' Greens tables: what each sensor measures, per ampere in each current source.
     ///
-    /// Fills, for every sensor in the magnetics IDS, with the same name and in the same order, `greens/b_field_pol_probe(i1)`,
-    /// `greens/flux_loop(i1)` and `greens/rogowski_coil(i1)` on the equilibrium IDS, each with the sensor's tables with:
+    /// Fills, for every sensor in the fit settings, `code/parameters_parsed/constraints`, which are the sensors `copy_from_magnetics_ids`
+    /// copies, with the same name and in the order of the magnetics IDS, `greens/b_field_pol_probe(i1)`, `greens/flux_loop(i1)` and
+    /// `greens/rogowski_coil(i1)` on the equilibrium IDS, each with the sensor's tables with:
     /// * `plasma` - the plasma current in each grid cell, shape = (n_z, n_r)
     /// * `d_plasma_d_z` - the same, differentiated with respect to the sensor's height, shape = (n_z, n_r)
     /// * `pf_active` - each PF coil, in the order of `greens/grid/pf_active`, shape = (n_coil)
     /// * `pf_passive` - each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`, shape = (n_dof_total)
     ///
     /// `greens/grid/pf_active` and `greens/grid/pf_passive` name the PF coils and the passive degrees of freedom, so
-    /// `Plasma.greens_with_pf_active` and `Plasma.greens_with_pf_passive` have to be called first, with the same `pf_active` and
+    /// `Equilibrium.greens_with_pf_active` and `Equilibrium.greens_with_pf_passive` have to be called first, with the same `pf_active` and
     /// `pf_passive`.
     ///
     /// Any sensors' Greens tables already on the IDS are replaced, so calling this twice does not repeat them.
@@ -888,8 +945,8 @@ impl Plasma {
     ///   implementation, initialised in Python)
     ///
     /// # Errors
-    /// A `ValueError` when the PF coils, or the passive loops and their degrees of freedom, are not the ones `greens/grid/pf_active`
-    /// and `greens/grid/pf_passive` were calculated with, in the same order.
+    /// A `ValueError` when a sensor in the fit settings is not in the magnetics IDS, or when the PF coils, or the passive loops and their
+    /// degrees of freedom, are not the ones `greens/grid/pf_active` and `greens/grid/pf_passive` were calculated with, in the same order.
     fn greens_with_magnetics(&mut self, magnetics: PyRef<Magnetics>, pf_active: PyRef<PfActive>, pf_passive: PyRef<PfPassive>) -> PyResult<()> {
         // Change Python types into Rust types
         let magnetics_rs: &Magnetics = &magnetics;
@@ -903,7 +960,7 @@ impl Plasma {
         if pf_active_names != greens_pf_active_names {
             return Err(PyValueError::new_err(format!(
                 "`pf_active/coil(:)/name` is {pf_active_names:?}, but the Greens tables, `greens/grid/pf_active(:)/name`, are for \
-                 {greens_pf_active_names:?}; call `Plasma.greens_with_pf_active` with these PF coils first"
+                 {greens_pf_active_names:?}; call `Equilibrium.greens_with_pf_active` with these PF coils first"
             )));
         }
 
@@ -931,9 +988,37 @@ impl Plasma {
         if pf_passive_dof_names != greens_pf_passive_dof_names {
             return Err(PyValueError::new_err(format!(
                 "the passive degrees of freedom, `pf_passive/loop(:)/dof(:)/name`, are {pf_passive_dof_names:?}, but the Greens tables, \
-                 `greens/grid/pf_passive(:)/dof(:)/name`, are for {greens_pf_passive_dof_names:?}; call `Plasma.greens_with_pf_passive` \
+                 `greens/grid/pf_passive(:)/dof(:)/name`, are for {greens_pf_passive_dof_names:?}; call `Equilibrium.greens_with_pf_passive` \
                  with these passive loops first"
             )));
+        }
+
+        // Only the sensors in the fit settings have Greens tables, and each of them has to be in the magnetics IDS
+        let constraints_settings: &EquilibriumCodeParametersParsedEquilibriumConstraints = &self.equilibrium_ids.code.parameters_parsed.constraints;
+        for (sensor, settings_names, magnetics_names) in [
+            (
+                "b_field_pol_probe",
+                constraints_settings.b_field_pol_probe.b_field_pol_probe(..).name.to_vec(),
+                magnetics_rs.magnetics_ids.b_field_pol_probe(..).name.to_vec(),
+            ),
+            (
+                "flux_loop",
+                constraints_settings.flux_loop.flux_loop(..).name.to_vec(),
+                magnetics_rs.magnetics_ids.flux_loop(..).name.to_vec(),
+            ),
+            (
+                "rogowski_coil",
+                constraints_settings.rogowski_coil.rogowski_coil(..).name.to_vec(),
+                magnetics_rs.magnetics_ids.rogowski_coil(..).name.to_vec(),
+            ),
+        ] {
+            for settings_name in &settings_names {
+                if !magnetics_names.contains(settings_name) {
+                    return Err(PyValueError::new_err(format!(
+                        "`{settings_name}` is in the fit settings, `code/parameters_parsed/constraints/{sensor}`, but not in the magnetics IDS, `magnetics/{sensor}`"
+                    )));
+                }
+            }
         }
 
         // Each kind of sensor is calculated by its own method, in `magnetic_sensors/`
@@ -944,101 +1029,164 @@ impl Plasma {
         Ok(())
     }
 
-    /// Print to screen, to be used within Python
-    fn __repr__(&self) -> String {
-        let version: &str = env!("CARGO_PKG_VERSION");
-
-        let mut string_output = String::from("╔═════════════════════════════════════════════════════════════════════════════╗\n");
-        string_output += &format!("║  {:<74} ║\n", "<gsfit_rs.Plasma>");
-        string_output += &format!("║  {:<74} ║\n", version);
-
-        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
-        string_output += &format!("║  {:<74} ║\n", format!(" n_r = {}, n_z = {}", n_r, n_z));
-
-        string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
-
-        string_output
-    }
-
-    /// Read the data at `path`, a path from `gsfit_rs.imas.equilibrium_paths`, straight out of the
-    /// equilibrium IDS.
+    /// Read the data at `path`, a path from `gsfit_rs.imas.equilibrium_paths`, straight out of the equilibrium IDS.
     ///
-    /// This is how the results are read. A path holds no data, so the IDS is only borrowed for
-    /// the read, never copied. The shape of the result follows the shape of the index; see
-    /// `gsfit_rs.imas.Equilibrium.get`.
+    /// This is how the data is read: there are no bespoke accessors, so every quantity is reached by its data dictionary path,
+    /// e.g. `equilibrium_paths.code.parameters_parsed.grid.n_r`. A path holds no data, so the IDS is only borrowed for the read,
+    /// never copied.
     fn get<'py>(&self, py: Python<'py>, path: &PyPath) -> PyResult<Bound<'py, PyAny>> {
         read_path(py, &self.equilibrium_ids, "equilibrium", path)
     }
 
     /// A copy of the whole equilibrium IDS, for reading with `gsfit_rs.imas.equilibrium_paths`.
     ///
-    /// Read the results with `get` instead. This copies everything, the Greens tables included,
-    /// on every access. It is for when a detached snapshot is wanted: changes made on the Rust
-    /// side afterwards are not seen by it.
+    /// Read the data with `get` instead. This copies everything, the Greens tables included, on every access. It is for when a
+    /// detached snapshot is wanted: changes made on the Rust side afterwards are not seen by it.
     #[getter]
     fn equilibrium_ids(&self) -> PyEquilibrium {
         PyEquilibrium::new(self.equilibrium_ids.clone())
     }
+
+    /// Print to screen, to be used within Python
+    fn __repr__(&self) -> String {
+        let version: &str = env!("CARGO_PKG_VERSION");
+
+        let mut string_output = String::from("╔═════════════════════════════════════════════════════════════════════════════╗\n");
+        string_output += &format!("║  {:<74} ║\n", "<gsfit_rs.Equilibrium>");
+        string_output += &format!("║  {:<74} ║\n", version);
+
+        let n_characters: usize = self.equilibrium_ids.code.parameters.chars().count();
+        string_output += &format!("║  {:<74} ║\n", format!(" code/parameters: {n_characters} characters of XML"));
+
+        let n_r: i32 = self.equilibrium_ids.code.parameters_parsed.grid.n_r;
+        let n_z: i32 = self.equilibrium_ids.code.parameters_parsed.grid.n_z;
+        string_output += &format!("║  {:<74} ║\n", format!(" grid: n_r = {n_r}, n_z = {n_z}"));
+
+        let p_prime_n_dof: usize = self.p_prime_source_function.source_function_n_dof();
+        let ff_prime_n_dof: usize = self.ff_prime_source_function.source_function_n_dof();
+        string_output += &format!(
+            "║  {:<74} ║\n",
+            format!(" source functions: p' with {p_prime_n_dof} and ff' with {ff_prime_n_dof} degrees of freedom")
+        );
+
+        let n_time: usize = self.equilibrium_ids.time_slice.len();
+        if n_time == 0 {
+            string_output += &format!("║  {:<74} ║\n", " time_slice: none");
+        } else {
+            let time_first: f64 = self.equilibrium_ids.time_slice[0].time;
+            let time_last: f64 = self.equilibrium_ids.time_slice[n_time - 1].time;
+            string_output += &format!("║  {:<74} ║\n", format!(" time_slice: {n_time}, from {time_first} to {time_last} second"));
+        }
+
+        string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
+
+        string_output
+    }
 }
 
-// Rust only methods - either because we want to keep the methods private
-// or more likely because the methods are incompatible with Python
-impl Plasma {
-    /// Pre-allocate the equilibrium IDS with one empty time-slice per reconstruction time.
-    ///
-    /// Every leaf is unset (`None`); the Grad-Shafranov solver fills them in. Called once the
-    /// reconstruction times are known, which is later than `Plasma::new`.
-    ///
-    /// Only the time slices are (re)allocated. Anything already on the IDS - `code`,
-    /// `vacuum_toroidal_field`, ... - is left alone, so this does not discard data set before the
-    /// reconstruction runs.
-    /// Allocate one equilibrium time-slice per reconstruction time, and store the grid on each.
-    ///
-    /// The equilibrium IDS has no IDS-level grid: `grid`, `grid_type` and the (R, Z) positions all
-    /// live inside `time_slice/profiles_2d`, so the grid can only be stored once the time-slices
-    /// exist. That is why this runs from `Plasma::new`, before anything reads the grid.
-    ///
-    /// # Arguments
-    /// * `times_to_reconstruct` - the times to allocate a time-slice for [second]
-    /// * `r`, `z` - the grid axes [metre]
-    /// * `mesh_r`, `mesh_z` - the (R, Z) mesh, shape `(n_z, n_r)` [metre]
-    /// * `psi_norm` - the normalised poloidal flux grid the source functions are defined on
-    /// * `d_area` - area of one grid cell [metre ** 2]
-    #[allow(clippy::too_many_arguments)]
-    fn initialise_equilibrium_ids(
-        &mut self,
-        times_to_reconstruct: &Array1<f64>,
-        r: &Array1<f64>,
-        z: &Array1<f64>,
-        mesh_r: &Array2<f64>,
-        mesh_z: &Array2<f64>,
-        psi_norm: &Array1<f64>,
-        d_area: f64,
-    ) {
-        self.equilibrium_ids.allocate_time_slices(times_to_reconstruct);
+/// Make a source function, p' or ff', from its settings, as `make_source_function` in the database reader's `setup_plasma.py` does.
+///
+/// # Arguments
+/// * `method` - the source function's `method`: "efit_polynomial" or "tensioned_cubic_b_spline"
+/// * `efit_polynomial` - the source function's `efit_polynomial` settings, used when `method` is "efit_polynomial"
+/// * `tensioned_cubic_b_spline` - the source function's `tensioned_cubic_b_spline` settings, used when `method` is
+///   "tensioned_cubic_b_spline"
+/// * `path` - the path of the source function's settings, e.g. `code/parameters_parsed/source_function_p_prime`, for the errors
+///
+/// # Errors
+/// `ValueError` if `method` is not a source function, its settings are left out, or they cannot make a source function
+fn source_function_from_settings(
+    method: &str,
+    efit_polynomial: &EquilibriumCodeParametersParsedEfitPolynomial,
+    tensioned_cubic_b_spline: &EquilibriumCodeParametersParsedTensionedCubicBSpline,
+    path: &str,
+) -> PyResult<SharedSourceFunction> {
+    match method {
+        "efit_polynomial" => {
+            // `n_dof` is required, so is unset, and negative, only when `efit_polynomial` is left out
+            let n_dof: usize = usize::try_from(efit_polynomial.n_dof).map_err(|_| {
+                PyValueError::new_err(format!(
+                    "`{path}/method` is \"efit_polynomial\", but `{path}/efit_polynomial` is not in the settings"
+                ))
+            })?;
 
-        for time_slice in self.equilibrium_ids.time_slice.iter_mut() {
-            // GSFit solves on a single rectangular (R, Z) grid, so there is exactly one entry in
-            // this array of structures
-            let mut profiles_2d: EquilibriumProfiles2d = EquilibriumProfiles2d::default();
+            // No regularisations is a matrix with no rows, which the settings give as shape (0, 0).
+            // The source function takes shape (n_regularisations, n_dof), so it needs shape (0, n_dof)
+            let regularisations: Array2<f64> = if efit_polynomial.regularisations.nrows() == 0 {
+                Array2::zeros((0, n_dof))
+            } else {
+                efit_polynomial.regularisations.clone()
+            };
+            if regularisations.ncols() != n_dof {
+                return Err(PyValueError::new_err(format!(
+                    "`{path}/efit_polynomial/regularisations` has {} columns, but there are n_dof = {n_dof} degrees of freedom",
+                    regularisations.ncols()
+                )));
+            }
 
-            // `rectangular` is index 1 of the data dictionary's poloidal plane coordinates
-            // enumeration: "Cylindrical R,Z ala eqdsk (R=dim1, Z=dim2)"
-            profiles_2d.grid_type.name = "rectangular".to_string();
-            profiles_2d.grid_type.index = 1;
-            profiles_2d.grid_type.description = "Cylindrical R,Z ala eqdsk (R=dim1, Z=dim2)".to_string();
+            // `exact` fixes the coefficients to `coefficients`, rather than fitting them. Both are left out when the coefficients
+            // are fitted, and an unset `exact` is neither 0 nor 1
+            let exact: bool = efit_polynomial.exact == 1;
+            let source_function: EfitPolynomial = EfitPolynomial::new(n_dof, regularisations, exact, efit_polynomial.coefficients.clone())
+                .map_err(|error| PyValueError::new_err(format!("`{path}/efit_polynomial`: {error}")))?;
 
-            profiles_2d.grid.dim1 = r.to_owned();
-            profiles_2d.grid.dim2 = z.to_owned();
-            profiles_2d.grid.d_area = d_area;
-            profiles_2d.r = mesh_r.to_owned();
-            profiles_2d.z = mesh_z.to_owned();
-            time_slice.profiles_2d = vec![profiles_2d];
-
-            // The psi_norm grid the source functions are defined on
-            time_slice.profiles_1d.psi_norm = psi_norm.to_owned();
+            Ok(Arc::new(source_function))
         }
+        "tensioned_cubic_b_spline" => {
+            let interior_knots: &Array1<f64> = &tensioned_cubic_b_spline.interior_knots;
+            let interval_tensions: &Array1<f64> = &tensioned_cubic_b_spline.interval_tensions;
+            // There is one tension per interval between the knots, one more than the interior knots. Neither has any value only when
+            // `tensioned_cubic_b_spline` is left out
+            if interior_knots.is_empty() && interval_tensions.is_empty() {
+                return Err(PyValueError::new_err(format!(
+                    "`{path}/method` is \"tensioned_cubic_b_spline\", but `{path}/tensioned_cubic_b_spline` is not in the settings"
+                )));
+            }
+            if interval_tensions.len() != interior_knots.len() + 1 {
+                return Err(PyValueError::new_err(format!(
+                    "`{path}/tensioned_cubic_b_spline/interval_tensions` has {} values, but there are {} intervals between the knots: one more than the {} interior knots",
+                    interval_tensions.len(),
+                    interior_knots.len() + 1,
+                    interior_knots.len()
+                )));
+            }
+            let n_dof: usize = interior_knots.len() + 4;
+
+            // The regularisations are either built from `regularisation_builder` or given in `regularisations`.
+            // `make_cubic_spline_regularisations` is false when left out, when it is unset, so neither 0 nor 1
+            let regularisations: Array2<f64> = if tensioned_cubic_b_spline.make_cubic_spline_regularisations == 1 {
+                // Each of `regularisation_builder`'s elements is required, so `regularisation_mode` is empty only when it is left out
+                if tensioned_cubic_b_spline.regularisation_builder.regularisation_mode.is_empty() {
+                    return Err(PyValueError::new_err(format!(
+                        "`{path}/tensioned_cubic_b_spline/make_cubic_spline_regularisations` is true, but `{path}/tensioned_cubic_b_spline/regularisation_builder` is not in the settings"
+                    )));
+                }
+                TensionedCubicBSpline::make_regularisations(interior_knots, interval_tensions, &tensioned_cubic_b_spline.regularisation_builder)
+                    .map_err(|error| PyValueError::new_err(format!("`{path}/tensioned_cubic_b_spline/regularisation_builder`: {error}")))?
+            } else if tensioned_cubic_b_spline.regularisations.nrows() == 0 {
+                // No regularisations is a matrix with no rows, which the settings give as shape (0, 0), or leave out.
+                // The source function takes shape (n_regularisations, n_dof), so it needs shape (0, n_dof)
+                Array2::zeros((0, n_dof))
+            } else {
+                tensioned_cubic_b_spline.regularisations.clone()
+            };
+            // The source function takes its number of degrees of freedom from the regularisations
+            if regularisations.ncols() != n_dof {
+                return Err(PyValueError::new_err(format!(
+                    "`{path}/tensioned_cubic_b_spline/regularisations` has {} columns, but there are n_dof = (number of interior knots) + 4 = {n_dof} degrees of freedom",
+                    regularisations.ncols()
+                )));
+            }
+
+            Ok(Arc::new(TensionedCubicBSpline::new(
+                regularisations,
+                interior_knots.clone(),
+                interval_tensions.clone(),
+            )))
+        }
+        _ => Err(PyValueError::new_err(format!(
+            "`{path}/method` is \"{method}\", but it must be \"efit_polynomial\" or \"tensioned_cubic_b_spline\""
+        ))),
     }
 }
 
@@ -1080,13 +1228,13 @@ fn apply_current_distributions(greens_filaments: &Array2<f64>, current_distribut
     // Both arrays are freshly allocated, and so are contiguous and row-major
     let greens_filaments_flat: &[f64] = greens_filaments
         .as_slice()
-        .expect("plasma.apply_current_distributions: `greens_filaments` must be contiguous");
+        .expect("apply_current_distributions: `greens_filaments` must be contiguous");
     let mut current_distributions_flat: Vec<&[f64]> = Vec::with_capacity(n_dof);
     for i_dof in 0..n_dof {
         current_distributions_flat.push(
             current_distributions[i_dof]
                 .as_slice()
-                .expect("plasma.apply_current_distributions: `current_distribution` must be contiguous"),
+                .expect("apply_current_distributions: `current_distribution` must be contiguous"),
         );
     }
 
@@ -1097,7 +1245,7 @@ fn apply_current_distributions(greens_filaments: &Array2<f64>, current_distribut
     {
         let greens_with_dof_flat: &mut [f64] = greens_with_dof
             .as_slice_mut()
-            .expect("plasma.apply_current_distributions: `greens_with_dof` must be contiguous");
+            .expect("apply_current_distributions: `greens_with_dof` must be contiguous");
 
         greens_filaments_flat
             .par_chunks(N_GRID_PER_TASK * n_filament)
@@ -1127,4 +1275,52 @@ fn apply_current_distributions(greens_filaments: &Array2<f64>, current_distribut
     }
 
     greens_with_dof
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use imas_rs::dd_support::parameters_input::ParametersInput;
+
+    #[test]
+    fn the_equilibrium_is_built_from_its_settings() {
+        let parameters_value: String = "<equilibrium_settings>
+            <timeslices><method>user_defined</method><user_defined>0.1 0.2</user_defined></timeslices>
+            <numerics><nonlinear_solver><method>picard</method><picard><anderson_mixing>1.0</anderson_mixing></picard></nonlinear_solver></numerics>
+            <grid><n_r>5</n_r><n_z>4</n_z><r_min>0.2</r_min><r_max>1.0</r_max><z_min>-1.0</z_min><z_max>1.0</z_max><n_psi_norm>11</n_psi_norm></grid>
+            <source_function_p_prime><method>efit_polynomial</method><efit_polynomial><n_dof>2</n_dof><regularisations/></efit_polynomial></source_function_p_prime>
+            <source_function_ff_prime><method>efit_polynomial</method><efit_polynomial><n_dof>3</n_dof><regularisations><row>1.0 0.0 0.0</row></regularisations></efit_polynomial></source_function_ff_prime>
+        </equilibrium_settings>"
+            .to_string();
+        let parameters_input: ParametersInput = ParametersInput {
+            parameters_value: parameters_value.clone(),
+            parameters_default: String::new(),
+            schema: "<xs:schema/>".to_string(),
+        };
+
+        let equilibrium: Equilibrium = Equilibrium::new(&PyParametersInput::new(parameters_input)).expect("the settings make an equilibrium");
+
+        // The settings, as XML and parsed
+        assert_eq!(equilibrium.equilibrium_ids.code.parameters, parameters_value);
+        assert_eq!(equilibrium.equilibrium_ids.code.parameters_parsed.grid.n_r, 5);
+        // Left out of the settings, so unset
+        assert!(equilibrium.equilibrium_ids.code.parameters_parsed.initial_guess.ip.is_nan());
+
+        // One time-slice per time, each holding the grid
+        assert_eq!(equilibrium.equilibrium_ids.time_slice.len(), 2);
+        assert_eq!(equilibrium.equilibrium_ids.time_slice[1].time, 0.2);
+        assert_eq!(equilibrium.equilibrium_ids.time_slice[1].profiles_2d[0].grid.dim1.len(), 5);
+        assert_eq!(equilibrium.equilibrium_ids.time_slice[1].profiles_2d[0].r.shape(), &[4, 5]);
+        assert_eq!(equilibrium.equilibrium_ids.time_slice[1].profiles_1d.psi_norm.len(), 11);
+        assert_eq!(equilibrium.equilibrium_ids.time_slice[1].profiles_1d.psi_norm[10], 1.0);
+
+        // The Greens tables between the grid points
+        assert_eq!(equilibrium.equilibrium_ids.greens.grid.plasma.psi.shape(), &[4, 5, 5]);
+
+        // The source functions; p' has no regularisations
+        assert_eq!(equilibrium.p_prime_source_function.source_function_n_dof(), 2);
+        assert_eq!(equilibrium.p_prime_source_function.source_function_regularisation().shape(), &[0, 2]);
+        assert_eq!(equilibrium.ff_prime_source_function.source_function_n_dof(), 3);
+        assert_eq!(equilibrium.ff_prime_source_function.source_function_regularisation().shape(), &[1, 3]);
+    }
 }

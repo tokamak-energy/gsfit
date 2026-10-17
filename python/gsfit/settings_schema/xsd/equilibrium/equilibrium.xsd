@@ -12,25 +12,43 @@
     <!-- ================================= Types ================================= -->
 
     <xs:simpleType name="XmlPath">
-        <xs:annotation><xs:documentation>Path of an XML file, relative to the file holding the link</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                Path of an XML file, relative to the file holding the link
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:anyURI">
             <xs:pattern value="\S+\.xml"/>
         </xs:restriction>
     </xs:simpleType>
 
     <xs:complexType name="Link">
-        <xs:annotation><xs:documentation>A link to the file holding these settings</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A link to the file holding these settings
+            </xs:documentation>
+        </xs:annotation>
         <xs:attribute name="href" type="XmlPath" use="required">
-            <xs:annotation><xs:documentation>Path of the linked file, relative to equilibrium.xml, e.g. "numerics.xml" or "../../default/equilibrium/numerics.xml"</xs:documentation></xs:annotation>
+            <xs:annotation>
+                <xs:documentation>
+                    Path of the linked file, relative to equilibrium.xml, e.g. "numerics.xml" or "../../default/equilibrium/numerics.xml"
+                </xs:documentation>
+            </xs:annotation>
         </xs:attribute>
     </xs:complexType>
 
     <xs:complexType name="EquilibriumConstraints">
-        <xs:annotation><xs:documentation>The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+            </xs:documentation>
+        </xs:annotation>
         <xs:all>
             <xs:element name="b_field_pol_probe" type="Link">
                 <xs:annotation>
-                    <xs:documentation>How each poloidal field probe (Mirnov coil) is fitted. IMAS: equilibrium time_slice[:]/constraints/b_field_pol_probe[:]</xs:documentation>
+                    <xs:documentation>
+                        How each poloidal field probe (Mirnov coil) is fitted. IMAS: equilibrium time_slice[:]/constraints/b_field_pol_probe[:]
+                    </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_b_field_pol_probe.xsd</schema>
                     </xs:appinfo>
@@ -38,7 +56,9 @@
             </xs:element>
             <xs:element name="flux_loop" type="Link">
                 <xs:annotation>
-                    <xs:documentation>How each flux loop is fitted. IMAS: equilibrium time_slice[:]/constraints/flux_loop[:]</xs:documentation>
+                    <xs:documentation>
+                        How each flux loop is fitted. IMAS: equilibrium time_slice[:]/constraints/flux_loop[:]
+                    </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_flux_loop.xsd</schema>
                     </xs:appinfo>
@@ -46,7 +66,9 @@
             </xs:element>
             <xs:element name="rogowski_coil" type="Link">
                 <xs:annotation>
-                    <xs:documentation>How each Rogowski coil is fitted. IMAS: magnetics rogowski_coil[:]; the equilibrium IDS has no Rogowski coil constraint</xs:documentation>
+                    <xs:documentation>
+                        How each Rogowski coil is fitted. IMAS: magnetics rogowski_coil[:]; the equilibrium IDS has no Rogowski coil constraint
+                    </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_rogowski_coil.xsd</schema>
                     </xs:appinfo>
@@ -54,7 +76,9 @@
             </xs:element>
             <xs:element name="diamagnetic_flux" type="Link">
                 <xs:annotation>
-                    <xs:documentation>How the diamagnetic loop is fitted. IMAS: equilibrium time_slice[:]/constraints/diamagnetic_flux</xs:documentation>
+                    <xs:documentation>
+                        How the diamagnetic loop is fitted. IMAS: equilibrium time_slice[:]/constraints/diamagnetic_flux
+                    </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_diamagnetic_flux.xsd</schema>
                     </xs:appinfo>
@@ -62,7 +86,9 @@
             </xs:element>
             <xs:element name="isoflux" type="Link">
                 <xs:annotation>
-                    <xs:documentation>The isoflux constraints: pairs of points on the same flux surface. Not in the IMAS Data Dictionary</xs:documentation>
+                    <xs:documentation>
+                        The isoflux constraints: pairs of points on the same flux surface. Not in the IMAS Data Dictionary
+                    </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_isoflux.xsd</schema>
                     </xs:appinfo>
@@ -70,7 +96,9 @@
             </xs:element>
             <xs:element name="pressure" type="Link">
                 <xs:annotation>
-                    <xs:documentation>Whether pressure is fitted, and how the pressure constraints are made. IMAS: equilibrium time_slice[:]/constraints/pressure[:]</xs:documentation>
+                    <xs:documentation>
+                        Whether pressure is fitted, and how the pressure constraints are made. IMAS: equilibrium time_slice[:]/constraints/pressure[:]
+                    </xs:documentation>
                     <xs:appinfo>
                         <schema>constraints_pressure.xsd</schema>
                     </xs:appinfo>
@@ -82,13 +110,19 @@
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="equilibrium_settings">
-        <xs:annotation><xs:documentation>GSFit's own settings, which make the equilibrium IDS. This file holds no settings itself: each element links to the file which holds one group of them</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                GSFit's own settings, which make the equilibrium IDS. This file holds no settings itself: each element links to the file which holds one group of them
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:all>
                 <!-- Code settings -->
                 <xs:element name="timeslices" type="Link">
                     <xs:annotation>
-                        <xs:documentation>The times to reconstruct</xs:documentation>
+                        <xs:documentation>
+                            The times to reconstruct
+                        </xs:documentation>
                         <xs:appinfo>
                             <schema>timeslices.xsd</schema>
                         </xs:appinfo>
@@ -96,7 +130,9 @@
                 </xs:element>
                 <xs:element name="numerics" type="Link">
                     <xs:annotation>
-                        <xs:documentation>Settings for the Grad-Shafranov solve, and the number of threads it runs on</xs:documentation>
+                        <xs:documentation>
+                            Settings for the Grad-Shafranov solve, and the number of threads it runs on
+                        </xs:documentation>
                         <xs:appinfo>
                             <schema>numerics.xsd</schema>
                         </xs:appinfo>
@@ -104,7 +140,9 @@
                 </xs:element>
                 <xs:element name="grid" type="Link">
                     <xs:annotation>
-                        <xs:documentation>The (R, Z) grid the equilibrium is solved on, and the psi_n grid of the 1D profiles</xs:documentation>
+                        <xs:documentation>
+                            The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+                        </xs:documentation>
                         <xs:appinfo>
                             <schema>grid.xsd</schema>
                         </xs:appinfo>
@@ -112,7 +150,9 @@
                 </xs:element>
                 <xs:element name="initial_guess" type="Link">
                     <xs:annotation>
-                        <xs:documentation>The initial guess of the plasma current</xs:documentation>
+                        <xs:documentation>
+                            The initial guess of the plasma current
+                        </xs:documentation>
                         <xs:appinfo>
                             <schema>initial_guess.xsd</schema>
                         </xs:appinfo>
@@ -122,7 +162,9 @@
                 <!-- Source functions -->
                 <xs:element name="source_function_p_prime" type="Link">
                     <xs:annotation>
-                        <xs:documentation>The p' source function: its basis functions and their regularisation</xs:documentation>
+                        <xs:documentation>
+                            The p' source function: its basis functions and their regularisation
+                        </xs:documentation>
                         <xs:appinfo>
                             <schema>source_function_p_prime.xsd</schema>
                         </xs:appinfo>
@@ -130,7 +172,9 @@
                 </xs:element>
                 <xs:element name="source_function_ff_prime" type="Link">
                     <xs:annotation>
-                        <xs:documentation>The ff' source function: its basis functions and their regularisation</xs:documentation>
+                        <xs:documentation>
+                            The ff' source function: its basis functions and their regularisation
+                        </xs:documentation>
                         <xs:appinfo>
                             <schema>source_function_ff_prime.xsd</schema>
                         </xs:appinfo>
@@ -140,7 +184,9 @@
                 <!-- Passive structures -->
                 <xs:element name="passive_dof_regularisation" type="Link">
                     <xs:annotation>
-                        <xs:documentation>The degrees of freedom of the currents in the passive structures, and their regularisation</xs:documentation>
+                        <xs:documentation>
+                            The degrees of freedom of the currents in the passive structures, and their regularisation
+                        </xs:documentation>
                         <xs:appinfo>
                             <schema>passive_dof_regularisation.xsd</schema>
                         </xs:appinfo>
@@ -149,7 +195,11 @@
 
                 <!-- Constraints -->
                 <xs:element name="constraints" type="EquilibriumConstraints">
-                    <xs:annotation><xs:documentation>The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
             </xs:all>
         </xs:complexType>

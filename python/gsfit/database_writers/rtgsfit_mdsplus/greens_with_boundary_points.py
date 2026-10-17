@@ -4,12 +4,12 @@ import numpy.typing as npt
 from gsfit_rs.imas import equilibrium_paths as ep
 
 
-def greens_with_boundary_points(plasma: gsfit_rs.Plasma) -> npt.NDArray[np.float64]:
+def greens_with_boundary_points(plasma: gsfit_rs.Equilibrium) -> npt.NDArray[np.float64]:
     """
     Calculate the Greens table with the boundary points.
     In this context "boundary" means the 2D (R, Z) grid, not the plasma boundary.
 
-    :param plasma: Plasma object containing the grid information.
+    :param plasma: Equilibrium object containing the grid information.
 
     Boundary points are ordered clockwise from the bottom left, i.e.
     * (bottom, left) = (r_min, z_min)

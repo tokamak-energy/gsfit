@@ -1398,12 +1398,12 @@ pub struct Code {
     pub output_flag: INT_1D,
     /// List of external libraries used by the code that has produced this IDS
     pub library: Vec<Library>,
-    /// Numerical settings the Grad-Shafranov solve is run with
-    pub numerics: EquilibriumCodeNumerics,
-    /// The (R, Z) grid the Grad-Shafranov equation is solved on
-    pub grid: EquilibriumCodeGrid,
-    /// Initial guess for the plasma, used to seed the first iteration
-    pub initial_guess: EquilibriumCodeInitialGuess,
+    /// GSFit's settings, `code/parameters`, read into structs. The XML of `code/parameters` is
+    /// `equilibrium.xml` with each file it links to written in its link's place, so each element
+    /// is the key of the same name, e.g. `<grid><n_r>` is `code/parameters_parsed/grid/n_r`. Its
+    /// structs are generated from GSFit's XML schema of the settings,
+    /// `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`, rather than declared here
+    pub parameters_parsed: EquilibriumCodeParametersParsed,
 }
 
 /// Generic grid space (dynamic within a type 3 AoS)
@@ -1638,215 +1638,6 @@ impl Default for EquilibriumBoundaryBounding {
 pub struct EquilibriumConstraints0dDof {
     /// Name of the degree of freedom, `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
     pub name: STR_0D,
-}
-
-/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-#[derive(Debug, Clone)]
-pub struct EquilibriumCodeGrid {
-    /// Number of grid points in the radial direction
-    pub n_r: INT_0D,
-    /// Number of grid points in the vertical direction
-    pub n_z: INT_0D,
-    /// Major radius of the innermost grid column
-    /// Units: m
-    pub r_min: FLT_0D,
-    /// Major radius of the outermost grid column
-    /// Units: m
-    pub r_max: FLT_0D,
-    /// Height of the lowest grid row
-    /// Units: m
-    pub z_min: FLT_0D,
-    /// Height of the highest grid row
-    /// Units: m
-    pub z_max: FLT_0D,
-}
-
-impl Default for EquilibriumCodeGrid {
-    fn default() -> Self {
-        Self {
-            n_r: EMPTY_INT,
-            n_z: EMPTY_INT,
-            r_min: f64::NAN,
-            r_max: f64::NAN,
-            z_min: f64::NAN,
-            z_max: f64::NAN,
-        }
-    }
-}
-
-/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-#[derive(Debug, Clone)]
-pub struct EquilibriumCodeNumerics {
-    /// Bounds on the nonlinear solver's iteration loop
-    pub iterations: EquilibriumCodeNumericsIterations,
-    /// Value of convergence/grad_shafranov_deviation_value below which the solution is taken as
-    /// converged
-    /// Units: mixed
-    pub grad_shafranov_deviation_tolerance: FLT_0D,
-    /// The method which makes the flux and the current density consistent with each other, and
-    /// its settings
-    pub nonlinear_solver: EquilibriumCodeNumericsNonlinearSolver,
-}
-
-impl Default for EquilibriumCodeNumerics {
-    fn default() -> Self {
-        Self {
-            iterations: EquilibriumCodeNumericsIterations::default(),
-            grad_shafranov_deviation_tolerance: f64::NAN,
-            nonlinear_solver: EquilibriumCodeNumericsNonlinearSolver::default(),
-        }
-    }
-}
-
-/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-#[derive(Debug, Clone)]
-pub struct EquilibriumCodeNumericsIterations {
-    /// Maximum number of iterations the convergence loop is allowed to run for
-    pub n_max: INT_0D,
-    /// Minimum number of iterations before the convergence test is allowed to pass
-    pub n_min: INT_0D,
-}
-
-impl Default for EquilibriumCodeNumericsIterations {
-    fn default() -> Self {
-        Self {
-            n_max: EMPTY_INT,
-            n_min: EMPTY_INT,
-        }
-    }
-}
-
-/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-#[derive(Debug, Clone, Default)]
-pub struct EquilibriumCodeNumericsNonlinearSolver {
-    /// Either "picard", "newton_krylov" or "newton_picard"
-    pub method: STR_0D,
-    /// Settings for the Picard iteration
-    pub picard: EquilibriumCodeNumericsNonlinearSolverPicard,
-    /// Settings for the Jacobian-free Newton-Krylov iteration
-    pub newton_krylov: EquilibriumCodeNumericsNonlinearSolverNewtonKrylov,
-    /// Settings for the Newton-Picard iteration (the recursive projection method)
-    pub newton_picard: EquilibriumCodeNumericsNonlinearSolverNewtonPicard,
-}
-
-/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-#[derive(Debug, Clone)]
-pub struct EquilibriumCodeNumericsNonlinearSolverPicard {
-    /// Number of initial iterations for which the vertical feedback is switched off
-    pub n_iter_no_vertical_feedback: INT_0D,
-    /// Whether Anderson mixing is applied: each new state is the combination of the last few
-    /// iterates which best cancels their residuals, rather than the Picard update itself. 0 for
-    /// off, 1 for on. The data dictionary has no boolean base type, so this is an integer
-    pub apply_anderson_mixing: INT_0D,
-    /// Maximum number of previous iterations Anderson mixing combines
-    pub anderson_n_history: INT_0D,
-    /// Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it
-    /// Units: dimensionless
-    pub anderson_mixing: FLT_0D,
-}
-
-impl Default for EquilibriumCodeNumericsNonlinearSolverPicard {
-    fn default() -> Self {
-        Self {
-            n_iter_no_vertical_feedback: EMPTY_INT,
-            apply_anderson_mixing: EMPTY_INT,
-            anderson_n_history: EMPTY_INT,
-            anderson_mixing: f64::NAN,
-        }
-    }
-}
-
-/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-#[derive(Debug, Clone)]
-pub struct EquilibriumCodeNumericsNonlinearSolverNewtonKrylov {
-    /// Value of convergence/grad_shafranov_deviation_value below which the Picard iterations hand
-    /// over to Newton iterations
-    /// Units: mixed
-    pub picard_handover: FLT_0D,
-    /// Maximum number of Krylov directions per Newton iteration. Each costs one evaluation of the
-    /// Picard update
-    pub n_krylov_max: INT_0D,
-    /// The Krylov solve stops once the linearised residual has fallen to this fraction of the
-    /// nonlinear residual
-    /// Units: dimensionless
-    pub krylov_tolerance: FLT_0D,
-    /// Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
-    /// the size of the nonlinear residual
-    /// Units: dimensionless
-    pub finite_difference_step: FLT_0D,
-    /// Whether to print the progress of each Newton iteration; 0 for off, 1 for on
-    pub verbose: INT_0D,
-}
-
-impl Default for EquilibriumCodeNumericsNonlinearSolverNewtonKrylov {
-    fn default() -> Self {
-        Self {
-            picard_handover: f64::NAN,
-            n_krylov_max: EMPTY_INT,
-            krylov_tolerance: f64::NAN,
-            finite_difference_step: f64::NAN,
-            verbose: EMPTY_INT,
-        }
-    }
-}
-
-/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-#[derive(Debug, Clone)]
-pub struct EquilibriumCodeNumericsNonlinearSolverNewtonPicard {
-    /// Maximum number of directions in which Newton's method is used
-    pub n_basis_max: INT_0D,
-    /// A direction is added when the part of the residual outside them has shrunk by less than
-    /// this factor since the previous iteration
-    /// Units: dimensionless
-    pub contraction_threshold: FLT_0D,
-    /// Size of the finite-difference step used for each Jacobian-vector product, as a multiple of
-    /// the size of the nonlinear residual
-    /// Units: dimensionless
-    pub finite_difference_step: FLT_0D,
-    /// Whether to print the progress of each iteration; 0 for off, 1 for on
-    pub verbose: INT_0D,
-}
-
-impl Default for EquilibriumCodeNumericsNonlinearSolverNewtonPicard {
-    fn default() -> Self {
-        Self {
-            n_basis_max: EMPTY_INT,
-            contraction_threshold: f64::NAN,
-            finite_difference_step: f64::NAN,
-            verbose: EMPTY_INT,
-        }
-    }
-}
-
-/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-#[derive(Debug, Clone)]
-pub struct EquilibriumCodeInitialGuess {
-    /// Initial total plasma current
-    /// Units: A
-    pub ip: FLT_0D,
-    /// Radial centre of the initial current distribution
-    /// Units: m
-    pub cur_r: FLT_0D,
-    /// Vertical centre of the initial current distribution
-    /// Units: m
-    pub cur_z: FLT_0D,
-    /// Radial semi-axis of the initial current distribution
-    /// Units: m
-    pub minor_radius: FLT_0D,
-    /// Elongation of the initial current distribution
-    pub elongation: FLT_0D,
-}
-
-impl Default for EquilibriumCodeInitialGuess {
-    fn default() -> Self {
-        Self {
-            ip: f64::NAN,
-            cur_r: f64::NAN,
-            cur_z: f64::NAN,
-            minor_radius: f64::NAN,
-            elongation: f64::NAN,
-        }
-    }
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
@@ -2171,6 +1962,761 @@ pub struct EquilibriumLimiterUnitOutline {
     /// Height of each point along the outline
     /// Units: m
     pub z: FLT_1D,
+}
+
+/// GSFit's own settings, which make the equilibrium IDS. This file holds no settings itself: each element links to the file which holds one group of them
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsed {
+    /// The times to reconstruct
+    pub timeslices: EquilibriumCodeParametersParsedTimeslices,
+    /// Settings for the Grad-Shafranov solve, and the number of threads it runs on
+    pub numerics: EquilibriumCodeParametersParsedNumerics,
+    /// The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+    pub grid: EquilibriumCodeParametersParsedGrid,
+    /// The initial guess of the plasma current
+    pub initial_guess: EquilibriumCodeParametersParsedInitialGuess,
+    /// The p' source function: its basis functions and their regularisation
+    pub source_function_p_prime: EquilibriumCodeParametersParsedSourceFunctionPPrime,
+    /// The ff' source function: its basis functions and their regularisation
+    pub source_function_ff_prime: EquilibriumCodeParametersParsedSourceFunctionFfPrime,
+    /// The degrees of freedom of the currents in the passive structures, and their regularisation
+    pub passive_dof_regularisation: EquilibriumCodeParametersParsedPassiveDofRegularisation,
+    /// The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+    pub constraints: EquilibriumCodeParametersParsedEquilibriumConstraints,
+}
+
+/// The times to reconstruct
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedTimeslices {
+    /// How the times are chosen. Its settings are in the element of the same name, below
+    /// One of: "arange", "linspace", "user_defined", "good_pressure_sensors"
+    pub method: STR_0D,
+    /// Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
+    pub arange: EquilibriumCodeParametersParsedTimeslicesArange,
+    /// n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
+    pub linspace: EquilibriumCodeParametersParsedTimeslicesLinspace,
+    /// The times, in the order they are given
+    /// Units: s
+    pub user_defined: FLT_1D,
+}
+
+/// Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedTimeslicesArange {
+    /// First time
+    /// Units: s
+    pub time_start: FLT_0D,
+    /// End of the times, which is not included
+    /// Units: s
+    pub time_end: FLT_0D,
+    /// Step between times
+    /// Units: s
+    pub dt: FLT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedTimeslicesArange {
+    fn default() -> Self {
+        Self {
+            time_start: f64::NAN,
+            time_end: f64::NAN,
+            dt: f64::NAN,
+        }
+    }
+}
+
+/// n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedTimeslicesLinspace {
+    /// First time
+    /// Units: s
+    pub time_start: FLT_0D,
+    /// Last time
+    /// Units: s
+    pub time_end: FLT_0D,
+    /// Number of times
+    pub n_time: INT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedTimeslicesLinspace {
+    fn default() -> Self {
+        Self {
+            time_start: f64::NAN,
+            time_end: f64::NAN,
+            n_time: EMPTY_INT,
+        }
+    }
+}
+
+/// Settings for the Grad-Shafranov solve, and the number of threads it runs on
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedNumerics {
+    /// Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU
+    #[allow(non_snake_case)]
+    pub RAYON_NUM_THREADS: INT_0D,
+    /// Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed
+    pub n_iter_max: INT_0D,
+    /// The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this
+    pub grad_shafranov_deviation_tolerance: FLT_0D,
+    /// Minimum number of nonlinear solver iterations before the convergence test may pass
+    pub n_iter_min: INT_0D,
+    /// Not read by the code at present
+    pub save_unconverged: INT_0D,
+    /// The nonlinear solver for the Grad-Shafranov equation
+    pub nonlinear_solver: EquilibriumCodeParametersParsedNumericsNonlinearSolver,
+}
+
+impl Default for EquilibriumCodeParametersParsedNumerics {
+    fn default() -> Self {
+        Self {
+            RAYON_NUM_THREADS: EMPTY_INT,
+            n_iter_max: EMPTY_INT,
+            grad_shafranov_deviation_tolerance: f64::NAN,
+            n_iter_min: EMPTY_INT,
+            save_unconverged: EMPTY_INT,
+            nonlinear_solver: EquilibriumCodeParametersParsedNumericsNonlinearSolver::default(),
+        }
+    }
+}
+
+/// The nonlinear solver for the Grad-Shafranov equation
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolver {
+    /// The solver to use. Its settings are in the element of the same name, below
+    /// One of: "picard", "newton_krylov", "newton_picard"
+    pub method: STR_0D,
+    /// Settings for Picard iterations
+    pub picard: EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard,
+    /// Settings for Jacobian-free Newton-Krylov
+    pub newton_krylov: EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylov,
+    /// Settings for Newton-Picard, the recursive projection method (RPM)
+    pub newton_picard: EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicard,
+}
+
+/// Settings for Picard iterations
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard {
+    /// Number of initial iterations with the vertical feedback (the fit of delta_z) switched off
+    pub n_iter_no_vertical_feedback: INT_0D,
+    /// Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals
+    pub apply_anderson_mixing: INT_0D,
+    /// Maximum number of previous iterations Anderson mixing combines
+    pub anderson_n_history: INT_0D,
+    /// Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it. Must be greater than 0, which `Plasma::new` checks too
+    pub anderson_mixing: FLT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard {
+    fn default() -> Self {
+        Self {
+            n_iter_no_vertical_feedback: EMPTY_INT,
+            apply_anderson_mixing: EMPTY_INT,
+            anderson_n_history: EMPTY_INT,
+            anderson_mixing: f64::NAN,
+        }
+    }
+}
+
+/// Settings for Jacobian-free Newton-Krylov
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylov {
+    /// Grad-Shafranov deviation below which it hands over from Picard to Newton iterations
+    pub picard_handover: FLT_0D,
+    /// Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work
+    pub n_krylov_max: INT_0D,
+    /// The Krylov solve stops once the linearised residual is this fraction of the residual
+    pub krylov_tolerance: FLT_0D,
+    /// Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
+    pub finite_difference_step: FLT_0D,
+    /// Whether to print the progress of each Newton iteration
+    pub verbose: INT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylov {
+    fn default() -> Self {
+        Self {
+            picard_handover: f64::NAN,
+            n_krylov_max: EMPTY_INT,
+            krylov_tolerance: f64::NAN,
+            finite_difference_step: f64::NAN,
+            verbose: EMPTY_INT,
+        }
+    }
+}
+
+/// Settings for Newton-Picard, the recursive projection method (RPM)
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicard {
+    /// Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add
+    pub n_basis_max: INT_0D,
+    /// A direction is added when the residual outside them shrinks by less than this factor per iteration
+    pub contraction_threshold: FLT_0D,
+    /// Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
+    pub finite_difference_step: FLT_0D,
+    /// Whether to print the progress of each Newton-Picard iteration
+    pub verbose: INT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicard {
+    fn default() -> Self {
+        Self {
+            n_basis_max: EMPTY_INT,
+            contraction_threshold: f64::NAN,
+            finite_difference_step: f64::NAN,
+            verbose: EMPTY_INT,
+        }
+    }
+}
+
+/// The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedGrid {
+    /// Number of radial grid points
+    pub n_r: INT_0D,
+    /// Number of vertical grid points
+    pub n_z: INT_0D,
+    /// Minimum major radius
+    /// Units: m
+    pub r_min: FLT_0D,
+    /// Maximum major radius
+    /// Units: m
+    pub r_max: FLT_0D,
+    /// Minimum vertical position
+    /// Units: m
+    pub z_min: FLT_0D,
+    /// Maximum vertical position
+    /// Units: m
+    pub z_max: FLT_0D,
+    /// Number of points in the normalised poloidal flux, psi_norm, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given
+    pub n_psi_norm: INT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedGrid {
+    fn default() -> Self {
+        Self {
+            n_r: EMPTY_INT,
+            n_z: EMPTY_INT,
+            r_min: f64::NAN,
+            r_max: f64::NAN,
+            z_min: f64::NAN,
+            z_max: f64::NAN,
+            n_psi_norm: EMPTY_INT,
+        }
+    }
+}
+
+/// The initial guess of the plasma current: an ellipse of current
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/initial_guess.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedInitialGuess {
+    /// Plasma current
+    /// Units: A
+    pub ip: FLT_0D,
+    /// Radial centre of the current
+    /// Units: m
+    pub cur_r: FLT_0D,
+    /// Vertical centre of the current
+    /// Units: m
+    pub cur_z: FLT_0D,
+    /// Radial semi-axis of the current
+    /// Units: m
+    pub minor_radius: FLT_0D,
+    /// Elongation of the current
+    pub elongation: FLT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedInitialGuess {
+    fn default() -> Self {
+        Self {
+            ip: f64::NAN,
+            cur_r: f64::NAN,
+            cur_z: f64::NAN,
+            minor_radius: f64::NAN,
+            elongation: f64::NAN,
+        }
+    }
+}
+
+/// The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedSourceFunctionPPrime {
+    /// The basis functions to use. Their settings are in the element of the same name, below
+    /// One of: "efit_polynomial", "tensioned_cubic_b_spline"
+    pub method: STR_0D,
+    /// Settings for EFIT's polynomials
+    /// Optional in the settings: unset when it is left out
+    pub efit_polynomial: EquilibriumCodeParametersParsedEfitPolynomial,
+    /// Settings for the tensioned cubic B-splines
+    /// Optional in the settings: unset when it is left out
+    pub tensioned_cubic_b_spline: EquilibriumCodeParametersParsedTensionedCubicBSpline,
+}
+
+/// Settings for EFIT's polynomials
+/// Generated from the XML schema type `EfitPolynomial`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedEfitPolynomial {
+    /// Number of polynomials, and so of degrees of freedom
+    pub n_dof: INT_0D,
+    /// The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true
+    /// Shape [n_rows, n_columns], one row per `row` element
+    pub regularisations: FLT_2D,
+    /// When true, the coefficients are not fitted but fixed to `coefficients`. False when absent
+    /// Optional in the settings: unset when it is left out
+    pub exact: INT_0D,
+    /// The fixed coefficients, one per polynomial, used when `exact` is true
+    /// Optional in the settings: unset when it is left out
+    pub coefficients: FLT_1D,
+}
+
+impl Default for EquilibriumCodeParametersParsedEfitPolynomial {
+    fn default() -> Self {
+        Self {
+            n_dof: EMPTY_INT,
+            regularisations: Default::default(),
+            exact: EMPTY_INT,
+            coefficients: Default::default(),
+        }
+    }
+}
+
+/// Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom
+/// Generated from the XML schema type `TensionedCubicBSpline`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedTensionedCubicBSpline {
+    /// The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false
+    /// Shape [n_rows, n_columns], one row per `row` element
+    /// Optional in the settings: unset when it is left out
+    pub regularisations: FLT_2D,
+    /// The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included
+    pub interior_knots: FLT_1D,
+    /// The tension over each interval between neighbouring knots: one more than the number of interior knots
+    pub interval_tensions: FLT_1D,
+    /// When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent
+    /// Optional in the settings: unset when it is left out
+    pub make_cubic_spline_regularisations: INT_0D,
+    /// How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true
+    /// Optional in the settings: unset when it is left out
+    pub regularisation_builder: EquilibriumCodeParametersParsedRegularisationBuilder,
+}
+
+impl Default for EquilibriumCodeParametersParsedTensionedCubicBSpline {
+    fn default() -> Self {
+        Self {
+            regularisations: Default::default(),
+            interior_knots: Default::default(),
+            interval_tensions: Default::default(),
+            make_cubic_spline_regularisations: EMPTY_INT,
+            regularisation_builder: EquilibriumCodeParametersParsedRegularisationBuilder::default(),
+        }
+    }
+}
+
+/// How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free)
+/// Generated from the XML schema type `RegularisationBuilder`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedRegularisationBuilder {
+    /// Multiplies the rows which regularise the bulk of the profile
+    pub regularisation_scale: FLT_0D,
+    /// How the bulk of the profile is regularised
+    /// One of: "second_derivative_zero"
+    pub regularisation_mode: STR_0D,
+    /// The boundary condition at psi_n = 0, the magnetic axis
+    /// One of: "free", "dirichlet", "neumann"
+    pub left_boundary_condition: STR_0D,
+    /// Weight of the boundary condition at psi_n = 0. Not used when it is free
+    pub left_boundary_weight: FLT_0D,
+    /// The boundary condition at psi_n = 1, the plasma boundary
+    /// One of: "free", "dirichlet", "neumann"
+    pub right_boundary_condition: STR_0D,
+    /// Weight of the boundary condition at psi_n = 1. Not used when it is free
+    pub right_boundary_weight: FLT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedRegularisationBuilder {
+    fn default() -> Self {
+        Self {
+            regularisation_scale: f64::NAN,
+            regularisation_mode: String::new(),
+            left_boundary_condition: String::new(),
+            left_boundary_weight: f64::NAN,
+            right_boundary_condition: String::new(),
+            right_boundary_weight: f64::NAN,
+        }
+    }
+}
+
+/// The ff' source function: ff' = f df/dpsi, with f = R B_phi, is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_ff_prime.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedSourceFunctionFfPrime {
+    /// The basis functions to use. Their settings are in the element of the same name, below
+    /// One of: "efit_polynomial", "tensioned_cubic_b_spline"
+    pub method: STR_0D,
+    /// Settings for EFIT's polynomials
+    /// Optional in the settings: unset when it is left out
+    pub efit_polynomial: EquilibriumCodeParametersParsedEfitPolynomial,
+    /// Settings for the tensioned cubic B-splines
+    /// Optional in the settings: unset when it is left out
+    pub tensioned_cubic_b_spline: EquilibriumCodeParametersParsedTensionedCubicBSpline,
+}
+
+/// The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/passive_dof_regularisation.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedPassiveDofRegularisation {
+    /// One passive structure
+    /// Optional in the settings: unset when it is left out
+    pub passive: Vec<EquilibriumCodeParametersParsedPassive>,
+}
+
+/// The degrees of freedom of one passive structure's current, and their regularisation
+/// Generated from the XML schema type `Passive`, in `python/gsfit/settings_schema/xsd/equilibrium/passive_dof_regularisation.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedPassive {
+    /// The passive's name in the database, e.g. "IVC"
+    pub name: STR_0D,
+    /// How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code
+    /// One of: "constant_current_density", "eig"
+    pub current_distribution_type: STR_0D,
+    /// Whether the passive is included. Not read at present
+    pub include: INT_0D,
+    /// Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig
+    pub n_dof: INT_0D,
+    /// The regularisations, one `row` of n_dof coefficients each; no rows for none
+    /// Shape [n_rows, n_columns], one row per `row` element
+    pub regularisations: FLT_2D,
+    /// The weight of each regularisation in the fit: one per `row` of `regularisations`
+    pub regularisations_weight: FLT_1D,
+}
+
+impl Default for EquilibriumCodeParametersParsedPassive {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            current_distribution_type: String::new(),
+            include: EMPTY_INT,
+            n_dof: EMPTY_INT,
+            regularisations: Default::default(),
+            regularisations_weight: Default::default(),
+        }
+    }
+}
+
+/// The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+/// Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedEquilibriumConstraints {
+    /// How each poloidal field probe (Mirnov coil) is fitted. IMAS: equilibrium time_slice[:]/constraints/b_field_pol_probe[:]
+    pub b_field_pol_probe: EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe,
+    /// How each flux loop is fitted. IMAS: equilibrium time_slice[:]/constraints/flux_loop[:]
+    pub flux_loop: EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop,
+    /// How each Rogowski coil is fitted. IMAS: magnetics rogowski_coil[:]; the equilibrium IDS has no Rogowski coil constraint
+    pub rogowski_coil: EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil,
+    /// How the diamagnetic loop is fitted. IMAS: equilibrium time_slice[:]/constraints/diamagnetic_flux
+    pub diamagnetic_flux: EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux,
+    /// The isoflux constraints: pairs of points on the same flux surface. Not in the IMAS Data Dictionary
+    pub isoflux: EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux,
+    /// Whether pressure is fitted, and how the pressure constraints are made. IMAS: equilibrium time_slice[:]/constraints/pressure[:]
+    pub pressure: EquilibriumCodeParametersParsedEquilibriumConstraintsPressure,
+}
+
+/// Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe.
+/// A probe read by the `database_reader` which is not listed here is not included in the fit.
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe {
+    /// Fitting settings for one probe.
+    /// Optional in the settings: unset when it is left out
+    pub b_field_pol_probe: Vec<EquilibriumCodeParametersParsedBFieldPolProbe>,
+}
+
+/// Fitting settings for one probe.
+/// Generated from the XML schema type `b_field_pol_probe`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_b_field_pol_probe.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedBFieldPolProbe {
+    /// Name of the probe, e.g. `P101`.
+    /// Must be unique, and match the name read by the `database_reader`.
+    pub name: STR_0D,
+    /// Free-text comment, e.g. on the quality of the signal; may be empty.
+    pub comment: STR_0D,
+    /// Expected magnitude of the measurement, used to normalise the measurement.
+    /// Units: tesla
+    pub expected_value: FLT_0D,
+    /// Whether to include the probe in the fit.
+    pub include: INT_0D,
+    /// Relative weight of the probe in the fit.
+    /// Units: dimensionless
+    pub weight: FLT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedBFieldPolProbe {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            comment: String::new(),
+            expected_value: f64::NAN,
+            include: EMPTY_INT,
+            weight: f64::NAN,
+        }
+    }
+}
+
+/// How each flux loop is fitted, one `flux_loop` per loop. A loop the database has but this file does not list is not fitted, and a listed loop the database does not have is ignored
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop {
+    /// One flux loop, which measures the poloidal flux
+    /// Optional in the settings: unset when it is left out
+    pub flux_loop: Vec<EquilibriumCodeParametersParsedFluxLoop>,
+}
+
+/// One flux loop, which measures the poloidal flux
+/// Generated from the XML schema type `flux_loop`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_flux_loop.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedFluxLoop {
+    /// The loop's name in the database, e.g. "L001"
+    pub name: STR_0D,
+    /// Expected magnitude of the measurement, used to normalise the measurement.
+    /// Units: Wb
+    pub expected_value: FLT_0D,
+    /// Relative weight of the constraint in the least-squares fit.
+    pub weight: FLT_0D,
+    /// Whether the constraint is fitted
+    pub include: INT_0D,
+    /// Free text, e.g. why the constraint is not included; not used by the fit
+    pub comment: STR_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedFluxLoop {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            expected_value: f64::NAN,
+            weight: f64::NAN,
+            include: EMPTY_INT,
+            comment: String::new(),
+        }
+    }
+}
+
+/// How each Rogowski coil is fitted, one `rogowski_coil` per coil. A coil the database has but this file does not list is not fitted, and a listed coil the database does not have is ignored. Not read by the freegs reader
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil {
+    /// One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses
+    /// Optional in the settings: unset when it is left out
+    pub rogowski_coil: Vec<EquilibriumCodeParametersParsedRogowskiCoil>,
+}
+
+/// One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses
+/// Generated from the XML schema type `rogowski_coil`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_rogowski_coil.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedRogowskiCoil {
+    /// The coil's name in the database, e.g. "INIVC000" or "BVLT"
+    pub name: STR_0D,
+    /// The typical size of the coil's measurement. The fit divides the residual by it
+    /// Units: A
+    pub expected_value: FLT_0D,
+    /// Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+    pub weight: FLT_0D,
+    /// Whether the constraint is fitted
+    pub include: INT_0D,
+    /// Free text, e.g. why the constraint is not included; not used by the fit
+    pub comment: STR_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedRogowskiCoil {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            expected_value: f64::NAN,
+            weight: f64::NAN,
+            include: EMPTY_INT,
+            comment: String::new(),
+        }
+    }
+}
+
+/// How the diamagnetic loop is fitted: a `diamagnetic_flux` named DIALOOP, or none. With none it is not fitted. Only read by the st40_mdsplus and st40_mdsplus_with_digital_filter readers
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsDiamagneticFlux {
+    /// The diamagnetic loop, which measures the toroidal flux from the plasma
+    /// Optional in the settings: unset when it is left out
+    pub diamagnetic_flux: EquilibriumCodeParametersParsedDiamagneticFlux,
+}
+
+/// The diamagnetic loop, which measures the toroidal flux from the plasma
+/// Generated from the XML schema type `diamagnetic_flux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_diamagnetic_flux.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedDiamagneticFlux {
+    /// The loop's name, which the readers expect to be "DIALOOP"
+    pub name: STR_0D,
+    /// The typical size of the loop's measured diamagnetic flux. The fit divides the residual by it
+    /// Units: Wb
+    pub expected_value: FLT_0D,
+    /// Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+    pub weight: FLT_0D,
+    /// Whether the constraint is fitted
+    pub include: INT_0D,
+    /// Free text, e.g. why the constraint is not included; not used by the fit
+    pub comment: STR_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedDiamagneticFlux {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            expected_value: f64::NAN,
+            weight: f64::NAN,
+            include: EMPTY_INT,
+            comment: String::new(),
+        }
+    }
+}
+
+/// The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux {
+    /// One isoflux constraint
+    /// Optional in the settings: unset when it is left out
+    pub isoflux: Vec<EquilibriumCodeParametersParsedIsoflux>,
+}
+
+/// One isoflux constraint
+/// Generated from the XML schema type `isoflux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedIsoflux {
+    /// The constraint's name
+    pub name: STR_0D,
+    /// The typical size of the flux difference between the two points. The fit divides the residual by it
+    pub expected_value: FLT_0D,
+    /// Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+    pub weight: FLT_0D,
+    /// Whether the constraint is fitted
+    pub include: INT_0D,
+    /// Free text, e.g. why the constraint is not included; not used by the fit
+    pub comment: STR_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedIsoflux {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            expected_value: f64::NAN,
+            weight: f64::NAN,
+            include: EMPTY_INT,
+            comment: String::new(),
+        }
+    }
+}
+
+/// Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this
+/// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsPressure {
+    /// Whether pressure is fitted, and how the pressure constraints are made
+    pub pressure: EquilibriumCodeParametersParsedPressure,
+}
+
+/// Whether pressure is fitted, and how the pressure constraints are made
+/// Generated from the XML schema type `Pressure`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedPressure {
+    /// Whether to fit pressure. When false, nothing else in this file is read
+    pub include: INT_0D,
+    /// The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true
+    /// Optional in the settings: unset when it is left out
+    pub sensor_name_prefix: STR_0D,
+    /// The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead
+    /// Optional in the settings: unset when it is left out
+    /// Units: Pa
+    pub expected_value: FLT_0D,
+    /// Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true
+    /// Optional in the settings: unset when it is left out
+    pub weight: FLT_0D,
+    /// Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true
+    /// Optional in the settings: unset when it is left out
+    pub comment: STR_0D,
+    /// Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true
+    /// Optional in the settings: unset when it is left out
+    pub thomson_scattering: EquilibriumCodeParametersParsedPressureThomsonScattering,
+    /// Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true
+    /// Optional in the settings: unset when it is left out
+    pub synthetic: EquilibriumCodeParametersParsedSynthetic,
+}
+
+impl Default for EquilibriumCodeParametersParsedPressure {
+    fn default() -> Self {
+        Self {
+            include: EMPTY_INT,
+            sensor_name_prefix: String::new(),
+            expected_value: f64::NAN,
+            weight: f64::NAN,
+            comment: String::new(),
+            thomson_scattering: EquilibriumCodeParametersParsedPressureThomsonScattering::default(),
+            synthetic: EquilibriumCodeParametersParsedSynthetic::default(),
+        }
+    }
+}
+
+/// Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader
+/// Generated from the XML schema type `PressureThomsonScattering`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedPressureThomsonScattering {
+    /// Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature
+    pub pressure_multiplier: FLT_0D,
+    /// Total pressures at or below this are ignored. A channel with none above it gets no constraint
+    /// Units: Pa
+    pub minimum_pressure: FLT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedPressureThomsonScattering {
+    fn default() -> Self {
+        Self {
+            pressure_multiplier: f64::NAN,
+            minimum_pressure: f64::NAN,
+        }
+    }
+}
+
+/// Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader
+/// Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
+#[derive(Debug, Clone)]
+pub struct EquilibriumCodeParametersParsedSynthetic {
+    /// Major radius of the first sensor, relative to the magnetic axis
+    /// Units: m
+    pub r_start: FLT_0D,
+    /// Major radius of the last sensor, relative to the magnetic axis
+    /// Units: m
+    pub r_end: FLT_0D,
+    /// Number of sensors, evenly spaced from r_start to r_end
+    pub n_sensors: INT_0D,
+    /// Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint
+    /// Units: Pa
+    pub minimum_pressure: FLT_0D,
+}
+
+impl Default for EquilibriumCodeParametersParsedSynthetic {
+    fn default() -> Self {
+        Self {
+            r_start: f64::NAN,
+            r_end: f64::NAN,
+            n_sensors: EMPTY_INT,
+            minimum_pressure: f64::NAN,
+        }
+    }
 }
 
 // ============================================================================
@@ -4550,6 +5096,326 @@ impl Named for EquilibriumLimiterUnit {
     }
 }
 
+// --- EquilibriumCodeParametersParsedPassive View Types ---
+
+/// View over multiple EquilibriumCodeParametersParsedPassive with field accumulation
+pub struct EquilibriumCodeParametersParsedPassiveSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumCodeParametersParsedPassive, STR_0D, D>,
+    pub current_distribution_type: Accumulator<'a, EquilibriumCodeParametersParsedPassive, STR_0D, D>,
+    pub include: Accumulator<'a, EquilibriumCodeParametersParsedPassive, INT_0D, D>,
+    pub n_dof: Accumulator<'a, EquilibriumCodeParametersParsedPassive, INT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumCodeParametersParsedPassive, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumCodeParametersParsedPassiveSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumCodeParametersParsedPassive, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedPassive| item.name.clone()),
+            current_distribution_type: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedPassive| {
+                item.current_distribution_type.clone()
+            }),
+            include: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedPassive| item.include),
+            n_dof: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedPassive| item.n_dof),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumCodeParametersParsedPassive> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumCodeParametersParsedPassive {
+    type SliceView<'a, D>
+        = EquilibriumCodeParametersParsedPassiveSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumCodeParametersParsedPassiveSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumCodeParametersParsedPassive {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- EquilibriumCodeParametersParsedBFieldPolProbe View Types ---
+
+/// View over multiple EquilibriumCodeParametersParsedBFieldPolProbe with field accumulation
+pub struct EquilibriumCodeParametersParsedBFieldPolProbeSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumCodeParametersParsedBFieldPolProbe, STR_0D, D>,
+    pub comment: Accumulator<'a, EquilibriumCodeParametersParsedBFieldPolProbe, STR_0D, D>,
+    pub expected_value: Accumulator<'a, EquilibriumCodeParametersParsedBFieldPolProbe, FLT_0D, D>,
+    pub include: Accumulator<'a, EquilibriumCodeParametersParsedBFieldPolProbe, INT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumCodeParametersParsedBFieldPolProbe, FLT_0D, D>,
+    slice_elements: Elements<'a, EquilibriumCodeParametersParsedBFieldPolProbe, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumCodeParametersParsedBFieldPolProbeSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumCodeParametersParsedBFieldPolProbe, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedBFieldPolProbe| item.name.clone()),
+            comment: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedBFieldPolProbe| item.comment.clone()),
+            expected_value: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedBFieldPolProbe| item.expected_value),
+            include: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedBFieldPolProbe| item.include),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedBFieldPolProbe| item.weight),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumCodeParametersParsedBFieldPolProbe> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumCodeParametersParsedBFieldPolProbe {
+    type SliceView<'a, D>
+        = EquilibriumCodeParametersParsedBFieldPolProbeSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumCodeParametersParsedBFieldPolProbeSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumCodeParametersParsedBFieldPolProbe {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- EquilibriumCodeParametersParsedFluxLoop View Types ---
+
+/// View over multiple EquilibriumCodeParametersParsedFluxLoop with field accumulation
+pub struct EquilibriumCodeParametersParsedFluxLoopSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumCodeParametersParsedFluxLoop, STR_0D, D>,
+    pub expected_value: Accumulator<'a, EquilibriumCodeParametersParsedFluxLoop, FLT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumCodeParametersParsedFluxLoop, FLT_0D, D>,
+    pub include: Accumulator<'a, EquilibriumCodeParametersParsedFluxLoop, INT_0D, D>,
+    pub comment: Accumulator<'a, EquilibriumCodeParametersParsedFluxLoop, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumCodeParametersParsedFluxLoop, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumCodeParametersParsedFluxLoopSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumCodeParametersParsedFluxLoop, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedFluxLoop| item.name.clone()),
+            expected_value: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedFluxLoop| item.expected_value),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedFluxLoop| item.weight),
+            include: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedFluxLoop| item.include),
+            comment: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedFluxLoop| item.comment.clone()),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumCodeParametersParsedFluxLoop> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumCodeParametersParsedFluxLoop {
+    type SliceView<'a, D>
+        = EquilibriumCodeParametersParsedFluxLoopSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumCodeParametersParsedFluxLoopSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumCodeParametersParsedFluxLoop {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- EquilibriumCodeParametersParsedRogowskiCoil View Types ---
+
+/// View over multiple EquilibriumCodeParametersParsedRogowskiCoil with field accumulation
+pub struct EquilibriumCodeParametersParsedRogowskiCoilSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumCodeParametersParsedRogowskiCoil, STR_0D, D>,
+    pub expected_value: Accumulator<'a, EquilibriumCodeParametersParsedRogowskiCoil, FLT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumCodeParametersParsedRogowskiCoil, FLT_0D, D>,
+    pub include: Accumulator<'a, EquilibriumCodeParametersParsedRogowskiCoil, INT_0D, D>,
+    pub comment: Accumulator<'a, EquilibriumCodeParametersParsedRogowskiCoil, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumCodeParametersParsedRogowskiCoil, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumCodeParametersParsedRogowskiCoilSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumCodeParametersParsedRogowskiCoil, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedRogowskiCoil| item.name.clone()),
+            expected_value: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedRogowskiCoil| item.expected_value),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedRogowskiCoil| item.weight),
+            include: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedRogowskiCoil| item.include),
+            comment: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedRogowskiCoil| item.comment.clone()),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumCodeParametersParsedRogowskiCoil> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumCodeParametersParsedRogowskiCoil {
+    type SliceView<'a, D>
+        = EquilibriumCodeParametersParsedRogowskiCoilSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumCodeParametersParsedRogowskiCoilSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumCodeParametersParsedRogowskiCoil {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- EquilibriumCodeParametersParsedIsoflux View Types ---
+
+/// View over multiple EquilibriumCodeParametersParsedIsoflux with field accumulation
+pub struct EquilibriumCodeParametersParsedIsofluxSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumCodeParametersParsedIsoflux, STR_0D, D>,
+    pub expected_value: Accumulator<'a, EquilibriumCodeParametersParsedIsoflux, FLT_0D, D>,
+    pub weight: Accumulator<'a, EquilibriumCodeParametersParsedIsoflux, FLT_0D, D>,
+    pub include: Accumulator<'a, EquilibriumCodeParametersParsedIsoflux, INT_0D, D>,
+    pub comment: Accumulator<'a, EquilibriumCodeParametersParsedIsoflux, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumCodeParametersParsedIsoflux, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumCodeParametersParsedIsofluxSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumCodeParametersParsedIsoflux, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedIsoflux| item.name.clone()),
+            expected_value: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedIsoflux| item.expected_value),
+            weight: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedIsoflux| item.weight),
+            include: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedIsoflux| item.include),
+            comment: Accumulator::new(elements.clone(), |item: &EquilibriumCodeParametersParsedIsoflux| item.comment.clone()),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumCodeParametersParsedIsoflux> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumCodeParametersParsedIsoflux {
+    type SliceView<'a, D>
+        = EquilibriumCodeParametersParsedIsofluxSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumCodeParametersParsedIsofluxSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumCodeParametersParsedIsoflux {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 // --- EquilibriumGgdArray View Types ---
 
 /// View over multiple EquilibriumGgdArray with field accumulation
@@ -6566,6 +7432,101 @@ impl EquilibriumLimiter {
     /// Get the number of unit elements
     pub fn unit_len(&self) -> usize {
         self.unit.len()
+    }
+}
+
+impl EquilibriumCodeParametersParsedPassiveDofRegularisation {
+    /// Select from `passive`. A range, e.g. `.passive(0..2)` or `.passive(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.passive(name)`, gives the one element with that `name`.
+    /// A single element is `.passive[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn passive<'a, S: Selection<'a, EquilibriumCodeParametersParsedPassive>>(&'a self, selection: S) -> S::Output {
+        selection.select("passive", &self.passive)
+    }
+
+    /// Get the number of passive elements
+    pub fn passive_len(&self) -> usize {
+        self.passive.len()
+    }
+}
+
+impl EquilibriumCodeParametersParsedEquilibriumConstraintsBFieldPolProbe {
+    /// Select from `b_field_pol_probe`. A range, e.g. `.b_field_pol_probe(0..2)` or `.b_field_pol_probe(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.b_field_pol_probe(name)`, gives the one element with that `name`.
+    /// A single element is `.b_field_pol_probe[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn b_field_pol_probe<'a, S: Selection<'a, EquilibriumCodeParametersParsedBFieldPolProbe>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_pol_probe", &self.b_field_pol_probe)
+    }
+
+    /// Get the number of b_field_pol_probe elements
+    pub fn b_field_pol_probe_len(&self) -> usize {
+        self.b_field_pol_probe.len()
+    }
+}
+
+impl EquilibriumCodeParametersParsedEquilibriumConstraintsFluxLoop {
+    /// Select from `flux_loop`. A range, e.g. `.flux_loop(0..2)` or `.flux_loop(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.flux_loop(name)`, gives the one element with that `name`.
+    /// A single element is `.flux_loop[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn flux_loop<'a, S: Selection<'a, EquilibriumCodeParametersParsedFluxLoop>>(&'a self, selection: S) -> S::Output {
+        selection.select("flux_loop", &self.flux_loop)
+    }
+
+    /// Get the number of flux_loop elements
+    pub fn flux_loop_len(&self) -> usize {
+        self.flux_loop.len()
+    }
+}
+
+impl EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoil {
+    /// Select from `rogowski_coil`. A range, e.g. `.rogowski_coil(0..2)` or `.rogowski_coil(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.rogowski_coil(name)`, gives the one element with that `name`.
+    /// A single element is `.rogowski_coil[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn rogowski_coil<'a, S: Selection<'a, EquilibriumCodeParametersParsedRogowskiCoil>>(&'a self, selection: S) -> S::Output {
+        selection.select("rogowski_coil", &self.rogowski_coil)
+    }
+
+    /// Get the number of rogowski_coil elements
+    pub fn rogowski_coil_len(&self) -> usize {
+        self.rogowski_coil.len()
+    }
+}
+
+impl EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux {
+    /// Select from `isoflux`. A range, e.g. `.isoflux(0..2)` or `.isoflux(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.isoflux(name)`, gives the one element with that `name`.
+    /// A single element is `.isoflux[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn isoflux<'a, S: Selection<'a, EquilibriumCodeParametersParsedIsoflux>>(&'a self, selection: S) -> S::Output {
+        selection.select("isoflux", &self.isoflux)
+    }
+
+    /// Get the number of isoflux elements
+    pub fn isoflux_len(&self) -> usize {
+        self.isoflux.len()
     }
 }
 

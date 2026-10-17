@@ -85,7 +85,7 @@ struct PicardUpdate {
     magnetic_axis: (f64, f64),
 }
 
-/// The settings of the Newton-Picard iterations, from `code/numerics/nonlinear_solver/newton_picard`
+/// The settings of the Newton-Picard iterations, from `code/parameters_parsed/numerics/nonlinear_solver/newton_picard`
 struct NewtonPicardSettings {
     n_basis_max: usize,
     contraction_threshold: f64,
@@ -146,14 +146,26 @@ impl Subspace {
 /// Solve with Newton-Picard iterations; see the module documentation.
 pub(crate) fn solve(solver: &mut EquilibriumSolver) {
     // Solver settings, supplied through `equilibrium.code`
-    let n_iter_max: usize = solver.equilibrium_code.numerics.iterations.n_max as usize;
-    let n_iter_min: usize = solver.equilibrium_code.numerics.iterations.n_min as usize;
-    let grad_shafranov_deviation_tolerance: f64 = solver.equilibrium_code.numerics.grad_shafranov_deviation_tolerance;
+    let n_iter_max: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_max as usize;
+    let n_iter_min: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_min as usize;
+    let grad_shafranov_deviation_tolerance: f64 = solver.equilibrium_code.parameters_parsed.numerics.grad_shafranov_deviation_tolerance;
     let settings: NewtonPicardSettings = NewtonPicardSettings {
-        n_basis_max: solver.equilibrium_code.numerics.nonlinear_solver.newton_picard.n_basis_max as usize,
-        contraction_threshold: solver.equilibrium_code.numerics.nonlinear_solver.newton_picard.contraction_threshold,
-        finite_difference_step: solver.equilibrium_code.numerics.nonlinear_solver.newton_picard.finite_difference_step,
-        verbose: solver.equilibrium_code.numerics.nonlinear_solver.newton_picard.verbose != 0,
+        n_basis_max: solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.newton_picard.n_basis_max as usize,
+        contraction_threshold: solver
+            .equilibrium_code
+            .parameters_parsed
+            .numerics
+            .nonlinear_solver
+            .newton_picard
+            .contraction_threshold,
+        finite_difference_step: solver
+            .equilibrium_code
+            .parameters_parsed
+            .numerics
+            .nonlinear_solver
+            .newton_picard
+            .finite_difference_step,
+        verbose: solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.newton_picard.verbose != 0,
     };
 
     // The passive currents and the initial current density
@@ -462,8 +474,8 @@ fn get_state(solver: &EquilibriumSolver) -> Array1<f64> {
 /// Put the unscaled state `x` back into the time-slice, with no vertical shift, and with the
 /// magnetic axis search to start from `magnetic_axis_start`; the reverse of `get_state`
 fn set_state(solver: &mut EquilibriumSolver, x: &Array1<f64>, magnetic_axis_start: (f64, f64)) {
-    let n_r: usize = solver.equilibrium_code.grid.n_r as usize;
-    let n_z: usize = solver.equilibrium_code.grid.n_z as usize;
+    let n_r: usize = solver.equilibrium_code.parameters_parsed.grid.n_r as usize;
+    let n_z: usize = solver.equilibrium_code.parameters_parsed.grid.n_z as usize;
     let n_grid: usize = n_z * n_r;
     let n_passive_dof: usize = solver.passive_dof_values.len();
 

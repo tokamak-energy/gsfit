@@ -6,7 +6,7 @@ from ..gsfit import Gsfit
 
 
 def plot(gsfit_controller: Gsfit, ax: matplotlib.axes.Axes, time_desired: float, color: str = "blue", linestyle: str = "solid") -> None:
-    plasma = gsfit_controller.plasma
+    plasma = gsfit_controller.equilibrium
 
     time = plasma.get(ep.time_slice[:].time)
     i_time = int(np.argmin(np.abs(time - time_desired)))

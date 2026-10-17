@@ -19,16 +19,28 @@
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="constraints__rogowski_coil">
-        <xs:annotation><xs:documentation>How each Rogowski coil is fitted, one `rogowski_coil` per coil. A coil the database has but this file does not list is not fitted, and a listed coil the database does not have is ignored. Not read by the freegs reader</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                How each Rogowski coil is fitted, one `rogowski_coil` per coil. A coil the database has but this file does not list is not fitted, and a listed coil the database does not have is ignored. Not read by the freegs reader
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="rogowski_coil" type="rogowski_coil" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation><xs:documentation>One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
             </xs:sequence>
         </xs:complexType>
         <xs:unique name="constraints_rogowski_coil_unique_name">
-            <xs:annotation><xs:documentation>Each rogowski_coil is listed at most once</xs:documentation></xs:annotation>
+            <xs:annotation>
+                <xs:documentation>
+                    Each rogowski_coil is listed at most once
+                </xs:documentation>
+            </xs:annotation>
             <xs:selector xpath="rogowski_coil"/>
             <xs:field xpath="name"/>
         </xs:unique>
@@ -37,14 +49,22 @@
     <!-- ================================= Other simple types ================================= -->
 
     <xs:simpleType name="Name">
-        <xs:annotation><xs:documentation>A name, with no spaces</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A name, with no spaces
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:pattern value="\S+"/>
         </xs:restriction>
     </xs:simpleType>
 
     <xs:simpleType name="NonNegativeDouble">
-        <xs:annotation><xs:documentation>A number greater than or equal to 0</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A number greater than or equal to 0
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:double">
             <xs:minInclusive value="0.0"/>
         </xs:restriction>
@@ -53,14 +73,24 @@
     <!-- ================================= Complex types ================================= -->
 
     <xs:complexType name="rogowski_coil">
-        <xs:annotation><xs:documentation>One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses
+            </xs:documentation>
+        </xs:annotation>
         <xs:all>
             <xs:element name="name" type="Name">
-                <xs:annotation><xs:documentation>The coil's name in the database, e.g. "INIVC000" or "BVLT"</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The coil's name in the database, e.g. "INIVC000" or "BVLT"
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="expected_value" type="xs:double">
                 <xs:annotation>
-                    <xs:documentation>The typical size of the coil's measurement. The fit divides the residual by it</xs:documentation>
+                    <xs:documentation>
+                        The typical size of the coil's measurement. The fit divides the residual by it
+                    </xs:documentation>
                     <xs:appinfo>
                         <units>A</units>
                     </xs:appinfo>
@@ -68,17 +98,27 @@
             </xs:element>
             <xs:element name="weight" type="NonNegativeDouble">
                 <xs:annotation>
-                    <xs:documentation>Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value</xs:documentation>
+                    <xs:documentation>
+                        Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+                    </xs:documentation>
                     <xs:appinfo>
                         <units>1</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
             <xs:element name="include" type="xs:boolean">
-                <xs:annotation><xs:documentation>Whether the constraint is fitted</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Whether the constraint is fitted
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="comment" type="xs:string">
-                <xs:annotation><xs:documentation>Free text, e.g. why the constraint is not included; not used by the fit</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Free text, e.g. why the constraint is not included; not used by the fit
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
         </xs:all>
     </xs:complexType>

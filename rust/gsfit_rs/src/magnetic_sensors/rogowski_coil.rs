@@ -1,10 +1,10 @@
 //! `magnetics/rogowski_coil(i1)`: the Rogowski coils, with the custom key `gaps(i2)`
 
+use crate::equilibrium::Equilibrium;
 use crate::greens::Greens;
 use crate::magnetics::Magnetics;
 use crate::pf_active::PfActive;
 use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
-use crate::plasma::Plasma;
 use geo::{Contains, Coord, LineString, Point, Polygon};
 use imas_rs::ids::magnetics::{MagneticsRogowski, MagneticsRogowskiGaps, Rphiz0dStatic, SignalFlt1dValidity};
 use imas_rs::ids::pf_active::PfCoils;
@@ -260,7 +260,7 @@ impl Magnetics {
 }
 
 /// Rust only methods, copying the Rogowski coils into the equilibrium IDS
-impl Plasma {
+impl Equilibrium {
     /// Copy the Rogowski coils' currents from the magnetics IDS onto every time-slice of the equilibrium IDS, as
     /// `equilibrium/time_slice(itime)/constraints/rogowski_coil(i1)`, a custom key. This does part of the work of the Python method
     /// `copy_from_magnetics_ids`; see it for what is stored.
@@ -269,18 +269,55 @@ impl Plasma {
     /// * `magnetics` - the magnetic sensors, holding the Rogowski coils in `magnetics/rogowski_coil`
     ///
     /// # Errors
-    /// Why a Rogowski coil's current cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
+    /// A Rogowski coil in the fit settings, `code/parameters_parsed/constraints/rogowski_coil`, is not in the magnetics IDS, or a Rogowski coil's
+    /// measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
     pub fn copy_from_magnetics_ids_rogowski_coil(&mut self, magnetics: &Magnetics) -> Result<(), String> {
         let rogowski_coils: &Vec<MagneticsRogowski> = &magnetics.magnetics_ids.rogowski_coil;
         let n_rogowski_coil: usize = rogowski_coils.len();
 
+        // Only the Rogowski coils in the fit settings, `code/parameters_parsed/constraints/rogowski_coil`, are copied, and each of them has to
+        // be in the magnetics IDS. Checked before anything is copied
+        let settings_names: Vec<String> = self
+            .equilibrium_ids
+            .code
+            .parameters_parsed
+            .constraints
+            .rogowski_coil
+            .rogowski_coil(..)
+            .name
+            .to_vec();
+        let settings_weights: Array1<f64> = self
+            .equilibrium_ids
+            .code
+            .parameters_parsed
+            .constraints
+            .rogowski_coil
+            .rogowski_coil(..)
+            .weight
+            .to_array();
+        let n_settings: usize = settings_names.len();
+        for i_settings in 0..n_settings {
+            let settings_name: &str = &settings_names[i_settings];
+            if !rogowski_coils
+                .iter()
+                .any(|magnetics_sensor: &MagneticsRogowski| magnetics_sensor.name == settings_name)
+            {
+                return Err(format!(
+                    "`{settings_name}` is in the fit settings, `code/parameters_parsed/constraints/rogowski_coil`, but not in the magnetics IDS, `magnetics/rogowski_coil`"
+                ));
+            }
+        }
+
         // Each Rogowski coil's current is on the experimental timebase, so it is interpolated onto the times of the time-slices
-        // `Plasma::new` allocated
+        // `Equilibrium::new` allocated
         let times_to_reconstruct: Array1<f64> = self.equilibrium_ids.time_slice(..).time.to_array();
         let n_time: usize = times_to_reconstruct.len();
         let mut current_measured: Array2<f64> = Array2::from_elem((n_time, n_rogowski_coil), f64::NAN); // shape = (n_time, n_rogowski_coil)
         for i_rogowski_coil in 0..n_rogowski_coil {
             let rogowski_coil_name: &str = &rogowski_coils[i_rogowski_coil].name;
+            if !settings_names.iter().any(|settings_name: &String| settings_name.as_str() == rogowski_coil_name) {
+                continue;
+            }
             let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(
                 rogowski_coils[i_rogowski_coil].current.time.clone(),
                 rogowski_coils[i_rogowski_coil].current.data.clone(),
@@ -296,17 +333,36 @@ impl Plasma {
             current_measured.slice_mut(s![.., i_rogowski_coil]).assign(&measured);
         }
 
-        // Assigned rather than appended, so that calling this twice replaces the Rogowski coils instead of repeating them
+        // Rebuilt from the Rogowski coils in the fit settings, in the order of the magnetics IDS, so that calling this twice replaces them
+        // instead of repeating them. Each keeps the constraint `Equilibrium::new` made from its fit settings, with its `weight`, found by
+        // its name
         for i_time in 0..n_time {
-            let mut rogowski_coil_constraints: Vec<EquilibriumConstraints0dIpLike> = Vec::with_capacity(n_rogowski_coil);
+            let mut settings_constraints: Vec<EquilibriumConstraints0dIpLike> =
+                std::mem::take(&mut self.equilibrium_ids.time_slice[i_time].constraints.rogowski_coil);
+            let mut rogowski_coil_constraints: Vec<EquilibriumConstraints0dIpLike> = Vec::with_capacity(n_settings);
             for i_rogowski_coil in 0..n_rogowski_coil {
-                rogowski_coil_constraints.push(EquilibriumConstraints0dIpLike {
-                    name: rogowski_coils[i_rogowski_coil].name.clone(),
-                    measured: current_measured[[i_time, i_rogowski_coil]],
-                    source: format!("magnetics/rogowski_coil({i_rogowski_coil})/current"),
-                    time_measurement: times_to_reconstruct[i_time],
-                    ..Default::default()
-                });
+                let rogowski_coil_name: &str = &rogowski_coils[i_rogowski_coil].name;
+                let Some(i_settings) = settings_names
+                    .iter()
+                    .position(|settings_name: &String| settings_name.as_str() == rogowski_coil_name)
+                else {
+                    continue;
+                };
+                let mut constraint: EquilibriumConstraints0dIpLike = match settings_constraints
+                    .iter()
+                    .position(|settings_constraint: &EquilibriumConstraints0dIpLike| settings_constraint.name == rogowski_coil_name)
+                {
+                    Some(i_settings_constraint) => settings_constraints.swap_remove(i_settings_constraint),
+                    None => EquilibriumConstraints0dIpLike {
+                        name: rogowski_coil_name.to_string(),
+                        weight: settings_weights[i_settings],
+                        ..Default::default()
+                    },
+                };
+                constraint.measured = current_measured[[i_time, i_rogowski_coil]];
+                constraint.source = format!("magnetics/rogowski_coil({i_rogowski_coil})/current");
+                constraint.time_measurement = times_to_reconstruct[i_time];
+                rogowski_coil_constraints.push(constraint);
             }
             self.equilibrium_ids.time_slice[i_time].constraints.rogowski_coil = rogowski_coil_constraints;
         }
@@ -316,10 +372,11 @@ impl Plasma {
 }
 
 /// Rust only methods, calculating the Rogowski coils' Greens tables
-impl Plasma {
-    /// Calculate the Rogowski coils' Greens tables, `equilibrium/greens/rogowski_coil(i1)`, one for each coil in
-    /// `magnetics/rogowski_coil`, in the same order. This does part of the work of the Python method `greens_with_magnetics`; see
-    /// it for what is stored, and for the checks on `pf_active` and `pf_passive`.
+impl Equilibrium {
+    /// Calculate the Rogowski coils' Greens tables, `equilibrium/greens/rogowski_coil(i1)`, one for each coil in the fit settings,
+    /// `code/parameters_parsed/constraints/rogowski_coil`, in the order of `magnetics/rogowski_coil`. This does part of the work of the
+    /// Python method `greens_with_magnetics`; see it for what is stored, and for the checks on `pf_active`, `pf_passive` and the fit
+    /// settings.
     ///
     /// Each table is the current the coil measures: the current inside its contour, `position`, less `integral(b . d_l) / mu_0`
     /// along each of its gaps, from the gap's start to its end. A grid cell, or a conductor's filament, is inside when its centre
@@ -333,11 +390,23 @@ impl Plasma {
         let rogowski_coils: &Vec<MagneticsRogowski> = &magnetics.magnetics_ids.rogowski_coil;
         let n_rogowski_coil: usize = rogowski_coils.len();
 
+        // Only the Rogowski coils in the fit settings, `code/parameters_parsed/constraints/rogowski_coil`, which `copy_from_magnetics_ids` copies,
+        // have Greens tables. `greens_with_magnetics` checked that each of them is in the magnetics IDS
+        let settings_names: Vec<String> = self
+            .equilibrium_ids
+            .code
+            .parameters_parsed
+            .constraints
+            .rogowski_coil
+            .rogowski_coil(..)
+            .name
+            .to_vec();
+
         // The grid. `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)` because GSFit solves
         // on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives
         // the flattened grid
-        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
+        let n_r: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_z as usize;
         let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let grid_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
@@ -371,6 +440,12 @@ impl Plasma {
 
         let mut greens_rogowski_coils: Vec<EquilibriumGreensRogowskiCoil> = Vec::with_capacity(n_rogowski_coil);
         for i_rogowski_coil in 0..n_rogowski_coil {
+            if !settings_names
+                .iter()
+                .any(|settings_name: &String| *settings_name == rogowski_coils[i_rogowski_coil].name)
+            {
+                continue;
+            }
             // The coil's contour, which `Polygon` closes
             let positions: &Vec<Rphiz0dStatic> = &rogowski_coils[i_rogowski_coil].position;
             let n_position: usize = positions.len();

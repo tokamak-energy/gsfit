@@ -1,7 +1,7 @@
 //! `magnetics/ip(i1)`: the plasma current, one for each method of calculating it
 
+use crate::equilibrium::Equilibrium;
 use crate::magnetics::Magnetics;
-use crate::plasma::Plasma;
 use imas_rs::EquilibriumConstraints0dIpLike;
 use imas_rs::ids::magnetics::MagneticsMethodDistinct;
 use ndarray::Array1;
@@ -82,7 +82,7 @@ impl Magnetics {
 }
 
 /// Rust only methods, copying the plasma current into the equilibrium IDS
-impl Plasma {
+impl Equilibrium {
     /// Copy the plasma current from the magnetics IDS onto every time-slice of the equilibrium IDS, as
     /// `equilibrium/time_slice(itime)/constraints/ip`. This does part of the work of the Python method `copy_from_magnetics_ids`;
     /// see it for what is stored.
@@ -108,7 +108,7 @@ impl Plasma {
             return Ok(());
         }
 
-        // The plasma current is on the experimental timebase, so it is interpolated onto the times of the time-slices `Plasma::new`
+        // The plasma current is on the experimental timebase, so it is interpolated onto the times of the time-slices `Equilibrium::new`
         // allocated
         let method_name: &str = &ip_methods[0].method_name;
         let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(ip_methods[0].time.clone(), ip_methods[0].data.clone())

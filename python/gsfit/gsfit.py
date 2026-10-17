@@ -45,17 +45,13 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
     # The dataclass which `GSFIT_code_settings.xml`, and the XML files it links to, are read into, as `self.settings_xml`
     settings_xml_class = GsfitCodeSettings
 
+    equilibrium: gsfit_rs.Equilibrium
     pf_active: gsfit_rs.PfActive
     pf_passive: gsfit_rs.PfPassive
-    plasma: gsfit_rs.Plasma
-    bp_probes: gsfit_rs.BpProbes
-    flux_loops: gsfit_rs.FluxLoops
-    rogowski_coils: gsfit_rs.RogowskiCoils
     isoflux: gsfit_rs.Isoflux
     isoflux_boundary: gsfit_rs.IsofluxBoundary
     pressure_sensors: gsfit_rs.Pressure
     stationary_point: gsfit_rs.StationaryPoint
-    dialoop: gsfit_rs.Dialoop
     tf: gsfit_rs.Tf
     wall: gsfit_rs.Wall
 
@@ -101,7 +97,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         2. Set the environment variables
         3. Setup the timeslices to reconstruct
         4. Read in all the machine settings and initalise the following Rust implementations:
-            `pf_active`, `pf_passive`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+            `equilibrium`, `pf_active`, `pf_passive`, `tf`, `wall`, `magnetics`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
             and the optional `pulse_schedule`
         5. Initialise the Greens functions
         6. Solve the GS equation
@@ -127,7 +123,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         self.setup_timeslices()
 
         # Read in all the machine settings and initalise the following Rust implementations:
-        # `pf_active`, `pf_passive`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+        # `equilibrium`, `pf_active`, `pf_passive`, `tf`, `wall`, `magnetics`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
         # and the optional `pulse_schedule`
         self.setup_objects(**kwargs)
 
@@ -264,29 +260,21 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         """
 
         # Extract objects from class
-        plasma = self.plasma
-        bp_probes = self.bp_probes
-        flux_loops = self.flux_loops
-        rogowski_coils = self.rogowski_coils
+        equilibrium = self.equilibrium
         isoflux = self.isoflux
         isoflux_boundary = self.isoflux_boundary
         pressure_sensors = self.pressure_sensors
         stationary_point = self.stationary_point
-        dialoop = self.dialoop
 
         self.logger.info(msg="About to call: `gsfit_rs.solve_grad_shafranov`")
-        # Note: the solution to the GS equation is stored inside: `plasma`, `bp_probes`, `flux_loops`, and `rogowski_coils`
+        # Note: the solution to the GS equation is stored inside `equilibrium`
         tic = time_py.time()
         gsfit_rs.solve_grad_shafranov(
-            plasma,
-            bp_probes,
-            flux_loops,
-            rogowski_coils,
+            equilibrium,
             isoflux,
             isoflux_boundary,
             pressure_sensors,
             stationary_point,
-            dialoop,
         )
         toc = time_py.time()
         self.logger.info(msg=f"Finished: `gsfit_rs.solve_inverse_problem` time = {(toc - tic) * 1e3:,.2f}ms")
@@ -300,10 +288,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         magnetics = self.magnetics
         pf_active = self.pf_active
         pf_passive = self.pf_passive
-        plasma = self.plasma
-        bp_probes = self.bp_probes
-        flux_loops = self.flux_loops
-        rogowski_coils = self.rogowski_coils
+        equilibrium = self.equilibrium
         isoflux = self.isoflux
         isoflux_boundary = self.isoflux_boundary
         pressure_sensors = self.pressure_sensors
@@ -311,10 +296,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
 
         # Greens with the PF coils
         tic = time_py.time()
-        plasma.greens_with_pf_active(pf_active)
-        bp_probes.greens_with_pf_active(pf_active)
-        flux_loops.greens_with_pf_active(pf_active)
-        rogowski_coils.greens_with_pf_active(pf_active)
+        equilibrium.greens_with_pf_active(pf_active)
         isoflux.greens_with_pf_active(pf_active)
         isoflux_boundary.greens_with_pf_active(pf_active)
         pressure_sensors.greens_with_pf_active(pf_active)
@@ -324,10 +306,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
 
         # Greens with the passive conductors
         tic = time_py.time()
-        plasma.greens_with_pf_passive(pf_passive)
-        bp_probes.greens_with_pf_passive(pf_passive)
-        flux_loops.greens_with_pf_passive(pf_passive)
-        rogowski_coils.greens_with_pf_passive(pf_passive)
+        equilibrium.greens_with_pf_passive(pf_passive)
         isoflux.greens_with_pf_passive(pf_passive)
         isoflux_boundary.greens_with_pf_passive(pf_passive)
         pressure_sensors.greens_with_pf_passive(pf_passive)
@@ -338,26 +317,23 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         # Greens of the magnetic sensors, with the plasma, the PF coils and the passive conductors. The PF coils and the passive
         # conductors are in the order of the Greens tables above, so these come after them
         tic = time_py.time()
-        plasma.greens_with_magnetics(magnetics, pf_active, pf_passive)
+        equilibrium.greens_with_magnetics(magnetics, pf_active, pf_passive)
         toc = time_py.time()
         self.logger.info(f"Finished Greens of the magnetic sensors;  {(toc - tic) * 1e3:,.2f}ms")
 
         # Greens with plasma
         tic = time_py.time()
-        bp_probes.greens_with_plasma(plasma)
-        flux_loops.greens_with_plasma(plasma)
-        rogowski_coils.greens_with_plasma(plasma)
-        isoflux.greens_with_plasma(plasma)
-        isoflux_boundary.greens_with_plasma(plasma)
-        pressure_sensors.greens_with_plasma(plasma)
-        stationary_point.greens_with_plasma(plasma)
+        isoflux.greens_with_plasma(equilibrium)
+        isoflux_boundary.greens_with_plasma(equilibrium)
+        pressure_sensors.greens_with_plasma(equilibrium)
+        stationary_point.greens_with_plasma(equilibrium)
         toc = time_py.time()
         self.logger.info(f"Finished Greens with plasma;  {(toc - tic) * 1e3:,.2f}ms")
 
     def setup_objects(self, **kwargs: dict[str, typing.Any]) -> None:
         """
         Initialises the Rust objects needed to run the GSFit inverse solver:
-        `pf_active`, `pf_passive`, `plasma`, `tf`, `wall`, `bp_probes`, `flux_loops`, `rogowski_coils`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
+        `equilibrium`, `pf_active`, `pf_passive`, `tf`, `wall`, `magnetics`, `isoflux`, `isoflux_boundary`, and `stationary_point`,
         and the optional `pulse_schedule`, which is `None` unless the `database_reader` implements `setup_pulse_schedule`
 
         Different machines will use different data stores (e.g. MDSplus, or FreeGNSKE object).
@@ -371,6 +347,12 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         database_reader_method = self.settings_xml.database_reader.method
         database_reader = get_database_reader(database_reader_method)
         settings_xml = self.settings_xml
+
+        # `equilibrium` is in IDS structure, built from its settings alone
+        tic = time_py.time()
+        self.equilibrium = database_reader.setup_equilibrium(pulseNo=self.pulseNo, settings=settings_xml.ids.equilibrium, **kwargs)
+        toc = time_py.time()
+        self.logger.info(msg=f"`equilibrium` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
         # `wall` is in IDS structure
         tic = time_py.time()
@@ -403,27 +385,6 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         toc = time_py.time()
         self.logger.info(msg=f"`pf_active` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # TODO: change to `magnetics`
-        tic = time_py.time()
-        self.bp_probes = database_reader.setup_bp_probes(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, settings_bp_probes=self.settings_xml.ids.equilibrium.constraints.b_field_pol_probe, **kwargs)
-        toc = time_py.time()
-        self.logger.info(msg=f"`bp_probes` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
-        tic = time_py.time()
-        self.flux_loops = database_reader.setup_flux_loops(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, settings_flux_loops=self.settings_xml.ids.equilibrium.constraints.flux_loop, **kwargs)
-        toc = time_py.time()
-        self.logger.info(msg=f"`flux_loops` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
-        tic = time_py.time()
-        self.rogowski_coils = database_reader.setup_rogowski_coils(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, settings_rogowski_coils=self.settings_xml.ids.equilibrium.constraints.rogowski_coil, **kwargs)
-        toc = time_py.time()
-        self.logger.info(msg=f"`rogowski_coils` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
-        tic = time_py.time()
-        self.dialoop = database_reader.setup_dialoop(pulseNo=self.pulseNo, settings=self.settings_xml.ids.magnetics, settings_dialoop=self.settings_xml.ids.equilibrium.constraints.diamagnetic_flux, **kwargs)
-        toc = time_py.time()
-        self.logger.info(msg=f"`dialoop` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
         times_to_reconstruct = self.results["TIME"]
 
         tic = time_py.time()
@@ -454,29 +415,21 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         toc = time_py.time()
         self.logger.info(msg=f"`stationary_point` initialised;  {(toc - tic) * 1e3:,.2f}ms")
 
-        # TODO: change to `equilibrium` IDS
-        tic = time_py.time()
-        self.plasma = database_reader.setup_plasma(
-            pulseNo=self.pulseNo, settings=self.settings_xml.ids.equilibrium, times_to_reconstruct=times_to_reconstruct, **kwargs
-        )
-        toc = time_py.time()
-        self.logger.info(msg=f"`plasma` initialised;  {(toc - tic) * 1e3:,.2f}ms")
-
-        # Copy IDS data into the plasma object
-        self.plasma.copy_from_wall_ids(self.wall)
-        self.plasma.copy_from_tf_ids(self.tf)
-        self.plasma.copy_from_pf_active_ids(self.pf_active)
-        self.plasma.copy_from_pf_passive_ids(self.pf_passive)
+        # Copy IDS data into the equilibrium
+        self.equilibrium.copy_from_wall_ids(self.wall)
+        self.equilibrium.copy_from_tf_ids(self.tf)
+        self.equilibrium.copy_from_pf_active_ids(self.pf_active)
+        self.equilibrium.copy_from_pf_passive_ids(self.pf_passive)
         # `pulse_schedule` is optional. Only copy it in if it is not None
         if self.pulse_schedule is not None:
             # is this ever None?
-            self.plasma.copy_from_pulse_schedule_ids(self.pulse_schedule)
+            self.equilibrium.copy_from_pulse_schedule_ids(self.pulse_schedule)
 
         self.magnetics = database_reader.setup_magnetics(
             pulseNo=self.pulseNo,
             settings=self.settings_xml.ids.magnetics,
         )
 
-        self.plasma.copy_from_magnetics_ids(self.magnetics)
+        self.equilibrium.copy_from_magnetics_ids(self.magnetics)
 
         # import pdb; pdb.set_trace()

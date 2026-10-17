@@ -21,7 +21,7 @@ def add_to_magnetics_diamagnetic_flux(
 
     Not every pulse has a DIALOOP run. When MDSplus cannot read it, nothing is added, and the reconstruction runs without the diamagnetic flux.
 
-    The diamagnetic loop's path, which `Dialoop` keeps for reference only, is not added: `magnetics/diamagnetic_flux` has no node for it.
+    The diamagnetic loop's path is not added: `magnetics/diamagnetic_flux` has no node for it.
     """
 
     # Measured signal: \DIALOOP::TOP.<run_name>.GLOBAL:PHI_DIA

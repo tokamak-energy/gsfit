@@ -202,24 +202,20 @@ def map_results_to_database(
 
     # Take class object out of the `gsfit_controller` object
     pulseNo = gsfit_controller.pulseNo
-    plasma = gsfit_controller.plasma
-    bp_probes = gsfit_controller.bp_probes
-    flux_loops = gsfit_controller.flux_loops
-    dialoop = gsfit_controller.dialoop
-    rogowski_coils = gsfit_controller.rogowski_coils
+    equilibrium = gsfit_controller.equilibrium
     pf_passive = gsfit_controller.pf_passive
     pressure_sensors = gsfit_controller.pressure_sensors
     results = gsfit_controller.results
 
     # Everything below comes out of the `equilibrium` IDS through the (MDSplus path, IMAS path)
-    # tables at the top of this file. `plasma.get` reads in place, so reading quantity by quantity
+    # tables at the top of this file. `equilibrium.get` reads in place, so reading quantity by quantity
     # costs nothing extra
 
     for mdsplus_path, imas_path in _TIME_SERIES_PATH_PAIRS:
-        _assign(results, mdsplus_path, plasma.get(imas_path))
+        _assign(results, mdsplus_path, equilibrium.get(imas_path))
 
     for mdsplus_path, imas_path in _TIME_INDEPENDENT_PATH_PAIRS:
-        _assign(results, mdsplus_path, np.asarray(plasma.get(imas_path))[0])
+        _assign(results, mdsplus_path, np.asarray(equilibrium.get(imas_path))[0])
 
     # The rest need something done to them on the way out, so they are not in the tables
 
@@ -241,7 +237,7 @@ def map_results_to_database(
     n_time: int = len(results["TIME"])
     contour_tree_node_n: npt.NDArray[np.int32] = np.zeros(n_time, dtype=np.int32)
     for i_time in range(n_time):
-        contour_tree_node_n[i_time] = len(plasma.get(ep.time_slice[i_time].contour_tree.node[:].r))
+        contour_tree_node_n[i_time] = len(equilibrium.get(ep.time_slice[i_time].contour_tree.node[:].r))
     n_node_max: int = int(np.max(contour_tree_node_n, initial=0))
     contour_tree_node_critical_type: npt.NDArray[np.float64] = np.full((n_time, n_node_max), np.nan)
     contour_tree_node_psi: npt.NDArray[np.float64] = np.full((n_time, n_node_max), np.nan)
@@ -249,10 +245,10 @@ def map_results_to_database(
     contour_tree_node_z: npt.NDArray[np.float64] = np.full((n_time, n_node_max), np.nan)
     for i_time in range(n_time):
         n_node: int = int(contour_tree_node_n[i_time])
-        contour_tree_node_critical_type[i_time, :n_node] = plasma.get(ep.time_slice[i_time].contour_tree.node[:].critical_type)
-        contour_tree_node_psi[i_time, :n_node] = plasma.get(ep.time_slice[i_time].contour_tree.node[:].psi)
-        contour_tree_node_r[i_time, :n_node] = plasma.get(ep.time_slice[i_time].contour_tree.node[:].r)
-        contour_tree_node_z[i_time, :n_node] = plasma.get(ep.time_slice[i_time].contour_tree.node[:].z)
+        contour_tree_node_critical_type[i_time, :n_node] = equilibrium.get(ep.time_slice[i_time].contour_tree.node[:].critical_type)
+        contour_tree_node_psi[i_time, :n_node] = equilibrium.get(ep.time_slice[i_time].contour_tree.node[:].psi)
+        contour_tree_node_r[i_time, :n_node] = equilibrium.get(ep.time_slice[i_time].contour_tree.node[:].r)
+        contour_tree_node_z[i_time, :n_node] = equilibrium.get(ep.time_slice[i_time].contour_tree.node[:].z)
     results["CONTOUR_TREE"]["NODE"]["CRIT_TYPE"] = contour_tree_node_critical_type  # shape = [n_time, n_node_max]
     results["CONTOUR_TREE"]["NODE"]["N"] = contour_tree_node_n  # shape = [n_time]
     results["CONTOUR_TREE"]["NODE"]["PSI"] = contour_tree_node_psi  # shape = [n_time, n_node_max]
@@ -274,7 +270,7 @@ def map_results_to_database(
     levelset_leg_names_above_axis: list[str] = ["LFS_UPPER", "HFS_UPPER", "LFS_LOWER", "HFS_LOWER"]
     levelset_leg_names_below_axis: list[str] = ["LFS_LOWER", "HFS_LOWER", "LFS_UPPER", "HFS_UPPER"]
     n_levelset: int = len(levelset_leg_names_above_axis)
-    mag_z: npt.NDArray[np.float64] = np.asarray(plasma.get(ep.time_slice[:].global_quantities.magnetic_axis.z))  # shape = [n_time] [metre]
+    mag_z: npt.NDArray[np.float64] = np.asarray(equilibrium.get(ep.time_slice[:].global_quantities.magnetic_axis.z))  # shape = [n_time] [metre]
     # Each leg on each time-slice, without padding; empty on a time-slice without legs
     secondary_xpt_leg_r: dict[str, list[npt.NDArray[np.float64]]] = {}  # [metre]
     secondary_xpt_leg_z: dict[str, list[npt.NDArray[np.float64]]] = {}  # [metre]
@@ -285,7 +281,7 @@ def map_results_to_database(
         n_node = int(contour_tree_node_n[i_time])
         for i_node in range(n_node):
             # One row per contour, the shorter ones padded with NaN; no rows for a node without a `levelset`
-            levelset_r: npt.NDArray[np.float64] = np.asarray(plasma.get(ep.time_slice[i_time].contour_tree.node[i_node].levelset[:].r))  # [metre]
+            levelset_r: npt.NDArray[np.float64] = np.asarray(equilibrium.get(ep.time_slice[i_time].contour_tree.node[i_node].levelset[:].r))  # [metre]
             if levelset_r.shape[0] == 0:
                 continue
             if levelset_r.shape[0] != n_levelset:
@@ -293,8 +289,8 @@ def map_results_to_database(
                     f"`time_slice({i_time})/contour_tree/node({i_node})/levelset` has {levelset_r.shape[0]} contours, but the secondary "
                     f"X-point has {n_levelset} legs: see `contour_tree/node_levelset__r__z.rs`"
                 )
-            levelset_z: npt.NDArray[np.float64] = np.asarray(plasma.get(ep.time_slice[i_time].contour_tree.node[i_node].levelset[:].z))  # [metre]
-            secondary_xpt_z: float = plasma.get(ep.time_slice[i_time].contour_tree.node[i_node].z)  # [metre]
+            levelset_z: npt.NDArray[np.float64] = np.asarray(equilibrium.get(ep.time_slice[i_time].contour_tree.node[i_node].levelset[:].z))  # [metre]
+            secondary_xpt_z: float = equilibrium.get(ep.time_slice[i_time].contour_tree.node[i_node].z)  # [metre]
             if secondary_xpt_z > mag_z[i_time]:
                 levelset_leg_names: list[str] = levelset_leg_names_above_axis
             else:
@@ -321,76 +317,99 @@ def map_results_to_database(
 
     # The data dictionary defines `beta_tor` as a fraction, but this MDSplus node has always held a
     # percentage, so the factor of 100 is put back here rather than changing what consumers read
-    results["GLOBAL"]["BETA_T"] = 100.0 * np.asarray(plasma.get(ep.time_slice[:].global_quantities.beta_tor))
+    results["GLOBAL"]["BETA_T"] = 100.0 * np.asarray(equilibrium.get(ep.time_slice[:].global_quantities.beta_tor))
 
     # The rod current is not a data dictionary node. It is recovered from the vacuum toroidal
     # field, `f_vac = r0 * b0 = mu_0 * i_rod / (2 * pi)`
-    r0 = plasma.get(ep.vacuum_toroidal_field.r0)
-    b0 = np.asarray(plasma.get(ep.vacuum_toroidal_field.b0))
+    r0 = equilibrium.get(ep.vacuum_toroidal_field.r0)
+    b0 = np.asarray(equilibrium.get(ep.vacuum_toroidal_field.b0))
     results["GLOBAL"]["I_ROD"] = 2.0 * np.pi * r0 * b0 / mu_0
 
 
     # The magnetic sensors, from `constraints/b_field_pol_probe`, `constraints/flux_loop` and `constraints/rogowski_coil`, which
-    # `Plasma.copy_from_magnetics_ids` filled on every time-slice with every sensor, in the order of the magnetics IDS: `measured`, the
-    # measurement interpolated onto the time-slice's time, and `reconstructed`, the reconstruction's value of it.
-    # Whether each sensor is fitted, and its weight, are still read from the sensor objects
-    b_field_pol_probe_names: npt.NDArray[np.str_] = plasma.get(ep.time_slice[0].constraints.b_field_pol_probe[:].name)
+    # `Equilibrium.copy_from_magnetics_ids` filled on every time-slice with each sensor in the fit settings, in the order of the magnetics IDS:
+    # `measured`, the measurement interpolated onto the time-slice's time, `reconstructed`, the reconstruction's value of it, and `weight`,
+    # which `Equilibrium` set from the fit settings. MDSplus holds one weight for each sensor, so the first time-slice's is written.
+    # Whether each sensor is fitted is its fit settings' `include`, in `code/parameters_parsed/constraints`
+    b_field_pol_probe_include: dict[str, np.int32] = {}
+    settings_names: npt.NDArray[np.str_] = equilibrium.get(ep.code.parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe[:].name)
+    settings_include: npt.NDArray[np.int32] = equilibrium.get(ep.code.parameters_parsed.constraints.b_field_pol_probe.b_field_pol_probe[:].include)
+    n_settings: int = len(settings_names)
+    for i_settings in range(n_settings):
+        b_field_pol_probe_include[str(settings_names[i_settings])] = np.int32(settings_include[i_settings] == 1)
+    b_field_pol_probe_names: npt.NDArray[np.str_] = equilibrium.get(ep.time_slice[0].constraints.b_field_pol_probe[:].name)
+    b_field_pol_probe_weight: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[0].constraints.b_field_pol_probe[:].weight)
     # shape = [n_time, n_b_field_pol_probe]
-    b_field_pol_probe_measured: npt.NDArray[np.float64] = plasma.get(ep.time_slice[:].constraints.b_field_pol_probe[:].measured)
-    b_field_pol_probe_reconstructed: npt.NDArray[np.float64] = plasma.get(ep.time_slice[:].constraints.b_field_pol_probe[:].reconstructed)
+    b_field_pol_probe_measured: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.b_field_pol_probe[:].measured)
+    b_field_pol_probe_reconstructed: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.b_field_pol_probe[:].reconstructed)
     n_b_field_pol_probe: int = len(b_field_pol_probe_names)
     for i_b_field_pol_probe in range(n_b_field_pol_probe):
         sensor_name: str = str(b_field_pol_probe_names[i_b_field_pol_probe])
         # results["CONSTRAINTS"]["BP_PROBE"][pf_name]["EXACT"]
-        results["CONSTRAINTS"]["BP_PROBE"][sensor_name]["INCLUDE"] = np.int32(bp_probes.get_bool([sensor_name, "fit_settings", "include"]))
+        results["CONSTRAINTS"]["BP_PROBE"][sensor_name]["INCLUDE"] = b_field_pol_probe_include[sensor_name]
         results["CONSTRAINTS"]["BP_PROBE"][sensor_name]["MEASURED"] = b_field_pol_probe_measured[:, i_b_field_pol_probe]
         results["CONSTRAINTS"]["BP_PROBE"][sensor_name]["RECONSTRUCT"] = b_field_pol_probe_reconstructed[:, i_b_field_pol_probe]
-        results["CONSTRAINTS"]["BP_PROBE"][sensor_name]["WEIGHT"] = bp_probes.get_f64([sensor_name, "fit_settings", "weight"])
+        results["CONSTRAINTS"]["BP_PROBE"][sensor_name]["WEIGHT"] = float(b_field_pol_probe_weight[i_b_field_pol_probe])
 
-    flux_loop_names: npt.NDArray[np.str_] = plasma.get(ep.time_slice[0].constraints.flux_loop[:].name)
+    flux_loop_include: dict[str, np.int32] = {}
+    settings_names = equilibrium.get(ep.code.parameters_parsed.constraints.flux_loop.flux_loop[:].name)
+    settings_include = equilibrium.get(ep.code.parameters_parsed.constraints.flux_loop.flux_loop[:].include)
+    n_settings = len(settings_names)
+    for i_settings in range(n_settings):
+        flux_loop_include[str(settings_names[i_settings])] = np.int32(settings_include[i_settings] == 1)
+    flux_loop_names: npt.NDArray[np.str_] = equilibrium.get(ep.time_slice[0].constraints.flux_loop[:].name)
+    flux_loop_weight: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[0].constraints.flux_loop[:].weight)
     # shape = [n_time, n_flux_loop]
-    flux_loop_measured: npt.NDArray[np.float64] = plasma.get(ep.time_slice[:].constraints.flux_loop[:].measured)
-    flux_loop_reconstructed: npt.NDArray[np.float64] = plasma.get(ep.time_slice[:].constraints.flux_loop[:].reconstructed)
+    flux_loop_measured: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.flux_loop[:].measured)
+    flux_loop_reconstructed: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.flux_loop[:].reconstructed)
     n_flux_loop: int = len(flux_loop_names)
     for i_flux_loop in range(n_flux_loop):
         sensor_name = str(flux_loop_names[i_flux_loop])
         # results["CONSTRAINTS"]["FLUX_LOOP"][pf_name]["EXACT"]
-        results["CONSTRAINTS"]["FLUX_LOOP"][sensor_name]["INCLUDE"] = np.int32(flux_loops.get_bool([sensor_name, "fit_settings", "include"]))
+        results["CONSTRAINTS"]["FLUX_LOOP"][sensor_name]["INCLUDE"] = flux_loop_include[sensor_name]
         results["CONSTRAINTS"]["FLUX_LOOP"][sensor_name]["MEASURED"] = flux_loop_measured[:, i_flux_loop]
         results["CONSTRAINTS"]["FLUX_LOOP"][sensor_name]["RECONSTRUCT"] = flux_loop_reconstructed[:, i_flux_loop]
-        results["CONSTRAINTS"]["FLUX_LOOP"][sensor_name]["WEIGHT"] = flux_loops.get_f64([sensor_name, "fit_settings", "weight"])
+        results["CONSTRAINTS"]["FLUX_LOOP"][sensor_name]["WEIGHT"] = float(flux_loop_weight[i_flux_loop])
 
-    rogowski_coil_names: npt.NDArray[np.str_] = plasma.get(ep.time_slice[0].constraints.rogowski_coil[:].name)
+    rogowski_coil_include: dict[str, np.int32] = {}
+    settings_names = equilibrium.get(ep.code.parameters_parsed.constraints.rogowski_coil.rogowski_coil[:].name)
+    settings_include = equilibrium.get(ep.code.parameters_parsed.constraints.rogowski_coil.rogowski_coil[:].include)
+    n_settings = len(settings_names)
+    for i_settings in range(n_settings):
+        rogowski_coil_include[str(settings_names[i_settings])] = np.int32(settings_include[i_settings] == 1)
+    rogowski_coil_names: npt.NDArray[np.str_] = equilibrium.get(ep.time_slice[0].constraints.rogowski_coil[:].name)
+    rogowski_coil_weight: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[0].constraints.rogowski_coil[:].weight)
     # shape = [n_time, n_rogowski_coil]
-    rogowski_coil_measured: npt.NDArray[np.float64] = plasma.get(ep.time_slice[:].constraints.rogowski_coil[:].measured)
-    rogowski_coil_reconstructed: npt.NDArray[np.float64] = plasma.get(ep.time_slice[:].constraints.rogowski_coil[:].reconstructed)
+    rogowski_coil_measured: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.rogowski_coil[:].measured)
+    rogowski_coil_reconstructed: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].constraints.rogowski_coil[:].reconstructed)
     n_rogowski_coil: int = len(rogowski_coil_names)
     for i_rogowski_coil in range(n_rogowski_coil):
         sensor_name = str(rogowski_coil_names[i_rogowski_coil])
         # results["CONSTRAINTS"]["ROGOWSKI"][pf_name]["EXACT"]
-        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["INCLUDE"] = np.int32(rogowski_coils.get_bool([sensor_name, "fit_settings", "include"]))
+        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["INCLUDE"] = rogowski_coil_include[sensor_name]
         results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["MEASURED"] = rogowski_coil_measured[:, i_rogowski_coil]
         results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["RECONSTRUCT"] = rogowski_coil_reconstructed[:, i_rogowski_coil]
-        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["WEIGHT"] = rogowski_coils.get_f64([sensor_name, "fit_settings", "weight"])
+        results["CONSTRAINTS"]["ROGOWSKI"][sensor_name]["WEIGHT"] = float(rogowski_coil_weight[i_rogowski_coil])
 
     # Diamagnetic flux (single diamagnetic flux loop "DIALOOP"), from `constraints/diamagnetic_flux`, whose `reconstructed` the equilibrium
-    # post-processor calculates. Its name is empty when the magnetics IDS has no diamagnetic flux, e.g. on a pulse without a DIALOOP run
-    diamagnetic_flux_name: str = str(plasma.get(ep.time_slice[0].constraints.diamagnetic_flux.name))
+    # post-processor calculates. Its name is empty when the fit settings have no diamagnetic flux
+    diamagnetic_flux_name: str = str(equilibrium.get(ep.time_slice[0].constraints.diamagnetic_flux.name))
     if diamagnetic_flux_name != "":
-        results["CONSTRAINTS"]["DIAMAG_FLUX"]["INCLUDE"] = np.int32(dialoop.get_bool([diamagnetic_flux_name, "fit_settings", "include"]))
-        results["CONSTRAINTS"]["DIAMAG_FLUX"]["MEASURED"] = plasma.get(ep.time_slice[:].constraints.diamagnetic_flux.measured)
-        results["CONSTRAINTS"]["DIAMAG_FLUX"]["RECONSTRUCT"] = plasma.get(ep.time_slice[:].constraints.diamagnetic_flux.reconstructed)
-        results["CONSTRAINTS"]["DIAMAG_FLUX"]["WEIGHT"] = dialoop.get_f64([diamagnetic_flux_name, "fit_settings", "weight"])
+        diamagnetic_flux_include: int = equilibrium.get(ep.code.parameters_parsed.constraints.diamagnetic_flux.diamagnetic_flux.include)
+        results["CONSTRAINTS"]["DIAMAG_FLUX"]["INCLUDE"] = np.int32(diamagnetic_flux_include == 1)
+        results["CONSTRAINTS"]["DIAMAG_FLUX"]["MEASURED"] = equilibrium.get(ep.time_slice[:].constraints.diamagnetic_flux.measured)
+        results["CONSTRAINTS"]["DIAMAG_FLUX"]["RECONSTRUCT"] = equilibrium.get(ep.time_slice[:].constraints.diamagnetic_flux.reconstructed)
+        results["CONSTRAINTS"]["DIAMAG_FLUX"]["WEIGHT"] = float(equilibrium.get(ep.time_slice[0].constraints.diamagnetic_flux.weight))
 
-    # The PF coil currents, from `constraints/pf_current`, which `Plasma.copy_from_pf_active_ids` filled on every time-slice
-    pf_current_names = [str(pf_name) for pf_name in plasma.get(ep.time_slice[0].constraints.pf_current[:].name)]
-    pf_current_measured = plasma.get(ep.time_slice[:].constraints.pf_current[:].measured)  # shape = (n_time, n_pf)
+    # The PF coil currents, from `constraints/pf_current`, which `Equilibrium.copy_from_pf_active_ids` filled on every time-slice
+    pf_current_names = [str(pf_name) for pf_name in equilibrium.get(ep.time_slice[0].constraints.pf_current[:].name)]
+    pf_current_measured = equilibrium.get(ep.time_slice[:].constraints.pf_current[:].measured)  # shape = (n_time, n_pf)
     for i_pf, pf_name in enumerate(pf_current_names):
         # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["EXACT"]
         # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["INCLUDE"]
         results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["MEASURED"] = pf_current_measured[:, i_pf]
-        # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["RECONSTRUCT"] = plasma.get(ep.time_slice[:].constraints.pf_current[i_pf].reconstructed)
-        # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["WEIGHT"] = plasma.get(ep.time_slice[:].constraints.pf_current[i_pf].weight)
+        # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["RECONSTRUCT"] = equilibrium.get(ep.time_slice[:].constraints.pf_current[i_pf].reconstructed)
+        # results["CONSTRAINTS"]["PF_CURRENT"][pf_name]["WEIGHT"] = equilibrium.get(ep.time_slice[:].constraints.pf_current[i_pf].weight)
     # TODO: need to handle circuits vs coils better
     results["CONSTRAINTS"]["PF_CURRENT"]["BVL"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("BVLT")]
     results["CONSTRAINTS"]["PF_CURRENT"]["DIV"]["MEASURED"] = pf_current_measured[:, pf_current_names.index("DIVT")]
@@ -400,7 +419,7 @@ def map_results_to_database(
     # distributions, and the geometry of its filaments.
     # The fitted amplitudes are each time-slice's `passive_dof_values`, NaN on a time-slice which failed. They follow the Greens tables,
     # `greens/grid/pf_passive`, which are in the order of `pf_passive/loop`, and then of `loop(i1)/dof`
-    passive_dof_values: npt.NDArray[np.float64] = plasma.get(ep.time_slice[:].passive_dof_values)  # shape = [n_time, n_dof_total]
+    passive_dof_values: npt.NDArray[np.float64] = equilibrium.get(ep.time_slice[:].passive_dof_values)  # shape = [n_time, n_dof_total]
     n_loop: int = len(pf_passive.get(pp.loop[:].name))
     i_dof_total: int = 0
     for i_loop in range(n_loop):

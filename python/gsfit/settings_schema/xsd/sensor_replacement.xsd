@@ -10,35 +10,63 @@
     <!-- ================================= Other simple types ================================= -->
 
     <xs:simpleType name="Name">
-        <xs:annotation><xs:documentation>A name, with no spaces</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A name, with no spaces
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:pattern value="\S+"/>
         </xs:restriction>
     </xs:simpleType>
 
     <xs:simpleType name="NameList">
-        <xs:annotation><xs:documentation>A list of names, written space-separated, e.g. "V_FLOOP_007 V_FLOOP_009"</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A list of names, written space-separated, e.g. "V_FLOOP_007 V_FLOOP_009"
+            </xs:documentation>
+        </xs:annotation>
         <xs:list itemType="Name"/>
     </xs:simpleType>
 
     <xs:simpleType name="DoubleList">
-        <xs:annotation><xs:documentation>An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"
+            </xs:documentation>
+        </xs:annotation>
         <xs:list itemType="xs:double"/>
     </xs:simpleType>
 
     <!-- ================================= Complex types ================================= -->
 
     <xs:complexType name="Constraint">
-        <xs:annotation><xs:documentation>A constraint which RTGSFit makes from other sensors: the sum over i of coefficients[i] times replacements[i]</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A constraint which RTGSFit makes from other sensors: the sum over i of coefficients[i] times replacements[i]
+            </xs:documentation>
+        </xs:annotation>
         <xs:all>
             <xs:element name="name" type="Name">
-                <xs:annotation><xs:documentation>The constraint's name in RTGSFit, e.g. "I_ROG_DIVPSRB"</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The constraint's name in RTGSFit, e.g. "I_ROG_DIVPSRB"
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="replacements" type="NameList">
-                <xs:annotation><xs:documentation>The PCS sensors the constraint is made from, e.g. "V_FLOOP_024 V_FLOOP_022"</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The PCS sensors the constraint is made from, e.g. "V_FLOOP_024 V_FLOOP_022"
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="coefficients" type="DoubleList">
-                <xs:annotation><xs:documentation>The coefficient of each sensor in `replacements`, in the same order</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The coefficient of each sensor in `replacements`, in the same order
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
         </xs:all>
     </xs:complexType>
@@ -46,16 +74,28 @@
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="sensor_replacement">
-        <xs:annotation><xs:documentation>The constraints which RTGSFit makes from other sensors, because the PCS cannot read the constraint's own sensor, one `constraint` each. Every other constraint is read by the PCS directly. Only read by the rtgsfit_mdsplus writer, which builds PRESHOT:SENS_REP_MAT from it</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The constraints which RTGSFit makes from other sensors, because the PCS cannot read the constraint's own sensor, one `constraint` each. Every other constraint is read by the PCS directly. Only read by the rtgsfit_mdsplus writer, which builds PRESHOT:SENS_REP_MAT from it
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="constraint" type="Constraint" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation><xs:documentation>A constraint which RTGSFit makes from other sensors</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            A constraint which RTGSFit makes from other sensors
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
             </xs:sequence>
         </xs:complexType>
         <xs:unique name="sensor_replacement_unique_name">
-            <xs:annotation><xs:documentation>Each constraint is listed at most once</xs:documentation></xs:annotation>
+            <xs:annotation>
+                <xs:documentation>
+                    Each constraint is listed at most once
+                </xs:documentation>
+            </xs:annotation>
             <xs:selector xpath="constraint"/>
             <xs:field xpath="name"/>
         </xs:unique>

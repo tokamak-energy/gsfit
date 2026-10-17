@@ -41,7 +41,7 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     ]
 
     # Get objects out of `gsfit_controller`
-    plasma = gsfit_controller.plasma
+    plasma = gsfit_controller.equilibrium
     passives = gsfit_controller.passives
     flux_loops = gsfit_controller.flux_loops
     bp_probes = gsfit_controller.bp_probes

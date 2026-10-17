@@ -3,18 +3,14 @@ from typing import Protocol
 
 import numpy as np
 import numpy.typing as npt
-from gsfit_rs import BpProbes
-from gsfit_rs import Dialoop
-from gsfit_rs import FluxLoops
+from gsfit_rs import Equilibrium
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
 from gsfit_rs import Magnetics
 from gsfit_rs import PfActive
 from gsfit_rs import PfPassive
-from gsfit_rs import Plasma
 from gsfit_rs import Pressure
 from gsfit_rs import PulseSchedule
-from gsfit_rs import RogowskiCoils
 from gsfit_rs import StationaryPoint
 from gsfit_rs import Tf
 from gsfit_rs import Wall
@@ -32,7 +28,7 @@ class DatabaseReaderProtocol(Protocol):
     """
     Protocol for reading experimental data.
     Each method is responsible for initialising one of the Rust objects:
-    `bp_probes`, `dialoop`, `flux_loops`, `isoflux`, `isoflux_boundary`, `magnetics`, `stationary_point`, `pf_active`, `pf_passive`, `plasma`, `rogowski_coils`, `tf`, and `wall`.
+    `equilibrium`, `isoflux`, `isoflux_boundary`, `magnetics`, `stationary_point`, `pf_active`, `pf_passive`, `tf`, and `wall`.
 
     The Protocol defines the inputs and outputs of each method.
     New database readers should be implemented **all** methods.
@@ -41,43 +37,30 @@ class DatabaseReaderProtocol(Protocol):
     It has a default here, returning `None`, so a reader for a machine with no gaps to measure need not implement it.
     """
 
-    def setup_bp_probes(self, pulseNo: int, settings: MagneticsSettings, **kwargs: dict[str, typing.Any]) -> BpProbes:
+    def setup_equilibrium(self, pulseNo: int, settings: EquilibriumSettings, **kwargs: dict[str, typing.Any]) -> Equilibrium:
         """
-        This method initialises the Rust `BpProbes` class (Mirnov coils with a direction in the poloidal plane).
+        This method initialises the Rust `Equilibrium` class, which holds an IMAS `equilibrium` IDS.
 
         :param pulseNo: Pulse number, used to read from the database
-        :param settings: Dictionary containing the JSON settings read from the `settings` directory
+        :param settings: `EquilibriumSettings` object containing the XML settings read from the `settings` directory
         :param kwargs: Additional objects, such as FreeGNSKE object
 
-        Initialising requires reading data from two locations:
-        1. `sensor_weights_bp_probe.json`: Which contains "fitting parameters", e.g. if a probe should be used in the fitting
-        2. Database reading (e.g. MDSplus, or FreeGNSKE object): Which contains the measurements and probe geometry
+        The equilibrium is built from its settings alone. `equilibrium/code/parameters` holds them as XML: `equilibrium.xml`, with
+        each file it links to written in its link's place. `Equilibrium` reads the XML into `equilibrium/code/parameters_parsed`,
+        e.g. `equilibrium/code/parameters_parsed/grid/n_r`, whose structs are generated from the settings' XML schema, and makes
+        everything else from it: one time-slice per time to reconstruct, each with the grid and the magnetic sensors' weights, the
+        Greens tables between the grid points, `greens/grid/plasma`, and the p' and ff' source functions. So **record all the settings**: a reader which records
+        only some leaves the rest of `code/parameters_parsed` unset.
 
-        Different machines will use different data stores for the probe geometry and measured signals.
-        This Protocol allows different database readers to be selected.
-        The output of this method must always be a `BpProbes` object.
+        The output of this method must always be an `Equilibrium` object.
 
         At a minimum this method should look like this:
         ```python
-        # Initialise the BpProbes Rust class
-        bp_probes = BpProbes()
+        # Initialise the Equilibrium Rust class, with the settings it is built from, which it records in `equilibrium/code/parameters`,
+        # and reads into `equilibrium/code/parameters_parsed`. See `serialise_python_dataclass_to_imas_parameters_input`
+        equilibrium = Equilibrium(parameters_input)
 
-        # Add all of the BP probes
-        for i_bp_probe in range(n_bp_probes):
-            bp_probes.add_sensor(
-                name=...,                         # need to be same in database and `sensor_weights_bp_probe.json` file
-                geometry_angle_pol=...,           # read from a database
-                geometry_r=...,                   # read from a database
-                geometry_z=...,                   # read from a database
-                fit_settings_comment=...,         # read from `sensor_weights_bp_probe.json` file
-                fit_settings_expected_value=...,  # read from `sensor_weights_bp_probe.json` file
-                fit_settings_include=...,         # read from `sensor_weights_bp_probe.json` file
-                fit_settings_weight=...,          # read from `sensor_weights_bp_probe.json` file
-                time=...,                         # read from a database
-                measured=...,                     # read from a database
-            )
-
-        return bp_probes
+        return equilibrium
         ```
         """
         ...
@@ -99,7 +82,7 @@ class DatabaseReaderProtocol(Protocol):
         **Each coil's `name` must be unique**: the sensors and the solver match up the PF coils by name.
 
         **Store the experimental signal**, on its own timebase, not one interpolated onto the reconstruction times.
-        `Plasma.copy_from_pf_active_ids` interpolates it itself, so the timebase must cover every time being reconstructed.
+        `Equilibrium.copy_from_pf_active_ids` interpolates it itself, so the timebase must cover every time being reconstructed.
 
         **`current` is signed**: positive means counter-clockwise viewed from above.
 
@@ -129,84 +112,6 @@ class DatabaseReaderProtocol(Protocol):
             )
 
         return pf_active
-        ```
-        """
-        ...
-
-    def setup_dialoop(self, pulseNo: int, settings: MagneticsSettings, **kwargs: dict[str, typing.Any]) -> Dialoop:
-        """
-        This method initialises the Rust `Dialoop` class (the plasma's diamagnetic flux, with the vaccuum toroidal field subtracted).
-
-        :param pulseNo: Pulse number, used to read from the database
-        :param settings: Dictionary containing the JSON settings read from the `settings` directory
-        :param kwargs: Additional objects, such as FreeGNSKE object
-
-        Initialising requires reading data from two locations:
-        1. `sensor_weights_dialoop.json`: Which contains "fitting parameters", e.g. if a probe should be used in the fitting
-        2. Database reading (e.g. MDSplus, or FreeGNSKE object): Which contains the measurements and the probe geometry
-
-        Different machines will use different data stores for the measured signals.
-        This Protocol allows different database readers to be selected.
-        The output of this method must always be a `Dialoop` object.
-
-        At a minimum this method should look like this:
-        ```python
-        # Initialise the Dialoop Rust class
-        dialoop = Dialoop()
-
-        # Add all of the diamagnetic loops
-        for i_dialoop in range(n_dialoops):
-            dialoop.add_sensor(
-                name=...,                         # read from a database
-                fit_settings_comment=...,         # read from `sensor_weights_dialoop.json` file
-                fit_settings_expected_value=...,  # read from `sensor_weights_dialoop.json` file
-                fit_settings_include=...,         # read from `sensor_weights_dialoop.json` file
-                fit_settings_weight=...,          # read from `sensor_weights_dialoop.json` file
-                time=...,                         # read from a database
-                measured=...,                     # read from a database
-            )
-
-        return dialoop
-        ```
-        """
-        ...
-
-    def setup_flux_loops(self, pulseNo: int, settings: MagneticsSettings, **kwargs: dict[str, typing.Any]) -> FluxLoops:
-        """
-        This method initialises the Rust `FluxLoops` class (loops going in the toroidal direction measuring poloidal flux).
-
-        :param pulseNo: Pulse number, used to read from the database
-        :param settings: Dictionary containing the JSON settings read from the `settings` directory
-        :param kwargs: Additional objects, such as FreeGNSKE object
-
-        Initialising requires reading data from two locations:
-        1. `sensor_weights_flux_loops.json`: Which contains "fitting parameters", e.g. if a probe should be used in the fitting
-        2. Database reading (e.g. MDSplus, or FreeGNSKE object): Which contains the measurements and the probe geometry
-
-        Different machines will use different data stores for the probes geometry and measured signals.
-        This Protocol allows different database readers to be selected.
-        The output of this method must always be a `FluxLoops` object.
-
-        At a minimum this method should look like this:
-        ```python
-        # Initialise the FluxLoops Rust class
-        flux_loops = FluxLoops()
-
-        # Add all of the BP probes
-        for i_flux_loop in range(n_flux_loops):
-            flux_loops.add_sensor(
-                name=...,                         # need to be same in database and `sensor_weights_flux_loops.json` file
-                geometry_r=...,                   # read from a database
-                geometry_z=...,                   # read from a database
-                fit_settings_comment=...,         # read from `sensor_weights_flux_loops.json` file
-                fit_settings_expected_value=...,  # read from `sensor_weights_flux_loops.json` file
-                fit_settings_include=...,         # read from `sensor_weights_flux_loops.json` file
-                fit_settings_weight=...,          # read from `sensor_weights_flux_loops.json` file
-                time=...,                         # read from a database
-                measured=...,                     # read from a database
-            )
-
-        return flux_loops
         ```
         """
         ...
@@ -396,84 +301,6 @@ class DatabaseReaderProtocol(Protocol):
         """
         ...
 
-    def setup_plasma(
-        self, pulseNo: int, settings: EquilibriumSettings, times_to_reconstruct: npt.NDArray[np.float64], **kwargs: dict[str, typing.Any]
-    ) -> Plasma:
-        """
-        This method initialises the Rust `Plasma` class.
-
-        :param pulseNo: Pulse number, used to read from the database
-        :param settings: `EquilibriumSettings` object containing the XML settings read from the `settings` directory
-        :param kwargs: Additional objects, such as FreeGNSKE object
-
-        Initialising requires reading data from three locations:
-        1. `GSFIT_code_settings.json`: Which contains the plasma grid size and the numerical settings the solve is run with
-        2. `source_function_p_prime.json`: Which contains the number of degrees of freedom for p_prime, and regularisation;
-           or, when `exact` is `true`, the fixed `coefficients`
-        3. `source_function_ff_prime.json`: Which contains the number of degrees of freedom for ff_prime, and regularisation;
-           or, when `exact` is `true`, the fixed `coefficients`
-
-        Normally, this method will be the same for all machines.
-
-        The output of this method must always be a `Plasma` object.
-
-        At a minimum this method should look like this:
-        ```python
-        # Initialise the Plasma Rust class
-        p_prime_source_function = gsfit_rs.EfitPolynomial(
-            n_dof=...,            # read from `source_function_p_prime.json` file
-            regularisations=...,  # read from `source_function_p_prime.json` file
-            exact=...,            # read from `source_function_p_prime.json` file (optional, default `False`)
-            coefficients=...,     # read from `source_function_p_prime.json` file (only needed when `exact=True`)
-        )
-        ff_prime_source_function = gsfit_rs.EfitPolynomial(
-            n_dof=...,            # read from `source_function_ff_prime.json` file
-            regularisations=...,  # read from `source_function_ff_prime.json` file
-            exact=...,            # read from `source_function_ff_prime.json` file (optional, default `False`)
-            coefficients=...,     # read from `source_function_ff_prime.json` file (only needed when `exact=True`)
-        )
-
-        # Initialise the Plasma Rust class
-        plasma = Plasma(
-            n_r=...,                                            # read from `GSFIT_code_settings.json` file
-            n_z=...,                                            # read from `GSFIT_code_settings.json` file
-            r_min=...,                                          # read from `GSFIT_code_settings.json` file
-            r_max=...,                                          # read from `GSFIT_code_settings.json` file
-            z_min=...,                                          # read from `GSFIT_code_settings.json` file
-            z_max=...,                                          # read from `GSFIT_code_settings.json` file
-            psi_n=...,                                          # read from `GSFIT_code_settings.json` file
-            p_prime_source_function=p_prime_source_function,    # built above
-            ff_prime_source_function=ff_prime_source_function,  # built above
-            initial_guess_ip=...,                              # read from `GSFIT_code_settings.json` file
-            initial_guess_cur_r=...,                           # read from `GSFIT_code_settings.json` file
-            initial_guess_cur_z=...,                           # read from `GSFIT_code_settings.json` file
-            initial_guess_minor_radius=...,                    # read from `GSFIT_code_settings.json` file
-            initial_guess_elongation=...,                      # read from `GSFIT_code_settings.json` file
-            n_iter_max=...,                                    # read from `GSFIT_code_settings.json` file
-            n_iter_min=...,                                    # read from `GSFIT_code_settings.json` file
-            grad_shafranov_deviation_tolerance=...,            # read from `GSFIT_code_settings.json` file
-            nonlinear_solver_method=...,                       # read from `GSFIT_code_settings.json` file
-            picard_n_iter_no_vertical_feedback=...,            # read from `GSFIT_code_settings.json` file
-            picard_apply_anderson_mixing=...,                  # read from `GSFIT_code_settings.json` file
-            picard_anderson_n_history=...,                     # read from `GSFIT_code_settings.json` file
-            picard_anderson_mixing=...,                        # read from `GSFIT_code_settings.json` file
-            newton_krylov_picard_handover=...,                 # read from `GSFIT_code_settings.json` file
-            newton_krylov_n_krylov_max=...,                    # read from `GSFIT_code_settings.json` file
-            newton_krylov_krylov_tolerance=...,                # read from `GSFIT_code_settings.json` file
-            newton_krylov_finite_difference_step=...,          # read from `GSFIT_code_settings.json` file
-            newton_krylov_verbose=...,                         # read from `GSFIT_code_settings.json` file
-            newton_picard_n_basis_max=...,                     # read from `GSFIT_code_settings.json` file
-            newton_picard_contraction_threshold=...,           # read from `GSFIT_code_settings.json` file
-            newton_picard_finite_difference_step=...,          # read from `GSFIT_code_settings.json` file
-            newton_picard_verbose=...,                         # read from `GSFIT_code_settings.json` file
-            times_to_reconstruct=times_to_reconstruct,         # passed in, from `setup_timeslices`
-        )
-
-        return plasma
-        ```
-        """
-        ...
-
     def setup_tf(self, pulseNo: int, settings: TfSettings, **kwargs: dict[str, typing.Any]) -> Tf:
         """
         This method initialises the Rust `Tf` class, which holds an IMAS `tf` IDS.
@@ -492,7 +319,7 @@ class DatabaseReaderProtocol(Protocol):
         is not stored separately: the solver recovers it as `i_rod = 2 * pi * f_vac / mu_0`.
 
         **Store the experimental signal**, on its own timebase, not one interpolated onto the
-        reconstruction times. `Plasma.copy_from_tf_ids` interpolates it itself.
+        reconstruction times. `Equilibrium.copy_from_tf_ids` interpolates it itself.
 
         **`b_field_phi_vacuum_r` is signed**: positive means counter-clockwise viewed from above.
         A reader which passes a magnitude will silently reverse the toroidal field, and with it
@@ -645,51 +472,6 @@ class DatabaseReaderProtocol(Protocol):
         """
         ...
 
-    def setup_rogowski_coils(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> RogowskiCoils:
-        """
-        This method initialises the Rust `RogowskiCoils` class.
-
-        :param pulseNo: Pulse number, used to read from the database
-        :param settings: Dictionary containing the JSON settings read from the `settings` directory
-        :param kwargs: Additional objects, such as FreeGNSKE object
-
-        Initialising requires reading data from two locations:
-        1. `sensor_weights_rogowski_coils.json`: Which contains "fitting parameters", e.g. if a probe should be used in the fitting
-        2. Database reading (e.g. MDSplus, or FreeGNSKE object): Which contains the measurements and the Rogowski coil path
-
-        Different machines will use different data stores for the probes geometry and measured signals.
-        This Protocol allows different database readers to be selected.
-        The output of this method must always be a `RogowskiCoils` object.
-
-        At a minimum this method should look like this:
-        ```python
-        # Initialise the RogowskiCoils Rust class
-        rogowski_coils = RogowskiCoils()
-
-        # Add all of the BP probes
-        for i_rogowski_coil in range(n_rogowski_coils):
-            rogowski_coils.add_sensor(
-                sensor_name=...,              # need to be same in database and `sensor_weights_flux_loops.json` file
-                path_r,                       # read from a database
-                path_z,                       # read from a database
-                fit_settings_comment,         # read from `sensor_weights_flux_loops.json` file
-                fit_settings_expected_value,  # read from `sensor_weights_flux_loops.json` file
-                fit_settings_include,         # read from `sensor_weights_flux_loops.json` file
-                fit_settings_weight,          # read from `sensor_weights_flux_loops.json` file
-                time,                         # read from a database
-                measured,                     # read from a database
-                gaps_r=gaps_r,                # read from a database
-                gaps_z=gaps_z,                # read from a database
-                gaps_d_r=gaps_d_r,            # read from a database
-                gaps_d_z=gaps_d_z,            # read from a database
-                gaps_name=gaps_name,          # read from a database
-            )
-
-        return rogowski_coils
-        ```
-        """
-        ...
-
     def setup_pressure_sensors(self, pulseNo: int, settings: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) -> Pressure:
         """
         This method initialises the Rust `Pressure` class (pressure measurements at specific locations in the poloidal plane).
@@ -739,14 +521,14 @@ class DatabaseReaderProtocol(Protocol):
         :param kwargs: Additional objects, such as FreeGNSKE object
 
         **This method is optional.**
-        Unlike every other method it has a default, which returns `None`: `Plasma.copy_from_pulse_schedule_ids` is then not called, and the equilibrium has no gaps.
+        Unlike every other method it has a default, which returns `None`: `Equilibrium.copy_from_pulse_schedule_ids` is then not called, and the equilibrium has no gaps.
 
         Initialising requires reading data from:
         1. Database reading (e.g. MDSplus): Which contains the gap definitions
 
         Only the gap definitions are filled, `pulse_schedule/position_control/gap(i)`.
         A gap is a reference point and a direction, and its value is the distance from the reference point to the plasma boundary along that direction.
-        `Plasma.copy_from_pulse_schedule_ids` copies the definitions onto every time-slice's `equilibrium/time_slice(itime)/boundary/gap`, and the equilibrium post-processor calculates each value.
+        `Equilibrium.copy_from_pulse_schedule_ids` copies the definitions onto every time-slice's `equilibrium/time_slice(itime)/boundary/gap`, and the equilibrium post-processor calculates each value.
 
         **The angle is clockwise from `grad(R)`**, in the usual plot with `R` to the right and `Z` upwards, which is the equilibrium IDS's convention.
         So an angle of `pi / 2` points towards `-Z`.

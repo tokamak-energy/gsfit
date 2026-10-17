@@ -86,7 +86,7 @@ impl Tf {
     ///
     /// This is the machine's official reference radius, typically the middle of the vessel at
     /// the equatorial midplane. It is copied onto `equilibrium/vacuum_toroidal_field/r0` by
-    /// `Plasma.copy_from_tf_ids`, so that the two IDSs cannot disagree.
+    /// `Equilibrium.copy_from_tf_ids`, so that the two IDSs cannot disagree.
     pub fn set_r0(&mut self, r0: f64) -> PyResult<()> {
         if !r0.is_finite() || r0 <= 0.0 {
             return Err(PyValueError::new_err(format!("`tf/r0` must be a positive major radius, got {r0}")));
@@ -104,7 +104,7 @@ impl Tf {
     /// * `data` - vacuum toroidal field times major radius (1d array), [tesla * metre]
     ///
     /// Store the **experimental** signal here, not one interpolated onto the reconstruction
-    /// times: `Plasma.copy_from_tf_ids` interpolates it itself, so that changing the reconstruction
+    /// times: `Equilibrium.copy_from_tf_ids` interpolates it itself, so that changing the reconstruction
     /// times does not require re-reading the database.
     ///
     /// `data` is signed; see the `Tf` documentation. A reader holding a rod current instead

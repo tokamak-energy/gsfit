@@ -75,7 +75,7 @@ struct PicardUpdate {
     magnetic_axis: (f64, f64),
 }
 
-/// The settings of the Newton iterations, from `code/numerics/nonlinear_solver/newton_krylov`
+/// The settings of the Newton iterations, from `code/parameters_parsed/numerics/nonlinear_solver/newton_krylov`
 struct NewtonKrylovSettings {
     picard_handover: f64,
     n_krylov_max: usize,
@@ -87,16 +87,40 @@ struct NewtonKrylovSettings {
 /// Solve with the Jacobian-free Newton-Krylov method; see the module documentation.
 pub(crate) fn solve(solver: &mut EquilibriumSolver) {
     // Solver settings, supplied through `equilibrium.code`
-    let n_iter_max: usize = solver.equilibrium_code.numerics.iterations.n_max as usize;
-    let n_iter_min: usize = solver.equilibrium_code.numerics.iterations.n_min as usize;
-    let grad_shafranov_deviation_tolerance: f64 = solver.equilibrium_code.numerics.grad_shafranov_deviation_tolerance;
-    let n_iter_no_vertical_feedback: usize = solver.equilibrium_code.numerics.nonlinear_solver.picard.n_iter_no_vertical_feedback as usize;
+    let n_iter_max: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_max as usize;
+    let n_iter_min: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_min as usize;
+    let grad_shafranov_deviation_tolerance: f64 = solver.equilibrium_code.parameters_parsed.numerics.grad_shafranov_deviation_tolerance;
+    let n_iter_no_vertical_feedback: usize = solver
+        .equilibrium_code
+        .parameters_parsed
+        .numerics
+        .nonlinear_solver
+        .picard
+        .n_iter_no_vertical_feedback as usize;
     let settings: NewtonKrylovSettings = NewtonKrylovSettings {
-        picard_handover: solver.equilibrium_code.numerics.nonlinear_solver.newton_krylov.picard_handover,
-        n_krylov_max: solver.equilibrium_code.numerics.nonlinear_solver.newton_krylov.n_krylov_max as usize,
-        krylov_tolerance: solver.equilibrium_code.numerics.nonlinear_solver.newton_krylov.krylov_tolerance,
-        finite_difference_step: solver.equilibrium_code.numerics.nonlinear_solver.newton_krylov.finite_difference_step,
-        verbose: solver.equilibrium_code.numerics.nonlinear_solver.newton_krylov.verbose != 0,
+        picard_handover: solver
+            .equilibrium_code
+            .parameters_parsed
+            .numerics
+            .nonlinear_solver
+            .newton_krylov
+            .picard_handover,
+        n_krylov_max: solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.newton_krylov.n_krylov_max as usize,
+        krylov_tolerance: solver
+            .equilibrium_code
+            .parameters_parsed
+            .numerics
+            .nonlinear_solver
+            .newton_krylov
+            .krylov_tolerance,
+        finite_difference_step: solver
+            .equilibrium_code
+            .parameters_parsed
+            .numerics
+            .nonlinear_solver
+            .newton_krylov
+            .finite_difference_step,
+        verbose: solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.newton_krylov.verbose != 0,
     };
 
     // The passive currents and the initial current density
@@ -415,8 +439,8 @@ fn get_state(solver: &EquilibriumSolver) -> Array1<f64> {
 /// Put the unscaled state `x` back into the time-slice, with no vertical shift, and with the
 /// magnetic axis search to start from `magnetic_axis_start`; the reverse of `get_state`
 fn set_state(solver: &mut EquilibriumSolver, x: &Array1<f64>, magnetic_axis_start: (f64, f64)) {
-    let n_r: usize = solver.equilibrium_code.grid.n_r as usize;
-    let n_z: usize = solver.equilibrium_code.grid.n_z as usize;
+    let n_r: usize = solver.equilibrium_code.parameters_parsed.grid.n_r as usize;
+    let n_z: usize = solver.equilibrium_code.parameters_parsed.grid.n_z as usize;
     let n_grid: usize = n_z * n_r;
     let n_passive_dof: usize = solver.passive_dof_values.len();
 

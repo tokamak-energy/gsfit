@@ -7,6 +7,8 @@
 pub mod dd_base_types;
 pub mod dd_support;
 pub mod ids;
+// The leaf readers of the generated `src/ids/<ids>_parameters_parsed.rs`
+mod parameters_parsed;
 
 /// The IMAS Data Dictionary version that the generated `src/ids/*.rs` and `src/dd_support/*.rs` files came from,
 /// e.g. `"4.1.1-60-gf5d44e8"`.

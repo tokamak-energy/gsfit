@@ -4,6 +4,8 @@
 //! Generated from IMAS Data Dictionary XSD schemas.
 
 pub mod equilibrium;
+// Reads `equilibrium/code/parameters` into `equilibrium/code/parameters_parsed`; generated with `equilibrium`
+pub mod equilibrium_parameters_parsed;
 pub mod magnetics;
 pub mod pf_active;
 pub mod pf_passive;

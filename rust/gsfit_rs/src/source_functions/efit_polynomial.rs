@@ -36,7 +36,7 @@ impl EfitPolynomial {
     /// * `coefficients` - the fixed coefficients, shape = [n_dof]; required when `exact` is `true`
     #[new]
     #[pyo3(signature = (n_dof, regularisations, exact=false, coefficients=None))]
-    pub fn new(n_dof: usize, regularisations: PyReadonlyArray2<f64>, exact: bool, coefficients: Option<PyReadonlyArray1<f64>>) -> PyResult<Self> {
+    pub fn new_py(n_dof: usize, regularisations: PyReadonlyArray2<f64>, exact: bool, coefficients: Option<PyReadonlyArray1<f64>>) -> PyResult<Self> {
         // Change Python types into Rust types
         let regularisations_ndarray: Array2<f64> = regularisations.to_owned_array();
         let polynomial_coefficients_ndarray: Array1<f64> = match coefficients {
@@ -44,22 +44,8 @@ impl EfitPolynomial {
             None => Array1::zeros(0),
         };
 
-        // An exact source function is only usable if we know every coefficient
-        if exact && polynomial_coefficients_ndarray.len() != n_dof {
-            return Err(PyValueError::new_err(format!(
-                "EfitPolynomial: `exact=True` needs `coefficients` with n_dof={} values, but {} were given",
-                n_dof,
-                polynomial_coefficients_ndarray.len()
-            )));
-        }
-
-        // Create the struct
-        Ok(EfitPolynomial {
-            n_dof,
-            regularisations: regularisations_ndarray,
-            exact,
-            dof_values: polynomial_coefficients_ndarray,
-        })
+        // Call the Rust constructor
+        EfitPolynomial::new(n_dof, regularisations_ndarray, exact, polynomial_coefficients_ndarray).map_err(PyValueError::new_err)
     }
 
     /// Print to screen, to be used within Python
@@ -80,6 +66,31 @@ impl EfitPolynomial {
         string_output.push_str("╚═════════════════════════════════════════════════════════════════════════════╝");
 
         string_output
+    }
+}
+
+impl EfitPolynomial {
+    /// Create a new EfitPolynomial; see `new_py` for the arguments
+    ///
+    /// # Errors
+    /// `exact` is `true`, but `coefficients` does not have `n_dof` values
+    pub fn new(n_dof: usize, regularisations: Array2<f64>, exact: bool, coefficients: Array1<f64>) -> Result<Self, String> {
+        // An exact source function is only usable if we know every coefficient
+        if exact && coefficients.len() != n_dof {
+            return Err(format!(
+                "EfitPolynomial: `exact=True` needs `coefficients` with n_dof={} values, but {} were given",
+                n_dof,
+                coefficients.len()
+            ));
+        }
+
+        // Create the struct
+        Ok(EfitPolynomial {
+            n_dof,
+            regularisations,
+            exact,
+            dof_values: coefficients,
+        })
     }
 }
 

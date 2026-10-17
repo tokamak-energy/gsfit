@@ -1,4 +1,5 @@
 use crate::source_functions::SourceFunctionTraits;
+use imas_rs::EquilibriumCodeParametersParsedRegularisationBuilder;
 use ndarray::{Array1, Array2, s};
 use numpy::PyArray1;
 use numpy::PyArrayMethods; // used in to convert python data into ndarray
@@ -243,6 +244,128 @@ impl TensionedCubicBSpline {
             sigma2_array,
             tstar_array,
         }
+    }
+
+    /// Build the regularisations of a tensioned cubic B-spline from its `regularisation_builder` settings, as
+    /// `make_tensioned_cubic_b_spline_regularisations` in `python/gsfit/tensioned_cubic_splines_regularisations.py` does.
+    ///
+    /// The bulk of the profile has one row per knot, including the boundary knots at psi_n = 0 and psi_n = 1. With the
+    /// `regularisation_mode` "second_derivative_zero", the only one, each row drives the second derivative of the source function
+    /// at its knot to zero. They are multiplied by `regularisation_scale`. A boundary whose condition is not "free" adds a row,
+    /// before the bulk for psi_n = 0 (`left_*`) and after it for psi_n = 1 (`right_*`), of weight `*_boundary_weight`: "dirichlet"
+    /// drives the value of the source function at the boundary to zero, and "neumann" its first derivative.
+    ///
+    /// The analytic formulae for the derivatives of a tensioned cubic B-spline at a knot are derived in
+    /// https://www.overleaf.com/read/vbydpqkjtmds#910342, which builds on P. E. Koch and T. Lyche, "Interpolation with Exponential
+    /// B-Splines in Tension", in *Geometric Modelling*, pp. 173-190.
+    ///
+    /// # Arguments
+    /// * `interior_knots` - the interior knots in normalised poloidal flux, without the boundary knots at 0 and 1, [dimensionless]
+    /// * `interval_tensions` - the tension over each interval between knots, [dimensionless]
+    /// * `regularisation_builder` - how to build the regularisations, `regularisation_builder` of the source function's settings
+    ///
+    /// # Returns
+    /// * `regularisations` - shape = [n_regularisation, n_dof], where n_dof = (number of interior knots) + 4
+    ///
+    /// # Errors
+    /// The `regularisation_mode` is not "second_derivative_zero", or a boundary condition is not "free", "dirichlet" or "neumann"
+    pub fn make_regularisations(
+        interior_knots: &Array1<f64>,
+        interval_tensions: &Array1<f64>,
+        regularisation_builder: &EquilibriumCodeParametersParsedRegularisationBuilder,
+    ) -> Result<Array2<f64>, String> {
+        // The number of degrees of freedom of a cubic spline is the number of interior knots plus 4
+        let n_interior_knots: usize = interior_knots.len();
+        let n_dof: usize = n_interior_knots + 4;
+
+        // A source function is made only for its `sigma1_array` and `sigma2_array`, which the analytic formulae below need
+        let source_function: TensionedCubicBSpline = TensionedCubicBSpline::new(Array2::zeros((1, n_dof)), interior_knots.clone(), interval_tensions.clone());
+        let sigma1_array: &Array1<f64> = &source_function.sigma1_array;
+        let sigma2_array: &Array1<f64> = &source_function.sigma2_array;
+
+        // The "bulk" regularisations: one row per knot, including the boundary knots at psi_n = 0 and psi_n = 1
+        let n_knots: usize = n_interior_knots + 2;
+        let mut bulk_regularisations: Array2<f64> = Array2::zeros((n_knots, n_dof));
+        match regularisation_builder.regularisation_mode.as_str() {
+            "second_derivative_zero" => {
+                // d^2(source_function)/d(psi_n)^2 = 0 at each knot
+                for i_knot in 0..n_knots {
+                    let j: usize = i_knot + 3;
+                    bulk_regularisations[(i_knot, j - 3)] = 1.0 / (sigma2_array[j - 2] * sigma1_array[j - 1]);
+                    bulk_regularisations[(i_knot, j - 2)] = -(1.0 / sigma2_array[j - 2] + 1.0 / sigma2_array[j - 1]) / sigma1_array[j - 1];
+                    bulk_regularisations[(i_knot, j - 1)] = 1.0 / (sigma2_array[j - 1] * sigma1_array[j - 1]);
+                }
+            }
+            regularisation_mode => {
+                return Err(format!(
+                    "`regularisation_mode` is \"{regularisation_mode}\", but the only one is \"second_derivative_zero\""
+                ));
+            }
+        }
+        bulk_regularisations *= regularisation_builder.regularisation_scale;
+
+        // At a clamped boundary only one B-spline is non-zero, so the value of the source function there is the first (psi_n = 0)
+        // or last (psi_n = 1) degree of freedom, and its first derivative is proportional to the difference of the two degrees of
+        // freedom nearest the boundary
+        let left_boundary_weight: f64 = regularisation_builder.left_boundary_weight;
+        let left_boundary_regularisation: Option<Array1<f64>> = match regularisation_builder.left_boundary_condition.as_str() {
+            "free" => None,
+            "dirichlet" => {
+                let mut row: Array1<f64> = Array1::zeros(n_dof);
+                row[0] = left_boundary_weight;
+                Some(row)
+            }
+            "neumann" => {
+                let mut row: Array1<f64> = Array1::zeros(n_dof);
+                row[0] = left_boundary_weight;
+                row[1] = -left_boundary_weight;
+                Some(row)
+            }
+            left_boundary_condition => {
+                return Err(format!(
+                    "`left_boundary_condition` is \"{left_boundary_condition}\", but it must be \"free\", \"dirichlet\" or \"neumann\""
+                ));
+            }
+        };
+        let right_boundary_weight: f64 = regularisation_builder.right_boundary_weight;
+        let right_boundary_regularisation: Option<Array1<f64>> = match regularisation_builder.right_boundary_condition.as_str() {
+            "free" => None,
+            "dirichlet" => {
+                let mut row: Array1<f64> = Array1::zeros(n_dof);
+                row[n_dof - 1] = right_boundary_weight;
+                Some(row)
+            }
+            "neumann" => {
+                let mut row: Array1<f64> = Array1::zeros(n_dof);
+                row[n_dof - 1] = right_boundary_weight;
+                row[n_dof - 2] = -right_boundary_weight;
+                Some(row)
+            }
+            right_boundary_condition => {
+                return Err(format!(
+                    "`right_boundary_condition` is \"{right_boundary_condition}\", but it must be \"free\", \"dirichlet\" or \"neumann\""
+                ));
+            }
+        };
+
+        // The boundary rows go before and after the bulk
+        let mut rows: Vec<Array1<f64>> = Vec::new();
+        if let Some(row) = left_boundary_regularisation {
+            rows.push(row);
+        }
+        for i_knot in 0..n_knots {
+            rows.push(bulk_regularisations.row(i_knot).to_owned());
+        }
+        if let Some(row) = right_boundary_regularisation {
+            rows.push(row);
+        }
+        let n_regularisations: usize = rows.len();
+        let mut regularisations: Array2<f64> = Array2::zeros((n_regularisations, n_dof));
+        for i_regularisation in 0..n_regularisations {
+            regularisations.row_mut(i_regularisation).assign(&rows[i_regularisation]);
+        }
+
+        Ok(regularisations)
     }
 
     // This is Equation (2.1) from P. E. Koch & T. Lyche "Interpolation with Exponential B-Splines in Tension" (1993)

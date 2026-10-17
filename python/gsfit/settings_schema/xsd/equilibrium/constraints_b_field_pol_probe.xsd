@@ -12,14 +12,18 @@
             <xs:sequence>
                 <xs:element name="b_field_pol_probe" type="b_field_pol_probe" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
-                        <xs:documentation>Fitting settings for one probe.</xs:documentation>
+                        <xs:documentation>
+                            Fitting settings for one probe.
+                        </xs:documentation>
                     </xs:annotation>
                 </xs:element>
             </xs:sequence>
         </xs:complexType>
         <xs:key name="b_field_pol_probe_name_key">
             <xs:annotation>
-                <xs:documentation>Each probe's `name` must be unique.</xs:documentation>
+                <xs:documentation>
+                    Each probe's `name` must be unique.
+                </xs:documentation>
             </xs:annotation>
             <xs:selector xpath="b_field_pol_probe"/>
             <xs:field xpath="name"/>
@@ -38,14 +42,15 @@
             </xs:element>
             <xs:element name="comment" type="xs:string">
                 <xs:annotation>
-                    <xs:documentation>Free-text comment, e.g. on the quality of the signal; may be empty.</xs:documentation>
+                    <xs:documentation>
+                        Free-text comment, e.g. on the quality of the signal; may be empty.
+                    </xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="expected_value" type="finite_double_positive">
                 <xs:annotation>
                     <xs:documentation>
-                        Expected magnitude of the measurement, used for normalisation.
-                        In the fit the probe is weighted by `weight / expected_value`.
+                        Expected magnitude of the measurement, used to normalise the measurement.
                     </xs:documentation>
                     <xs:appinfo>
                         <units>tesla</units>
@@ -54,12 +59,16 @@
             </xs:element>
             <xs:element name="include" type="true_or_false">
                 <xs:annotation>
-                    <xs:documentation>Whether to include the probe in the fit.</xs:documentation>
+                    <xs:documentation>
+                        Whether to include the probe in the fit.
+                    </xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="weight" type="finite_double_non_negative">
                 <xs:annotation>
-                    <xs:documentation>Relative weight of the probe in the fit.</xs:documentation>
+                    <xs:documentation>
+                        Relative weight of the probe in the fit.
+                    </xs:documentation>
                     <xs:appinfo>
                         <units>dimensionless</units>
                     </xs:appinfo>
@@ -70,7 +79,9 @@
 
     <xs:simpleType name="finite_double">
         <xs:annotation>
-            <xs:documentation>A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.</xs:documentation>
+            <xs:documentation>
+                A finite `xs:double`; `NaN`, `INF` and `-INF` are not allowed.
+            </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:double">
             <xs:pattern value="[+\-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+\-]?[0-9]+)?"/>
@@ -91,7 +102,9 @@
 
     <xs:simpleType name="sensor_name">
         <xs:annotation>
-            <xs:documentation>A non-empty name without any whitespace.</xs:documentation>
+            <xs:documentation>
+                A non-empty name without any whitespace.
+            </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:pattern value="\S+"/>
@@ -100,7 +113,9 @@
 
     <xs:simpleType name="true_or_false">
         <xs:annotation>
-            <xs:documentation>A boolean written as `true` or `false`; `xs:boolean` alone would also accept `1` and `0`.</xs:documentation>
+            <xs:documentation>
+                A boolean written as `true` or `false`; `xs:boolean` alone would also accept `1` and `0`.
+            </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:boolean">
             <xs:pattern value="true|false"/>

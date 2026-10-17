@@ -23,6 +23,7 @@ use super::profiles_2d;
 use super::sol;
 use crate::source_functions::SharedSourceFunction;
 use imas_rs::Equilibrium;
+use imas_rs::EquilibriumGreens;
 use imas_rs::EquilibriumLimiter;
 use imas_rs::EquilibriumTimeSlice;
 use ndarray::Array1;
@@ -84,6 +85,8 @@ pub fn equilibrium_post_processor(
     let b0: &Array1<f64> = &equilibrium_ids.vacuum_toroidal_field.b0;
     // The limiter, which is the same for every time-slice
     let limiter: &EquilibriumLimiter = &equilibrium_ids.limiter;
+    // The Greens tables, which are the same for every time-slice
+    let greens: &EquilibriumGreens = &equilibrium_ids.greens;
 
     // The calculator table: one row per calculator, in whatever order reads best. The order they
     // run in comes from the `dependencies` column, via `dependency_sorter::sort` below
@@ -94,7 +97,10 @@ pub fn equilibrium_post_processor(
         entry(CI::boundary__geometry,                                                          boundary::geometry::calculate,                                                          &[CI::boundary__outline__r__z]                                                                                                                      ),
         entry(CI::boundary__outline__r__z,                                                     boundary::outline__r__z::calculate,                                                     &[]                                                                                                                                                 ),
         entry(CI::boundary__psi_norm__rho_tor,                                                 boundary::psi_norm__rho_tor::calculate,                                                 &[CI::profiles_1d__rho_tor]                                                                                                                         ),
+        entry(CI::constraints__b_field_pol_probe_reconstructed,                                constraints::b_field_pol_probe_reconstructed::calculate,                                &[]                                                                                                                                                 ),
         entry(CI::constraints__diamagnetic_flux_reconstructed,                                 constraints::diamagnetic_flux_reconstructed::calculate,                                 &[CI::intermediate_values__flux_surfaces, CI::profiles_1d__f, CI::profiles_1d__phi, CI::profiles_1d__psi]                                           ),
+        entry(CI::constraints__flux_loop_reconstructed,                                        constraints::flux_loop_reconstructed::calculate,                                        &[]                                                                                                                                                 ),
+        entry(CI::constraints__rogowski_coil_reconstructed,                                    constraints::rogowski_coil_reconstructed::calculate,                                    &[]                                                                                                                                                 ),
         entry(CI::contour_tree__node_levelset__r__z,                                           contour_tree::node_levelset__r__z::calculate,                                           &[]                                                                                                                                                 ),
         entry(CI::convergence__grad_shafranov_deviation_expression__description__index__name,  convergence::grad_shafranov_deviation_expression__description__index__name::calculate,  &[]                                                                                                                                                 ),
         entry(CI::global_quantities__area__length_pol__surface__volume,                        global_quantities::area__length_pol__surface__volume::calculate,                        &[CI::boundary__outline__r__z, CI::profiles_1d__area__volume__derivatives]                                                                          ),
@@ -174,6 +180,7 @@ pub fn equilibrium_post_processor(
         let constant_values: ConstantValues = ConstantValues {
             b0: b0[i_time],
             ff_prime_source_function,
+            greens,
             i_rod: 2.0 * PI * r0 * b0[i_time] / MU_0,
             limiter,
             p_prime_source_function,

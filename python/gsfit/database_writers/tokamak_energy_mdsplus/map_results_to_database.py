@@ -127,7 +127,7 @@ def map_results_to_database(
     # Take class object out of the `gsfit_controller` object
     pulseNo = gsfit_controller.pulseNo
     settings = gsfit_controller.settings
-    plasma = gsfit_controller.plasma
+    plasma = gsfit_controller.equilibrium
     bp_probes = gsfit_controller.bp_probes
     flux_loops = gsfit_controller.flux_loops
     rogowski_coils = gsfit_controller.rogowski_coils

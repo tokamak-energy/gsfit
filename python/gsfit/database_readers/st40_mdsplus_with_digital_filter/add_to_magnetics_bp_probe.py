@@ -19,8 +19,8 @@ def add_to_magnetics_bp_probe(
     **This method is specific to ST40's experimental MDSplus database.**
 
     **The angle keeps GSFit's present definition, COCOS 13, as MDSplus stores it.**
-    MAG stores `BPPROBE.ALL.THETA` counter-clockwise from `grad(R)`, in the usual plot with `R` to the right and `Z` upwards, which is how
-    `BpProbes` takes its `angle_pol`.
+    MAG stores `BPPROBE.ALL.THETA` counter-clockwise from `grad(R)`, in the usual plot with `R` to the right and `Z` upwards, which is the
+    angle GSFit has always called `angle_pol`.
     It is stored in `poloidal_angle` unchanged, although the data dictionary's COCOS 17 measures it clockwise; see the `Magnetics` documentation.
     """
 

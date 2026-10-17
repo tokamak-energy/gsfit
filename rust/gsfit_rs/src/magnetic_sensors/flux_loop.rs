@@ -1,10 +1,10 @@
 //! `magnetics/flux_loop(i1)`: the flux loops
 
+use crate::equilibrium::Equilibrium;
 use crate::greens::Greens;
 use crate::magnetics::Magnetics;
 use crate::pf_active::PfActive;
 use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
-use crate::plasma::Plasma;
 use imas_rs::ids::magnetics::{IdentifierStatic, MagneticsFluxLoop, Rphiz0dStatic, SignalFlt1dValidity};
 use imas_rs::ids::pf_active::PfCoils;
 use imas_rs::ids::pf_passive::PfPassiveLoops;
@@ -106,7 +106,7 @@ impl Magnetics {
 }
 
 /// Rust only methods, copying the flux loops into the equilibrium IDS
-impl Plasma {
+impl Equilibrium {
     /// Copy the flux loops' fluxes from the magnetics IDS onto every time-slice of the equilibrium IDS, as
     /// `equilibrium/time_slice(itime)/constraints/flux_loop(i1)`. This does part of the work of the Python method
     /// `copy_from_magnetics_ids`; see it for what is stored.
@@ -115,18 +115,47 @@ impl Plasma {
     /// * `magnetics` - the magnetic sensors, holding the flux loops in `magnetics/flux_loop`
     ///
     /// # Errors
-    /// Why a flux loop's flux cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
+    /// A flux loop in the fit settings, `code/parameters_parsed/constraints/flux_loop`, is not in the magnetics IDS, or a flux loop's
+    /// measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
     pub fn copy_from_magnetics_ids_flux_loop(&mut self, magnetics: &Magnetics) -> Result<(), String> {
         let flux_loops: &Vec<MagneticsFluxLoop> = &magnetics.magnetics_ids.flux_loop;
         let n_flux_loop: usize = flux_loops.len();
 
+        // Only the flux loops in the fit settings, `code/parameters_parsed/constraints/flux_loop`, are copied, and each of them has to
+        // be in the magnetics IDS. Checked before anything is copied
+        let settings_names: Vec<String> = self.equilibrium_ids.code.parameters_parsed.constraints.flux_loop.flux_loop(..).name.to_vec();
+        let settings_weights: Array1<f64> = self
+            .equilibrium_ids
+            .code
+            .parameters_parsed
+            .constraints
+            .flux_loop
+            .flux_loop(..)
+            .weight
+            .to_array();
+        let n_settings: usize = settings_names.len();
+        for i_settings in 0..n_settings {
+            let settings_name: &str = &settings_names[i_settings];
+            if !flux_loops
+                .iter()
+                .any(|magnetics_sensor: &MagneticsFluxLoop| magnetics_sensor.name == settings_name)
+            {
+                return Err(format!(
+                    "`{settings_name}` is in the fit settings, `code/parameters_parsed/constraints/flux_loop`, but not in the magnetics IDS, `magnetics/flux_loop`"
+                ));
+            }
+        }
+
         // Each flux loop's flux is on the experimental timebase, so it is interpolated onto the times of the time-slices
-        // `Plasma::new` allocated
+        // `Equilibrium::new` allocated
         let times_to_reconstruct: Array1<f64> = self.equilibrium_ids.time_slice(..).time.to_array();
         let n_time: usize = times_to_reconstruct.len();
         let mut flux_measured: Array2<f64> = Array2::from_elem((n_time, n_flux_loop), f64::NAN); // shape = (n_time, n_flux_loop)
         for i_flux_loop in 0..n_flux_loop {
             let flux_loop_name: &str = &flux_loops[i_flux_loop].name;
+            if !settings_names.iter().any(|settings_name: &String| settings_name.as_str() == flux_loop_name) {
+                continue;
+            }
             let interpolator: interpolation::Dim1Linear =
                 interpolation::Dim1Linear::new(flux_loops[i_flux_loop].flux.time.clone(), flux_loops[i_flux_loop].flux.data.clone()).map_err(
                     |error: interpolation::Error| format!("cannot interpolate `magnetics/flux_loop({i_flux_loop})/flux` ({flux_loop_name}): {error:?}"),
@@ -137,17 +166,35 @@ impl Plasma {
             flux_measured.slice_mut(s![.., i_flux_loop]).assign(&measured);
         }
 
-        // Assigned rather than appended, so that calling this twice replaces the flux loops instead of repeating them
+        // Rebuilt from the flux loops in the fit settings, in the order of the magnetics IDS, so that calling this twice replaces them
+        // instead of repeating them. Each keeps the constraint `Equilibrium::new` made from its fit settings, with its `weight`, found by
+        // its name
         for i_time in 0..n_time {
-            let mut flux_loop_constraints: Vec<EquilibriumConstraints0d> = Vec::with_capacity(n_flux_loop);
+            let mut settings_constraints: Vec<EquilibriumConstraints0d> = std::mem::take(&mut self.equilibrium_ids.time_slice[i_time].constraints.flux_loop);
+            let mut flux_loop_constraints: Vec<EquilibriumConstraints0d> = Vec::with_capacity(n_settings);
             for i_flux_loop in 0..n_flux_loop {
-                flux_loop_constraints.push(EquilibriumConstraints0d {
-                    name: flux_loops[i_flux_loop].name.clone(),
-                    measured: flux_measured[[i_time, i_flux_loop]],
-                    source: format!("magnetics/flux_loop({i_flux_loop})/flux"),
-                    time_measurement: times_to_reconstruct[i_time],
-                    ..Default::default()
-                });
+                let flux_loop_name: &str = &flux_loops[i_flux_loop].name;
+                let Some(i_settings) = settings_names
+                    .iter()
+                    .position(|settings_name: &String| settings_name.as_str() == flux_loop_name)
+                else {
+                    continue;
+                };
+                let mut constraint: EquilibriumConstraints0d = match settings_constraints
+                    .iter()
+                    .position(|settings_constraint: &EquilibriumConstraints0d| settings_constraint.name == flux_loop_name)
+                {
+                    Some(i_settings_constraint) => settings_constraints.swap_remove(i_settings_constraint),
+                    None => EquilibriumConstraints0d {
+                        name: flux_loop_name.to_string(),
+                        weight: settings_weights[i_settings],
+                        ..Default::default()
+                    },
+                };
+                constraint.measured = flux_measured[[i_time, i_flux_loop]];
+                constraint.source = format!("magnetics/flux_loop({i_flux_loop})/flux");
+                constraint.time_measurement = times_to_reconstruct[i_time];
+                flux_loop_constraints.push(constraint);
             }
             self.equilibrium_ids.time_slice[i_time].constraints.flux_loop = flux_loop_constraints;
         }
@@ -157,10 +204,10 @@ impl Plasma {
 }
 
 /// Rust only methods, calculating the flux loops' Greens tables
-impl Plasma {
-    /// Calculate the flux loops' Greens tables, `equilibrium/greens/flux_loop(i1)`, one for each flux loop in `magnetics/flux_loop`,
-    /// in the same order. This does part of the work of the Python method `greens_with_magnetics`; see it for what is stored, and
-    /// for the checks on `pf_active` and `pf_passive`.
+impl Equilibrium {
+    /// Calculate the flux loops' Greens tables, `equilibrium/greens/flux_loop(i1)`, one for each flux loop in the fit settings,
+    /// `code/parameters_parsed/constraints/flux_loop`, in the order of `magnetics/flux_loop`. This does part of the work of the Python
+    /// method `greens_with_magnetics`; see it for what is stored, and for the checks on `pf_active`, `pf_passive` and the fit settings.
     ///
     /// Each table is the poloidal flux through the loop, GSFit's `psi`. The loop goes all the way around the machine, at its one
     /// `position`.
@@ -173,11 +220,15 @@ impl Plasma {
         let flux_loops: &Vec<MagneticsFluxLoop> = &magnetics.magnetics_ids.flux_loop;
         let n_flux_loop: usize = flux_loops.len();
 
+        // Only the flux loops in the fit settings, `code/parameters_parsed/constraints/flux_loop`, which `copy_from_magnetics_ids` copies,
+        // have Greens tables. `greens_with_magnetics` checked that each of them is in the magnetics IDS
+        let settings_names: Vec<String> = self.equilibrium_ids.code.parameters_parsed.constraints.flux_loop.flux_loop(..).name.to_vec();
+
         // The grid. `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)` because GSFit solves
         // on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives
         // the flattened grid
-        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
+        let n_r: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_z as usize;
         let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let grid_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
@@ -199,6 +250,12 @@ impl Plasma {
 
         let mut greens_flux_loops: Vec<EquilibriumGreensFluxLoop> = Vec::with_capacity(n_flux_loop);
         for i_flux_loop in 0..n_flux_loop {
+            if !settings_names
+                .iter()
+                .any(|settings_name: &String| *settings_name == flux_loops[i_flux_loop].name)
+            {
+                continue;
+            }
             // `Magnetics.add_flux_loop` gives every flux loop exactly one position
             let flux_loop_r: f64 = flux_loops[i_flux_loop].position[0].r;
             let flux_loop_z: f64 = flux_loops[i_flux_loop].position[0].z;

@@ -10,13 +10,25 @@
     <!-- ===================================== Enums ===================================== -->
 
     <xs:simpleType name="CurrentDistributionType">
-        <xs:annotation><xs:documentation>How the current is distributed over a passive's filaments, from `PfPassive::add_loop`</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                How the current is distributed over a passive's filaments, from `PfPassive::add_loop`
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="constant_current_density">
-                <xs:annotation><xs:documentation>The same current density in every filament: one degree of freedom</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The same current density in every filament: one degree of freedom
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="eig">
-                <xs:annotation><xs:documentation>A sum of eigenmodes of the passive's mutual inductance and resistance: n_dof degrees of freedom</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        A sum of eigenmodes of the passive's mutual inductance and resistance: n_dof degrees of freedom
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
@@ -24,49 +36,91 @@
     <!-- ================================= Other simple types ================================= -->
 
     <xs:simpleType name="Name">
-        <xs:annotation><xs:documentation>A name, with no spaces</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A name, with no spaces
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:pattern value="\S+"/>
         </xs:restriction>
     </xs:simpleType>
 
     <xs:simpleType name="DoubleList">
-        <xs:annotation><xs:documentation>An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"
+            </xs:documentation>
+        </xs:annotation>
         <xs:list itemType="xs:double"/>
     </xs:simpleType>
 
     <!-- ================================= Complex types ================================= -->
 
     <xs:complexType name="Regularisations">
-        <xs:annotation><xs:documentation>A matrix of shape [n_regularisations, n_dof], one `row` per regularisation. Each row is a combination of the passive's degrees of freedom which the fit drives towards zero. No rows for no regularisation</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A matrix of shape [n_regularisations, n_dof], one `row` per regularisation. Each row is a combination of the degrees of freedom which the fit drives towards zero. No rows for no regularisation
+            </xs:documentation>
+        </xs:annotation>
         <xs:sequence>
             <xs:element name="row" type="DoubleList" minOccurs="0" maxOccurs="unbounded">
-                <xs:annotation><xs:documentation>One regularisation: a coefficient for each degree of freedom, as a space-separated list</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        One regularisation: a coefficient for each degree of freedom, as a space-separated list
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="Passive">
-        <xs:annotation><xs:documentation>The degrees of freedom of one passive structure's current, and their regularisation</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The degrees of freedom of one passive structure's current, and their regularisation
+            </xs:documentation>
+        </xs:annotation>
         <xs:all>
             <xs:element name="name" type="Name">
-                <xs:annotation><xs:documentation>The passive's name in the database, e.g. "IVC"</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The passive's name in the database, e.g. "IVC"
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="current_distribution_type" type="CurrentDistributionType">
-                <xs:annotation><xs:documentation>How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="include" type="xs:boolean">
-                <xs:annotation><xs:documentation>Whether the passive is included. Not read at present</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Whether the passive is included. Not read at present
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="n_dof" type="xs:nonNegativeInteger">
-                <xs:annotation><xs:documentation>Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="regularisations" type="Regularisations">
-                <xs:annotation><xs:documentation>The regularisations, one `row` of n_dof coefficients each; no rows for none</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The regularisations, one `row` of n_dof coefficients each; no rows for none
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="regularisations_weight" type="DoubleList">
                 <xs:annotation>
-                    <xs:documentation>The weight of each regularisation in the fit: one per `row` of `regularisations`</xs:documentation>
+                    <xs:documentation>
+                        The weight of each regularisation in the fit: one per `row` of `regularisations`
+                    </xs:documentation>
                     <xs:appinfo>
                         <units>1</units>
                     </xs:appinfo>
@@ -78,16 +132,28 @@
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="passive_dof_regularisation">
-        <xs:annotation><xs:documentation>The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="passive" type="Passive" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation><xs:documentation>One passive structure</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            One passive structure
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
             </xs:sequence>
         </xs:complexType>
         <xs:unique name="passive_dof_regularisation_unique_name">
-            <xs:annotation><xs:documentation>Each passive is listed at most once</xs:documentation></xs:annotation>
+            <xs:annotation>
+                <xs:documentation>
+                    Each passive is listed at most once
+                </xs:documentation>
+            </xs:annotation>
             <xs:selector xpath="passive"/>
             <xs:field xpath="name"/>
         </xs:unique>

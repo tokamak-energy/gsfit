@@ -8,12 +8,13 @@ use crate::grad_shafranov::CONVERGENCE_STATUS_CONVERGED;
 use crate::grad_shafranov::contour_tree_nodes as grad_shafranov_contour_tree_nodes;
 use crate::greens::Greens;
 use crate::limiter::{limiter_points, vacuum_vessel_outline};
+use crate::magnetics::Magnetics;
 use crate::pf_active::PfActive;
 use crate::plasma_geometry::{BoundaryContour, MagneticAxis, StationaryPoint, find_boundary, find_magnetic_axis, find_stationary_points_using_winding_number};
-use crate::sensors::{BpProbes, FluxLoops};
 use crate::source_functions::{EfitPolynomial, SharedSourceFunction};
 use crate::wall::Wall;
 use imas_rs::dd_support::parameters_input::ParametersInput;
+use imas_rs::ids::magnetics::SignalFlt1dValidity;
 use imas_rs::ids::pf_active::PfCoils;
 use imas_rs::ids::wall::{Wall as WallIds, Wall2dLimiterUnit};
 use imas_rs::python::{PyEquilibrium, PyParametersInput};
@@ -345,23 +346,21 @@ impl GuazzottoFreidberg {
         pf_active
     }
 
-    /// Fill the `experimental` measurement of each BP probe (tesla) and flux loop (weber) with the
-    /// field the analytic plasma current plus `pf_active` produce at that sensor, mutating the passed
-    /// `bp_probes` / `flux_loops` in place. Requires `solve` first. The sensors' geometry must
-    /// already be set (e.g. via `add_sensor`).
+    /// Fill the magnetic sensors' measurements with what the analytic plasma current plus `pf_active` produce at each sensor. Requires
+    /// `solve` first. The sensors must already be in `magnetics`, e.g. added with `Magnetics.add_flux_loop` and
+    /// `Magnetics.add_b_field_pol_probe`; their measurements are overwritten.
     ///
-    /// Each coil filament carries its coil's current at the first time of its experimental
-    /// timebase.
+    /// Each coil filament carries its coil's current at the first time of its experimental timebase, so each measurement is a signal
+    /// with that one time, the first coil's, or 0 without any coils.
     ///
-    /// The values are physical: flux loops read `Greens::psi` (= `2 pi R A_phi`, weber) and BP
-    /// probes read `B_r cos(angle_pol) + B_z sin(angle_pol)` (tesla), mirroring GSFit's own
-    /// `calculate_sensor_values`.
+    /// The values are physical, as GSFit's own Greens tables give them: `magnetics/flux_loop(i1)/flux` is `Greens::psi`
+    /// (= `2 pi R A_phi`, weber) at `position(0)`, and `magnetics/b_field_pol_probe(i1)/field` is
+    /// `B_r cos(poloidal_angle) + B_z sin(poloidal_angle)` (tesla) at `position`, with GSFit's COCOS 13 `poloidal_angle`.
     ///
     /// # Arguments
-    /// * `bp_probes` - BP probes with geometry already set; their measurements are overwritten
-    /// * `flux_loops` - flux loops with geometry already set; their measurements are overwritten
+    /// * `magnetics` - the magnetic sensors, with their geometry already set; their measurements are overwritten
     /// * `pf_active` - the PF coils, typically the ones `get_pf_active` returned
-    pub fn get_sensor_values(&self, mut bp_probes: PyRefMut<BpProbes>, mut flux_loops: PyRefMut<FluxLoops>, pf_active: PyRef<PfActive>) {
+    pub fn get_sensor_values(&self, mut magnetics: PyRefMut<Magnetics>, pf_active: PyRef<PfActive>) {
         self.assert_solved("get_sensor_values");
 
         // Plasma current filaments + the coils are the free-boundary field the sensors see.
@@ -399,15 +398,17 @@ impl GuazzottoFreidberg {
         let coil_d_r: Array1<f64> = Array1::zeros(n_coil);
         let coil_d_z: Array1<f64> = Array1::zeros(n_coil);
 
+        // The measurements are at the time the coils' currents are taken at
+        let time: f64 = if n_pf_coil > 0 { pf_active_coils[0].current.time[0] } else { 0.0 };
+
         // --- Flux loops: measured psi = Greens::psi() @ (plasma cells + coils)  [weber] ---
-        let flux_loop_names: Vec<String> = flux_loops.results.keys();
-        let n_flux_loop: usize = flux_loop_names.len();
+        let n_flux_loop: usize = magnetics.magnetics_ids.flux_loop.len();
         if n_flux_loop > 0 {
             let mut flux_loop_r: Array1<f64> = Array1::zeros(n_flux_loop);
             let mut flux_loop_z: Array1<f64> = Array1::zeros(n_flux_loop);
             for i_flux_loop in 0..n_flux_loop {
-                flux_loop_r[i_flux_loop] = flux_loops.results.get(&flux_loop_names[i_flux_loop]).get("geometry").get("r").unwrap_f64();
-                flux_loop_z[i_flux_loop] = flux_loops.results.get(&flux_loop_names[i_flux_loop]).get("geometry").get("z").unwrap_f64();
+                flux_loop_r[i_flux_loop] = magnetics.magnetics_ids.flux_loop[i_flux_loop].position[0].r;
+                flux_loop_z[i_flux_loop] = magnetics.magnetics_ids.flux_loop[i_flux_loop].position[0].z;
             }
             let psi_from_cells: Array1<f64> = Greens::sensor_to_conductor(
                 flux_loop_r.clone(),
@@ -430,27 +431,24 @@ impl GuazzottoFreidberg {
             .psi()
             .dot(&coil_current);
             for i_flux_loop in 0..n_flux_loop {
-                let value: Array1<f64> = Array1::from_elem(1, psi_from_cells[i_flux_loop] + psi_from_coils[i_flux_loop]);
-                flux_loops
-                    .results
-                    .get_or_insert(&flux_loop_names[i_flux_loop])
-                    .get_or_insert("psi")
-                    .get_or_insert("experimental")
-                    .insert("value", value);
+                magnetics.magnetics_ids.flux_loop[i_flux_loop].flux = SignalFlt1dValidity {
+                    data: array![psi_from_cells[i_flux_loop] + psi_from_coils[i_flux_loop]],
+                    time: array![time],
+                    ..Default::default()
+                };
             }
         }
 
-        // --- BP probes: measured B = B_r cos(angle_pol) + B_z sin(angle_pol)  [tesla] ---
-        let bp_probe_names: Vec<String> = bp_probes.results.keys();
-        let n_bp_probe: usize = bp_probe_names.len();
+        // --- BP probes: measured B = B_r cos(poloidal_angle) + B_z sin(poloidal_angle)  [tesla] ---
+        let n_bp_probe: usize = magnetics.magnetics_ids.b_field_pol_probe.len();
         if n_bp_probe > 0 {
             let mut bp_probe_r: Array1<f64> = Array1::zeros(n_bp_probe);
             let mut bp_probe_z: Array1<f64> = Array1::zeros(n_bp_probe);
-            let mut bp_probe_angle_pol: Array1<f64> = Array1::zeros(n_bp_probe);
+            let mut bp_probe_poloidal_angle: Array1<f64> = Array1::zeros(n_bp_probe);
             for i_bp_probe in 0..n_bp_probe {
-                bp_probe_r[i_bp_probe] = bp_probes.results.get(&bp_probe_names[i_bp_probe]).get("geometry").get("r").unwrap_f64();
-                bp_probe_z[i_bp_probe] = bp_probes.results.get(&bp_probe_names[i_bp_probe]).get("geometry").get("z").unwrap_f64();
-                bp_probe_angle_pol[i_bp_probe] = bp_probes.results.get(&bp_probe_names[i_bp_probe]).get("geometry").get("angle_pol").unwrap_f64();
+                bp_probe_r[i_bp_probe] = magnetics.magnetics_ids.b_field_pol_probe[i_bp_probe].position.r;
+                bp_probe_z[i_bp_probe] = magnetics.magnetics_ids.b_field_pol_probe[i_bp_probe].position.z;
+                bp_probe_poloidal_angle[i_bp_probe] = magnetics.magnetics_ids.b_field_pol_probe[i_bp_probe].poloidal_angle;
             }
             let greens_cells: Greens = Greens::sensor_to_conductor(
                 bp_probe_r.clone(),
@@ -471,14 +469,13 @@ impl GuazzottoFreidberg {
             let b_r_total: Array1<f64> = greens_cells.b_r().dot(&cell_current) + greens_coils.b_r().dot(&coil_current);
             let b_z_total: Array1<f64> = greens_cells.b_z().dot(&cell_current) + greens_coils.b_z().dot(&coil_current);
             for i_bp_probe in 0..n_bp_probe {
-                let value: f64 = b_r_total[i_bp_probe] * bp_probe_angle_pol[i_bp_probe].cos() + b_z_total[i_bp_probe] * bp_probe_angle_pol[i_bp_probe].sin();
-                let value_array: Array1<f64> = Array1::from_elem(1, value);
-                bp_probes
-                    .results
-                    .get_or_insert(&bp_probe_names[i_bp_probe])
-                    .get_or_insert("b")
-                    .get_or_insert("experimental")
-                    .insert("value", value_array);
+                let value: f64 =
+                    b_r_total[i_bp_probe] * bp_probe_poloidal_angle[i_bp_probe].cos() + b_z_total[i_bp_probe] * bp_probe_poloidal_angle[i_bp_probe].sin();
+                magnetics.magnetics_ids.b_field_pol_probe[i_bp_probe].field = SignalFlt1dValidity {
+                    data: array![value],
+                    time: array![time],
+                    ..Default::default()
+                };
             }
         }
     }
@@ -666,7 +663,7 @@ impl GuazzottoFreidberg {
         let n_z: usize = self.n_z;
         let d_area: f64 = (r[1] - r[0]) * (z[1] - z[0]);
 
-        // The IDS starts with the limiter, copied in from the wall as `Plasma.copy_from_wall_ids` copies it into a
+        // The IDS starts with the limiter, copied in from the wall as `Equilibrium.copy_from_wall_ids` copies it into a
         // reconstruction's, because a diverted plasma's boundary is found inside it below
         let mut equilibrium_ids: Equilibrium = Equilibrium::default();
         let wall_units: &Vec<Wall2dLimiterUnit> = &wall_ids.description_2d[0].limiter.unit;
@@ -759,12 +756,12 @@ impl GuazzottoFreidberg {
 
         // The IDS layout, the same as a reconstruction's: one time-slice, holding one rectangular grid
         equilibrium_ids.allocate_time_slices(&array![0.0]);
-        equilibrium_ids.code.grid.n_r = n_r as i32;
-        equilibrium_ids.code.grid.n_z = n_z as i32;
-        equilibrium_ids.code.grid.r_min = self.r_min;
-        equilibrium_ids.code.grid.r_max = self.r_max;
-        equilibrium_ids.code.grid.z_min = self.z_min;
-        equilibrium_ids.code.grid.z_max = self.z_max;
+        equilibrium_ids.code.parameters_parsed.grid.n_r = n_r as i32;
+        equilibrium_ids.code.parameters_parsed.grid.n_z = n_z as i32;
+        equilibrium_ids.code.parameters_parsed.grid.r_min = self.r_min;
+        equilibrium_ids.code.parameters_parsed.grid.r_max = self.r_max;
+        equilibrium_ids.code.parameters_parsed.grid.z_min = self.z_min;
+        equilibrium_ids.code.parameters_parsed.grid.z_max = self.z_max;
         // An analytic solution is always usable
         equilibrium_ids.code.output_flag = array![0];
         // `r0 * b0` is the vacuum `f`, which is what the post-processor recovers the rod current from

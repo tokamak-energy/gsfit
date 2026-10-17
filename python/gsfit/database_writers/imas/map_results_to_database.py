@@ -125,7 +125,7 @@ def _is_array_of_structures(path: typing.Any) -> bool:
     return not [name for name in dir(path) if not name.startswith("_")] and not _is_leaf(path)
 
 
-def _read_leaf(plasma: "gsfit_rs.Plasma", path: typing.Any) -> typing.Any:
+def _read_leaf(plasma: "gsfit_rs.Equilibrium", path: typing.Any) -> typing.Any:
     """Read one leaf out of the Rust IDS held by `plasma`, or `None` if its path does not exist.
 
     Every path read here selects a single element of each array of structures on it, e.g.
@@ -176,7 +176,7 @@ def _write_leaf(destination: typing.Any, name: str, values: typing.Any, data_typ
 def _copy_branch(
     source: typing.Any,
     destination: typing.Any,
-    plasma: "gsfit_rs.Plasma",
+    plasma: "gsfit_rs.Equilibrium",
     path: str,
     skipped: set[str],
 ) -> None:
@@ -223,7 +223,7 @@ def _copy_branch(
 def _copy_profiles_2d(
     source: typing.Any,
     destination: typing.Any,
-    plasma: "gsfit_rs.Plasma",
+    plasma: "gsfit_rs.Equilibrium",
     path: str,
     skipped: set[str],
 ) -> None:
@@ -246,13 +246,13 @@ def _copy_profiles_2d(
 def _copy_gaps(
     source: typing.Any,
     destination: typing.Any,
-    plasma: "gsfit_rs.Plasma",
+    plasma: "gsfit_rs.Equilibrium",
     path: str,
     skipped: set[str],
 ) -> None:
     """Copy `boundary/gap`, one element at a time.
 
-    There are only gaps when `Plasma.copy_from_pulse_schedule_ids` was given a pulse schedule defining some, so an
+    There are only gaps when `Equilibrium.copy_from_pulse_schedule_ids` was given a pulse schedule defining some, so an
     empty array is the usual case and leaves the node empty. Every time-slice carries the same gaps,
     whether or not it converged; one which did not has each `value` unset.
     """
@@ -272,7 +272,7 @@ def _copy_gaps(
 def _copy_profiles_2d_branch(
     source: typing.Any,
     destination: typing.Any,
-    plasma: "gsfit_rs.Plasma",
+    plasma: "gsfit_rs.Equilibrium",
     path: str,
     skipped: set[str],
     n_dim1: int,
@@ -366,7 +366,7 @@ def map_results_to_database(
 
     logger = gsfit_controller.logger
 
-    plasma = gsfit_controller.plasma
+    plasma = gsfit_controller.equilibrium
     bp_probes = gsfit_controller.bp_probes
     flux_loops = gsfit_controller.flux_loops
     rogowski_coils = gsfit_controller.rogowski_coils

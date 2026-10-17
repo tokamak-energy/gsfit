@@ -10,37 +10,73 @@
     <!-- ===================================== Enums ===================================== -->
 
     <xs:simpleType name="SourceFunctionMethod">
-        <xs:annotation><xs:documentation>The basis functions a source function is made of</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The basis functions a source function is made of
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="efit_polynomial">
-                <xs:annotation><xs:documentation>EFIT's polynomials: (1 - psi_n) psi_n^i for i = 0 .. n_dof - 1, which are zero at the boundary (L. Lao et al., Nucl. Fusion 25, 1611 (1985), Eq. 4 and 5)</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        EFIT's polynomials: (1 - psi_n) psi_n^i for i = 0 .. n_dof - 1, which are zero at the boundary (L. Lao et al., Nucl. Fusion 25, 1611 (1985), Eq. 4 and 5)
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="tensioned_cubic_b_spline">
-                <xs:annotation><xs:documentation>Cubic B-splines in tension, over knots in psi_n</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Cubic B-splines in tension, over knots in psi_n
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
 
     <xs:simpleType name="RegularisationMode">
-        <xs:annotation><xs:documentation>How the bulk of a tensioned cubic B-spline is regularised</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                How the bulk of a tensioned cubic B-spline is regularised
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="second_derivative_zero">
-                <xs:annotation><xs:documentation>Drive the second derivative of the source function to zero at every knot, including the knots at psi_n = 0 and 1</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Drive the second derivative of the source function to zero at every knot, including the knots at psi_n = 0 and 1
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
 
     <xs:simpleType name="BoundaryCondition">
-        <xs:annotation><xs:documentation>A boundary condition on a tensioned cubic B-spline</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A boundary condition on a tensioned cubic B-spline
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="free">
-                <xs:annotation><xs:documentation>No boundary condition</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        No boundary condition
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="dirichlet">
-                <xs:annotation><xs:documentation>Drive the source function to zero at the boundary</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Drive the source function to zero at the boundary
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="neumann">
-                <xs:annotation><xs:documentation>Drive the first derivative of the source function to zero at the boundary</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Drive the first derivative of the source function to zero at the boundary
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
@@ -48,70 +84,124 @@
     <!-- ================================= Other simple types ================================= -->
 
     <xs:simpleType name="DoubleList">
-        <xs:annotation><xs:documentation>An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                An array of numbers, written as a space-separated list, e.g. "0.1 0.2 0.3"
+            </xs:documentation>
+        </xs:annotation>
         <xs:list itemType="xs:double"/>
     </xs:simpleType>
 
     <!-- ================================= Complex types ================================= -->
 
     <xs:complexType name="Regularisations">
-        <xs:annotation><xs:documentation>A matrix of shape [n_regularisations, n_dof], one `row` per regularisation. Each row is a combination of the degrees of freedom which the fit drives towards zero. No rows for no regularisation</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A matrix of shape [n_regularisations, n_dof], one `row` per regularisation. Each row is a combination of the degrees of freedom which the fit drives towards zero. No rows for no regularisation
+            </xs:documentation>
+        </xs:annotation>
         <xs:sequence>
             <xs:element name="row" type="DoubleList" minOccurs="0" maxOccurs="unbounded">
-                <xs:annotation><xs:documentation>One regularisation: a coefficient for each degree of freedom, as a space-separated list</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        One regularisation: a coefficient for each degree of freedom, as a space-separated list
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
         </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="EfitPolynomial">
-        <xs:annotation><xs:documentation>Settings for EFIT's polynomials</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                Settings for EFIT's polynomials
+            </xs:documentation>
+        </xs:annotation>
         <xs:all>
             <xs:element name="n_dof" type="xs:nonNegativeInteger">
-                <xs:annotation><xs:documentation>Number of polynomials, and so of degrees of freedom</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Number of polynomials, and so of degrees of freedom
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="regularisations" type="Regularisations">
-                <xs:annotation><xs:documentation>The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="exact" type="xs:boolean" minOccurs="0">
-                <xs:annotation><xs:documentation>When true, the coefficients are not fitted but fixed to `coefficients`. False when absent</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        When true, the coefficients are not fitted but fixed to `coefficients`. False when absent
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="coefficients" type="DoubleList" minOccurs="0">
-                <xs:annotation><xs:documentation>The fixed coefficients, one per polynomial, used when `exact` is true</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The fixed coefficients, one per polynomial, used when `exact` is true
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
         </xs:all>
     </xs:complexType>
 
     <xs:complexType name="RegularisationBuilder">
-        <xs:annotation><xs:documentation>How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free)</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free)
+            </xs:documentation>
+        </xs:annotation>
         <xs:all>
             <xs:element name="regularisation_scale" type="xs:double">
                 <xs:annotation>
-                    <xs:documentation>Multiplies the rows which regularise the bulk of the profile</xs:documentation>
+                    <xs:documentation>
+                        Multiplies the rows which regularise the bulk of the profile
+                    </xs:documentation>
                     <xs:appinfo>
                         <units>1</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
             <xs:element name="regularisation_mode" type="RegularisationMode">
-                <xs:annotation><xs:documentation>How the bulk of the profile is regularised</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        How the bulk of the profile is regularised
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="left_boundary_condition" type="BoundaryCondition">
-                <xs:annotation><xs:documentation>The boundary condition at psi_n = 0, the magnetic axis</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The boundary condition at psi_n = 0, the magnetic axis
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="left_boundary_weight" type="xs:double">
                 <xs:annotation>
-                    <xs:documentation>Weight of the boundary condition at psi_n = 0. Not used when it is free</xs:documentation>
+                    <xs:documentation>
+                        Weight of the boundary condition at psi_n = 0. Not used when it is free
+                    </xs:documentation>
                     <xs:appinfo>
                         <units>1</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
             <xs:element name="right_boundary_condition" type="BoundaryCondition">
-                <xs:annotation><xs:documentation>The boundary condition at psi_n = 1, the plasma boundary</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The boundary condition at psi_n = 1, the plasma boundary
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="right_boundary_weight" type="xs:double">
                 <xs:annotation>
-                    <xs:documentation>Weight of the boundary condition at psi_n = 1. Not used when it is free</xs:documentation>
+                    <xs:documentation>
+                        Weight of the boundary condition at psi_n = 1. Not used when it is free
+                    </xs:documentation>
                     <xs:appinfo>
                         <units>1</units>
                     </xs:appinfo>
@@ -121,14 +211,24 @@
     </xs:complexType>
 
     <xs:complexType name="TensionedCubicBSpline">
-        <xs:annotation><xs:documentation>Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom
+            </xs:documentation>
+        </xs:annotation>
         <xs:all>
             <xs:element name="regularisations" type="Regularisations" minOccurs="0">
-                <xs:annotation><xs:documentation>The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="interior_knots" type="DoubleList">
                 <xs:annotation>
-                    <xs:documentation>The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included</xs:documentation>
+                    <xs:documentation>
+                        The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included
+                    </xs:documentation>
                     <xs:appinfo>
                         <units>1</units>
                     </xs:appinfo>
@@ -136,17 +236,27 @@
             </xs:element>
             <xs:element name="interval_tensions" type="DoubleList">
                 <xs:annotation>
-                    <xs:documentation>The tension over each interval between neighbouring knots: one more than the number of interior knots</xs:documentation>
+                    <xs:documentation>
+                        The tension over each interval between neighbouring knots: one more than the number of interior knots
+                    </xs:documentation>
                     <xs:appinfo>
                         <units>1</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
             <xs:element name="make_cubic_spline_regularisations" type="xs:boolean" minOccurs="0">
-                <xs:annotation><xs:documentation>When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="regularisation_builder" type="RegularisationBuilder" minOccurs="0">
-                <xs:annotation><xs:documentation>How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
         </xs:all>
     </xs:complexType>
@@ -154,17 +264,33 @@
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="source_function_p_prime">
-        <xs:annotation><xs:documentation>The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:all>
                 <xs:element name="method" type="SourceFunctionMethod">
-                    <xs:annotation><xs:documentation>The basis functions to use. Their settings are in the element of the same name, below</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            The basis functions to use. Their settings are in the element of the same name, below
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
                 <xs:element name="efit_polynomial" type="EfitPolynomial" minOccurs="0">
-                    <xs:annotation><xs:documentation>Settings for EFIT's polynomials</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            Settings for EFIT's polynomials
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
                 <xs:element name="tensioned_cubic_b_spline" type="TensionedCubicBSpline" minOccurs="0">
-                    <xs:annotation><xs:documentation>Settings for the tensioned cubic B-splines</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            Settings for the tensioned cubic B-splines
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
             </xs:all>
         </xs:complexType>

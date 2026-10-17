@@ -45,9 +45,9 @@ use std::f64::consts::PI;
 /// * `eig` (`index` 2): the loop's `n_dof` slowest decaying eigenmodes, from its mutual inductances and resistances
 ///
 /// The degrees of freedom of every loop, in the order of `loop` and then of `dof`, are the passive columns of the reconstruction's
-/// fit: `Plasma.greens_with_pf_passive` fills `greens/grid/pf_passive` in this order, and `time_slice(itime)/passive_dof_values` follows it.
+/// fit: `Equilibrium.greens_with_pf_passive` fills `greens/grid/pf_passive` in this order, and `time_slice(itime)/passive_dof_values` follows it.
 ///
-/// `Plasma.copy_from_pf_passive_ids` copies each loop's degrees of freedom and regularisations onto every time-slice of the
+/// `Equilibrium.copy_from_pf_passive_ids` copies each loop's degrees of freedom and regularisations onto every time-slice of the
 /// equilibrium IDS, as `constraints/pf_passive_current(i1)`, which is where the solver reads the regularisations from.
 ///
 /// Read the data back through `pf_passive_ids` and a path from `gsfit_rs.imas.pf_passive_paths`; there are no bespoke accessors.

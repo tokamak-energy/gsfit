@@ -18,16 +18,28 @@
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="constraints__flux_loop">
-        <xs:annotation><xs:documentation>How each flux loop is fitted, one `flux_loop` per loop. A loop the database has but this file does not list is not fitted, and a listed loop the database does not have is ignored</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                How each flux loop is fitted, one `flux_loop` per loop. A loop the database has but this file does not list is not fitted, and a listed loop the database does not have is ignored
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="flux_loop" type="flux_loop" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation><xs:documentation>One flux loop, which measures the poloidal flux</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            One flux loop, which measures the poloidal flux
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
             </xs:sequence>
         </xs:complexType>
         <xs:unique name="constraints_flux_loop_unique_name">
-            <xs:annotation><xs:documentation>Each flux_loop is listed at most once</xs:documentation></xs:annotation>
+            <xs:annotation>
+                <xs:documentation>
+                    Each flux_loop is listed at most once
+                </xs:documentation>
+            </xs:annotation>
             <xs:selector xpath="flux_loop"/>
             <xs:field xpath="name"/>
         </xs:unique>
@@ -36,14 +48,22 @@
     <!-- ================================= Other simple types ================================= -->
 
     <xs:simpleType name="Name">
-        <xs:annotation><xs:documentation>A name, with no spaces</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A name, with no spaces
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:pattern value="\S+"/>
         </xs:restriction>
     </xs:simpleType>
 
     <xs:simpleType name="NonNegativeDouble">
-        <xs:annotation><xs:documentation>A number greater than or equal to 0</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A number greater than or equal to 0
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:double">
             <xs:minInclusive value="0.0"/>
         </xs:restriction>
@@ -52,27 +72,52 @@
     <!-- ================================= Complex types ================================= -->
 
     <xs:complexType name="flux_loop">
-        <xs:annotation><xs:documentation>One flux loop, which measures the poloidal flux</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                One flux loop, which measures the poloidal flux
+            </xs:documentation>
+        </xs:annotation>
         <xs:all>
             <xs:element name="name" type="Name">
-                <xs:annotation><xs:documentation>The loop's name in the database, e.g. "L001"</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The loop's name in the database, e.g. "L001"
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="expected_value" type="xs:double">
-                <xs:annotation><xs:documentation>The typical size of the loop's measured poloidal flux. The fit divides the residual by it</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Expected magnitude of the measurement, used to normalise the measurement.
+                    </xs:documentation>
+                    <xs:appinfo>
+                        <units>Wb</units>
+                    </xs:appinfo>
+                </xs:annotation>
             </xs:element>
             <xs:element name="weight" type="NonNegativeDouble">
                 <xs:annotation>
-                    <xs:documentation>Relative weight of the constraint in the fit. Its least-squares weight is 2 pi weight / expected_value, but every reader except st40_mdsplus_with_digital_filter first divides `weight` by 2 pi</xs:documentation>
+                    <xs:documentation>
+                        Relative weight of the constraint in the least-squares fit.
+                    </xs:documentation>
                     <xs:appinfo>
                         <units>1</units>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:element>
             <xs:element name="include" type="xs:boolean">
-                <xs:annotation><xs:documentation>Whether the constraint is fitted</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Whether the constraint is fitted
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="comment" type="xs:string">
-                <xs:annotation><xs:documentation>Free text, e.g. why the constraint is not included; not used by the fit</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Free text, e.g. why the constraint is not included; not used by the fit
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
         </xs:all>
     </xs:complexType>

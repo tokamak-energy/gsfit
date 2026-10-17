@@ -15,7 +15,7 @@ const XI: f64 = 0.157;
 /// Ad hoc parameter which defines when a sensor which is "close" to a conductor should be considered as at the same location (i.e. self-point).
 /// Defined as a module constant to ensure consistency across all Greens-function calculations.
 /// Units are metres.
-/// We could make the distance exactly 0.0, which would work when calculating the grid-to-grid for Plasma which will be "bit exact".
+/// We could make the distance exactly 0.0, which would work when calculating the grid-to-grid Greens tables, `greens/grid/plasma`, which will be "bit exact".
 /// But there are other cases with the passives and coils to the grid which might lie on top of each other, but might contain floating point rounding errors, so we need a small tolerance.
 /// We could replace this tolerance with one on `k_sq`, as the problem we are avoiding is that `K(k_sq) --> \infty` as `k_sq --> 1.0`, but that loses the physical meaning of "near distance".
 const SELF_POINT_DISTANCE_TOLERANCE: f64 = 1e-7; // = 0.1 μm

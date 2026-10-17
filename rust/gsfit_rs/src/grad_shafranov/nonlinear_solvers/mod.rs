@@ -6,7 +6,7 @@
 //! * `fit_and_update_current`: the fit of the source functions, passive currents and `delta_z` to
 //!   the constraints, and from it the new current density
 //!
-//! Which one is used is chosen by `code/numerics/nonlinear_solver/method`; see
+//! Which one is used is chosen by `code/parameters_parsed/numerics/nonlinear_solver/method`; see
 //! `EquilibriumSolver::solve`.
 
 pub(super) mod newton_krylov;

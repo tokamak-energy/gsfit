@@ -42,17 +42,23 @@ const ANDERSON_SINGULAR_VALUE_CUTOFF: f64 = 1.0e-10;
 /// Solve with Picard iterations.
 ///
 /// Converged when the Grad-Shafranov deviation, the change in the flux on the magnetic axis
-/// between iterations, is below `code/numerics/grad_shafranov_deviation_tolerance`.
+/// between iterations, is below `code/parameters_parsed/numerics/grad_shafranov_deviation_tolerance`.
 pub(crate) fn solve(solver: &mut EquilibriumSolver) {
     // Solver settings, supplied through `equilibrium.code`
-    let n_iter_max: usize = solver.equilibrium_code.numerics.iterations.n_max as usize;
-    let n_iter_min: usize = solver.equilibrium_code.numerics.iterations.n_min as usize;
-    let grad_shafranov_deviation_tolerance: f64 = solver.equilibrium_code.numerics.grad_shafranov_deviation_tolerance;
-    let n_iter_no_vertical_feedback: usize = solver.equilibrium_code.numerics.nonlinear_solver.picard.n_iter_no_vertical_feedback as usize;
+    let n_iter_max: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_max as usize;
+    let n_iter_min: usize = solver.equilibrium_code.parameters_parsed.numerics.n_iter_min as usize;
+    let grad_shafranov_deviation_tolerance: f64 = solver.equilibrium_code.parameters_parsed.numerics.grad_shafranov_deviation_tolerance;
+    let n_iter_no_vertical_feedback: usize = solver
+        .equilibrium_code
+        .parameters_parsed
+        .numerics
+        .nonlinear_solver
+        .picard
+        .n_iter_no_vertical_feedback as usize;
     // Without Anderson mixing, the state is left exactly as the fit leaves it
-    let use_anderson: bool = solver.equilibrium_code.numerics.nonlinear_solver.picard.apply_anderson_mixing != 0;
-    let anderson_n_history: usize = solver.equilibrium_code.numerics.nonlinear_solver.picard.anderson_n_history as usize;
-    let anderson_mixing: f64 = solver.equilibrium_code.numerics.nonlinear_solver.picard.anderson_mixing;
+    let use_anderson: bool = solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.picard.apply_anderson_mixing != 0;
+    let anderson_n_history: usize = solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.picard.anderson_n_history as usize;
+    let anderson_mixing: f64 = solver.equilibrium_code.parameters_parsed.numerics.nonlinear_solver.picard.anderson_mixing;
 
     // The passive currents and the initial current density
     if let Err(error) = solver.initialise() {
@@ -231,8 +237,8 @@ fn get_state(solver: &EquilibriumSolver) -> Array1<f64> {
 
 /// Put the unscaled state `x` back into the time-slice; the reverse of `get_state`
 fn set_state(solver: &mut EquilibriumSolver, x: &Array1<f64>) {
-    let n_r: usize = solver.equilibrium_code.grid.n_r as usize;
-    let n_z: usize = solver.equilibrium_code.grid.n_z as usize;
+    let n_r: usize = solver.equilibrium_code.parameters_parsed.grid.n_r as usize;
+    let n_z: usize = solver.equilibrium_code.parameters_parsed.grid.n_z as usize;
     let n_grid: usize = n_z * n_r;
     let n_passive_dof: usize = solver.passive_dof_values.len();
 

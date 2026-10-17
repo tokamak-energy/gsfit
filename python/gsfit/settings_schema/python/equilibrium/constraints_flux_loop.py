@@ -37,8 +37,8 @@ class FluxLoop:
     One flux loop, which measures the poloidal flux
 
     :param name: The loop's name in the database, e.g. "L001"
-    :param expected_value: The typical size of the loop's measured poloidal flux. The fit divides the residual by it
-    :param weight: Relative weight of the constraint in the fit. Its least-squares weight is 2 pi weight / expected_value, but every reader except st40_mdsplus_with_digital_filter first divides `weight` by 2 pi [1]
+    :param expected_value: Expected magnitude of the measurement, used to normalise the measurement. [Wb]
+    :param weight: Relative weight of the constraint in the least-squares fit. [1]
     :param include: Whether the constraint is fitted
     :param comment: Free text, e.g. why the constraint is not included; not used by the fit
     """
@@ -47,7 +47,7 @@ class FluxLoop:
     KEY: typing.ClassVar[str] = "name"
 
     name: str
-    expected_value: float
+    expected_value: float  # [Wb]
     weight: float  # [1]
     include: bool
     comment: str

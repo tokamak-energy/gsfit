@@ -11,8 +11,10 @@ use ndarray::{Array1, Array2};
 /// Rather than special-casing those, the vector is a vector of `Arc` handles. Sensor types whose
 /// data does vary build a new one per time-slice; those whose data does not point every entry at a
 /// single shared copy. The solver indexes `[i_time]` either way and cannot tell the difference,
-/// but the fixed ones are stored once instead of 480 times — for ST40's magnetics that is about
-/// 29 MB in place of 13.7 GB.
+/// but the fixed ones are stored once instead of 480 times.
+///
+/// The magnetic sensors do not use this: the solver reads which are fitted, their measurements,
+/// weights and Greens tables from the equilibrium IDS; see `FittedMagneticSensors`.
 pub struct SensorsStatic {
     pub names: Vec<String>,                       // shape = [n_sensors]; the name of each sensor, in the order of the columns below
     pub greens_with_grid: Array2<f64>,            // shape = [n_z * n_r, n_sensors]

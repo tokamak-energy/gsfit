@@ -1,7 +1,7 @@
 //! The limiter an equilibrium is solved inside, as the equilibrium IDS holds it: `equilibrium/limiter`.
 //!
 //! The limiter is read from a database into the `wall` IDS, and copied from there into the
-//! equilibrium IDS by `Plasma.copy_from_wall_ids`. The solver and the post-processor read it from the
+//! equilibrium IDS by `Equilibrium.copy_from_wall_ids`. The solver and the post-processor read it from the
 //! equilibrium IDS alone, through the two functions here, and never from the `wall` IDS.
 //!
 //! The units are read by position: `unit(0)` is the vacuum vessel contour, and the others are plasma
@@ -26,7 +26,7 @@ pub fn limiter_points(limiter: &EquilibriumLimiter) -> Result<(Array1<f64>, Arra
     let units: &[EquilibriumLimiterUnit] = &limiter.unit;
     let n_unit: usize = units.len();
     if n_unit == 0 {
-        return Err("`equilibrium/limiter/unit` is empty: copy the limiter in from the `wall` IDS with `Plasma.copy_from_wall_ids`".to_string());
+        return Err("`equilibrium/limiter/unit` is empty: copy the limiter in from the `wall` IDS with `Equilibrium.copy_from_wall_ids`".to_string());
     }
 
     // Count first, so that the output is allocated once
@@ -67,7 +67,7 @@ pub fn limiter_points(limiter: &EquilibriumLimiter) -> Result<(Array1<f64>, Arra
 /// * `vessel_z` - vertical coordinates, [metre]
 pub fn vacuum_vessel_outline(limiter: &EquilibriumLimiter) -> Result<(Array1<f64>, Array1<f64>), String> {
     if limiter.unit.is_empty() {
-        return Err("`equilibrium/limiter/unit` is empty: copy the limiter in from the `wall` IDS with `Plasma.copy_from_wall_ids`".to_string());
+        return Err("`equilibrium/limiter/unit` is empty: copy the limiter in from the `wall` IDS with `Equilibrium.copy_from_wall_ids`".to_string());
     }
     let (vessel_r, vessel_z): (&Array1<f64>, &Array1<f64>) = unit_outline(&limiter.unit[0], 0)?;
 
@@ -150,7 +150,7 @@ mod tests {
         let error: String = limiter_points(&limiter).unwrap_err();
 
         assert!(error.contains("`equilibrium/limiter/unit` is empty"), "{error}");
-        assert!(error.contains("`Plasma.copy_from_wall_ids`"), "{error}");
+        assert!(error.contains("`Equilibrium.copy_from_wall_ids`"), "{error}");
     }
 
     #[test]

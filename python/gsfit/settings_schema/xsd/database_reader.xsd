@@ -12,28 +12,60 @@
     <!-- ===================================== Enums ===================================== -->
 
     <xs:simpleType name="DatabaseReaderMethod">
-        <xs:annotation><xs:documentation>The database readers, from `get_database_reader` in python/gsfit/database_readers/__init__.py</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The database readers, from `get_database_reader` in python/gsfit/database_readers/__init__.py
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="st40_mdsplus">
-                <xs:annotation><xs:documentation>ST40's experimental MDSplus database</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        ST40's experimental MDSplus database
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="st40_mdsplus_with_digital_filter">
-                <xs:annotation><xs:documentation>ST40's experimental MDSplus database, with a digital filter</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        ST40's experimental MDSplus database, with a digital filter
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="st40_astra_mdsplus">
-                <xs:annotation><xs:documentation>ST40, with synthetic measurements from an ASTRA simulation</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        ST40, with synthetic measurements from an ASTRA simulation
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="st40_spider_mdsplus">
-                <xs:annotation><xs:documentation>ST40, with synthetic measurements from a SPIDER simulation</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        ST40, with synthetic measurements from a SPIDER simulation
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="freegs">
-                <xs:annotation><xs:documentation>Synthetic measurements from FreeGS equilibria, which are passed to `Gsfit.run`</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Synthetic measurements from FreeGS equilibria, which are passed to `Gsfit.run`
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="freegsnke">
-                <xs:annotation><xs:documentation>Synthetic measurements from FreeGSNKE equilibria, which are passed to `Gsfit.run`</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        Synthetic measurements from FreeGSNKE equilibria, which are passed to `Gsfit.run`
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="mock_st40_mdsplus">
-                <xs:annotation><xs:documentation>A mock of ST40's MDSplus database, frozen to a single time-slice, so that a reconstruction can run without a live database (e.g. in CI)</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        A mock of ST40's MDSplus database, frozen to a single time-slice, so that a reconstruction can run without a live database (e.g. in CI)
+                    </xs:documentation>
+                </xs:annotation>
             </xs:enumeration>
         </xs:restriction>
     </xs:simpleType>
@@ -41,11 +73,19 @@
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="database_reader">
-        <xs:annotation><xs:documentation>The database reader the whole run uses, which builds the IDSs GSFit reads</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The database reader the whole run uses, which builds the IDSs GSFit reads
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:all>
                 <xs:element name="method" type="DatabaseReaderMethod">
-                    <xs:annotation><xs:documentation>The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
             </xs:all>
         </xs:complexType>

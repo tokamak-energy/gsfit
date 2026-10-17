@@ -19,7 +19,7 @@ use pyo3::prelude::*;
 ///
 /// # Unit ordering
 ///
-/// `Plasma.copy_from_wall_ids` copies the units into the equilibrium IDS, as
+/// `Equilibrium.copy_from_wall_ids` copies the units into the equilibrium IDS, as
 /// `equilibrium/limiter/unit(i)`, in the same order, and the solver reads them from there by
 /// position. So the order they are added in is part of the contract:
 /// * `unit(0)` is the vacuum vessel contour: the closed polygon bounding the region the

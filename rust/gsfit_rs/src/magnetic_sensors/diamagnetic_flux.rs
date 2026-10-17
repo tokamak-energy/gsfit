@@ -1,7 +1,7 @@
 //! `magnetics/diamagnetic_flux(i1)`: the diamagnetic flux, one for each method of calculating it
 
+use crate::equilibrium::Equilibrium;
 use crate::magnetics::Magnetics;
-use crate::plasma::Plasma;
 use imas_rs::EquilibriumConstraints0dB0Like;
 use imas_rs::ids::magnetics::MagneticsMethodDistinct;
 use ndarray::Array1;
@@ -86,7 +86,7 @@ impl Magnetics {
 }
 
 /// Rust only methods, copying the diamagnetic flux into the equilibrium IDS
-impl Plasma {
+impl Equilibrium {
     /// Copy the diamagnetic flux from the magnetics IDS onto every time-slice of the equilibrium IDS, as
     /// `equilibrium/time_slice(itime)/constraints/diamagnetic_flux`. This does part of the work of the Python method `copy_from_magnetics_ids`;
     /// see it for what is stored.
@@ -95,42 +95,71 @@ impl Plasma {
     /// * `magnetics` - the magnetic sensors, holding the diamagnetic flux in `magnetics/diamagnetic_flux`
     ///
     /// # Errors
-    /// Why the diamagnetic flux cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
+    /// The diamagnetic flux is in the fit settings but not in the magnetics IDS, or it cannot be interpolated onto the reconstruction times,
+    /// e.g. because its timebase does not cover them.
     pub fn copy_from_magnetics_ids_diamagnetic_flux(&mut self, magnetics: &Magnetics) -> Result<(), String> {
         let times_to_reconstruct: Array1<f64> = self.equilibrium_ids.time_slice(..).time.to_array();
         let n_time: usize = times_to_reconstruct.len();
 
-        // The data dictionary has one diamagnetic flux constraint, whereas the magnetics IDS has one diamagnetic flux for each method of
-        // calculating it, the generally recommended method first. So that one is copied
-        let diamagnetic_flux_methods: &Vec<MagneticsMethodDistinct> = &magnetics.magnetics_ids.diamagnetic_flux;
-
-        // Without one, the constraint is left unset. Assigned, so that calling this twice replaces it
-        if diamagnetic_flux_methods.is_empty() {
+        // The diamagnetic flux is only copied if it is in the fit settings, `code/parameters_parsed/constraints/diamagnetic_flux`, whose
+        // `name` is required, so is empty only when they are left out. Without them the constraint is left unset. Assigned, so that calling
+        // this twice replaces it
+        let settings_name: String = self
+            .equilibrium_ids
+            .code
+            .parameters_parsed
+            .constraints
+            .diamagnetic_flux
+            .diamagnetic_flux
+            .name
+            .clone();
+        let settings_weight: f64 = self.equilibrium_ids.code.parameters_parsed.constraints.diamagnetic_flux.diamagnetic_flux.weight;
+        if settings_name.is_empty() {
             for i_time in 0..n_time {
                 self.equilibrium_ids.time_slice[i_time].constraints.diamagnetic_flux = EquilibriumConstraints0dB0Like::default();
             }
             return Ok(());
         }
 
-        // The diamagnetic flux is on the experimental timebase, so it is interpolated onto the times of the time-slices `Plasma::new`
+        // The data dictionary has one diamagnetic flux constraint, whereas the magnetics IDS has one diamagnetic flux for each method of
+        // calculating it. The one the fit settings name is copied, and it has to be there
+        let diamagnetic_flux_methods: &Vec<MagneticsMethodDistinct> = &magnetics.magnetics_ids.diamagnetic_flux;
+        let Some(i_method) = diamagnetic_flux_methods
+            .iter()
+            .position(|diamagnetic_flux_method: &MagneticsMethodDistinct| diamagnetic_flux_method.method_name == settings_name)
+        else {
+            return Err(format!(
+                "`{settings_name}` is in the fit settings, `code/parameters_parsed/constraints/diamagnetic_flux`, but not in the magnetics IDS, `magnetics/diamagnetic_flux(:)/method_name`"
+            ));
+        };
+
+        // The diamagnetic flux is on the experimental timebase, so it is interpolated onto the times of the time-slices `Equilibrium::new`
         // allocated
-        let method_name: &str = &diamagnetic_flux_methods[0].method_name;
         let interpolator: interpolation::Dim1Linear =
-            interpolation::Dim1Linear::new(diamagnetic_flux_methods[0].time.clone(), diamagnetic_flux_methods[0].data.clone())
-                .map_err(|error: interpolation::Error| format!("cannot interpolate `magnetics/diamagnetic_flux(0)/data` ({method_name}): {error:?}"))?;
+            interpolation::Dim1Linear::new(diamagnetic_flux_methods[i_method].time.clone(), diamagnetic_flux_methods[i_method].data.clone()).map_err(
+                |error: interpolation::Error| format!("cannot interpolate `magnetics/diamagnetic_flux({i_method})/data` ({settings_name}): {error:?}"),
+            )?;
         let measured: Array1<f64> = interpolator.interpolate_array1(&times_to_reconstruct).map_err(|error: interpolation::Error| {
-            format!("cannot interpolate `magnetics/diamagnetic_flux(0)/data` ({method_name}) onto the reconstruction times: {error:?}")
+            format!("cannot interpolate `magnetics/diamagnetic_flux({i_method})/data` ({settings_name}) onto the reconstruction times: {error:?}")
         })?;
 
-        // Assigned, so that calling this twice replaces the diamagnetic flux
+        // Assigned, so that calling this twice replaces the diamagnetic flux. It keeps the constraint `Equilibrium::new` made from the fit
+        // settings, with its `weight`
         for i_time in 0..n_time {
-            self.equilibrium_ids.time_slice[i_time].constraints.diamagnetic_flux = EquilibriumConstraints0dB0Like {
-                name: method_name.to_string(),
-                measured: measured[i_time],
-                source: "magnetics/diamagnetic_flux(0)/data".to_string(),
-                time_measurement: times_to_reconstruct[i_time],
-                ..Default::default()
+            let settings_constraint: &EquilibriumConstraints0dB0Like = &self.equilibrium_ids.time_slice[i_time].constraints.diamagnetic_flux;
+            let mut constraint: EquilibriumConstraints0dB0Like = if settings_constraint.name == settings_name {
+                settings_constraint.clone()
+            } else {
+                EquilibriumConstraints0dB0Like {
+                    name: settings_name.clone(),
+                    weight: settings_weight,
+                    ..Default::default()
+                }
             };
+            constraint.measured = measured[i_time];
+            constraint.source = format!("magnetics/diamagnetic_flux({i_method})/data");
+            constraint.time_measurement = times_to_reconstruct[i_time];
+            self.equilibrium_ids.time_slice[i_time].constraints.diamagnetic_flux = constraint;
         }
 
         Ok(())

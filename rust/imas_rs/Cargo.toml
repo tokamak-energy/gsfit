@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 ndarray = "0.17.2"
 num-complex = "0.4.6"
+roxmltree = "0.21.1"  # For reading `code/parameters`, the XML of the settings an IDS was built with, into `code/parameters_parsed`
 
 # Only needed by the `python` feature, which adds the Python bindings in `src/python/`.
 # Kept optional so `imas_rs` stays a plain Rust crate by default.

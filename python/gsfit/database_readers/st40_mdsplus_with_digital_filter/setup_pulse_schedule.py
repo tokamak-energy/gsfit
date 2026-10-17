@@ -31,7 +31,7 @@ def setup_pulse_schedule(
     **This method is specific to ST40's experimental MDSplus database, with a digital filter.**
 
     Only the gap definitions are filled, `pulse_schedule/position_control/gap(i)/name`, `.../r`, `.../z` and `.../angle`.
-    `Plasma.copy_from_pulse_schedule_ids` copies them onto the equilibrium IDS, and `solve_grad_shafranov` calculates the value of each gap.
+    `Equilibrium.copy_from_pulse_schedule_ids` copies them onto the equilibrium IDS, and `solve_grad_shafranov` calculates the value of each gap.
 
     **The angle is converted.**
     ELMAG stores `GAPS.ANGLE` counter-clockwise from the outward major radius, in the usual plot with `R` to the right and `Z` upwards.

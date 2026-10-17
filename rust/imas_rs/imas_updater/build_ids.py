@@ -946,6 +946,9 @@ def generate_rust_struct(ct: ComplexType) -> str:
             lines.append(f"    /// Units: {f.units}")
 
         field_name = sanitize_rust_identifier(f.name)
+        # A key keeps the name it has where it comes from, e.g. `RAYON_NUM_THREADS` in the settings, so that its path is the same
+        if f.name != f.name.lower():
+            lines.append("    #[allow(non_snake_case)]")
         lines.append(f"    pub {field_name}: {f.rust_type},")
 
     lines.append("}")
@@ -1256,6 +1259,531 @@ def add_custom_keys_to_ids(
                 f"keys to an existing struct, check the spelling; if it is a new nested structure, "
                 f"add a field of that type to its parent."
             )
+
+
+# ============================================================================
+# `code/parameters_parsed`: the settings an IDS is built with, read into structs
+#
+# `code/parameters` holds the settings an IDS was built with as XML text, which is what the data
+# dictionary asks for. `code/parameters_parsed` holds the same settings read into structs, so that
+# they are read by name and with their types, e.g. `code/parameters_parsed/grid/n_r`. Two things are
+# generated from the settings' XML schema, following its links to the XML schemas of the files it
+# links to, so that neither can drift from it:
+#   * the structs, added to the IDS's own, so that they get views and Python paths like any other;
+#   * `src/ids/<ids>_parameters_parsed.rs`, which reads the XML into them.
+# ============================================================================
+
+# The XML schema of the settings each IDS is built with, keyed by the IDS's name. Only an IDS listed
+# here gets a `code/parameters_parsed`, and its custom keys must declare the field, e.g.
+# `pub parameters_parsed: EquilibriumCodeParametersParsed,` in `Code`.
+# The settings' XML schemas live in the `gsfit` Python package, which is assumed not to move relative to this script
+PARAMETERS_PARSED_XSD_FILES: dict[str, Path] = {
+    "equilibrium": REPO_ROOT / "python" / "gsfit" / "settings_schema" / "xsd" / "equilibrium" / "equilibrium.xsd",
+}
+
+# The XML schema's built-in types which the settings use, with the base type each is stored as and the
+# function in `src/parameters_parsed.rs` which reads it. The data dictionary has no boolean, so an
+# `xs:boolean` is stored as an integer, 1 for true and 0 for false, as it does for e.g. `constraints/ip/exact`
+XSD_BUILT_IN_LEAF_TYPES: dict[str, tuple[str, str]] = {
+    "xs:double": ("FLT_0D", "read_double"),
+    "xs:nonNegativeInteger": ("INT_0D", "read_integer"),
+    "xs:boolean": ("INT_0D", "read_boolean"),
+    "xs:string": ("STR_0D", "read_string"),
+}
+
+
+@dataclass
+class SettingsSchema:
+    """One XML schema file of the settings, with its named types looked up by name."""
+
+    xsd_file_path: Path
+    root: ET.Element
+    complex_types: dict[str, ET.Element]
+    simple_types: dict[str, ET.Element]
+
+
+@dataclass
+class ParametersParsedStruct:
+    """A struct of `code/parameters_parsed`, and the function reading each of its fields from the XML."""
+
+    complex_type: ComplexType
+    # Keyed by the field's name, which is the name of the XML element it is read from. A leaf is read by a
+    # function in `src/parameters_parsed.rs`; a struct by its own generated function
+    readers: dict[str, str] = field(default_factory=dict)
+
+
+def read_settings_schema(xsd_file_path: Path) -> SettingsSchema:
+    """Read one XML schema file of the settings."""
+
+    root: ET.Element = ET.parse(xsd_file_path).getroot()
+    complex_types: dict[str, ET.Element] = {}
+    simple_types: dict[str, ET.Element] = {}
+    for component in root:
+        component_name: str | None = component.get("name")
+        if component.tag == f"{XS_NS}complexType" and component_name is not None:
+            complex_types[component_name] = component
+        elif component.tag == f"{XS_NS}simpleType" and component_name is not None:
+            simple_types[component_name] = component
+
+    return SettingsSchema(xsd_file_path=xsd_file_path, root=root, complex_types=complex_types, simple_types=simple_types)
+
+
+def xsd_type_name_to_pascal_case(type_name: str) -> str:
+    """
+    An XML schema type's name in PascalCase, e.g. `BFieldPolProbe` for `b_field_pol_probe`.
+
+    The settings' type names are either snake_case, e.g. `b_field_pol_probe`, or PascalCase already, e.g. `EfitPolynomial`, which
+    `snake_to_pascal_case` would turn into `Efitpolynomial`, so only the first letter of each word is changed.
+    """
+
+    pascal_case: str = ""
+    for word in type_name.split("_"):
+        pascal_case += word[:1].upper() + word[1:]
+
+    return pascal_case
+
+
+def parameters_parsed_reader_name(struct_name: str) -> str:
+    """The name of the generated function which reads the struct `struct_name` from its XML element."""
+
+    return f"read_{pascal_case_to_snake(struct_name)}"
+
+
+def resolve_settings_leaf_type(type_name: str, schema: SettingsSchema) -> tuple[str, str, list[str]]:
+    """
+    The base type a leaf of the settings is stored as, the function reading it, and its enumeration values, if it has any.
+
+    A simple type is resolved through its restrictions to the built-in type it restricts, e.g. `NonNegativeDouble` to
+    `xs:double`. A space-separated list of numbers, an `xs:list` of `xs:double`, is a `FLT_1D`.
+    """
+
+    if type_name in XSD_BUILT_IN_LEAF_TYPES:
+        rust_type, reader = XSD_BUILT_IN_LEAF_TYPES[type_name]
+        return rust_type, reader, []
+
+    if type_name not in schema.simple_types:
+        raise NotImplementedError(
+            f"{schema.xsd_file_path}: the type `{type_name}` is neither a simple type of this XML schema nor one of {sorted(XSD_BUILT_IN_LEAF_TYPES)}"
+        )
+    simple_type: ET.Element = schema.simple_types[type_name]
+
+    list_element: ET.Element | None = simple_type.find(f"{XS_NS}list")
+    if list_element is not None:
+        item_rust_type, _, _ = resolve_settings_leaf_type(list_element.get("itemType", ""), schema)
+        if item_rust_type != "FLT_0D":
+            raise NotImplementedError(f"{schema.xsd_file_path}: `{type_name}` is a list of `{item_rust_type}`, but only lists of numbers are handled")
+        return "FLT_1D", "read_double_list", []
+
+    restriction: ET.Element | None = simple_type.find(f"{XS_NS}restriction")
+    if restriction is None:
+        raise NotImplementedError(f"{schema.xsd_file_path}: `{type_name}` is neither an `xs:list` nor an `xs:restriction`")
+    rust_type, reader, _ = resolve_settings_leaf_type(restriction.get("base", ""), schema)
+    enumeration_values: list[str] = []
+    for enumeration in restriction.findall(f"{XS_NS}enumeration"):
+        enumeration_values.append(enumeration.get("value", ""))
+
+    return rust_type, reader, enumeration_values
+
+
+def settings_element_content(element: ET.Element, schema: SettingsSchema) -> ET.Element:
+    """The complex type holding an element's children: its named type, or the complex type written inside it."""
+
+    type_name: str | None = element.get("type")
+    if type_name is not None:
+        if type_name not in schema.complex_types:
+            raise NotImplementedError(f"{schema.xsd_file_path}: <{element.get('name')}> has the type `{type_name}`, which is not a complex type of this XML schema")
+        return schema.complex_types[type_name]
+
+    inline_complex_type: ET.Element | None = element.find(f"{XS_NS}complexType")
+    if inline_complex_type is None:
+        raise NotImplementedError(f"{schema.xsd_file_path}: <{element.get('name')}> has neither a `type` nor a complex type inside it")
+    return inline_complex_type
+
+
+def settings_child_elements(complex_type: ET.Element, schema: SettingsSchema, path: str) -> list[ET.Element]:
+    """
+    The elements a complex type holds, in an `xs:all` or an `xs:sequence`.
+
+    Anything else, e.g. an `xs:choice` or an attribute, is not handled, so raises rather than being silently left out.
+    """
+
+    groups: list[ET.Element] = []
+    for component in complex_type:
+        if component.tag == f"{XS_NS}annotation":
+            continue
+        if component.tag not in (f"{XS_NS}all", f"{XS_NS}sequence"):
+            raise NotImplementedError(f"{schema.xsd_file_path}: `{path}` holds an `{component.tag.removeprefix(XS_NS)}`, but only an `xs:all` or `xs:sequence` of elements is handled")
+        groups.append(component)
+    if len(groups) > 1:
+        raise NotImplementedError(f"{schema.xsd_file_path}: `{path}` holds {len(groups)} groups of elements, rather than one")
+
+    child_elements: list[ET.Element] = []
+    for group in groups:
+        for component in group:
+            if component.tag == f"{XS_NS}annotation":
+                continue
+            if component.tag != f"{XS_NS}element":
+                raise NotImplementedError(f"{schema.xsd_file_path}: `{path}` holds an `{component.tag.removeprefix(XS_NS)}`, but only elements are handled")
+            child_elements.append(component)
+
+    return child_elements
+
+
+def is_settings_matrix(complex_type: ET.Element, schema: SettingsSchema) -> bool:
+    """Whether a complex type is a matrix: an element holding only a repeated `row`, each a list of numbers."""
+
+    sequence: ET.Element | None = complex_type.find(f"{XS_NS}sequence")
+    if sequence is None:
+        return False
+    row_elements: list[ET.Element] = sequence.findall(f"{XS_NS}element")
+    if len(row_elements) != 1:
+        return False
+    row_element: ET.Element = row_elements[0]
+    if row_element.get("name") != "row" or row_element.get("maxOccurs") != "unbounded":
+        return False
+    row_rust_type, _, _ = resolve_settings_leaf_type(row_element.get("type", ""), schema)
+
+    return row_rust_type == "FLT_1D"
+
+
+def add_parameters_parsed_struct(
+    complex_type: ET.Element,
+    schema: SettingsSchema,
+    struct_name: str,
+    path: str,
+    documentation: str,
+    root_struct_name: str,
+    named_types: dict[str, tuple[Path, str]],
+    parameters_parsed_structs: list[ParametersParsedStruct],
+    xsd_type_name: str | None = None,
+) -> None:
+    """
+    Add the struct read from the elements of `complex_type`, and the structs of the elements inside it, to `parameters_parsed_structs`.
+
+    Each element is a field of the same name. A link to another file, an element naming the XML schema of the file it links to in
+    `xs:appinfo/schema`, holds the linked file's root element, which is how the settings are written into `code/parameters`.
+
+    A struct of a named XML schema type is named after the type, e.g. `EquilibriumCodeParametersParsedEfitPolynomial` for
+    `EfitPolynomial`, and is one struct wherever the type is used, e.g. for both p' and ff', so that the code reading it is written
+    once. A type used by several XML schemas is repeated in each, so they must agree on it, as they must for the settings to be
+    written into `code/parameters`. A struct of a type written inside its element is named after the struct holding it and the
+    element, e.g. `EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard` for `code/parameters_parsed/numerics/nonlinear_solver/picard`.
+
+    Args:
+        complex_type: The complex type holding the struct's elements
+        schema: The XML schema file `complex_type` is in, whose named types its elements' types are looked up in
+        struct_name: The struct's Rust name
+        path: The struct's path in the IDS, e.g. `code/parameters_parsed/grid`, for the error messages
+        documentation: The struct's documentation
+        root_struct_name: The name of the struct of `code/parameters_parsed`, e.g. `EquilibriumCodeParametersParsed`, which the
+            name of each struct of a named type starts with
+        named_types: The structs of named types so far, keyed by the struct's name, with the XML schema each was first found in and
+            its type, as canonical XML, to check that every XML schema using it agrees
+        parameters_parsed_structs: The structs so far, which this struct, and those inside it, are added to
+        xsd_type_name: The name of the XML schema type `complex_type` is, if it is a named one, for the documentation
+    """
+
+    xsd_relative_path: Path = schema.xsd_file_path.relative_to(REPO_ROOT)
+    generated_from: str = f"Generated from the XML schema `{xsd_relative_path}`"
+    if xsd_type_name is not None:
+        generated_from = f"Generated from the XML schema type `{xsd_type_name}`, in `{xsd_relative_path}`"
+    parameters_parsed_struct: ParametersParsedStruct = ParametersParsedStruct(
+        complex_type=ComplexType(
+            # `generate_rust_struct` derives the Rust name from `name` via `snake_to_pascal_case`
+            name=pascal_case_to_snake(struct_name),
+            documentation=f"{documentation}\n{generated_from}",
+        )
+    )
+    parameters_parsed_structs.append(parameters_parsed_struct)
+
+    child_elements: list[ET.Element] = settings_child_elements(complex_type, schema, path)
+    n_child_elements: int = len(child_elements)
+    for i_child_element in range(n_child_elements):
+        element: ET.Element = child_elements[i_child_element]
+        element_name: str | None = element.get("name")
+        if element_name is None:
+            raise NotImplementedError(f"{schema.xsd_file_path}: `{path}` holds an element with no `name`, e.g. an `xs:element ref`")
+        element_path: str = f"{path}/{element_name}"
+        if element.get("nillable") == "true":
+            raise NotImplementedError(f"{schema.xsd_file_path}: `{element_path}` is nillable, but a nil element is not handled")
+        max_occurs: str = element.get("maxOccurs", "1")
+        if max_occurs not in ("1", "unbounded"):
+            raise NotImplementedError(f'{schema.xsd_file_path}: `{element_path}` has maxOccurs="{max_occurs}", but only "1" and "unbounded" are handled')
+        is_array: bool = max_occurs == "unbounded"
+        is_optional: bool = element.get("minOccurs", "1") == "0"
+        field_documentation: str = extract_documentation(element)
+        child_struct_name: str = f"{struct_name}{snake_to_pascal_case(element_name)}"
+
+        # A link names the XML schema of the file it links to, relative to this XML schema
+        linked_xsd_relative_path: str | None = None
+        appinfo: ET.Element | None = element.find(f"{XS_NS}annotation/{XS_NS}appinfo")
+        if appinfo is not None:
+            linked_schema_element: ET.Element | None = appinfo.find("schema")
+            if linked_schema_element is not None and linked_schema_element.text:
+                linked_xsd_relative_path = linked_schema_element.text.strip()
+
+        type_name: str | None = element.get("type")
+        rust_type: str
+        reader: str
+        if linked_xsd_relative_path is not None:
+            # The link holds the linked file's root element, so the struct is read from that root element's type
+            linked_schema: SettingsSchema = read_settings_schema((schema.xsd_file_path.parent / linked_xsd_relative_path).resolve())
+            linked_root_elements: list[ET.Element] = linked_schema.root.findall(f"{XS_NS}element")
+            if len(linked_root_elements) != 1:
+                raise NotImplementedError(f"{linked_schema.xsd_file_path}: {len(linked_root_elements)} root elements, rather than one")
+            linked_root_element: ET.Element = linked_root_elements[0]
+            struct_documentation: str = extract_documentation(linked_root_element)
+            if struct_documentation == "":
+                struct_documentation = field_documentation
+            add_parameters_parsed_struct(
+                complex_type=settings_element_content(linked_root_element, linked_schema),
+                schema=linked_schema,
+                struct_name=child_struct_name,
+                path=element_path,
+                documentation=struct_documentation,
+                root_struct_name=root_struct_name,
+                named_types=named_types,
+                parameters_parsed_structs=parameters_parsed_structs,
+            )
+            rust_type = child_struct_name
+            reader = parameters_parsed_reader_name(child_struct_name)
+        elif type_name is not None and type_name not in schema.complex_types:
+            rust_type, reader, enumeration_values = resolve_settings_leaf_type(type_name, schema)
+            if len(enumeration_values) > 0:
+                quoted_enumeration_values: list[str] = []
+                for enumeration_value in enumeration_values:
+                    quoted_enumeration_values.append(f'"{enumeration_value}"')
+                field_documentation += "\nOne of: " + ", ".join(quoted_enumeration_values)
+            if is_array:
+                raise NotImplementedError(f"{schema.xsd_file_path}: `{element_path}` is a repeated leaf, but only a repeated `row` of a matrix, or a repeated element holding others, is handled")
+        else:
+            element_content: ET.Element = settings_element_content(element, schema)
+            if is_settings_matrix(element_content, schema):
+                rust_type = "FLT_2D"
+                reader = "read_matrix"
+                field_documentation += "\nShape [n_rows, n_columns], one row per `row` element"
+            else:
+                is_new_struct: bool = True
+                if type_name is not None:
+                    # One struct per named type, wherever it is used: see the docstring
+                    child_struct_name = f"{root_struct_name}{xsd_type_name_to_pascal_case(type_name)}"
+                    canonical_type: str = ET.canonicalize(ET.tostring(element_content, encoding="unicode"), strip_text=True)
+                    if child_struct_name in named_types:
+                        first_xsd_file_path, first_canonical_type = named_types[child_struct_name]
+                        if canonical_type != first_canonical_type:
+                            raise ValueError(
+                                f"{first_xsd_file_path} and {schema.xsd_file_path} both have a type named `{type_name}`, which are not the same. "
+                                "A type used by several XML schemas must be the same in each"
+                            )
+                        is_new_struct = False
+                    else:
+                        named_types[child_struct_name] = (schema.xsd_file_path, canonical_type)
+                    # The type's own documentation, as the element's is about where it is used
+                    struct_documentation = extract_documentation(element_content)
+                    if struct_documentation == "":
+                        struct_documentation = field_documentation
+                else:
+                    struct_documentation = field_documentation
+                    if struct_documentation == "":
+                        struct_documentation = extract_documentation(element_content)
+                if is_new_struct:
+                    add_parameters_parsed_struct(
+                        complex_type=element_content,
+                        schema=schema,
+                        struct_name=child_struct_name,
+                        path=f"{element_path}(i1)" if is_array else element_path,
+                        documentation=struct_documentation,
+                        root_struct_name=root_struct_name,
+                        named_types=named_types,
+                        parameters_parsed_structs=parameters_parsed_structs,
+                        xsd_type_name=type_name,
+                    )
+                rust_type = child_struct_name
+                reader = parameters_parsed_reader_name(child_struct_name)
+
+        if is_optional:
+            field_documentation += "\nOptional in the settings: unset when it is left out"
+        if is_array:
+            rust_type = f"Vec<{rust_type}>"
+
+        parameters_parsed_struct.complex_type.fields.append(
+            Field(
+                name=element_name,
+                rust_type=rust_type,
+                documentation=field_documentation.strip(),
+                units=extract_units(element),
+                is_array=is_array,
+                is_optional=is_optional,
+            )
+        )
+        parameters_parsed_struct.readers[element_name] = reader
+
+
+def add_parameters_parsed_to_ids(
+    complex_types: list[ComplexType],
+    root_element: ComplexType | None,
+    ids_name: str,
+    xsd_file_path: Path,
+) -> tuple[list[ParametersParsedStruct], str]:
+    """
+    Add the structs of `code/parameters_parsed`, generated from the XML schema of the settings the IDS is built with, to the IDS's structs, in place.
+
+    The field itself, `code/parameters_parsed`, is declared in the IDS's custom keys, with the type of the root struct, e.g.
+    `EquilibriumCodeParametersParsed`, so that it is listed and documented with the other custom keys.
+
+    Args:
+        complex_types: The IDS's structs, which the structs of `code/parameters_parsed` are added to
+        root_element: The IDS's root struct
+        ids_name: The IDS's name, e.g. "equilibrium"
+        xsd_file_path: The XML schema of the settings the IDS is built with, e.g. `equilibrium/equilibrium.xsd`
+
+    Returns:
+        The structs of `code/parameters_parsed`, with the function reading each field, and the name of the settings' root element,
+        e.g. "equilibrium_settings"
+    """
+
+    schema: SettingsSchema = read_settings_schema(xsd_file_path)
+    settings_root_elements: list[ET.Element] = schema.root.findall(f"{XS_NS}element")
+    if len(settings_root_elements) != 1:
+        raise NotImplementedError(f"{xsd_file_path}: {len(settings_root_elements)} root elements, rather than one")
+    settings_root_element: ET.Element = settings_root_elements[0]
+    settings_root_element_name: str = settings_root_element.get("name", "")
+
+    root_struct_name: str = f"{snake_to_pascal_case(ids_name)}CodeParametersParsed"
+    parameters_parsed_structs: list[ParametersParsedStruct] = []
+    named_types: dict[str, tuple[Path, str]] = {}
+    add_parameters_parsed_struct(
+        complex_type=settings_element_content(settings_root_element, schema),
+        schema=schema,
+        struct_name=root_struct_name,
+        path="code/parameters_parsed",
+        documentation=extract_documentation(settings_root_element),
+        root_struct_name=root_struct_name,
+        named_types=named_types,
+        parameters_parsed_structs=parameters_parsed_structs,
+    )
+
+    # A struct's name could clash with another's, e.g. a named type's with that of a type written inside an element, or with a struct
+    # the IDS already has
+    existing_struct_names: set[str] = set()
+    for ct in complex_types + ([root_element] if root_element else []):
+        existing_struct_names.add(snake_to_pascal_case(ct.name))
+    for parameters_parsed_struct in parameters_parsed_structs:
+        struct_name: str = snake_to_pascal_case(parameters_parsed_struct.complex_type.name)
+        if struct_name in existing_struct_names:
+            raise ValueError(f"`{struct_name}`, generated from {xsd_file_path}, is already a struct of the {ids_name} IDS")
+        existing_struct_names.add(struct_name)
+        complex_types.append(parameters_parsed_struct.complex_type)
+        print(f"  Parameters parsed struct: {struct_name}")
+
+    # The custom keys must declare the field which holds them
+    is_referenced: bool = False
+    for ct in complex_types + ([root_element] if root_element else []):
+        for f in ct.fields:
+            if f.rust_type == root_struct_name:
+                is_referenced = True
+    if not is_referenced:
+        raise ValueError(
+            f"`{root_struct_name}`, generated from {xsd_file_path}, is not the type of any key. "
+            f"Declare `pub parameters_parsed: {root_struct_name},` in `Code`, in custom_{ids_name}_keys.rs"
+        )
+
+    return parameters_parsed_structs, settings_root_element_name
+
+
+def generate_parameters_parsed_reader(
+    ids_name: str,
+    settings_root_element_name: str,
+    xsd_file_path: Path,
+    parameters_parsed_structs: list[ParametersParsedStruct],
+) -> str:
+    """
+    Generate `src/ids/<ids>_parameters_parsed.rs`, which reads `code/parameters`, the settings' XML, into `code/parameters_parsed`.
+
+    Each struct gets a function which reads it from its XML element, one field per child element. The leaves are read by the functions
+    in `src/parameters_parsed.rs`.
+    """
+
+    root_struct_name: str = snake_to_pascal_case(parameters_parsed_structs[0].complex_type.name)
+    xsd_relative_path: Path = xsd_file_path.relative_to(REPO_ROOT)
+
+    struct_names: list[str] = []
+    leaf_readers: set[str] = {"child_elements", "unexpected_element"}
+    functions: list[str] = []
+    for parameters_parsed_struct in parameters_parsed_structs:
+        ct: ComplexType = parameters_parsed_struct.complex_type
+        struct_name: str = snake_to_pascal_case(ct.name)
+        struct_names.append(struct_name)
+
+        lines: list[str] = [
+            f"/// Read `{struct_name}` from its XML element, whose path is `path`",
+            f"fn {parameters_parsed_reader_name(struct_name)}(node: Node<'_, '_>, path: &str) -> Result<{struct_name}, String> {{",
+            f"    let mut parsed: {struct_name} = {struct_name}::default();",
+            "    for child in child_elements(node, path)? {",
+            "        let child_name: &str = child.tag_name().name();",
+            "        match child_name {",
+        ]
+        for f in ct.fields:
+            reader: str = parameters_parsed_struct.readers[f.name]
+            field_name: str = sanitize_rust_identifier(f.name)
+            # A leaf is read by a function from `src/parameters_parsed.rs`, which has to be imported
+            if f.is_base_type:
+                leaf_readers.add(reader)
+            if f.is_array:
+                lines.append(f'            "{f.name}" => {{')
+                lines.append(f'                let child_path: String = format!("{{path}}/{f.name}({{}})", parsed.{field_name}.len());')
+                lines.append(f"                parsed.{field_name}.push({reader}(child, &child_path)?);")
+                lines.append("            }")
+            else:
+                lines.append(f'            "{f.name}" => parsed.{field_name} = {reader}(child, &format!("{{path}}/{f.name}"))?,')
+        lines.append('            _ => return Err(unexpected_element(&format!("{path}/{child_name}"))),')
+        lines.append("        }")
+        lines.append("    }")
+        lines.append("")
+        lines.append("    Ok(parsed)")
+        lines.append("}")
+        functions.append("\n".join(lines))
+
+    header: list[str] = [
+        f"//! Reading `{ids_name}/code/parameters`, the XML of the settings the IDS was built with, into `{ids_name}/code/parameters_parsed`",
+        "//!",
+        "//! **WARNING** This file is autogenerated by `rust/imas_rs/imas_updater/build_ids.py`.",
+        "//! Any changes will be overwritten.",
+        "//!",
+        f"//! Generated from the XML schema `{xsd_relative_path}`, and the XML schemas of the files it links to.",
+        "",
+        f"use super::{ids_name}::{{{', '.join(sorted(struct_names))}}};",
+        f"use crate::parameters_parsed::{{{', '.join(sorted(leaf_readers))}}};",
+        "use roxmltree::{Document, Node};",
+        "",
+        f"impl {root_struct_name} {{",
+        "    /// Read the settings the IDS was built with, the XML text of `code/parameters`, into `code/parameters_parsed`.",
+        "    ///",
+        f"    /// The XML is that of `{xsd_relative_path.with_suffix('.xml').name}`, with each file it links to written in its link's place, as",
+        "    /// `serialise_python_dataclass_to_imas_parameters_input` writes it, e.g. `<grid><n_r>81</n_r>...</grid>`. Each",
+        "    /// element is read into the field of the same name. One which is left out is left unset, and the XML is not",
+        "    /// checked against its XML schema here: that was done when it was written.",
+        "    ///",
+        "    /// # Errors",
+        f"    /// The XML is not well-formed, its root element is not `<{settings_root_element_name}>`, it holds an element which is",
+        "    /// not in the XML schema this was generated from, or a value cannot be read as its type",
+        "    pub fn from_xml(xml: &str) -> Result<Self, String> {",
+        '        let document: Document = Document::parse(xml).map_err(|error| format!("`code/parameters` is not well-formed XML: {error}"))?;',
+        "        let root: Node = document.root_element();",
+        f'        if root.tag_name().name() != "{settings_root_element_name}" {{',
+        "            return Err(format!(",
+        f'                "the root element of `code/parameters` is <{{}}>, rather than <{settings_root_element_name}>",',
+        "                root.tag_name().name()",
+        "            ));",
+        "        }",
+        "",
+        f'        {parameters_parsed_reader_name(root_struct_name)}(root, "code/parameters_parsed")',
+        "    }",
+        "}",
+        "",
+    ]
+
+    return "\n".join(header) + "\n" + "\n\n".join(functions) + "\n"
 
 
 # ============================================================================
@@ -1983,6 +2511,17 @@ def build_ids(
         root_element=root_element,
         path_to_custom_keys_file=CUSTOM_KEYS_DIR / f"custom_{ids_name}_keys.rs",
     )
+
+    # `code/parameters_parsed`, generated from the XML schema of the settings the IDS is built with
+    parameters_parsed_structs: list[ParametersParsedStruct] = []
+    settings_root_element_name: str = ""
+    if ids_name in PARAMETERS_PARSED_XSD_FILES:
+        parameters_parsed_structs, settings_root_element_name = add_parameters_parsed_to_ids(
+            complex_types=complex_types,
+            root_element=root_element,
+            ids_name=ids_name,
+            xsd_file_path=PARAMETERS_PARSED_XSD_FILES[ids_name],
+        )
     resolve_supporting_types(complex_types, root_element, supporting_types)
 
     if root_element:
@@ -2010,6 +2549,31 @@ def build_ids(
         check=True,
     )
     print(f"Formatted: {output_path}")
+
+    # The code reading `code/parameters`, the settings' XML, into `code/parameters_parsed`
+    if len(parameters_parsed_structs) > 0:
+        reader_path: Path = output_path.with_name(f"{ids_name}_parameters_parsed.rs")
+        reader_path.write_text(
+            generate_parameters_parsed_reader(
+                ids_name=ids_name,
+                settings_root_element_name=settings_root_element_name,
+                xsd_file_path=PARAMETERS_PARSED_XSD_FILES[ids_name],
+                parameters_parsed_structs=parameters_parsed_structs,
+            )
+        )
+        print(f"Generated: {reader_path}")
+        subprocess.run(
+            [
+                "rustfmt",
+                "--edition",
+                RUST_EDITION,
+                "--config-path",
+                str(WORKSPACE_DIR),
+                str(reader_path),
+            ],
+            check=True,
+        )
+        print(f"Formatted: {reader_path}")
 
     # The Python bindings: a static description of the same schema, plus the type stub
     # that gives editors their completions. Both come from one walk of the tree, so they

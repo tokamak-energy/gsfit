@@ -17,7 +17,7 @@ use pyo3::prelude::*;
 /// The reference waveforms, `gap(i)/value`, are deliberately left empty: GSFit measures the gaps,
 /// it does not control them.
 ///
-/// `Plasma.copy_from_pulse_schedule_ids` copies the definitions onto every time-slice's
+/// `Equilibrium.copy_from_pulse_schedule_ids` copies the definitions onto every time-slice's
 /// `equilibrium/time_slice(itime)/boundary/gap`, which is where the calculated values go.
 ///
 /// # Angle convention

@@ -1,7 +1,7 @@
 //! The quantities which are fixed for the whole of a time-slice's post-processing.
 
 use crate::source_functions::SharedSourceFunction;
-use imas_rs::EquilibriumLimiter;
+use imas_rs::{EquilibriumGreens, EquilibriumLimiter};
 
 /// Everything a post-processing calculator reads which is neither on the time-slice it is given
 /// nor produced by an earlier calculator.
@@ -16,6 +16,8 @@ pub struct ConstantValues<'a> {
     /// Vacuum toroidal field at `r0`, for this time-slice [tesla]
     pub b0: f64,
     pub ff_prime_source_function: &'a SharedSourceFunction,
+    /// The Greens tables, `equilibrium/greens`, which are the same for every time-slice
+    pub greens: &'a EquilibriumGreens,
     /// Toroidal field rod current [ampere]
     pub i_rod: f64,
     /// The limiter, `equilibrium/limiter`, whose `unit(0)` is the vacuum vessel
@@ -41,11 +43,13 @@ pub fn constant_values_for_test() -> ConstantValues<'static> {
             dof_values: Array1::zeros(0),
         })
     });
+    static GREENS: LazyLock<EquilibriumGreens> = LazyLock::new(EquilibriumGreens::default);
     static LIMITER: LazyLock<EquilibriumLimiter> = LazyLock::new(EquilibriumLimiter::default);
 
     return ConstantValues {
         b0: f64::NAN,
         ff_prime_source_function: &SOURCE_FUNCTION,
+        greens: &GREENS,
         i_rod: f64::NAN,
         limiter: &LIMITER,
         p_prime_source_function: &SOURCE_FUNCTION,

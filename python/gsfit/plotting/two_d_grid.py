@@ -9,7 +9,7 @@ def plot(
     gsfit_controller: Gsfit,
     ax: matplotlib.axes.Axes,
 ) -> None:
-    plasma = gsfit_controller.plasma
+    plasma = gsfit_controller.equilibrium
 
     # `profiles_2d(0)` because GSFit solves on a single rectangular (R, Z) grid
     r = plasma.get(ep.time_slice[0].profiles_2d[0].grid.dim1)

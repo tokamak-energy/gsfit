@@ -36,7 +36,7 @@ class EquilibriumSettings:
 
     :param timeslices: The times to reconstruct
     :param numerics: Settings for the Grad-Shafranov solve, and the number of threads it runs on
-    :param grid: The (R, Z) grid the equilibrium is solved on, and the psi_n grid of the 1D profiles
+    :param grid: The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
     :param initial_guess: The initial guess of the plasma current
     :param source_function_p_prime: The p' source function: its basis functions and their regularisation
     :param source_function_ff_prime: The ff' source function: its basis functions and their regularisation

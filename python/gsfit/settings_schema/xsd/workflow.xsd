@@ -19,7 +19,11 @@
     <!-- ================================= Simple types ================================= -->
 
     <xs:simpleType name="TreeName">
-        <xs:annotation><xs:documentation>The name of an MDSplus tree, in upper case, e.g. "ELMAG": a letter followed by up to 11 letters, digits or underscores, as MDSplus allows for a tree, and for the node under INPUT.WORKFLOW which the Tokamak Energy writers store it in</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The name of an MDSplus tree, in upper case, e.g. "ELMAG": a letter followed by up to 11 letters, digits or underscores, as MDSplus allows for a tree, and for the node under INPUT.WORKFLOW which the Tokamak Energy writers store it in
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:pattern value="[A-Z][A-Z0-9_]{0,11}"/>
         </xs:restriction>
@@ -28,19 +32,39 @@
     <!-- ================================= Complex types ================================= -->
 
     <xs:complexType name="WorkflowTree">
-        <xs:annotation><xs:documentation>Which run of an MDSplus tree to read, and from which pulse</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                Which run of an MDSplus tree to read, and from which pulse
+            </xs:documentation>
+        </xs:annotation>
         <xs:all>
             <xs:element name="tree_name" type="TreeName">
-                <xs:annotation><xs:documentation>The MDSplus tree, e.g. "ELMAG" or "MAG", which the database reader selects it by. Must be unique</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The MDSplus tree, e.g. "ELMAG" or "MAG", which the database reader selects it by. Must be unique
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="pulseNo" type="xs:int" nillable="true">
-                <xs:annotation><xs:documentation>The pulse to read the tree from; nil for the pulse being reconstructed</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The pulse to read the tree from; nil for the pulse being reconstructed
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="run_name" type="xs:string">
-                <xs:annotation><xs:documentation>The run of the tree to read, e.g. "BEST" or "RUN16"</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        The run of the tree to read, e.g. "BEST" or "RUN16"
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
             <xs:element name="usage" type="xs:string">
-                <xs:annotation><xs:documentation>What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree_name].USAGE), to record where the inputs came from</xs:documentation></xs:annotation>
+                <xs:annotation>
+                    <xs:documentation>
+                        What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree_name].USAGE), to record where the inputs came from
+                    </xs:documentation>
+                </xs:annotation>
             </xs:element>
         </xs:all>
     </xs:complexType>
@@ -63,12 +87,20 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="tree" type="WorkflowTree" minOccurs="0" maxOccurs="unbounded">
-                    <xs:annotation><xs:documentation>One MDSplus tree, and which run of it to read</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            One MDSplus tree, and which run of it to read
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
             </xs:sequence>
         </xs:complexType>
         <xs:key name="workflow_tree_name_key">
-            <xs:annotation><xs:documentation>Each tree is listed at most once, as the database reader selects it by its `tree_name`</xs:documentation></xs:annotation>
+            <xs:annotation>
+                <xs:documentation>
+                    Each tree is listed at most once, as the database reader selects it by its `tree_name`
+                </xs:documentation>
+            </xs:annotation>
             <xs:selector xpath="tree"/>
             <xs:field xpath="tree_name"/>
         </xs:key>

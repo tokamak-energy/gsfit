@@ -6,5 +6,5 @@
     <r_max>1.01</r_max>
     <z_min>-1.0</z_min>
     <z_max>1.0</z_max>
-    <n_psi_n>100</n_psi_n>
+    <n_psi_norm>100</n_psi_norm>
 </grid>

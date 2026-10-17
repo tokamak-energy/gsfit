@@ -1,7 +1,7 @@
+use crate::equilibrium::Equilibrium;
 use crate::greens::Greens;
 use crate::pf_active::PfActive;
 use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
-use crate::plasma::Plasma;
 use crate::python_pickling_methods::{data_tree_to_py_dict, py_dict_to_data_tree};
 use crate::sensors::static_and_dynamic_data_types::{SensorsDynamic, SensorsStatic};
 use data_tree::{AddDataTreeGetters, DataTree, DataTreeAccumulator};
@@ -143,21 +143,21 @@ impl StationaryPoint {
     }
 
     /// Greens with plasma
-    pub fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
+    pub fn greens_with_plasma(&mut self, equilibrium: PyRef<Equilibrium>) {
         // Change Python type into Rust
-        let plasma_local: &Plasma = &plasma;
+        let equilibrium_local: &Equilibrium = &equilibrium;
 
         // Run the Rust method
-        self.greens_with_plasma_rs(plasma_local);
+        self.greens_with_plasma_rs(equilibrium_local);
     }
 
     // /// Calculate sensor values
-    // pub fn calculate_sensor_values(&mut self, plasma: PyRef<Plasma>) {
+    // pub fn calculate_sensor_values(&mut self, equilibrium: PyRef<Equilibrium>) {
     //     // Convert Python types into Rust
-    //     let plasma_rs: &Plasma = &plasma;
+    //     let equilibrium_rs: &Equilibrium = &equilibrium;
 
     //     // Run the Rust method
-    //     self.calculate_sensor_values_rust(plasma_rs);
+    //     self.calculate_sensor_values_rust(equilibrium_rs);
     // }
 
     /// Print to screen, to be used within Python
@@ -422,17 +422,17 @@ impl StationaryPoint {
         }
     }
 
-    pub fn greens_with_plasma_rs(&mut self, plasma: &Plasma) {
+    pub fn greens_with_plasma_rs(&mut self, equilibrium: &Equilibrium) {
         // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
         // because GSFit solves on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the
         // (R, Z) mesh, so iterating them row-major gives the flattened grid the Green's tables are
         // indexed by
-        let mesh_r: &Array2<f64> = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].r;
-        let mesh_z: &Array2<f64> = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].z;
+        let mesh_r: &Array2<f64> = &equilibrium.equilibrium_ids.time_slice[0].profiles_2d[0].r;
+        let mesh_z: &Array2<f64> = &equilibrium.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let plasma_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let plasma_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
-        let n_r: usize = plasma.equilibrium_ids.code.grid.n_r as usize;
-        let n_z: usize = plasma.equilibrium_ids.code.grid.n_z as usize;
+        let n_r: usize = equilibrium.equilibrium_ids.code.parameters_parsed.grid.n_r as usize;
+        let n_z: usize = equilibrium.equilibrium_ids.code.parameters_parsed.grid.n_z as usize;
 
         for sensor_name in self.results.keys() {
             // Get time

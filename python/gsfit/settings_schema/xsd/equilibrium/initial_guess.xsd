@@ -9,12 +9,18 @@
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="initial_guess">
-        <xs:annotation><xs:documentation>The initial guess of the plasma current: an ellipse of current</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The initial guess of the plasma current: an ellipse of current
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:all>
                 <xs:element name="ip" type="xs:double">
                     <xs:annotation>
-                        <xs:documentation>Plasma current</xs:documentation>
+                        <xs:documentation>
+                            Plasma current
+                        </xs:documentation>
                         <xs:appinfo>
                             <units>A</units>
                         </xs:appinfo>
@@ -22,7 +28,9 @@
                 </xs:element>
                 <xs:element name="cur_r" type="xs:double">
                     <xs:annotation>
-                        <xs:documentation>Radial centre of the current</xs:documentation>
+                        <xs:documentation>
+                            Radial centre of the current
+                        </xs:documentation>
                         <xs:appinfo>
                             <units>m</units>
                         </xs:appinfo>
@@ -30,7 +38,9 @@
                 </xs:element>
                 <xs:element name="cur_z" type="xs:double">
                     <xs:annotation>
-                        <xs:documentation>Vertical centre of the current</xs:documentation>
+                        <xs:documentation>
+                            Vertical centre of the current
+                        </xs:documentation>
                         <xs:appinfo>
                             <units>m</units>
                         </xs:appinfo>
@@ -38,7 +48,9 @@
                 </xs:element>
                 <xs:element name="minor_radius" type="xs:double">
                     <xs:annotation>
-                        <xs:documentation>Radial semi-axis of the current</xs:documentation>
+                        <xs:documentation>
+                            Radial semi-axis of the current
+                        </xs:documentation>
                         <xs:appinfo>
                             <units>m</units>
                         </xs:appinfo>
@@ -46,7 +58,9 @@
                 </xs:element>
                 <xs:element name="elongation" type="xs:double">
                     <xs:annotation>
-                        <xs:documentation>Elongation of the current</xs:documentation>
+                        <xs:documentation>
+                            Elongation of the current
+                        </xs:documentation>
                         <xs:appinfo>
                             <units>1</units>
                         </xs:appinfo>

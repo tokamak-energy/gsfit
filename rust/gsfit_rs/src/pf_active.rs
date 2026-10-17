@@ -40,7 +40,7 @@ use pyo3::prelude::*;
 /// * `voltage` (`index` 2), set by `set_pf_voltage_prescribed`: `coil(i1)/voltage` is given, and
 ///   the current is calculated
 ///
-/// `Plasma.copy_from_pf_active_ids` copies each coil's current onto every time-slice of the
+/// `Equilibrium.copy_from_pf_active_ids` copies each coil's current onto every time-slice of the
 /// equilibrium IDS, as `constraints/pf_current(i1)`, interpolated onto the reconstruction times.
 ///
 /// Read the data back through `pf_active_ids` and a path from `gsfit_rs.imas.pf_active_paths`;
@@ -109,7 +109,7 @@ impl PfActive {
     /// `coil(i1)/inductance`, is calculated from them.
     ///
     /// Store the **experimental** current here, not one interpolated onto the reconstruction
-    /// times: `Plasma.copy_from_pf_active_ids` interpolates it itself. It is signed; see the
+    /// times: `Equilibrium.copy_from_pf_active_ids` interpolates it itself. It is signed; see the
     /// `PfActive` documentation. A single time holds the current at that time only.
     #[allow(clippy::too_many_arguments)]
     pub fn add_pf_coil(

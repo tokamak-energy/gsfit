@@ -15,28 +15,46 @@
     <!-- ================================= Link to workflow.xml ================================= -->
 
     <xs:simpleType name="XmlPath">
-        <xs:annotation><xs:documentation>Path of an XML file, relative to the file holding the link</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                Path of an XML file, relative to the file holding the link
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:anyURI">
             <xs:pattern value="\S+\.xml"/>
         </xs:restriction>
     </xs:simpleType>
 
     <xs:complexType name="Link">
-        <xs:annotation><xs:documentation>A link to the file holding these settings</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A link to the file holding these settings
+            </xs:documentation>
+        </xs:annotation>
         <xs:attribute name="href" type="XmlPath" use="required">
-            <xs:annotation><xs:documentation>Path of the linked file, relative to the file holding the link, e.g. "../workflow.xml"</xs:documentation></xs:annotation>
+            <xs:annotation>
+                <xs:documentation>
+                    Path of the linked file, relative to the file holding the link, e.g. "../workflow.xml"
+                </xs:documentation>
+            </xs:annotation>
         </xs:attribute>
     </xs:complexType>
 
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="thomson_scattering_settings">
-        <xs:annotation><xs:documentation>How the database reader reads the Thomson scattering: the electron pressure which the pressure constraints are made from, and its good time-slices. The st40_mdsplus and st40_mdsplus_with_digital_filter readers read their runs from the workflow.xml linked in `workflow`</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                How the database reader reads the Thomson scattering: the electron pressure which the pressure constraints are made from, and its good time-slices. The st40_mdsplus and st40_mdsplus_with_digital_filter readers read their runs from the workflow.xml linked in `workflow`
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:all>
                 <xs:element name="workflow" type="Link" minOccurs="0">
                     <xs:annotation>
-                        <xs:documentation>A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus and st40_mdsplus_with_digital_filter readers read the good time-slices from its PPTS tree, GLOBAL:BAD_MA, and each channel's position and electron pressure from its TS tree</xs:documentation>
+                        <xs:documentation>
+                            A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus and st40_mdsplus_with_digital_filter readers read the good time-slices from its PPTS tree, GLOBAL:BAD_MA, and each channel's position and electron pressure from its TS tree
+                        </xs:documentation>
                         <xs:appinfo>
                             <schema>../workflow.xsd</schema>
                         </xs:appinfo>

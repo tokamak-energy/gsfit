@@ -1,4 +1,4 @@
-use crate::Plasma;
+use crate::equilibrium::Equilibrium;
 use crate::pf_active::PfActive;
 use crate::pf_passive::PfPassive;
 use crate::plasma_geometry::bicubic_interpolator::BicubicInterpolator;
@@ -179,14 +179,14 @@ impl Pressure {
     /// # Returns
     /// * None
     ///
-    pub fn greens_with_plasma(&mut self, plasma: PyRef<Plasma>) {
+    pub fn greens_with_plasma(&mut self, equilibrium: PyRef<Equilibrium>) {
         // Change Python type into Rust
-        let plasma_local: &Plasma = &plasma;
+        let equilibrium_local: &Equilibrium = &equilibrium;
 
         // `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)`
         // because GSFit solves on a single rectangular (R, Z) grid
-        let n_r: usize = plasma_local.equilibrium_ids.code.grid.n_r as usize;
-        let n_z: usize = plasma_local.equilibrium_ids.code.grid.n_z as usize;
+        let n_r: usize = equilibrium_local.equilibrium_ids.code.parameters_parsed.grid.n_r as usize;
+        let n_z: usize = equilibrium_local.equilibrium_ids.code.parameters_parsed.grid.n_z as usize;
 
         for sensor_name in &self.results.keys() {
             // Create zero array
@@ -203,12 +203,12 @@ impl Pressure {
     }
 
     /// Calculate the sensor values
-    pub fn calculate_sensor_values(&mut self, plasma: PyRef<Plasma>) {
+    pub fn calculate_sensor_values(&mut self, equilibrium: PyRef<Equilibrium>) {
         // Convert Python types into Rust
-        let plasma_rs: &Plasma = &plasma;
+        let equilibrium_rs: &Equilibrium = &equilibrium;
 
         // Run the Rust method
-        self.calculate_sensor_values_rust(plasma_rs);
+        self.calculate_sensor_values_rust(equilibrium_rs);
     }
 
     /// Print to screen, to be used within Python
@@ -443,13 +443,13 @@ impl Pressure {
     }
 
     /// Calculate the sensor values
-    pub fn calculate_sensor_values_rust(&mut self, plasma: &Plasma) {
-        let time: Array1<f64> = plasma.equilibrium_ids.time_slice(..).time.to_array();
+    pub fn calculate_sensor_values_rust(&mut self, equilibrium: &Equilibrium) {
+        let time: Array1<f64> = equilibrium.equilibrium_ids.time_slice(..).time.to_array();
         let n_time: usize = time.len();
 
         // `time_slice[0]` because the grid is the same on every time-slice, and `profiles_2d[0]`
         // because GSFit solves on a single rectangular (R, Z) grid
-        let grid: &EquilibriumProfiles2dGrid = &plasma.equilibrium_ids.time_slice[0].profiles_2d[0].grid;
+        let grid: &EquilibriumProfiles2dGrid = &equilibrium.equilibrium_ids.time_slice[0].profiles_2d[0].grid;
         let r: Array1<f64> = grid.dim1.to_owned();
         let z: Array1<f64> = grid.dim2.to_owned();
         let d_r: f64 = r[1] - r[0];
@@ -504,7 +504,7 @@ impl Pressure {
             }
 
             for i_time in 0..n_time {
-                let time_slice: &EquilibriumTimeSlice = &plasma.equilibrium_ids.time_slice[i_time];
+                let time_slice: &EquilibriumTimeSlice = &equilibrium.equilibrium_ids.time_slice[i_time];
 
                 let psi_a: f64 = time_slice.global_quantities.psi_magnetic_axis;
                 let psi_b: f64 = time_slice.boundary.psi;
@@ -558,7 +558,7 @@ impl Pressure {
                 // Note: source_function_integral returns an integral from psi_norm = 1 to psi_norm,
                 // i.e. p(psi_norm) = integral_{1}^{psi_norm} p'(x) dx, scaled by (psi_b - psi_a).
                 let p_prime_dof_values: Array1<f64> = time_slice.source_functions.p_prime.coefficients.to_owned();
-                sensor_values[i_time] = plasma
+                sensor_values[i_time] = equilibrium
                     .p_prime_source_function
                     .source_function_integral(&Array1::from_vec(vec![psi_norm_at_sensor]), &p_prime_dof_values)[0]
                     * (psi_b - psi_a);

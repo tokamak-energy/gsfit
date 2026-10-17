@@ -33,7 +33,7 @@ def setup_tf(
     Two nodes are filled:
     1. `tf/r0`, the reference major radius the vacuum toroidal field is quoted at
     2. `tf/b_field_phi_vacuum_r`, the vacuum field times major radius, on the **experimental**
-       timebase. `Plasma.copy_from_tf_ids` interpolates it onto the reconstruction times itself, so
+       timebase. `Equilibrium.copy_from_tf_ids` interpolates it onto the reconstruction times itself, so
        do not interpolate it here.
 
     `b_field_phi_vacuum_r` is signed: positive means counter-clockwise viewed from above.

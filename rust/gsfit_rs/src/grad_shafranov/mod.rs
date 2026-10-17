@@ -1,6 +1,7 @@
 // Load modules
 mod chi_sq_mag;
 mod equilibrium_solve;
+mod fitted_magnetic_sensors;
 mod grad_shafranov_solver;
 mod initial_current_seed;
 mod nonlinear_solvers;

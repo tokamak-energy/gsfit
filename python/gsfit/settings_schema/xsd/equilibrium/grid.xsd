@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Schema for grid.xml: the (R, Z) grid the equilibrium is solved on, and the psi_n grid of the 1D profiles.
+    Schema for grid.xml: the (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
 
     See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
 -->
@@ -9,7 +9,11 @@
     <!-- ================================= Other simple types ================================= -->
 
     <xs:simpleType name="PositiveDouble">
-        <xs:annotation><xs:documentation>A number greater than 0</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                A number greater than 0
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:double">
             <xs:minExclusive value="0.0"/>
         </xs:restriction>
@@ -18,18 +22,32 @@
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="grid">
-        <xs:annotation><xs:documentation>The (R, Z) grid the equilibrium is solved on, and the psi_n grid of the 1D profiles</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
             <xs:all>
                 <xs:element name="n_r" type="xs:nonNegativeInteger">
-                    <xs:annotation><xs:documentation>Number of radial grid points</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            Number of radial grid points
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
                 <xs:element name="n_z" type="xs:nonNegativeInteger">
-                    <xs:annotation><xs:documentation>Number of vertical grid points</xs:documentation></xs:annotation>
+                    <xs:annotation>
+                        <xs:documentation>
+                            Number of vertical grid points
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
                 <xs:element name="r_min" type="PositiveDouble">
                     <xs:annotation>
-                        <xs:documentation>Minimum major radius</xs:documentation>
+                        <xs:documentation>
+                            Minimum major radius
+                        </xs:documentation>
                         <xs:appinfo>
                             <units>m</units>
                         </xs:appinfo>
@@ -37,7 +55,9 @@
                 </xs:element>
                 <xs:element name="r_max" type="PositiveDouble">
                     <xs:annotation>
-                        <xs:documentation>Maximum major radius</xs:documentation>
+                        <xs:documentation>
+                            Maximum major radius
+                        </xs:documentation>
                         <xs:appinfo>
                             <units>m</units>
                         </xs:appinfo>
@@ -45,7 +65,9 @@
                 </xs:element>
                 <xs:element name="z_min" type="xs:double">
                     <xs:annotation>
-                        <xs:documentation>Minimum vertical position</xs:documentation>
+                        <xs:documentation>
+                            Minimum vertical position
+                        </xs:documentation>
                         <xs:appinfo>
                             <units>m</units>
                         </xs:appinfo>
@@ -53,14 +75,20 @@
                 </xs:element>
                 <xs:element name="z_max" type="xs:double">
                     <xs:annotation>
-                        <xs:documentation>Maximum vertical position</xs:documentation>
+                        <xs:documentation>
+                            Maximum vertical position
+                        </xs:documentation>
                         <xs:appinfo>
                             <units>m</units>
                         </xs:appinfo>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="n_psi_n" type="xs:nonNegativeInteger">
-                    <xs:annotation><xs:documentation>Number of points in the normalised poloidal flux, psi_n, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given</xs:documentation></xs:annotation>
+                <xs:element name="n_psi_norm" type="xs:nonNegativeInteger">
+                    <xs:annotation>
+                        <xs:documentation>
+                            Number of points in the normalised poloidal flux, psi_norm, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given
+                        </xs:documentation>
+                    </xs:annotation>
                 </xs:element>
             </xs:all>
         </xs:complexType>

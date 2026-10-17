@@ -1,10 +1,10 @@
 //! `magnetics/b_field_pol_probe(i1)`: the poloidal field probes
 
+use crate::equilibrium::Equilibrium;
 use crate::greens::Greens;
 use crate::magnetics::Magnetics;
 use crate::pf_active::PfActive;
 use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
-use crate::plasma::Plasma;
 use imas_rs::ids::magnetics::{MagneticsBpolProbe, Rphiz0dStatic, SignalFlt1dValidity};
 use imas_rs::ids::pf_active::PfCoils;
 use imas_rs::ids::pf_passive::PfPassiveLoops;
@@ -129,7 +129,7 @@ impl Magnetics {
 }
 
 /// Rust only methods, copying the poloidal field probes into the equilibrium IDS
-impl Plasma {
+impl Equilibrium {
     /// Copy the poloidal field probes' fields from the magnetics IDS onto every time-slice of the equilibrium IDS, as
     /// `equilibrium/time_slice(itime)/constraints/b_field_pol_probe(i1)`. This does part of the work of the Python method
     /// `copy_from_magnetics_ids`; see it for what is stored.
@@ -138,18 +138,58 @@ impl Plasma {
     /// * `magnetics` - the magnetic sensors, holding the poloidal field probes in `magnetics/b_field_pol_probe`
     ///
     /// # Errors
-    /// Why a probe's field cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
+    /// A probe in the fit settings, `code/parameters_parsed/constraints/b_field_pol_probe`, is not in the magnetics IDS, or a probe's
+    /// measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not cover them.
     pub fn copy_from_magnetics_ids_b_field_pol_probe(&mut self, magnetics: &Magnetics) -> Result<(), String> {
         let b_field_pol_probes: &Vec<MagneticsBpolProbe> = &magnetics.magnetics_ids.b_field_pol_probe;
         let n_b_field_pol_probe: usize = b_field_pol_probes.len();
 
+        // Only the poloidal field probes in the fit settings, `code/parameters_parsed/constraints/b_field_pol_probe`, are copied, and each of them has to
+        // be in the magnetics IDS. Checked before anything is copied
+        let settings_names: Vec<String> = self
+            .equilibrium_ids
+            .code
+            .parameters_parsed
+            .constraints
+            .b_field_pol_probe
+            .b_field_pol_probe(..)
+            .name
+            .to_vec();
+        let settings_weights: Array1<f64> = self
+            .equilibrium_ids
+            .code
+            .parameters_parsed
+            .constraints
+            .b_field_pol_probe
+            .b_field_pol_probe(..)
+            .weight
+            .to_array();
+        let n_settings: usize = settings_names.len();
+        for i_settings in 0..n_settings {
+            let settings_name: &str = &settings_names[i_settings];
+            if !b_field_pol_probes
+                .iter()
+                .any(|magnetics_sensor: &MagneticsBpolProbe| magnetics_sensor.name == settings_name)
+            {
+                return Err(format!(
+                    "`{settings_name}` is in the fit settings, `code/parameters_parsed/constraints/b_field_pol_probe`, but not in the magnetics IDS, `magnetics/b_field_pol_probe`"
+                ));
+            }
+        }
+
         // Each probe's field is on the experimental timebase, so it is interpolated onto the times of the time-slices
-        // `Plasma::new` allocated
+        // `Equilibrium::new` allocated
         let times_to_reconstruct: Array1<f64> = self.equilibrium_ids.time_slice(..).time.to_array();
         let n_time: usize = times_to_reconstruct.len();
         let mut field_measured: Array2<f64> = Array2::from_elem((n_time, n_b_field_pol_probe), f64::NAN); // shape = (n_time, n_b_field_pol_probe)
         for i_b_field_pol_probe in 0..n_b_field_pol_probe {
             let b_field_pol_probe_name: &str = &b_field_pol_probes[i_b_field_pol_probe].name;
+            if !settings_names
+                .iter()
+                .any(|settings_name: &String| settings_name.as_str() == b_field_pol_probe_name)
+            {
+                continue;
+            }
             let interpolator: interpolation::Dim1Linear = interpolation::Dim1Linear::new(
                 b_field_pol_probes[i_b_field_pol_probe].field.time.clone(),
                 b_field_pol_probes[i_b_field_pol_probe].field.data.clone(),
@@ -163,17 +203,36 @@ impl Plasma {
             field_measured.slice_mut(s![.., i_b_field_pol_probe]).assign(&measured);
         }
 
-        // Assigned rather than appended, so that calling this twice replaces the poloidal field probes instead of repeating them
+        // Rebuilt from the poloidal field probes in the fit settings, in the order of the magnetics IDS, so that calling this twice replaces them
+        // instead of repeating them. Each keeps the constraint `Equilibrium::new` made from its fit settings, with its `weight`, found by
+        // its name
         for i_time in 0..n_time {
-            let mut b_field_pol_probe_constraints: Vec<EquilibriumConstraints0dOneLike> = Vec::with_capacity(n_b_field_pol_probe);
+            let mut settings_constraints: Vec<EquilibriumConstraints0dOneLike> =
+                std::mem::take(&mut self.equilibrium_ids.time_slice[i_time].constraints.b_field_pol_probe);
+            let mut b_field_pol_probe_constraints: Vec<EquilibriumConstraints0dOneLike> = Vec::with_capacity(n_settings);
             for i_b_field_pol_probe in 0..n_b_field_pol_probe {
-                b_field_pol_probe_constraints.push(EquilibriumConstraints0dOneLike {
-                    name: b_field_pol_probes[i_b_field_pol_probe].name.clone(),
-                    measured: field_measured[[i_time, i_b_field_pol_probe]],
-                    source: format!("magnetics/b_field_pol_probe({i_b_field_pol_probe})/field"),
-                    time_measurement: times_to_reconstruct[i_time],
-                    ..Default::default()
-                });
+                let b_field_pol_probe_name: &str = &b_field_pol_probes[i_b_field_pol_probe].name;
+                let Some(i_settings) = settings_names
+                    .iter()
+                    .position(|settings_name: &String| settings_name.as_str() == b_field_pol_probe_name)
+                else {
+                    continue;
+                };
+                let mut constraint: EquilibriumConstraints0dOneLike = match settings_constraints
+                    .iter()
+                    .position(|settings_constraint: &EquilibriumConstraints0dOneLike| settings_constraint.name == b_field_pol_probe_name)
+                {
+                    Some(i_settings_constraint) => settings_constraints.swap_remove(i_settings_constraint),
+                    None => EquilibriumConstraints0dOneLike {
+                        name: b_field_pol_probe_name.to_string(),
+                        weight: settings_weights[i_settings],
+                        ..Default::default()
+                    },
+                };
+                constraint.measured = field_measured[[i_time, i_b_field_pol_probe]];
+                constraint.source = format!("magnetics/b_field_pol_probe({i_b_field_pol_probe})/field");
+                constraint.time_measurement = times_to_reconstruct[i_time];
+                b_field_pol_probe_constraints.push(constraint);
             }
             self.equilibrium_ids.time_slice[i_time].constraints.b_field_pol_probe = b_field_pol_probe_constraints;
         }
@@ -183,10 +242,11 @@ impl Plasma {
 }
 
 /// Rust only methods, calculating the poloidal field probes' Greens tables
-impl Plasma {
-    /// Calculate the poloidal field probes' Greens tables, `equilibrium/greens/b_field_pol_probe(i1)`, one for each probe in
-    /// `magnetics/b_field_pol_probe`, in the same order. This does part of the work of the Python method `greens_with_magnetics`;
-    /// see it for what is stored, and for the checks on `pf_active` and `pf_passive`.
+impl Equilibrium {
+    /// Calculate the poloidal field probes' Greens tables, `equilibrium/greens/b_field_pol_probe(i1)`, one for each probe in the fit
+    /// settings, `code/parameters_parsed/constraints/b_field_pol_probe`, in the order of `magnetics/b_field_pol_probe`. This does part of
+    /// the work of the Python method `greens_with_magnetics`; see it for what is stored, and for the checks on `pf_active`, `pf_passive`
+    /// and the fit settings.
     ///
     /// Each table is the field along the probe's normal, `b_r * cos(poloidal_angle) + b_z * sin(poloidal_angle)`, with GSFit's
     /// COCOS 13 `poloidal_angle`.
@@ -199,11 +259,23 @@ impl Plasma {
         let b_field_pol_probes: &Vec<MagneticsBpolProbe> = &magnetics.magnetics_ids.b_field_pol_probe;
         let n_b_field_pol_probe: usize = b_field_pol_probes.len();
 
+        // Only the poloidal field probes in the fit settings, `code/parameters_parsed/constraints/b_field_pol_probe`, which `copy_from_magnetics_ids` copies,
+        // have Greens tables. `greens_with_magnetics` checked that each of them is in the magnetics IDS
+        let settings_names: Vec<String> = self
+            .equilibrium_ids
+            .code
+            .parameters_parsed
+            .constraints
+            .b_field_pol_probe
+            .b_field_pol_probe(..)
+            .name
+            .to_vec();
+
         // The grid. `time_slice(0)` because the grid is the same on every time-slice, and `profiles_2d(0)` because GSFit solves
         // on a single rectangular (R, Z) grid. `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives
         // the flattened grid
-        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
+        let n_r: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_ids.code.parameters_parsed.grid.n_z as usize;
         let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let grid_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
@@ -225,6 +297,12 @@ impl Plasma {
 
         let mut greens_b_field_pol_probes: Vec<EquilibriumGreensBFieldPolProbe> = Vec::with_capacity(n_b_field_pol_probe);
         for i_b_field_pol_probe in 0..n_b_field_pol_probe {
+            if !settings_names
+                .iter()
+                .any(|settings_name: &String| *settings_name == b_field_pol_probes[i_b_field_pol_probe].name)
+            {
+                continue;
+            }
             let probe_r: f64 = b_field_pol_probes[i_b_field_pol_probe].position.r;
             let probe_z: f64 = b_field_pol_probes[i_b_field_pol_probe].position.z;
             let probe_angle: f64 = b_field_pol_probes[i_b_field_pol_probe].poloidal_angle;
