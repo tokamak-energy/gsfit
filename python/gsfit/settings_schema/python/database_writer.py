@@ -13,7 +13,7 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass
 
-# The database writers, from `get_database_writer` in python/gsfit/database_writers/__init__.py
+# The database writers, from `get_database_writer` in python/gsfit/database_writers/__init__.py.
 DatabaseWriterMethod: typing.TypeAlias = typing.Literal[
     "tokamak_energy_mdsplus",
     "tokamak_energy_mdsplus_new",
@@ -26,9 +26,9 @@ DatabaseWriterMethod: typing.TypeAlias = typing.Literal[
 @dataclass(kw_only=True)
 class DatabaseWriter:
     """
-    Where the results are written
+    Where the results are written.
 
-    :param method: A database writer to write the results with: one `method` for each place to write to, at least one. None of the writers has settings of its own
+    :param method: A database writer to write the results with: one `method` for each place to write to, at least one. None of the writers has settings of its own.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

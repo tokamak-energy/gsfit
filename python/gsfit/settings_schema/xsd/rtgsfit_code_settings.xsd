@@ -25,7 +25,7 @@
     <xs:element name="rtgsfit_code_settings">
         <xs:annotation>
             <xs:documentation>
-                RTGSFit's own settings. GSFit does not use them: the rtgsfit_mdsplus writer stores them under PRESHOT for RTGSFit
+                RTGSFit's own settings. GSFit does not use them: the rtgsfit_mdsplus writer stores them under PRESHOT for RTGSFit.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -33,35 +33,35 @@
                 <xs:element name="thresh" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            RTGSFit's `thresh`, stored as PRESHOT:THRESH
+                            RTGSFit's `thresh`, stored as PRESHOT:THRESH.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
                 <xs:element name="frac" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            RTGSFit's `frac`, stored as PRESHOT:FRAC
+                            RTGSFit's `frac`, stored as PRESHOT:FRAC.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
                 <xs:element name="n_intrp" type="xs:nonNegativeInteger">
                     <xs:annotation>
                         <xs:documentation>
-                            RTGSFit's `n_intrp`, stored as PRESHOT:N_INTRP
+                            RTGSFit's `n_intrp`, stored as PRESHOT:N_INTRP.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
                 <xs:element name="n_xpt_max" type="xs:nonNegativeInteger">
                     <xs:annotation>
                         <xs:documentation>
-                            Maximum number of X-points RTGSFit handles, stored as PRESHOT:N_XPT_MAX
+                            Maximum number of X-points RTGSFit handles, stored as PRESHOT:N_XPT_MAX.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
                 <xs:element name="n_lcfs_max" type="xs:nonNegativeInteger">
                     <xs:annotation>
                         <xs:documentation>
-                            Maximum number of points on RTGSFit's last closed flux surface, stored as PRESHOT:N_LCFS_MAX
+                            Maximum number of points on RTGSFit's last closed flux surface, stored as PRESHOT:N_LCFS_MAX.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>

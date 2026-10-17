@@ -11559,7 +11559,7 @@ static NODES_CODE_LIBRARY: &[Node] = &[
 static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_ARANGE: &[Node] = &[
     Node {
         name: "time_start",
-        documentation: "First time",
+        documentation: "First time.",
         units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -11573,7 +11573,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_ARANGE: &[Node] = &[
     },
     Node {
         name: "time_end",
-        documentation: "End of the times, which is not included",
+        documentation: "End of the times, which is not included.",
         units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -11587,7 +11587,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_ARANGE: &[Node] = &[
     },
     Node {
         name: "dt",
-        documentation: "Step between times",
+        documentation: "Step between times.",
         units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -11604,7 +11604,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_ARANGE: &[Node] = &[
 static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_LINSPACE: &[Node] = &[
     Node {
         name: "time_start",
-        documentation: "First time",
+        documentation: "First time.",
         units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -11618,7 +11618,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_LINSPACE: &[Node] = &[
     },
     Node {
         name: "time_end",
-        documentation: "Last time",
+        documentation: "Last time.",
         units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -11632,7 +11632,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_LINSPACE: &[Node] = &[
     },
     Node {
         name: "n_time",
-        documentation: "Number of times",
+        documentation: "Number of times.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -11649,7 +11649,7 @@ static NODES_CODE_PARAMETERS_PARSED_TIMESLICES_LINSPACE: &[Node] = &[
 static NODES_CODE_PARAMETERS_PARSED_TIMESLICES: &[Node] = &[
     Node {
         name: "method",
-        documentation: "How the times are chosen. Its settings are in the element of the same name, below
+        documentation: "How the times are chosen. Its settings are in the element of the same name, below.
 One of: \"arange\", \"linspace\", \"user_defined\", \"good_pressure_sensors\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -11664,19 +11664,19 @@ One of: \"arange\", \"linspace\", \"user_defined\", \"good_pressure_sensors\"",
     },
     Node {
         name: "arange",
-        documentation: "Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)",
+        documentation: "Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_TIMESLICES_ARANGE),
     },
     Node {
         name: "linspace",
-        documentation: "n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)",
+        documentation: "n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_TIMESLICES_LINSPACE),
     },
     Node {
         name: "user_defined",
-        documentation: "User defined time-slices, space-separated list, e.g. \"80.e-3 100.0e-3 120.0e-3\"",
+        documentation: "User defined time-slices, space-separated list, e.g. \"80.e-3 100.0e-3 120.0e-3\".",
         units: "second",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -11693,7 +11693,7 @@ One of: \"arange\", \"linspace\", \"user_defined\", \"good_pressure_sensors\"",
 static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_PICARD: &[Node] = &[
     Node {
         name: "n_iter_no_vertical_feedback",
-        documentation: "Number of initial iterations with the vertical feedback (the fit of delta_z) switched off",
+        documentation: "Number of initial iterations with the vertical feedback (the fit of delta_z) switched off.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -11714,7 +11714,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_PICARD: &[Node] = 
     },
     Node {
         name: "apply_anderson_mixing",
-        documentation: "Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals",
+        documentation: "Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -11735,7 +11735,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_PICARD: &[Node] = 
     },
     Node {
         name: "anderson_n_history",
-        documentation: "Maximum number of previous iterations Anderson mixing combines",
+        documentation: "Maximum number of previous iterations Anderson mixing combines.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -11766,7 +11766,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_PICARD: &[Node] = 
 static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[Node] = &[
     Node {
         name: "picard_handover",
-        documentation: "Grad-Shafranov deviation below which it hands over from Picard to Newton iterations",
+        documentation: "Grad-Shafranov deviation below which it hands over from Picard to Newton iterations.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -11787,7 +11787,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[N
     },
     Node {
         name: "n_krylov_max",
-        documentation: "Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work",
+        documentation: "Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -11801,7 +11801,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[N
     },
     Node {
         name: "krylov_tolerance",
-        documentation: "The Krylov solve stops once the linearised residual is this fraction of the residual",
+        documentation: "The Krylov solve stops once the linearised residual is this fraction of the residual.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -11822,7 +11822,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[N
     },
     Node {
         name: "finite_difference_step",
-        documentation: "Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual",
+        documentation: "Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -11843,7 +11843,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[N
     },
     Node {
         name: "verbose",
-        documentation: "Whether to print the progress of each Newton iteration",
+        documentation: "Whether to print the progress of each Newton iteration.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -11860,7 +11860,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV: &[N
 static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD: &[Node] = &[
     Node {
         name: "n_basis_max",
-        documentation: "Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add",
+        documentation: "Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -11874,7 +11874,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD: &[N
     },
     Node {
         name: "contraction_threshold",
-        documentation: "A direction is added when the residual outside them shrinks by less than this factor per iteration",
+        documentation: "A direction is added when the residual outside them shrinks by less than this factor per iteration.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -11895,7 +11895,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD: &[N
     },
     Node {
         name: "finite_difference_step",
-        documentation: "Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual",
+        documentation: "Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -11916,7 +11916,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD: &[N
     },
     Node {
         name: "verbose",
-        documentation: "Whether to print the progress of each Newton-Picard iteration",
+        documentation: "Whether to print the progress of each Newton-Picard iteration.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -11933,7 +11933,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD: &[N
 static NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER: &[Node] = &[
     Node {
         name: "method",
-        documentation: "The solver to use. Its settings are in the element of the same name, below
+        documentation: "The solver to use. Its settings are in the element of the same name, below.
 One of: \"picard\", \"newton_krylov\", \"newton_picard\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -11948,19 +11948,19 @@ One of: \"picard\", \"newton_krylov\", \"newton_picard\"",
     },
     Node {
         name: "picard",
-        documentation: "Settings for Picard iterations",
+        documentation: "Settings for Picard iterations.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_PICARD),
     },
     Node {
         name: "newton_krylov",
-        documentation: "Settings for Jacobian-free Newton-Krylov",
+        documentation: "Settings for Jacobian-free Newton-Krylov.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_KRYLOV),
     },
     Node {
         name: "newton_picard",
-        documentation: "Settings for Newton-Picard, the recursive projection method (RPM)",
+        documentation: "Settings for Newton-Picard, the recursive projection method (RPM).",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER_NEWTON_PICARD),
     },
@@ -11969,7 +11969,7 @@ One of: \"picard\", \"newton_krylov\", \"newton_picard\"",
 static NODES_CODE_PARAMETERS_PARSED_NUMERICS: &[Node] = &[
     Node {
         name: "RAYON_NUM_THREADS",
-        documentation: "Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU",
+        documentation: "Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -11983,7 +11983,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS: &[Node] = &[
     },
     Node {
         name: "n_iter_max",
-        documentation: "Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed",
+        documentation: "Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -11997,7 +11997,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS: &[Node] = &[
     },
     Node {
         name: "grad_shafranov_deviation_tolerance",
-        documentation: "The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this",
+        documentation: "The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12011,7 +12011,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS: &[Node] = &[
     },
     Node {
         name: "n_iter_min",
-        documentation: "Minimum number of nonlinear solver iterations before the convergence test may pass",
+        documentation: "Minimum number of nonlinear solver iterations before the convergence test may pass.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -12025,7 +12025,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS: &[Node] = &[
     },
     Node {
         name: "save_unconverged",
-        documentation: "Not read by the code at present",
+        documentation: "Not read by the code at present.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -12039,7 +12039,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS: &[Node] = &[
     },
     Node {
         name: "nonlinear_solver",
-        documentation: "The nonlinear solver for the Grad-Shafranov equation",
+        documentation: "The nonlinear solver for the Grad-Shafranov equation.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_NUMERICS_NONLINEAR_SOLVER),
     },
@@ -12048,7 +12048,7 @@ static NODES_CODE_PARAMETERS_PARSED_NUMERICS: &[Node] = &[
 static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     Node {
         name: "n_r",
-        documentation: "Number of radial grid points",
+        documentation: "Number of radial grid points.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -12062,7 +12062,7 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     },
     Node {
         name: "n_z",
-        documentation: "Number of vertical grid points",
+        documentation: "Number of vertical grid points.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -12076,7 +12076,7 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     },
     Node {
         name: "r_min",
-        documentation: "Lower radial bound of the grid",
+        documentation: "Lower radial bound of the grid.",
         units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12090,7 +12090,7 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     },
     Node {
         name: "r_max",
-        documentation: "Upper radial bound of the grid",
+        documentation: "Upper radial bound of the grid.",
         units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12104,7 +12104,7 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     },
     Node {
         name: "z_min",
-        documentation: "Lower vertical bound of the grid",
+        documentation: "Lower vertical bound of the grid.",
         units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12118,7 +12118,7 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
     },
     Node {
         name: "z_max",
-        documentation: "Upper vertical bound of the grid",
+        documentation: "Upper vertical bound of the grid.",
         units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12149,7 +12149,7 @@ static NODES_CODE_PARAMETERS_PARSED_GRID: &[Node] = &[
 static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
     Node {
         name: "ip",
-        documentation: "Plasma current",
+        documentation: "Plasma current.",
         units: "ampere",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12163,7 +12163,7 @@ static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
     },
     Node {
         name: "cur_r",
-        documentation: "Radial centre of the current",
+        documentation: "Radial centre of the current.",
         units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12177,7 +12177,7 @@ static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
     },
     Node {
         name: "cur_z",
-        documentation: "Vertical centre of the current",
+        documentation: "Vertical centre of the current.",
         units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12191,7 +12191,7 @@ static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
     },
     Node {
         name: "minor_radius",
-        documentation: "Radial semi-axis of the current",
+        documentation: "Radial semi-axis of the current.",
         units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12205,7 +12205,7 @@ static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
     },
     Node {
         name: "elongation",
-        documentation: "Elongation of the current",
+        documentation: "Elongation of the current.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12222,7 +12222,7 @@ static NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS: &[Node] = &[
 static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_EFIT_POLYNOMIAL: &[Node] = &[
     Node {
         name: "n_dof",
-        documentation: "Number of polynomials, and so of degrees of freedom",
+        documentation: "Number of polynomials, and so of degrees of freedom.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -12236,7 +12236,7 @@ static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_EFIT_POLYNOMIAL: &[N
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true
+        documentation: "The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true.
 Shape [n_rows, n_columns], one row per `row` element",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12257,7 +12257,7 @@ Shape [n_rows, n_columns], one row per `row` element",
     },
     Node {
         name: "exact",
-        documentation: "When true, the coefficients are not fitted but fixed to `coefficients`. False when absent
+        documentation: "When true, the coefficients are not fitted but fixed to `coefficients`. False when absent.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12272,7 +12272,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "coefficients",
-        documentation: "The fixed coefficients, one per polynomial, used when `exact` is true
+        documentation: "The fixed coefficients, one per polynomial, used when `exact` is true.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12290,7 +12290,7 @@ Optional in the settings: unset when it is left out",
 static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_TENSIONED_CUBIC_B_SPLINE_REGULARISATION_BUILDER: &[Node] = &[
     Node {
         name: "regularisation_scale",
-        documentation: "Multiplies the rows which regularise the bulk of the profile",
+        documentation: "Multiplies the rows which regularise the bulk of the profile.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12311,7 +12311,7 @@ static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_TENSIONED_CUBIC_B_SP
     },
     Node {
         name: "regularisation_mode",
-        documentation: "How the bulk of the profile is regularised
+        documentation: "How the bulk of the profile is regularised.
 One of: \"second_derivative_zero\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12333,7 +12333,7 @@ One of: \"second_derivative_zero\"",
     },
     Node {
         name: "left_boundary_condition",
-        documentation: "The boundary condition at psi_n = 0, the magnetic axis
+        documentation: "The boundary condition at psi_n = 0, the magnetic axis.
 One of: \"free\", \"dirichlet\", \"neumann\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12355,7 +12355,7 @@ One of: \"free\", \"dirichlet\", \"neumann\"",
     },
     Node {
         name: "left_boundary_weight",
-        documentation: "Weight of the boundary condition at psi_n = 0. Not used when it is free",
+        documentation: "Weight of the boundary condition at psi_n = 0. Not used when it is free.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12376,7 +12376,7 @@ One of: \"free\", \"dirichlet\", \"neumann\"",
     },
     Node {
         name: "right_boundary_condition",
-        documentation: "The boundary condition at psi_n = 1, the plasma boundary
+        documentation: "The boundary condition at psi_n = 1, the plasma boundary.
 One of: \"free\", \"dirichlet\", \"neumann\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12398,7 +12398,7 @@ One of: \"free\", \"dirichlet\", \"neumann\"",
     },
     Node {
         name: "right_boundary_weight",
-        documentation: "Weight of the boundary condition at psi_n = 1. Not used when it is free",
+        documentation: "Weight of the boundary condition at psi_n = 1. Not used when it is free.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12423,7 +12423,7 @@ static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_TENSIONED_CUBIC_B_SP
     Node {
         name: "regularisations",
         documentation:
-            "The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false
+            "The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false.
 Shape [n_rows, n_columns], one row per `row` element
 Optional in the settings: unset when it is left out",
         units: "",
@@ -12445,7 +12445,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "interior_knots",
-        documentation: "The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included",
+        documentation: "The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -12465,7 +12465,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "interval_tensions",
-        documentation: "The tension over each interval between neighbouring knots: one more than the number of interior knots",
+        documentation: "The tension over each interval between neighbouring knots: one more than the number of interior knots.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -12485,7 +12485,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "make_cubic_spline_regularisations",
-        documentation: "When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent
+        documentation: "When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12506,7 +12506,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "regularisation_builder",
-        documentation: "How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true
+        documentation: "How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_TENSIONED_CUBIC_B_SPLINE_REGULARISATION_BUILDER),
@@ -12516,7 +12516,7 @@ Optional in the settings: unset when it is left out",
 static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME: &[Node] = &[
     Node {
         name: "method",
-        documentation: "The basis functions to use. Their settings are in the element of the same name, below
+        documentation: "The basis functions to use. Their settings are in the element of the same name, below.
 One of: \"efit_polynomial\", \"tensioned_cubic_b_spline\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12531,14 +12531,14 @@ One of: \"efit_polynomial\", \"tensioned_cubic_b_spline\"",
     },
     Node {
         name: "efit_polynomial",
-        documentation: "Settings for EFIT's polynomials
+        documentation: "Settings for EFIT's polynomials.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_EFIT_POLYNOMIAL),
     },
     Node {
         name: "tensioned_cubic_b_spline",
-        documentation: "Settings for the tensioned cubic B-splines
+        documentation: "Settings for the tensioned cubic B-splines.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME_TENSIONED_CUBIC_B_SPLINE),
@@ -12548,7 +12548,7 @@ Optional in the settings: unset when it is left out",
 static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_EFIT_POLYNOMIAL: &[Node] = &[
     Node {
         name: "n_dof",
-        documentation: "Number of polynomials, and so of degrees of freedom",
+        documentation: "Number of polynomials, and so of degrees of freedom.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -12562,7 +12562,7 @@ static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_EFIT_POLYNOMIAL: &[
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true
+        documentation: "The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true.
 Shape [n_rows, n_columns], one row per `row` element",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12583,7 +12583,7 @@ Shape [n_rows, n_columns], one row per `row` element",
     },
     Node {
         name: "exact",
-        documentation: "When true, the coefficients are not fitted but fixed to `coefficients`. False when absent
+        documentation: "When true, the coefficients are not fitted but fixed to `coefficients`. False when absent.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12598,7 +12598,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "coefficients",
-        documentation: "The fixed coefficients, one per polynomial, used when `exact` is true
+        documentation: "The fixed coefficients, one per polynomial, used when `exact` is true.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12616,7 +12616,7 @@ Optional in the settings: unset when it is left out",
 static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_TENSIONED_CUBIC_B_SPLINE_REGULARISATION_BUILDER: &[Node] = &[
     Node {
         name: "regularisation_scale",
-        documentation: "Multiplies the rows which regularise the bulk of the profile",
+        documentation: "Multiplies the rows which regularise the bulk of the profile.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12637,7 +12637,7 @@ static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_TENSIONED_CUBIC_B_S
     },
     Node {
         name: "regularisation_mode",
-        documentation: "How the bulk of the profile is regularised
+        documentation: "How the bulk of the profile is regularised.
 One of: \"second_derivative_zero\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12659,7 +12659,7 @@ One of: \"second_derivative_zero\"",
     },
     Node {
         name: "left_boundary_condition",
-        documentation: "The boundary condition at psi_n = 0, the magnetic axis
+        documentation: "The boundary condition at psi_n = 0, the magnetic axis.
 One of: \"free\", \"dirichlet\", \"neumann\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12681,7 +12681,7 @@ One of: \"free\", \"dirichlet\", \"neumann\"",
     },
     Node {
         name: "left_boundary_weight",
-        documentation: "Weight of the boundary condition at psi_n = 0. Not used when it is free",
+        documentation: "Weight of the boundary condition at psi_n = 0. Not used when it is free.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12702,7 +12702,7 @@ One of: \"free\", \"dirichlet\", \"neumann\"",
     },
     Node {
         name: "right_boundary_condition",
-        documentation: "The boundary condition at psi_n = 1, the plasma boundary
+        documentation: "The boundary condition at psi_n = 1, the plasma boundary.
 One of: \"free\", \"dirichlet\", \"neumann\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12724,7 +12724,7 @@ One of: \"free\", \"dirichlet\", \"neumann\"",
     },
     Node {
         name: "right_boundary_weight",
-        documentation: "Weight of the boundary condition at psi_n = 1. Not used when it is free",
+        documentation: "Weight of the boundary condition at psi_n = 1. Not used when it is free.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -12749,7 +12749,7 @@ static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_TENSIONED_CUBIC_B_S
     Node {
         name: "regularisations",
         documentation:
-            "The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false
+            "The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false.
 Shape [n_rows, n_columns], one row per `row` element
 Optional in the settings: unset when it is left out",
         units: "",
@@ -12771,7 +12771,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "interior_knots",
-        documentation: "The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included",
+        documentation: "The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -12791,7 +12791,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "interval_tensions",
-        documentation: "The tension over each interval between neighbouring knots: one more than the number of interior knots",
+        documentation: "The tension over each interval between neighbouring knots: one more than the number of interior knots.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
@@ -12811,7 +12811,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "make_cubic_spline_regularisations",
-        documentation: "When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent
+        documentation: "When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12832,7 +12832,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "regularisation_builder",
-        documentation: "How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true
+        documentation: "How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_TENSIONED_CUBIC_B_SPLINE_REGULARISATION_BUILDER),
@@ -12842,7 +12842,7 @@ Optional in the settings: unset when it is left out",
 static NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME: &[Node] = &[
     Node {
         name: "method",
-        documentation: "The basis functions to use. Their settings are in the element of the same name, below
+        documentation: "The basis functions to use. Their settings are in the element of the same name, below.
 One of: \"efit_polynomial\", \"tensioned_cubic_b_spline\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12857,14 +12857,14 @@ One of: \"efit_polynomial\", \"tensioned_cubic_b_spline\"",
     },
     Node {
         name: "efit_polynomial",
-        documentation: "Settings for EFIT's polynomials
+        documentation: "Settings for EFIT's polynomials.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_EFIT_POLYNOMIAL),
     },
     Node {
         name: "tensioned_cubic_b_spline",
-        documentation: "Settings for the tensioned cubic B-splines
+        documentation: "Settings for the tensioned cubic B-splines.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME_TENSIONED_CUBIC_B_SPLINE),
@@ -12874,7 +12874,7 @@ Optional in the settings: unset when it is left out",
 static NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF_PASSIVE: &[Node] = &[
     Node {
         name: "name",
-        documentation: "The passive's name in the database, e.g. \"IVC\"",
+        documentation: "The passive's name in the database, e.g. \"IVC\".",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -12892,7 +12892,7 @@ static NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF_PASSIVE: &[Node] = &[
     },
     Node {
         name: "current_distribution_type",
-        documentation: "How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code
+        documentation: "How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code.
 One of: \"constant_current_density\", \"eig\"",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12915,7 +12915,7 @@ One of: \"constant_current_density\", \"eig\"",
     },
     Node {
         name: "include",
-        documentation: "Whether the passive is included. Not read at present",
+        documentation: "Whether the passive is included. Not read at present.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -12933,7 +12933,7 @@ One of: \"constant_current_density\", \"eig\"",
     },
     Node {
         name: "n_dof",
-        documentation: "Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig",
+        documentation: "Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -12951,7 +12951,7 @@ One of: \"constant_current_density\", \"eig\"",
     },
     Node {
         name: "regularisations",
-        documentation: "The regularisations, one `row` of n_dof coefficients each; no rows for none
+        documentation: "The regularisations, one `row` of n_dof coefficients each; no rows for none.
 Shape [n_rows, n_columns], one row per `row` element",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -12994,7 +12994,7 @@ Shape [n_rows, n_columns], one row per `row` element",
 
 static NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF: &[Node] = &[Node {
     name: "passive",
-    documentation: "One passive structure
+    documentation: "One passive structure.
 Optional in the settings: unset when it is left out",
     units: "",
     kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF_PASSIVE),
@@ -13429,7 +13429,7 @@ Optional in the settings: unset when it is left out",
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
     Node {
         name: "name",
-        documentation: "The constraint's name",
+        documentation: "The constraint's name.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -13447,7 +13447,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
     },
     Node {
         name: "expected_value",
-        documentation: "The typical size of the flux difference between the two points. The fit divides the residual by it",
+        documentation: "The typical size of the flux difference between the two points. The fit divides the residual by it.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -13467,7 +13467,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
     },
     Node {
         name: "weight",
-        documentation: "Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value",
+        documentation: "Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -13487,7 +13487,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
     },
     Node {
         name: "include",
-        documentation: "Whether the constraint is fitted",
+        documentation: "Whether the constraint is fitted.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -13507,7 +13507,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
     },
     Node {
         name: "comment",
-        documentation: "Free text, e.g. why the constraint is not included; not used by the fit",
+        documentation: "Free text, e.g. why the constraint is not included; not used by the fit.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "STR_0D",
@@ -13529,7 +13529,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX: &[Node] = &[
 
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX: &[Node] = &[Node {
     name: "isoflux",
-    documentation: "One isoflux constraint
+    documentation: "One isoflux constraint.
 Optional in the settings: unset when it is left out",
     units: "",
     kind: NodeKind::ArrayOfStructures(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_ISOFLUX_ISOFLUX),
@@ -13538,7 +13538,7 @@ Optional in the settings: unset when it is left out",
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTERING: &[Node] = &[
     Node {
         name: "pressure_multiplier",
-        documentation: "Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature",
+        documentation: "Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -13560,7 +13560,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTE
     },
     Node {
         name: "minimum_pressure",
-        documentation: "Total pressures at or below this are ignored. A channel with none above it gets no constraint",
+        documentation: "Total pressures at or below this are ignored. A channel with none above it gets no constraint.",
         units: "pascal",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -13585,7 +13585,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTE
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[Node] = &[
     Node {
         name: "r_start",
-        documentation: "Major radius of the first sensor, relative to the magnetic axis",
+        documentation: "Major radius of the first sensor, relative to the magnetic axis.",
         units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -13599,7 +13599,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
     },
     Node {
         name: "r_end",
-        documentation: "Major radius of the last sensor, relative to the magnetic axis",
+        documentation: "Major radius of the last sensor, relative to the magnetic axis.",
         units: "metre",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -13613,7 +13613,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
     },
     Node {
         name: "n_sensors",
-        documentation: "Number of sensors, evenly spaced from r_start to r_end",
+        documentation: "Number of sensors, evenly spaced from r_start to r_end.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
             data_type: "INT_0D",
@@ -13627,7 +13627,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
     },
     Node {
         name: "minimum_pressure",
-        documentation: "Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint",
+        documentation: "Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint.",
         units: "pascal",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
@@ -13652,7 +13652,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC: &[N
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE: &[Node] = &[
     Node {
         name: "include",
-        documentation: "Whether to fit pressure. When false, nothing else in this file is read",
+        documentation: "Whether to fit pressure. When false, nothing else in this file is read.",
         units: "",
         kind: NodeKind::Leaf(Leaf {
                 data_type: "INT_0D",
@@ -13672,7 +13672,7 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE: &[Node] = &[
     },
     Node {
         name: "sensor_name_prefix",
-        documentation: "The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true
+        documentation: "The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -13693,7 +13693,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "expected_value",
-        documentation: "The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead
+        documentation: "The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead.
 Optional in the settings: unset when it is left out",
         units: "pascal",
         kind: NodeKind::Leaf(Leaf {
@@ -13714,7 +13714,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "weight",
-        documentation: "Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true
+        documentation: "Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true.
 Optional in the settings: unset when it is left out",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
@@ -13735,7 +13735,7 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "comment",
-        documentation: "Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true
+        documentation: "Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Leaf(Leaf {
@@ -13756,14 +13756,14 @@ Optional in the settings: unset when it is left out",
     },
     Node {
         name: "thomson_scattering",
-        documentation: "Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true
+        documentation: "Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_THOMSON_SCATTERING),
     },
     Node {
         name: "synthetic",
-        documentation: "Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true
+        documentation: "Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true.
 Optional in the settings: unset when it is left out",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE_SYNTHETIC),
@@ -13772,7 +13772,7 @@ Optional in the settings: unset when it is left out",
 
 static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE: &[Node] = &[Node {
     name: "pressure",
-    documentation: "Whether pressure is fitted, and how the pressure constraints are made",
+    documentation: "Whether pressure is fitted, and how the pressure constraints are made.",
     units: "",
     kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS_PRESSURE_PRESSURE),
 }];
@@ -13819,43 +13819,43 @@ static NODES_CODE_PARAMETERS_PARSED_CONSTRAINTS: &[Node] = &[
 static NODES_CODE_PARAMETERS_PARSED: &[Node] = &[
     Node {
         name: "timeslices",
-        documentation: "The times to reconstruct",
+        documentation: "The times to reconstruct.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_TIMESLICES),
     },
     Node {
         name: "numerics",
-        documentation: "Settings for the Grad-Shafranov solve, and the number of threads it runs on",
+        documentation: "Settings for the Grad-Shafranov solve, and the number of threads it runs on.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_NUMERICS),
     },
     Node {
         name: "grid",
-        documentation: "The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles",
+        documentation: "The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_GRID),
     },
     Node {
         name: "initial_guess",
-        documentation: "Initial guess for first iteration",
+        documentation: "Initial guess for first iteration.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_INITIAL_GUESS),
     },
     Node {
         name: "source_function_p_prime",
-        documentation: "The p' source function: its basis functions and their regularisation",
+        documentation: "The p' source function: its basis functions and their regularisation.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_P_PRIME),
     },
     Node {
         name: "source_function_ff_prime",
-        documentation: "The ff' source function: its basis functions and their regularisation",
+        documentation: "The ff' source function: its basis functions and their regularisation.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_SOURCE_FUNCTION_FF_PRIME),
     },
     Node {
         name: "pf_passive_dof",
-        documentation: "The degrees of freedom of the currents in the passive structures, and their regularisation",
+        documentation: "The degrees of freedom of the currents in the passive structures, and their regularisation.",
         units: "",
         kind: NodeKind::Structure(NODES_CODE_PARAMETERS_PARSED_PF_PASSIVE_DOF),
     },

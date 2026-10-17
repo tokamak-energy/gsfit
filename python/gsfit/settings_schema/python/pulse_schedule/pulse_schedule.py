@@ -20,9 +20,9 @@ from ..workflow import Workflow
 @dataclass(kw_only=True)
 class PulseScheduleSettings:
     """
-    How the database reader builds the pulse_schedule IDS: the gaps between the plasma boundary and the wall. Only the st40_mdsplus_with_digital_filter reader builds one, reading its run from the workflow.xml linked in `workflow`
+    How the database reader builds the pulse_schedule IDS: the gaps between the plasma boundary and the wall. Only the st40_mdsplus_with_digital_filter reader builds one, reading its run from the workflow.xml linked in `workflow`.
 
-    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the gaps, their names, origins and angles, from its ELMAG tree, GAPS
+    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the gaps, their names, origins and angles, from its ELMAG tree, GAPS.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

@@ -246,7 +246,6 @@ pub struct WallDescriptionGgdEnergyNeutralState {
     /// String identifying state
     pub name: STR_0D,
     /// Vibrational level (can be bundled)
-    /// Units: e
     pub vibrational_level: FLT_0D,
     /// Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
     pub vibrational_mode: STR_0D,
@@ -323,7 +322,6 @@ pub struct WallDescriptionGgdEnergyIonState {
     /// String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
     pub name: STR_0D,
     /// Vibrational level (can be bundled)
-    /// Units: e
     pub vibrational_level: FLT_0D,
     /// Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
     pub vibrational_mode: STR_0D,
@@ -430,7 +428,6 @@ pub struct WallDescriptionGgdParticleNeutralState {
     /// String identifying state
     pub name: STR_0D,
     /// Vibrational level (can be bundled)
-    /// Units: e
     pub vibrational_level: FLT_0D,
     /// Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
     pub vibrational_mode: STR_0D,
@@ -507,7 +504,6 @@ pub struct WallDescriptionGgdParticleIonState {
     /// String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
     pub name: STR_0D,
     /// Vibrational level (can be bundled)
-    /// Units: e
     pub vibrational_level: FLT_0D,
     /// Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
     pub vibrational_mode: STR_0D,
@@ -603,7 +599,6 @@ pub struct WallDescriptionGgdRecyclingNeutralState {
     /// String identifying state
     pub name: STR_0D,
     /// Vibrational level (can be bundled)
-    /// Units: e
     pub vibrational_level: FLT_0D,
     /// Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
     pub vibrational_mode: STR_0D,
@@ -670,7 +665,6 @@ pub struct WallDescriptionGgdRecyclingIonState {
     /// String identifying charge state (e.g. C+, C+2 , C+3, C+4, C+5, C+6, ...)
     pub name: STR_0D,
     /// Vibrational level (can be bundled)
-    /// Units: e
     pub vibrational_level: FLT_0D,
     /// Vibrational mode of this state, e.g. "A_g". Need to define, or adopt a standard nomenclature.
     pub vibrational_mode: STR_0D,

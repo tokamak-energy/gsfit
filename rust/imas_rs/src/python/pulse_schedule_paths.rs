@@ -79,6 +79,23 @@ fn lengths_ec_beam(pulse_schedule: &PulseSchedule, level: usize, _at: &[usize]) 
     }
 }
 
+/// Length of each array-of-structures level along `ec_mirror`.
+fn lengths_ec_mirror(pulse_schedule: &PulseSchedule, level: usize, _at: &[usize]) -> Option<usize> {
+    match level {
+        0 => return Some(pulse_schedule.ec.mirror.len()),
+        _ => return None,
+    }
+}
+
+/// Length of each array-of-structures level along `ec_mirror_movement`.
+fn lengths_ec_mirror_movement(pulse_schedule: &PulseSchedule, level: usize, at: &[usize]) -> Option<usize> {
+    match level {
+        0 => return Some(pulse_schedule.ec.mirror.len()),
+        1 => return Some(pulse_schedule.ec.mirror[at[0]].movement.len()),
+        _ => return None,
+    }
+}
+
 /// Length of each array-of-structures level along `event`.
 fn lengths_event(pulse_schedule: &PulseSchedule, level: usize, _at: &[usize]) -> Option<usize> {
     match level {
@@ -803,81 +820,6 @@ static NODES_EC_BEAM_FREQUENCY: &[Node] = &[
     },
 ];
 
-static NODES_EC_BEAM_DEPOSITION_RHO_TOR_NORM: &[Node] = &[
-    Node {
-        name: "reference_name",
-        documentation: "Reference name (e.g. in the native pulse schedule system of the device)",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "STR_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
-                gather(
-                    pulse_schedule,
-                    indices,
-                    1,
-                    lengths_ec_beam,
-                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.beam[at[0]].deposition_rho_tor_norm.reference_name.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "reference",
-        documentation: "Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.",
-        units: "mixed",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "FLT_1D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
-                gather(
-                    pulse_schedule,
-                    indices,
-                    1,
-                    lengths_ec_beam,
-                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].deposition_rho_tor_norm.reference.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "reference_type",
-        documentation: "Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
-                gather(
-                    pulse_schedule,
-                    indices,
-                    1,
-                    lengths_ec_beam,
-                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.beam[at[0]].deposition_rho_tor_norm.reference_type.clone() },
-                )
-            },
-        }),
-    },
-    Node {
-        name: "envelope_type",
-        documentation: "Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data",
-        units: "",
-        kind: NodeKind::Leaf(Leaf {
-            data_type: "INT_0D",
-            read: |ids: &dyn Any, indices: &[IndexSpec]| {
-                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
-                gather(
-                    pulse_schedule,
-                    indices,
-                    1,
-                    lengths_ec_beam,
-                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.beam[at[0]].deposition_rho_tor_norm.envelope_type.clone() },
-                )
-            },
-        }),
-    },
-];
-
 static NODES_EC_BEAM_STEERING_ANGLE_POL: &[Node] = &[
     Node {
         name: "reference_name",
@@ -1028,6 +970,270 @@ static NODES_EC_BEAM_STEERING_ANGLE_TOR: &[Node] = &[
     },
 ];
 
+static NODES_EC_BEAM_POLARIZATION_O_MODE_FRACTION: &[Node] = &[
+    Node {
+        name: "reference_name",
+        documentation: "Reference name (e.g. in the native pulse schedule system of the device)",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
+                        pulse_schedule.ec.beam[at[0]].polarization.o_mode_fraction.reference_name.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference",
+        documentation: "Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].polarization.o_mode_fraction.reference.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference_type",
+        documentation: "Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
+                        pulse_schedule.ec.beam[at[0]].polarization.o_mode_fraction.reference_type.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "envelope_type",
+        documentation: "Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
+                        pulse_schedule.ec.beam[at[0]].polarization.o_mode_fraction.envelope_type.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_EC_BEAM_POLARIZATION_AZIMUTHAL_ANGLE: &[Node] = &[
+    Node {
+        name: "reference_name",
+        documentation: "Reference name (e.g. in the native pulse schedule system of the device)",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
+                        pulse_schedule.ec.beam[at[0]].polarization.azimuthal_angle.reference_name.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference",
+        documentation: "Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].polarization.azimuthal_angle.reference.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference_type",
+        documentation: "Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
+                        pulse_schedule.ec.beam[at[0]].polarization.azimuthal_angle.reference_type.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "envelope_type",
+        documentation: "Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
+                        pulse_schedule.ec.beam[at[0]].polarization.azimuthal_angle.envelope_type.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_EC_BEAM_POLARIZATION_ELLIPTICITY_ANGLE: &[Node] = &[
+    Node {
+        name: "reference_name",
+        documentation: "Reference name (e.g. in the native pulse schedule system of the device)",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
+                        pulse_schedule.ec.beam[at[0]].polarization.ellipticity_angle.reference_name.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference",
+        documentation: "Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.beam[at[0]].polarization.ellipticity_angle.reference.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference_type",
+        documentation: "Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
+                        pulse_schedule.ec.beam[at[0]].polarization.ellipticity_angle.reference_type.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "envelope_type",
+        documentation: "Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_beam,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
+                        pulse_schedule.ec.beam[at[0]].polarization.ellipticity_angle.envelope_type.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_EC_BEAM_POLARIZATION: &[Node] = &[
+    Node {
+        name: "o_mode_fraction",
+        documentation: "Fraction of EC beam power launched in ordinary (O) mode. If all power is launched in ordinary mode (O-mode), o_mode_fraction = 1.0. If all  power is launched in extraordinary mode (X-mode), o_mode_fraction = 0.0",
+        units: "1",
+        kind: NodeKind::Structure(NODES_EC_BEAM_POLARIZATION_O_MODE_FRACTION),
+    },
+    Node {
+        name: "azimuthal_angle",
+        documentation: "Poincare sphere angle psi for mixed mode",
+        units: "rad",
+        kind: NodeKind::Structure(NODES_EC_BEAM_POLARIZATION_AZIMUTHAL_ANGLE),
+    },
+    Node {
+        name: "ellipticity_angle",
+        documentation: "Poincare sphere angle chi for mixed mode",
+        units: "rad",
+        kind: NodeKind::Structure(NODES_EC_BEAM_POLARIZATION_ELLIPTICITY_ANGLE),
+    },
+];
+
 static NODES_EC_BEAM: &[Node] = &[
     Node {
         name: "name",
@@ -1078,12 +1284,6 @@ static NODES_EC_BEAM: &[Node] = &[
         kind: NodeKind::Structure(NODES_EC_BEAM_FREQUENCY),
     },
     Node {
-        name: "deposition_rho_tor_norm",
-        documentation: "Normalized toroidal flux coordinate at which the main deposition should occur",
-        units: "1",
-        kind: NodeKind::Structure(NODES_EC_BEAM_DEPOSITION_RHO_TOR_NORM),
-    },
-    Node {
         name: "steering_angle_pol",
         documentation: "Steering angle of the EC beam in the R,Z plane (from the -R axis towards the -Z axis), angle_pol=atan2(-k_Z,-k_R), where k_Z and k_R are the Z and R components of the mean wave vector in the EC beam",
         units: "rad",
@@ -1094,6 +1294,398 @@ static NODES_EC_BEAM: &[Node] = &[
         documentation: "Steering angle of the EC beam away from the poloidal plane that is increasing towards the positive phi axis, angle_tor=arcsin(k_phi/k), where k_phi is the component of the wave vector in the phi direction and k is the length of the wave vector. Here the term wave vector refers to the mean wave vector in the EC beam",
         units: "rad",
         kind: NodeKind::Structure(NODES_EC_BEAM_STEERING_ANGLE_TOR),
+    },
+    Node {
+        name: "polarization",
+        documentation: "Wave polarization",
+        units: "",
+        kind: NodeKind::Structure(NODES_EC_BEAM_POLARIZATION),
+    },
+];
+
+static NODES_EC_MIRROR_MOVEMENT_TYPE: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Short string identifier",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].movement[at[1]].r#type.name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "index",
+        documentation: "Integer identifier (enumeration index within a list). Private identifier values must be indicated by a negative index.",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.mirror[at[0]].movement[at[1]].r#type.index.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "description",
+        documentation: "Verbose description",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].movement[at[1]].r#type.description.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_EC_MIRROR_MOVEMENT_TRANSLATION: &[Node] = &[
+    Node {
+        name: "reference_name",
+        documentation: "Reference name (e.g. in the native pulse schedule system of the device)",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
+                        pulse_schedule.ec.mirror[at[0]].movement[at[1]].translation.reference_name.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference",
+        documentation: "Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.mirror[at[0]].movement[at[1]].translation.reference.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference_type",
+        documentation: "Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
+                        pulse_schedule.ec.mirror[at[0]].movement[at[1]].translation.reference_type.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "envelope_type",
+        documentation: "Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
+                        pulse_schedule.ec.mirror[at[0]].movement[at[1]].translation.envelope_type.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_EC_MIRROR_MOVEMENT_ROTATION_ANGLE: &[Node] = &[
+    Node {
+        name: "reference_name",
+        documentation: "Reference name (e.g. in the native pulse schedule system of the device)",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D {
+                        pulse_schedule.ec.mirror[at[0]].movement[at[1]].rotation_angle.reference_name.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference",
+        documentation: "Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D {
+                        pulse_schedule.ec.mirror[at[0]].movement[at[1]].rotation_angle.reference.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference_type",
+        documentation: "Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
+                        pulse_schedule.ec.mirror[at[0]].movement[at[1]].rotation_angle.reference_type.clone()
+                    },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "envelope_type",
+        documentation: "Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D {
+                        pulse_schedule.ec.mirror[at[0]].movement[at[1]].rotation_angle.envelope_type.clone()
+                    },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_EC_MIRROR_MOVEMENT: &[Node] = &[
+    Node {
+        name: "description",
+        documentation: "Description, e.g. “Core mirror steering”",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    2,
+                    lengths_ec_mirror_movement,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].movement[at[1]].description.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "type",
+        documentation: "Type of movement",
+        units: "",
+        kind: NodeKind::Structure(NODES_EC_MIRROR_MOVEMENT_TYPE),
+    },
+    Node {
+        name: "translation",
+        documentation: "Linear displacement from reference position, along the direction vector",
+        units: "m",
+        kind: NodeKind::Structure(NODES_EC_MIRROR_MOVEMENT_TRANSLATION),
+    },
+    Node {
+        name: "rotation_angle",
+        documentation: "Angular displacement with respect to the reference position, counter-clockwise around the direction vector",
+        units: "rad",
+        kind: NodeKind::Structure(NODES_EC_MIRROR_MOVEMENT_ROTATION_ANGLE),
+    },
+];
+
+static NODES_EC_MIRROR_DEPOSITION_RHO_TOR_NORM: &[Node] = &[
+    Node {
+        name: "reference_name",
+        documentation: "Reference name (e.g. in the native pulse schedule system of the device)",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_mirror,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].deposition_rho_tor_norm.reference_name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference",
+        documentation: "Reference waveform. Caution : error bars of the reference/data node are not used in the usual sense, instead they are used to describe the control envelope, with a meaning depending on the chosen envelope_type option.",
+        units: "mixed",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_1D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_mirror,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> FLT_1D { pulse_schedule.ec.mirror[at[0]].deposition_rho_tor_norm.reference.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "reference_type",
+        documentation: "Reference type:  0:relative (don't use for the moment, to be defined later when segments are introduced in the IDS structure); 1: absolute: the reference time trace is provided in the reference/data node",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_mirror,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.mirror[at[0]].deposition_rho_tor_norm.reference_type.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "envelope_type",
+        documentation: "Envelope type:  0:relative: means that the envelope upper and lower bound values are defined respectively as reference.data * reference.data_error_upper and reference.data * reference.data_error_lower. 1: absolute: the envelope upper and lower bound values are given respectively by reference/data_error_upper and reference/data_error_lower. Lower and upper are taken in the strict mathematical sense, without considering absolute values of the data",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "INT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_mirror,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> INT_0D { pulse_schedule.ec.mirror[at[0]].deposition_rho_tor_norm.envelope_type.clone() },
+                )
+            },
+        }),
+    },
+];
+
+static NODES_EC_MIRROR: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Short string identifier (unique for a given device)",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_mirror,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "description",
+        documentation: "Description, e.g. “Mirror in upper port 12”",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let pulse_schedule: &PulseSchedule = ids.downcast_ref().ok_or_else(|| "not a pulse_schedule IDS".to_string())?;
+                gather(
+                    pulse_schedule,
+                    indices,
+                    1,
+                    lengths_ec_mirror,
+                    |pulse_schedule: &PulseSchedule, at: &[usize]| -> STR_0D { pulse_schedule.ec.mirror[at[0]].description.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "movement",
+        documentation: "Set of degrees of freedom for this mirror, allowing the mirror to move around its reference position indicated in ../geometry. Can be cascaded for composite movements.",
+        units: "",
+        kind: NodeKind::ArrayOfStructures(NODES_EC_MIRROR_MOVEMENT),
+    },
+    Node {
+        name: "deposition_rho_tor_norm",
+        documentation: "Normalized toroidal flux coordinate at which the main deposition should occur. For tracking a rational surface use a negative value (for example -1.5 or -2.0)\"",
+        units: "1",
+        kind: NodeKind::Structure(NODES_EC_MIRROR_DEPOSITION_RHO_TOR_NORM),
     },
 ];
 
@@ -1178,6 +1770,12 @@ static NODES_EC: &[Node] = &[
         documentation: "Set of Electron Cyclotron beams",
         units: "",
         kind: NodeKind::ArrayOfStructures(NODES_EC_BEAM),
+    },
+    Node {
+        name: "mirror",
+        documentation: "Set of Electron Cyclotron mirrors",
+        units: "",
+        kind: NodeKind::ArrayOfStructures(NODES_EC_MIRROR),
     },
     Node {
         name: "power_launched",

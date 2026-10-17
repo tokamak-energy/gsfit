@@ -330,6 +330,47 @@ pub struct PulseScheduleIcAntenna {
     pub frequency: PulseScheduleReferenceIc,
 }
 
+/// EC mirror movements
+#[derive(Debug, Clone, Default)]
+pub struct PulseScheduleEcMirrorMovement {
+    /// Description, e.g. “Core mirror steering”
+    pub description: STR_0D,
+    /// Type of movement
+    pub r#type: Identifier,
+    /// Linear displacement from reference position, along the direction vector
+    /// Units: m
+    pub translation: PulseScheduleReferenceEc,
+    /// Angular displacement with respect to the reference position, counter-clockwise around the direction vector
+    /// Units: rad
+    pub rotation_angle: PulseScheduleReferenceEc,
+}
+
+/// EC beam polarization
+#[derive(Debug, Clone, Default)]
+pub struct PulseScheduleEcBeamPolarization {
+    /// Fraction of EC beam power launched in ordinary (O) mode. If all power is launched in ordinary mode (O-mode), o_mode_fraction = 1.0. If all  power is launched in extraordinary mode (X-mode), o_mode_fraction = 0.0
+    pub o_mode_fraction: PulseScheduleReferenceEc,
+    /// Poincare sphere angle psi for mixed mode
+    /// Units: rad
+    pub azimuthal_angle: PulseScheduleReferenceEc,
+    /// Poincare sphere angle chi for mixed mode
+    /// Units: rad
+    pub ellipticity_angle: PulseScheduleReferenceEc,
+}
+
+/// EC mirror
+#[derive(Debug, Clone, Default)]
+pub struct PulseScheduleEcMirror {
+    /// Short string identifier (unique for a given device)
+    pub name: STR_0D,
+    /// Description, e.g. “Mirror in upper port 12”
+    pub description: STR_0D,
+    /// Set of degrees of freedom for this mirror, allowing the mirror to move around its reference position indicated in ../geometry. Can be cascaded for composite movements.
+    pub movement: Vec<PulseScheduleEcMirrorMovement>,
+    /// Normalized toroidal flux coordinate at which the main deposition should occur. For tracking a rational surface use a negative value (for example -1.5 or -2.0)"
+    pub deposition_rho_tor_norm: PulseScheduleReferenceEc,
+}
+
 /// EC beam
 #[derive(Debug, Clone, Default)]
 pub struct PulseScheduleEcBeam {
@@ -343,14 +384,14 @@ pub struct PulseScheduleEcBeam {
     /// Frequency
     /// Units: Hz
     pub frequency: PulseScheduleReferenceEc,
-    /// Normalized toroidal flux coordinate at which the main deposition should occur
-    pub deposition_rho_tor_norm: PulseScheduleReferenceEc,
     /// Steering angle of the EC beam in the R,Z plane (from the -R axis towards the -Z axis), angle_pol=atan2(-k_Z,-k_R), where k_Z and k_R are the Z and R components of the mean wave vector in the EC beam
     /// Units: rad
     pub steering_angle_pol: PulseScheduleReferenceEc,
     /// Steering angle of the EC beam away from the poloidal plane that is increasing towards the positive phi axis, angle_tor=arcsin(k_phi/k), where k_phi is the component of the wave vector in the phi direction and k is the length of the wave vector. Here the term wave vector refers to the mean wave vector in the EC beam
     /// Units: rad
     pub steering_angle_tor: PulseScheduleReferenceEc,
+    /// Wave polarization
+    pub polarization: PulseScheduleEcBeamPolarization,
 }
 
 /// LH antenna
@@ -442,6 +483,8 @@ pub struct PulseScheduleLh {
 pub struct PulseScheduleEc {
     /// Set of Electron Cyclotron beams
     pub beam: Vec<PulseScheduleEcBeam>,
+    /// Set of Electron Cyclotron mirrors
+    pub mirror: Vec<PulseScheduleEcMirror>,
     /// Total EC power launched in the plasma (sum over the beams)
     /// Units: W
     pub power_launched: PulseScheduleReferenceEc,
@@ -860,6 +903,121 @@ pub struct PulseSchedule {
 // ============================================================================
 // View, Accessor, and Accumulator Types
 // ============================================================================
+
+// --- PulseScheduleEcMirrorMovement View Types ---
+
+/// View over `type` (Identifier) across multiple PulseScheduleEcMirrorMovement
+pub struct PulseScheduleEcMirrorMovementTypeView<'a, D> {
+    pub name: Accumulator<'a, PulseScheduleEcMirrorMovement, STR_0D, D>,
+    pub index: Accumulator<'a, PulseScheduleEcMirrorMovement, INT_0D, D>,
+    pub description: Accumulator<'a, PulseScheduleEcMirrorMovement, STR_0D, D>,
+    slice_elements: Elements<'a, PulseScheduleEcMirrorMovement, D>,
+}
+
+impl<'a, D: Dimension> PulseScheduleEcMirrorMovementTypeView<'a, D> {
+    pub fn new(elements: Elements<'a, PulseScheduleEcMirrorMovement, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirrorMovement| item.r#type.name.clone()),
+            index: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirrorMovement| item.r#type.index),
+            description: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirrorMovement| item.r#type.description.clone()),
+            slice_elements: elements,
+        }
+    }
+}
+
+/// View over `translation` (PulseScheduleReferenceEc) across multiple PulseScheduleEcMirrorMovement
+pub struct PulseScheduleEcMirrorMovementTranslationView<'a, D> {
+    pub reference_name: Accumulator<'a, PulseScheduleEcMirrorMovement, STR_0D, D>,
+    pub reference_type: Accumulator<'a, PulseScheduleEcMirrorMovement, INT_0D, D>,
+    pub envelope_type: Accumulator<'a, PulseScheduleEcMirrorMovement, INT_0D, D>,
+    slice_elements: Elements<'a, PulseScheduleEcMirrorMovement, D>,
+}
+
+impl<'a, D: Dimension> PulseScheduleEcMirrorMovementTranslationView<'a, D> {
+    pub fn new(elements: Elements<'a, PulseScheduleEcMirrorMovement, D>) -> Self {
+        Self {
+            reference_name: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirrorMovement| item.translation.reference_name.clone()),
+            reference_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirrorMovement| item.translation.reference_type),
+            envelope_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirrorMovement| item.translation.envelope_type),
+            slice_elements: elements,
+        }
+    }
+}
+
+/// View over `rotation_angle` (PulseScheduleReferenceEc) across multiple PulseScheduleEcMirrorMovement
+pub struct PulseScheduleEcMirrorMovementRotationAngleView<'a, D> {
+    pub reference_name: Accumulator<'a, PulseScheduleEcMirrorMovement, STR_0D, D>,
+    pub reference_type: Accumulator<'a, PulseScheduleEcMirrorMovement, INT_0D, D>,
+    pub envelope_type: Accumulator<'a, PulseScheduleEcMirrorMovement, INT_0D, D>,
+    slice_elements: Elements<'a, PulseScheduleEcMirrorMovement, D>,
+}
+
+impl<'a, D: Dimension> PulseScheduleEcMirrorMovementRotationAngleView<'a, D> {
+    pub fn new(elements: Elements<'a, PulseScheduleEcMirrorMovement, D>) -> Self {
+        Self {
+            reference_name: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirrorMovement| {
+                item.rotation_angle.reference_name.clone()
+            }),
+            reference_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirrorMovement| item.rotation_angle.reference_type),
+            envelope_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirrorMovement| item.rotation_angle.envelope_type),
+            slice_elements: elements,
+        }
+    }
+}
+
+/// View over multiple PulseScheduleEcMirrorMovement with field accumulation
+pub struct PulseScheduleEcMirrorMovementSliceView<'a, D> {
+    pub description: Accumulator<'a, PulseScheduleEcMirrorMovement, STR_0D, D>,
+    pub r#type: PulseScheduleEcMirrorMovementTypeView<'a, D>,
+    pub translation: PulseScheduleEcMirrorMovementTranslationView<'a, D>,
+    pub rotation_angle: PulseScheduleEcMirrorMovementRotationAngleView<'a, D>,
+    slice_elements: Elements<'a, PulseScheduleEcMirrorMovement, D>,
+}
+
+impl<'a, D: Dimension> PulseScheduleEcMirrorMovementSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, PulseScheduleEcMirrorMovement, D>) -> Self {
+        Self {
+            description: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirrorMovement| item.description.clone()),
+            r#type: PulseScheduleEcMirrorMovementTypeView::new(elements.clone()),
+            translation: PulseScheduleEcMirrorMovementTranslationView::new(elements.clone()),
+            rotation_angle: PulseScheduleEcMirrorMovementRotationAngleView::new(elements.clone()),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a PulseScheduleEcMirrorMovement> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for PulseScheduleEcMirrorMovement {
+    type SliceView<'a, D>
+        = PulseScheduleEcMirrorMovementSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseScheduleEcMirrorMovementSliceView::new(elements)
+    }
+}
 
 // --- GasMixtureConstant View Types ---
 
@@ -1384,27 +1542,6 @@ impl<'a, D: Dimension> PulseScheduleEcBeamFrequencyView<'a, D> {
     }
 }
 
-/// View over `deposition_rho_tor_norm` (PulseScheduleReferenceEc) across multiple PulseScheduleEcBeam
-pub struct PulseScheduleEcBeamDepositionRhoTorNormView<'a, D> {
-    pub reference_name: Accumulator<'a, PulseScheduleEcBeam, STR_0D, D>,
-    pub reference_type: Accumulator<'a, PulseScheduleEcBeam, INT_0D, D>,
-    pub envelope_type: Accumulator<'a, PulseScheduleEcBeam, INT_0D, D>,
-    slice_elements: Elements<'a, PulseScheduleEcBeam, D>,
-}
-
-impl<'a, D: Dimension> PulseScheduleEcBeamDepositionRhoTorNormView<'a, D> {
-    pub fn new(elements: Elements<'a, PulseScheduleEcBeam, D>) -> Self {
-        Self {
-            reference_name: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| {
-                item.deposition_rho_tor_norm.reference_name.clone()
-            }),
-            reference_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| item.deposition_rho_tor_norm.reference_type),
-            envelope_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| item.deposition_rho_tor_norm.envelope_type),
-            slice_elements: elements,
-        }
-    }
-}
-
 /// View over `steering_angle_pol` (PulseScheduleReferenceEc) across multiple PulseScheduleEcBeam
 pub struct PulseScheduleEcBeamSteeringAnglePolView<'a, D> {
     pub reference_name: Accumulator<'a, PulseScheduleEcBeam, STR_0D, D>,
@@ -1443,15 +1580,99 @@ impl<'a, D: Dimension> PulseScheduleEcBeamSteeringAngleTorView<'a, D> {
     }
 }
 
+/// View over `polarization.o_mode_fraction` (PulseScheduleReferenceEc) across multiple PulseScheduleEcBeam
+pub struct PulseScheduleEcBeamPolarizationOModeFractionView<'a, D> {
+    pub reference_name: Accumulator<'a, PulseScheduleEcBeam, STR_0D, D>,
+    pub reference_type: Accumulator<'a, PulseScheduleEcBeam, INT_0D, D>,
+    pub envelope_type: Accumulator<'a, PulseScheduleEcBeam, INT_0D, D>,
+    slice_elements: Elements<'a, PulseScheduleEcBeam, D>,
+}
+
+impl<'a, D: Dimension> PulseScheduleEcBeamPolarizationOModeFractionView<'a, D> {
+    pub fn new(elements: Elements<'a, PulseScheduleEcBeam, D>) -> Self {
+        Self {
+            reference_name: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| {
+                item.polarization.o_mode_fraction.reference_name.clone()
+            }),
+            reference_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| item.polarization.o_mode_fraction.reference_type),
+            envelope_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| item.polarization.o_mode_fraction.envelope_type),
+            slice_elements: elements,
+        }
+    }
+}
+
+/// View over `polarization.azimuthal_angle` (PulseScheduleReferenceEc) across multiple PulseScheduleEcBeam
+pub struct PulseScheduleEcBeamPolarizationAzimuthalAngleView<'a, D> {
+    pub reference_name: Accumulator<'a, PulseScheduleEcBeam, STR_0D, D>,
+    pub reference_type: Accumulator<'a, PulseScheduleEcBeam, INT_0D, D>,
+    pub envelope_type: Accumulator<'a, PulseScheduleEcBeam, INT_0D, D>,
+    slice_elements: Elements<'a, PulseScheduleEcBeam, D>,
+}
+
+impl<'a, D: Dimension> PulseScheduleEcBeamPolarizationAzimuthalAngleView<'a, D> {
+    pub fn new(elements: Elements<'a, PulseScheduleEcBeam, D>) -> Self {
+        Self {
+            reference_name: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| {
+                item.polarization.azimuthal_angle.reference_name.clone()
+            }),
+            reference_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| item.polarization.azimuthal_angle.reference_type),
+            envelope_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| item.polarization.azimuthal_angle.envelope_type),
+            slice_elements: elements,
+        }
+    }
+}
+
+/// View over `polarization.ellipticity_angle` (PulseScheduleReferenceEc) across multiple PulseScheduleEcBeam
+pub struct PulseScheduleEcBeamPolarizationEllipticityAngleView<'a, D> {
+    pub reference_name: Accumulator<'a, PulseScheduleEcBeam, STR_0D, D>,
+    pub reference_type: Accumulator<'a, PulseScheduleEcBeam, INT_0D, D>,
+    pub envelope_type: Accumulator<'a, PulseScheduleEcBeam, INT_0D, D>,
+    slice_elements: Elements<'a, PulseScheduleEcBeam, D>,
+}
+
+impl<'a, D: Dimension> PulseScheduleEcBeamPolarizationEllipticityAngleView<'a, D> {
+    pub fn new(elements: Elements<'a, PulseScheduleEcBeam, D>) -> Self {
+        Self {
+            reference_name: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| {
+                item.polarization.ellipticity_angle.reference_name.clone()
+            }),
+            reference_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| {
+                item.polarization.ellipticity_angle.reference_type
+            }),
+            envelope_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| item.polarization.ellipticity_angle.envelope_type),
+            slice_elements: elements,
+        }
+    }
+}
+
+/// View over `polarization` (PulseScheduleEcBeamPolarization) across multiple PulseScheduleEcBeam
+pub struct PulseScheduleEcBeamPolarizationView<'a, D> {
+    pub o_mode_fraction: PulseScheduleEcBeamPolarizationOModeFractionView<'a, D>,
+    pub azimuthal_angle: PulseScheduleEcBeamPolarizationAzimuthalAngleView<'a, D>,
+    pub ellipticity_angle: PulseScheduleEcBeamPolarizationEllipticityAngleView<'a, D>,
+    slice_elements: Elements<'a, PulseScheduleEcBeam, D>,
+}
+
+impl<'a, D: Dimension> PulseScheduleEcBeamPolarizationView<'a, D> {
+    pub fn new(elements: Elements<'a, PulseScheduleEcBeam, D>) -> Self {
+        Self {
+            o_mode_fraction: PulseScheduleEcBeamPolarizationOModeFractionView::new(elements.clone()),
+            azimuthal_angle: PulseScheduleEcBeamPolarizationAzimuthalAngleView::new(elements.clone()),
+            ellipticity_angle: PulseScheduleEcBeamPolarizationEllipticityAngleView::new(elements.clone()),
+            slice_elements: elements,
+        }
+    }
+}
+
 /// View over multiple PulseScheduleEcBeam with field accumulation
 pub struct PulseScheduleEcBeamSliceView<'a, D> {
     pub name: Accumulator<'a, PulseScheduleEcBeam, STR_0D, D>,
     pub description: Accumulator<'a, PulseScheduleEcBeam, STR_0D, D>,
     pub power_launched: PulseScheduleEcBeamPowerLaunchedView<'a, D>,
     pub frequency: PulseScheduleEcBeamFrequencyView<'a, D>,
-    pub deposition_rho_tor_norm: PulseScheduleEcBeamDepositionRhoTorNormView<'a, D>,
     pub steering_angle_pol: PulseScheduleEcBeamSteeringAnglePolView<'a, D>,
     pub steering_angle_tor: PulseScheduleEcBeamSteeringAngleTorView<'a, D>,
+    pub polarization: PulseScheduleEcBeamPolarizationView<'a, D>,
     slice_elements: Elements<'a, PulseScheduleEcBeam, D>,
 }
 
@@ -1462,9 +1683,9 @@ impl<'a, D: Dimension> PulseScheduleEcBeamSliceView<'a, D> {
             description: Accumulator::new(elements.clone(), |item: &PulseScheduleEcBeam| item.description.clone()),
             power_launched: PulseScheduleEcBeamPowerLaunchedView::new(elements.clone()),
             frequency: PulseScheduleEcBeamFrequencyView::new(elements.clone()),
-            deposition_rho_tor_norm: PulseScheduleEcBeamDepositionRhoTorNormView::new(elements.clone()),
             steering_angle_pol: PulseScheduleEcBeamSteeringAnglePolView::new(elements.clone()),
             steering_angle_tor: PulseScheduleEcBeamSteeringAngleTorView::new(elements.clone()),
+            polarization: PulseScheduleEcBeamPolarizationView::new(elements.clone()),
             slice_elements: elements,
         }
     }
@@ -1504,6 +1725,96 @@ impl ArrayOfStructuresElement for PulseScheduleEcBeam {
 }
 
 impl Named for PulseScheduleEcBeam {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- PulseScheduleEcMirror View Types ---
+
+/// View over `deposition_rho_tor_norm` (PulseScheduleReferenceEc) across multiple PulseScheduleEcMirror
+pub struct PulseScheduleEcMirrorDepositionRhoTorNormView<'a, D> {
+    pub reference_name: Accumulator<'a, PulseScheduleEcMirror, STR_0D, D>,
+    pub reference_type: Accumulator<'a, PulseScheduleEcMirror, INT_0D, D>,
+    pub envelope_type: Accumulator<'a, PulseScheduleEcMirror, INT_0D, D>,
+    slice_elements: Elements<'a, PulseScheduleEcMirror, D>,
+}
+
+impl<'a, D: Dimension> PulseScheduleEcMirrorDepositionRhoTorNormView<'a, D> {
+    pub fn new(elements: Elements<'a, PulseScheduleEcMirror, D>) -> Self {
+        Self {
+            reference_name: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirror| {
+                item.deposition_rho_tor_norm.reference_name.clone()
+            }),
+            reference_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirror| item.deposition_rho_tor_norm.reference_type),
+            envelope_type: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirror| item.deposition_rho_tor_norm.envelope_type),
+            slice_elements: elements,
+        }
+    }
+}
+
+/// View over multiple PulseScheduleEcMirror with field accumulation
+pub struct PulseScheduleEcMirrorSliceView<'a, D> {
+    pub name: Accumulator<'a, PulseScheduleEcMirror, STR_0D, D>,
+    pub description: Accumulator<'a, PulseScheduleEcMirror, STR_0D, D>,
+    pub deposition_rho_tor_norm: PulseScheduleEcMirrorDepositionRhoTorNormView<'a, D>,
+    slice_elements: Elements<'a, PulseScheduleEcMirror, D>,
+}
+
+impl<'a, D: Dimension> PulseScheduleEcMirrorSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, PulseScheduleEcMirror, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirror| item.name.clone()),
+            description: Accumulator::new(elements.clone(), |item: &PulseScheduleEcMirror| item.description.clone()),
+            deposition_rho_tor_norm: PulseScheduleEcMirrorDepositionRhoTorNormView::new(elements.clone()),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a PulseScheduleEcMirror> + '_ {
+        self.slice_elements.iter()
+    }
+
+    /// Select from `movement` under every element. A range, e.g. `.movement(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    ///
+    /// # Panics
+    /// If a range does not select the same number of elements under every element.
+    pub fn movement<S: Selection<'a, PulseScheduleEcMirrorMovement>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("movement", &self.slice_elements, |item: &PulseScheduleEcMirror| item.movement.as_slice())
+    }
+}
+
+impl ArrayOfStructuresElement for PulseScheduleEcMirror {
+    type SliceView<'a, D>
+        = PulseScheduleEcMirrorSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        PulseScheduleEcMirrorSliceView::new(elements)
+    }
+}
+
+impl Named for PulseScheduleEcMirror {
     fn name(&self) -> &str {
         &self.name
     }
@@ -2403,6 +2714,23 @@ impl ArrayOfStructuresElement for PulseScheduleEvent {
 // Struct Impl Blocks for Vec Field Access
 // ============================================================================
 
+impl PulseScheduleEcMirror {
+    /// Select from `movement`. A range, e.g. `.movement(0..2)` or `.movement(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A single element is `.movement[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    pub fn movement<'a, S: Selection<'a, PulseScheduleEcMirrorMovement>>(&'a self, selection: S) -> S::Output {
+        selection.select("movement", &self.movement)
+    }
+
+    /// Get the number of movement elements
+    pub fn movement_len(&self) -> usize {
+        self.movement.len()
+    }
+}
+
 impl PulseScheduleNbiUnit {
     /// Select from `species`. A range, e.g. `.species(0..2)` or `.species(..)`, gives the slice view over
     /// those elements, whose leaves gather one value per element.
@@ -2495,6 +2823,25 @@ impl PulseScheduleEc {
     /// Get the number of beam elements
     pub fn beam_len(&self) -> usize {
         self.beam.len()
+    }
+}
+
+impl PulseScheduleEc {
+    /// Select from `mirror`. A range, e.g. `.mirror(0..2)` or `.mirror(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.mirror(name)`, gives the one element with that `name`.
+    /// A single element is `.mirror[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn mirror<'a, S: Selection<'a, PulseScheduleEcMirror>>(&'a self, selection: S) -> S::Output {
+        selection.select("mirror", &self.mirror)
+    }
+
+    /// Get the number of mirror elements
+    pub fn mirror_len(&self) -> usize {
+        self.mirror.len()
     }
 }
 

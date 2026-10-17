@@ -11,42 +11,42 @@
     <xs:simpleType name="DatabaseWriterMethod">
         <xs:annotation>
             <xs:documentation>
-                The database writers, from `get_database_writer` in python/gsfit/database_writers/__init__.py
+                The database writers, from `get_database_writer` in python/gsfit/database_writers/__init__.py.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="tokamak_energy_mdsplus">
                 <xs:annotation>
                     <xs:documentation>
-                        Tokamak Energy's MDSplus database
+                        Tokamak Energy's MDSplus database.
                     </xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="tokamak_energy_mdsplus_new">
                 <xs:annotation>
                     <xs:documentation>
-                        Tokamak Energy's MDSplus database, with the newer writer
+                        Tokamak Energy's MDSplus database, with the newer writer.
                     </xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="rtgsfit_mdsplus">
                 <xs:annotation>
                     <xs:documentation>
-                        MDSplus, with what RTGSFit (real-time GSFit) needs, such as its Greens functions and Poisson matrix. Needs the rtgsfit_code_settings and rtgsfit_initial_conditions links in GSFIT_code_settings.xml
+                        MDSplus, with what RTGSFit (real-time GSFit) needs, such as its Greens functions and Poisson matrix. Needs the rtgsfit_code_settings and rtgsfit_initial_conditions links in GSFIT_code_settings.xml.
                     </xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="imas">
                 <xs:annotation>
                     <xs:documentation>
-                        An IMAS equilibrium IDS, built with imas-python and kept on `gsfit_controller.equilibrium_ids`; nothing is written to a database
+                        An IMAS equilibrium IDS, built with imas-python and kept on `gsfit_controller.equilibrium_ids`; nothing is written to a database.
                     </xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
             <xs:enumeration value="geqdsk">
                 <xs:annotation>
                     <xs:documentation>
-                        A G EQDSK file, EFIT's equilibrium file format. Not written yet (future work): `get_database_writer` has no geqdsk writer, so GSFit stops with an error when it comes to write the results
+                        A G EQDSK file, EFIT's equilibrium file format. Not written yet (future work): `get_database_writer` has no geqdsk writer, so GSFit stops with an error when it comes to write the results.
                     </xs:documentation>
                 </xs:annotation>
             </xs:enumeration>
@@ -58,7 +58,7 @@
     <xs:element name="database_writer">
         <xs:annotation>
             <xs:documentation>
-                Where the results are written
+                Where the results are written.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -66,7 +66,7 @@
                 <xs:element name="method" type="DatabaseWriterMethod" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:documentation>
-                            A database writer to write the results with: one `method` for each place to write to, at least one. None of the writers has settings of its own
+                            A database writer to write the results with: one `method` for each place to write to, at least one. None of the writers has settings of its own.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
@@ -75,7 +75,7 @@
         <xs:unique name="database_writer_unique_method">
             <xs:annotation>
                 <xs:documentation>
-                    Each database writer is listed at most once, so the results are not written twice to the same place
+                    Each database writer is listed at most once, so the results are not written twice to the same place.
                 </xs:documentation>
             </xs:annotation>
             <xs:selector xpath="method"/>

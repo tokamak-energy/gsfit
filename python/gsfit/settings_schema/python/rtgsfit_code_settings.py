@@ -17,13 +17,13 @@ from dataclasses import dataclass
 @dataclass(kw_only=True)
 class RtgsfitCodeSettings:
     """
-    RTGSFit's own settings. GSFit does not use them: the rtgsfit_mdsplus writer stores them under PRESHOT for RTGSFit
+    RTGSFit's own settings. GSFit does not use them: the rtgsfit_mdsplus writer stores them under PRESHOT for RTGSFit.
 
-    :param thresh: RTGSFit's `thresh`, stored as PRESHOT:THRESH
-    :param frac: RTGSFit's `frac`, stored as PRESHOT:FRAC
-    :param n_intrp: RTGSFit's `n_intrp`, stored as PRESHOT:N_INTRP
-    :param n_xpt_max: Maximum number of X-points RTGSFit handles, stored as PRESHOT:N_XPT_MAX
-    :param n_lcfs_max: Maximum number of points on RTGSFit's last closed flux surface, stored as PRESHOT:N_LCFS_MAX
+    :param thresh: RTGSFit's `thresh`, stored as PRESHOT:THRESH.
+    :param frac: RTGSFit's `frac`, stored as PRESHOT:FRAC.
+    :param n_intrp: RTGSFit's `n_intrp`, stored as PRESHOT:N_INTRP.
+    :param n_xpt_max: Maximum number of X-points RTGSFit handles, stored as PRESHOT:N_XPT_MAX.
+    :param n_lcfs_max: Maximum number of points on RTGSFit's last closed flux surface, stored as PRESHOT:N_LCFS_MAX.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

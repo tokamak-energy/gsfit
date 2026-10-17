@@ -10,8 +10,8 @@ roxmltree = "0.21.1"  # For reading `code/parameters`, the XML of the settings a
 
 # Only needed by the `python` feature, which adds the Python bindings in `src/python/`.
 # Kept optional so `imas_rs` stays a plain Rust crate by default.
-numpy = { version = "0.29.0", optional = true }  # must be the same version as `gsfit_rs` uses
-pyo3 = { version = "0.29.2", optional = true }  # must be the same version as `gsfit_rs` uses
+numpy = { version = "0.30.0", optional = true }  # must be the same version as `gsfit_rs` uses
+pyo3 = { version = "0.30.1", optional = true }  # must be the same version as `gsfit_rs` uses
 
 [features]
 # Expose the data dictionary to Python. `gsfit_rs` enables this and mounts the

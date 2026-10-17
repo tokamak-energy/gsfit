@@ -13,7 +13,7 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass
 
-# The ways of choosing the times to reconstruct, from `Gsfit.setup_timeslices` in python/gsfit/gsfit.py
+# The ways of choosing the times to reconstruct, from `Gsfit.setup_timeslices` in python/gsfit/gsfit.py.
 TimeslicesMethod: typing.TypeAlias = typing.Literal[
     "arange",
     "linspace",
@@ -25,12 +25,12 @@ TimeslicesMethod: typing.TypeAlias = typing.Literal[
 @dataclass(kw_only=True)
 class Timeslices:
     """
-    The times to reconstruct
+    The times to reconstruct.
 
-    :param method: How the times are chosen. Its settings are in the element of the same name, below
-    :param arange: Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
-    :param linspace: n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
-    :param user_defined: User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3" [second]
+    :param method: How the times are chosen. Its settings are in the element of the same name, below.
+    :param arange: Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
+    :param linspace: n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
+    :param user_defined: User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3". [second]
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -45,11 +45,11 @@ class Timeslices:
 @dataclass(kw_only=True)
 class Arange:
     """
-    Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
+    Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
 
-    :param time_start: First time [second]
-    :param time_end: End of the times, which is not included [second]
-    :param dt: Step between times [second]
+    :param time_start: First time. [second]
+    :param time_end: End of the times, which is not included. [second]
+    :param dt: Step between times. [second]
     """
 
     time_start: float  # [second]
@@ -60,11 +60,11 @@ class Arange:
 @dataclass(kw_only=True)
 class Linspace:
     """
-    n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
+    n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
 
-    :param time_start: First time [second]
-    :param time_end: Last time [second]
-    :param n_time: Number of times
+    :param time_start: First time. [second]
+    :param time_end: Last time. [second]
+    :param n_time: Number of times.
     """
 
     time_start: float  # [second]

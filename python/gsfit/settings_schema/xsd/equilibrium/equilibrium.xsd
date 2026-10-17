@@ -14,7 +14,7 @@
     <xs:simpleType name="XmlPath">
         <xs:annotation>
             <xs:documentation>
-                Path of an XML file, relative to the file holding the link
+                Path of an XML file, relative to the file holding the link.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:anyURI">
@@ -25,13 +25,13 @@
     <xs:complexType name="Link">
         <xs:annotation>
             <xs:documentation>
-                A link to the file holding these settings
+                A link to the file holding these settings.
             </xs:documentation>
         </xs:annotation>
         <xs:attribute name="href" type="XmlPath" use="required">
             <xs:annotation>
                 <xs:documentation>
-                    Path of the linked file, relative to equilibrium.xml, e.g. "numerics.xml" or "../../default/equilibrium/numerics.xml"
+                    Path of the linked file, relative to equilibrium.xml, e.g. "numerics.xml" or "../../default/equilibrium/numerics.xml".
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
@@ -40,7 +40,7 @@
     <xs:complexType name="EquilibriumConstraints">
         <xs:annotation>
             <xs:documentation>
-                The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+                The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
             </xs:documentation>
         </xs:annotation>
         <xs:all>
@@ -121,7 +121,7 @@
                 <xs:element name="timeslices" type="Link">
                     <xs:annotation>
                         <xs:documentation>
-                            The times to reconstruct
+                            The times to reconstruct.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>timeslices.xsd</schema>
@@ -131,7 +131,7 @@
                 <xs:element name="numerics" type="Link">
                     <xs:annotation>
                         <xs:documentation>
-                            Settings for the Grad-Shafranov solve, and the number of threads it runs on
+                            Settings for the Grad-Shafranov solve, and the number of threads it runs on.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>numerics.xsd</schema>
@@ -141,7 +141,7 @@
                 <xs:element name="grid" type="Link">
                     <xs:annotation>
                         <xs:documentation>
-                            The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+                            The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>grid.xsd</schema>
@@ -151,7 +151,7 @@
                 <xs:element name="initial_guess" type="Link">
                     <xs:annotation>
                         <xs:documentation>
-                            Initial guess for first iteration
+                            Initial guess for first iteration.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>initial_guess.xsd</schema>
@@ -163,7 +163,7 @@
                 <xs:element name="source_function_p_prime" type="Link">
                     <xs:annotation>
                         <xs:documentation>
-                            The p' source function: its basis functions and their regularisation
+                            The p' source function: its basis functions and their regularisation.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>source_function_p_prime.xsd</schema>
@@ -173,7 +173,7 @@
                 <xs:element name="source_function_ff_prime" type="Link">
                     <xs:annotation>
                         <xs:documentation>
-                            The ff' source function: its basis functions and their regularisation
+                            The ff' source function: its basis functions and their regularisation.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>source_function_ff_prime.xsd</schema>
@@ -185,7 +185,7 @@
                 <xs:element name="pf_passive_dof" type="Link">
                     <xs:annotation>
                         <xs:documentation>
-                            The degrees of freedom of the currents in the passive structures, and their regularisation
+                            The degrees of freedom of the currents in the passive structures, and their regularisation.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>pf_passive_dof.xsd</schema>

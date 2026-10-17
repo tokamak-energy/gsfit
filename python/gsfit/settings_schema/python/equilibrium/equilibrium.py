@@ -34,13 +34,13 @@ class EquilibriumSettings:
     """
     Settings to make the equilibrium IDS.
 
-    :param timeslices: The times to reconstruct
-    :param numerics: Settings for the Grad-Shafranov solve, and the number of threads it runs on
-    :param grid: The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
-    :param initial_guess: Initial guess for first iteration
-    :param source_function_p_prime: The p' source function: its basis functions and their regularisation
-    :param source_function_ff_prime: The ff' source function: its basis functions and their regularisation
-    :param pf_passive_dof: The degrees of freedom of the currents in the passive structures, and their regularisation
+    :param timeslices: The times to reconstruct.
+    :param numerics: Settings for the Grad-Shafranov solve, and the number of threads it runs on.
+    :param grid: The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
+    :param initial_guess: Initial guess for first iteration.
+    :param source_function_p_prime: The p' source function: its basis functions and their regularisation.
+    :param source_function_ff_prime: The ff' source function: its basis functions and their regularisation.
+    :param pf_passive_dof: The degrees of freedom of the currents in the passive structures, and their regularisation.
     :param constraints: Constraints used in the least-squares fit.
     """
 
@@ -60,7 +60,7 @@ class EquilibriumSettings:
 @dataclass(kw_only=True)
 class EquilibriumConstraints:
     """
-    The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+    The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
 
     :param b_field_pol_probe: How each poloidal field probe (Mirnov coil) is fitted.
     :param flux_loop: How each flux loop is fitted.

@@ -73,7 +73,7 @@
     <xs:simpleType name="XmlPath">
         <xs:annotation>
             <xs:documentation>
-                Path of an XML file, relative to the file holding the link
+                Path of an XML file, relative to the file holding the link.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:anyURI">
@@ -84,13 +84,13 @@
     <xs:complexType name="Link">
         <xs:annotation>
             <xs:documentation>
-                A link to the file holding these settings
+                A link to the file holding these settings.
             </xs:documentation>
         </xs:annotation>
         <xs:attribute name="href" type="XmlPath" use="required">
             <xs:annotation>
                 <xs:documentation>
-                    Path of the linked file, relative to GSFIT_code_settings.xml, e.g. "wall/wall.xml" or "../default/wall/wall.xml"
+                    Path of the linked file, relative to GSFIT_code_settings.xml, e.g. "wall/wall.xml" or "../default/wall/wall.xml".
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
@@ -234,7 +234,7 @@
                 <xs:element name="rtgsfit_code_settings" type="Link" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>
-                            RTGSFit's own settings, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer
+                            RTGSFit's own settings, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>rtgsfit_code_settings.xsd</schema>
@@ -244,7 +244,7 @@
                 <xs:element name="rtgsfit_initial_conditions" type="Link" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>
-                            The equilibrium RTGSFit starts from, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer
+                            The equilibrium RTGSFit starts from, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>rtgsfit_initial_conditions.xsd</schema>
@@ -254,7 +254,7 @@
                 <xs:element name="sensor_replacement" type="Link" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>
-                            The constraints which RTGSFit makes from other sensors. Optional, and only read by the rtgsfit_mdsplus writer
+                            The constraints which RTGSFit makes from other sensors. Optional, and only read by the rtgsfit_mdsplus writer.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>sensor_replacement.xsd</schema>

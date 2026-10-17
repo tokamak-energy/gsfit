@@ -13,7 +13,7 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass
 
-# The nonlinear solvers for the Grad-Shafranov equation
+# The nonlinear solvers for the Grad-Shafranov equation.
 NonlinearSolverMethod: typing.TypeAlias = typing.Literal[
     "picard",
     "newton_krylov",
@@ -24,14 +24,14 @@ NonlinearSolverMethod: typing.TypeAlias = typing.Literal[
 @dataclass(kw_only=True)
 class Numerics:
     """
-    Settings for the Grad-Shafranov solve, and the number of threads it runs on
+    Settings for the Grad-Shafranov solve, and the number of threads it runs on.
 
-    :param RAYON_NUM_THREADS: Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU
-    :param n_iter_max: Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed
-    :param grad_shafranov_deviation_tolerance: The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this [dimensionless]
-    :param n_iter_min: Minimum number of nonlinear solver iterations before the convergence test may pass
-    :param save_unconverged: Not read by the code at present
-    :param nonlinear_solver: The nonlinear solver for the Grad-Shafranov equation
+    :param RAYON_NUM_THREADS: Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU.
+    :param n_iter_max: Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed.
+    :param grad_shafranov_deviation_tolerance: The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this. [dimensionless]
+    :param n_iter_min: Minimum number of nonlinear solver iterations before the convergence test may pass.
+    :param save_unconverged: Not read by the code at present.
+    :param nonlinear_solver: The nonlinear solver for the Grad-Shafranov equation.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -48,12 +48,12 @@ class Numerics:
 @dataclass(kw_only=True)
 class NonlinearSolver:
     """
-    The nonlinear solver for the Grad-Shafranov equation
+    The nonlinear solver for the Grad-Shafranov equation.
 
-    :param method: The solver to use. Its settings are in the element of the same name, below
-    :param picard: Settings for Picard iterations
-    :param newton_krylov: Settings for Jacobian-free Newton-Krylov
-    :param newton_picard: Settings for Newton-Picard, the recursive projection method (RPM)
+    :param method: The solver to use. Its settings are in the element of the same name, below.
+    :param picard: Settings for Picard iterations.
+    :param newton_krylov: Settings for Jacobian-free Newton-Krylov.
+    :param newton_picard: Settings for Newton-Picard, the recursive projection method (RPM).
     """
 
     method: NonlinearSolverMethod
@@ -65,11 +65,11 @@ class NonlinearSolver:
 @dataclass(kw_only=True)
 class Picard:
     """
-    Settings for Picard iterations
+    Settings for Picard iterations.
 
-    :param n_iter_no_vertical_feedback: Number of initial iterations with the vertical feedback (the fit of delta_z) switched off
-    :param apply_anderson_mixing: Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals
-    :param anderson_n_history: Maximum number of previous iterations Anderson mixing combines
+    :param n_iter_no_vertical_feedback: Number of initial iterations with the vertical feedback (the fit of delta_z) switched off.
+    :param apply_anderson_mixing: Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals.
+    :param anderson_n_history: Maximum number of previous iterations Anderson mixing combines.
     :param anderson_mixing: Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it. [dimensionless]
     """
 
@@ -82,13 +82,13 @@ class Picard:
 @dataclass(kw_only=True)
 class NewtonKrylov:
     """
-    Settings for Jacobian-free Newton-Krylov
+    Settings for Jacobian-free Newton-Krylov.
 
-    :param picard_handover: Grad-Shafranov deviation below which it hands over from Picard to Newton iterations [dimensionless]
-    :param n_krylov_max: Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work
-    :param krylov_tolerance: The Krylov solve stops once the linearised residual is this fraction of the residual [dimensionless]
-    :param finite_difference_step: Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual [dimensionless]
-    :param verbose: Whether to print the progress of each Newton iteration
+    :param picard_handover: Grad-Shafranov deviation below which it hands over from Picard to Newton iterations. [dimensionless]
+    :param n_krylov_max: Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work.
+    :param krylov_tolerance: The Krylov solve stops once the linearised residual is this fraction of the residual. [dimensionless]
+    :param finite_difference_step: Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual. [dimensionless]
+    :param verbose: Whether to print the progress of each Newton iteration.
     """
 
     picard_handover: float  # [dimensionless]
@@ -101,12 +101,12 @@ class NewtonKrylov:
 @dataclass(kw_only=True)
 class NewtonPicard:
     """
-    Settings for Newton-Picard, the recursive projection method (RPM)
+    Settings for Newton-Picard, the recursive projection method (RPM).
 
-    :param n_basis_max: Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add
-    :param contraction_threshold: A direction is added when the residual outside them shrinks by less than this factor per iteration [dimensionless]
-    :param finite_difference_step: Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual [dimensionless]
-    :param verbose: Whether to print the progress of each Newton-Picard iteration
+    :param n_basis_max: Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add.
+    :param contraction_threshold: A direction is added when the residual outside them shrinks by less than this factor per iteration. [dimensionless]
+    :param finite_difference_step: Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual. [dimensionless]
+    :param verbose: Whether to print the progress of each Newton-Picard iteration.
     """
 
     n_basis_max: int

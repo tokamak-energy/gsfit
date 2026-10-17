@@ -17,12 +17,12 @@ from dataclasses import dataclass
 @dataclass(kw_only=True)
 class RtgsfitInitialConditions:
     """
-    The equilibrium RTGSFit starts from. GSFit does not use it: the rtgsfit_mdsplus writer stores it under PRESHOT.INITIAL_COND for RTGSFit. Each array holds one value per point of the grid in grid.xml, flattened with R varying fastest: n_z rows of n_r values
+    The equilibrium RTGSFit starts from. GSFit does not use it: the rtgsfit_mdsplus writer stores it under PRESHOT.INITIAL_COND for RTGSFit. Each array holds one value per point of the grid in grid.xml, flattened with R varying fastest: n_z rows of n_r values.
 
-    :param description: Where the equilibrium comes from, e.g. its pulse and time. Not stored
-    :param flux_norm: The normalised poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:FLUX_NORM [dimensionless]
-    :param mask: 1 at the grid points inside the plasma and 0 elsewhere, stored as PRESHOT.INITIAL_COND:MASK
-    :param psi_total: The poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:PSI_TOTAL
+    :param description: Where the equilibrium comes from, e.g. its pulse and time. Not stored.
+    :param flux_norm: The normalised poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:FLUX_NORM. [dimensionless]
+    :param mask: 1 at the grid points inside the plasma and 0 elsewhere, stored as PRESHOT.INITIAL_COND:MASK.
+    :param psi_total: The poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:PSI_TOTAL.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

@@ -4753,7 +4753,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_ION_STATE: &[Node] = &[
     Node {
         name: "vibrational_level",
         documentation: "Vibrational level (can be bundled)",
-        units: "e",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -5250,7 +5250,7 @@ static NODES_DESCRIPTION_GGD_GGD_RECYCLING_NEUTRAL_STATE: &[Node] = &[
     Node {
         name: "vibrational_level",
         documentation: "Vibrational level (can be bundled)",
-        units: "e",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -6077,7 +6077,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_ION_STATE: &[Node] = &[
     Node {
         name: "vibrational_level",
         documentation: "Vibrational level (can be bundled)",
-        units: "e",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -6772,7 +6772,7 @@ static NODES_DESCRIPTION_GGD_GGD_PARTICLE_FLUXES_NEUTRAL_STATE: &[Node] = &[
     Node {
         name: "vibrational_level",
         documentation: "Vibrational level (can be bundled)",
-        units: "e",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -7826,7 +7826,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_ION_STATE: &[Node] 
     Node {
         name: "vibrational_level",
         documentation: "Vibrational level (can be bundled)",
-        units: "e",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -8541,7 +8541,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_RECOMBINATION_NEUTRAL_STATE: &[No
     Node {
         name: "vibrational_level",
         documentation: "Vibrational level (can be bundled)",
-        units: "e",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -9424,7 +9424,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_ION_STATE: &[Node] = &[
     Node {
         name: "vibrational_level",
         documentation: "Vibrational level (can be bundled)",
-        units: "e",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {
@@ -10135,7 +10135,7 @@ static NODES_DESCRIPTION_GGD_GGD_ENERGY_FLUXES_KINETIC_NEUTRAL_STATE: &[Node] = 
     Node {
         name: "vibrational_level",
         documentation: "Vibrational level (can be bundled)",
-        units: "e",
+        units: "1",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_0D",
             read: |ids: &dyn Any, indices: &[IndexSpec]| {

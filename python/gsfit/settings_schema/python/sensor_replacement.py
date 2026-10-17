@@ -20,7 +20,7 @@ from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 @dataclass(kw_only=True)
 class SensorReplacement:
     """
-    The constraints which RTGSFit makes from other sensors, because the PCS cannot read the constraint's own sensor, one `constraint` each. Every other constraint is read by the PCS directly. Only read by the rtgsfit_mdsplus writer, which builds PRESHOT:SENS_REP_MAT from it
+    The constraints which RTGSFit makes from other sensors, because the PCS cannot read the constraint's own sensor, one `constraint` each. Every other constraint is read by the PCS directly. Only read by the rtgsfit_mdsplus writer, which builds PRESHOT:SENS_REP_MAT from it.
 
     :param constraint: A constraint which RTGSFit makes from other sensors. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `constraint[name]`
     """
@@ -34,11 +34,11 @@ class SensorReplacement:
 @dataclass(kw_only=True)
 class Constraint:
     """
-    A constraint which RTGSFit makes from other sensors: the sum over i of coefficients[i] times replacements[i]
+    A constraint which RTGSFit makes from other sensors: the sum over i of coefficients[i] times replacements[i].
 
-    :param name: The constraint's name in RTGSFit, e.g. "I_ROG_DIVPSRB"
-    :param replacements: The PCS sensors the constraint is made from, e.g. "V_FLOOP_024 V_FLOOP_022"
-    :param coefficients: The coefficient of each sensor in `replacements`, in the same order
+    :param name: The constraint's name in RTGSFit, e.g. "I_ROG_DIVPSRB".
+    :param replacements: The PCS sensors the constraint is made from, e.g. "V_FLOOP_024 V_FLOOP_022".
+    :param coefficients: The coefficient of each sensor in `replacements`, in the same order.
     """
 
     # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique

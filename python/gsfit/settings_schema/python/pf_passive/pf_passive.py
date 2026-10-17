@@ -20,9 +20,9 @@ from ..workflow import Workflow
 @dataclass(kw_only=True)
 class PfPassiveSettings:
     """
-    How the database reader builds the pf_passive IDS: the geometry and resistivity of the passive structures. The st40_mdsplus_with_digital_filter reader reads its run from the workflow.xml linked in `workflow`
+    How the database reader builds the pf_passive IDS: the geometry and resistivity of the passive structures. The st40_mdsplus_with_digital_filter reader reads its run from the workflow.xml linked in `workflow`.
 
-    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the passive structures' geometry and resistivity from its ELMAG tree, VESSEL
+    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the passive structures' geometry and resistivity from its ELMAG tree, VESSEL.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

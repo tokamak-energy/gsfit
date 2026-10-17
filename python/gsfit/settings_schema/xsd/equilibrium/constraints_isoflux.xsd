@@ -19,7 +19,7 @@
     <xs:element name="constraints__isoflux">
         <xs:annotation>
             <xs:documentation>
-                The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty
+                The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -27,7 +27,7 @@
                 <xs:element name="isoflux" type="Isoflux" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:documentation>
-                            One isoflux constraint
+                            One isoflux constraint.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
@@ -36,7 +36,7 @@
         <xs:key name="isoflux_name_key">
             <xs:annotation>
                 <xs:documentation>
-                    Each isoflux is listed at most once
+                    Each isoflux is listed at most once.
                 </xs:documentation>
             </xs:annotation>
             <xs:selector xpath="isoflux"/>
@@ -95,28 +95,28 @@
     <xs:complexType name="Isoflux">
         <xs:annotation>
             <xs:documentation>
-                One isoflux constraint
+                One isoflux constraint.
             </xs:documentation>
         </xs:annotation>
         <xs:all>
             <xs:element name="name" type="Name">
                 <xs:annotation>
                     <xs:documentation>
-                        The constraint's name
+                        The constraint's name.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="expected_value" type="FiniteDouble">
                 <xs:annotation>
                     <xs:documentation>
-                        The typical size of the flux difference between the two points. The fit divides the residual by it
+                        The typical size of the flux difference between the two points. The fit divides the residual by it.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="weight" type="FiniteNonNegativeDouble">
                 <xs:annotation>
                     <xs:documentation>
-                        Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+                        Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value.
                     </xs:documentation>
                     <xs:appinfo>
                         <units>dimensionless</units>
@@ -126,14 +126,14 @@
             <xs:element name="include" type="TrueOrFalse">
                 <xs:annotation>
                     <xs:documentation>
-                        Whether the constraint is fitted
+                        Whether the constraint is fitted.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="comment" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>
-                        Free text, e.g. why the constraint is not included; not used by the fit
+                        Free text, e.g. why the constraint is not included; not used by the fit.
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>

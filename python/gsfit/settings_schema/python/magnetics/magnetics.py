@@ -20,9 +20,9 @@ from ..workflow import Workflow
 @dataclass(kw_only=True)
 class MagneticsSettings:
     """
-    How the database reader builds the magnetics IDS: the geometry and measurements of the magnetic sensors. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`
+    How the database reader builds the magnetics IDS: the geometry and measurements of the magnetic sensors. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`.
 
-    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the poloidal field probes, flux loops and Rogowski coils, and the diamagnetic loop's geometry, from its MAG tree, and the diamagnetic flux from its DIALOOP tree, GLOBAL.PHI_DIA
+    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the poloidal field probes, flux loops and Rogowski coils, and the diamagnetic loop's geometry, from its MAG tree, and the diamagnetic flux from its DIALOOP tree, GLOBAL.PHI_DIA.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

@@ -13,7 +13,7 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass
 
-# The database readers, from `get_database_reader` in python/gsfit/database_readers/__init__.py
+# The database readers, from `get_database_reader` in python/gsfit/database_readers/__init__.py.
 DatabaseReaderMethod: typing.TypeAlias = typing.Literal[
     "st40_mdsplus",
     "st40_mdsplus_with_digital_filter",
@@ -28,9 +28,9 @@ DatabaseReaderMethod: typing.TypeAlias = typing.Literal[
 @dataclass(kw_only=True)
 class DatabaseReader:
     """
-    The database reader the whole run uses, which builds the IDSs GSFit reads
+    The database reader the whole run uses, which builds the IDSs GSFit reads.
 
-    :param method: The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml
+    :param method: The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

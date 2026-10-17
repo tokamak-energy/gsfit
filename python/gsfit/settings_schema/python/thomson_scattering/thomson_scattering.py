@@ -20,9 +20,9 @@ from ..workflow import Workflow
 @dataclass(kw_only=True)
 class ThomsonScatteringSettings:
     """
-    How the database reader reads the Thomson scattering: the electron pressure which the pressure constraints are made from, and its good time-slices. The st40_mdsplus and st40_mdsplus_with_digital_filter readers read their runs from the workflow.xml linked in `workflow`
+    How the database reader reads the Thomson scattering: the electron pressure which the pressure constraints are made from, and its good time-slices. The st40_mdsplus and st40_mdsplus_with_digital_filter readers read their runs from the workflow.xml linked in `workflow`.
 
-    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus and st40_mdsplus_with_digital_filter readers read the good time-slices from its PPTS tree, GLOBAL:BAD_MA, and each channel's position and electron pressure from its TS tree
+    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus and st40_mdsplus_with_digital_filter readers read the good time-slices from its PPTS tree, GLOBAL:BAD_MA, and each channel's position and electron pressure from its TS tree.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

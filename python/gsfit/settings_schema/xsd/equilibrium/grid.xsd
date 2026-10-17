@@ -46,7 +46,7 @@
     <xs:element name="grid">
         <xs:annotation>
             <xs:documentation>
-                The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+                The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -54,21 +54,21 @@
                 <xs:element name="n_r" type="NumberOfGridPoints">
                     <xs:annotation>
                         <xs:documentation>
-                            Number of radial grid points
+                            Number of radial grid points.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
                 <xs:element name="n_z" type="NumberOfGridPoints">
                     <xs:annotation>
                         <xs:documentation>
-                            Number of vertical grid points
+                            Number of vertical grid points.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
                 <xs:element name="r_min" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Lower radial bound of the grid
+                            Lower radial bound of the grid.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>
@@ -78,7 +78,7 @@
                 <xs:element name="r_max" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Upper radial bound of the grid
+                            Upper radial bound of the grid.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>
@@ -88,7 +88,7 @@
                 <xs:element name="z_min" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Lower vertical bound of the grid
+                            Lower vertical bound of the grid.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>
@@ -98,7 +98,7 @@
                 <xs:element name="z_max" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Upper vertical bound of the grid
+                            Upper vertical bound of the grid.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>

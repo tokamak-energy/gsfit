@@ -16,16 +16,16 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
-# The basis functions a source function is made of
+# The basis functions a source function is made of.
 SourceFunctionMethod: typing.TypeAlias = typing.Literal[
     "efit_polynomial",
     "tensioned_cubic_b_spline",
 ]
 
-# How the bulk of a tensioned cubic B-spline is regularised
+# How the bulk of a tensioned cubic B-spline is regularised.
 RegularisationMode: typing.TypeAlias = typing.Literal["second_derivative_zero"]
 
-# A boundary condition on a tensioned cubic B-spline
+# A boundary condition on a tensioned cubic B-spline.
 BoundaryCondition: typing.TypeAlias = typing.Literal[
     "free",
     "dirichlet",
@@ -36,11 +36,11 @@ BoundaryCondition: typing.TypeAlias = typing.Literal[
 @dataclass(kw_only=True)
 class SourceFunctionPPrime:
     """
-    The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted
+    The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
 
-    :param method: The basis functions to use. Their settings are in the element of the same name, below
-    :param efit_polynomial: Settings for EFIT's polynomials
-    :param tensioned_cubic_b_spline: Settings for the tensioned cubic B-splines
+    :param method: The basis functions to use. Their settings are in the element of the same name, below.
+    :param efit_polynomial: Settings for EFIT's polynomials.
+    :param tensioned_cubic_b_spline: Settings for the tensioned cubic B-splines.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
@@ -54,12 +54,12 @@ class SourceFunctionPPrime:
 @dataclass(kw_only=True)
 class EfitPolynomial:
     """
-    Settings for EFIT's polynomials
+    Settings for EFIT's polynomials.
 
-    :param n_dof: Number of polynomials, and so of degrees of freedom
-    :param regularisations: The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true
-    :param exact: When true, the coefficients are not fitted but fixed to `coefficients`. False when absent
-    :param coefficients: The fixed coefficients, one per polynomial, used when `exact` is true
+    :param n_dof: Number of polynomials, and so of degrees of freedom.
+    :param regularisations: The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true.
+    :param exact: When true, the coefficients are not fitted but fixed to `coefficients`. False when absent.
+    :param coefficients: The fixed coefficients, one per polynomial, used when `exact` is true.
     """
 
     n_dof: int
@@ -71,13 +71,13 @@ class EfitPolynomial:
 @dataclass(kw_only=True)
 class TensionedCubicBSpline:
     """
-    Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom
+    Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom.
 
-    :param regularisations: The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false
-    :param interior_knots: The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included [dimensionless]
-    :param interval_tensions: The tension over each interval between neighbouring knots: one more than the number of interior knots [dimensionless]
-    :param make_cubic_spline_regularisations: When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent
-    :param regularisation_builder: How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true
+    :param regularisations: The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false.
+    :param interior_knots: The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included. [dimensionless]
+    :param interval_tensions: The tension over each interval between neighbouring knots: one more than the number of interior knots. [dimensionless]
+    :param make_cubic_spline_regularisations: When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent.
+    :param regularisation_builder: How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true.
     """
 
     regularisations: npt.NDArray[np.float64] | None = None
@@ -90,14 +90,14 @@ class TensionedCubicBSpline:
 @dataclass(kw_only=True)
 class RegularisationBuilder:
     """
-    How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free)
+    How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free).
 
-    :param regularisation_scale: Multiplies the rows which regularise the bulk of the profile [dimensionless]
-    :param regularisation_mode: How the bulk of the profile is regularised
-    :param left_boundary_condition: The boundary condition at psi_n = 0, the magnetic axis
-    :param left_boundary_weight: Weight of the boundary condition at psi_n = 0. Not used when it is free [dimensionless]
-    :param right_boundary_condition: The boundary condition at psi_n = 1, the plasma boundary
-    :param right_boundary_weight: Weight of the boundary condition at psi_n = 1. Not used when it is free [dimensionless]
+    :param regularisation_scale: Multiplies the rows which regularise the bulk of the profile. [dimensionless]
+    :param regularisation_mode: How the bulk of the profile is regularised.
+    :param left_boundary_condition: The boundary condition at psi_n = 0, the magnetic axis.
+    :param left_boundary_weight: Weight of the boundary condition at psi_n = 0. Not used when it is free. [dimensionless]
+    :param right_boundary_condition: The boundary condition at psi_n = 1, the plasma boundary.
+    :param right_boundary_weight: Weight of the boundary condition at psi_n = 1. Not used when it is free. [dimensionless]
     """
 
     regularisation_scale: float  # [dimensionless]

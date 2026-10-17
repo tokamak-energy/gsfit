@@ -2,11 +2,11 @@ use crate::greens::{Greens, mutual_inductance_finite_size_to_finite_size};
 use crate::material_properties::copper_resistivity;
 use crate::pf_active::PfActive;
 use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
-use diffsol::{NalgebraMat, NalgebraVec, OdeBuilder, OdeSolverMethod, OdeSolverStopReason, Vector, VectorHost};
+use diffsol::{NalgebraMat, OdeBuilder, OdeSolverMethod, OdeSolverStopReason};
 use faer::linalg::solvers::Solve;
 use imas_rs::ids::pf_active::{PfCoils, SignalFlt1d};
 use imas_rs::ids::pf_passive::PfPassiveLoops;
-use ndarray::{Array1, Array2, Axis, concatenate, s};
+use ndarray::{Array1, Array2, ArrayView1, Axis, concatenate, s};
 use numpy::PyArrayMethods;
 use numpy::borrow::PyReadonlyArray1;
 use pyo3::prelude::*;
@@ -539,26 +539,28 @@ impl CircuitEquationModel {
     /// where A is the state matrix, B is the input matrix, and u(t) is the control input vector.
     ///
     /// This function is run inside `diffsol` during integration.
-    fn rhs(&self) -> impl Fn(&NalgebraVec<f64>, &NalgebraVec<f64>, f64, &mut NalgebraVec<f64>) {
+    /// `diffsol` passes the vectors to the closures as slices, `&[f64]`.
+    fn rhs(&self) -> impl Fn(&[f64], &[f64], f64, &mut [f64]) {
         let state_space_matrix_a: Array2<f64> = self.state_space_matrix_a.clone();
         let state_space_matrix_b: Array2<f64> = self.state_space_matrix_b.clone();
         let model: CircuitEquationModel = self.clone();
+        let n_states: usize = self.n_states;
 
-        // Note: `diffsol` has defined the function argumens for `rhs`. But we need to pass in additional data, specifically the state-space matrices.
+        // Note: `diffsol` has defined the function arguments for `rhs`. But we need to pass in additional data, specifically the state-space matrices.
         // The easiest way to do this is to use `move` "closures", which produce a function with the correct arguments.
-        move |states: &NalgebraVec<f64>, _ode_params: &NalgebraVec<f64>, time_now: f64, d_states_d_t: &mut NalgebraVec<f64>| {
+        move |states: &[f64], _ode_params: &[f64], time_now: f64, d_states_d_t: &mut [f64]| {
             // Compute control input u(t)
             let u: Array1<f64> = model.compute_input_vector(time_now);
 
-            // Convert DVector to Array1
-            let states_ndarray: Array1<f64> = Array1::from_vec(states.as_slice().to_vec());
+            // View the slice as an ndarray (no copy)
+            let states_ndarray: ArrayView1<f64> = ArrayView1::from(states);
 
             // Calculate d(states)/d(t) = A*states + B*u [ampere / second]
             let d_states_d_t_ndarray: Array1<f64> = state_space_matrix_a.dot(&states_ndarray) + state_space_matrix_b.dot(&u);
 
-            // Convert back to DVector
-            for (i, &value) in d_states_d_t_ndarray.iter().enumerate() {
-                d_states_d_t[i] = value;
+            // Copy the result back into the output slice
+            for i_state in 0..n_states {
+                d_states_d_t[i_state] = d_states_d_t_ndarray[i_state];
             }
         }
     }
@@ -567,26 +569,29 @@ impl CircuitEquationModel {
     /// The Jacobian-vector product is: jac_v = A * v
     ///
     /// This function is run inside `diffsol` during implicit integration steps.
-    fn rhs_jacobian(&self) -> impl Fn(&NalgebraVec<f64>, &NalgebraVec<f64>, f64, &NalgebraVec<f64>, &mut NalgebraVec<f64>) {
+    /// `diffsol` passes the vectors to the closures as slices, `&[f64]`.
+    fn rhs_jacobian(&self) -> impl Fn(&[f64], &[f64], f64, &[f64], &mut [f64]) {
         let state_space_matrix_a: Array2<f64> = self.state_space_matrix_a.clone();
+        let n_states: usize = self.n_states;
 
-        move |_states: &NalgebraVec<f64>, _ode_params: &NalgebraVec<f64>, _time_now: f64, v: &NalgebraVec<f64>, jac_v: &mut NalgebraVec<f64>| {
-            // Convert input vector to ndarray
-            let v_ndarray: Array1<f64> = Array1::from_vec(v.as_slice().to_vec());
+        move |_states: &[f64], _ode_params: &[f64], _time_now: f64, v: &[f64], jac_v: &mut [f64]| {
+            // View the slice as an ndarray (no copy)
+            let v_ndarray: ArrayView1<f64> = ArrayView1::from(v);
 
             // Compute Jacobian-vector product: jac_v = A * v
             let jac_v_ndarray: Array1<f64> = state_space_matrix_a.dot(&v_ndarray);
 
-            // Copy result back to output vector
-            for (i, &value) in jac_v_ndarray.iter().enumerate() {
-                jac_v[i] = value;
+            // Copy the result back into the output slice
+            for i_state in 0..n_states {
+                jac_v[i_state] = jac_v_ndarray[i_state];
             }
         }
     }
 
     /// Returns a function, which produces the `initial_states`.
     /// This function is run inside `diffsol`
-    fn initial_states(&self) -> impl Fn(&NalgebraVec<f64>, f64, &mut NalgebraVec<f64>) {
+    /// `diffsol` passes the vectors to the closures as slices, `&[f64]`.
+    fn initial_states(&self) -> impl Fn(&[f64], f64, &mut [f64]) {
         /// Initialize the state vector at the start of integration.
         ///
         /// Present implementation fills the initial state vector with zeros.
@@ -596,7 +601,7 @@ impl CircuitEquationModel {
         /// * `_time_initial` - The initial time, [second]
         /// * `initial_states` - Initial state vector to fill, shape=(n_states), [ampere]
         ///
-        fn initial_states_function(_ode_params: &NalgebraVec<f64>, _time_initial: f64, initial_states: &mut NalgebraVec<f64>) {
+        fn initial_states_function(_ode_params: &[f64], _time_initial: f64, initial_states: &mut [f64]) {
             initial_states.fill(0.0);
         }
 

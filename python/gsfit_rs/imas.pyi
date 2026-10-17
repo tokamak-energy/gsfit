@@ -517,31 +517,31 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/equi
 
     @property
     def timeslices(self) -> _EquilibriumCodeParametersParsedTimeslicesItem:
-        """The times to reconstruct
+        """The times to reconstruct.
         """
     @property
     def numerics(self) -> _EquilibriumCodeParametersParsedNumericsItem:
-        """Settings for the Grad-Shafranov solve, and the number of threads it runs on
+        """Settings for the Grad-Shafranov solve, and the number of threads it runs on.
         """
     @property
     def grid(self) -> _EquilibriumCodeParametersParsedGridItem:
-        """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+        """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
         """
     @property
     def initial_guess(self) -> _EquilibriumCodeParametersParsedInitialGuessItem:
-        """Initial guess for first iteration
+        """Initial guess for first iteration.
         """
     @property
     def source_function_p_prime(self) -> _EquilibriumCodeParametersParsedSourceFunctionPPrimeItem:
-        """The p' source function: its basis functions and their regularisation
+        """The p' source function: its basis functions and their regularisation.
         """
     @property
     def source_function_ff_prime(self) -> _EquilibriumCodeParametersParsedSourceFunctionFfPrimeItem:
-        """The ff' source function: its basis functions and their regularisation
+        """The ff' source function: its basis functions and their regularisation.
         """
     @property
     def pf_passive_dof(self) -> _EquilibriumCodeParametersParsedPfPassiveDofItem:
-        """The degrees of freedom of the currents in the passive structures, and their regularisation
+        """The degrees of freedom of the currents in the passive structures, and their regularisation.
         """
     @property
     def constraints(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsItem:
@@ -555,31 +555,31 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/equi
 
     @property
     def timeslices(self) -> _EquilibriumCodeParametersParsedTimeslicesMany:
-        """The times to reconstruct
+        """The times to reconstruct.
         """
     @property
     def numerics(self) -> _EquilibriumCodeParametersParsedNumericsMany:
-        """Settings for the Grad-Shafranov solve, and the number of threads it runs on
+        """Settings for the Grad-Shafranov solve, and the number of threads it runs on.
         """
     @property
     def grid(self) -> _EquilibriumCodeParametersParsedGridMany:
-        """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+        """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
         """
     @property
     def initial_guess(self) -> _EquilibriumCodeParametersParsedInitialGuessMany:
-        """Initial guess for first iteration
+        """Initial guess for first iteration.
         """
     @property
     def source_function_p_prime(self) -> _EquilibriumCodeParametersParsedSourceFunctionPPrimeMany:
-        """The p' source function: its basis functions and their regularisation
+        """The p' source function: its basis functions and their regularisation.
         """
     @property
     def source_function_ff_prime(self) -> _EquilibriumCodeParametersParsedSourceFunctionFfPrimeMany:
-        """The ff' source function: its basis functions and their regularisation
+        """The ff' source function: its basis functions and their regularisation.
         """
     @property
     def pf_passive_dof(self) -> _EquilibriumCodeParametersParsedPfPassiveDofMany:
-        """The degrees of freedom of the currents in the passive structures, and their regularisation
+        """The degrees of freedom of the currents in the passive structures, and their regularisation.
         """
     @property
     def constraints(self) -> _EquilibriumCodeParametersParsedEquilibriumConstraintsMany:
@@ -701,57 +701,57 @@ Generated from the XML schema type `DiamagneticFlux`, in `python/gsfit/settings_
         """
 
 class _EquilibriumCodeParametersParsedEfitPolynomialItem:
-    """Settings for EFIT's polynomials
+    """Settings for EFIT's polynomials.
 Generated from the XML schema type `EfitPolynomial`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def n_dof(self) -> Path[int]:
-        """Number of polynomials, and so of degrees of freedom
+        """Number of polynomials, and so of degrees of freedom.
         """
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
-        """The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true
+        """The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true.
 Shape [n_rows, n_columns], one row per `row` element
         """
     @property
     def exact(self) -> Path[int]:
-        """When true, the coefficients are not fitted but fixed to `coefficients`. False when absent
+        """When true, the coefficients are not fitted but fixed to `coefficients`. False when absent.
 Optional in the settings: unset when it is left out
         """
     @property
     def coefficients(self) -> Path[npt.NDArray[np.float64]]:
-        """The fixed coefficients, one per polynomial, used when `exact` is true
+        """The fixed coefficients, one per polynomial, used when `exact` is true.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedEfitPolynomialMany:
-    """Settings for EFIT's polynomials
+    """Settings for EFIT's polynomials.
 Generated from the XML schema type `EfitPolynomial`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def n_dof(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of polynomials, and so of degrees of freedom
+        """Number of polynomials, and so of degrees of freedom.
         """
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
-        """The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true
+        """The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true.
 Shape [n_rows, n_columns], one row per `row` element
         """
     @property
     def exact(self) -> Path[npt.NDArray[np.int32]]:
-        """When true, the coefficients are not fitted but fixed to `coefficients`. False when absent
+        """When true, the coefficients are not fitted but fixed to `coefficients`. False when absent.
 Optional in the settings: unset when it is left out
         """
     @property
     def coefficients(self) -> Path[npt.NDArray[np.float64]]:
-        """The fixed coefficients, one per polynomial, used when `exact` is true
+        """The fixed coefficients, one per polynomial, used when `exact` is true.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedEquilibriumConstraintsItem:
-    """The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+    """The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
 Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
     """
 
@@ -781,7 +781,7 @@ Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/se
         """
 
 class _EquilibriumCodeParametersParsedEquilibriumConstraintsMany:
-    """The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+    """The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
 Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
     """
 
@@ -891,45 +891,45 @@ Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedEquilibriumConstraintsIsofluxItem:
-    """The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty
+    """The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
     """
 
     @property
     def isoflux(self) -> _EquilibriumCodeParametersParsedIsofluxArrayFromItem:
-        """One isoflux constraint
+        """One isoflux constraint.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedEquilibriumConstraintsIsofluxMany:
-    """The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty
+    """The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
     """
 
     @property
     def isoflux(self) -> _EquilibriumCodeParametersParsedIsofluxArrayFromMany:
-        """One isoflux constraint
+        """One isoflux constraint.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedEquilibriumConstraintsPressureItem:
-    """Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this
+    """Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
     def pressure(self) -> _EquilibriumCodeParametersParsedPressureItem:
-        """Whether pressure is fitted, and how the pressure constraints are made
+        """Whether pressure is fitted, and how the pressure constraints are made.
         """
 
 class _EquilibriumCodeParametersParsedEquilibriumConstraintsPressureMany:
-    """Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this
+    """Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
     def pressure(self) -> _EquilibriumCodeParametersParsedPressureMany:
-        """Whether pressure is fitted, and how the pressure constraints are made
+        """Whether pressure is fitted, and how the pressure constraints are made.
         """
 
 class _EquilibriumCodeParametersParsedEquilibriumConstraintsRogowskiCoilItem:
@@ -1023,39 +1023,39 @@ Generated from the XML schema type `FluxLoop`, in `python/gsfit/settings_schema/
         """
 
 class _EquilibriumCodeParametersParsedGridItem:
-    """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+    """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid.xsd`
     """
 
     @property
     def n_r(self) -> Path[int]:
-        """Number of radial grid points
+        """Number of radial grid points.
         """
     @property
     def n_z(self) -> Path[int]:
-        """Number of vertical grid points
+        """Number of vertical grid points.
         """
     @property
     def r_min(self) -> Path[float]:
-        """Lower radial bound of the grid
+        """Lower radial bound of the grid.
 
         Units: metre
         """
     @property
     def r_max(self) -> Path[float]:
-        """Upper radial bound of the grid
+        """Upper radial bound of the grid.
 
         Units: metre
         """
     @property
     def z_min(self) -> Path[float]:
-        """Lower vertical bound of the grid
+        """Lower vertical bound of the grid.
 
         Units: metre
         """
     @property
     def z_max(self) -> Path[float]:
-        """Upper vertical bound of the grid
+        """Upper vertical bound of the grid.
 
         Units: metre
         """
@@ -1065,39 +1065,39 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid
         """
 
 class _EquilibriumCodeParametersParsedGridMany:
-    """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+    """The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid.xsd`
     """
 
     @property
     def n_r(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of radial grid points
+        """Number of radial grid points.
         """
     @property
     def n_z(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of vertical grid points
+        """Number of vertical grid points.
         """
     @property
     def r_min(self) -> Path[npt.NDArray[np.float64]]:
-        """Lower radial bound of the grid
+        """Lower radial bound of the grid.
 
         Units: metre
         """
     @property
     def r_max(self) -> Path[npt.NDArray[np.float64]]:
-        """Upper radial bound of the grid
+        """Upper radial bound of the grid.
 
         Units: metre
         """
     @property
     def z_min(self) -> Path[npt.NDArray[np.float64]]:
-        """Lower vertical bound of the grid
+        """Lower vertical bound of the grid.
 
         Units: metre
         """
     @property
     def z_max(self) -> Path[npt.NDArray[np.float64]]:
-        """Upper vertical bound of the grid
+        """Upper vertical bound of the grid.
 
         Units: metre
         """
@@ -1107,375 +1107,375 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid
         """
 
 class _EquilibriumCodeParametersParsedInitialGuessItem:
-    """The initial guess of the plasma current: an ellipse of current
+    """The initial guess of the plasma current: an ellipse of current.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/initial_guess.xsd`
     """
 
     @property
     def ip(self) -> Path[float]:
-        """Plasma current
+        """Plasma current.
 
         Units: ampere
         """
     @property
     def cur_r(self) -> Path[float]:
-        """Radial centre of the current
+        """Radial centre of the current.
 
         Units: metre
         """
     @property
     def cur_z(self) -> Path[float]:
-        """Vertical centre of the current
+        """Vertical centre of the current.
 
         Units: metre
         """
     @property
     def minor_radius(self) -> Path[float]:
-        """Radial semi-axis of the current
+        """Radial semi-axis of the current.
 
         Units: metre
         """
     @property
     def elongation(self) -> Path[float]:
-        """Elongation of the current
+        """Elongation of the current.
 
         Units: dimensionless
         """
 
 class _EquilibriumCodeParametersParsedInitialGuessMany:
-    """The initial guess of the plasma current: an ellipse of current
+    """The initial guess of the plasma current: an ellipse of current.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/initial_guess.xsd`
     """
 
     @property
     def ip(self) -> Path[npt.NDArray[np.float64]]:
-        """Plasma current
+        """Plasma current.
 
         Units: ampere
         """
     @property
     def cur_r(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial centre of the current
+        """Radial centre of the current.
 
         Units: metre
         """
     @property
     def cur_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical centre of the current
+        """Vertical centre of the current.
 
         Units: metre
         """
     @property
     def minor_radius(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial semi-axis of the current
+        """Radial semi-axis of the current.
 
         Units: metre
         """
     @property
     def elongation(self) -> Path[npt.NDArray[np.float64]]:
-        """Elongation of the current
+        """Elongation of the current.
 
         Units: dimensionless
         """
 
 class _EquilibriumCodeParametersParsedIsofluxItem:
-    """One isoflux constraint
+    """One isoflux constraint.
 Generated from the XML schema type `Isoflux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
     """
 
     @property
     def name(self) -> Path[str]:
-        """The constraint's name
+        """The constraint's name.
         """
     @property
     def expected_value(self) -> Path[float]:
-        """The typical size of the flux difference between the two points. The fit divides the residual by it
+        """The typical size of the flux difference between the two points. The fit divides the residual by it.
         """
     @property
     def weight(self) -> Path[float]:
-        """Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+        """Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value.
 
         Units: dimensionless
         """
     @property
     def include(self) -> Path[int]:
-        """Whether the constraint is fitted
+        """Whether the constraint is fitted.
         """
     @property
     def comment(self) -> Path[str]:
-        """Free text, e.g. why the constraint is not included; not used by the fit
+        """Free text, e.g. why the constraint is not included; not used by the fit.
         """
 
 class _EquilibriumCodeParametersParsedIsofluxMany:
-    """One isoflux constraint
+    """One isoflux constraint.
 Generated from the XML schema type `Isoflux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
     """
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """The constraint's name
+        """The constraint's name.
         """
     @property
     def expected_value(self) -> Path[npt.NDArray[np.float64]]:
-        """The typical size of the flux difference between the two points. The fit divides the residual by it
+        """The typical size of the flux difference between the two points. The fit divides the residual by it.
         """
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
-        """Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+        """Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value.
 
         Units: dimensionless
         """
     @property
     def include(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether the constraint is fitted
+        """Whether the constraint is fitted.
         """
     @property
     def comment(self) -> Path[npt.NDArray[np.str_]]:
-        """Free text, e.g. why the constraint is not included; not used by the fit
+        """Free text, e.g. why the constraint is not included; not used by the fit.
         """
 
 class _EquilibriumCodeParametersParsedNumericsItem:
-    """Settings for the Grad-Shafranov solve, and the number of threads it runs on
+    """Settings for the Grad-Shafranov solve, and the number of threads it runs on.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def RAYON_NUM_THREADS(self) -> Path[int]:
-        """Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU
+        """Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU.
         """
     @property
     def n_iter_max(self) -> Path[int]:
-        """Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed
+        """Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed.
         """
     @property
     def grad_shafranov_deviation_tolerance(self) -> Path[float]:
-        """The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this
+        """The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this.
 
         Units: dimensionless
         """
     @property
     def n_iter_min(self) -> Path[int]:
-        """Minimum number of nonlinear solver iterations before the convergence test may pass
+        """Minimum number of nonlinear solver iterations before the convergence test may pass.
         """
     @property
     def save_unconverged(self) -> Path[int]:
-        """Not read by the code at present
+        """Not read by the code at present.
         """
     @property
     def nonlinear_solver(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverItem:
-        """The nonlinear solver for the Grad-Shafranov equation
+        """The nonlinear solver for the Grad-Shafranov equation.
         """
 
 class _EquilibriumCodeParametersParsedNumericsMany:
-    """Settings for the Grad-Shafranov solve, and the number of threads it runs on
+    """Settings for the Grad-Shafranov solve, and the number of threads it runs on.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def RAYON_NUM_THREADS(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU
+        """Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU.
         """
     @property
     def n_iter_max(self) -> Path[npt.NDArray[np.int32]]:
-        """Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed
+        """Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed.
         """
     @property
     def grad_shafranov_deviation_tolerance(self) -> Path[npt.NDArray[np.float64]]:
-        """The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this
+        """The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this.
 
         Units: dimensionless
         """
     @property
     def n_iter_min(self) -> Path[npt.NDArray[np.int32]]:
-        """Minimum number of nonlinear solver iterations before the convergence test may pass
+        """Minimum number of nonlinear solver iterations before the convergence test may pass.
         """
     @property
     def save_unconverged(self) -> Path[npt.NDArray[np.int32]]:
-        """Not read by the code at present
+        """Not read by the code at present.
         """
     @property
     def nonlinear_solver(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverMany:
-        """The nonlinear solver for the Grad-Shafranov equation
+        """The nonlinear solver for the Grad-Shafranov equation.
         """
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverItem:
-    """The nonlinear solver for the Grad-Shafranov equation
+    """The nonlinear solver for the Grad-Shafranov equation.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def method(self) -> Path[str]:
-        """The solver to use. Its settings are in the element of the same name, below
+        """The solver to use. Its settings are in the element of the same name, below.
 One of: "picard", "newton_krylov", "newton_picard"
         """
     @property
     def picard(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverPicardItem:
-        """Settings for Picard iterations
+        """Settings for Picard iterations.
         """
     @property
     def newton_krylov(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylovItem:
-        """Settings for Jacobian-free Newton-Krylov
+        """Settings for Jacobian-free Newton-Krylov.
         """
     @property
     def newton_picard(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicardItem:
-        """Settings for Newton-Picard, the recursive projection method (RPM)
+        """Settings for Newton-Picard, the recursive projection method (RPM).
         """
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverMany:
-    """The nonlinear solver for the Grad-Shafranov equation
+    """The nonlinear solver for the Grad-Shafranov equation.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def method(self) -> Path[npt.NDArray[np.str_]]:
-        """The solver to use. Its settings are in the element of the same name, below
+        """The solver to use. Its settings are in the element of the same name, below.
 One of: "picard", "newton_krylov", "newton_picard"
         """
     @property
     def picard(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverPicardMany:
-        """Settings for Picard iterations
+        """Settings for Picard iterations.
         """
     @property
     def newton_krylov(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylovMany:
-        """Settings for Jacobian-free Newton-Krylov
+        """Settings for Jacobian-free Newton-Krylov.
         """
     @property
     def newton_picard(self) -> _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicardMany:
-        """Settings for Newton-Picard, the recursive projection method (RPM)
+        """Settings for Newton-Picard, the recursive projection method (RPM).
         """
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylovItem:
-    """Settings for Jacobian-free Newton-Krylov
+    """Settings for Jacobian-free Newton-Krylov.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def picard_handover(self) -> Path[float]:
-        """Grad-Shafranov deviation below which it hands over from Picard to Newton iterations
+        """Grad-Shafranov deviation below which it hands over from Picard to Newton iterations.
 
         Units: dimensionless
         """
     @property
     def n_krylov_max(self) -> Path[int]:
-        """Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work
+        """Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work.
         """
     @property
     def krylov_tolerance(self) -> Path[float]:
-        """The Krylov solve stops once the linearised residual is this fraction of the residual
+        """The Krylov solve stops once the linearised residual is this fraction of the residual.
 
         Units: dimensionless
         """
     @property
     def finite_difference_step(self) -> Path[float]:
-        """Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
+        """Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual.
 
         Units: dimensionless
         """
     @property
     def verbose(self) -> Path[int]:
-        """Whether to print the progress of each Newton iteration
+        """Whether to print the progress of each Newton iteration.
         """
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylovMany:
-    """Settings for Jacobian-free Newton-Krylov
+    """Settings for Jacobian-free Newton-Krylov.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def picard_handover(self) -> Path[npt.NDArray[np.float64]]:
-        """Grad-Shafranov deviation below which it hands over from Picard to Newton iterations
+        """Grad-Shafranov deviation below which it hands over from Picard to Newton iterations.
 
         Units: dimensionless
         """
     @property
     def n_krylov_max(self) -> Path[npt.NDArray[np.int32]]:
-        """Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work
+        """Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work.
         """
     @property
     def krylov_tolerance(self) -> Path[npt.NDArray[np.float64]]:
-        """The Krylov solve stops once the linearised residual is this fraction of the residual
+        """The Krylov solve stops once the linearised residual is this fraction of the residual.
 
         Units: dimensionless
         """
     @property
     def finite_difference_step(self) -> Path[npt.NDArray[np.float64]]:
-        """Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
+        """Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual.
 
         Units: dimensionless
         """
     @property
     def verbose(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to print the progress of each Newton iteration
+        """Whether to print the progress of each Newton iteration.
         """
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicardItem:
-    """Settings for Newton-Picard, the recursive projection method (RPM)
+    """Settings for Newton-Picard, the recursive projection method (RPM).
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def n_basis_max(self) -> Path[int]:
-        """Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add
+        """Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add.
         """
     @property
     def contraction_threshold(self) -> Path[float]:
-        """A direction is added when the residual outside them shrinks by less than this factor per iteration
+        """A direction is added when the residual outside them shrinks by less than this factor per iteration.
 
         Units: dimensionless
         """
     @property
     def finite_difference_step(self) -> Path[float]:
-        """Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
+        """Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual.
 
         Units: dimensionless
         """
     @property
     def verbose(self) -> Path[int]:
-        """Whether to print the progress of each Newton-Picard iteration
+        """Whether to print the progress of each Newton-Picard iteration.
         """
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicardMany:
-    """Settings for Newton-Picard, the recursive projection method (RPM)
+    """Settings for Newton-Picard, the recursive projection method (RPM).
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def n_basis_max(self) -> Path[npt.NDArray[np.int32]]:
-        """Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add
+        """Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add.
         """
     @property
     def contraction_threshold(self) -> Path[npt.NDArray[np.float64]]:
-        """A direction is added when the residual outside them shrinks by less than this factor per iteration
+        """A direction is added when the residual outside them shrinks by less than this factor per iteration.
 
         Units: dimensionless
         """
     @property
     def finite_difference_step(self) -> Path[npt.NDArray[np.float64]]:
-        """Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
+        """Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual.
 
         Units: dimensionless
         """
     @property
     def verbose(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to print the progress of each Newton-Picard iteration
+        """Whether to print the progress of each Newton-Picard iteration.
         """
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverPicardItem:
-    """Settings for Picard iterations
+    """Settings for Picard iterations.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def n_iter_no_vertical_feedback(self) -> Path[int]:
-        """Number of initial iterations with the vertical feedback (the fit of delta_z) switched off
+        """Number of initial iterations with the vertical feedback (the fit of delta_z) switched off.
         """
     @property
     def apply_anderson_mixing(self) -> Path[int]:
-        """Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals
+        """Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals.
         """
     @property
     def anderson_n_history(self) -> Path[int]:
-        """Maximum number of previous iterations Anderson mixing combines
+        """Maximum number of previous iterations Anderson mixing combines.
         """
     @property
     def anderson_mixing(self) -> Path[float]:
@@ -1485,21 +1485,21 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
         """
 
 class _EquilibriumCodeParametersParsedNumericsNonlinearSolverPicardMany:
-    """Settings for Picard iterations
+    """Settings for Picard iterations.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
     """
 
     @property
     def n_iter_no_vertical_feedback(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of initial iterations with the vertical feedback (the fit of delta_z) switched off
+        """Number of initial iterations with the vertical feedback (the fit of delta_z) switched off.
         """
     @property
     def apply_anderson_mixing(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals
+        """Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals.
         """
     @property
     def anderson_n_history(self) -> Path[npt.NDArray[np.int32]]:
-        """Maximum number of previous iterations Anderson mixing combines
+        """Maximum number of previous iterations Anderson mixing combines.
         """
     @property
     def anderson_mixing(self) -> Path[npt.NDArray[np.float64]]:
@@ -1509,30 +1509,30 @@ Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/nume
         """
 
 class _EquilibriumCodeParametersParsedPassiveItem:
-    """The degrees of freedom of one passive structure's current, and their regularisation
+    """The degrees of freedom of one passive structure's current, and their regularisation.
 Generated from the XML schema type `Passive`, in `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
     """
 
     @property
     def name(self) -> Path[str]:
-        """The passive's name in the database, e.g. "IVC"
+        """The passive's name in the database, e.g. "IVC".
         """
     @property
     def current_distribution_type(self) -> Path[str]:
-        """How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code
+        """How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code.
 One of: "constant_current_density", "eig"
         """
     @property
     def include(self) -> Path[int]:
-        """Whether the passive is included. Not read at present
+        """Whether the passive is included. Not read at present.
         """
     @property
     def n_dof(self) -> Path[int]:
-        """Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig
+        """Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig.
         """
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
-        """The regularisations, one `row` of n_dof coefficients each; no rows for none
+        """The regularisations, one `row` of n_dof coefficients each; no rows for none.
 Shape [n_rows, n_columns], one row per `row` element
         """
     @property
@@ -1543,30 +1543,30 @@ Shape [n_rows, n_columns], one row per `row` element
         """
 
 class _EquilibriumCodeParametersParsedPassiveMany:
-    """The degrees of freedom of one passive structure's current, and their regularisation
+    """The degrees of freedom of one passive structure's current, and their regularisation.
 Generated from the XML schema type `Passive`, in `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
     """
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """The passive's name in the database, e.g. "IVC"
+        """The passive's name in the database, e.g. "IVC".
         """
     @property
     def current_distribution_type(self) -> Path[npt.NDArray[np.str_]]:
-        """How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code
+        """How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code.
 One of: "constant_current_density", "eig"
         """
     @property
     def include(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether the passive is included. Not read at present
+        """Whether the passive is included. Not read at present.
         """
     @property
     def n_dof(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig
+        """Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig.
         """
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
-        """The regularisations, one `row` of n_dof coefficients each; no rows for none
+        """The regularisations, one `row` of n_dof coefficients each; no rows for none.
 Shape [n_rows, n_columns], one row per `row` element
         """
     @property
@@ -1577,225 +1577,225 @@ Shape [n_rows, n_columns], one row per `row` element
         """
 
 class _EquilibriumCodeParametersParsedPfPassiveDofItem:
-    """The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it
+    """The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
     """
 
     @property
     def passive(self) -> _EquilibriumCodeParametersParsedPassiveArrayFromItem:
-        """One passive structure
+        """One passive structure.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedPfPassiveDofMany:
-    """The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it
+    """The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
     """
 
     @property
     def passive(self) -> _EquilibriumCodeParametersParsedPassiveArrayFromMany:
-        """One passive structure
+        """One passive structure.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedPressureItem:
-    """Whether pressure is fitted, and how the pressure constraints are made
+    """Whether pressure is fitted, and how the pressure constraints are made.
 Generated from the XML schema type `Pressure`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
     def include(self) -> Path[int]:
-        """Whether to fit pressure. When false, nothing else in this file is read
+        """Whether to fit pressure. When false, nothing else in this file is read.
         """
     @property
     def sensor_name_prefix(self) -> Path[str]:
-        """The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true
+        """The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true.
 Optional in the settings: unset when it is left out
         """
     @property
     def expected_value(self) -> Path[float]:
-        """The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead
+        """The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead.
 Optional in the settings: unset when it is left out
 
         Units: pascal
         """
     @property
     def weight(self) -> Path[float]:
-        """Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true
+        """Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true.
 Optional in the settings: unset when it is left out
 
         Units: dimensionless
         """
     @property
     def comment(self) -> Path[str]:
-        """Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true
+        """Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true.
 Optional in the settings: unset when it is left out
         """
     @property
     def thomson_scattering(self) -> _EquilibriumCodeParametersParsedPressureThomsonScatteringItem:
-        """Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true
+        """Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true.
 Optional in the settings: unset when it is left out
         """
     @property
     def synthetic(self) -> _EquilibriumCodeParametersParsedSyntheticItem:
-        """Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true
+        """Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedPressureMany:
-    """Whether pressure is fitted, and how the pressure constraints are made
+    """Whether pressure is fitted, and how the pressure constraints are made.
 Generated from the XML schema type `Pressure`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
     def include(self) -> Path[npt.NDArray[np.int32]]:
-        """Whether to fit pressure. When false, nothing else in this file is read
+        """Whether to fit pressure. When false, nothing else in this file is read.
         """
     @property
     def sensor_name_prefix(self) -> Path[npt.NDArray[np.str_]]:
-        """The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true
+        """The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true.
 Optional in the settings: unset when it is left out
         """
     @property
     def expected_value(self) -> Path[npt.NDArray[np.float64]]:
-        """The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead
+        """The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead.
 Optional in the settings: unset when it is left out
 
         Units: pascal
         """
     @property
     def weight(self) -> Path[npt.NDArray[np.float64]]:
-        """Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true
+        """Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true.
 Optional in the settings: unset when it is left out
 
         Units: dimensionless
         """
     @property
     def comment(self) -> Path[npt.NDArray[np.str_]]:
-        """Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true
+        """Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true.
 Optional in the settings: unset when it is left out
         """
     @property
     def thomson_scattering(self) -> _EquilibriumCodeParametersParsedPressureThomsonScatteringMany:
-        """Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true
+        """Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true.
 Optional in the settings: unset when it is left out
         """
     @property
     def synthetic(self) -> _EquilibriumCodeParametersParsedSyntheticMany:
-        """Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true
+        """Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedPressureThomsonScatteringItem:
-    """Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader
+    """Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader.
 Generated from the XML schema type `PressureThomsonScattering`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
     def pressure_multiplier(self) -> Path[float]:
-        """Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature
+        """Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature.
 
         Units: dimensionless
         """
     @property
     def minimum_pressure(self) -> Path[float]:
-        """Total pressures at or below this are ignored. A channel with none above it gets no constraint
+        """Total pressures at or below this are ignored. A channel with none above it gets no constraint.
 
         Units: pascal
         """
 
 class _EquilibriumCodeParametersParsedPressureThomsonScatteringMany:
-    """Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader
+    """Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader.
 Generated from the XML schema type `PressureThomsonScattering`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
     def pressure_multiplier(self) -> Path[npt.NDArray[np.float64]]:
-        """Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature
+        """Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature.
 
         Units: dimensionless
         """
     @property
     def minimum_pressure(self) -> Path[npt.NDArray[np.float64]]:
-        """Total pressures at or below this are ignored. A channel with none above it gets no constraint
+        """Total pressures at or below this are ignored. A channel with none above it gets no constraint.
 
         Units: pascal
         """
 
 class _EquilibriumCodeParametersParsedRegularisationBuilderItem:
-    """How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free)
+    """How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free).
 Generated from the XML schema type `RegularisationBuilder`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def regularisation_scale(self) -> Path[float]:
-        """Multiplies the rows which regularise the bulk of the profile
+        """Multiplies the rows which regularise the bulk of the profile.
 
         Units: dimensionless
         """
     @property
     def regularisation_mode(self) -> Path[str]:
-        """How the bulk of the profile is regularised
+        """How the bulk of the profile is regularised.
 One of: "second_derivative_zero"
         """
     @property
     def left_boundary_condition(self) -> Path[str]:
-        """The boundary condition at psi_n = 0, the magnetic axis
+        """The boundary condition at psi_n = 0, the magnetic axis.
 One of: "free", "dirichlet", "neumann"
         """
     @property
     def left_boundary_weight(self) -> Path[float]:
-        """Weight of the boundary condition at psi_n = 0. Not used when it is free
+        """Weight of the boundary condition at psi_n = 0. Not used when it is free.
 
         Units: dimensionless
         """
     @property
     def right_boundary_condition(self) -> Path[str]:
-        """The boundary condition at psi_n = 1, the plasma boundary
+        """The boundary condition at psi_n = 1, the plasma boundary.
 One of: "free", "dirichlet", "neumann"
         """
     @property
     def right_boundary_weight(self) -> Path[float]:
-        """Weight of the boundary condition at psi_n = 1. Not used when it is free
+        """Weight of the boundary condition at psi_n = 1. Not used when it is free.
 
         Units: dimensionless
         """
 
 class _EquilibriumCodeParametersParsedRegularisationBuilderMany:
-    """How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free)
+    """How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free).
 Generated from the XML schema type `RegularisationBuilder`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def regularisation_scale(self) -> Path[npt.NDArray[np.float64]]:
-        """Multiplies the rows which regularise the bulk of the profile
+        """Multiplies the rows which regularise the bulk of the profile.
 
         Units: dimensionless
         """
     @property
     def regularisation_mode(self) -> Path[npt.NDArray[np.str_]]:
-        """How the bulk of the profile is regularised
+        """How the bulk of the profile is regularised.
 One of: "second_derivative_zero"
         """
     @property
     def left_boundary_condition(self) -> Path[npt.NDArray[np.str_]]:
-        """The boundary condition at psi_n = 0, the magnetic axis
+        """The boundary condition at psi_n = 0, the magnetic axis.
 One of: "free", "dirichlet", "neumann"
         """
     @property
     def left_boundary_weight(self) -> Path[npt.NDArray[np.float64]]:
-        """Weight of the boundary condition at psi_n = 0. Not used when it is free
+        """Weight of the boundary condition at psi_n = 0. Not used when it is free.
 
         Units: dimensionless
         """
     @property
     def right_boundary_condition(self) -> Path[npt.NDArray[np.str_]]:
-        """The boundary condition at psi_n = 1, the plasma boundary
+        """The boundary condition at psi_n = 1, the plasma boundary.
 One of: "free", "dirichlet", "neumann"
         """
     @property
     def right_boundary_weight(self) -> Path[npt.NDArray[np.float64]]:
-        """Weight of the boundary condition at psi_n = 1. Not used when it is free
+        """Weight of the boundary condition at psi_n = 1. Not used when it is free.
 
         Units: dimensionless
         """
@@ -1863,353 +1863,353 @@ Generated from the XML schema type `RogowskiCoil`, in `python/gsfit/settings_sch
         """
 
 class _EquilibriumCodeParametersParsedSourceFunctionFfPrimeItem:
-    """The ff' source function: ff' = f df/dpsi, with f = R B_phi, is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted
+    """The ff' source function: ff' = f df/dpsi, with f = R B_phi, is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_ff_prime.xsd`
     """
 
     @property
     def method(self) -> Path[str]:
-        """The basis functions to use. Their settings are in the element of the same name, below
+        """The basis functions to use. Their settings are in the element of the same name, below.
 One of: "efit_polynomial", "tensioned_cubic_b_spline"
         """
     @property
     def efit_polynomial(self) -> _EquilibriumCodeParametersParsedEfitPolynomialItem:
-        """Settings for EFIT's polynomials
+        """Settings for EFIT's polynomials.
 Optional in the settings: unset when it is left out
         """
     @property
     def tensioned_cubic_b_spline(self) -> _EquilibriumCodeParametersParsedTensionedCubicBSplineItem:
-        """Settings for the tensioned cubic B-splines
+        """Settings for the tensioned cubic B-splines.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedSourceFunctionFfPrimeMany:
-    """The ff' source function: ff' = f df/dpsi, with f = R B_phi, is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted
+    """The ff' source function: ff' = f df/dpsi, with f = R B_phi, is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_ff_prime.xsd`
     """
 
     @property
     def method(self) -> Path[npt.NDArray[np.str_]]:
-        """The basis functions to use. Their settings are in the element of the same name, below
+        """The basis functions to use. Their settings are in the element of the same name, below.
 One of: "efit_polynomial", "tensioned_cubic_b_spline"
         """
     @property
     def efit_polynomial(self) -> _EquilibriumCodeParametersParsedEfitPolynomialMany:
-        """Settings for EFIT's polynomials
+        """Settings for EFIT's polynomials.
 Optional in the settings: unset when it is left out
         """
     @property
     def tensioned_cubic_b_spline(self) -> _EquilibriumCodeParametersParsedTensionedCubicBSplineMany:
-        """Settings for the tensioned cubic B-splines
+        """Settings for the tensioned cubic B-splines.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedSourceFunctionPPrimeItem:
-    """The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted
+    """The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def method(self) -> Path[str]:
-        """The basis functions to use. Their settings are in the element of the same name, below
+        """The basis functions to use. Their settings are in the element of the same name, below.
 One of: "efit_polynomial", "tensioned_cubic_b_spline"
         """
     @property
     def efit_polynomial(self) -> _EquilibriumCodeParametersParsedEfitPolynomialItem:
-        """Settings for EFIT's polynomials
+        """Settings for EFIT's polynomials.
 Optional in the settings: unset when it is left out
         """
     @property
     def tensioned_cubic_b_spline(self) -> _EquilibriumCodeParametersParsedTensionedCubicBSplineItem:
-        """Settings for the tensioned cubic B-splines
+        """Settings for the tensioned cubic B-splines.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedSourceFunctionPPrimeMany:
-    """The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted
+    """The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def method(self) -> Path[npt.NDArray[np.str_]]:
-        """The basis functions to use. Their settings are in the element of the same name, below
+        """The basis functions to use. Their settings are in the element of the same name, below.
 One of: "efit_polynomial", "tensioned_cubic_b_spline"
         """
     @property
     def efit_polynomial(self) -> _EquilibriumCodeParametersParsedEfitPolynomialMany:
-        """Settings for EFIT's polynomials
+        """Settings for EFIT's polynomials.
 Optional in the settings: unset when it is left out
         """
     @property
     def tensioned_cubic_b_spline(self) -> _EquilibriumCodeParametersParsedTensionedCubicBSplineMany:
-        """Settings for the tensioned cubic B-splines
+        """Settings for the tensioned cubic B-splines.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedSyntheticItem:
-    """Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader
+    """Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader.
 Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
     def r_start(self) -> Path[float]:
-        """Major radius of the first sensor, relative to the magnetic axis
+        """Major radius of the first sensor, relative to the magnetic axis.
 
         Units: metre
         """
     @property
     def r_end(self) -> Path[float]:
-        """Major radius of the last sensor, relative to the magnetic axis
+        """Major radius of the last sensor, relative to the magnetic axis.
 
         Units: metre
         """
     @property
     def n_sensors(self) -> Path[int]:
-        """Number of sensors, evenly spaced from r_start to r_end
+        """Number of sensors, evenly spaced from r_start to r_end.
         """
     @property
     def minimum_pressure(self) -> Path[float]:
-        """Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint
+        """Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint.
 
         Units: pascal
         """
 
 class _EquilibriumCodeParametersParsedSyntheticMany:
-    """Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader
+    """Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader.
 Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
     """
 
     @property
     def r_start(self) -> Path[npt.NDArray[np.float64]]:
-        """Major radius of the first sensor, relative to the magnetic axis
+        """Major radius of the first sensor, relative to the magnetic axis.
 
         Units: metre
         """
     @property
     def r_end(self) -> Path[npt.NDArray[np.float64]]:
-        """Major radius of the last sensor, relative to the magnetic axis
+        """Major radius of the last sensor, relative to the magnetic axis.
 
         Units: metre
         """
     @property
     def n_sensors(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of sensors, evenly spaced from r_start to r_end
+        """Number of sensors, evenly spaced from r_start to r_end.
         """
     @property
     def minimum_pressure(self) -> Path[npt.NDArray[np.float64]]:
-        """Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint
+        """Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint.
 
         Units: pascal
         """
 
 class _EquilibriumCodeParametersParsedTensionedCubicBSplineItem:
-    """Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom
+    """Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom.
 Generated from the XML schema type `TensionedCubicBSpline`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
-        """The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false
+        """The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false.
 Shape [n_rows, n_columns], one row per `row` element
 Optional in the settings: unset when it is left out
         """
     @property
     def interior_knots(self) -> Path[npt.NDArray[np.float64]]:
-        """The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included
+        """The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included.
 
         Units: dimensionless
         """
     @property
     def interval_tensions(self) -> Path[npt.NDArray[np.float64]]:
-        """The tension over each interval between neighbouring knots: one more than the number of interior knots
+        """The tension over each interval between neighbouring knots: one more than the number of interior knots.
 
         Units: dimensionless
         """
     @property
     def make_cubic_spline_regularisations(self) -> Path[int]:
-        """When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent
+        """When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent.
 Optional in the settings: unset when it is left out
         """
     @property
     def regularisation_builder(self) -> _EquilibriumCodeParametersParsedRegularisationBuilderItem:
-        """How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true
+        """How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedTensionedCubicBSplineMany:
-    """Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom
+    """Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom.
 Generated from the XML schema type `TensionedCubicBSpline`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
     """
 
     @property
     def regularisations(self) -> Path[npt.NDArray[np.float64]]:
-        """The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false
+        """The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false.
 Shape [n_rows, n_columns], one row per `row` element
 Optional in the settings: unset when it is left out
         """
     @property
     def interior_knots(self) -> Path[npt.NDArray[np.float64]]:
-        """The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included
+        """The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included.
 
         Units: dimensionless
         """
     @property
     def interval_tensions(self) -> Path[npt.NDArray[np.float64]]:
-        """The tension over each interval between neighbouring knots: one more than the number of interior knots
+        """The tension over each interval between neighbouring knots: one more than the number of interior knots.
 
         Units: dimensionless
         """
     @property
     def make_cubic_spline_regularisations(self) -> Path[npt.NDArray[np.int32]]:
-        """When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent
+        """When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent.
 Optional in the settings: unset when it is left out
         """
     @property
     def regularisation_builder(self) -> _EquilibriumCodeParametersParsedRegularisationBuilderMany:
-        """How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true
+        """How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true.
 Optional in the settings: unset when it is left out
         """
 
 class _EquilibriumCodeParametersParsedTimeslicesItem:
-    """The times to reconstruct
+    """The times to reconstruct.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
     def method(self) -> Path[str]:
-        """How the times are chosen. Its settings are in the element of the same name, below
+        """How the times are chosen. Its settings are in the element of the same name, below.
 One of: "arange", "linspace", "user_defined", "good_pressure_sensors"
         """
     @property
     def arange(self) -> _EquilibriumCodeParametersParsedTimeslicesArangeItem:
-        """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
+        """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
         """
     @property
     def linspace(self) -> _EquilibriumCodeParametersParsedTimeslicesLinspaceItem:
-        """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
+        """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
         """
     @property
     def user_defined(self) -> Path[npt.NDArray[np.float64]]:
-        """User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3"
+        """User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3".
 
         Units: second
         """
 
 class _EquilibriumCodeParametersParsedTimeslicesMany:
-    """The times to reconstruct
+    """The times to reconstruct.
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
     def method(self) -> Path[npt.NDArray[np.str_]]:
-        """How the times are chosen. Its settings are in the element of the same name, below
+        """How the times are chosen. Its settings are in the element of the same name, below.
 One of: "arange", "linspace", "user_defined", "good_pressure_sensors"
         """
     @property
     def arange(self) -> _EquilibriumCodeParametersParsedTimeslicesArangeMany:
-        """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
+        """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
         """
     @property
     def linspace(self) -> _EquilibriumCodeParametersParsedTimeslicesLinspaceMany:
-        """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
+        """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
         """
     @property
     def user_defined(self) -> Path[npt.NDArray[np.float64]]:
-        """User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3"
+        """User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3".
 
         Units: second
         """
 
 class _EquilibriumCodeParametersParsedTimeslicesArangeItem:
-    """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
+    """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
     def time_start(self) -> Path[float]:
-        """First time
+        """First time.
 
         Units: second
         """
     @property
     def time_end(self) -> Path[float]:
-        """End of the times, which is not included
+        """End of the times, which is not included.
 
         Units: second
         """
     @property
     def dt(self) -> Path[float]:
-        """Step between times
+        """Step between times.
 
         Units: second
         """
 
 class _EquilibriumCodeParametersParsedTimeslicesArangeMany:
-    """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
+    """Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
     def time_start(self) -> Path[npt.NDArray[np.float64]]:
-        """First time
+        """First time.
 
         Units: second
         """
     @property
     def time_end(self) -> Path[npt.NDArray[np.float64]]:
-        """End of the times, which is not included
+        """End of the times, which is not included.
 
         Units: second
         """
     @property
     def dt(self) -> Path[npt.NDArray[np.float64]]:
-        """Step between times
+        """Step between times.
 
         Units: second
         """
 
 class _EquilibriumCodeParametersParsedTimeslicesLinspaceItem:
-    """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
+    """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
     def time_start(self) -> Path[float]:
-        """First time
+        """First time.
 
         Units: second
         """
     @property
     def time_end(self) -> Path[float]:
-        """Last time
+        """Last time.
 
         Units: second
         """
     @property
     def n_time(self) -> Path[int]:
-        """Number of times
+        """Number of times.
         """
 
 class _EquilibriumCodeParametersParsedTimeslicesLinspaceMany:
-    """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
+    """n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
 Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
     """
 
     @property
     def time_start(self) -> Path[npt.NDArray[np.float64]]:
-        """First time
+        """First time.
 
         Units: second
         """
     @property
     def time_end(self) -> Path[npt.NDArray[np.float64]]:
-        """Last time
+        """Last time.
 
         Units: second
         """
     @property
     def n_time(self) -> Path[npt.NDArray[np.int32]]:
-        """Number of times
+        """Number of times.
         """
 
 class _EquilibriumConstraintsItem:
@@ -10527,6 +10527,10 @@ class _PulseScheduleEcItem:
         """Set of Electron Cyclotron beams
         """
     @property
+    def mirror(self) -> _PulseScheduleEcMirrorArrayFromItem:
+        """Set of Electron Cyclotron mirrors
+        """
+    @property
     def power_launched(self) -> _PulseScheduleReferenceEcItem:
         """Total EC power launched in the plasma (sum over the beams)
 
@@ -10550,6 +10554,10 @@ class _PulseScheduleEcMany:
     @property
     def beam(self) -> _PulseScheduleEcBeamArrayFromMany:
         """Set of Electron Cyclotron beams
+        """
+    @property
+    def mirror(self) -> _PulseScheduleEcMirrorArrayFromMany:
+        """Set of Electron Cyclotron mirrors
         """
     @property
     def power_launched(self) -> _PulseScheduleReferenceEcMany:
@@ -10593,12 +10601,6 @@ class _PulseScheduleEcBeamItem:
         Units: Hz
         """
     @property
-    def deposition_rho_tor_norm(self) -> _PulseScheduleReferenceEcItem:
-        """Normalized toroidal flux coordinate at which the main deposition should occur
-
-        Units: 1
-        """
-    @property
     def steering_angle_pol(self) -> _PulseScheduleReferenceEcItem:
         """Steering angle of the EC beam in the R,Z plane (from the -R axis towards the -Z axis), angle_pol=atan2(-k_Z,-k_R), where k_Z and k_R are the Z and R components of the mean wave vector in the EC beam
 
@@ -10609,6 +10611,10 @@ class _PulseScheduleEcBeamItem:
         """Steering angle of the EC beam away from the poloidal plane that is increasing towards the positive phi axis, angle_tor=arcsin(k_phi/k), where k_phi is the component of the wave vector in the phi direction and k is the length of the wave vector. Here the term wave vector refers to the mean wave vector in the EC beam
 
         Units: rad
+        """
+    @property
+    def polarization(self) -> _PulseScheduleEcBeamPolarizationItem:
+        """Wave polarization
         """
 
 class _PulseScheduleEcBeamMany:
@@ -10636,12 +10642,6 @@ class _PulseScheduleEcBeamMany:
         Units: Hz
         """
     @property
-    def deposition_rho_tor_norm(self) -> _PulseScheduleReferenceEcMany:
-        """Normalized toroidal flux coordinate at which the main deposition should occur
-
-        Units: 1
-        """
-    @property
     def steering_angle_pol(self) -> _PulseScheduleReferenceEcMany:
         """Steering angle of the EC beam in the R,Z plane (from the -R axis towards the -Z axis), angle_pol=atan2(-k_Z,-k_R), where k_Z and k_R are the Z and R components of the mean wave vector in the EC beam
 
@@ -10650,6 +10650,152 @@ class _PulseScheduleEcBeamMany:
     @property
     def steering_angle_tor(self) -> _PulseScheduleReferenceEcMany:
         """Steering angle of the EC beam away from the poloidal plane that is increasing towards the positive phi axis, angle_tor=arcsin(k_phi/k), where k_phi is the component of the wave vector in the phi direction and k is the length of the wave vector. Here the term wave vector refers to the mean wave vector in the EC beam
+
+        Units: rad
+        """
+    @property
+    def polarization(self) -> _PulseScheduleEcBeamPolarizationMany:
+        """Wave polarization
+        """
+
+class _PulseScheduleEcBeamPolarizationItem:
+    """EC beam polarization
+    """
+
+    @property
+    def o_mode_fraction(self) -> _PulseScheduleReferenceEcItem:
+        """Fraction of EC beam power launched in ordinary (O) mode. If all power is launched in ordinary mode (O-mode), o_mode_fraction = 1.0. If all  power is launched in extraordinary mode (X-mode), o_mode_fraction = 0.0
+
+        Units: 1
+        """
+    @property
+    def azimuthal_angle(self) -> _PulseScheduleReferenceEcItem:
+        """Poincare sphere angle psi for mixed mode
+
+        Units: rad
+        """
+    @property
+    def ellipticity_angle(self) -> _PulseScheduleReferenceEcItem:
+        """Poincare sphere angle chi for mixed mode
+
+        Units: rad
+        """
+
+class _PulseScheduleEcBeamPolarizationMany:
+    """EC beam polarization
+    """
+
+    @property
+    def o_mode_fraction(self) -> _PulseScheduleReferenceEcMany:
+        """Fraction of EC beam power launched in ordinary (O) mode. If all power is launched in ordinary mode (O-mode), o_mode_fraction = 1.0. If all  power is launched in extraordinary mode (X-mode), o_mode_fraction = 0.0
+
+        Units: 1
+        """
+    @property
+    def azimuthal_angle(self) -> _PulseScheduleReferenceEcMany:
+        """Poincare sphere angle psi for mixed mode
+
+        Units: rad
+        """
+    @property
+    def ellipticity_angle(self) -> _PulseScheduleReferenceEcMany:
+        """Poincare sphere angle chi for mixed mode
+
+        Units: rad
+        """
+
+class _PulseScheduleEcMirrorItem:
+    """EC mirror
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[str]:
+        """Description, e.g. “Mirror in upper port 12”
+        """
+    @property
+    def movement(self) -> _PulseScheduleEcMirrorMovementArrayFromItem:
+        """Set of degrees of freedom for this mirror, allowing the mirror to move around its reference position indicated in ../geometry. Can be cascaded for composite movements.
+        """
+    @property
+    def deposition_rho_tor_norm(self) -> _PulseScheduleReferenceEcItem:
+        """Normalized toroidal flux coordinate at which the main deposition should occur. For tracking a rational surface use a negative value (for example -1.5 or -2.0)"
+
+        Units: 1
+        """
+
+class _PulseScheduleEcMirrorMany:
+    """EC mirror
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier (unique for a given device)
+        """
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Description, e.g. “Mirror in upper port 12”
+        """
+    @property
+    def movement(self) -> _PulseScheduleEcMirrorMovementArrayFromMany:
+        """Set of degrees of freedom for this mirror, allowing the mirror to move around its reference position indicated in ../geometry. Can be cascaded for composite movements.
+        """
+    @property
+    def deposition_rho_tor_norm(self) -> _PulseScheduleReferenceEcMany:
+        """Normalized toroidal flux coordinate at which the main deposition should occur. For tracking a rational surface use a negative value (for example -1.5 or -2.0)"
+
+        Units: 1
+        """
+
+class _PulseScheduleEcMirrorMovementItem:
+    """EC mirror movements
+    """
+
+    @property
+    def description(self) -> Path[str]:
+        """Description, e.g. “Core mirror steering”
+        """
+    @property
+    def type(self) -> _PulseScheduleIdentifierItem:
+        """Type of movement
+        """
+    @property
+    def translation(self) -> _PulseScheduleReferenceEcItem:
+        """Linear displacement from reference position, along the direction vector
+
+        Units: m
+        """
+    @property
+    def rotation_angle(self) -> _PulseScheduleReferenceEcItem:
+        """Angular displacement with respect to the reference position, counter-clockwise around the direction vector
+
+        Units: rad
+        """
+
+class _PulseScheduleEcMirrorMovementMany:
+    """EC mirror movements
+    """
+
+    @property
+    def description(self) -> Path[npt.NDArray[np.str_]]:
+        """Description, e.g. “Core mirror steering”
+        """
+    @property
+    def type(self) -> _PulseScheduleIdentifierMany:
+        """Type of movement
+        """
+    @property
+    def translation(self) -> _PulseScheduleReferenceEcMany:
+        """Linear displacement from reference position, along the direction vector
+
+        Units: m
+        """
+    @property
+    def rotation_angle(self) -> _PulseScheduleReferenceEcMany:
+        """Angular displacement with respect to the reference position, counter-clockwise around the direction vector
 
         Units: rad
         """
@@ -12273,6 +12419,28 @@ class _PulseScheduleEcBeamArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
     def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleEcBeamMany: ...
+
+class _PulseScheduleEcMirrorArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleEcMirrorItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleEcMirrorMany: ...
+
+class _PulseScheduleEcMirrorArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleEcMirrorMany: ...
+
+class _PulseScheduleEcMirrorMovementArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _PulseScheduleEcMirrorMovementItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _PulseScheduleEcMirrorMovementMany: ...
+
+class _PulseScheduleEcMirrorMovementArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _PulseScheduleEcMirrorMovementMany: ...
 
 class _PulseScheduleEventArrayFromItem:
     @overload
@@ -15612,7 +15780,7 @@ class _WallDescriptionGgdEnergyIonStateItem:
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[str]:
@@ -15659,7 +15827,7 @@ class _WallDescriptionGgdEnergyIonStateMany:
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
@@ -15768,7 +15936,7 @@ class _WallDescriptionGgdEnergyNeutralStateItem:
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[str]:
@@ -15807,7 +15975,7 @@ class _WallDescriptionGgdEnergyNeutralStateMany:
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
@@ -16288,7 +16456,7 @@ class _WallDescriptionGgdParticleIonStateItem:
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[str]:
@@ -16335,7 +16503,7 @@ class _WallDescriptionGgdParticleIonStateMany:
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
@@ -16444,7 +16612,7 @@ class _WallDescriptionGgdParticleNeutralStateItem:
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[str]:
@@ -16483,7 +16651,7 @@ class _WallDescriptionGgdParticleNeutralStateMany:
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
@@ -16660,7 +16828,7 @@ class _WallDescriptionGgdRecyclingIonStateItem:
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[str]:
@@ -16701,7 +16869,7 @@ class _WallDescriptionGgdRecyclingIonStateMany:
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:
@@ -16792,7 +16960,7 @@ class _WallDescriptionGgdRecyclingNeutralStateItem:
     def vibrational_level(self) -> Path[float]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[str]:
@@ -16825,7 +16993,7 @@ class _WallDescriptionGgdRecyclingNeutralStateMany:
     def vibrational_level(self) -> Path[npt.NDArray[np.float64]]:
         """Vibrational level (can be bundled)
 
-        Units: e
+        Units: 1
         """
     @property
     def vibrational_mode(self) -> Path[npt.NDArray[np.str_]]:

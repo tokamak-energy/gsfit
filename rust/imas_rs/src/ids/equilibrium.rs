@@ -1964,51 +1964,51 @@ pub struct EquilibriumLimiterUnitOutline {
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsed {
-    /// The times to reconstruct
+    /// The times to reconstruct.
     pub timeslices: EquilibriumCodeParametersParsedTimeslices,
-    /// Settings for the Grad-Shafranov solve, and the number of threads it runs on
+    /// Settings for the Grad-Shafranov solve, and the number of threads it runs on.
     pub numerics: EquilibriumCodeParametersParsedNumerics,
-    /// The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+    /// The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
     pub grid: EquilibriumCodeParametersParsedGrid,
-    /// Initial guess for first iteration
+    /// Initial guess for first iteration.
     pub initial_guess: EquilibriumCodeParametersParsedInitialGuess,
-    /// The p' source function: its basis functions and their regularisation
+    /// The p' source function: its basis functions and their regularisation.
     pub source_function_p_prime: EquilibriumCodeParametersParsedSourceFunctionPPrime,
-    /// The ff' source function: its basis functions and their regularisation
+    /// The ff' source function: its basis functions and their regularisation.
     pub source_function_ff_prime: EquilibriumCodeParametersParsedSourceFunctionFfPrime,
-    /// The degrees of freedom of the currents in the passive structures, and their regularisation
+    /// The degrees of freedom of the currents in the passive structures, and their regularisation.
     pub pf_passive_dof: EquilibriumCodeParametersParsedPfPassiveDof,
     /// Constraints used in the least-squares fit.
     pub constraints: EquilibriumCodeParametersParsedEquilibriumConstraints,
 }
 
-/// The times to reconstruct
+/// The times to reconstruct.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedTimeslices {
-    /// How the times are chosen. Its settings are in the element of the same name, below
+    /// How the times are chosen. Its settings are in the element of the same name, below.
     /// One of: "arange", "linspace", "user_defined", "good_pressure_sensors"
     pub method: STR_0D,
-    /// Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
+    /// Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
     pub arange: EquilibriumCodeParametersParsedTimeslicesArange,
-    /// n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
+    /// n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
     pub linspace: EquilibriumCodeParametersParsedTimeslicesLinspace,
-    /// User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3"
+    /// User defined time-slices, space-separated list, e.g. "80.e-3 100.0e-3 120.0e-3".
     /// Units: second
     pub user_defined: FLT_1D,
 }
 
-/// Times from time_start, in steps of dt, up to but not including time_end (numpy.arange)
+/// Times from time_start, in steps of dt, up to but not including time_end (numpy.arange).
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedTimeslicesArange {
-    /// First time
+    /// First time.
     /// Units: second
     pub time_start: FLT_0D,
-    /// End of the times, which is not included
+    /// End of the times, which is not included.
     /// Units: second
     pub time_end: FLT_0D,
-    /// Step between times
+    /// Step between times.
     /// Units: second
     pub dt: FLT_0D,
 }
@@ -2023,17 +2023,17 @@ impl Default for EquilibriumCodeParametersParsedTimeslicesArange {
     }
 }
 
-/// n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace)
+/// n_time evenly spaced times, from time_start to time_end, both included (numpy.linspace).
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/timeslices.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedTimeslicesLinspace {
-    /// First time
+    /// First time.
     /// Units: second
     pub time_start: FLT_0D,
-    /// Last time
+    /// Last time.
     /// Units: second
     pub time_end: FLT_0D,
-    /// Number of times
+    /// Number of times.
     pub n_time: INT_0D,
 }
 
@@ -2047,23 +2047,23 @@ impl Default for EquilibriumCodeParametersParsedTimeslicesLinspace {
     }
 }
 
-/// Settings for the Grad-Shafranov solve, and the number of threads it runs on
+/// Settings for the Grad-Shafranov solve, and the number of threads it runs on.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedNumerics {
-    /// Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU
+    /// Number of threads for the Rust code. Sets the RAYON_NUM_THREADS environment variable, read by Rayon, Rust's parallelisation library; 0 lets Rayon choose one per CPU.
     #[allow(non_snake_case)]
     pub RAYON_NUM_THREADS: INT_0D,
-    /// Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed
+    /// Maximum number of nonlinear solver iterations; a time-slice which has not converged by then is marked as failed.
     pub n_iter_max: INT_0D,
-    /// The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this
+    /// The solve has converged once the Grad-Shafranov deviation, |psi_a - psi_a_previous| / |psi_b - psi_a| (EFIT's `cerror`), is below this.
     /// Units: dimensionless
     pub grad_shafranov_deviation_tolerance: FLT_0D,
-    /// Minimum number of nonlinear solver iterations before the convergence test may pass
+    /// Minimum number of nonlinear solver iterations before the convergence test may pass.
     pub n_iter_min: INT_0D,
-    /// Not read by the code at present
+    /// Not read by the code at present.
     pub save_unconverged: INT_0D,
-    /// The nonlinear solver for the Grad-Shafranov equation
+    /// The nonlinear solver for the Grad-Shafranov equation.
     pub nonlinear_solver: EquilibriumCodeParametersParsedNumericsNonlinearSolver,
 }
 
@@ -2080,30 +2080,30 @@ impl Default for EquilibriumCodeParametersParsedNumerics {
     }
 }
 
-/// The nonlinear solver for the Grad-Shafranov equation
+/// The nonlinear solver for the Grad-Shafranov equation.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolver {
-    /// The solver to use. Its settings are in the element of the same name, below
+    /// The solver to use. Its settings are in the element of the same name, below.
     /// One of: "picard", "newton_krylov", "newton_picard"
     pub method: STR_0D,
-    /// Settings for Picard iterations
+    /// Settings for Picard iterations.
     pub picard: EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard,
-    /// Settings for Jacobian-free Newton-Krylov
+    /// Settings for Jacobian-free Newton-Krylov.
     pub newton_krylov: EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylov,
-    /// Settings for Newton-Picard, the recursive projection method (RPM)
+    /// Settings for Newton-Picard, the recursive projection method (RPM).
     pub newton_picard: EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicard,
 }
 
-/// Settings for Picard iterations
+/// Settings for Picard iterations.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard {
-    /// Number of initial iterations with the vertical feedback (the fit of delta_z) switched off
+    /// Number of initial iterations with the vertical feedback (the fit of delta_z) switched off.
     pub n_iter_no_vertical_feedback: INT_0D,
-    /// Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals
+    /// Whether to use Anderson mixing: each new state is the combination of the last few iterates which best cancels their residuals.
     pub apply_anderson_mixing: INT_0D,
-    /// Maximum number of previous iterations Anderson mixing combines
+    /// Maximum number of previous iterations Anderson mixing combines.
     pub anderson_n_history: INT_0D,
     /// Fraction of the (Anderson-mixed) residual taken at each iteration; 1 for all of it.
     /// Units: dimensionless
@@ -2121,22 +2121,22 @@ impl Default for EquilibriumCodeParametersParsedNumericsNonlinearSolverPicard {
     }
 }
 
-/// Settings for Jacobian-free Newton-Krylov
+/// Settings for Jacobian-free Newton-Krylov.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKrylov {
-    /// Grad-Shafranov deviation below which it hands over from Picard to Newton iterations
+    /// Grad-Shafranov deviation below which it hands over from Picard to Newton iterations.
     /// Units: dimensionless
     pub picard_handover: FLT_0D,
-    /// Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work
+    /// Maximum number of Krylov directions per Newton iteration; each costs one Picard iteration's work.
     pub n_krylov_max: INT_0D,
-    /// The Krylov solve stops once the linearised residual is this fraction of the residual
+    /// The Krylov solve stops once the linearised residual is this fraction of the residual.
     /// Units: dimensionless
     pub krylov_tolerance: FLT_0D,
-    /// Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
+    /// Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual.
     /// Units: dimensionless
     pub finite_difference_step: FLT_0D,
-    /// Whether to print the progress of each Newton iteration
+    /// Whether to print the progress of each Newton iteration.
     pub verbose: INT_0D,
 }
 
@@ -2152,19 +2152,19 @@ impl Default for EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonKry
     }
 }
 
-/// Settings for Newton-Picard, the recursive projection method (RPM)
+/// Settings for Newton-Picard, the recursive projection method (RPM).
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/numerics.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPicard {
-    /// Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add
+    /// Maximum number of directions in which Newton's method is used; each costs one Picard iteration's work to add.
     pub n_basis_max: INT_0D,
-    /// A direction is added when the residual outside them shrinks by less than this factor per iteration
+    /// A direction is added when the residual outside them shrinks by less than this factor per iteration.
     /// Units: dimensionless
     pub contraction_threshold: FLT_0D,
-    /// Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual
+    /// Step of the finite-difference Jacobian-vector products, as a multiple of the size of the residual.
     /// Units: dimensionless
     pub finite_difference_step: FLT_0D,
-    /// Whether to print the progress of each Newton-Picard iteration
+    /// Whether to print the progress of each Newton-Picard iteration.
     pub verbose: INT_0D,
 }
 
@@ -2179,24 +2179,24 @@ impl Default for EquilibriumCodeParametersParsedNumericsNonlinearSolverNewtonPic
     }
 }
 
-/// The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles
+/// The (R, Z) grid the equilibrium is solved on, and the psi_norm grid of the 1D profiles.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/grid.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedGrid {
-    /// Number of radial grid points
+    /// Number of radial grid points.
     pub n_r: INT_0D,
-    /// Number of vertical grid points
+    /// Number of vertical grid points.
     pub n_z: INT_0D,
-    /// Lower radial bound of the grid
+    /// Lower radial bound of the grid.
     /// Units: metre
     pub r_min: FLT_0D,
-    /// Upper radial bound of the grid
+    /// Upper radial bound of the grid.
     /// Units: metre
     pub r_max: FLT_0D,
-    /// Lower vertical bound of the grid
+    /// Lower vertical bound of the grid.
     /// Units: metre
     pub z_min: FLT_0D,
-    /// Upper vertical bound of the grid
+    /// Upper vertical bound of the grid.
     /// Units: metre
     pub z_max: FLT_0D,
     /// Number of points in the normalised poloidal flux, `psi_norm`, evenly spaced from 0 (magnetic axis) to 1 (boundary), on which the 1D profiles are given.
@@ -2217,23 +2217,23 @@ impl Default for EquilibriumCodeParametersParsedGrid {
     }
 }
 
-/// The initial guess of the plasma current: an ellipse of current
+/// The initial guess of the plasma current: an ellipse of current.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/initial_guess.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedInitialGuess {
-    /// Plasma current
+    /// Plasma current.
     /// Units: ampere
     pub ip: FLT_0D,
-    /// Radial centre of the current
+    /// Radial centre of the current.
     /// Units: metre
     pub cur_r: FLT_0D,
-    /// Vertical centre of the current
+    /// Vertical centre of the current.
     /// Units: metre
     pub cur_z: FLT_0D,
-    /// Radial semi-axis of the current
+    /// Radial semi-axis of the current.
     /// Units: metre
     pub minor_radius: FLT_0D,
-    /// Elongation of the current
+    /// Elongation of the current.
     /// Units: dimensionless
     pub elongation: FLT_0D,
 }
@@ -2250,34 +2250,34 @@ impl Default for EquilibriumCodeParametersParsedInitialGuess {
     }
 }
 
-/// The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted
+/// The p' source function: p' = dp/dpsi is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedSourceFunctionPPrime {
-    /// The basis functions to use. Their settings are in the element of the same name, below
+    /// The basis functions to use. Their settings are in the element of the same name, below.
     /// One of: "efit_polynomial", "tensioned_cubic_b_spline"
     pub method: STR_0D,
-    /// Settings for EFIT's polynomials
+    /// Settings for EFIT's polynomials.
     /// Optional in the settings: unset when it is left out
     pub efit_polynomial: EquilibriumCodeParametersParsedEfitPolynomial,
-    /// Settings for the tensioned cubic B-splines
+    /// Settings for the tensioned cubic B-splines.
     /// Optional in the settings: unset when it is left out
     pub tensioned_cubic_b_spline: EquilibriumCodeParametersParsedTensionedCubicBSpline,
 }
 
-/// Settings for EFIT's polynomials
+/// Settings for EFIT's polynomials.
 /// Generated from the XML schema type `EfitPolynomial`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedEfitPolynomial {
-    /// Number of polynomials, and so of degrees of freedom
+    /// Number of polynomials, and so of degrees of freedom.
     pub n_dof: INT_0D,
-    /// The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true
+    /// The regularisations, one `row` of n_dof coefficients each; no rows for none. Not used when `exact` is true.
     /// Shape [n_rows, n_columns], one row per `row` element
     pub regularisations: FLT_2D,
-    /// When true, the coefficients are not fitted but fixed to `coefficients`. False when absent
+    /// When true, the coefficients are not fitted but fixed to `coefficients`. False when absent.
     /// Optional in the settings: unset when it is left out
     pub exact: INT_0D,
-    /// The fixed coefficients, one per polynomial, used when `exact` is true
+    /// The fixed coefficients, one per polynomial, used when `exact` is true.
     /// Optional in the settings: unset when it is left out
     pub coefficients: FLT_1D,
 }
@@ -2293,24 +2293,24 @@ impl Default for EquilibriumCodeParametersParsedEfitPolynomial {
     }
 }
 
-/// Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom
+/// Settings for the tensioned cubic B-splines. There are n_dof = (number of interior knots) + 4 degrees of freedom.
 /// Generated from the XML schema type `TensionedCubicBSpline`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedTensionedCubicBSpline {
-    /// The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false
+    /// The regularisations, one `row` of n_dof coefficients each; no rows for none. Only used when `make_cubic_spline_regularisations` is false.
     /// Shape [n_rows, n_columns], one row per `row` element
     /// Optional in the settings: unset when it is left out
     pub regularisations: FLT_2D,
-    /// The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included
+    /// The knots strictly between psi_n = 0 and 1, in increasing order. The knots at 0 and 1 are added, so must not be included.
     /// Units: dimensionless
     pub interior_knots: FLT_1D,
-    /// The tension over each interval between neighbouring knots: one more than the number of interior knots
+    /// The tension over each interval between neighbouring knots: one more than the number of interior knots.
     /// Units: dimensionless
     pub interval_tensions: FLT_1D,
-    /// When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent
+    /// When true, the regularisations are built from `regularisation_builder` and `regularisations` is not used. False when absent.
     /// Optional in the settings: unset when it is left out
     pub make_cubic_spline_regularisations: INT_0D,
-    /// How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true
+    /// How to build the regularisations. Needed when `make_cubic_spline_regularisations` is true.
     /// Optional in the settings: unset when it is left out
     pub regularisation_builder: EquilibriumCodeParametersParsedRegularisationBuilder,
 }
@@ -2327,26 +2327,26 @@ impl Default for EquilibriumCodeParametersParsedTensionedCubicBSpline {
     }
 }
 
-/// How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free)
+/// How to build the regularisations of a tensioned cubic B-spline, by `make_tensioned_cubic_b_spline_regularisations` in python/gsfit/tensioned_cubic_splines_regularisations.py. The rows are the left boundary's (unless free), then one per knot, then the right boundary's (unless free).
 /// Generated from the XML schema type `RegularisationBuilder`, in `python/gsfit/settings_schema/xsd/equilibrium/source_function_p_prime.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedRegularisationBuilder {
-    /// Multiplies the rows which regularise the bulk of the profile
+    /// Multiplies the rows which regularise the bulk of the profile.
     /// Units: dimensionless
     pub regularisation_scale: FLT_0D,
-    /// How the bulk of the profile is regularised
+    /// How the bulk of the profile is regularised.
     /// One of: "second_derivative_zero"
     pub regularisation_mode: STR_0D,
-    /// The boundary condition at psi_n = 0, the magnetic axis
+    /// The boundary condition at psi_n = 0, the magnetic axis.
     /// One of: "free", "dirichlet", "neumann"
     pub left_boundary_condition: STR_0D,
-    /// Weight of the boundary condition at psi_n = 0. Not used when it is free
+    /// Weight of the boundary condition at psi_n = 0. Not used when it is free.
     /// Units: dimensionless
     pub left_boundary_weight: FLT_0D,
-    /// The boundary condition at psi_n = 1, the plasma boundary
+    /// The boundary condition at psi_n = 1, the plasma boundary.
     /// One of: "free", "dirichlet", "neumann"
     pub right_boundary_condition: STR_0D,
-    /// Weight of the boundary condition at psi_n = 1. Not used when it is free
+    /// Weight of the boundary condition at psi_n = 1. Not used when it is free.
     /// Units: dimensionless
     pub right_boundary_weight: FLT_0D,
 }
@@ -2364,44 +2364,44 @@ impl Default for EquilibriumCodeParametersParsedRegularisationBuilder {
     }
 }
 
-/// The ff' source function: ff' = f df/dpsi, with f = R B_phi, is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted
+/// The ff' source function: ff' = f df/dpsi, with f = R B_phi, is a sum of basis functions of psi_n, whose coefficients, the degrees of freedom, are fitted.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/source_function_ff_prime.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedSourceFunctionFfPrime {
-    /// The basis functions to use. Their settings are in the element of the same name, below
+    /// The basis functions to use. Their settings are in the element of the same name, below.
     /// One of: "efit_polynomial", "tensioned_cubic_b_spline"
     pub method: STR_0D,
-    /// Settings for EFIT's polynomials
+    /// Settings for EFIT's polynomials.
     /// Optional in the settings: unset when it is left out
     pub efit_polynomial: EquilibriumCodeParametersParsedEfitPolynomial,
-    /// Settings for the tensioned cubic B-splines
+    /// Settings for the tensioned cubic B-splines.
     /// Optional in the settings: unset when it is left out
     pub tensioned_cubic_b_spline: EquilibriumCodeParametersParsedTensionedCubicBSpline,
 }
 
-/// The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it
+/// The degrees of freedom of the currents in the passive structures, and their regularisation, one `passive` per structure. At present only the IVC's n_dof, regularisations and regularisations_weight are read, by the ST40 readers (and its n_dof by the rtgsfit_mdsplus writer); everything else is set in the code. The FreeGS and FreeGSNKE readers read none of it.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedPfPassiveDof {
-    /// One passive structure
+    /// One passive structure.
     /// Optional in the settings: unset when it is left out
     pub passive: Vec<EquilibriumCodeParametersParsedPassive>,
 }
 
-/// The degrees of freedom of one passive structure's current, and their regularisation
+/// The degrees of freedom of one passive structure's current, and their regularisation.
 /// Generated from the XML schema type `Passive`, in `python/gsfit/settings_schema/xsd/equilibrium/pf_passive_dof.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedPassive {
-    /// The passive's name in the database, e.g. "IVC"
+    /// The passive's name in the database, e.g. "IVC".
     pub name: STR_0D,
-    /// How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code
+    /// How the current is distributed over the passive's filaments. Not read at present: the readers set it in the code.
     /// One of: "constant_current_density", "eig"
     pub current_distribution_type: STR_0D,
-    /// Whether the passive is included. Not read at present
+    /// Whether the passive is included. Not read at present.
     pub include: INT_0D,
-    /// Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig
+    /// Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig.
     pub n_dof: INT_0D,
-    /// The regularisations, one `row` of n_dof coefficients each; no rows for none
+    /// The regularisations, one `row` of n_dof coefficients each; no rows for none.
     /// Shape [n_rows, n_columns], one row per `row` element
     pub regularisations: FLT_2D,
     /// The weight of each regularisation in the least-squares fit, as a space-separated list with one value per `row` of `regularisations`, in the same order.
@@ -2422,7 +2422,7 @@ impl Default for EquilibriumCodeParametersParsedPassive {
     }
 }
 
-/// The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`
+/// The constraints, named as in the IMAS Data Dictionary. Each links to a file whose root element is the link's path with `__` for `/`, e.g. `constraints__flux_loop`.
 /// Generated from the XML schema type `EquilibriumConstraints`, in `python/gsfit/settings_schema/xsd/equilibrium/equilibrium.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedEquilibriumConstraints {
@@ -2606,29 +2606,29 @@ impl Default for EquilibriumCodeParametersParsedDiamagneticFlux {
     }
 }
 
-/// The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty
+/// The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsIsoflux {
-    /// One isoflux constraint
+    /// One isoflux constraint.
     /// Optional in the settings: unset when it is left out
     pub isoflux: Vec<EquilibriumCodeParametersParsedIsoflux>,
 }
 
-/// One isoflux constraint
+/// One isoflux constraint.
 /// Generated from the XML schema type `Isoflux`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_isoflux.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedIsoflux {
-    /// The constraint's name
+    /// The constraint's name.
     pub name: STR_0D,
-    /// The typical size of the flux difference between the two points. The fit divides the residual by it
+    /// The typical size of the flux difference between the two points. The fit divides the residual by it.
     pub expected_value: FLT_0D,
-    /// Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value
+    /// Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value.
     /// Units: dimensionless
     pub weight: FLT_0D,
-    /// Whether the constraint is fitted
+    /// Whether the constraint is fitted.
     pub include: INT_0D,
-    /// Free text, e.g. why the constraint is not included; not used by the fit
+    /// Free text, e.g. why the constraint is not included; not used by the fit.
     pub comment: STR_0D,
 }
 
@@ -2644,38 +2644,38 @@ impl Default for EquilibriumCodeParametersParsedIsoflux {
     }
 }
 
-/// Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this
+/// Whether pressure is fitted, and how the pressure constraints are made. Only the st40_mdsplus_with_digital_filter and freegsnke readers fit pressure; the other readers read none of this.
 /// Generated from the XML schema `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumCodeParametersParsedEquilibriumConstraintsPressure {
-    /// Whether pressure is fitted, and how the pressure constraints are made
+    /// Whether pressure is fitted, and how the pressure constraints are made.
     pub pressure: EquilibriumCodeParametersParsedPressure,
 }
 
-/// Whether pressure is fitted, and how the pressure constraints are made
+/// Whether pressure is fitted, and how the pressure constraints are made.
 /// Generated from the XML schema type `Pressure`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedPressure {
-    /// Whether to fit pressure. When false, nothing else in this file is read
+    /// Whether to fit pressure. When false, nothing else in this file is read.
     pub include: INT_0D,
-    /// The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true
+    /// The pressure constraints are named this followed by a two-digit number, e.g. PRESSURE01. Needed when `include` is true.
     /// Optional in the settings: unset when it is left out
     pub sensor_name_prefix: STR_0D,
-    /// The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead
+    /// The typical size of the measured pressure. The fit divides the residual by it. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true; the freegsnke reader uses each channel's largest measurement instead.
     /// Optional in the settings: unset when it is left out
     /// Units: pascal
     pub expected_value: FLT_0D,
-    /// Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true
+    /// Relative weight of each pressure constraint in the fit. Its least-squares weight is weight / expected_value. Needed when `include` is true.
     /// Optional in the settings: unset when it is left out
     /// Units: dimensionless
     pub weight: FLT_0D,
-    /// Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true
+    /// Free text, given to every pressure constraint; not used by the fit. Needed when `include` is true.
     /// Optional in the settings: unset when it is left out
     pub comment: STR_0D,
-    /// Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true
+    /// Pressure constraints from ST40's Thomson scattering. Needed by the st40_mdsplus_with_digital_filter reader when `include` is true.
     /// Optional in the settings: unset when it is left out
     pub thomson_scattering: EquilibriumCodeParametersParsedPressureThomsonScattering,
-    /// Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true
+    /// Synthetic pressure constraints from the FreeGSNKE equilibria. Needed by the freegsnke reader when `include` is true.
     /// Optional in the settings: unset when it is left out
     pub synthetic: EquilibriumCodeParametersParsedSynthetic,
 }
@@ -2694,14 +2694,14 @@ impl Default for EquilibriumCodeParametersParsedPressure {
     }
 }
 
-/// Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader
+/// Pressure constraints from ST40's Thomson scattering, one per channel, on the good time-slices. The PPTS and TS runs read are `ppts` and `ts` in thomson_scattering.xml. Read by the st40_mdsplus_with_digital_filter reader.
 /// Generated from the XML schema type `PressureThomsonScattering`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedPressureThomsonScattering {
-    /// Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature
+    /// Multiplies the measured electron pressure, to estimate the total pressure; 2 when the ions have the electrons' density and temperature.
     /// Units: dimensionless
     pub pressure_multiplier: FLT_0D,
-    /// Total pressures at or below this are ignored. A channel with none above it gets no constraint
+    /// Total pressures at or below this are ignored. A channel with none above it gets no constraint.
     /// Units: pascal
     pub minimum_pressure: FLT_0D,
 }
@@ -2715,19 +2715,19 @@ impl Default for EquilibriumCodeParametersParsedPressureThomsonScattering {
     }
 }
 
-/// Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader
+/// Synthetic pressure constraints, from the pressure profile of the FreeGSNKE equilibria, along the midplane outboard of the magnetic axis. Read by the freegsnke reader.
 /// Generated from the XML schema type `Synthetic`, in `python/gsfit/settings_schema/xsd/equilibrium/constraints_pressure.xsd`
 #[derive(Debug, Clone)]
 pub struct EquilibriumCodeParametersParsedSynthetic {
-    /// Major radius of the first sensor, relative to the magnetic axis
+    /// Major radius of the first sensor, relative to the magnetic axis.
     /// Units: metre
     pub r_start: FLT_0D,
-    /// Major radius of the last sensor, relative to the magnetic axis
+    /// Major radius of the last sensor, relative to the magnetic axis.
     /// Units: metre
     pub r_end: FLT_0D,
-    /// Number of sensors, evenly spaced from r_start to r_end
+    /// Number of sensors, evenly spaced from r_start to r_end.
     pub n_sensors: INT_0D,
-    /// Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint
+    /// Pressures at or below this are ignored, e.g. those of sensors outside the plasma. A sensor with none above it gets no constraint.
     /// Units: pascal
     pub minimum_pressure: FLT_0D,
 }

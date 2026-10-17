@@ -32,7 +32,7 @@
     <xs:simpleType name="ZeroOrOne">
         <xs:annotation>
             <xs:documentation>
-                0 or 1
+                0 or 1.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:int">
@@ -44,7 +44,7 @@
     <xs:simpleType name="ZeroOrOneList">
         <xs:annotation>
             <xs:documentation>
-                An array of 0s and 1s, written as a space-separated list, e.g. "0 1 1 0"
+                An array of 0s and 1s, written as a space-separated list, e.g. "0 1 1 0".
             </xs:documentation>
         </xs:annotation>
         <xs:list itemType="ZeroOrOne"/>
@@ -55,7 +55,7 @@
     <xs:element name="rtgsfit_initial_conditions">
         <xs:annotation>
             <xs:documentation>
-                The equilibrium RTGSFit starts from. GSFit does not use it: the rtgsfit_mdsplus writer stores it under PRESHOT.INITIAL_COND for RTGSFit. Each array holds one value per point of the grid in grid.xml, flattened with R varying fastest: n_z rows of n_r values
+                The equilibrium RTGSFit starts from. GSFit does not use it: the rtgsfit_mdsplus writer stores it under PRESHOT.INITIAL_COND for RTGSFit. Each array holds one value per point of the grid in grid.xml, flattened with R varying fastest: n_z rows of n_r values.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -63,14 +63,14 @@
                 <xs:element name="description" type="xs:string">
                     <xs:annotation>
                         <xs:documentation>
-                            Where the equilibrium comes from, e.g. its pulse and time. Not stored
+                            Where the equilibrium comes from, e.g. its pulse and time. Not stored.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
                 <xs:element name="flux_norm" type="FiniteDoubleList">
                     <xs:annotation>
                         <xs:documentation>
-                            The normalised poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:FLUX_NORM
+                            The normalised poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:FLUX_NORM.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>dimensionless</units>
@@ -80,14 +80,14 @@
                 <xs:element name="mask" type="ZeroOrOneList">
                     <xs:annotation>
                         <xs:documentation>
-                            1 at the grid points inside the plasma and 0 elsewhere, stored as PRESHOT.INITIAL_COND:MASK
+                            1 at the grid points inside the plasma and 0 elsewhere, stored as PRESHOT.INITIAL_COND:MASK.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>
                 <xs:element name="psi_total" type="FiniteDoubleList">
                     <xs:annotation>
                         <xs:documentation>
-                            The poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:PSI_TOTAL
+                            The poloidal flux at each grid point, stored as PRESHOT.INITIAL_COND:PSI_TOTAL.
                         </xs:documentation>
                     </xs:annotation>
                 </xs:element>

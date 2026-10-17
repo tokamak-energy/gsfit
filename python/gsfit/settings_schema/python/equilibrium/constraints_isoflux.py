@@ -20,7 +20,7 @@ from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 @dataclass(kw_only=True)
 class ConstraintsIsoflux:
     """
-    The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty
+    The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty.
 
     :param isoflux: One isoflux constraint. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `isoflux[name]`
     """
@@ -34,13 +34,13 @@ class ConstraintsIsoflux:
 @dataclass(kw_only=True)
 class Isoflux:
     """
-    One isoflux constraint
+    One isoflux constraint.
 
-    :param name: The constraint's name
-    :param expected_value: The typical size of the flux difference between the two points. The fit divides the residual by it
-    :param weight: Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value [dimensionless]
-    :param include: Whether the constraint is fitted
-    :param comment: Free text, e.g. why the constraint is not included; not used by the fit
+    :param name: The constraint's name.
+    :param expected_value: The typical size of the flux difference between the two points. The fit divides the residual by it.
+    :param weight: Relative weight of the constraint in the fit. Its least-squares weight is weight / expected_value. [dimensionless]
+    :param include: Whether the constraint is fitted.
+    :param comment: Free text, e.g. why the constraint is not included; not used by the fit.
     """
 
     # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique

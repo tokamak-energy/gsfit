@@ -35,7 +35,7 @@
     <xs:element name="initial_guess">
         <xs:annotation>
             <xs:documentation>
-                The initial guess of the plasma current: an ellipse of current
+                The initial guess of the plasma current: an ellipse of current.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -43,7 +43,7 @@
                 <xs:element name="ip" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Plasma current
+                            Plasma current.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>ampere</units>
@@ -53,7 +53,7 @@
                 <xs:element name="cur_r" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Radial centre of the current
+                            Radial centre of the current.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>
@@ -63,7 +63,7 @@
                 <xs:element name="cur_z" type="FiniteDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Vertical centre of the current
+                            Vertical centre of the current.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>
@@ -73,7 +73,7 @@
                 <xs:element name="minor_radius" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Radial semi-axis of the current
+                            Radial semi-axis of the current.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>
@@ -83,7 +83,7 @@
                 <xs:element name="elongation" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Elongation of the current
+                            Elongation of the current.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>dimensionless</units>

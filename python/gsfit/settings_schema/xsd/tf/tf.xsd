@@ -17,7 +17,7 @@
     <xs:simpleType name="XmlPath">
         <xs:annotation>
             <xs:documentation>
-                Path of an XML file, relative to the file holding the link
+                Path of an XML file, relative to the file holding the link.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:anyURI">
@@ -28,13 +28,13 @@
     <xs:complexType name="Link">
         <xs:annotation>
             <xs:documentation>
-                A link to the file holding these settings
+                A link to the file holding these settings.
             </xs:documentation>
         </xs:annotation>
         <xs:attribute name="href" type="XmlPath" use="required">
             <xs:annotation>
                 <xs:documentation>
-                    Path of the linked file, relative to the file holding the link, e.g. "../workflow.xml"
+                    Path of the linked file, relative to the file holding the link, e.g. "../workflow.xml".
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
@@ -69,7 +69,7 @@
     <xs:element name="tf_settings">
         <xs:annotation>
             <xs:documentation>
-                How the database reader builds the tf IDS: the toroidal field. The st40_mdsplus_with_digital_filter reader reads its run from the workflow.xml linked in `workflow`
+                How the database reader builds the tf IDS: the toroidal field. The st40_mdsplus_with_digital_filter reader reads its run from the workflow.xml linked in `workflow`.
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -77,7 +77,7 @@
                 <xs:element name="vacuum_toroidal_field_reference_radius" type="FinitePositiveDouble">
                     <xs:annotation>
                         <xs:documentation>
-                            Reference major radius at which the vacuum toroidal field is quoted, for every reader. Sets `tf/r0`, which is copied to equilibrium/vacuum_toroidal_field/r0. Must be greater than 0, which `Tf::set_r0` checks too
+                            Reference major radius at which the vacuum toroidal field is quoted, for every reader. Sets `tf/r0`, which is copied to equilibrium/vacuum_toroidal_field/r0. Must be greater than 0, which `Tf::set_r0` checks too.
                         </xs:documentation>
                         <xs:appinfo>
                             <units>metre</units>
@@ -87,7 +87,7 @@
                 <xs:element name="workflow" type="Link" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>
-                            A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the current in the TF rod from its PSU2COIL tree, TF.I_ROD
+                            A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the current in the TF rod from its PSU2COIL tree, TF.I_ROD.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>../workflow.xsd</schema>

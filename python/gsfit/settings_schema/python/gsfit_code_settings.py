@@ -35,11 +35,11 @@ class GsfitCodeSettings:
     GSFit's settings. This file holds no settings itself; instead it links to different *.xml's.
 
     :param database_reader: The Python `database_reader` to use for the whole run.
-    :param database_writer: List of Python `database_writer` to write to after the run completes.
+    :param database_writer: List of Python `database_writer`'s to call after the run completes.
     :param ids: Settings needed to build IDSs.
-    :param rtgsfit_code_settings: RTGSFit's own settings, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer
-    :param rtgsfit_initial_conditions: The equilibrium RTGSFit starts from, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer
-    :param sensor_replacement: The constraints which RTGSFit makes from other sensors. Optional, and only read by the rtgsfit_mdsplus writer
+    :param rtgsfit_code_settings: RTGSFit's own settings, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer.
+    :param rtgsfit_initial_conditions: The equilibrium RTGSFit starts from, which the rtgsfit_mdsplus writer stores for it. Only needed with the rtgsfit_mdsplus writer.
+    :param sensor_replacement: The constraints which RTGSFit makes from other sensors. Optional, and only read by the rtgsfit_mdsplus writer.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`

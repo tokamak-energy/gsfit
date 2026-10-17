@@ -20,9 +20,9 @@ from ..workflow import Workflow
 @dataclass(kw_only=True)
 class WallSettings:
     """
-    How the database reader builds the wall IDS: the limiter, which the plasma must stay inside. The st40_mdsplus_with_digital_filter reader reads its run from the workflow.xml linked in `workflow`
+    How the database reader builds the wall IDS: the limiter, which the plasma must stay inside. The st40_mdsplus_with_digital_filter reader reads its run from the workflow.xml linked in `workflow`.
 
-    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the limiter from its ELMAG tree, LIMITER.LIMIT_PTS
+    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the limiter from its ELMAG tree, LIMITER.LIMIT_PTS.
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
