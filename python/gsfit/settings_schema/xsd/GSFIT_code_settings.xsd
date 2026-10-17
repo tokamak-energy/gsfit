@@ -213,7 +213,7 @@
                 <xs:element name="database_writer" type="Link">
                     <xs:annotation>
                         <xs:documentation>
-                            List of Python `database_writer` to write to after the run completes.
+                            List of Python `database_writer`'s to call after the run completes.
                         </xs:documentation>
                         <xs:appinfo>
                             <schema>database_writer.xsd</schema>

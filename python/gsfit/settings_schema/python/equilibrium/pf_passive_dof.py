@@ -49,7 +49,7 @@ class Passive:
     :param include: Whether the passive is included. Not read at present
     :param n_dof: Number of degrees of freedom of the passive's current: 1 for constant_current_density, the number of eigenmodes for eig
     :param regularisations: The regularisations, one `row` of n_dof coefficients each; no rows for none
-    :param regularisations_weight: The weight of each regularisation in the fit: one per `row` of `regularisations` [dimensionless]
+    :param regularisations_weight: The weight of each regularisation in the least-squares fit, as a space-separated list with one value per `row` of `regularisations`, in the same order. [dimensionless]
     """
 
     # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique

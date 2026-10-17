@@ -1537,7 +1537,7 @@ Shape [n_rows, n_columns], one row per `row` element
         """
     @property
     def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
-        """The weight of each regularisation in the fit: one per `row` of `regularisations`
+        """The weight of each regularisation in the least-squares fit, as a space-separated list with one value per `row` of `regularisations`, in the same order.
 
         Units: dimensionless
         """
@@ -1571,7 +1571,7 @@ Shape [n_rows, n_columns], one row per `row` element
         """
     @property
     def regularisations_weight(self) -> Path[npt.NDArray[np.float64]]:
-        """The weight of each regularisation in the fit: one per `row` of `regularisations`
+        """The weight of each regularisation in the least-squares fit, as a space-separated list with one value per `row` of `regularisations`, in the same order.
 
         Units: dimensionless
         """

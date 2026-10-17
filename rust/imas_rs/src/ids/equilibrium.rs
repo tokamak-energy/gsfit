@@ -2404,7 +2404,7 @@ pub struct EquilibriumCodeParametersParsedPassive {
     /// The regularisations, one `row` of n_dof coefficients each; no rows for none
     /// Shape [n_rows, n_columns], one row per `row` element
     pub regularisations: FLT_2D,
-    /// The weight of each regularisation in the fit: one per `row` of `regularisations`
+    /// The weight of each regularisation in the least-squares fit, as a space-separated list with one value per `row` of `regularisations`, in the same order.
     /// Units: dimensionless
     pub regularisations_weight: FLT_1D,
 }

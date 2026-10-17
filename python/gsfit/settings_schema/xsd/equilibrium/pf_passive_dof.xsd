@@ -161,7 +161,7 @@
             <xs:element name="regularisations_weight" type="FiniteNonNegativeDoubleList">
                 <xs:annotation>
                     <xs:documentation>
-                        The weight of each regularisation in the fit: one per `row` of `regularisations`
+                        The weight of each regularisation in the least-squares fit, as a space-separated list with one value per `row` of `regularisations`, in the same order.
                     </xs:documentation>
                     <xs:appinfo>
                         <units>dimensionless</units>

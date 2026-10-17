@@ -12972,7 +12972,7 @@ Shape [n_rows, n_columns], one row per `row` element",
     },
     Node {
         name: "regularisations_weight",
-        documentation: "The weight of each regularisation in the fit: one per `row` of `regularisations`",
+        documentation: "The weight of each regularisation in the least-squares fit, as a space-separated list with one value per `row` of `regularisations`, in the same order.",
         units: "dimensionless",
         kind: NodeKind::Leaf(Leaf {
             data_type: "FLT_1D",
