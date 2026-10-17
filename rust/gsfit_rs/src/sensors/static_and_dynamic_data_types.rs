@@ -14,6 +14,7 @@ use ndarray::{Array1, Array2};
 /// but the fixed ones are stored once instead of 480 times — for ST40's magnetics that is about
 /// 29 MB in place of 13.7 GB.
 pub struct SensorsStatic {
+    pub names: Vec<String>,                       // shape = [n_sensors]; the name of each sensor, in the order of the columns below
     pub greens_with_grid: Array2<f64>,            // shape = [n_z * n_r, n_sensors]
     pub greens_with_pf: Array2<f64>,              // shape = [n_pf, n_sensors]
     pub greens_with_passives: Array2<f64>,        // shape = [n_dof_total, n_sensors]
@@ -32,6 +33,7 @@ pub struct SensorsDynamic {
 // Define empty data arrays
 pub fn create_empty_sensor_data() -> (SensorsStatic, SensorsDynamic) {
     let results_static_empty: SensorsStatic = SensorsStatic {
+        names: Vec::new(),
         greens_with_grid: Array2::zeros((0, 0)),       // TODO: should be: shape = [n_z * n_r, 0]
         greens_with_pf: Array2::zeros((0, 0)),         // TODO: should be: shape = [n_pf, 0]
         greens_with_passives: Array2::zeros((0, 0)),   // TODO: should be: shape = [n_dof_total, 0]

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 from diagnostic_and_simulation_base.xml_reader_and_writer import serialise_python_dataclass_to_imas_parameters_input
 from gsfit_rs import Tf
 from scipy.constants import mu_0
@@ -43,10 +44,10 @@ def setup_tf(
 
     # The PSU2COIL run to read, from the `workflow.xml` which `tf.xml` links to
     workflow = settings.workflow
-    if workflow is None or workflow.psu2coil is None:
-        raise ValueError("`tf.xml` must link to a `workflow.xml` holding `psu2coil`, which says which PSU2COIL run to read the TF rod's current from")
+    if workflow is None or "PSU2COIL" not in workflow.tree:
+        raise ValueError("`tf.xml` must link to a `workflow.xml` holding the PSU2COIL `tree`, which says which PSU2COIL run to read the TF rod's current from")
     # A nil `pulseNo` reads the pulse being reconstructed
-    psu2coil_settings = workflow.psu2coil
+    psu2coil_settings = workflow.tree["PSU2COIL"]
     if psu2coil_settings.pulseNo is None:
         psu2coil_pulseNo = pulseNo
     else:
@@ -57,7 +58,7 @@ def setup_tf(
     settings_xml = serialise_python_dataclass_to_imas_parameters_input(
         settings=TfSettings(
             vacuum_toroidal_field_reference_radius=vacuum_toroidal_field_reference_radius,
-            workflow=Workflow(psu2coil=psu2coil_settings),
+            workflow=Workflow(tree=KeyedList([psu2coil_settings])),
         ),
         xsd_directory_path=XSD_DIRECTORY_PATH,
     )

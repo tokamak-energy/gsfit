@@ -48,7 +48,7 @@ def serialise_python_dataclass_to_imas_parameters_input(settings: object, xsd_di
     with the linked file's XML schema merged in; see `_merge_linked_xml_schemas`.
     To record only the settings which were used, pass a copy holding only those, e.g. the wall settings of a database reader which reads only the ELMAG run:
         serialise_python_dataclass_to_imas_parameters_input(
-            settings=WallSettings(workflow=Workflow(elmag=wall_settings.workflow.elmag)),
+            settings=WallSettings(workflow=Workflow(tree=KeyedList([wall_settings.workflow.tree["ELMAG"]]))),
             xsd_directory_path=XSD_DIRECTORY_PATH,
         )
 
@@ -104,7 +104,7 @@ def _merge_linked_xml_schemas(xsd_file_path: Path) -> str:
     A link is an element which names the XML schema of the file it links to in `<xs:appinfo><schema>`, relative to the XML schema holding the link,
     e.g. `<xs:element name="workflow" type="Link">` holding `<schema>../workflow.xsd</schema>`, in `pf_active/pf_active.xsd`.
     It is merged by giving it the type of the linked XML schema's root element in place of `Link`, e.g. `<workflow>` holding the codes,
-    and adding the linked XML schema's named types to this one's, e.g. `WorkflowEntry`. The link keeps its own name and documentation.
+    and adding the linked XML schema's named types to this one's, e.g. `WorkflowTree`. The link keeps its own name and documentation.
     Each linked XML schema has its own links merged in first, so the links are merged however deep they go.
     So the result is the XML schema of the XML file with each linked file written in its link's place, as `serialise_python_dataclass_to_imas_parameters_input`
     writes the settings.
@@ -160,7 +160,7 @@ def _merge_linked_xml_schemas(xsd_file_path: Path) -> str:
         if len(appinfo_element) == 0:
             annotation_element.remove(appinfo_element)
 
-        # The linked XML schema's named types join this one's, after its own, e.g. `WorkflowEntry`.
+        # The linked XML schema's named types join this one's, after its own, e.g. `WorkflowTree`.
         # Complex and simple types share one set of names, so a type is looked for by its name alone
         n_components: int = len(schema_root)
         i_insert: int = 0
@@ -232,9 +232,9 @@ def dataclass_to_element(
     * any other value is written as text, by the XML schema type of its element, e.g. `False` -> "false" or `[0.1, 0.2]` -> "0.1 0.2",
       which also checks it against that type, e.g. that a `PositiveDouble` is greater than 0
 
-    :param settings: Dataclass of the element, e.g. `WallSt40Mdsplus`
+    :param settings: Dataclass of the element, e.g. `WorkflowTree`
     :param xsd_element: The element, as declared in the XML schema
-    :param element_path: Path of the element, e.g. "/wall_settings/st40_mdsplus_with_digital_filter", for the messages
+    :param element_path: Path of the element, e.g. "/workflow/tree", for the messages
     :param write_linked_file: Writes a linked file, given the dataclass of its root element and the path of the link's element, e.g. "/equilibrium_settings/grid",
         and returns the linked file's path relative to the XML file being written, for the link's `href`, e.g. "grid.xml".
         None to write each linked file in its link's place

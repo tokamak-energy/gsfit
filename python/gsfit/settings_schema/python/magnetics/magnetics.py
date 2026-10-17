@@ -20,100 +20,12 @@ from ..workflow import Workflow
 @dataclass(kw_only=True)
 class MagneticsSettings:
     """
-    How the database reader builds the magnetics IDS: the geometry and measurements of the magnetic sensors. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`; the other readers read only the element named after them
+    How the database reader builds the magnetics IDS: the geometry and measurements of the magnetic sensors. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`
 
-    :param workflow: A link to workflow.xml, the central list of the codes which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the poloidal field probes, flux loops and Rogowski coils, and the diamagnetic loop's geometry, from its `mag`, and the diamagnetic flux from its `dialoop`, GLOBAL.PHI_DIA
-    :param st40_mdsplus: Where the st40_mdsplus reader reads the magnetic sensors from
-    :param st40_astra_mdsplus: Where the st40_astra_mdsplus reader reads the magnetic sensors from
-    :param st40_spider_mdsplus: Where the st40_spider_mdsplus reader reads the magnetic sensors from
-    :param mock_st40_mdsplus: Where the mock_st40_mdsplus reader reads the magnetic sensors from
+    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the poloidal field probes, flux loops and Rogowski coils, and the diamagnetic loop's geometry, from its MAG tree, and the diamagnetic flux from its DIALOOP tree, GLOBAL.PHI_DIA
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "magnetics/magnetics.xsd"
 
     workflow: Workflow | None = None
-    st40_mdsplus: MagneticsSt40Mdsplus | None = None
-    st40_astra_mdsplus: MagneticsSt40AstraMdsplus | None = None
-    st40_spider_mdsplus: MagneticsSt40SpiderMdsplus | None = None
-    mock_st40_mdsplus: MagneticsMockSt40Mdsplus | None = None
-
-
-@dataclass(kw_only=True)
-class MagneticsSt40Mdsplus:
-    """
-    Where the st40_mdsplus reader reads the magnetic sensors from
-
-    :param mag: The MAG run holding the geometry and measurements of the poloidal field probes, flux loops and Rogowski coils, and the geometry of the diamagnetic loop
-    :param dialoop: The DIALOOP run holding the diamagnetic flux measurement, GLOBAL.PHI_DIA
-    """
-
-    mag: WorkflowEntry
-    dialoop: WorkflowEntry
-
-
-@dataclass(kw_only=True)
-class WorkflowEntry:
-    """
-    Which run of an MDSplus tree to read. The tree is named by the element holding this, e.g. `elmag` for ELMAG
-
-    :param pulseNo: The pulse to read the tree from; nil for the pulse being reconstructed
-    :param run_name: The run of the tree to read, e.g. "BEST" or "RUN16"
-    :param usage: What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from
-    """
-
-    pulseNo: int | None
-    run_name: str
-    usage: str
-
-
-@dataclass(kw_only=True)
-class MagneticsSt40AstraMdsplus:
-    """
-    Where the st40_astra_mdsplus reader reads the magnetic sensors from. Their geometry is read from pf_probe.dat, fl_loop.dat and rogpath.dat, in python/gsfit/database_readers/st40_astra_mdsplus/
-
-    :param astra: The ASTRA run holding the synthetic measurements of the poloidal field probes, flux loops and Rogowski coils
-    """
-
-    astra: WorkflowEntry
-
-
-@dataclass(kw_only=True)
-class MagneticsSt40SpiderMdsplus:
-    """
-    Where the st40_spider_mdsplus reader reads the magnetic sensors from
-
-    :param spider: The SPIDER run holding the synthetic measurements of the poloidal field probes, flux loops and Rogowski coils
-    """
-
-    spider: WorkflowEntry
-
-
-@dataclass(kw_only=True)
-class MagneticsMockSt40Mdsplus:
-    """
-    Where the mock_st40_mdsplus reader reads the magnetic sensors from
-
-    :param mag: The mocked MAG tree holding the geometry and measurements of the poloidal field probes, flux loops and Rogowski coils
-    :param rog_gaps: The mocked MAG tree holding the gaps of the Rogowski coil INIVC000, the only one with gaps. Needed when the mocked MAG tree holds INIVC000
-    """
-
-    mag: MockWorkflowEntry
-    rog_gaps: MockWorkflowEntry | None = None
-
-
-@dataclass(kw_only=True)
-class MockWorkflowEntry:
-    """
-    Which mocked MDSplus tree, pulse and run to read. The read is named by the element holding this, e.g. `elmag`. Reads are named separately from trees, so that one tree can be read more than once, e.g. from a different pulse
-
-    :param tree_name: The mocked MDSplus tree, e.g. "ELMAG" or "MAG". Its data is read from `mdsplus_mock_[tree_name]_[pulseNo].npz` in `mock_dir`, in database_reader.xml, with the tree name in lower case
-    :param pulseNo: The pulse to read the tree from; nil for the pulse being reconstructed
-    :param run_name: The run to read, which must be the run the mock was captured from, e.g. "BEST" or "RUN16"
-    :param usage: What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from
-    """
-
-    tree_name: str
-    pulseNo: int | None
-    run_name: str
-    usage: str

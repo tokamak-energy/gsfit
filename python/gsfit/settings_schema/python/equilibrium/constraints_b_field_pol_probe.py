@@ -14,6 +14,8 @@ import typing
 from dataclasses import dataclass
 from dataclasses import field
 
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
+
 
 @dataclass(kw_only=True)
 class ConstraintsBFieldPolProbe:
@@ -21,13 +23,13 @@ class ConstraintsBFieldPolProbe:
     Fitting settings for the poloidal magnetic field probes (Mirnov coils), with one `b_field_pol_probe` element per probe.
     A probe read by the `database_reader` which is not listed here is not included in the fit.
 
-    :param b_field_pol_probe: Fitting settings for one probe.
+    :param b_field_pol_probe: Fitting settings for one probe. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `b_field_pol_probe[name]`
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "equilibrium/constraints_b_field_pol_probe.xsd"
 
-    b_field_pol_probe: list[BFieldPolProbe] = field(default_factory=list)
+    b_field_pol_probe: KeyedList[BFieldPolProbe] = field(default_factory=KeyedList)
 
 
 @dataclass(kw_only=True)
@@ -39,6 +41,9 @@ class BFieldPolProbe:
     :param include: Whether to include the probe in the fit.
     :param weight: Relative weight of the probe in the fit. [dimensionless]
     """
+
+    # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique
+    KEY: typing.ClassVar[str] = "name"
 
     name: str
     comment: str

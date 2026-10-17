@@ -580,6 +580,9 @@ pub struct EquilibriumConstraints0dB0Like {
     pub reconstructed: FLT_0D,
     /// Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
     pub chi_squared: FLT_0D,
+    /// Name of the method the diamagnetic flux is calculated with, matching `magnetics/diamagnetic_flux(0)/method_name`,
+    /// e.g. `"DIALOOP"`
+    pub name: STR_0D,
 }
 
 impl Default for EquilibriumConstraints0dB0Like {
@@ -593,6 +596,7 @@ impl Default for EquilibriumConstraints0dB0Like {
             sigma: f64::NAN,
             reconstructed: f64::NAN,
             chi_squared: f64::NAN,
+            name: String::new(),
         }
     }
 }
@@ -620,8 +624,9 @@ pub struct EquilibriumConstraints0dIpLike {
     pub reconstructed: FLT_0D,
     /// Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
     pub chi_squared: FLT_0D,
-    /// Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name`
-    /// for `constraints/pf_current(i1)`
+    /// Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for
+    /// `constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
+    /// `magnetics/ip(0)/method_name` for `constraints/ip`
     pub name: STR_0D,
 }
 
@@ -664,6 +669,8 @@ pub struct EquilibriumConstraints0dOneLike {
     pub reconstructed: FLT_0D,
     /// Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
     pub chi_squared: FLT_0D,
+    /// Name of the poloidal field probe, matching `magnetics/b_field_pol_probe(i1)/name`, e.g. `"P101"`
+    pub name: STR_0D,
 }
 
 impl Default for EquilibriumConstraints0dOneLike {
@@ -677,6 +684,7 @@ impl Default for EquilibriumConstraints0dOneLike {
             sigma: f64::NAN,
             reconstructed: f64::NAN,
             chi_squared: f64::NAN,
+            name: String::new(),
         }
     }
 }
@@ -705,7 +713,7 @@ pub struct EquilibriumConstraints0d {
     /// Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
     pub chi_squared: FLT_0D,
     /// Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-    /// `constraints/pf_passive_current(i1)`
+    /// `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`
     pub name: STR_0D,
     /// The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order
     pub dof: Vec<EquilibriumConstraints0dDof>,
@@ -812,6 +820,9 @@ pub struct EquilibriumConstraints {
     pub freedom_degrees_n: INT_0D,
     /// Number of constraints used (i.e. having a non-zero weight)
     pub constraints_n: INT_0D,
+    /// Set of Rogowski coils, in the same order as `magnetics/rogowski_coil`. The data dictionary has no constraint for them
+    /// Units: A
+    pub rogowski_coil: Vec<EquilibriumConstraints0dIpLike>,
 }
 
 impl Default for EquilibriumConstraints {
@@ -839,6 +850,7 @@ impl Default for EquilibriumConstraints {
             chi_squared_reduced: f64::NAN,
             freedom_degrees_n: EMPTY_INT,
             constraints_n: EMPTY_INT,
+            rogowski_coil: Vec::new(),
         }
     }
 }
@@ -1902,44 +1914,78 @@ pub struct EquilibriumSourceFunction {
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
 #[derive(Debug, Clone, Default)]
 pub struct EquilibriumGreens {
-    /// Active poloidal field coils, one entry per coil
-    pub pf_active: Vec<EquilibriumGreensPfActive>,
-    /// Passive conductors, one entry per conductor. Each carries its own degrees of freedom,
-    /// because a passive is represented by a set of current distributions (e.g. eigenmodes)
-    /// rather than by a single current
-    pub pf_passive: Vec<EquilibriumGreensPfPassive>,
-    /// The plasma grid onto itself: the flux at each grid point due to a unit current at each
-    /// other grid point. Toroidal symmetry makes this a function of the vertical *offset* between
-    /// the two points, not of their absolute heights, which is why only one vertical index is
-    /// stored
-    pub grid_grid: EquilibriumGreensGridGrid,
+    /// Observer: the (R, Z) grid
+    pub grid: EquilibriumGreensGrid,
+    /// Observer: each poloidal field probe, in the order of `magnetics/b_field_pol_probe`
+    pub b_field_pol_probe: Vec<EquilibriumGreensBFieldPolProbe>,
+    /// Observer: each flux loop, in the order of `magnetics/flux_loop`
+    pub flux_loop: Vec<EquilibriumGreensFluxLoop>,
+    /// Observer: each Rogowski coil, in the order of `magnetics/rogowski_coil`
+    pub rogowski_coil: Vec<EquilibriumGreensRogowskiCoil>,
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
 #[derive(Debug, Clone, Default)]
-pub struct EquilibriumGreensPfActive {
-    /// Name of the coil, e.g. `"BVL"`
+pub struct EquilibriumGreensGrid {
+    /// Source: the plasma current in each grid cell
+    pub plasma: EquilibriumGreensGridPlasma,
+    /// Source: each PF coil, in the order of `pf_active/coil`. Every sensor's `pf_active` is in this order too
+    pub pf_active: Vec<EquilibriumGreensGridPfActive>,
+    /// Source: each passive conductor, in the order of `pf_passive/loop`, with its degrees of freedom. Every sensor's
+    /// `pf_passive`, and `time_slice(itime)/passive_dof_values`, are in this order too
+    pub pf_passive: Vec<EquilibriumGreensGridPfPassive>,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumGreensGridPlasma {
+    /// Poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1
+    pub psi: FLT_3D,
+    /// Radial derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_psi_d_r: FLT_3D,
+    /// Vertical derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_psi_d_z: FLT_3D,
+    /// Second radial derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_r2: FLT_3D,
+    /// Mixed second derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_r_d_z: FLT_3D,
+    /// Second vertical derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_z2: FLT_3D,
+    /// Third derivative of the poloidal flux, twice by r, once by z, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_r2_d_z: FLT_3D,
+    /// Third derivative of the poloidal flux, once by r, twice by z, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_r_d_z2: FLT_3D,
+    /// Third vertical derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_z3: FLT_3D,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumGreensGridPfActive {
+    /// Name of the coil, matching `pf_active/coil(i1)/name`, e.g. `"BVL"`
     pub name: STR_0D,
     /// Poloidal flux at every grid point, per ampere in the source.
     /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1
     pub psi: FLT_2D,
-    /// Radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z, n_r)`
-    /// Units: T.A^-1
-    pub br: FLT_2D,
-    /// Vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z, n_r)`
-    /// Units: T.A^-1
-    pub bz: FLT_2D,
-    /// Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z, n_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_br_d_z: FLT_2D,
-    /// Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z, n_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_bz_d_z: FLT_2D,
     /// Radial derivative of the poloidal flux at every grid point, per ampere in the source.
     /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-1
@@ -1976,127 +2022,123 @@ pub struct EquilibriumGreensPfActive {
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
 #[derive(Debug, Clone, Default)]
-pub struct EquilibriumGreensPfPassive {
-    /// Name of the passive conductor, e.g. `"IVC"`
+pub struct EquilibriumGreensGridPfPassive {
+    /// Name of the passive conductor, matching `pf_passive/loop(i1)/name`, e.g. `"IVC"`
     pub name: STR_0D,
-    /// Degrees of freedom of this conductor, one entry per current distribution
-    pub dof: Vec<EquilibriumGreensPfPassiveDof>,
+    /// Degrees of freedom of this conductor, one entry per current distribution, in the order of `pf_passive/loop(i1)/dof`
+    pub dof: Vec<EquilibriumGreensGridPfPassiveDof>,
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
 #[derive(Debug, Clone, Default)]
-pub struct EquilibriumGreensPfPassiveDof {
-    /// Name of the degree of freedom, e.g. `"EIG_01"`
+pub struct EquilibriumGreensGridPfPassiveDof {
+    /// Name of the degree of freedom, matching `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
     pub name: STR_0D,
     /// Poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1
-    pub psi: FLT_1D,
-    /// Radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: T.A^-1
-    pub br: FLT_1D,
-    /// Vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: T.A^-1
-    pub bz: FLT_1D,
-    /// Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_br_d_z: FLT_1D,
-    /// Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_bz_d_z: FLT_1D,
-    /// Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-1
-    pub d_psi_d_r: FLT_1D,
-    /// Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-1
-    pub d_psi_d_z: FLT_1D,
-    /// Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-2
-    pub d2_psi_d_r2: FLT_1D,
-    /// Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-2
-    pub d2_psi_d_r_d_z: FLT_1D,
-    /// Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-2
-    pub d2_psi_d_z2: FLT_1D,
-    /// Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-3
-    pub d3_psi_d_r2_d_z: FLT_1D,
-    /// Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-3
-    pub d3_psi_d_r_d_z2: FLT_1D,
-    /// Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-3
-    pub d3_psi_d_z3: FLT_1D,
-}
-
-/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-#[derive(Debug, Clone, Default)]
-pub struct EquilibriumGreensGridGrid {
-    /// Poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1
     pub psi: FLT_2D,
-    /// Radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-    /// Units: T.A^-1
-    pub br: FLT_2D,
-    /// Vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-    /// Units: T.A^-1
-    pub bz: FLT_2D,
-    /// Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_br_d_z: FLT_2D,
-    /// Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_bz_d_z: FLT_2D,
     /// Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-1
     pub d_psi_d_r: FLT_2D,
     /// Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-1
     pub d_psi_d_z: FLT_2D,
     /// Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-2
     pub d2_psi_d_r2: FLT_2D,
     /// Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-2
     pub d2_psi_d_r_d_z: FLT_2D,
     /// Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-2
     pub d2_psi_d_z2: FLT_2D,
     /// Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-3
     pub d3_psi_d_r2_d_z: FLT_2D,
     /// Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-3
     pub d3_psi_d_r_d_z2: FLT_2D,
     /// Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-3
     pub d3_psi_d_z3: FLT_2D,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumGreensBFieldPolProbe {
+    /// Name of the probe, matching `magnetics/b_field_pol_probe(i1)/name` and `time_slice(itime)/constraints/b_field_pol_probe(i1)/name`,
+    /// e.g. `"P101"`
+    pub name: STR_0D,
+    /// Source: the plasma current in each grid cell.
+    /// Shape = `(n_z, n_r)`
+    /// Units: T.A^-1
+    pub plasma: FLT_2D,
+    /// Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the probe's height, for the change
+    /// in the field with the vertical shift `time_slice(itime)/convergence/delta_z`.
+    /// Shape = `(n_z, n_r)`
+    /// Units: T.A^-1.m^-1
+    pub d_plasma_d_z: FLT_2D,
+    /// Source: each PF coil, in the order of `greens/grid/pf_active`
+    /// Units: T.A^-1
+    pub pf_active: FLT_1D,
+    /// Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
+    /// Units: T.A^-1
+    pub pf_passive: FLT_1D,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumGreensFluxLoop {
+    /// Name of the flux loop, matching `magnetics/flux_loop(i1)/name` and `time_slice(itime)/constraints/flux_loop(i1)/name`, e.g.
+    /// `"L001"`
+    pub name: STR_0D,
+    /// Source: the plasma current in each grid cell.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1
+    pub plasma: FLT_2D,
+    /// Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the loop's height, for the change
+    /// in the flux with the vertical shift `time_slice(itime)/convergence/delta_z`.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_plasma_d_z: FLT_2D,
+    /// Source: each PF coil, in the order of `greens/grid/pf_active`
+    /// Units: Wb.A^-1
+    pub pf_active: FLT_1D,
+    /// Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
+    /// Units: Wb.A^-1
+    pub pf_passive: FLT_1D,
+}
+
+/// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+#[derive(Debug, Clone, Default)]
+pub struct EquilibriumGreensRogowskiCoil {
+    /// Name of the Rogowski coil, matching `magnetics/rogowski_coil(i1)/name` and
+    /// `time_slice(itime)/constraints/rogowski_coil(i1)/name`, e.g. `"INIVC000"`
+    pub name: STR_0D,
+    /// Source: the plasma current in each grid cell.
+    /// Shape = `(n_z, n_r)`
+    /// Units: A.A^-1
+    pub plasma: FLT_2D,
+    /// Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the coil's height, for the change
+    /// in the current with the vertical shift `time_slice(itime)/convergence/delta_z`. Only the gaps contribute to it.
+    /// Shape = `(n_z, n_r)`
+    /// Units: A.A^-1.m^-1
+    pub d_plasma_d_z: FLT_2D,
+    /// Source: each PF coil, in the order of `greens/grid/pf_active`
+    /// Units: A.A^-1
+    pub pf_active: FLT_1D,
+    /// Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
+    /// Units: A.A^-1
+    pub pf_passive: FLT_1D,
 }
 
 /// Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
@@ -2145,7 +2187,7 @@ pub struct Equilibrium {
     /// Set of equilibria at various time slices
     pub time_slice: Vec<EquilibriumTimeSlice>,
     pub code: Code,
-    /// Greens tables: the poloidal flux and its derivatives per ampere in each current source
+    /// Greens tables: what each observer, the grid or a magnetic sensor, sees per ampere in each current source
     pub greens: EquilibriumGreens,
     /// The limiter: the immobile surfaces which bound the plasma. A copy of the `wall` IDS's
     /// `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and
@@ -2462,6 +2504,7 @@ pub struct EquilibriumConstraints0dOneLikeSliceView<'a, D> {
     pub sigma: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D, D>,
     pub reconstructed: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D, D>,
     pub chi_squared: Accumulator<'a, EquilibriumConstraints0dOneLike, FLT_0D, D>,
+    pub name: Accumulator<'a, EquilibriumConstraints0dOneLike, STR_0D, D>,
     slice_elements: Elements<'a, EquilibriumConstraints0dOneLike, D>,
 }
 
@@ -2476,6 +2519,7 @@ impl<'a, D: Dimension> EquilibriumConstraints0dOneLikeSliceView<'a, D> {
             sigma: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.sigma),
             reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.reconstructed),
             chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.chi_squared),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumConstraints0dOneLike| item.name.clone()),
             slice_elements: elements,
         }
     }
@@ -2511,6 +2555,12 @@ impl ArrayOfStructuresElement for EquilibriumConstraints0dOneLike {
         Self: 'a,
     {
         EquilibriumConstraints0dOneLikeSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumConstraints0dOneLike {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -4084,18 +4134,18 @@ impl ArrayOfStructuresElement for GenericGridDynamicSpaceDimensionObjectBoundary
     }
 }
 
-// --- EquilibriumGreensPfActive View Types ---
+// --- EquilibriumGreensBFieldPolProbe View Types ---
 
-/// View over multiple EquilibriumGreensPfActive with field accumulation
-pub struct EquilibriumGreensPfActiveSliceView<'a, D> {
-    pub name: Accumulator<'a, EquilibriumGreensPfActive, STR_0D, D>,
-    slice_elements: Elements<'a, EquilibriumGreensPfActive, D>,
+/// View over multiple EquilibriumGreensBFieldPolProbe with field accumulation
+pub struct EquilibriumGreensBFieldPolProbeSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumGreensBFieldPolProbe, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGreensBFieldPolProbe, D>,
 }
 
-impl<'a, D: Dimension> EquilibriumGreensPfActiveSliceView<'a, D> {
-    pub fn new(elements: Elements<'a, EquilibriumGreensPfActive, D>) -> Self {
+impl<'a, D: Dimension> EquilibriumGreensBFieldPolProbeSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGreensBFieldPolProbe, D>) -> Self {
         Self {
-            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensPfActive| item.name.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensBFieldPolProbe| item.name.clone()),
             slice_elements: elements,
         }
     }
@@ -4115,14 +4165,14 @@ impl<'a, D: Dimension> EquilibriumGreensPfActiveSliceView<'a, D> {
     }
 
     /// Every element, in path order: the first array of structures on the path varies slowest
-    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensPfActive> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensBFieldPolProbe> + '_ {
         self.slice_elements.iter()
     }
 }
 
-impl ArrayOfStructuresElement for EquilibriumGreensPfActive {
+impl ArrayOfStructuresElement for EquilibriumGreensBFieldPolProbe {
     type SliceView<'a, D>
-        = EquilibriumGreensPfActiveSliceView<'a, D>
+        = EquilibriumGreensBFieldPolProbeSliceView<'a, D>
     where
         Self: 'a;
 
@@ -4130,28 +4180,28 @@ impl ArrayOfStructuresElement for EquilibriumGreensPfActive {
     where
         Self: 'a,
     {
-        EquilibriumGreensPfActiveSliceView::new(elements)
+        EquilibriumGreensBFieldPolProbeSliceView::new(elements)
     }
 }
 
-impl Named for EquilibriumGreensPfActive {
+impl Named for EquilibriumGreensBFieldPolProbe {
     fn name(&self) -> &str {
         &self.name
     }
 }
 
-// --- EquilibriumGreensPfPassive View Types ---
+// --- EquilibriumGreensFluxLoop View Types ---
 
-/// View over multiple EquilibriumGreensPfPassive with field accumulation
-pub struct EquilibriumGreensPfPassiveSliceView<'a, D> {
-    pub name: Accumulator<'a, EquilibriumGreensPfPassive, STR_0D, D>,
-    slice_elements: Elements<'a, EquilibriumGreensPfPassive, D>,
+/// View over multiple EquilibriumGreensFluxLoop with field accumulation
+pub struct EquilibriumGreensFluxLoopSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumGreensFluxLoop, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGreensFluxLoop, D>,
 }
 
-impl<'a, D: Dimension> EquilibriumGreensPfPassiveSliceView<'a, D> {
-    pub fn new(elements: Elements<'a, EquilibriumGreensPfPassive, D>) -> Self {
+impl<'a, D: Dimension> EquilibriumGreensFluxLoopSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGreensFluxLoop, D>) -> Self {
         Self {
-            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensPfPassive| item.name.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensFluxLoop| item.name.clone()),
             slice_elements: elements,
         }
     }
@@ -4171,7 +4221,175 @@ impl<'a, D: Dimension> EquilibriumGreensPfPassiveSliceView<'a, D> {
     }
 
     /// Every element, in path order: the first array of structures on the path varies slowest
-    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensPfPassive> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensFluxLoop> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumGreensFluxLoop {
+    type SliceView<'a, D>
+        = EquilibriumGreensFluxLoopSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumGreensFluxLoopSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumGreensFluxLoop {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- EquilibriumGreensRogowskiCoil View Types ---
+
+/// View over multiple EquilibriumGreensRogowskiCoil with field accumulation
+pub struct EquilibriumGreensRogowskiCoilSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumGreensRogowskiCoil, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGreensRogowskiCoil, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumGreensRogowskiCoilSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGreensRogowskiCoil, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensRogowskiCoil| item.name.clone()),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensRogowskiCoil> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumGreensRogowskiCoil {
+    type SliceView<'a, D>
+        = EquilibriumGreensRogowskiCoilSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumGreensRogowskiCoilSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumGreensRogowskiCoil {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- EquilibriumGreensGridPfActive View Types ---
+
+/// View over multiple EquilibriumGreensGridPfActive with field accumulation
+pub struct EquilibriumGreensGridPfActiveSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumGreensGridPfActive, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGreensGridPfActive, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumGreensGridPfActiveSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGreensGridPfActive, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensGridPfActive| item.name.clone()),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensGridPfActive> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for EquilibriumGreensGridPfActive {
+    type SliceView<'a, D>
+        = EquilibriumGreensGridPfActiveSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        EquilibriumGreensGridPfActiveSliceView::new(elements)
+    }
+}
+
+impl Named for EquilibriumGreensGridPfActive {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// --- EquilibriumGreensGridPfPassive View Types ---
+
+/// View over multiple EquilibriumGreensGridPfPassive with field accumulation
+pub struct EquilibriumGreensGridPfPassiveSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumGreensGridPfPassive, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGreensGridPfPassive, D>,
+}
+
+impl<'a, D: Dimension> EquilibriumGreensGridPfPassiveSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGreensGridPfPassive, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensGridPfPassive| item.name.clone()),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensGridPfPassive> + '_ {
         self.slice_elements.iter()
     }
 
@@ -4182,14 +4400,14 @@ impl<'a, D: Dimension> EquilibriumGreensPfPassiveSliceView<'a, D> {
     /// # Panics
     /// If a range does not select the same number of elements under every element.
     /// If, under any element, no element or more than one has the name.
-    pub fn dof<S: Selection<'a, EquilibriumGreensPfPassiveDof>>(&self, selection: S) -> S::NestedOutput<D> {
-        selection.select_nested("dof", &self.slice_elements, |item: &EquilibriumGreensPfPassive| item.dof.as_slice())
+    pub fn dof<S: Selection<'a, EquilibriumGreensGridPfPassiveDof>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("dof", &self.slice_elements, |item: &EquilibriumGreensGridPfPassive| item.dof.as_slice())
     }
 }
 
-impl ArrayOfStructuresElement for EquilibriumGreensPfPassive {
+impl ArrayOfStructuresElement for EquilibriumGreensGridPfPassive {
     type SliceView<'a, D>
-        = EquilibriumGreensPfPassiveSliceView<'a, D>
+        = EquilibriumGreensGridPfPassiveSliceView<'a, D>
     where
         Self: 'a;
 
@@ -4197,28 +4415,28 @@ impl ArrayOfStructuresElement for EquilibriumGreensPfPassive {
     where
         Self: 'a,
     {
-        EquilibriumGreensPfPassiveSliceView::new(elements)
+        EquilibriumGreensGridPfPassiveSliceView::new(elements)
     }
 }
 
-impl Named for EquilibriumGreensPfPassive {
+impl Named for EquilibriumGreensGridPfPassive {
     fn name(&self) -> &str {
         &self.name
     }
 }
 
-// --- EquilibriumGreensPfPassiveDof View Types ---
+// --- EquilibriumGreensGridPfPassiveDof View Types ---
 
-/// View over multiple EquilibriumGreensPfPassiveDof with field accumulation
-pub struct EquilibriumGreensPfPassiveDofSliceView<'a, D> {
-    pub name: Accumulator<'a, EquilibriumGreensPfPassiveDof, STR_0D, D>,
-    slice_elements: Elements<'a, EquilibriumGreensPfPassiveDof, D>,
+/// View over multiple EquilibriumGreensGridPfPassiveDof with field accumulation
+pub struct EquilibriumGreensGridPfPassiveDofSliceView<'a, D> {
+    pub name: Accumulator<'a, EquilibriumGreensGridPfPassiveDof, STR_0D, D>,
+    slice_elements: Elements<'a, EquilibriumGreensGridPfPassiveDof, D>,
 }
 
-impl<'a, D: Dimension> EquilibriumGreensPfPassiveDofSliceView<'a, D> {
-    pub fn new(elements: Elements<'a, EquilibriumGreensPfPassiveDof, D>) -> Self {
+impl<'a, D: Dimension> EquilibriumGreensGridPfPassiveDofSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, EquilibriumGreensGridPfPassiveDof, D>) -> Self {
         Self {
-            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensPfPassiveDof| item.name.clone()),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumGreensGridPfPassiveDof| item.name.clone()),
             slice_elements: elements,
         }
     }
@@ -4238,14 +4456,14 @@ impl<'a, D: Dimension> EquilibriumGreensPfPassiveDofSliceView<'a, D> {
     }
 
     /// Every element, in path order: the first array of structures on the path varies slowest
-    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensPfPassiveDof> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &'a EquilibriumGreensGridPfPassiveDof> + '_ {
         self.slice_elements.iter()
     }
 }
 
-impl ArrayOfStructuresElement for EquilibriumGreensPfPassiveDof {
+impl ArrayOfStructuresElement for EquilibriumGreensGridPfPassiveDof {
     type SliceView<'a, D>
-        = EquilibriumGreensPfPassiveDofSliceView<'a, D>
+        = EquilibriumGreensGridPfPassiveDofSliceView<'a, D>
     where
         Self: 'a;
 
@@ -4253,11 +4471,11 @@ impl ArrayOfStructuresElement for EquilibriumGreensPfPassiveDof {
     where
         Self: 'a,
     {
-        EquilibriumGreensPfPassiveDofSliceView::new(elements)
+        EquilibriumGreensGridPfPassiveDofSliceView::new(elements)
     }
 }
 
-impl Named for EquilibriumGreensPfPassiveDof {
+impl Named for EquilibriumGreensGridPfPassiveDof {
     fn name(&self) -> &str {
         &self.name
     }
@@ -4624,6 +4842,7 @@ pub struct EquilibriumTimeSliceConstraintsDiamagneticFluxView<'a, D> {
     pub sigma: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub reconstructed: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
     pub chi_squared: Accumulator<'a, EquilibriumTimeSlice, FLT_0D, D>,
+    pub name: Accumulator<'a, EquilibriumTimeSlice, STR_0D, D>,
     slice_elements: Elements<'a, EquilibriumTimeSlice, D>,
 }
 
@@ -4640,6 +4859,7 @@ impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsDiamagneticFluxView<'a, D>
             sigma: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.sigma),
             reconstructed: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.reconstructed),
             chi_squared: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.chi_squared),
+            name: Accumulator::new(elements.clone(), |item: &EquilibriumTimeSlice| item.constraints.diamagnetic_flux.name.clone()),
             slice_elements: elements,
         }
     }
@@ -4702,9 +4922,11 @@ impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsView<'a, D> {
 
     /// Select from `constraints.b_field_pol_probe` under every element. A range, e.g. `.b_field_pol_probe(..)`, adds one dimension,
     /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.b_field_pol_probe(name)`, takes the one element with that `name` under every element, and adds none.
     ///
     /// # Panics
     /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
     pub fn b_field_pol_probe<S: Selection<'a, EquilibriumConstraints0dOneLike>>(&self, selection: S) -> S::NestedOutput<D> {
         selection.select_nested("constraints.b_field_pol_probe", &self.slice_elements, |item: &EquilibriumTimeSlice| {
             item.constraints.b_field_pol_probe.as_slice()
@@ -4885,6 +5107,19 @@ impl<'a, D: Dimension> EquilibriumTimeSliceConstraintsView<'a, D> {
     pub fn strike_point<S: Selection<'a, EquilibriumConstraintsPurePosition>>(&self, selection: S) -> S::NestedOutput<D> {
         selection.select_nested("constraints.strike_point", &self.slice_elements, |item: &EquilibriumTimeSlice| {
             item.constraints.strike_point.as_slice()
+        })
+    }
+
+    /// Select from `constraints.rogowski_coil` under every element. A range, e.g. `.rogowski_coil(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.rogowski_coil(name)`, takes the one element with that `name` under every element, and adds none.
+    ///
+    /// # Panics
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn rogowski_coil<S: Selection<'a, EquilibriumConstraints0dIpLike>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("constraints.rogowski_coil", &self.slice_elements, |item: &EquilibriumTimeSlice| {
+            item.constraints.rogowski_coil.as_slice()
         })
     }
 }
@@ -5504,10 +5739,12 @@ impl EquilibriumConstraints0d {
 impl EquilibriumConstraints {
     /// Select from `b_field_pol_probe`. A range, e.g. `.b_field_pol_probe(0..2)` or `.b_field_pol_probe(..)`, gives the slice view over
     /// those elements, whose leaves gather one value per element.
+    /// A name, `.b_field_pol_probe(name)`, gives the one element with that `name`.
     /// A single element is `.b_field_pol_probe[i]`.
     ///
     /// # Panics
     /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
     pub fn b_field_pol_probe<'a, S: Selection<'a, EquilibriumConstraints0dOneLike>>(&'a self, selection: S) -> S::Output {
         selection.select("b_field_pol_probe", &self.b_field_pol_probe)
     }
@@ -5782,6 +6019,25 @@ impl EquilibriumConstraints {
     /// Get the number of strike_point elements
     pub fn strike_point_len(&self) -> usize {
         self.strike_point.len()
+    }
+}
+
+impl EquilibriumConstraints {
+    /// Select from `rogowski_coil`. A range, e.g. `.rogowski_coil(0..2)` or `.rogowski_coil(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.rogowski_coil(name)`, gives the one element with that `name`.
+    /// A single element is `.rogowski_coil[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn rogowski_coil<'a, S: Selection<'a, EquilibriumConstraints0dIpLike>>(&'a self, selection: S) -> S::Output {
+        selection.select("rogowski_coil", &self.rogowski_coil)
+    }
+
+    /// Get the number of rogowski_coil elements
+    pub fn rogowski_coil_len(&self) -> usize {
+        self.rogowski_coil.len()
     }
 }
 
@@ -6181,6 +6437,63 @@ impl GenericGridDynamicSpaceDimensionObject {
 }
 
 impl EquilibriumGreens {
+    /// Select from `b_field_pol_probe`. A range, e.g. `.b_field_pol_probe(0..2)` or `.b_field_pol_probe(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.b_field_pol_probe(name)`, gives the one element with that `name`.
+    /// A single element is `.b_field_pol_probe[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn b_field_pol_probe<'a, S: Selection<'a, EquilibriumGreensBFieldPolProbe>>(&'a self, selection: S) -> S::Output {
+        selection.select("b_field_pol_probe", &self.b_field_pol_probe)
+    }
+
+    /// Get the number of b_field_pol_probe elements
+    pub fn b_field_pol_probe_len(&self) -> usize {
+        self.b_field_pol_probe.len()
+    }
+}
+
+impl EquilibriumGreens {
+    /// Select from `flux_loop`. A range, e.g. `.flux_loop(0..2)` or `.flux_loop(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.flux_loop(name)`, gives the one element with that `name`.
+    /// A single element is `.flux_loop[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn flux_loop<'a, S: Selection<'a, EquilibriumGreensFluxLoop>>(&'a self, selection: S) -> S::Output {
+        selection.select("flux_loop", &self.flux_loop)
+    }
+
+    /// Get the number of flux_loop elements
+    pub fn flux_loop_len(&self) -> usize {
+        self.flux_loop.len()
+    }
+}
+
+impl EquilibriumGreens {
+    /// Select from `rogowski_coil`. A range, e.g. `.rogowski_coil(0..2)` or `.rogowski_coil(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.rogowski_coil(name)`, gives the one element with that `name`.
+    /// A single element is `.rogowski_coil[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn rogowski_coil<'a, S: Selection<'a, EquilibriumGreensRogowskiCoil>>(&'a self, selection: S) -> S::Output {
+        selection.select("rogowski_coil", &self.rogowski_coil)
+    }
+
+    /// Get the number of rogowski_coil elements
+    pub fn rogowski_coil_len(&self) -> usize {
+        self.rogowski_coil.len()
+    }
+}
+
+impl EquilibriumGreensGrid {
     /// Select from `pf_active`. A range, e.g. `.pf_active(0..2)` or `.pf_active(..)`, gives the slice view over
     /// those elements, whose leaves gather one value per element.
     /// A name, `.pf_active(name)`, gives the one element with that `name`.
@@ -6189,7 +6502,7 @@ impl EquilibriumGreens {
     /// # Panics
     /// If a range is out of bounds.
     /// If no element, or more than one, has the name.
-    pub fn pf_active<'a, S: Selection<'a, EquilibriumGreensPfActive>>(&'a self, selection: S) -> S::Output {
+    pub fn pf_active<'a, S: Selection<'a, EquilibriumGreensGridPfActive>>(&'a self, selection: S) -> S::Output {
         selection.select("pf_active", &self.pf_active)
     }
 
@@ -6199,7 +6512,7 @@ impl EquilibriumGreens {
     }
 }
 
-impl EquilibriumGreens {
+impl EquilibriumGreensGrid {
     /// Select from `pf_passive`. A range, e.g. `.pf_passive(0..2)` or `.pf_passive(..)`, gives the slice view over
     /// those elements, whose leaves gather one value per element.
     /// A name, `.pf_passive(name)`, gives the one element with that `name`.
@@ -6208,7 +6521,7 @@ impl EquilibriumGreens {
     /// # Panics
     /// If a range is out of bounds.
     /// If no element, or more than one, has the name.
-    pub fn pf_passive<'a, S: Selection<'a, EquilibriumGreensPfPassive>>(&'a self, selection: S) -> S::Output {
+    pub fn pf_passive<'a, S: Selection<'a, EquilibriumGreensGridPfPassive>>(&'a self, selection: S) -> S::Output {
         selection.select("pf_passive", &self.pf_passive)
     }
 
@@ -6218,7 +6531,7 @@ impl EquilibriumGreens {
     }
 }
 
-impl EquilibriumGreensPfPassive {
+impl EquilibriumGreensGridPfPassive {
     /// Select from `dof`. A range, e.g. `.dof(0..2)` or `.dof(..)`, gives the slice view over
     /// those elements, whose leaves gather one value per element.
     /// A name, `.dof(name)`, gives the one element with that `name`.
@@ -6227,7 +6540,7 @@ impl EquilibriumGreensPfPassive {
     /// # Panics
     /// If a range is out of bounds.
     /// If no element, or more than one, has the name.
-    pub fn dof<'a, S: Selection<'a, EquilibriumGreensPfPassiveDof>>(&'a self, selection: S) -> S::Output {
+    pub fn dof<'a, S: Selection<'a, EquilibriumGreensGridPfPassiveDof>>(&'a self, selection: S) -> S::Output {
         selection.select("dof", &self.dof)
     }
 

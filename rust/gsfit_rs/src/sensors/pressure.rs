@@ -418,6 +418,7 @@ impl Pressure {
 
             // Create the `SensorsStatic` data
             let results_static_this_time_slice: SensorsStatic = SensorsStatic {
+                names: sensor_names.clone(),
                 greens_with_grid,
                 greens_with_pf,
                 greens_with_passives,

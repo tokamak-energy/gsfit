@@ -39,18 +39,18 @@ def setup_dialoop(
 
     # The DIALOOP and MAG runs to read, from the `workflow.xml` which `magnetics.xml` links to
     workflow = settings.workflow
-    if workflow is None or workflow.dialoop is None or workflow.mag is None:
+    if workflow is None or "DIALOOP" not in workflow.tree or "MAG" not in workflow.tree:
         raise ValueError(
-            "`magnetics.xml` must link to a `workflow.xml` holding `dialoop` and `mag`, which say which DIALOOP run to read the diamagnetic flux from, "
+            "`magnetics.xml` must link to a `workflow.xml` holding the DIALOOP and MAG `tree`s, which say which DIALOOP run to read the diamagnetic flux from, "
             "and which MAG run to read the loop's geometry from"
         )
     # A nil `pulseNo` reads the pulse being reconstructed
-    dialoop_settings = workflow.dialoop
+    dialoop_settings = workflow.tree["DIALOOP"]
     if dialoop_settings.pulseNo is None:
         dialoop_pulseNo = pulseNo
     else:
         dialoop_pulseNo = dialoop_settings.pulseNo
-    mag_settings = workflow.mag
+    mag_settings = workflow.tree["MAG"]
     if mag_settings.pulseNo is None:
         mag_pulseNo = pulseNo
     else:

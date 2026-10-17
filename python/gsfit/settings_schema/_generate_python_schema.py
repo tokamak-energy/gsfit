@@ -10,6 +10,8 @@ and has the type of that schema's root element, e.g. `Grid`, imported from its m
 So `GsfitCodeSettings`, in `gsfit_code_settings.py`, holds all of GSFit's settings: `GSFIT_code_settings.xml` with every link followed, however deep.
 Enumerations become `typing.Literal` aliases, `<xs:documentation>` becomes docstrings, and the units in `<xs:appinfo>` become comments.
 A matrix, an element holding one `<row>` per row, becomes a 2D numpy array, `npt.NDArray[np.float64]`, rather than a class; see `matrix_row_element`.
+A repeated element which an `xs:key` or `xs:unique` keeps unique by one of its child elements, e.g. each `<tree>` by its `<tree_name>` in `workflow.xsd`,
+becomes a `KeyedList`, which can be indexed by that key as well as by position, e.g. `workflow.tree["ELMAG"]`; see `ModuleBuilder.list_keys`.
 The generator stops on any XML schema construct it does not know how to translate, rather than guess.
 
 The XML schemas are read with `xmlschema`, which also checks that each is itself a valid XML schema.
@@ -33,8 +35,10 @@ from xmlschema.validators import XsdComplexType
 from xmlschema.validators import XsdComponent
 from xmlschema.validators import XsdElement
 from xmlschema.validators import XsdGroup
+from xmlschema.validators import XsdKey
 from xmlschema.validators import XsdList
 from xmlschema.validators import XsdSimpleType
+from xmlschema.validators import XsdUnique
 
 XS_NAMESPACE: str = "http://www.w3.org/2001/XMLSchema"
 XS: str = "{" + XS_NAMESPACE + "}"
@@ -74,20 +78,21 @@ SUPPORTED_XS_ATTRIBUTES: dict[str, set[str]] = {
     "schema": {"elementFormDefault"},
     "sequence": set(),
     "simpleType": {"name"},
-    # These only constrain the values, so make no difference to the Python types
+    # Identity constraints, which make a repeated element with a key a `KeyedList`, and otherwise only constrain the values; see `ModuleBuilder.list_keys`
     "field": {"xpath"},
     "key": {"name"},
+    "selector": {"xpath"},
+    "unique": {"name"},
+    # These only constrain the values, so make no difference to the Python types
     "maxExclusive": {"value"},
     "maxInclusive": {"value"},
     "minExclusive": {"value"},
     "minInclusive": {"value"},
     "pattern": {"value"},
-    "selector": {"xpath"},
-    "unique": {"name"},
 }
 
 # Names a field cannot take, as the generated modules use them
-RESERVED_NAMES: set[str] = {"XSD_PATH", "bool", "dataclass", "field", "float", "int", "list", "np", "npt", "str", "typing"}
+RESERVED_NAMES: set[str] = {"KEY", "KeyedList", "XSD_PATH", "bool", "dataclass", "field", "float", "int", "list", "np", "npt", "str", "typing"}
 
 
 @dataclass
@@ -105,6 +110,7 @@ class ClassDefinition:
     documentation: str
     field_definitions: list[FieldDefinition] = field(default_factory=list)
     xsd_path: str = ""  # e.g. "wall/wall.xsd" for the class of a root element, otherwise ""
+    key: str = ""  # e.g. "tree_name" for the class of the items of a `KeyedList`, otherwise ""
 
 
 @dataclass
@@ -189,6 +195,9 @@ class ModuleBuilder:
     It names the XML schema of the file it links to in `<xs:appinfo><schema>`, relative to this XML schema, e.g. `grid.xsd`.
     Its field has the type of that XML schema's root element, e.g. `grid: Grid`, imported from that XML schema's module, because
     `read_xml_settings_to_dataclasses` reads the linked file in the link's place, checked against the `XSD_PATH` of that type.
+
+    A repeated element with a key, e.g. `<tree>` keyed by its `<tree_name>`, has a `KeyedList` for its field, e.g. `tree: KeyedList[WorkflowTree]`,
+    and the class of its items names the key in `KEY`, e.g. `WorkflowTree.KEY = "tree_name"`; see `list_keys`.
     """
 
     def __init__(self, xsd_path: Path, schema_path: Path, root_class_names_by_xsd_path: dict[str, str]) -> None:
@@ -208,11 +217,15 @@ class ModuleBuilder:
 
         self.class_definitions: list[ClassDefinition] = []
         self.class_names_by_complex_type: dict[XsdComplexType, str] = {}
+        # The keys of the repeated child elements of each complex type with a class, e.g. `{"tree": "tree_name"}`; see `list_keys`
+        self.list_keys_by_complex_type: dict[XsdComplexType, dict[str, str]] = {}
         self.type_alias_definitions: list[TypeAliasDefinition] = []
         # The classes of the root elements of the linked XML files, and the modules `render` imports them from, e.g. "WallSettings" -> ".wall.wall"
         self.imported_module_names_by_class_name: dict[str, str] = {}
         # Whether a field is a matrix, a numpy array, so the module imports numpy
         self.uses_numpy: bool = False
+        # Whether a field is a `KeyedList`, so the module imports it
+        self.uses_keyed_list: bool = False
 
         # Reserve the Python names of the named types first, so that a class for an anonymous type is never given one of them.
         # Only complex types (classes) and enumerations (`typing.Literal` aliases) get a Python name
@@ -256,12 +269,20 @@ class ModuleBuilder:
             self.uses_numpy = True
             return "npt.NDArray[np.float64]"
 
-        # A named complex type has one class, shared by every element of that type
+        # The keys are on the element, but they make the fields of its type's class `KeyedList`s
+        list_keys: dict[str, str] = self.list_keys(element)
+
+        # A named complex type has one class, shared by every element of that type, so their repeated child elements must have the same keys
         if xsd_type.local_name is not None:
             if xsd_type in self.class_names_by_complex_type:
+                if list_keys != self.list_keys_by_complex_type[xsd_type]:
+                    raise NotImplementedError(
+                        f"{self.xsd_path.name}: two elements of type {xsd_type.local_name} have different keys, {self.list_keys_by_complex_type[xsd_type]} "
+                        f"and {list_keys}, but share one class"
+                    )
                 return self.class_names_by_complex_type[xsd_type]
             type_documentation, _ = read_annotation(xsd_type)
-            return self.add_class(xsd_type, pascal_case(xsd_type.local_name), type_documentation)
+            return self.add_class(xsd_type, pascal_case(xsd_type.local_name), type_documentation, list_keys)
 
         # An anonymous complex type's class is named after its element, and after the class holding the element too if that name is taken
         if element.local_name is None:
@@ -272,7 +293,72 @@ class ModuleBuilder:
         if class_name in self.taken_names:
             raise ValueError(f"{self.xsd_path.name}: {class_name} is used for two different types")
         self.taken_names.add(class_name)
-        return self.add_class(xsd_type, class_name, documentation)
+        return self.add_class(xsd_type, class_name, documentation, list_keys)
+
+    def list_keys(self, element: XsdElement) -> dict[str, str]:
+        """
+        The keys of the repeated child elements of an element, which make their fields `KeyedList`s.
+
+        A key is an `xs:key` or `xs:unique` on the element, which keeps a repeated child element unique by one of the child's own child elements, e.g. in `workflow.xsd`:
+            <xs:key name="workflow_tree_name_key">
+                <xs:selector xpath="tree"/>
+                <xs:field xpath="tree_name"/>
+            </xs:key>
+        The key must be in every item, and be a string, so that it can select every item, and is never mistaken for a position.
+        Any other identity constraint only constrains the values, e.g. `<xs:field xpath="."/>`, which keeps the values of a repeated simple element unique.
+
+        :param element: An element of a complex type, e.g. `<xs:element name="workflow">`
+        :return: The key of each repeated child element which has one, by the child element's name, e.g. `{"tree": "tree_name"}`
+        """
+
+        xsd_type: XsdComplexType | XsdSimpleType = element.type
+        if not isinstance(xsd_type, XsdComplexType) or not isinstance(xsd_type.content, XsdGroup):
+            return {}
+        child_elements_by_name: dict[str, XsdElement] = {}
+        for particle in xsd_type.content:
+            if isinstance(particle, XsdElement) and particle.local_name is not None:
+                child_elements_by_name[particle.local_name] = particle
+
+        list_keys: dict[str, str] = {}
+        for identity in element.identities:
+            if not isinstance(identity, (XsdKey, XsdUnique)) or identity.selector is None:
+                continue
+            list_name: str = identity.selector.path  # e.g. "tree"
+            field_paths: list[str] = []
+            for identity_field in identity.fields:
+                field_paths.append(identity_field.path)
+            if list_name not in child_elements_by_name or len(field_paths) != 1:
+                continue
+
+            # A key is a child element of the items, which are a repeated element holding child elements
+            list_element: XsdElement = child_elements_by_name[list_name]
+            list_type: XsdComplexType | XsdSimpleType = list_element.type
+            if list_element.max_occurs == 1 or not isinstance(list_type, XsdComplexType) or not isinstance(list_type.content, XsdGroup):
+                continue
+            key_element: XsdElement | None = None
+            for particle in list_type.content:
+                if isinstance(particle, XsdElement) and particle.local_name == field_paths[0]:
+                    key_element = particle
+            if key_element is None:
+                continue
+
+            key_type: XsdComplexType | XsdSimpleType = key_element.type
+            if (
+                key_element.min_occurs == 0
+                or key_element.max_occurs != 1
+                or key_element.nillable
+                or not isinstance(key_type, XsdSimpleType)
+                or self.simple_type(key_type) != "str"
+            ):
+                raise NotImplementedError(
+                    f"{self.xsd_path.name}: `{list_name}` is keyed by `{field_paths[0]}`, which is not a single, required, string element. "
+                    "A key must be in every item, and be a string, so that it can select every item, and is never mistaken for a position"
+                )
+            if list_name in list_keys:
+                raise NotImplementedError(f"{self.xsd_path.name}: `{list_name}` has two keys, `{list_keys[list_name]}` and `{field_paths[0]}`")
+            list_keys[list_name] = field_paths[0]
+
+        return list_keys
 
     def simple_type(self, simple_type: XsdSimpleType) -> str:
         """
@@ -313,13 +399,14 @@ class ModuleBuilder:
 
         raise NotImplementedError(f"{self.xsd_path.name}: simple type {simple_type.local_name}")
 
-    def add_class(self, complex_type: XsdComplexType, class_name: str, documentation: str) -> str:
+    def add_class(self, complex_type: XsdComplexType, class_name: str, documentation: str, list_keys: dict[str, str]) -> str:
         """
         Add a class for a complex type, and for the complex types inside it.
 
         :param complex_type: Complex type, named or anonymous
         :param class_name: Name of the new class
         :param documentation: Docstring of the new class
+        :param list_keys: The key of each repeated child element which has one, by the child element's name, e.g. `{"tree": "tree_name"}`; see `list_keys`
         :return: `class_name`
         """
 
@@ -327,6 +414,7 @@ class ModuleBuilder:
         # Added before its children, so the classes are written in the same order as the XML: the root first
         self.class_definitions.append(class_definition)
         self.class_names_by_complex_type[complex_type] = class_name
+        self.list_keys_by_complex_type[complex_type] = list_keys
 
         # The child elements, in a `<xs:sequence>` or `<xs:all>`, then the attributes
         if not isinstance(complex_type.content, XsdGroup):
@@ -334,7 +422,8 @@ class ModuleBuilder:
         for particle in complex_type.content:
             if not isinstance(particle, XsdElement):
                 raise NotImplementedError(f"{self.xsd_path.name}: a group inside a group, in {class_name}")
-            class_definition.field_definitions.append(self.element_field(particle, class_name))
+            key_name: str = list_keys.get(str(particle.local_name), "")
+            class_definition.field_definitions.append(self.element_field(particle, class_name, key_name))
         for attribute in complex_type.attributes.values():
             if not isinstance(attribute, XsdAttribute):
                 raise NotImplementedError(f"{self.xsd_path.name}: an attribute wildcard in {class_name}")
@@ -342,10 +431,11 @@ class ModuleBuilder:
 
         return class_name
 
-    def element_field(self, element: XsdElement, class_name: str) -> FieldDefinition:
+    def element_field(self, element: XsdElement, class_name: str, key_name: str) -> FieldDefinition:
         """
         :param element: An element inside a complex type
         :param class_name: Class holding the field
+        :param key_name: The key of the element, if it is a repeated element with one, e.g. "tree_name", which makes its field a `KeyedList`; otherwise ""
         :return: Field for the element
         """
 
@@ -362,6 +452,10 @@ class ModuleBuilder:
             and list(xsd_type.attributes) == ["href"]
         )
         if is_link:
+            if len(element.identities) > 0:
+                raise NotImplementedError(
+                    f"{self.xsd_path.name}: the link `{name}` has an identity constraint, which belongs on the linked file's root element"
+                )
             linked_schema: str = read_appinfo(element, "schema")
             if linked_schema == "":
                 raise NotImplementedError(
@@ -388,9 +482,31 @@ class ModuleBuilder:
         if element.max_occurs != 1:
             if element.nillable:
                 raise NotImplementedError(f"{self.xsd_path.name}: {name} is both repeated and nillable")
-            python_type = f"list[{python_type}]"
-            if element.min_occurs == 0:
-                default = "field(default_factory=list)"
+            if key_name != "":
+                # A repeated element with a key, which can be indexed by it as well as by position, e.g. `tree["ELMAG"]`.
+                # The class of its items names the key in `KEY`
+                item_class_definitions: list[ClassDefinition] = []
+                for class_definition in self.class_definitions:
+                    if class_definition.name == python_type:
+                        item_class_definitions.append(class_definition)
+                if len(item_class_definitions) != 1:
+                    raise NotImplementedError(
+                        f"{self.xsd_path.name}: `{name}` is keyed by `{key_name}`, but its items, {python_type}, are not a class of this XML schema"
+                    )
+                if item_class_definitions[0].key not in ("", key_name):
+                    raise NotImplementedError(f"{self.xsd_path.name}: {python_type} is keyed by both `{item_class_definitions[0].key}` and `{key_name}`")
+                item_class_definitions[0].key = key_name
+                self.uses_keyed_list = True
+                python_type = f"KeyedList[{python_type}]"
+                if element.min_occurs == 0:
+                    default = "field(default_factory=KeyedList)"
+                if documentation != "":
+                    documentation = documentation.removesuffix(".") + ".\n"
+                documentation += f"A `KeyedList`, which can be indexed by `{key_name}` as well as by position, e.g. `{name}[{key_name}]`"
+            else:
+                python_type = f"list[{python_type}]"
+                if element.min_occurs == 0:
+                    default = "field(default_factory=list)"
         else:
             if element.nillable or element.min_occurs == 0:
                 python_type = f"{python_type} | None"
@@ -458,11 +574,17 @@ class ModuleBuilder:
         lines.append("from dataclasses import dataclass")
         if uses_field:
             lines.append("from dataclasses import field")
-        # Imported, rather than only for type checking, as `read_xml_settings_to_dataclasses` reads the type of each field
+        # Imported, rather than only for type checking, as `read_xml_settings_to_dataclasses` reads the type of each field.
+        # As `ruff` sorts them: within the third-party imports, each `import ...` before any `from ... import ...`
+        third_party_lines: list[str] = []
         if self.uses_numpy:
+            third_party_lines.append("import numpy as np")
+            third_party_lines.append("import numpy.typing as npt")
+        if self.uses_keyed_list:
+            third_party_lines.append("from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList")
+        if len(third_party_lines) > 0:
             lines.append("")
-            lines.append("import numpy as np")
-            lines.append("import numpy.typing as npt")
+            lines += third_party_lines
         if len(imports) > 0:
             lines.append("")
             for _, module_name, class_name in imports:
@@ -548,7 +670,8 @@ def render_class(class_definition: ClassDefinition) -> list[str]:
             docstring_lines.append("")
         docstring_lines += parameter_lines
 
-    # The class body is up to three blocks, separated by blank lines: the docstring, `XSD_PATH` for a root element's class, and the fields
+    # The class body is up to four blocks, separated by blank lines: the docstring, `XSD_PATH` for a root element's class,
+    # `KEY` for the class of the items of a `KeyedList`, and the fields
     body_blocks: list[list[str]] = []
     if len(docstring_lines) > 0:
         docstring_block: list[str] = ['    """']
@@ -561,6 +684,13 @@ def render_class(class_definition: ClassDefinition) -> list[str]:
             [
                 f"    # The XML schema of the XML files whose root element this is, relative to `{SCHEMA_PATH}/`",
                 f"    XSD_PATH: typing.ClassVar[str] = {python_string(class_definition.xsd_path)}",
+            ]
+        )
+    if class_definition.key != "":
+        body_blocks.append(
+            [
+                "    # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique",
+                f"    KEY: typing.ClassVar[str] = {python_string(class_definition.key)}",
             ]
         )
     if len(class_definition.field_definitions) > 0:
@@ -692,8 +822,8 @@ def check_field_name(name: str | None, xsd_path: Path) -> str:
 
 def pascal_case(name: str) -> str:
     """
-    :param name: e.g. `b_field_pol_probe`, `constraints__b_field_pol_probe`, or `WorkflowEntry`
-    :return: e.g. `BFieldPolProbe`, `ConstraintsBFieldPolProbe`, or `WorkflowEntry`
+    :param name: e.g. `b_field_pol_probe`, `constraints__b_field_pol_probe`, or `WorkflowTree`
+    :return: e.g. `BFieldPolProbe`, `ConstraintsBFieldPolProbe`, or `WorkflowTree`
     """
 
     words: list[str] = name.split("_")

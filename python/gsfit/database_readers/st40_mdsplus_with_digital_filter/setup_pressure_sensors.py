@@ -176,18 +176,18 @@ def setup_pressure_sensors(
 
     # The PPTS and TS runs to read, from the `workflow.xml` which `thomson_scattering.xml` links to
     workflow = settings.workflow if settings is not None else None
-    if workflow is None or workflow.ppts is None or workflow.ts is None:
+    if workflow is None or "PPTS" not in workflow.tree or "TS" not in workflow.tree:
         raise ValueError(
-            "`constraints_pressure.xml` includes the pressure sensors, so `thomson_scattering.xml` must link to a `workflow.xml` holding `ppts` and `ts`, "
-            "which say which PPTS and TS runs to read"
+            "`constraints_pressure.xml` includes the pressure sensors, so `thomson_scattering.xml` must link to a `workflow.xml` holding the PPTS and TS "
+            "`tree`s, which say which PPTS and TS runs to read"
         )
     # A nil `pulseNo` reads the pulse being reconstructed
-    ppts_settings = workflow.ppts
+    ppts_settings = workflow.tree["PPTS"]
     if ppts_settings.pulseNo is None:
         ppts_pulseNo = pulseNo
     else:
         ppts_pulseNo = ppts_settings.pulseNo
-    ts_settings = workflow.ts
+    ts_settings = workflow.tree["TS"]
     if ts_settings.pulseNo is None:
         ts_pulseNo = pulseNo
     else:

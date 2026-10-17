@@ -20,100 +20,12 @@ from ..workflow import Workflow
 @dataclass(kw_only=True)
 class PfActiveSettings:
     """
-    How the database reader builds the pf_active IDS: the geometry and currents of the PF coils. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`; the other readers read only the element named after them
+    How the database reader builds the pf_active IDS: the geometry and currents of the PF coils. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`
 
-    :param workflow: A link to workflow.xml, the central list of the codes which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the PF coils' geometry from its `elmag`, COILS, and their currents from its `psu2coil`, PF.ALL
-    :param st40_mdsplus: Where the st40_mdsplus reader reads the PF coils from
-    :param st40_astra_mdsplus: Where the st40_astra_mdsplus reader reads the PF coils from
-    :param st40_spider_mdsplus: Where the st40_spider_mdsplus reader reads the PF coils from
-    :param mock_st40_mdsplus: Where the mock_st40_mdsplus reader reads the PF coils from
+    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the PF coils' geometry from its ELMAG tree, COILS, and their currents from its PSU2COIL tree, PF.ALL
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "pf_active/pf_active.xsd"
 
     workflow: Workflow | None = None
-    st40_mdsplus: PfActiveSt40Mdsplus | None = None
-    st40_astra_mdsplus: PfActiveSt40AstraMdsplus | None = None
-    st40_spider_mdsplus: PfActiveSt40SpiderMdsplus | None = None
-    mock_st40_mdsplus: PfActiveMockSt40Mdsplus | None = None
-
-
-@dataclass(kw_only=True)
-class PfActiveSt40Mdsplus:
-    """
-    Where the st40_mdsplus reader reads the PF coils from
-
-    :param elmag: The ELMAG run holding the PF coils' geometry, COILS
-    :param psu2coil: The PSU2COIL run holding the PF coils' currents, PF.ALL
-    """
-
-    elmag: WorkflowEntry
-    psu2coil: WorkflowEntry
-
-
-@dataclass(kw_only=True)
-class WorkflowEntry:
-    """
-    Which run of an MDSplus tree to read. The tree is named by the element holding this, e.g. `elmag` for ELMAG
-
-    :param pulseNo: The pulse to read the tree from; nil for the pulse being reconstructed
-    :param run_name: The run of the tree to read, e.g. "BEST" or "RUN16"
-    :param usage: What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from
-    """
-
-    pulseNo: int | None
-    run_name: str
-    usage: str
-
-
-@dataclass(kw_only=True)
-class PfActiveSt40AstraMdsplus:
-    """
-    Where the st40_astra_mdsplus reader reads the PF coils from. Their geometry is read from coil.dat, in python/gsfit/database_readers/st40_astra_mdsplus/
-
-    :param astra: The ASTRA run holding the PF coils' currents, COILS.PSU2PF
-    """
-
-    astra: WorkflowEntry
-
-
-@dataclass(kw_only=True)
-class PfActiveSt40SpiderMdsplus:
-    """
-    Where the st40_spider_mdsplus reader reads the PF coils from. Their geometry is in python/gsfit/database_readers/st40_spider_mdsplus/setup_pf_active.py
-
-    :param spider: The SPIDER run holding the PF coils' currents, COILS.PSU2PF
-    """
-
-    spider: WorkflowEntry
-
-
-@dataclass(kw_only=True)
-class PfActiveMockSt40Mdsplus:
-    """
-    Where the mock_st40_mdsplus reader reads the PF coils from
-
-    :param elmag_coils: The mocked ELMAG tree holding the PF coils' geometry
-    :param psu2coil: The mocked PSU2COIL tree holding the PF coils' currents
-    """
-
-    elmag_coils: MockWorkflowEntry
-    psu2coil: MockWorkflowEntry
-
-
-@dataclass(kw_only=True)
-class MockWorkflowEntry:
-    """
-    Which mocked MDSplus tree, pulse and run to read. The read is named by the element holding this, e.g. `elmag`. Reads are named separately from trees, so that one tree can be read more than once, e.g. from a different pulse
-
-    :param tree_name: The mocked MDSplus tree, e.g. "ELMAG" or "MAG". Its data is read from `mdsplus_mock_[tree_name]_[pulseNo].npz` in `mock_dir`, in database_reader.xml, with the tree name in lower case
-    :param pulseNo: The pulse to read the tree from; nil for the pulse being reconstructed
-    :param run_name: The run to read, which must be the run the mock was captured from, e.g. "BEST" or "RUN16"
-    :param usage: What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from
-    """
-
-    tree_name: str
-    pulseNo: int | None
-    run_name: str
-    usage: str

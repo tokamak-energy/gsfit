@@ -14,19 +14,21 @@ import typing
 from dataclasses import dataclass
 from dataclasses import field
 
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
+
 
 @dataclass(kw_only=True)
 class ConstraintsIsoflux:
     """
     The isoflux constraints, which make pairs of points lie on the same flux surface, one `isoflux` per pair. Not read at present, and no database reader has a setting for where to read the points from, so listing any adds no constraints. Keep it empty
 
-    :param isoflux: One isoflux constraint
+    :param isoflux: One isoflux constraint. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `isoflux[name]`
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "equilibrium/constraints_isoflux.xsd"
 
-    isoflux: list[Isoflux] = field(default_factory=list)
+    isoflux: KeyedList[Isoflux] = field(default_factory=KeyedList)
 
 
 @dataclass(kw_only=True)
@@ -40,6 +42,9 @@ class Isoflux:
     :param include: Whether the constraint is fitted
     :param comment: Free text, e.g. why the constraint is not included; not used by the fit
     """
+
+    # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique
+    KEY: typing.ClassVar[str] = "name"
 
     name: str
     expected_value: float

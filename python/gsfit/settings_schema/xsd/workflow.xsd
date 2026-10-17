@@ -1,26 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Schema for workflow.xml: the central list of the codes which the database reader reads from, and which run of each to read.
+    Schema for workflow.xml: the central list of the MDSplus trees which the database reader reads from, and which run of each to read.
 
-    Each code is an MDSplus tree, e.g. ELMAG, which holds the machine's geometry, or MAG, which holds the magnetic sensors.
-    workflow.xml has one optional element per code, named after it in lower case, e.g. `elmag`, saying which run to read, and from which pulse.
-    The IDS files which the database reader builds from these codes link to workflow.xml, in `workflow`, e.g. `<workflow href="../workflow.xml"/>`
-    in pf_active/pf_active.xml. So a code's run is set once, however many IDSs are built from it: ELMAG builds pf_active, pf_passive,
-    pulse_schedule and wall. The reader reads the codes it needs from the workflow.xml which the IDS's file links to, and stops with an
-    error if one is missing.
-    The Tokamak Energy writers store every code with the results, in INPUT.WORKFLOW, to record where the inputs came from.
-    So far only the st40_mdsplus_with_digital_filter reader reads workflow.xml. The other readers still read their runs from their own
-    element in each IDS's file.
-    WorkflowEntry is the same as in each IDS's schema, so change them all together.
+    Each tree holds the data of one code or diagnostic, e.g. ELMAG, which holds the machine's geometry, or MAG, which holds the magnetic sensors.
+    workflow.xml has one `tree` per tree, named by its `tree_name`, e.g. ELMAG, saying which run to read, and from which pulse.
+    The trees are a list, so a tree is added, or removed, by changing workflow.xml alone, without changing this schema.
+    The IDS files which the database reader builds from these trees link to workflow.xml, in `workflow`, e.g. `<workflow href="../workflow.xml"/>`
+    in pf_active/pf_active.xml. So a tree's run is set once, however many IDSs are built from it: ELMAG builds pf_active, pf_passive,
+    pulse_schedule and wall. The reader selects the trees it needs by their `tree_name`, from the workflow.xml which the IDS's file links to,
+    and stops with an error if one is missing.
+    The Tokamak Energy writers store every tree with the results, in INPUT.WORKFLOW, to record where the inputs came from.
+    So far workflow.xml is read by the st40_mdsplus_with_digital_filter reader, and by the st40_mdsplus reader for the Thomson
+    scattering alone.
     See GSFIT_code_settings.xsd for the conventions shared by all the schemas.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
 
+    <!-- ================================= Simple types ================================= -->
+
+    <xs:simpleType name="TreeName">
+        <xs:annotation><xs:documentation>The name of an MDSplus tree, in upper case, e.g. "ELMAG": a letter followed by up to 11 letters, digits or underscores, as MDSplus allows for a tree, and for the node under INPUT.WORKFLOW which the Tokamak Energy writers store it in</xs:documentation></xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[A-Z][A-Z0-9_]{0,11}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <!-- ================================= Complex types ================================= -->
 
-    <xs:complexType name="WorkflowEntry">
-        <xs:annotation><xs:documentation>Which run of an MDSplus tree to read. The tree is named by the element holding this, e.g. `elmag` for ELMAG</xs:documentation></xs:annotation>
+    <xs:complexType name="WorkflowTree">
+        <xs:annotation><xs:documentation>Which run of an MDSplus tree to read, and from which pulse</xs:documentation></xs:annotation>
         <xs:all>
+            <xs:element name="tree_name" type="TreeName">
+                <xs:annotation><xs:documentation>The MDSplus tree, e.g. "ELMAG" or "MAG", which the database reader selects it by. Must be unique</xs:documentation></xs:annotation>
+            </xs:element>
             <xs:element name="pulseNo" type="xs:int" nillable="true">
                 <xs:annotation><xs:documentation>The pulse to read the tree from; nil for the pulse being reconstructed</xs:documentation></xs:annotation>
             </xs:element>
@@ -28,7 +40,7 @@
                 <xs:annotation><xs:documentation>The run of the tree to read, e.g. "BEST" or "RUN16"</xs:documentation></xs:annotation>
             </xs:element>
             <xs:element name="usage" type="xs:string">
-                <xs:annotation><xs:documentation>What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from</xs:documentation></xs:annotation>
+                <xs:annotation><xs:documentation>What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree_name].USAGE), to record where the inputs came from</xs:documentation></xs:annotation>
             </xs:element>
         </xs:all>
     </xs:complexType>
@@ -36,28 +48,29 @@
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="workflow">
-        <xs:annotation><xs:documentation>The central list of the codes which the database reader reads from, and which run of each to read. Each IDS's file links to it, in `workflow`, e.g. pf_active/pf_active.xml</xs:documentation></xs:annotation>
+        <xs:annotation>
+            <xs:documentation>
+                The central list of the MDSplus trees which the database reader reads from, and which run of each to read, one `tree` per tree. Each IDS's file links to it, in `workflow`, e.g. pf_active/pf_active.xml.
+                The st40_mdsplus_with_digital_filter reader reads:
+                * DIALOOP: the diamagnetic flux measurement, GLOBAL.PHI_DIA. Read for magnetics
+                * ELMAG: the machine's geometry: the PF coils, COILS; the passive structures and their resistivity, VESSEL; the limiter, LIMITER.LIMIT_PTS; and the gaps, GAPS. Read for pf_active, pf_passive, pulse_schedule and wall
+                * MAG: the geometry and measurements of the poloidal field probes, flux loops and Rogowski coils, and the geometry of the diamagnetic loop. Read for magnetics
+                * PPTS: the BAD_MA flag, GLOBAL:BAD_MA, which picks the good time-slices: those the pressure constraints are made at, and the good_pressure_sensors time-slices in timeslices.xml. Read for thomson_scattering
+                * PSU2COIL: the currents: the PF coils', PF.ALL, and the TF rod's, TF.I_ROD. Read for pf_active and tf
+                * TS: each channel's position, R and Z, and electron pressure, PROFILES:PE. Read for thomson_scattering
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexType>
-            <xs:all>
-                <xs:element name="dialoop" type="WorkflowEntry" minOccurs="0">
-                    <xs:annotation><xs:documentation>The DIALOOP run holding the diamagnetic flux measurement, GLOBAL.PHI_DIA. Read for magnetics</xs:documentation></xs:annotation>
+            <xs:sequence>
+                <xs:element name="tree" type="WorkflowTree" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation><xs:documentation>One MDSplus tree, and which run of it to read</xs:documentation></xs:annotation>
                 </xs:element>
-                <xs:element name="elmag" type="WorkflowEntry" minOccurs="0">
-                    <xs:annotation><xs:documentation>The ELMAG run holding the machine's geometry: the PF coils, COILS; the passive structures and their resistivity, VESSEL; the limiter, LIMITER.LIMIT_PTS; and the gaps, GAPS. Read for pf_active, pf_passive, pulse_schedule and wall</xs:documentation></xs:annotation>
-                </xs:element>
-                <xs:element name="mag" type="WorkflowEntry" minOccurs="0">
-                    <xs:annotation><xs:documentation>The MAG run holding the geometry and measurements of the poloidal field probes, flux loops and Rogowski coils, and the geometry of the diamagnetic loop. Read for magnetics</xs:documentation></xs:annotation>
-                </xs:element>
-                <xs:element name="ppts" type="WorkflowEntry" minOccurs="0">
-                    <xs:annotation><xs:documentation>The PPTS run whose BAD_MA flag, GLOBAL:BAD_MA, picks the good time-slices: those the pressure constraints are made at, and the good_pressure_sensors time-slices in timeslices.xml. Read for thomson_scattering</xs:documentation></xs:annotation>
-                </xs:element>
-                <xs:element name="psu2coil" type="WorkflowEntry" minOccurs="0">
-                    <xs:annotation><xs:documentation>The PSU2COIL run holding the currents: the PF coils', PF.ALL, and the TF rod's, TF.I_ROD. Read for pf_active and tf</xs:documentation></xs:annotation>
-                </xs:element>
-                <xs:element name="ts" type="WorkflowEntry" minOccurs="0">
-                    <xs:annotation><xs:documentation>The TS run holding each channel's position, R and Z, and electron pressure, PROFILES:PE. Read for thomson_scattering</xs:documentation></xs:annotation>
-                </xs:element>
-            </xs:all>
+            </xs:sequence>
         </xs:complexType>
+        <xs:key name="workflow_tree_name_key">
+            <xs:annotation><xs:documentation>Each tree is listed at most once, as the database reader selects it by its `tree_name`</xs:documentation></xs:annotation>
+            <xs:selector xpath="tree"/>
+            <xs:field xpath="tree_name"/>
+        </xs:key>
     </xs:element>
 </xs:schema>

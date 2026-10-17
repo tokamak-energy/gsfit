@@ -8,6 +8,7 @@ from gsfit_rs import Dialoop
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
+from gsfit_rs import Magnetics
 from gsfit_rs import PfActive
 from gsfit_rs import PfPassive
 from gsfit_rs import Plasma
@@ -31,7 +32,7 @@ class DatabaseReaderProtocol(Protocol):
     """
     Protocol for reading experimental data.
     Each method is responsible for initialising one of the Rust objects:
-    `bp_probes`, `dialoop`, `flux_loops`, `isoflux`, `isoflux_boundary`, `stationary_point`, `pf_active`, `pf_passive`, `plasma`, `rogowski_coils`, `tf`, and `wall`.
+    `bp_probes`, `dialoop`, `flux_loops`, `isoflux`, `isoflux_boundary`, `magnetics`, `stationary_point`, `pf_active`, `pf_passive`, `plasma`, `rogowski_coils`, `tf`, and `wall`.
 
     The Protocol defines the inputs and outputs of each method.
     New database readers should be implemented **all** methods.
@@ -565,6 +566,81 @@ class DatabaseReaderProtocol(Protocol):
             )
 
         return wall
+        ```
+        """
+        ...
+
+    def setup_magnetics(self, pulseNo: int, settings: MagneticsSettings, **kwargs: dict[str, typing.Any]) -> Magnetics:
+        """
+        This method initialises the Rust `Magnetics` class, which holds an IMAS `magnetics` IDS.
+
+        :param pulseNo: Pulse number, used to read from the database
+        :param settings: `MagneticsSettings` object containing the XML settings read from the `settings` directory
+        :param kwargs: Additional objects, such as FreeGNSKE object
+
+        Initialising requires reading data from:
+        1. Database reading (e.g. MDSplus, or FreeGSNKE object): Which contains the sensors' geometry and measurements
+
+        Every sensor is added, whether or not it is fitted: which sensors are fitted, and their weights, are the equilibrium's constraints.
+
+        **Store the experimental signals**, each on its own timebase, not interpolated onto the reconstruction times.
+
+        **The probes' `poloidal_angle` keeps GSFit's present definition, COCOS 13**: counter-clockwise from `grad(R)`, in the usual plot with `R` to the
+        right and `Z` upwards, so an angle of `pi / 2` points towards `+Z`.
+        This is not yet the data dictionary's COCOS 17, which measures it clockwise; see the `Magnetics` documentation.
+
+        **A flux loop's `flux` is GSFit's `psi`**, the total poloidal flux, with no factor of `2 * pi`.
+
+        Different machines will use different data stores for the magnetic sensors.
+        This Protocol allows different database readers to be selected.
+        The output of this method must always be a `Magnetics` object.
+
+        At a minimum this method should look like this:
+        ```python
+        # Initialise the Magnetics Rust class, with the settings it is built from, which it records in `magnetics/code/parameters`.
+        # See `serialise_python_dataclass_to_imas_parameters_input`
+        magnetics = Magnetics(parameters_input)
+
+        for i_b_field_pol_probe in range(n_b_field_pol_probes):
+            magnetics.add_b_field_pol_probe(
+                name=...,            # need to be same in database and `constraints_b_field_pol_probe.xml` file
+                r=...,               # read from a database
+                z=...,               # read from a database
+                poloidal_angle=...,  # read from a database, counter-clockwise from `grad(R)`
+                time=...,            # read from a database
+                field=...,           # read from a database
+            )
+
+        for i_flux_loop in range(n_flux_loops):
+            magnetics.add_flux_loop(
+                name=...,  # need to be same in database and `constraints_flux_loop.xml` file
+                r=...,     # read from a database
+                z=...,     # read from a database
+                time=...,  # read from a database
+                flux=...,  # read from a database
+            )
+
+        for i_rogowski_coil in range(n_rogowski_coils):
+            magnetics.add_rogowski_coil(
+                name=...,          # need to be same in database and `constraints_rogowski_coil.xml` file
+                r=...,             # read from a database
+                z=...,             # read from a database
+                time=...,          # read from a database
+                current=...,       # read from a database
+                gaps_name=...,     # (optional) read from a database
+                gaps_r_start=...,  # (optional) read from a database
+                gaps_r_end=...,    # (optional) read from a database
+                gaps_z_start=...,  # (optional) read from a database
+                gaps_z_end=...,    # (optional) read from a database
+            )
+
+        magnetics.add_diamagnetic_flux(
+            method_name=...,  # need to be same in database and `constraints_diamagnetic_flux.xml` file
+            time=...,         # read from a database
+            data=...,         # read from a database
+        )
+
+        return magnetics
         ```
         """
         ...

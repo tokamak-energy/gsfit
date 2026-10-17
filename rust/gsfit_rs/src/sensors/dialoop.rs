@@ -215,8 +215,15 @@ impl Dialoop {
         let fit_settings_expected_value: Array1<f64> = self.results.get("*").get("fit_settings").get("expected_value").unwrap_array1();
         let fit_settings_expected_value: Array1<f64> = fit_settings_expected_value.select(Axis(0), &include_indices);
 
+        // The name of each sensor fitted
+        let mut sensor_names: Vec<String> = Vec::with_capacity(n_sensors);
+        for i_sensor in 0..n_sensors {
+            sensor_names.push(sensor_names_all[include_indices[i_sensor]].clone());
+        }
+
         // No Green's functions for the diamagnetic loop (see method docstring).
         let results_static: SensorsStatic = SensorsStatic {
+            names: sensor_names,
             greens_with_grid: Array2::zeros((0, n_sensors)),
             greens_with_pf: Array2::zeros((0, n_sensors)),
             greens_with_passives: Array2::zeros((0, n_sensors)),

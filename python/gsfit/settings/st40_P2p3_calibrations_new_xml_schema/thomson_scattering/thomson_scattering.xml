@@ -1,16 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <thomson_scattering_settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../settings_schema/xsd/thomson_scattering/thomson_scattering.xsd">
     <workflow href="../workflow.xml"/>
-    <st40_mdsplus>
-        <ppts>
-            <pulseNo xsi:nil="true"/>
-            <run_name>BEST</run_name>
-            <usage>Pressure sensor good time-slices (BAD_MA flag)</usage>
-        </ppts>
-        <ts>
-            <pulseNo xsi:nil="true"/>
-            <run_name>BEST</run_name>
-            <usage>Thomson scattering geometry and electron pressure</usage>
-        </ts>
-    </st40_mdsplus>
 </thomson_scattering_settings>

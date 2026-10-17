@@ -88,14 +88,14 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     g_grid_coil = np.zeros((n_z, n_r, n_psu))
     # The Green's tables are an array of structures, so the coil name is looked up once to give an
     # index to read by
-    pf_active_names: list[str] = plasma.get(ep.greens.pf_active[:].name).tolist()
+    pf_active_names: list[str] = plasma.get(ep.greens.grid.pf_active[:].name).tolist()
     psu_names = []
     for i_psu, power_supply in enumerate(rtgsfit_psus):
         psu_names.append(power_supply["power_supply_name"])
         coil_names = power_supply["coils"]
         for coil_name in coil_names:
             i_coil = pf_active_names.index(coil_name)
-            g_grid_coil[:, :, i_psu] += plasma.get(ep.greens.pf_active[i_coil].psi)
+            g_grid_coil[:, :, i_psu] += plasma.get(ep.greens.grid.pf_active[i_coil].psi)
 
     # Store in MDSplus
     results["PRESHOT"]["GREENS"]["GRID_COIL"] = g_grid_coil.flatten()
@@ -303,14 +303,14 @@ def map_results_to_database(self: "DatabaseWriterRTGSFitMDSplus", gsfit_controll
     # Collect the greens for "grid-vessel"
     g_grid_vessel = np.zeros((n_z * n_r, n_passive_dofs))
     # Loop over all passives
-    # `greens/pf_passive` is in the same order as `passives.keys()`, and each passive's `dof` in the
+    # `greens/grid/pf_passive` is in the same order as `passives.keys()`, and each passive's `dof` in the
     # same order as its own dof keys, because they were built in that order
     i_dof = 0
     for i_passive, passive_name in enumerate(passive_names):
         current_distribution_dof_names = passives.keys([passive_name, "dof"])
         # `current_distribution_dof_names` can be "constant_current_density", "eig_01", "eig_02", etc.
         for i_passive_dof, _current_distribution_dof_name in enumerate(current_distribution_dof_names):
-            g_grid_vessel[:, i_dof] = plasma.get(ep.greens.pf_passive[i_passive].dof[i_passive_dof].psi)
+            g_grid_vessel[:, i_dof] = plasma.get(ep.greens.grid.pf_passive[i_passive].dof[i_passive_dof].psi).flatten()
             i_dof += 1
     # Store in MDSplus
     results["PRESHOT"]["GREENS"]["GRID_VESSEL"] = g_grid_vessel.flatten()  # .reshape((n_z * n_r, n_passive_dofs))

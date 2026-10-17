@@ -456,6 +456,7 @@ impl IsofluxBoundary {
     ) -> (Vec<Arc<SensorsStatic>>, Vec<SensorsDynamic>) {
         // Define empty data arrays
         let results_static_empty: Arc<SensorsStatic> = Arc::new(SensorsStatic {
+            names: Vec::new(),
             greens_with_grid: Array2::zeros((0, 0)),
             greens_with_pf: Array2::zeros((0, 0)),
             greens_with_passives: Array2::zeros((0, 0)),
@@ -563,6 +564,7 @@ impl IsofluxBoundary {
 
             // Create the `SensorsStatic` data
             let results_static_this_time_slice: SensorsStatic = SensorsStatic {
+                names: sensor_names.clone(),
                 greens_with_grid: greens_with_grid.slice(s![i_time, .., ..]).to_owned(), // shape = [n_z * n_r, n_sensors]
                 greens_with_pf,
                 greens_with_passives: greens_with_passives.slice(s![i_time, .., ..]).to_owned(),

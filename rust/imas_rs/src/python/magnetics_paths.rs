@@ -93,6 +93,15 @@ fn lengths_rogowski_coil(magnetics: &Magnetics, level: usize, _at: &[usize]) -> 
     }
 }
 
+/// Length of each array-of-structures level along `rogowski_coil_gaps`.
+fn lengths_rogowski_coil_gaps(magnetics: &Magnetics, level: usize, at: &[usize]) -> Option<usize> {
+    match level {
+        0 => return Some(magnetics.rogowski_coil.len()),
+        1 => return Some(magnetics.rogowski_coil[at[0]].gaps.len()),
+        _ => return None,
+    }
+}
+
 /// Length of each array-of-structures level along `rogowski_coil_position`.
 fn lengths_rogowski_coil_position(magnetics: &Magnetics, level: usize, at: &[usize]) -> Option<usize> {
     match level {
@@ -1641,6 +1650,101 @@ static NODES_ROGOWSKI_COIL_CURRENT: &[Node] = &[
     },
 ];
 
+static NODES_ROGOWSKI_COIL_GAPS: &[Node] = &[
+    Node {
+        name: "name",
+        documentation: "Short string identifier for the gap, unique within the Rogowski coil",
+        units: "",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "STR_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    2,
+                    lengths_rogowski_coil_gaps,
+                    |magnetics: &Magnetics, at: &[usize]| -> STR_0D { magnetics.rogowski_coil[at[0]].gaps[at[1]].name.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "r_start",
+        documentation: "Major radius of the start of the gap. The gap is the straight line from (`r_start`, `z_start`) to (`r_end`, `z_end`), and the
+line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
+line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    2,
+                    lengths_rogowski_coil_gaps,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].gaps[at[1]].r_start.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "r_end",
+        documentation: "Major radius of the end of the gap",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    2,
+                    lengths_rogowski_coil_gaps,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].gaps[at[1]].r_end.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "z_start",
+        documentation: "Height of the start of the gap",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    2,
+                    lengths_rogowski_coil_gaps,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].gaps[at[1]].z_start.clone() },
+                )
+            },
+        }),
+    },
+    Node {
+        name: "z_end",
+        documentation: "Height of the end of the gap",
+        units: "m",
+        kind: NodeKind::Leaf(Leaf {
+            data_type: "FLT_0D",
+            read: |ids: &dyn Any, indices: &[IndexSpec]| {
+                let magnetics: &Magnetics = ids.downcast_ref().ok_or_else(|| "not a magnetics IDS".to_string())?;
+                gather(
+                    magnetics,
+                    indices,
+                    2,
+                    lengths_rogowski_coil_gaps,
+                    |magnetics: &Magnetics, at: &[usize]| -> FLT_0D { magnetics.rogowski_coil[at[0]].gaps[at[1]].z_end.clone() },
+                )
+            },
+        }),
+    },
+];
+
 static NODES_ROGOWSKI_COIL: &[Node] = &[
     Node {
         name: "name",
@@ -1729,6 +1833,14 @@ static NODES_ROGOWSKI_COIL: &[Node] = &[
         documentation: "Measured current inside the Rogowski coil contour. The normal direction to the Rogowski coil is defined by the order of points in the list of guiding centre positions. The current is positive when oriented in the same direction as the normal.",
         units: "A",
         kind: NodeKind::Structure(NODES_ROGOWSKI_COIL_CURRENT),
+    },
+    Node {
+        name: "gaps",
+        documentation: "The gaps in the coil's winding, where its contour, `position`, has no turns. The poloidal field along a gap is not
+integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
+divided by MU_0",
+        units: "",
+        kind: NodeKind::ArrayOfStructures(NODES_ROGOWSKI_COIL_GAPS),
     },
 ];
 

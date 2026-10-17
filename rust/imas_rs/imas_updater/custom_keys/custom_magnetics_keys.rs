@@ -12,6 +12,33 @@
 
 use crate::dd_base_types::{FLT_0D, STR_0D};
 
+pub struct MagneticsRogowski {
+    /// The gaps in the coil's winding, where its contour, `position`, has no turns. The poloidal field along a gap is not
+    /// integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
+    /// divided by MU_0
+    pub gaps: Vec<MagneticsRogowskiGaps>,
+}
+
+/// One gap in a Rogowski coil's winding
+pub struct MagneticsRogowskiGaps {
+    /// Short string identifier for the gap, unique within the Rogowski coil
+    pub name: STR_0D,
+    /// Major radius of the start of the gap. The gap is the straight line from (`r_start`, `z_start`) to (`r_end`, `z_end`), and the
+    /// line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
+    /// line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`
+    /// Units: m
+    pub r_start: FLT_0D,
+    /// Major radius of the end of the gap
+    /// Units: m
+    pub r_end: FLT_0D,
+    /// Height of the start of the gap
+    /// Units: m
+    pub z_start: FLT_0D,
+    /// Height of the end of the gap
+    /// Units: m
+    pub z_end: FLT_0D,
+}
+
 pub struct MagneticsFluxLoop {
     /// Greens tables: the poloidal flux at this flux loop per ampere flowing in each current source
     pub greens: MagneticsFluxLoopGreens,

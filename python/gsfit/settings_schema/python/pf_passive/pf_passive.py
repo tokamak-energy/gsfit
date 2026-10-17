@@ -20,72 +20,12 @@ from ..workflow import Workflow
 @dataclass(kw_only=True)
 class PfPassiveSettings:
     """
-    How the database reader builds the pf_passive IDS: the geometry and resistivity of the passive structures. The st40_mdsplus_with_digital_filter reader reads its run from the workflow.xml linked in `workflow`; the other readers read only the element named after them
+    How the database reader builds the pf_passive IDS: the geometry and resistivity of the passive structures. The st40_mdsplus_with_digital_filter reader reads its run from the workflow.xml linked in `workflow`
 
-    :param workflow: A link to workflow.xml, the central list of the codes which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the passive structures' geometry and resistivity from its `elmag`, VESSEL
-    :param st40_mdsplus: Where the st40_mdsplus reader reads the passive structures from
-    :param st40_spider_mdsplus: Where the st40_spider_mdsplus reader reads the passive structures from
-    :param mock_st40_mdsplus: Where the mock_st40_mdsplus reader reads the passive structures from
+    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the passive structures' geometry and resistivity from its ELMAG tree, VESSEL
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "pf_passive/pf_passive.xsd"
 
     workflow: Workflow | None = None
-    st40_mdsplus: PfPassiveSt40Mdsplus | None = None
-    st40_spider_mdsplus: PfPassiveSt40Mdsplus | None = None
-    mock_st40_mdsplus: PfPassiveMockSt40Mdsplus | None = None
-
-
-@dataclass(kw_only=True)
-class PfPassiveSt40Mdsplus:
-    """
-    Where a reader of ST40's MDSplus database reads the passive structures from. The st40_mdsplus and st40_spider_mdsplus readers both read them from ELMAG
-
-    :param elmag: The ELMAG run holding the passive structures' geometry and resistivity, VESSEL
-    """
-
-    elmag: WorkflowEntry
-
-
-@dataclass(kw_only=True)
-class WorkflowEntry:
-    """
-    Which run of an MDSplus tree to read. The tree is named by the element holding this, e.g. `elmag` for ELMAG
-
-    :param pulseNo: The pulse to read the tree from; nil for the pulse being reconstructed
-    :param run_name: The run of the tree to read, e.g. "BEST" or "RUN16"
-    :param usage: What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from
-    """
-
-    pulseNo: int | None
-    run_name: str
-    usage: str
-
-
-@dataclass(kw_only=True)
-class PfPassiveMockSt40Mdsplus:
-    """
-    Where the mock_st40_mdsplus reader reads the passive structures from
-
-    :param elmag: The mocked ELMAG tree holding the passive structures' geometry and resistivity
-    """
-
-    elmag: MockWorkflowEntry
-
-
-@dataclass(kw_only=True)
-class MockWorkflowEntry:
-    """
-    Which mocked MDSplus tree, pulse and run to read. The read is named by the element holding this, e.g. `elmag`. Reads are named separately from trees, so that one tree can be read more than once, e.g. from a different pulse
-
-    :param tree_name: The mocked MDSplus tree, e.g. "ELMAG" or "MAG". Its data is read from `mdsplus_mock_[tree_name]_[pulseNo].npz` in `mock_dir`, in database_reader.xml, with the tree name in lower case
-    :param pulseNo: The pulse to read the tree from; nil for the pulse being reconstructed
-    :param run_name: The run to read, which must be the run the mock was captured from, e.g. "BEST" or "RUN16"
-    :param usage: What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from
-    """
-
-    tree_name: str
-    pulseNo: int | None
-    run_name: str
-    usage: str

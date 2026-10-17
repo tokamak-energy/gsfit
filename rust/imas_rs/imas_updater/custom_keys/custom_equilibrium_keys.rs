@@ -20,7 +20,7 @@
 //! Note that these keys have no IMAS counterpart, so they cannot be written to an IMAS
 //! backend. Anything written out over the standard data dictionary must skip them.
 
-use crate::dd_base_types::{FLT_0D, FLT_1D, FLT_2D, INT_0D, STR_0D};
+use crate::dd_base_types::{FLT_0D, FLT_1D, FLT_2D, FLT_3D, INT_0D, STR_0D};
 
 /// Profiles along the horizontal line through the middle of the grid.
 ///
@@ -249,11 +249,31 @@ pub struct EquilibriumConvergence {
     pub flux_evaluations_n: INT_0D,
 }
 
-/// The data dictionary uses this type for both `time_slice(itime)/constraints/pf_current(i1)` and
-/// `time_slice(itime)/constraints/ip`, so the key below is on `constraints/ip` too, where it is left empty.
+pub struct EquilibriumConstraints {
+    /// Set of Rogowski coils, in the same order as `magnetics/rogowski_coil`. The data dictionary has no constraint for them
+    /// Units: A
+    pub rogowski_coil: Vec<EquilibriumConstraints0dIpLike>,
+}
+
+/// The data dictionary uses this type for `time_slice(itime)/constraints/pf_current(i1)` and `time_slice(itime)/constraints/ip`,
+/// and the custom key `time_slice(itime)/constraints/rogowski_coil(i1)` uses it too.
 pub struct EquilibriumConstraints0dIpLike {
-    /// Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name`
-    /// for `constraints/pf_current(i1)`
+    /// Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for
+    /// `constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
+    /// `magnetics/ip(0)/method_name` for `constraints/ip`
+    pub name: STR_0D,
+}
+
+/// The data dictionary uses this type for `time_slice(itime)/constraints/b_field_pol_probe(i1)` only.
+pub struct EquilibriumConstraints0dOneLike {
+    /// Name of the poloidal field probe, matching `magnetics/b_field_pol_probe(i1)/name`, e.g. `"P101"`
+    pub name: STR_0D,
+}
+
+/// The data dictionary uses this type for `time_slice(itime)/constraints/diamagnetic_flux` only.
+pub struct EquilibriumConstraints0dB0Like {
+    /// Name of the method the diamagnetic flux is calculated with, matching `magnetics/diamagnetic_flux(0)/method_name`,
+    /// e.g. `"DIALOOP"`
     pub name: STR_0D,
 }
 
@@ -263,10 +283,10 @@ pub struct EquilibriumConstraints0dIpLike {
 ///
 /// The data dictionary also uses this type for `b_field_tor_vacuum_r`, `faraday_angle(i1)`, `flux_loop(i1)`,
 /// `iron_core_segment(i1)/magnetization_r` and `.../magnetization_z`, `mse_polarization_angle(i1)` and `n_e_line(i1)`, so the
-/// keys below are on all of those too, where they are left empty.
+/// keys below are on all of those too. Of those, only `flux_loop(i1)/name` is filled; the rest are left empty.
 pub struct EquilibriumConstraints0d {
     /// Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-    /// `constraints/pf_passive_current(i1)`
+    /// `constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`
     pub name: STR_0D,
     /// The degrees of freedom the passive loop's current is fitted with, `pf_passive/loop(i1)/dof`, in the same order
     pub dof: Vec<EquilibriumConstraints0dDof>,
@@ -289,7 +309,7 @@ pub struct EquilibriumConstraints0dDof {
 /// The IDS root. `greens` and `limiter` hang off it rather than off `time_slice`, because they are
 /// geometry and so are the same for every time-slice.
 pub struct Equilibrium {
-    /// Greens tables: the poloidal flux and its derivatives per ampere in each current source
+    /// Greens tables: what each observer, the grid or a magnetic sensor, sees per ampere in each current source
     pub greens: EquilibriumGreens,
     /// The limiter: the immobile surfaces which bound the plasma. A copy of the `wall` IDS's
     /// `wall/description_2d(0)/limiter`, made by `Plasma.copy_from_wall_ids`, so that the solver and
@@ -515,50 +535,96 @@ pub struct EquilibriumSourceFunction {
     pub coefficients: FLT_1D,
 }
 
-/// Greens tables: the poloidal flux and its derivatives at every point of the plasma grid, per
-/// ampere flowing in each current source.
+/// Greens tables: what each observer sees, per ampere flowing in each current source.
 ///
-/// These are geometry only - they depend on where the conductors and the grid are, never on the
+/// These are geometry only - they depend on where the observers and the conductors are, never on the
 /// plasma - so they are calculated once, before the first time-slice is solved, and are shared by
 /// every time-slice. That is why they hang off the IDS root rather than off `time_slice`.
+///
+/// They are arranged observer first, then source: `greens/<observer>/<source>`. This is the order of the data
+/// dictionary's `em_coupling` IDS, "Quantity_Sensor_Source". The observers are the (R, Z) grid and the magnetic
+/// sensors, and every observer has the same three sources:
+/// * `plasma` - the plasma current in each grid cell
+/// * `pf_active` - the PF coils, in the order of `pf_active/coil`
+/// * `pf_passive` - the passive conductors' degrees of freedom, in the order of `pf_passive/loop`, and then of
+///   `loop(i1)/dof`
+///
+/// Each magnetic sensor has one entry, with the same name and in the same order as in `magnetics/<sensor>(i1)` and
+/// `time_slice(itime)/constraints/<sensor>(i1)`, so a sensor's tables are found by the name of its constraint. Its
+/// tables with the PF coils and the passive degrees of freedom are arrays over them, in the order of
+/// `greens/grid/pf_active` and `greens/grid/pf_passive`, which name them.
 pub struct EquilibriumGreens {
-    /// Active poloidal field coils, one entry per coil
-    pub pf_active: Vec<EquilibriumGreensPfActive>,
-    /// Passive conductors, one entry per conductor. Each carries its own degrees of freedom,
-    /// because a passive is represented by a set of current distributions (e.g. eigenmodes)
-    /// rather than by a single current
-    pub pf_passive: Vec<EquilibriumGreensPfPassive>,
-    /// The plasma grid onto itself: the flux at each grid point due to a unit current at each
-    /// other grid point. Toroidal symmetry makes this a function of the vertical *offset* between
-    /// the two points, not of their absolute heights, which is why only one vertical index is
-    /// stored
-    pub grid_grid: EquilibriumGreensGridGrid,
+    /// Observer: the (R, Z) grid
+    pub grid: EquilibriumGreensGrid,
+    /// Observer: each poloidal field probe, in the order of `magnetics/b_field_pol_probe`
+    pub b_field_pol_probe: Vec<EquilibriumGreensBFieldPolProbe>,
+    /// Observer: each flux loop, in the order of `magnetics/flux_loop`
+    pub flux_loop: Vec<EquilibriumGreensFluxLoop>,
+    /// Observer: each Rogowski coil, in the order of `magnetics/rogowski_coil`
+    pub rogowski_coil: Vec<EquilibriumGreensRogowskiCoil>,
 }
 
-/// Greens table for one active poloidal field coil, summed over the coil's filaments
-pub struct EquilibriumGreensPfActive {
-    /// Name of the coil, e.g. `"BVL"`
+/// Observer: the (R, Z) grid. The poloidal flux and its derivatives at every grid point, per ampere in each current source
+pub struct EquilibriumGreensGrid {
+    /// Source: the plasma current in each grid cell
+    pub plasma: EquilibriumGreensGridPlasma,
+    /// Source: each PF coil, in the order of `pf_active/coil`. Every sensor's `pf_active` is in this order too
+    pub pf_active: Vec<EquilibriumGreensGridPfActive>,
+    /// Source: each passive conductor, in the order of `pf_passive/loop`, with its degrees of freedom. Every sensor's
+    /// `pf_passive`, and `time_slice(itime)/passive_dof_values`, are in this order too
+    pub pf_passive: Vec<EquilibriumGreensGridPfPassive>,
+}
+
+/// The grid onto itself: the flux at each grid point due to a unit current in each grid cell. Toroidal symmetry makes this a
+/// function of the vertical *offset* between the two points, not of their absolute heights, so it is only stored for a source
+/// in the lowest row, and an observer `i_offset_z` rows above it
+pub struct EquilibriumGreensGridPlasma {
+    /// Poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1
+    pub psi: FLT_3D,
+    /// Radial derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_psi_d_r: FLT_3D,
+    /// Vertical derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_psi_d_z: FLT_3D,
+    /// Second radial derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_r2: FLT_3D,
+    /// Mixed second derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_r_d_z: FLT_3D,
+    /// Second vertical derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-2
+    pub d2_psi_d_z2: FLT_3D,
+    /// Third derivative of the poloidal flux, twice by r, once by z, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_r2_d_z: FLT_3D,
+    /// Third derivative of the poloidal flux, once by r, twice by z, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_r_d_z2: FLT_3D,
+    /// Third vertical derivative of the poloidal flux, per ampere in the source.
+    /// Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+    /// Units: Wb.A^-1.m^-3
+    pub d3_psi_d_z3: FLT_3D,
+}
+
+/// Source: one PF coil, summed over the coil's filaments
+pub struct EquilibriumGreensGridPfActive {
+    /// Name of the coil, matching `pf_active/coil(i1)/name`, e.g. `"BVL"`
     pub name: STR_0D,
     /// Poloidal flux at every grid point, per ampere in the source.
     /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1
     pub psi: FLT_2D,
-    /// Radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z, n_r)`
-    /// Units: T.A^-1
-    pub br: FLT_2D,
-    /// Vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z, n_r)`
-    /// Units: T.A^-1
-    pub bz: FLT_2D,
-    /// Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z, n_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_br_d_z: FLT_2D,
-    /// Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z, n_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_bz_d_z: FLT_2D,
     /// Radial derivative of the poloidal flux at every grid point, per ampere in the source.
     /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-1
@@ -593,127 +659,125 @@ pub struct EquilibriumGreensPfActive {
     pub d3_psi_d_z3: FLT_2D,
 }
 
-/// Greens tables for one passive conductor
-pub struct EquilibriumGreensPfPassive {
-    /// Name of the passive conductor, e.g. `"IVC"`
+/// Source: one passive conductor, with one entry for each of its degrees of freedom
+pub struct EquilibriumGreensGridPfPassive {
+    /// Name of the passive conductor, matching `pf_passive/loop(i1)/name`, e.g. `"IVC"`
     pub name: STR_0D,
-    /// Degrees of freedom of this conductor, one entry per current distribution
-    pub dof: Vec<EquilibriumGreensPfPassiveDof>,
+    /// Degrees of freedom of this conductor, one entry per current distribution, in the order of `pf_passive/loop(i1)/dof`
+    pub dof: Vec<EquilibriumGreensGridPfPassiveDof>,
 }
 
-/// Greens table for one degree of freedom of one passive conductor, summed over the filaments
-/// weighted by that degree of freedom's current distribution
-pub struct EquilibriumGreensPfPassiveDof {
-    /// Name of the degree of freedom, e.g. `"EIG_01"`
+/// Source: one degree of freedom of one passive conductor, summed over the filaments weighted by that degree of freedom's
+/// current distribution
+pub struct EquilibriumGreensGridPfPassiveDof {
+    /// Name of the degree of freedom, matching `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
     pub name: STR_0D,
     /// Poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1
-    pub psi: FLT_1D,
-    /// Radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: T.A^-1
-    pub br: FLT_1D,
-    /// Vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: T.A^-1
-    pub bz: FLT_1D,
-    /// Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_br_d_z: FLT_1D,
-    /// Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_bz_d_z: FLT_1D,
-    /// Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-1
-    pub d_psi_d_r: FLT_1D,
-    /// Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-1
-    pub d_psi_d_z: FLT_1D,
-    /// Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-2
-    pub d2_psi_d_r2: FLT_1D,
-    /// Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-2
-    pub d2_psi_d_r_d_z: FLT_1D,
-    /// Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-2
-    pub d2_psi_d_z2: FLT_1D,
-    /// Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-3
-    pub d3_psi_d_r2_d_z: FLT_1D,
-    /// Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-3
-    pub d3_psi_d_r_d_z2: FLT_1D,
-    /// Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r)`
-    /// Units: Wb.A^-1.m^-3
-    pub d3_psi_d_z3: FLT_1D,
-}
-
-/// Greens tables for the plasma grid onto itself
-pub struct EquilibriumGreensGridGrid {
-    /// Poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1
     pub psi: FLT_2D,
-    /// Radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-    /// Units: T.A^-1
-    pub br: FLT_2D,
-    /// Vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-    /// Units: T.A^-1
-    pub bz: FLT_2D,
-    /// Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_br_d_z: FLT_2D,
-    /// Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-    /// Units: T.A^-1.m^-1
-    pub d_bz_d_z: FLT_2D,
     /// Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-1
     pub d_psi_d_r: FLT_2D,
     /// Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-1
     pub d_psi_d_z: FLT_2D,
     /// Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-2
     pub d2_psi_d_r2: FLT_2D,
     /// Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-2
     pub d2_psi_d_r_d_z: FLT_2D,
     /// Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-2
     pub d2_psi_d_z2: FLT_2D,
     /// Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-3
     pub d3_psi_d_r2_d_z: FLT_2D,
     /// Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-3
     pub d3_psi_d_r_d_z2: FLT_2D,
     /// Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-    /// Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
+    /// Shape = `(n_z, n_r)`
     /// Units: Wb.A^-1.m^-3
     pub d3_psi_d_z3: FLT_2D,
+}
+
+/// Observer: one poloidal field probe, `magnetics/b_field_pol_probe(i1)`. Each table is the field the probe measures, along its
+/// normal, per ampere in the source
+pub struct EquilibriumGreensBFieldPolProbe {
+    /// Name of the probe, matching `magnetics/b_field_pol_probe(i1)/name` and `time_slice(itime)/constraints/b_field_pol_probe(i1)/name`,
+    /// e.g. `"P101"`
+    pub name: STR_0D,
+    /// Source: the plasma current in each grid cell.
+    /// Shape = `(n_z, n_r)`
+    /// Units: T.A^-1
+    pub plasma: FLT_2D,
+    /// Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the probe's height, for the change
+    /// in the field with the vertical shift `time_slice(itime)/convergence/delta_z`.
+    /// Shape = `(n_z, n_r)`
+    /// Units: T.A^-1.m^-1
+    pub d_plasma_d_z: FLT_2D,
+    /// Source: each PF coil, in the order of `greens/grid/pf_active`
+    /// Units: T.A^-1
+    pub pf_active: FLT_1D,
+    /// Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
+    /// Units: T.A^-1
+    pub pf_passive: FLT_1D,
+}
+
+/// Observer: one flux loop, `magnetics/flux_loop(i1)`. Each table is the poloidal flux through the loop, GSFit's `psi`, per ampere
+/// in the source
+pub struct EquilibriumGreensFluxLoop {
+    /// Name of the flux loop, matching `magnetics/flux_loop(i1)/name` and `time_slice(itime)/constraints/flux_loop(i1)/name`, e.g.
+    /// `"L001"`
+    pub name: STR_0D,
+    /// Source: the plasma current in each grid cell.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1
+    pub plasma: FLT_2D,
+    /// Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the loop's height, for the change
+    /// in the flux with the vertical shift `time_slice(itime)/convergence/delta_z`.
+    /// Shape = `(n_z, n_r)`
+    /// Units: Wb.A^-1.m^-1
+    pub d_plasma_d_z: FLT_2D,
+    /// Source: each PF coil, in the order of `greens/grid/pf_active`
+    /// Units: Wb.A^-1
+    pub pf_active: FLT_1D,
+    /// Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
+    /// Units: Wb.A^-1
+    pub pf_passive: FLT_1D,
+}
+
+/// Observer: one Rogowski coil, `magnetics/rogowski_coil(i1)`. Each table is the current the coil measures, per ampere in the
+/// source: the current inside the coil's contour, less `integral(b . d_l) / mu_0` along each of its gaps, from the gap's start
+/// to its end
+pub struct EquilibriumGreensRogowskiCoil {
+    /// Name of the Rogowski coil, matching `magnetics/rogowski_coil(i1)/name` and
+    /// `time_slice(itime)/constraints/rogowski_coil(i1)/name`, e.g. `"INIVC000"`
+    pub name: STR_0D,
+    /// Source: the plasma current in each grid cell.
+    /// Shape = `(n_z, n_r)`
+    /// Units: A.A^-1
+    pub plasma: FLT_2D,
+    /// Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the coil's height, for the change
+    /// in the current with the vertical shift `time_slice(itime)/convergence/delta_z`. Only the gaps contribute to it.
+    /// Shape = `(n_z, n_r)`
+    /// Units: A.A^-1.m^-1
+    pub d_plasma_d_z: FLT_2D,
+    /// Source: each PF coil, in the order of `greens/grid/pf_active`
+    /// Units: A.A^-1
+    pub pf_active: FLT_1D,
+    /// Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
+    /// Units: A.A^-1
+    pub pf_passive: FLT_1D,
 }
 
 /// The limiter: the immobile surfaces which bound the plasma.

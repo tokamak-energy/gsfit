@@ -4,6 +4,7 @@ Read XML settings into dataclasses, checking every XML file against its XML sche
 This module knows nothing about any one code's settings.
 The code passes in the dataclass to fill, e.g. GSFit's settings, and gets back an instance of that same dataclass, so the result is fully typed.
 A matrix, written as one `<row>` per row, is read into a 2D numpy array; see `matrix_row_element`.
+A repeated element with a key, e.g. `<tree>`, keyed by its `<tree_name>`, is read into a `KeyedList`, which can be indexed by key, e.g. `workflow.tree["ELMAG"]`.
 """
 
 import dataclasses
@@ -21,6 +22,8 @@ from xmlschema.validators import XsdGroup
 from xmlschema.validators import XsdList
 from xmlschema.validators import XsdSimpleType
 
+from .keyed_list import KeyedList
+
 DataclassT = typing.TypeVar("DataclassT")
 
 
@@ -37,7 +40,7 @@ def read_xml_settings_to_dataclasses(
     A link is followed when the type of its field is the dataclass of the linked file's root element, e.g. `grid: Grid`, and the linked file is read in its place.
     Otherwise the link is read like any other element, e.g. into a dataclass with an `href` field.
     A file linked from several places, e.g. `workflow.xml`, which every IDS's file links to, is read once, and every link to it holds the same dataclass.
-    So a setting changed in Python through one of the links, e.g. `settings.ids.pf_active.workflow.psu2coil.run_name = "RUN02"`, is changed for all of them,
+    So a setting changed in Python through one of the links, e.g. `settings.ids.pf_active.workflow.tree["PSU2COIL"].run_name = "RUN02"`, is changed for all of them,
     as changing the file would.
 
     Every XML file is checked against the XML schema of the dataclass of its root element, which that dataclass names in its `XSD_PATH`,
@@ -112,6 +115,7 @@ def _decoded_xml_to_dataclass(
     * `X | None` for an optional element, which is None if the element is not given, or is nil, e.g. `<pulseNo xsi:nil="true"/>`
     * a dataclass, for an element holding child elements or attributes
     * `list[...]`, for a repeated element, e.g. `list[FluxLoop]`, or a space-separated list, e.g. "0.1 0.2 0.3" -> `list[float]`
+    * `KeyedList[...]`, for a repeated element with a key, e.g. `KeyedList[WorkflowTree]`, which can also be indexed by key, e.g. `["ELMAG"]`; see `KeyedList`
     * `npt.NDArray[np.float64]`, for a matrix with one `<row>` per row; see `matrix_row_element`
 
     :param dataclass_type: Dataclass of the element, e.g. `Grid`
@@ -153,8 +157,8 @@ def _decoded_xml_to_dataclass(
                     value_type = argument_type
 
         # `xmlschema` decodes both a repeated element and a space-separated list as a `list`, whose items are all checked in the same way.
-        # Anything else is a single item
-        is_list: bool = typing.get_origin(value_type) is list
+        # A repeated element with a key is held in a `KeyedList`, e.g. `KeyedList[WorkflowTree]`. Anything else is a single item
+        is_list: bool = typing.get_origin(value_type) in (list, KeyedList)
         item_type: typing.Any = value_type
         items: list[typing.Any] = [value]
         if is_list:
@@ -254,10 +258,12 @@ def _decoded_xml_to_dataclass(
                     raise TypeError(f"{xml_file_path}: `{'/'.join(field_names)}` is {plain_value!r}, which is not a `{plain_type.__name__}`")
             item_values.append(item)
 
-        if is_list:
-            field_values[field_name] = item_values
-        else:
+        if not is_list:
             field_values[field_name] = item_values[0]
+        elif typing.get_origin(value_type) is KeyedList:
+            field_values[field_name] = KeyedList(item_values)
+        else:
+            field_values[field_name] = item_values
 
     # Raises `TypeError` if a field with no default is not given
     return dataclass_type(**field_values)

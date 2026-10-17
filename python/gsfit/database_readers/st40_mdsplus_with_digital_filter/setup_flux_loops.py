@@ -38,10 +38,10 @@ def setup_flux_loops(
 
     # The MAG run to read, from the `workflow.xml` which `magnetics.xml` links to
     workflow = settings.workflow
-    if workflow is None or workflow.mag is None:
-        raise ValueError("`magnetics.xml` must link to a `workflow.xml` holding `mag`, which says which MAG run to read the flux loops from")
+    if workflow is None or "MAG" not in workflow.tree:
+        raise ValueError("`magnetics.xml` must link to a `workflow.xml` holding the MAG `tree`, which says which MAG run to read the flux loops from")
     # A nil `pulseNo` reads the pulse being reconstructed
-    mag_settings = workflow.mag
+    mag_settings = workflow.tree["MAG"]
     if mag_settings.pulseNo is None:
         mag_pulseNo = pulseNo
     else:

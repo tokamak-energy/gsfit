@@ -3,7 +3,7 @@
     Schema for pulse_schedule.xml: how the database reader builds the pulse_schedule IDS, the gaps between the plasma boundary and the wall.
 
     The root element is `pulse_schedule_settings`, the IDS's name followed by `_settings`.
-    `workflow` links to workflow.xml, the central list of the codes which the database reader reads from, and which run of each.
+    `workflow` links to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each.
     Only the st40_mdsplus_with_digital_filter reader builds a pulse_schedule, from its ELMAG; without one, the equilibrium has no gaps.
     XmlPath and Link are the same in each IDS's schema, so change them all together.
     See ../GSFIT_code_settings.xsd for the conventions shared by all the schemas.
@@ -34,7 +34,7 @@
             <xs:all>
                 <xs:element name="workflow" type="Link" minOccurs="0">
                     <xs:annotation>
-                        <xs:documentation>A link to workflow.xml, the central list of the codes which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the gaps, their names, origins and angles, from its `elmag`, GAPS</xs:documentation>
+                        <xs:documentation>A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the gaps, their names, origins and angles, from its ELMAG tree, GAPS</xs:documentation>
                         <xs:appinfo>
                             <schema>../workflow.xsd</schema>
                         </xs:appinfo>

@@ -13,15 +13,13 @@
     * Each IDS has its own directory and file, named as in the IMAS Data Dictionary, e.g. wall/wall.xml,
       linked from `ids` in GSFIT_code_settings.xml.
       * The IDSs GSFit reads, e.g. wall, pf_active and magnetics, are built by the database reader, which
-        `method` in database_reader.xml picks. Which run of which code to read, e.g. ELMAG's RUN16, is set
-        once, in workflow.xml, the central list of the codes which the database reader reads from. Each
+        `method` in database_reader.xml picks. Which run of which MDSplus tree to read, e.g. ELMAG's RUN16, is
+        set once, in workflow.xml, the central list of the trees which the database reader reads from. Each
         IDS's file links to it, in `workflow`, e.g. `<workflow href="../workflow.xml"/>` in
-        pf_active/pf_active.xml, and the reader reads the codes it needs from it. So far only the
-        st40_mdsplus_with_digital_filter reader does. The other readers still read their runs from their
-        own optional element in each IDS's file, named after the reader, so switching between them is a
-        change of `method` alone. A reader which needs nothing to build an IDS has no element in that
-        IDS's file. Settings which every reader needs, such as tf's reference radius, sit beside the
-        readers' elements.
+        pf_active/pf_active.xml, and the reader selects the trees it needs from it by their `tree_name`. So far only the
+        st40_mdsplus_with_digital_filter reader reads every IDS's file; the st40_mdsplus reader reads only
+        thomson_scattering.xml. An IDS's file holds only its link to workflow.xml, and the settings which
+        do not come from a tree, such as tf's reference radius, which every reader needs.
       * The IDS GSFit writes, equilibrium, is built by GSFit itself. equilibrium/equilibrium.xml links to
         GSFit's own settings, e.g. the grid and the constraints, in the same directory.
     * A link's path is relative to the file holding the link, so a settings directory can use a file
@@ -46,8 +44,8 @@
     * Units are in `xs:appinfo/units`, as in the IMAS Data Dictionary: SI symbols such as m, s and A, and 1
       for dimensionless. Counts have no units.
     * The "method" elements are enums. Each value names the sibling element that holds that method's
-      settings. The exception is `method` in database_reader.xml, whose value names an element in each
-      IDS's file.
+      settings. The exception is `method` in database_reader.xml, which has no sibling elements: the reader
+      it picks reads each IDS's file, and the workflow.xml they link to.
     * Types follow the Rust side: usize -> xs:nonNegativeInteger, f64 -> xs:double, bool -> xs:boolean.
     * JSON's `null` is `xsi:nil="true"` on an element declared `nillable="true"`.
     * An array of numbers is a space-separated list, e.g. "0.1 0.2 0.3", such as the times in

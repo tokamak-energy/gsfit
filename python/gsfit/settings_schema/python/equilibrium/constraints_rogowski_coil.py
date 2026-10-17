@@ -14,19 +14,21 @@ import typing
 from dataclasses import dataclass
 from dataclasses import field
 
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
+
 
 @dataclass(kw_only=True)
 class ConstraintsRogowskiCoil:
     """
     How each Rogowski coil is fitted, one `rogowski_coil` per coil. A coil the database has but this file does not list is not fitted, and a listed coil the database does not have is ignored. Not read by the freegs reader
 
-    :param rogowski_coil: One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses
+    :param rogowski_coil: One Rogowski coil, which measures the current through it: the plasma current and the currents in the structures it encloses. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `rogowski_coil[name]`
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "equilibrium/constraints_rogowski_coil.xsd"
 
-    rogowski_coil: list[RogowskiCoil] = field(default_factory=list)
+    rogowski_coil: KeyedList[RogowskiCoil] = field(default_factory=KeyedList)
 
 
 @dataclass(kw_only=True)
@@ -40,6 +42,9 @@ class RogowskiCoil:
     :param include: Whether the constraint is fitted
     :param comment: Free text, e.g. why the constraint is not included; not used by the fit
     """
+
+    # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique
+    KEY: typing.ClassVar[str] = "name"
 
     name: str
     expected_value: float  # [A]

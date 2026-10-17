@@ -1070,6 +1070,12 @@ class _EquilibriumConstraintsItem:
     def constraints_n(self) -> Path[int]:
         """Number of constraints used (i.e. having a non-zero weight)
         """
+    @property
+    def rogowski_coil(self) -> _EquilibriumConstraints0dIpLikeArrayFromItem:
+        """Set of Rogowski coils, in the same order as `magnetics/rogowski_coil`. The data dictionary has no constraint for them
+
+        Units: A
+        """
 
 class _EquilibriumConstraintsMany:
     """Measurements to constrain the equilibrium, output values and accuracy of the fit
@@ -1199,6 +1205,12 @@ class _EquilibriumConstraintsMany:
     def constraints_n(self) -> Path[npt.NDArray[np.int32]]:
         """Number of constraints used (i.e. having a non-zero weight)
         """
+    @property
+    def rogowski_coil(self) -> _EquilibriumConstraints0dIpLikeArrayFromMany:
+        """Set of Rogowski coils, in the same order as `magnetics/rogowski_coil`. The data dictionary has no constraint for them
+
+        Units: A
+        """
 
 class _EquilibriumConstraints0dItem:
     """Scalar constraint with no sign convention transformation
@@ -1251,7 +1263,7 @@ class _EquilibriumConstraints0dItem:
     @property
     def name(self) -> Path[str]:
         """Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`
+`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`
         """
     @property
     def dof(self) -> _EquilibriumConstraints0dDofArrayFromItem:
@@ -1322,7 +1334,7 @@ class _EquilibriumConstraints0dMany:
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
         """Name of what was measured or fitted, matching its name in the source IDS, e.g. `pf_passive/loop(i1)/name` for
-`constraints/pf_passive_current(i1)`
+`constraints/pf_passive_current(i1)`, and `magnetics/flux_loop(i1)/name` for `constraints/flux_loop(i1)`
         """
     @property
     def dof(self) -> _EquilibriumConstraints0dDofArrayFromMany:
@@ -1390,6 +1402,11 @@ class _EquilibriumConstraints0dB0LikeItem:
 
         Units: 1
         """
+    @property
+    def name(self) -> Path[str]:
+        """Name of the method the diamagnetic flux is calculated with, matching `magnetics/diamagnetic_flux(0)/method_name`,
+e.g. `"DIALOOP"`
+        """
 
 class _EquilibriumConstraints0dB0LikeMany:
     """Scalar constraint with toroidal-field-like sign convention
@@ -1438,6 +1455,11 @@ class _EquilibriumConstraints0dB0LikeMany:
         """Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
 
         Units: 1
+        """
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of the method the diamagnetic flux is calculated with, matching `magnetics/diamagnetic_flux(0)/method_name`,
+e.g. `"DIALOOP"`
         """
 
 class _EquilibriumConstraints0dDofItem:
@@ -1508,8 +1530,9 @@ class _EquilibriumConstraints0dIpLikeItem:
         """
     @property
     def name(self) -> Path[str]:
-        """Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name`
-for `constraints/pf_current(i1)`
+        """Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for
+`constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
+`magnetics/ip(0)/method_name` for `constraints/ip`
         """
 
 class _EquilibriumConstraints0dIpLikeMany:
@@ -1562,8 +1585,9 @@ class _EquilibriumConstraints0dIpLikeMany:
         """
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name`
-for `constraints/pf_current(i1)`
+        """Name of what was measured, matching its name in the source IDS, e.g. `pf_active/coil(i1)/name` for
+`constraints/pf_current(i1)`, `magnetics/rogowski_coil(i1)/name` for `constraints/rogowski_coil(i1)`, and
+`magnetics/ip(0)/method_name` for `constraints/ip`
         """
 
 class _EquilibriumConstraints0dOneLikeItem:
@@ -1614,6 +1638,10 @@ class _EquilibriumConstraints0dOneLikeItem:
 
         Units: 1
         """
+    @property
+    def name(self) -> Path[str]:
+        """Name of the poloidal field probe, matching `magnetics/b_field_pol_probe(i1)/name`, e.g. `"P101"`
+        """
 
 class _EquilibriumConstraints0dOneLikeMany:
     """Scalar constraint with geometry-dependent sign convention
@@ -1662,6 +1690,10 @@ class _EquilibriumConstraints0dOneLikeMany:
         """Squared error normalized by the variance considered in the minimization process : chi_squared = weight^2 *(reconstructed - measured)^2 / sigma^2, where sigma is the standard deviation of the measurement error
 
         Units: 1
+        """
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of the poloidal field probe, matching `magnetics/b_field_pol_probe(i1)/name`, e.g. `"P101"`
         """
 
 class _EquilibriumConstraints0dPositionItem:
@@ -2955,21 +2987,20 @@ class _EquilibriumGreensItem:
     """
 
     @property
-    def pf_active(self) -> _EquilibriumGreensPfActiveArrayFromItem:
-        """Active poloidal field coils, one entry per coil
+    def grid(self) -> _EquilibriumGreensGridItem:
+        """Observer: the (R, Z) grid
         """
     @property
-    def pf_passive(self) -> _EquilibriumGreensPfPassiveArrayFromItem:
-        """Passive conductors, one entry per conductor. Each carries its own degrees of freedom,
-because a passive is represented by a set of current distributions (e.g. eigenmodes)
-rather than by a single current
+    def b_field_pol_probe(self) -> _EquilibriumGreensBFieldPolProbeArrayFromItem:
+        """Observer: each poloidal field probe, in the order of `magnetics/b_field_pol_probe`
         """
     @property
-    def grid_grid(self) -> _EquilibriumGreensGridGridItem:
-        """The plasma grid onto itself: the flux at each grid point due to a unit current at each
-other grid point. Toroidal symmetry makes this a function of the vertical *offset* between
-the two points, not of their absolute heights, which is why only one vertical index is
-stored
+    def flux_loop(self) -> _EquilibriumGreensFluxLoopArrayFromItem:
+        """Observer: each flux loop, in the order of `magnetics/flux_loop`
+        """
+    @property
+    def rogowski_coil(self) -> _EquilibriumGreensRogowskiCoilArrayFromItem:
+        """Observer: each Rogowski coil, in the order of `magnetics/rogowski_coil`
         """
 
 class _EquilibriumGreensMany:
@@ -2977,639 +3008,728 @@ class _EquilibriumGreensMany:
     """
 
     @property
-    def pf_active(self) -> _EquilibriumGreensPfActiveArrayFromMany:
-        """Active poloidal field coils, one entry per coil
+    def grid(self) -> _EquilibriumGreensGridMany:
+        """Observer: the (R, Z) grid
         """
     @property
-    def pf_passive(self) -> _EquilibriumGreensPfPassiveArrayFromMany:
-        """Passive conductors, one entry per conductor. Each carries its own degrees of freedom,
-because a passive is represented by a set of current distributions (e.g. eigenmodes)
-rather than by a single current
+    def b_field_pol_probe(self) -> _EquilibriumGreensBFieldPolProbeArrayFromMany:
+        """Observer: each poloidal field probe, in the order of `magnetics/b_field_pol_probe`
         """
     @property
-    def grid_grid(self) -> _EquilibriumGreensGridGridMany:
-        """The plasma grid onto itself: the flux at each grid point due to a unit current at each
-other grid point. Toroidal symmetry makes this a function of the vertical *offset* between
-the two points, not of their absolute heights, which is why only one vertical index is
-stored
-        """
-
-class _EquilibriumGreensGridGridItem:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
-
-    @property
-    def psi(self) -> Path[npt.NDArray[np.float64]]:
-        """Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1
+    def flux_loop(self) -> _EquilibriumGreensFluxLoopArrayFromMany:
+        """Observer: each flux loop, in the order of `magnetics/flux_loop`
         """
     @property
-    def br(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: T.A^-1
-        """
-    @property
-    def bz(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: T.A^-1
-        """
-    @property
-    def d_br_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: T.A^-1.m^-1
-        """
-    @property
-    def d_bz_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: T.A^-1.m^-1
-        """
-    @property
-    def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-1
-        """
-    @property
-    def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-1
-        """
-    @property
-    def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
-        """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
-        """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-3
-        """
-    @property
-    def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
-        """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-3
-        """
-    @property
-    def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
-        """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-3
+    def rogowski_coil(self) -> _EquilibriumGreensRogowskiCoilArrayFromMany:
+        """Observer: each Rogowski coil, in the order of `magnetics/rogowski_coil`
         """
 
-class _EquilibriumGreensGridGridMany:
-    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
-    """
-
-    @property
-    def psi(self) -> Path[npt.NDArray[np.float64]]:
-        """Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1
-        """
-    @property
-    def br(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: T.A^-1
-        """
-    @property
-    def bz(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: T.A^-1
-        """
-    @property
-    def d_br_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: T.A^-1.m^-1
-        """
-    @property
-    def d_bz_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: T.A^-1.m^-1
-        """
-    @property
-    def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-1
-        """
-    @property
-    def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-1
-        """
-    @property
-    def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
-        """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
-        """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-3
-        """
-    @property
-    def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
-        """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-3
-        """
-    @property
-    def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
-        """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r, n_r)`, which unflattens to `(i_offset_z, i_r, i_current_r)`
-
-        Units: Wb.A^-1.m^-3
-        """
-
-class _EquilibriumGreensPfActiveItem:
+class _EquilibriumGreensBFieldPolProbeItem:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
     """
 
     @property
     def name(self) -> Path[str]:
-        """Name of the coil, e.g. `"BVL"`
+        """Name of the probe, matching `magnetics/b_field_pol_probe(i1)/name` and `time_slice(itime)/constraints/b_field_pol_probe(i1)/name`,
+e.g. `"P101"`
         """
     @property
-    def psi(self) -> Path[npt.NDArray[np.float64]]:
-        """Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1
-        """
-    @property
-    def br(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial magnetic field at every grid point, per ampere in the source.
+    def plasma(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell.
 Shape = `(n_z, n_r)`
 
         Units: T.A^-1
         """
     @property
-    def bz(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical magnetic field at every grid point, per ampere in the source.
+    def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the probe's height, for the change
+in the field with the vertical shift `time_slice(itime)/convergence/delta_z`.
 Shape = `(n_z, n_r)`
+
+        Units: T.A^-1.m^-1
+        """
+    @property
+    def pf_active(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each PF coil, in the order of `greens/grid/pf_active`
 
         Units: T.A^-1
         """
     @property
-    def d_br_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+    def pf_passive(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
 
-        Units: T.A^-1.m^-1
-        """
-    @property
-    def d_bz_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: T.A^-1.m^-1
-        """
-    @property
-    def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-1
-        """
-    @property
-    def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-1
-        """
-    @property
-    def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
-        """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
-        """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-3
-        """
-    @property
-    def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
-        """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-3
-        """
-    @property
-    def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
-        """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-3
+        Units: T.A^-1
         """
 
-class _EquilibriumGreensPfActiveMany:
+class _EquilibriumGreensBFieldPolProbeMany:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
     """
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the coil, e.g. `"BVL"`
+        """Name of the probe, matching `magnetics/b_field_pol_probe(i1)/name` and `time_slice(itime)/constraints/b_field_pol_probe(i1)/name`,
+e.g. `"P101"`
         """
     @property
-    def psi(self) -> Path[npt.NDArray[np.float64]]:
-        """Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1
-        """
-    @property
-    def br(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial magnetic field at every grid point, per ampere in the source.
+    def plasma(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell.
 Shape = `(n_z, n_r)`
 
         Units: T.A^-1
         """
     @property
-    def bz(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical magnetic field at every grid point, per ampere in the source.
+    def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the probe's height, for the change
+in the field with the vertical shift `time_slice(itime)/convergence/delta_z`.
 Shape = `(n_z, n_r)`
+
+        Units: T.A^-1.m^-1
+        """
+    @property
+    def pf_active(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each PF coil, in the order of `greens/grid/pf_active`
 
         Units: T.A^-1
         """
     @property
-    def d_br_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
+    def pf_passive(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
 
-        Units: T.A^-1.m^-1
-        """
-    @property
-    def d_bz_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: T.A^-1.m^-1
-        """
-    @property
-    def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-1
-        """
-    @property
-    def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-1
-        """
-    @property
-    def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
-        """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
-        """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-2
-        """
-    @property
-    def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-3
-        """
-    @property
-    def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
-        """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-3
-        """
-    @property
-    def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
-        """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z, n_r)`
-
-        Units: Wb.A^-1.m^-3
+        Units: T.A^-1
         """
 
-class _EquilibriumGreensPfPassiveItem:
+class _EquilibriumGreensFluxLoopItem:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
     """
 
     @property
     def name(self) -> Path[str]:
-        """Name of the passive conductor, e.g. `"IVC"`
+        """Name of the flux loop, matching `magnetics/flux_loop(i1)/name` and `time_slice(itime)/constraints/flux_loop(i1)/name`, e.g.
+`"L001"`
         """
     @property
-    def dof(self) -> _EquilibriumGreensPfPassiveDofArrayFromItem:
-        """Degrees of freedom of this conductor, one entry per current distribution
+    def plasma(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1
+        """
+    @property
+    def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the loop's height, for the change
+in the flux with the vertical shift `time_slice(itime)/convergence/delta_z`.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-1
+        """
+    @property
+    def pf_active(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each PF coil, in the order of `greens/grid/pf_active`
+
+        Units: Wb.A^-1
+        """
+    @property
+    def pf_passive(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
+
+        Units: Wb.A^-1
         """
 
-class _EquilibriumGreensPfPassiveMany:
+class _EquilibriumGreensFluxLoopMany:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
     """
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the passive conductor, e.g. `"IVC"`
+        """Name of the flux loop, matching `magnetics/flux_loop(i1)/name` and `time_slice(itime)/constraints/flux_loop(i1)/name`, e.g.
+`"L001"`
         """
     @property
-    def dof(self) -> _EquilibriumGreensPfPassiveDofArrayFromMany:
-        """Degrees of freedom of this conductor, one entry per current distribution
+    def plasma(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1
+        """
+    @property
+    def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the loop's height, for the change
+in the flux with the vertical shift `time_slice(itime)/convergence/delta_z`.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-1
+        """
+    @property
+    def pf_active(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each PF coil, in the order of `greens/grid/pf_active`
+
+        Units: Wb.A^-1
+        """
+    @property
+    def pf_passive(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
+
+        Units: Wb.A^-1
         """
 
-class _EquilibriumGreensPfPassiveDofItem:
+class _EquilibriumGreensGridItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def plasma(self) -> _EquilibriumGreensGridPlasmaItem:
+        """Source: the plasma current in each grid cell
+        """
+    @property
+    def pf_active(self) -> _EquilibriumGreensGridPfActiveArrayFromItem:
+        """Source: each PF coil, in the order of `pf_active/coil`. Every sensor's `pf_active` is in this order too
+        """
+    @property
+    def pf_passive(self) -> _EquilibriumGreensGridPfPassiveArrayFromItem:
+        """Source: each passive conductor, in the order of `pf_passive/loop`, with its degrees of freedom. Every sensor's
+`pf_passive`, and `time_slice(itime)/passive_dof_values`, are in this order too
+        """
+
+class _EquilibriumGreensGridMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def plasma(self) -> _EquilibriumGreensGridPlasmaMany:
+        """Source: the plasma current in each grid cell
+        """
+    @property
+    def pf_active(self) -> _EquilibriumGreensGridPfActiveArrayFromMany:
+        """Source: each PF coil, in the order of `pf_active/coil`. Every sensor's `pf_active` is in this order too
+        """
+    @property
+    def pf_passive(self) -> _EquilibriumGreensGridPfPassiveArrayFromMany:
+        """Source: each passive conductor, in the order of `pf_passive/loop`, with its degrees of freedom. Every sensor's
+`pf_passive`, and `time_slice(itime)/passive_dof_values`, are in this order too
+        """
+
+class _EquilibriumGreensGridPfActiveItem:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
     """
 
     @property
     def name(self) -> Path[str]:
-        """Name of the degree of freedom, e.g. `"EIG_01"`
+        """Name of the coil, matching `pf_active/coil(i1)/name`, e.g. `"BVL"`
         """
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1
         """
     @property
-    def br(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
-
-        Units: T.A^-1
-        """
-    @property
-    def bz(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
-
-        Units: T.A^-1
-        """
-    @property
-    def d_br_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
-
-        Units: T.A^-1.m^-1
-        """
-    @property
-    def d_bz_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
-
-        Units: T.A^-1.m^-1
-        """
-    @property
     def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
         """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-1
         """
     @property
     def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-1
         """
     @property
     def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
         """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-2
         """
     @property
     def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
         """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-3
         """
 
-class _EquilibriumGreensPfPassiveDofMany:
+class _EquilibriumGreensGridPfActiveMany:
     """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
     """
 
     @property
     def name(self) -> Path[npt.NDArray[np.str_]]:
-        """Name of the degree of freedom, e.g. `"EIG_01"`
+        """Name of the coil, matching `pf_active/coil(i1)/name`, e.g. `"BVL"`
         """
     @property
     def psi(self) -> Path[npt.NDArray[np.float64]]:
         """Poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1
         """
     @property
-    def br(self) -> Path[npt.NDArray[np.float64]]:
-        """Radial magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
-
-        Units: T.A^-1
-        """
-    @property
-    def bz(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
-
-        Units: T.A^-1
-        """
-    @property
-    def d_br_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the radial magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
-
-        Units: T.A^-1.m^-1
-        """
-    @property
-    def d_bz_d_z(self) -> Path[npt.NDArray[np.float64]]:
-        """Vertical derivative of the vertical magnetic field at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
-
-        Units: T.A^-1.m^-1
-        """
-    @property
     def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
         """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-1
         """
     @property
     def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-1
         """
     @property
     def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
         """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-2
         """
     @property
     def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-2
         """
     @property
     def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
         """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-3
         """
     @property
     def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
         """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
-Shape = `(n_z * n_r)`
+Shape = `(n_z, n_r)`
 
         Units: Wb.A^-1.m^-3
+        """
+
+class _EquilibriumGreensGridPfPassiveItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Name of the passive conductor, matching `pf_passive/loop(i1)/name`, e.g. `"IVC"`
+        """
+    @property
+    def dof(self) -> _EquilibriumGreensGridPfPassiveDofArrayFromItem:
+        """Degrees of freedom of this conductor, one entry per current distribution, in the order of `pf_passive/loop(i1)/dof`
+        """
+
+class _EquilibriumGreensGridPfPassiveMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of the passive conductor, matching `pf_passive/loop(i1)/name`, e.g. `"IVC"`
+        """
+    @property
+    def dof(self) -> _EquilibriumGreensGridPfPassiveDofArrayFromMany:
+        """Degrees of freedom of this conductor, one entry per current distribution, in the order of `pf_passive/loop(i1)/dof`
+        """
+
+class _EquilibriumGreensGridPfPassiveDofItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Name of the degree of freedom, matching `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
+        """
+    @property
+    def psi(self) -> Path[npt.NDArray[np.float64]]:
+        """Poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1
+        """
+    @property
+    def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
+        """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-1
+        """
+    @property
+    def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-1
+        """
+    @property
+    def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
+        """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
+        """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-3
+        """
+    @property
+    def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
+        """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-3
+        """
+    @property
+    def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
+        """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-3
+        """
+
+class _EquilibriumGreensGridPfPassiveDofMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of the degree of freedom, matching `pf_passive/loop(i1)/dof(i2)/name`, e.g. `"eig_01"`
+        """
+    @property
+    def psi(self) -> Path[npt.NDArray[np.float64]]:
+        """Poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1
+        """
+    @property
+    def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
+        """Radial derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-1
+        """
+    @property
+    def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-1
+        """
+    @property
+    def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
+        """Second radial derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Mixed second derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
+        """Second vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Third derivative of the poloidal flux, twice by r, once by z at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-3
+        """
+    @property
+    def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
+        """Third derivative of the poloidal flux, once by r, twice by z at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-3
+        """
+    @property
+    def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
+        """Third vertical derivative of the poloidal flux at every grid point, per ampere in the source.
+Shape = `(n_z, n_r)`
+
+        Units: Wb.A^-1.m^-3
+        """
+
+class _EquilibriumGreensGridPlasmaItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def psi(self) -> Path[npt.NDArray[np.float64]]:
+        """Poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1
+        """
+    @property
+    def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
+        """Radial derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-1
+        """
+    @property
+    def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Vertical derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-1
+        """
+    @property
+    def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
+        """Second radial derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Mixed second derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
+        """Second vertical derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Third derivative of the poloidal flux, twice by r, once by z, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-3
+        """
+    @property
+    def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
+        """Third derivative of the poloidal flux, once by r, twice by z, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-3
+        """
+    @property
+    def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
+        """Third vertical derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-3
+        """
+
+class _EquilibriumGreensGridPlasmaMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def psi(self) -> Path[npt.NDArray[np.float64]]:
+        """Poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1
+        """
+    @property
+    def d_psi_d_r(self) -> Path[npt.NDArray[np.float64]]:
+        """Radial derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-1
+        """
+    @property
+    def d_psi_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Vertical derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-1
+        """
+    @property
+    def d2_psi_d_r2(self) -> Path[npt.NDArray[np.float64]]:
+        """Second radial derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d2_psi_d_r_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Mixed second derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d2_psi_d_z2(self) -> Path[npt.NDArray[np.float64]]:
+        """Second vertical derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-2
+        """
+    @property
+    def d3_psi_d_r2_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Third derivative of the poloidal flux, twice by r, once by z, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-3
+        """
+    @property
+    def d3_psi_d_r_d_z2(self) -> Path[npt.NDArray[np.float64]]:
+        """Third derivative of the poloidal flux, once by r, twice by z, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-3
+        """
+    @property
+    def d3_psi_d_z3(self) -> Path[npt.NDArray[np.float64]]:
+        """Third vertical derivative of the poloidal flux, per ampere in the source.
+Shape = `(n_z, n_r, n_r)`, which is `(i_offset_z, i_r, i_r_source)`
+
+        Units: Wb.A^-1.m^-3
+        """
+
+class _EquilibriumGreensRogowskiCoilItem:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Name of the Rogowski coil, matching `magnetics/rogowski_coil(i1)/name` and
+`time_slice(itime)/constraints/rogowski_coil(i1)/name`, e.g. `"INIVC000"`
+        """
+    @property
+    def plasma(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell.
+Shape = `(n_z, n_r)`
+
+        Units: A.A^-1
+        """
+    @property
+    def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the coil's height, for the change
+in the current with the vertical shift `time_slice(itime)/convergence/delta_z`. Only the gaps contribute to it.
+Shape = `(n_z, n_r)`
+
+        Units: A.A^-1.m^-1
+        """
+    @property
+    def pf_active(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each PF coil, in the order of `greens/grid/pf_active`
+
+        Units: A.A^-1
+        """
+    @property
+    def pf_passive(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
+
+        Units: A.A^-1
+        """
+
+class _EquilibriumGreensRogowskiCoilMany:
+    """Custom (non-IMAS) structure, declared in custom_equilibrium_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Name of the Rogowski coil, matching `magnetics/rogowski_coil(i1)/name` and
+`time_slice(itime)/constraints/rogowski_coil(i1)/name`, e.g. `"INIVC000"`
+        """
+    @property
+    def plasma(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell.
+Shape = `(n_z, n_r)`
+
+        Units: A.A^-1
+        """
+    @property
+    def d_plasma_d_z(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: the plasma current in each grid cell. The derivative of `plasma` with respect to the coil's height, for the change
+in the current with the vertical shift `time_slice(itime)/convergence/delta_z`. Only the gaps contribute to it.
+Shape = `(n_z, n_r)`
+
+        Units: A.A^-1.m^-1
+        """
+    @property
+    def pf_active(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each PF coil, in the order of `greens/grid/pf_active`
+
+        Units: A.A^-1
+        """
+    @property
+    def pf_passive(self) -> Path[npt.NDArray[np.float64]]:
+        """Source: each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`
+
+        Units: A.A^-1
         """
 
 class _EquilibriumLimiterItem:
@@ -5921,38 +6041,71 @@ class _EquilibriumGgdArrayArrayFromMany:
     # the values are still gathered.
     def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGgdArrayMany: ...
 
-class _EquilibriumGreensPfActiveArrayFromItem:
+class _EquilibriumGreensBFieldPolProbeArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumGreensPfActiveItem: ...
+    def __getitem__(self, index: int) -> _EquilibriumGreensBFieldPolProbeItem: ...
     @overload
-    def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensPfActiveMany: ...
+    def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensBFieldPolProbeMany: ...
 
-class _EquilibriumGreensPfActiveArrayFromMany:
+class _EquilibriumGreensBFieldPolProbeArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensPfActiveMany: ...
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensBFieldPolProbeMany: ...
 
-class _EquilibriumGreensPfPassiveArrayFromItem:
+class _EquilibriumGreensFluxLoopArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumGreensPfPassiveItem: ...
+    def __getitem__(self, index: int) -> _EquilibriumGreensFluxLoopItem: ...
     @overload
-    def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensPfPassiveMany: ...
+    def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensFluxLoopMany: ...
 
-class _EquilibriumGreensPfPassiveArrayFromMany:
+class _EquilibriumGreensFluxLoopArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensPfPassiveMany: ...
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensFluxLoopMany: ...
 
-class _EquilibriumGreensPfPassiveDofArrayFromItem:
+class _EquilibriumGreensGridPfActiveArrayFromItem:
     @overload
-    def __getitem__(self, index: int) -> _EquilibriumGreensPfPassiveDofItem: ...
+    def __getitem__(self, index: int) -> _EquilibriumGreensGridPfActiveItem: ...
     @overload
-    def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensPfPassiveDofMany: ...
+    def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensGridPfActiveMany: ...
 
-class _EquilibriumGreensPfPassiveDofArrayFromMany:
+class _EquilibriumGreensGridPfActiveArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
-    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensPfPassiveDofMany: ...
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensGridPfActiveMany: ...
+
+class _EquilibriumGreensGridPfPassiveArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _EquilibriumGreensGridPfPassiveItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensGridPfPassiveMany: ...
+
+class _EquilibriumGreensGridPfPassiveArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensGridPfPassiveMany: ...
+
+class _EquilibriumGreensGridPfPassiveDofArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _EquilibriumGreensGridPfPassiveDofItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensGridPfPassiveDofMany: ...
+
+class _EquilibriumGreensGridPfPassiveDofArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensGridPfPassiveDofMany: ...
+
+class _EquilibriumGreensRogowskiCoilArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _EquilibriumGreensRogowskiCoilItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _EquilibriumGreensRogowskiCoilMany: ...
+
+class _EquilibriumGreensRogowskiCoilArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _EquilibriumGreensRogowskiCoilMany: ...
 
 class _EquilibriumLimiterUnitArrayFromItem:
     @overload
@@ -6154,7 +6307,7 @@ class _EquilibriumPaths:
     def code(self) -> _EquilibriumCodeItem: ...
     @property
     def greens(self) -> _EquilibriumGreensItem:
-        """Greens tables: the poloidal flux and its derivatives per ampere in each current source
+        """Greens tables: what each observer, the grid or a magnetic sensor, sees per ampere in each current source
         """
     @property
     def limiter(self) -> _EquilibriumLimiterItem:
@@ -17023,6 +17176,12 @@ class _MagneticsRogowskiItem:
 
         Units: A
         """
+    @property
+    def gaps(self) -> _MagneticsRogowskiGapsArrayFromItem:
+        """The gaps in the coil's winding, where its contour, `position`, has no turns. The poloidal field along a gap is not
+integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
+divided by MU_0
+        """
 
 class _MagneticsRogowskiMany:
     """Rogowski coil
@@ -17065,6 +17224,82 @@ class _MagneticsRogowskiMany:
         """Measured current inside the Rogowski coil contour. The normal direction to the Rogowski coil is defined by the order of points in the list of guiding centre positions. The current is positive when oriented in the same direction as the normal.
 
         Units: A
+        """
+    @property
+    def gaps(self) -> _MagneticsRogowskiGapsArrayFromMany:
+        """The gaps in the coil's winding, where its contour, `position`, has no turns. The poloidal field along a gap is not
+integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
+divided by MU_0
+        """
+
+class _MagneticsRogowskiGapsItem:
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[str]:
+        """Short string identifier for the gap, unique within the Rogowski coil
+        """
+    @property
+    def r_start(self) -> Path[float]:
+        """Major radius of the start of the gap. The gap is the straight line from (`r_start`, `z_start`) to (`r_end`, `z_end`), and the
+line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
+line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`
+
+        Units: m
+        """
+    @property
+    def r_end(self) -> Path[float]:
+        """Major radius of the end of the gap
+
+        Units: m
+        """
+    @property
+    def z_start(self) -> Path[float]:
+        """Height of the start of the gap
+
+        Units: m
+        """
+    @property
+    def z_end(self) -> Path[float]:
+        """Height of the end of the gap
+
+        Units: m
+        """
+
+class _MagneticsRogowskiGapsMany:
+    """Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
+    """
+
+    @property
+    def name(self) -> Path[npt.NDArray[np.str_]]:
+        """Short string identifier for the gap, unique within the Rogowski coil
+        """
+    @property
+    def r_start(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of the start of the gap. The gap is the straight line from (`r_start`, `z_start`) to (`r_end`, `z_end`), and the
+line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
+line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`
+
+        Units: m
+        """
+    @property
+    def r_end(self) -> Path[npt.NDArray[np.float64]]:
+        """Major radius of the end of the gap
+
+        Units: m
+        """
+    @property
+    def z_start(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the start of the gap
+
+        Units: m
+        """
+    @property
+    def z_end(self) -> Path[npt.NDArray[np.float64]]:
+        """Height of the end of the gap
+
+        Units: m
         """
 
 class _MagneticsShuntItem:
@@ -17348,6 +17583,17 @@ class _MagneticsRogowskiArrayFromMany:
     # A level above has already been sliced, so whatever this one is indexed with,
     # the values are still gathered.
     def __getitem__(self, index: int | slice | list[int]) -> _MagneticsRogowskiMany: ...
+
+class _MagneticsRogowskiGapsArrayFromItem:
+    @overload
+    def __getitem__(self, index: int) -> _MagneticsRogowskiGapsItem: ...
+    @overload
+    def __getitem__(self, index: slice | list[int]) -> _MagneticsRogowskiGapsMany: ...
+
+class _MagneticsRogowskiGapsArrayFromMany:
+    # A level above has already been sliced, so whatever this one is indexed with,
+    # the values are still gathered.
+    def __getitem__(self, index: int | slice | list[int]) -> _MagneticsRogowskiGapsMany: ...
 
 class _MagneticsShuntArrayFromItem:
     @overload

@@ -38,6 +38,10 @@ pub struct MagneticsRogowski {
     /// Measured current inside the Rogowski coil contour. The normal direction to the Rogowski coil is defined by the order of points in the list of guiding centre positions. The current is positive when oriented in the same direction as the normal.
     /// Units: A
     pub current: SignalFlt1dValidity,
+    /// The gaps in the coil's winding, where its contour, `position`, has no turns. The poloidal field along a gap is not
+    /// integrated, so the coil measures the current it encloses less the line integral of the poloidal field along every gap,
+    /// divided by MU_0
+    pub gaps: Vec<MagneticsRogowskiGaps>,
 }
 
 impl Default for MagneticsRogowski {
@@ -51,6 +55,7 @@ impl Default for MagneticsRogowski {
             area: f64::NAN,
             turns_per_metre: f64::NAN,
             current: SignalFlt1dValidity::default(),
+            gaps: Vec::new(),
         }
     }
 }
@@ -381,6 +386,39 @@ pub struct Library {
 }
 
 /// Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
+#[derive(Debug, Clone)]
+pub struct MagneticsRogowskiGaps {
+    /// Short string identifier for the gap, unique within the Rogowski coil
+    pub name: STR_0D,
+    /// Major radius of the start of the gap. The gap is the straight line from (`r_start`, `z_start`) to (`r_end`, `z_end`), and the
+    /// line integral of the poloidal field along it is taken from its start to its end; so for it to be the part of the contour's
+    /// line integral which the winding misses, the gap runs in the direction of the coil's contour, `position`
+    /// Units: m
+    pub r_start: FLT_0D,
+    /// Major radius of the end of the gap
+    /// Units: m
+    pub r_end: FLT_0D,
+    /// Height of the start of the gap
+    /// Units: m
+    pub z_start: FLT_0D,
+    /// Height of the end of the gap
+    /// Units: m
+    pub z_end: FLT_0D,
+}
+
+impl Default for MagneticsRogowskiGaps {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            r_start: f64::NAN,
+            r_end: f64::NAN,
+            z_start: f64::NAN,
+            z_end: f64::NAN,
+        }
+    }
+}
+
+/// Custom (non-IMAS) structure, declared in custom_magnetics_keys.rs
 #[derive(Debug, Clone, Default)]
 pub struct MagneticsFluxLoopGreens {
     /// Active poloidal field coils, one entry per coil, in the same order as the `pf_active` IDS
@@ -510,6 +548,70 @@ impl ArrayOfStructuresElement for Rphiz0dStatic {
         Self: 'a,
     {
         Rphiz0dStaticSliceView::new(elements)
+    }
+}
+
+// --- MagneticsRogowskiGaps View Types ---
+
+/// View over multiple MagneticsRogowskiGaps with field accumulation
+pub struct MagneticsRogowskiGapsSliceView<'a, D> {
+    pub name: Accumulator<'a, MagneticsRogowskiGaps, STR_0D, D>,
+    pub r_start: Accumulator<'a, MagneticsRogowskiGaps, FLT_0D, D>,
+    pub r_end: Accumulator<'a, MagneticsRogowskiGaps, FLT_0D, D>,
+    pub z_start: Accumulator<'a, MagneticsRogowskiGaps, FLT_0D, D>,
+    pub z_end: Accumulator<'a, MagneticsRogowskiGaps, FLT_0D, D>,
+    slice_elements: Elements<'a, MagneticsRogowskiGaps, D>,
+}
+
+impl<'a, D: Dimension> MagneticsRogowskiGapsSliceView<'a, D> {
+    pub fn new(elements: Elements<'a, MagneticsRogowskiGaps, D>) -> Self {
+        Self {
+            name: Accumulator::new(elements.clone(), |item: &MagneticsRogowskiGaps| item.name.clone()),
+            r_start: Accumulator::new(elements.clone(), |item: &MagneticsRogowskiGaps| item.r_start),
+            r_end: Accumulator::new(elements.clone(), |item: &MagneticsRogowskiGaps| item.r_end),
+            z_start: Accumulator::new(elements.clone(), |item: &MagneticsRogowskiGaps| item.z_start),
+            z_end: Accumulator::new(elements.clone(), |item: &MagneticsRogowskiGaps| item.z_end),
+            slice_elements: elements,
+        }
+    }
+
+    /// Total number of elements, across every sliced level
+    pub fn len(&self) -> usize {
+        self.slice_elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice_elements.is_empty()
+    }
+
+    /// The length of each sliced level, in path order like the gathered arrays
+    pub fn shape(&self) -> Vec<usize> {
+        self.slice_elements.shape()
+    }
+
+    /// Every element, in path order: the first array of structures on the path varies slowest
+    pub fn iter(&self) -> impl Iterator<Item = &'a MagneticsRogowskiGaps> + '_ {
+        self.slice_elements.iter()
+    }
+}
+
+impl ArrayOfStructuresElement for MagneticsRogowskiGaps {
+    type SliceView<'a, D>
+        = MagneticsRogowskiGapsSliceView<'a, D>
+    where
+        Self: 'a;
+
+    fn slice_view<'a, D: Dimension>(elements: Elements<'a, Self, D>) -> Self::SliceView<'a, D>
+    where
+        Self: 'a,
+    {
+        MagneticsRogowskiGapsSliceView::new(elements)
+    }
+}
+
+impl Named for MagneticsRogowskiGaps {
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -1033,6 +1135,17 @@ impl<'a, D: Dimension> MagneticsRogowskiSliceView<'a, D> {
     pub fn position<S: Selection<'a, Rphiz0dStatic>>(&self, selection: S) -> S::NestedOutput<D> {
         selection.select_nested("position", &self.slice_elements, |item: &MagneticsRogowski| item.position.as_slice())
     }
+
+    /// Select from `gaps` under every element. A range, e.g. `.gaps(..)`, adds one dimension,
+    /// after those of the levels sliced above it and before the leaf's own.
+    /// A name, `.gaps(name)`, takes the one element with that `name` under every element, and adds none.
+    ///
+    /// # Panics
+    /// If a range does not select the same number of elements under every element.
+    /// If, under any element, no element or more than one has the name.
+    pub fn gaps<S: Selection<'a, MagneticsRogowskiGaps>>(&self, selection: S) -> S::NestedOutput<D> {
+        selection.select_nested("gaps", &self.slice_elements, |item: &MagneticsRogowski| item.gaps.as_slice())
+    }
 }
 
 impl ArrayOfStructuresElement for MagneticsRogowski {
@@ -1259,6 +1372,25 @@ impl MagneticsRogowski {
     /// Get the number of position elements
     pub fn position_len(&self) -> usize {
         self.position.len()
+    }
+}
+
+impl MagneticsRogowski {
+    /// Select from `gaps`. A range, e.g. `.gaps(0..2)` or `.gaps(..)`, gives the slice view over
+    /// those elements, whose leaves gather one value per element.
+    /// A name, `.gaps(name)`, gives the one element with that `name`.
+    /// A single element is `.gaps[i]`.
+    ///
+    /// # Panics
+    /// If a range is out of bounds.
+    /// If no element, or more than one, has the name.
+    pub fn gaps<'a, S: Selection<'a, MagneticsRogowskiGaps>>(&'a self, selection: S) -> S::Output {
+        selection.select("gaps", &self.gaps)
+    }
+
+    /// Get the number of gaps elements
+    pub fn gaps_len(&self) -> usize {
+        self.gaps.len()
     }
 }
 

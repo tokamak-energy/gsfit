@@ -2,11 +2,9 @@
 <!--
     Schema for database_reader.xml: the database reader the whole run uses.
 
-    `method` picks the reader. What it needs to build each IDS is in that IDS's file, e.g. wall/wall.xml.
-    Which run of which MDSplus tree to read is in workflow.xml, which each IDS's file links to, for the
-    st40_mdsplus_with_digital_filter reader, and in the element named after the reader for the others.
-    What a reader needs whichever IDS it is building is here, in the element named after the reader.
-    Only the mock_st40_mdsplus reader needs anything.
+    `method` picks the reader. What it needs to build each IDS is in that IDS's file, e.g. wall/wall.xml,
+    and which run of which MDSplus tree to read is in workflow.xml, which each IDS's file links to.
+    So this file holds only `method`.
     See GSFIT_code_settings.xsd for the conventions shared by all the schemas.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
@@ -40,17 +38,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <!-- ================================= Complex types ================================= -->
-
-    <xs:complexType name="MockSt40Mdsplus">
-        <xs:annotation><xs:documentation>What the mock_st40_mdsplus reader needs whichever IDS it is building</xs:documentation></xs:annotation>
-        <xs:all>
-            <xs:element name="mock_dir" type="xs:string">
-                <xs:annotation><xs:documentation>The directory holding the mocked trees, the `mdsplus_mock_*.npz` files</xs:documentation></xs:annotation>
-            </xs:element>
-        </xs:all>
-    </xs:complexType>
-
     <!-- ================================= The settings file ================================= -->
 
     <xs:element name="database_reader">
@@ -58,10 +45,7 @@
         <xs:complexType>
             <xs:all>
                 <xs:element name="method" type="DatabaseReaderMethod">
-                    <xs:annotation><xs:documentation>The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml. The other readers read the element named after them from each IDS's file, which must be present where they need one</xs:documentation></xs:annotation>
-                </xs:element>
-                <xs:element name="mock_st40_mdsplus" type="MockSt40Mdsplus" minOccurs="0">
-                    <xs:annotation><xs:documentation>What the mock_st40_mdsplus reader needs whichever IDS it is building. Needed by the mock_st40_mdsplus reader. See tests/test_02_delta_z_shift_greater_than_d_z for an example</xs:documentation></xs:annotation>
+                    <xs:annotation><xs:documentation>The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml</xs:documentation></xs:annotation>
                 </xs:element>
             </xs:all>
         </xs:complexType>

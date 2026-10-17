@@ -5,6 +5,7 @@ from gsfit_rs import Dialoop
 from gsfit_rs import FluxLoops
 from gsfit_rs import Isoflux
 from gsfit_rs import IsofluxBoundary
+from gsfit_rs import Magnetics
 from gsfit_rs import PfActive
 from gsfit_rs import PfPassive
 from gsfit_rs import Plasma
@@ -21,6 +22,7 @@ from .setup_dialoop import setup_dialoop
 from .setup_flux_loops import setup_flux_loops
 from .setup_isoflux_boundary_sensors import setup_isoflux_boundary_sensors
 from .setup_isoflux_sensors import setup_isoflux_sensors
+from .setup_magnetics import setup_magnetics
 from .setup_pf_active import setup_pf_active
 from .setup_pf_passive import setup_pf_passive
 from .setup_plasma import setup_plasma
@@ -58,6 +60,9 @@ class DatabaseReader(DatabaseReaderProtocol):
 
     def setup_isoflux_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> Isoflux:
         return setup_isoflux_sensors(self, *args, **kwargs)
+
+    def setup_magnetics(self, *args: typing.Any, **kwargs: typing.Any) -> Magnetics:
+        return setup_magnetics(self, *args, **kwargs)
 
     def setup_stationary_point_sensors(self, *args: typing.Any, **kwargs: typing.Any) -> StationaryPoint:
         return setup_stationary_point_sensors(self, *args, **kwargs)

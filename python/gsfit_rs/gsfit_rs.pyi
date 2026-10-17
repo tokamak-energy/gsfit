@@ -87,8 +87,8 @@ def solve_grad_shafranov(
         the vacuum toroidal field, the PF coil currents, the passive loops' regularisations and any gaps, so
         `Plasma.copy_from_wall_ids`, `Plasma.copy_from_tf_ids`, `Plasma.copy_from_pf_active_ids` and `Plasma.copy_from_pf_passive_ids`
         have to have been called first. `Plasma.copy_from_pulse_schedule_ids` is optional: without it the equilibrium has no gaps.
-        The passive loops have to be the ones the Greens tables, `greens/pf_passive`, were calculated with, by `Plasma.greens_with_pf_passive`.
-        The fitted passive degrees of freedom are written to every time-slice's `passive_dof_values`, in the order of `greens/pf_passive`
+        The passive loops have to be the ones the Greens tables, `greens/grid/pf_passive`, were calculated with, by `Plasma.greens_with_pf_passive`.
+        The fitted passive degrees of freedom are written to every time-slice's `passive_dof_values`, in the order of `greens/grid/pf_passive`
     :param bp_probes: BpProbes object, note this is mutated and contains the solution
     :param flux_loops: FluxLoops object, note this is mutated and contains the solution
     :param rogowski_coils: RogowskiCoils object, note this is mutated and contains the solution
@@ -516,7 +516,7 @@ class Plasma(DataTreeAccessor):
         `.../source`, the path `pf_active/coil(i1)/current`; and `.../time_measurement`, the time-slice's own time [second].
 
         The solver reads the PF coil currents from the equilibrium IDS, so this has to be called before `solve_grad_shafranov`.
-        The solver multiplies them by the Greens tables, `greens/pf_active(i1)`, so the coils have to be in the same order as
+        The solver multiplies them by the Greens tables, `greens/grid/pf_active(i1)`, so the coils have to be in the same order as
         those, which the solver checks by name.
 
         Any PF coil currents already on a time-slice are replaced, so calling this twice does not repeat them.
@@ -541,7 +541,7 @@ class Plasma(DataTreeAccessor):
         fit. So `measured`, `source` and `time_measurement` are left unset.
 
         The solver reads the regularisations from the equilibrium IDS, so this has to be called before `solve_grad_shafranov`. It fits
-        the amplitudes with the Greens tables, `greens/pf_passive(i1)/dof(i2)`, so the loops and their degrees of freedom have to be in
+        the amplitudes with the Greens tables, `greens/grid/pf_passive(i1)/dof(i2)`, so the loops and their degrees of freedom have to be in
         the same order as those, which the solver checks by name.
 
         A pf_passive IDS with no loops is allowed: the equilibrium then has no passive conductors. Any passive loops already on a
@@ -564,6 +564,29 @@ class Plasma(DataTreeAccessor):
         :param pulse_schedule: The pulse schedule, holding the gap definitions
         """
         ...
+    def copy_from_magnetics_ids(self, magnetics: Magnetics) -> None:
+        """
+        Copy the magnetic sensors' measurements from the magnetics IDS onto every time-slice of the equilibrium IDS.
+
+        Each measurement is on the experimental timebase, so it is interpolated onto the time-slice's time. On every time-slice, for
+        every sensor, in the same order as in the magnetics IDS: `magnetics/b_field_pol_probe(i1)/field` fills
+        `equilibrium/time_slice(itime)/constraints/b_field_pol_probe(i1)` [tesla]; `magnetics/flux_loop(i1)/flux` fills
+        `.../constraints/flux_loop(i1)` [weber]; `magnetics/rogowski_coil(i1)/current` fills `.../constraints/rogowski_coil(i1)`, a custom
+        key, as the data dictionary has no constraint for Rogowski coils [ampere]; `magnetics/diamagnetic_flux(0)/data` fills
+        `.../constraints/diamagnetic_flux` [weber]; and `magnetics/ip(0)/data` fills `.../constraints/ip` [ampere].
+
+        Each constraint gets `name`, a custom key: the sensor's `name`, or the `method_name` for `diamagnetic_flux` and `ip`; `measured`,
+        the measurement interpolated onto the time-slice's time; `source`, the path the measurement was read from; and `time_measurement`,
+        the time-slice's own time [second]. `diamagnetic_flux` and `ip` take the magnetics IDS's first, generally recommended, method,
+        and are left unset when it has none. Which sensors are fitted, and their weights, are not set here.
+
+        Any magnetic constraints already on a time-slice are replaced, so calling this twice does not repeat them.
+
+        :param magnetics: The magnetic sensors, holding their measurements
+        :raises ValueError: When a measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not
+            cover them
+        """
+        ...
     def greens_with_pf_active(
         cls,
         pf_active: PfActive,
@@ -572,6 +595,27 @@ class Plasma(DataTreeAccessor):
         cls,
         pf_passive: PfPassive,
     ) -> None: ...
+    def greens_with_magnetics(self, magnetics: Magnetics, pf_active: PfActive, pf_passive: PfPassive) -> None:
+        """
+        Calculate the magnetic sensors' Greens tables: what each sensor measures, per ampere in each current source.
+
+        Fills, for every sensor in the magnetics IDS, with the same name and in the same order, `greens/b_field_pol_probe(i1)`,
+        `greens/flux_loop(i1)` and `greens/rogowski_coil(i1)` on the equilibrium IDS, each with the sensor's tables with: `plasma`, the
+        plasma current in each grid cell, shape = (n_z, n_r); `d_plasma_d_z`, the same differentiated with respect to the sensor's
+        height, shape = (n_z, n_r); `pf_active`, each PF coil, in the order of `greens/grid/pf_active`; and `pf_passive`, each passive
+        degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`.
+
+        `greens/grid/pf_active` and `greens/grid/pf_passive` name the PF coils and the passive degrees of freedom, so
+        `Plasma.greens_with_pf_active` and `Plasma.greens_with_pf_passive` have to be called first, with the same `pf_active` and
+        `pf_passive`. Any sensors' Greens tables already on the IDS are replaced, so calling this twice does not repeat them.
+
+        :param magnetics: The magnetic sensors, holding where they are
+        :param pf_active: The PF coils, holding their filaments
+        :param pf_passive: The passive conductors, holding their filaments and degrees of freedom
+        :raises ValueError: When the PF coils, or the passive loops and their degrees of freedom, are not the ones
+            `greens/grid/pf_active` and `greens/grid/pf_passive` were calculated with, in the same order
+        """
+        ...
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path`, from `gsfit_rs.imas.equilibrium_paths`, straight out of the equilibrium IDS.
 
@@ -895,13 +939,148 @@ class PfActive:
 class Magnetics:
     """The machine's magnetic sensors, stored as an IMAS `magnetics` IDS.
 
-    Nothing is filled yet: this is constructed empty.
+    For each poloidal field probe, `b_field_pol_probe(i1)`: `name`; `position/r` and `z`, the probe's centre; `poloidal_angle`,
+    the direction of the probe's normal; and `field`, the measured field along the normal, on the experimental timebase.
+
+    For each flux loop, `flux_loop(i1)`: `name`; `type` = 1, `poloidal_flux`, a loop all the way around the machine; `position(0)/r`
+    and `z`, the loop's one point in the poloidal plane; and `flux`, the measured poloidal flux, on the experimental timebase.
+
+    For each Rogowski coil, `rogowski_coil(i1)`: `name`; `position(i2)/r` and `z`, the coil's contour; `current`, the measured
+    current, on the experimental timebase; and `gaps(i2)/name`, `r_start`, `r_end`, `z_start` and `z_end`, a custom key, the stretches of
+    the contour which have no winding.
+
+    For the diamagnetic flux, `diamagnetic_flux(i1)`, and the plasma current, `ip(i1)`, one entry for each method of calculating
+    them: `method_name`, `data` and `time`.
+
+    For now, `b_field_pol_probe(i1)/poloidal_angle` keeps GSFit's present definition, COCOS 13, as MDSplus stores it: counter-clockwise
+    from `grad(R)`, in the usual plot with `R` to the right and `Z` upwards, so the probe's normal is
+    `cos(poloidal_angle) * grad(R) + sin(poloidal_angle) * grad(Z)`. It is the same angle as `BpProbes`'s `angle_pol`. This is not the
+    data dictionary's COCOS 17, which measures it clockwise, within [0, 2 * pi]. `toroidal_angle` is left empty.
+
+    `flux_loop(i1)/flux` is GSFit's `psi`, the total poloidal flux, with no factor of 2 * pi. `ip(i1)/data` and
+    `diamagnetic_flux(i1)/data` are positive counter-clockwise viewed from above.
 
     Read it back through `magnetics_ids` and a path from `gsfit_rs.imas.magnetics_paths`.
+
+    The magnetic sensors are constructed with the settings they are built from, which are kept in `parameters_input`, and whose XML is
+    also written to `magnetics/code/parameters`.
     """
 
-    def __new__(cls) -> Magnetics:
-        """Construct an empty set of magnetic sensors."""
+    def __new__(cls, parameters_input: ParametersInput) -> Magnetics:
+        """
+        Construct empty magnetic sensors, ready for `add_b_field_pol_probe`, `add_flux_loop`, `add_rogowski_coil`,
+        `add_diamagnetic_flux` and `add_ip` to be called.
+
+        :param parameters_input: The settings the magnetic sensors are built from, e.g. which run of which database the sensors are
+            read from. Their XML is written to `magnetics/code/parameters`
+        """
+        ...
+    @property
+    def parameters_input(self) -> ParametersInput:
+        """The settings the magnetic sensors were built from. This is a copy: changing it does not change the magnetic sensors."""
+        ...
+    def add_b_field_pol_probe(
+        self,
+        name: str,
+        r: float,
+        z: float,
+        poloidal_angle: float,
+        time: npt.NDArray[np.float64],
+        field: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        Append a poloidal field probe to `magnetics/b_field_pol_probe`.
+
+        :param name: short identifier for the probe, unique within the poloidal field probes, e.g. `"P101"`
+        :param r: major radius of the probe's centre [metre]
+        :param z: height of the probe's centre [metre]
+        :param poloidal_angle: angle of the probe's normal, counter-clockwise from `grad(R)`: GSFit's COCOS 13, not the data dictionary's COCOS 17 [radian]
+        :param time: the experimental timebase [second]
+        :param field: the measured field along the probe's normal [tesla]
+        """
+        ...
+    def add_flux_loop(
+        self,
+        name: str,
+        r: float,
+        z: float,
+        time: npt.NDArray[np.float64],
+        flux: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        Append a flux loop to `magnetics/flux_loop`.
+
+        :param name: short identifier for the flux loop, unique within the flux loops, e.g. `"L001"`
+        :param r: major radius of the loop [metre]
+        :param z: height of the loop [metre]
+        :param time: the experimental timebase [second]
+        :param flux: the measured poloidal flux, GSFit's `psi` [weber]
+
+        The loop goes all the way around the machine, so it is a `poloidal_flux` loop with one `position`.
+        """
+        ...
+    def add_rogowski_coil(
+        self,
+        name: str,
+        r: npt.NDArray[np.float64],
+        z: npt.NDArray[np.float64],
+        time: npt.NDArray[np.float64],
+        current: npt.NDArray[np.float64],
+        gaps_name: list[str] = ...,
+        gaps_r_start: npt.NDArray[np.float64] | None = None,
+        gaps_r_end: npt.NDArray[np.float64] | None = None,
+        gaps_z_start: npt.NDArray[np.float64] | None = None,
+        gaps_z_end: npt.NDArray[np.float64] | None = None,
+    ) -> None:
+        """
+        Append a Rogowski coil to `magnetics/rogowski_coil`.
+
+        :param name: short identifier for the Rogowski coil, unique within the Rogowski coils, e.g. `"INIVC000"`
+        :param r: major radius of each point of the coil's contour, at least 3 points [metre]
+        :param z: height of each point of the coil's contour [metre]
+        :param time: the experimental timebase [second]
+        :param current: the measured current [ampere]
+        :param gaps_name: (optional) short identifier for each gap in the coil's winding, unique within the coil
+        :param gaps_r_start: (optional) major radius of the start of each gap [metre]
+        :param gaps_r_end: (optional) major radius of the end of each gap [metre]
+        :param gaps_z_start: (optional) height of the start of each gap [metre]
+        :param gaps_z_end: (optional) height of the end of each gap [metre]
+
+        Each gap is the straight line from its start to its end; the documentation of `rogowski_coil(i1)/gaps(i2)/r_start` says which
+        way it runs. A coil with no gaps leaves the gap arguments out.
+        """
+        ...
+    def add_diamagnetic_flux(
+        self,
+        method_name: str,
+        time: npt.NDArray[np.float64],
+        data: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        Append a diamagnetic flux to `magnetics/diamagnetic_flux`, one for each method of calculating it.
+
+        :param method_name: name of the method the diamagnetic flux is calculated with, unique within the diamagnetic fluxes, e.g. `"DIALOOP"`
+        :param time: the experimental timebase [second]
+        :param data: the diamagnetic flux, positive counter-clockwise viewed from above [weber]
+
+        The data dictionary asks for the generally recommended method to be added first.
+        """
+        ...
+    def add_ip(
+        self,
+        method_name: str,
+        time: npt.NDArray[np.float64],
+        data: npt.NDArray[np.float64],
+    ) -> None:
+        """
+        Append a plasma current to `magnetics/ip`, one for each method of calculating it.
+
+        :param method_name: name of the method the plasma current is calculated with, unique within the plasma currents
+        :param time: the experimental timebase [second]
+        :param data: the plasma current, positive counter-clockwise viewed from above [ampere]
+
+        The data dictionary asks for the generally recommended method to be added first.
+        """
         ...
     def get(self, path: Path[_T]) -> _T:
         """Read the data at `path`, from `gsfit_rs.imas.magnetics_paths`, straight out of the magnetics IDS.

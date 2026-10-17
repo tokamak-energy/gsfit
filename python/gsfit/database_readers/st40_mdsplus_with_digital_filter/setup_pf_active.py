@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 from diagnostic_and_simulation_base.xml_reader_and_writer import serialise_python_dataclass_to_imas_parameters_input
 from gsfit_rs import PfActive
 from st40_database import GetData
@@ -38,17 +39,17 @@ def setup_pf_active(
 
     # The ELMAG and PSU2COIL runs to read, from the `workflow.xml` which `pf_active.xml` links to
     workflow = settings.workflow
-    if workflow is None or workflow.elmag is None or workflow.psu2coil is None:
+    if workflow is None or "ELMAG" not in workflow.tree or "PSU2COIL" not in workflow.tree:
         raise ValueError(
-            "`pf_active.xml` must link to a `workflow.xml` holding `elmag` and `psu2coil`, which say which ELMAG and PSU2COIL runs to read the PF coils from"
+            "`pf_active.xml` must link to a `workflow.xml` holding the ELMAG and PSU2COIL `tree`s, which say which ELMAG and PSU2COIL runs to read the PF coils from"
         )
     # A nil `pulseNo` reads the pulse being reconstructed
-    elmag_settings = workflow.elmag
+    elmag_settings = workflow.tree["ELMAG"]
     if elmag_settings.pulseNo is None:
         elmag_pulseNo = pulseNo
     else:
         elmag_pulseNo = elmag_settings.pulseNo
-    psu2coil_settings = workflow.psu2coil
+    psu2coil_settings = workflow.tree["PSU2COIL"]
     if psu2coil_settings.pulseNo is None:
         psu2coil_pulseNo = pulseNo
     else:
@@ -56,7 +57,7 @@ def setup_pf_active(
 
     # Serialise the settings, which the PF coils record in `pf_active/code/parameters`: `pf_active.xml` holding only the runs which built the PF coils
     settings_xml = serialise_python_dataclass_to_imas_parameters_input(
-        settings=PfActiveSettings(workflow=Workflow(elmag=elmag_settings, psu2coil=psu2coil_settings)),
+        settings=PfActiveSettings(workflow=Workflow(tree=KeyedList([elmag_settings, psu2coil_settings]))),
         xsd_directory_path=XSD_DIRECTORY_PATH,
     )
 

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 from diagnostic_and_simulation_base.xml_reader_and_writer import serialise_python_dataclass_to_imas_parameters_input
 from gsfit_rs import PulseSchedule
 from st40_database import GetData
@@ -42,10 +43,10 @@ def setup_pulse_schedule(
 
     # The ELMAG run to read the gaps from, from the `workflow.xml` which `pulse_schedule.xml` links to
     workflow = settings.workflow
-    if workflow is None or workflow.elmag is None:
-        raise ValueError("`pulse_schedule.xml` must link to a `workflow.xml` holding `elmag`, which says which ELMAG run to read the gaps from")
+    if workflow is None or "ELMAG" not in workflow.tree:
+        raise ValueError("`pulse_schedule.xml` must link to a `workflow.xml` holding the ELMAG `tree`, which says which ELMAG run to read the gaps from")
     # A nil `pulseNo` reads the pulse being reconstructed
-    elmag_settings = workflow.elmag
+    elmag_settings = workflow.tree["ELMAG"]
     if elmag_settings.pulseNo is None:
         elmag_pulseNo = pulseNo
     else:
@@ -55,7 +56,7 @@ def setup_pulse_schedule(
     # Serialise the settings, which the pulse schedule records in `pulse_schedule/code/parameters`: `pulse_schedule.xml` holding only the run which
     # built the gaps
     settings_xml = serialise_python_dataclass_to_imas_parameters_input(
-        settings=PulseScheduleSettings(workflow=Workflow(elmag=elmag_settings)),
+        settings=PulseScheduleSettings(workflow=Workflow(tree=KeyedList([elmag_settings]))),
         xsd_directory_path=XSD_DIRECTORY_PATH,
     )
 

@@ -297,6 +297,7 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         """
 
         # Get Rust classes out of self
+        magnetics = self.magnetics
         pf_active = self.pf_active
         pf_passive = self.pf_passive
         plasma = self.plasma
@@ -333,6 +334,13 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
         stationary_point.greens_with_pf_passive(pf_passive)
         toc = time_py.time()
         self.logger.info(f"Finished Greens with the passive conductors;  {(toc - tic) * 1e3:,.2f}ms")
+
+        # Greens of the magnetic sensors, with the plasma, the PF coils and the passive conductors. The PF coils and the passive
+        # conductors are in the order of the Greens tables above, so these come after them
+        tic = time_py.time()
+        plasma.greens_with_magnetics(magnetics, pf_active, pf_passive)
+        toc = time_py.time()
+        self.logger.info(f"Finished Greens of the magnetic sensors;  {(toc - tic) * 1e3:,.2f}ms")
 
         # Greens with plasma
         tic = time_py.time()
@@ -464,6 +472,11 @@ class Gsfit(DiagnosticAndSimulationBase[GsfitCodeSettings]):
             # is this ever None?
             self.plasma.copy_from_pulse_schedule_ids(self.pulse_schedule)
 
+        self.magnetics = database_reader.setup_magnetics(
+            pulseNo=self.pulseNo,
+            settings=self.settings_xml.ids.magnetics,
+        )
 
+        self.plasma.copy_from_magnetics_ids(self.magnetics)
 
         # import pdb; pdb.set_trace()

@@ -14,19 +14,21 @@ import typing
 from dataclasses import dataclass
 from dataclasses import field
 
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
+
 
 @dataclass(kw_only=True)
 class ConstraintsFluxLoop:
     """
     How each flux loop is fitted, one `flux_loop` per loop. A loop the database has but this file does not list is not fitted, and a listed loop the database does not have is ignored
 
-    :param flux_loop: One flux loop, which measures the poloidal flux
+    :param flux_loop: One flux loop, which measures the poloidal flux. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `flux_loop[name]`
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "equilibrium/constraints_flux_loop.xsd"
 
-    flux_loop: list[FluxLoop] = field(default_factory=list)
+    flux_loop: KeyedList[FluxLoop] = field(default_factory=KeyedList)
 
 
 @dataclass(kw_only=True)
@@ -40,6 +42,9 @@ class FluxLoop:
     :param include: Whether the constraint is fitted
     :param comment: Free text, e.g. why the constraint is not included; not used by the fit
     """
+
+    # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique
+    KEY: typing.ClassVar[str] = "name"
 
     name: str
     expected_value: float

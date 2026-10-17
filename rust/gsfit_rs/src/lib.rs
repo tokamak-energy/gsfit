@@ -7,6 +7,7 @@ mod circuit_equations;
 mod equilibrium_post_processor;
 mod grad_shafranov;
 mod limiter;
+mod magnetic_sensors;
 mod magnetics;
 mod pf_active;
 mod pf_passive;

@@ -22,11 +22,11 @@ use faer::mat::MatRef;
 use faer::{Accum, Par};
 use imas_rs::EMPTY_INT;
 use imas_rs::{
-    Code, EquilibriumConstraints0d, EquilibriumContourTreeNode, EquilibriumGreens, EquilibriumGreensPfActive, EquilibriumGreensPfPassiveDof,
+    Code, EquilibriumConstraints0d, EquilibriumContourTreeNode, EquilibriumGreens, EquilibriumGreensGridPfActive, EquilibriumGreensGridPfPassiveDof,
     EquilibriumLimiter, EquilibriumProfiles2d, EquilibriumProfiles2dGrid, EquilibriumTimeSlice,
 };
 use ndarray::Axis;
-use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView2, concatenate, s};
+use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView2, ArrayView3, concatenate, s};
 use ndarray_stats::QuantileExt;
 use std::f64::consts::PI;
 use std::sync::Arc;
@@ -173,38 +173,32 @@ impl PsiAndDerivativesGreens {
     /// anywhere else, so this cannot be handed a table which disagrees with the grid it was
     /// calculated on.
     pub fn new(greens: &EquilibriumGreens) -> Self {
-        let grid_grid_psi: &Array2<f64> = &greens.grid_grid.psi;
-        let (n_offset_z_times_n_r, n_r): (usize, usize) = grid_grid_psi.dim();
-        if n_r == 0 || n_offset_z_times_n_r % n_r != 0 {
-            panic!("PsiAndDerivativesGreens: `greens/grid_grid/psi` has shape ({n_offset_z_times_n_r}, {n_r}), which is not (n_z * n_r, n_r)");
+        let grid_plasma_psi: &Array3<f64> = &greens.grid.plasma.psi;
+        let (n_z, n_r, n_r_source): (usize, usize, usize) = grid_plasma_psi.dim();
+        if n_r == 0 || n_r_source != n_r {
+            panic!("PsiAndDerivativesGreens: `greens/grid/plasma/psi` has shape ({n_z}, {n_r}, {n_r_source}), which is not (n_z, n_r, n_r)");
         }
-        let n_z: usize = n_offset_z_times_n_r / n_r;
 
-        // Plasma grid-to-grid tables; stored shape = (n_z * n_r, n_r), which unflattens to
-        // (i_offset_z, i_r, i_cur_r). Permute to (i_offset_z, i_cur_r, i_r) and re-flatten so
-        // that rows = (i_offset_z, i_cur_r) match the columns of `w`, and columns = i_r
-        let permute_to_by_offset = |g_flat: &Array2<f64>| -> Array2<f64> {
-            let g_3d: Array3<f64> = g_flat.to_shape((n_z, n_r, n_r)).unwrap().to_owned();
-            let g_3d_permuted: Array3<f64> = g_3d.permuted_axes([0, 2, 1]);
-            let g_by_offset: Array2<f64> = g_3d_permuted.as_standard_layout().to_shape((n_z * n_r, n_r)).unwrap().to_owned();
+        // Plasma grid-to-grid tables; stored shape = (n_z, n_r, n_r), which is (i_offset_z, i_r, i_cur_r).
+        // Permute to (i_offset_z, i_cur_r, i_r) and flatten so that rows = (i_offset_z, i_cur_r) match
+        // the columns of `w`, and columns = i_r
+        let grid_plasma = |table: &Array3<f64>, key: &str| -> Array2<f64> {
+            if table.is_empty() {
+                panic!("PsiAndDerivativesGreens: `greens/grid/plasma/{key}` unset");
+            }
+            let table_permuted: ArrayView3<f64> = table.view().permuted_axes([0, 2, 1]);
+            let g_by_offset: Array2<f64> = table_permuted.as_standard_layout().to_shape((n_z * n_r, n_r)).unwrap().to_owned();
             g_by_offset
         };
-
-        let grid_grid = |table: &Array2<f64>, key: &str| -> Array2<f64> {
-            if table.is_empty() {
-                panic!("PsiAndDerivativesGreens: `greens/grid_grid/{key}` unset");
-            }
-            permute_to_by_offset(table)
-        };
-        let g_psi_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.psi, "psi");
-        let g_d_psi_d_r_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d_psi_d_r, "d_psi_d_r");
-        let g_d_psi_d_z_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d_psi_d_z, "d_psi_d_z");
-        let g_d2_psi_d_r2_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d2_psi_d_r2, "d2_psi_d_r2");
-        let g_d2_psi_d_r_d_z_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d2_psi_d_r_d_z, "d2_psi_d_r_d_z");
-        let g_d2_psi_d_z2_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d2_psi_d_z2, "d2_psi_d_z2");
-        let g_d3_psi_d_r2_d_z_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d3_psi_d_r2_d_z, "d3_psi_d_r2_d_z");
-        let g_d3_psi_d_r_d_z2_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d3_psi_d_r_d_z2, "d3_psi_d_r_d_z2");
-        let g_d3_psi_d_z3_plasma_by_offset: Array2<f64> = grid_grid(&greens.grid_grid.d3_psi_d_z3, "d3_psi_d_z3");
+        let g_psi_plasma_by_offset: Array2<f64> = grid_plasma(&greens.grid.plasma.psi, "psi");
+        let g_d_psi_d_r_plasma_by_offset: Array2<f64> = grid_plasma(&greens.grid.plasma.d_psi_d_r, "d_psi_d_r");
+        let g_d_psi_d_z_plasma_by_offset: Array2<f64> = grid_plasma(&greens.grid.plasma.d_psi_d_z, "d_psi_d_z");
+        let g_d2_psi_d_r2_plasma_by_offset: Array2<f64> = grid_plasma(&greens.grid.plasma.d2_psi_d_r2, "d2_psi_d_r2");
+        let g_d2_psi_d_r_d_z_plasma_by_offset: Array2<f64> = grid_plasma(&greens.grid.plasma.d2_psi_d_r_d_z, "d2_psi_d_r_d_z");
+        let g_d2_psi_d_z2_plasma_by_offset: Array2<f64> = grid_plasma(&greens.grid.plasma.d2_psi_d_z2, "d2_psi_d_z2");
+        let g_d3_psi_d_r2_d_z_plasma_by_offset: Array2<f64> = grid_plasma(&greens.grid.plasma.d3_psi_d_r2_d_z, "d3_psi_d_r2_d_z");
+        let g_d3_psi_d_r_d_z2_plasma_by_offset: Array2<f64> = grid_plasma(&greens.grid.plasma.d3_psi_d_r_d_z2, "d3_psi_d_r_d_z2");
+        let g_d3_psi_d_z3_plasma_by_offset: Array2<f64> = grid_plasma(&greens.grid.plasma.d3_psi_d_z3, "d3_psi_d_z3");
 
         // Concatenate per parity, so each parity is a single GEMM
         // (`as_standard_layout` because `concatenate` does not guarantee a C-contiguous result)
@@ -236,18 +230,18 @@ impl PsiAndDerivativesGreens {
 
         // PF coils: each table is (n_z, n_r), gathered into one column per coil. The coils keep the
         // order they sit in on the IDS, which is the order the measured currents are in
-        let n_pf: usize = greens.pf_active.len();
-        let coils_matrix = |select: fn(&EquilibriumGreensPfActive) -> &Array2<f64>, key: &str| -> Array2<f64> {
+        let n_pf: usize = greens.grid.pf_active.len();
+        let coils_matrix = |select: fn(&EquilibriumGreensGridPfActive) -> &Array2<f64>, key: &str| -> Array2<f64> {
             let mut g_coils: Array2<f64> = Array2::from_elem((n_z * n_r, n_pf), f64::NAN);
             for i_pf in 0..n_pf {
-                let coil: &EquilibriumGreensPfActive = &greens.pf_active[i_pf];
+                let coil: &EquilibriumGreensGridPfActive = &greens.grid.pf_active[i_pf];
                 let table: &Array2<f64> = select(coil);
                 if table.is_empty() {
-                    panic!("PsiAndDerivativesGreens: `greens/pf_active({i_pf})/{key}` unset");
+                    panic!("PsiAndDerivativesGreens: `greens/grid/pf_active({i_pf})/{key}` unset");
                 }
                 let table_flat: Array1<f64> = table
                     .to_shape(n_z * n_r)
-                    .unwrap_or_else(|_| panic!("PsiAndDerivativesGreens: `greens/pf_active({i_pf})/{key}` is not (n_z, n_r)"))
+                    .unwrap_or_else(|_| panic!("PsiAndDerivativesGreens: `greens/grid/pf_active({i_pf})/{key}` is not (n_z, n_r)"))
                     .to_owned();
                 g_coils.slice_mut(s![.., i_pf]).assign(&table_flat);
             }
@@ -262,26 +256,30 @@ impl PsiAndDerivativesGreens {
         let g_d3_psi_d_r_d_z2_coils_matrix: Array2<f64> = coils_matrix(|coil| &coil.d3_psi_d_r_d_z2, "d3_psi_d_r_d_z2");
         let g_d3_psi_d_z3_coils_matrix: Array2<f64> = coils_matrix(|coil| &coil.d3_psi_d_z3, "d3_psi_d_z3");
 
-        // Passives: each table is already (n_z * n_r), gathered into one column per degree of
-        // freedom. The degrees of freedom are laid out conductor by conductor, in IDS order, which
-        // is the order `passive_dof_values` and the regularisation matrices are in
-        let n_passives: usize = greens.pf_passive.len();
+        // Passives: each table is (n_z, n_r), gathered into one column per degree of freedom. The
+        // degrees of freedom are laid out conductor by conductor, in IDS order, which is the order
+        // `passive_dof_values` and the regularisation matrices are in
+        let n_passives: usize = greens.grid.pf_passive.len();
         let mut n_passive_dof: usize = 0;
         for i_passive in 0..n_passives {
-            n_passive_dof += greens.pf_passive[i_passive].dof.len();
+            n_passive_dof += greens.grid.pf_passive[i_passive].dof.len();
         }
-        let passives_matrix = |select: fn(&EquilibriumGreensPfPassiveDof) -> &Array1<f64>, key: &str| -> Array2<f64> {
+        let passives_matrix = |select: fn(&EquilibriumGreensGridPfPassiveDof) -> &Array2<f64>, key: &str| -> Array2<f64> {
             let mut g_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_passive_dof), f64::NAN);
             let mut i_dof_total: usize = 0;
             for i_passive in 0..n_passives {
-                let n_dof_this_passive: usize = greens.pf_passive[i_passive].dof.len();
+                let n_dof_this_passive: usize = greens.grid.pf_passive[i_passive].dof.len();
                 for i_dof in 0..n_dof_this_passive {
-                    let dof: &EquilibriumGreensPfPassiveDof = &greens.pf_passive[i_passive].dof[i_dof];
-                    let table: &Array1<f64> = select(dof);
+                    let dof: &EquilibriumGreensGridPfPassiveDof = &greens.grid.pf_passive[i_passive].dof[i_dof];
+                    let table: &Array2<f64> = select(dof);
                     if table.is_empty() {
-                        panic!("PsiAndDerivativesGreens: `greens/pf_passive({i_passive})/dof({i_dof})/{key}` unset");
+                        panic!("PsiAndDerivativesGreens: `greens/grid/pf_passive({i_passive})/dof({i_dof})/{key}` unset");
                     }
-                    g_passives.slice_mut(s![.., i_dof_total]).assign(table);
+                    let table_flat: Array1<f64> = table
+                        .to_shape(n_z * n_r)
+                        .unwrap_or_else(|_| panic!("PsiAndDerivativesGreens: `greens/grid/pf_passive({i_passive})/dof({i_dof})/{key}` is not (n_z, n_r)"))
+                        .to_owned();
+                    g_passives.slice_mut(s![.., i_dof_total]).assign(&table_flat);
                     i_dof_total += 1;
                 }
             }
@@ -352,13 +350,9 @@ pub struct EquilibriumSolver<'a> {
     /// are read from it; see `crate::limiter` for the unit ordering
     limiter: &'a EquilibriumLimiter,
     bp_probes_static: &'a SensorsStatic,
-    bp_probes_dynamic: &'a SensorsDynamic,
     flux_loops_static: &'a SensorsStatic,
-    flux_loops_dynamic: &'a SensorsDynamic,
     dialoop_static: &'a SensorsStatic,
-    dialoop_dynamic: &'a SensorsDynamic,
     rogowski_coils_static: &'a SensorsStatic,
-    rogowski_coils_dynamic: &'a SensorsDynamic,
     isoflux_static: &'a SensorsStatic,
     isoflux_dynamic: &'a SensorsDynamic,
     isoflux_boundary_static: &'a SensorsStatic,
@@ -418,13 +412,9 @@ impl<'a> EquilibriumSolver<'a> {
             vacuum_toroidal_field_b0,
             limiter,
             bp_probes_static: inputs.bp_probes_static,
-            bp_probes_dynamic: inputs.bp_probes_dynamic,
             flux_loops_static: inputs.flux_loops_static,
-            flux_loops_dynamic: inputs.flux_loops_dynamic,
             dialoop_static: inputs.dialoop_static,
-            dialoop_dynamic: inputs.dialoop_dynamic,
             rogowski_coils_static: inputs.rogowski_coils_static,
-            rogowski_coils_dynamic: inputs.rogowski_coils_dynamic,
             isoflux_static: inputs.isoflux_static,
             isoflux_dynamic: inputs.isoflux_dynamic,
             isoflux_boundary_static: inputs.isoflux_boundary_static,
@@ -676,13 +666,9 @@ impl<'a> EquilibriumSolver<'a> {
 
         // Get sensors
         let bp_probes_static: &SensorsStatic = self.bp_probes_static;
-        let bp_probes_dynamic: &SensorsDynamic = self.bp_probes_dynamic;
         let flux_loops_static: &SensorsStatic = self.flux_loops_static;
-        let flux_loops_dynamic: &SensorsDynamic = self.flux_loops_dynamic;
         let dialoop_static: &SensorsStatic = self.dialoop_static;
-        let dialoop_dynamic: &SensorsDynamic = self.dialoop_dynamic;
         let rogowski_coils_static: &SensorsStatic = self.rogowski_coils_static;
-        let rogowski_coils_dynamic: &SensorsDynamic = self.rogowski_coils_dynamic;
         let isoflux_static: &SensorsStatic = self.isoflux_static;
         let isoflux_dynamic: &SensorsDynamic = self.isoflux_dynamic;
         let isoflux_boundary_static: &SensorsStatic = self.isoflux_boundary_static;
@@ -708,10 +694,10 @@ impl<'a> EquilibriumSolver<'a> {
         let ff_prime_exact_dof_values: Option<Array1<f64>> = ff_prime_source_function.source_function_exact_dof_values();
 
         // Constraints
-        let n_bp: usize = bp_probes_dynamic.measured.len();
-        let n_fl: usize = flux_loops_dynamic.measured.len();
-        let n_dialoop: usize = dialoop_dynamic.measured.len();
-        let n_rog: usize = rogowski_coils_dynamic.measured.len();
+        let n_bp: usize = bp_probes_static.names.len();
+        let n_fl: usize = flux_loops_static.names.len();
+        let n_dialoop: usize = dialoop_static.names.len();
+        let n_rog: usize = rogowski_coils_static.names.len();
         let n_isoflux: usize = isoflux_dynamic.measured.len();
         let n_isoflux_boundary: usize = isoflux_boundary_dynamic.measured.len();
         let n_pressure_sensors: usize = pressure_sensors_dynamic.measured.len();
@@ -883,8 +869,8 @@ impl<'a> EquilibriumSolver<'a> {
             // Exact source function component
             constraint_values_from_exact_source_functions[i_constraint] = d_area * (&greens_bp_probes_grid.slice(s![.., i_sensor]) * &j_exact_flat).sum();
 
-            // Store sensor values
-            s_measured[i_constraint] = bp_probes_dynamic.measured[i_sensor];
+            // Store sensor values: the measurement which `Plasma.copy_from_magnetics_ids` copied onto this time-slice
+            s_measured[i_constraint] = self.time_slice.constraints.b_field_pol_probe(&bp_probes_static.names[i_sensor]).measured;
 
             // Store weights
             constraint_weights[i_constraint] = bp_probes_static.fit_settings_weight[i_sensor] / bp_probes_static.fit_settings_expected_value[i_sensor];
@@ -938,9 +924,9 @@ impl<'a> EquilibriumSolver<'a> {
             // Exact source function component
             constraint_values_from_exact_source_functions[i_constraint] = d_area * (&greens_flux_loops_grid.slice(s![.., i_sensor]) * &j_exact_flat).sum();
 
-            // Store sensor values
+            // Store sensor values: the measurement which `Plasma.copy_from_magnetics_ids` copied onto this time-slice
             // s_measured[i_constraint] = flux_loops_rs.all.psi.measured[i_sensor];
-            s_measured[i_constraint] = flux_loops_dynamic.measured[i_sensor];
+            s_measured[i_constraint] = self.time_slice.constraints.flux_loop(&flux_loops_static.names[i_sensor]).measured;
 
             // Store weights
             constraint_weights[i_constraint] =
@@ -991,8 +977,9 @@ impl<'a> EquilibriumSolver<'a> {
                 constraint_values_from_exact_source_functions[i_constraint] = (d_psi / f_vac) * d_area * integrand.sum();
             }
 
-            // Store sensor value
-            s_measured[i_constraint] = dialoop_dynamic.measured[i_sensor];
+            // Store sensor value: the measurement which `Plasma.copy_from_magnetics_ids` copied onto this time-slice. The data dictionary
+            // has a single diamagnetic flux constraint, so at most one diamagnetic loop is fitted, which `solve_grad_shafranov` checked
+            s_measured[i_constraint] = self.time_slice.constraints.diamagnetic_flux.measured;
 
             // Store weights
             constraint_weights[i_constraint] = dialoop_static.fit_settings_weight[i_sensor] / dialoop_static.fit_settings_expected_value[i_sensor];
@@ -1045,8 +1032,8 @@ impl<'a> EquilibriumSolver<'a> {
             // Exact source function component
             constraint_values_from_exact_source_functions[i_constraint] = d_area * (&greens_rogowski_coils_grid.slice(s![.., i_sensor]) * &j_exact_flat).sum();
 
-            // Store sensor values
-            s_measured[i_constraint] = rogowski_coils_dynamic.measured[i_sensor];
+            // Store sensor values: the measurement which `Plasma.copy_from_magnetics_ids` copied onto this time-slice
+            s_measured[i_constraint] = self.time_slice.constraints.rogowski_coil(&rogowski_coils_static.names[i_sensor]).measured;
 
             // Store weights
             constraint_weights[i_constraint] =
@@ -1772,15 +1759,15 @@ impl<'a> EquilibriumSolver<'a> {
 
         // Flux from the poloidal field coils, from the Greens tables on the IDS. The coils are summed in IDS order,
         // which `solve_grad_shafranov` checked is the order of the PF coil currents
-        let n_pf: usize = self.greens_tables.pf_active.len();
+        let n_pf: usize = self.greens_tables.grid.pf_active.len();
         let n_r: usize = self.equilibrium_code.grid.n_r as usize;
         let n_z: usize = self.equilibrium_code.grid.n_z as usize;
 
         let mut psi_2d_coils: Array2<f64> = Array2::zeros((n_z, n_r));
         for i_pf in 0..n_pf {
-            let g_psi_coil: &Array2<f64> = &self.greens_tables.pf_active[i_pf].psi;
+            let g_psi_coil: &Array2<f64> = &self.greens_tables.grid.pf_active[i_pf].psi;
             if g_psi_coil.is_empty() {
-                return Err(format!("equilibrium_solve: `greens/pf_active({i_pf})/psi` unset"));
+                return Err(format!("equilibrium_solve: `greens/grid/pf_active({i_pf})/psi` unset"));
             }
             psi_2d_coils = psi_2d_coils + g_psi_coil * pf_currents[i_pf];
         }
@@ -1969,14 +1956,11 @@ pub struct GradShafranovInputs<'a> {
     /// The initial current-density guess, built once before the loop over time-slices, or the
     /// reason it could not be built
     pub initial_j_2d: &'a Result<Array2<f64>, String>,
+    /// The magnetic sensors fitted. Their measurements are read from `time_slice(itime)/constraints`, by name
     pub bp_probes_static: &'a SensorsStatic,
-    pub bp_probes_dynamic: &'a SensorsDynamic,
     pub flux_loops_static: &'a SensorsStatic,
-    pub flux_loops_dynamic: &'a SensorsDynamic,
     pub dialoop_static: &'a SensorsStatic,
-    pub dialoop_dynamic: &'a SensorsDynamic,
     pub rogowski_coils_static: &'a SensorsStatic,
-    pub rogowski_coils_dynamic: &'a SensorsDynamic,
     pub isoflux_static: &'a SensorsStatic,
     pub isoflux_dynamic: &'a SensorsDynamic,
     pub isoflux_boundary_static: &'a SensorsStatic,

@@ -1,4 +1,5 @@
 use crate::greens::Greens;
+use crate::magnetics::Magnetics;
 use crate::pf_active::PfActive;
 use crate::pf_passive::{PassiveFilaments, PfPassive, passive_filaments};
 use crate::pulse_schedule::PulseSchedule;
@@ -12,8 +13,8 @@ use imas_rs::ids::pulse_schedule::PulseScheduleGap;
 use imas_rs::ids::wall::Wall2dLimiterUnit;
 use imas_rs::python::{PyEquilibrium, PyPath, read_path};
 use imas_rs::{
-    Equilibrium, EquilibriumConstraints0d, EquilibriumConstraints0dDof, EquilibriumConstraints0dIpLike, EquilibriumGap, EquilibriumGreensGridGrid,
-    EquilibriumGreensPfActive, EquilibriumGreensPfPassive, EquilibriumGreensPfPassiveDof, EquilibriumLimiterUnit, EquilibriumLimiterUnitOutline,
+    Equilibrium, EquilibriumConstraints0d, EquilibriumConstraints0dDof, EquilibriumConstraints0dIpLike, EquilibriumGap, EquilibriumGreensGridPfActive,
+    EquilibriumGreensGridPfPassive, EquilibriumGreensGridPfPassiveDof, EquilibriumGreensGridPlasma, EquilibriumLimiterUnit, EquilibriumLimiterUnitOutline,
     EquilibriumProfiles2d,
 };
 use ndarray::{Array1, Array2, ArrayView2, Axis, MeshIndex, meshgrid, s};
@@ -164,20 +165,6 @@ impl Plasma {
         let flat_d_z: Array1<f64> = &r * 0.0 + d_z;
         let greens_calculator: Greens = Greens::sensor_to_conductor(flat_r.clone(), flat_z.clone(), r.clone(), 0.0 * r.clone() + z[0], flat_d_r, flat_d_z);
         let g_psi: Array2<f64> = greens_calculator.psi();
-        let g_br: Array2<f64> = greens_calculator.b_r();
-        let g_bz: Array2<f64> = greens_calculator.b_z();
-        let mut g_d_br_d_z: Array2<f64> = greens_calculator.d_b_r_d_z();
-        let mut g_d_bz_d_z: Array2<f64> = greens_calculator.d_b_z_d_z();
-
-        // Set the self-values to 0.0
-        for i_r in 0..n_r {
-            for i_rz in 0..n_r * n_z {
-                if g_d_br_d_z[(i_rz, i_r)].is_nan() {
-                    g_d_br_d_z[(i_rz, i_r)] = 0.0; // TODO: this can be improved; avoiding "if" statement
-                    g_d_bz_d_z[(i_rz, i_r)] = 0.0;
-                }
-            }
-        }
 
         // d2_g_d_r2
         let mut g_d2_psi_d_r2: Array2<f64> = greens_calculator.d2_psi_d_r2();
@@ -235,23 +222,38 @@ impl Plasma {
             }
         }
 
-        // Store the plasma grid-to-grid Greens tables in the equilibrium IDS. They are geometry, so
-        // they are the same for every time-slice and hang off the IDS root rather than off
-        // `time_slice`
-        let greens_grid_grid: EquilibriumGreensGridGrid = EquilibriumGreensGridGrid {
-            psi: g_psi,
-            br: g_br,
-            bz: g_bz,
-            d_br_d_z: g_d_br_d_z,
-            d_bz_d_z: g_d_bz_d_z,
-            d_psi_d_r: g_d_psi_d_r,
-            d_psi_d_z: g_d_psi_d_z,
-            d2_psi_d_r2: g_d2_psi_d_r2,
-            d2_psi_d_r_d_z: g_d2_psi_d_r_d_z,
-            d2_psi_d_z2: g_d2_psi_d_z2,
-            d3_psi_d_r2_d_z: g_d3_psi_d_r2_d_z,
-            d3_psi_d_r_d_z2: g_d3_psi_d_r_d_z2,
-            d3_psi_d_z3: g_d3_psi_d_z3,
+        // Store the grid-to-grid Greens tables in the equilibrium IDS, as `greens/grid/plasma`. They are geometry, so they are the
+        // same for every time-slice and hang off the IDS root rather than off `time_slice`. Each table was calculated with shape
+        // (n_z * n_r, n_r): the observers are every grid point, row by row, and the sources the lowest row, so an observer's row is
+        // its offset above the source, and the table is (i_offset_z, i_r, i_r_source)
+        let greens_grid_plasma: EquilibriumGreensGridPlasma = EquilibriumGreensGridPlasma {
+            psi: g_psi
+                .into_shape_with_order((n_z, n_r, n_r))
+                .expect("plasma.new: failed to reshape `g_psi` into (n_z, n_r, n_r)"),
+            d_psi_d_r: g_d_psi_d_r
+                .into_shape_with_order((n_z, n_r, n_r))
+                .expect("plasma.new: failed to reshape `g_d_psi_d_r` into (n_z, n_r, n_r)"),
+            d_psi_d_z: g_d_psi_d_z
+                .into_shape_with_order((n_z, n_r, n_r))
+                .expect("plasma.new: failed to reshape `g_d_psi_d_z` into (n_z, n_r, n_r)"),
+            d2_psi_d_r2: g_d2_psi_d_r2
+                .into_shape_with_order((n_z, n_r, n_r))
+                .expect("plasma.new: failed to reshape `g_d2_psi_d_r2` into (n_z, n_r, n_r)"),
+            d2_psi_d_r_d_z: g_d2_psi_d_r_d_z
+                .into_shape_with_order((n_z, n_r, n_r))
+                .expect("plasma.new: failed to reshape `g_d2_psi_d_r_d_z` into (n_z, n_r, n_r)"),
+            d2_psi_d_z2: g_d2_psi_d_z2
+                .into_shape_with_order((n_z, n_r, n_r))
+                .expect("plasma.new: failed to reshape `g_d2_psi_d_z2` into (n_z, n_r, n_r)"),
+            d3_psi_d_r2_d_z: g_d3_psi_d_r2_d_z
+                .into_shape_with_order((n_z, n_r, n_r))
+                .expect("plasma.new: failed to reshape `g_d3_psi_d_r2_d_z` into (n_z, n_r, n_r)"),
+            d3_psi_d_r_d_z2: g_d3_psi_d_r_d_z2
+                .into_shape_with_order((n_z, n_r, n_r))
+                .expect("plasma.new: failed to reshape `g_d3_psi_d_r_d_z2` into (n_z, n_r, n_r)"),
+            d3_psi_d_z3: g_d3_psi_d_z3
+                .into_shape_with_order((n_z, n_r, n_r))
+                .expect("plasma.new: failed to reshape `g_d3_psi_d_z3` into (n_z, n_r, n_r)"),
         };
 
         // The equilibrium IDS. `initialise_equilibrium_ids` fills in the time-slices below; what is
@@ -292,7 +294,7 @@ impl Plasma {
         equilibrium_ids.code.numerics.nonlinear_solver.newton_picard.finite_difference_step = newton_picard_finite_difference_step;
         equilibrium_ids.code.numerics.nonlinear_solver.newton_picard.verbose = newton_picard_verbose as i32;
 
-        equilibrium_ids.greens.grid_grid = greens_grid_grid;
+        equilibrium_ids.greens.grid.plasma = greens_grid_plasma;
 
         let mut plasma: Self = Self {
             equilibrium_ids,
@@ -407,7 +409,7 @@ impl Plasma {
     ///   at one of the times it was measured, [second]
     ///
     /// The solver reads the PF coil currents from the equilibrium IDS, so this has to be called before
-    /// `solve_grad_shafranov`. The solver multiplies them by the Greens tables, `greens/pf_active(i1)`, so the coils
+    /// `solve_grad_shafranov`. The solver multiplies them by the Greens tables, `greens/grid/pf_active(i1)`, so the coils
     /// have to be in the same order as those, which the solver checks by name.
     ///
     /// Any PF coil currents already on a time-slice are replaced, so calling this twice does not repeat them.
@@ -480,7 +482,7 @@ impl Plasma {
     /// fit. So `measured`, `source` and `time_measurement` are left unset.
     ///
     /// The solver reads the regularisations from the equilibrium IDS, so this has to be called before `solve_grad_shafranov`. It fits
-    /// the amplitudes with the Greens tables, `greens/pf_passive(i1)/dof(i2)`, so the loops and their degrees of freedom have to be in
+    /// the amplitudes with the Greens tables, `greens/grid/pf_passive(i1)/dof(i2)`, so the loops and their degrees of freedom have to be in
     /// the same order as those, which the solver checks by name.
     ///
     /// A pf_passive IDS with no loops is allowed: the equilibrium then has no passive conductors. Any passive loops already on a
@@ -562,9 +564,54 @@ impl Plasma {
         }
     }
 
+    /// Copy the magnetic sensors' measurements from the magnetics IDS onto every time-slice of the equilibrium IDS.
+    ///
+    /// Each measurement is on the experimental timebase, so it is interpolated onto the time-slice's time. On every time-slice
+    /// `Plasma::new` allocated, for every sensor, in the same order as in the magnetics IDS:
+    /// * `magnetics/b_field_pol_probe(i1)/field` fills `equilibrium/time_slice(itime)/constraints/b_field_pol_probe(i1)`, [tesla]
+    /// * `magnetics/flux_loop(i1)/flux` fills `.../constraints/flux_loop(i1)`, [weber]
+    /// * `magnetics/rogowski_coil(i1)/current` fills `.../constraints/rogowski_coil(i1)`, a custom key, as the data dictionary has
+    ///   no constraint for Rogowski coils, [ampere]
+    /// * `magnetics/diamagnetic_flux(0)/data` fills `.../constraints/diamagnetic_flux`, [weber]
+    /// * `magnetics/ip(0)/data` fills `.../constraints/ip`, [ampere]
+    ///
+    /// Each constraint gets:
+    /// * `name` - a custom key: the sensor's `name`, or the `method_name` for `diamagnetic_flux` and `ip`
+    /// * `measured` - the measurement, interpolated onto the time-slice's time
+    /// * `source` - the path the measurement was read from, e.g. `magnetics/b_field_pol_probe(i1)/field`
+    /// * `time_measurement` - the time-slice's own time, because the measurement is interpolated rather than taken at one of the
+    ///   times it was measured, [second]
+    ///
+    /// `diamagnetic_flux` and `ip` are single constraints, whereas the magnetics IDS holds one entry for each method of calculating
+    /// them, the generally recommended method first, so that one is copied. Each is left unset when the magnetics IDS has none.
+    ///
+    /// Which sensors are fitted, and their weights, are not set here.
+    ///
+    /// Any magnetic constraints already on a time-slice are replaced, so calling this twice does not repeat them.
+    ///
+    /// # Arguments
+    /// * `magnetics` - The Magnetics object (a Rust implementation, initialised in Python)
+    ///
+    /// # Errors
+    /// A `ValueError` when a measurement cannot be interpolated onto the reconstruction times, e.g. because its timebase does not
+    /// cover them.
+    pub fn copy_from_magnetics_ids(&mut self, magnetics: PyRef<Magnetics>) -> PyResult<()> {
+        // Change Python types into Rust types
+        let magnetics_rs: &Magnetics = &magnetics;
+
+        // Each kind of sensor is copied by its own method, in `magnetic_sensors/`
+        self.copy_from_magnetics_ids_b_field_pol_probe(magnetics_rs).map_err(PyValueError::new_err)?;
+        self.copy_from_magnetics_ids_diamagnetic_flux(magnetics_rs).map_err(PyValueError::new_err)?;
+        self.copy_from_magnetics_ids_flux_loop(magnetics_rs).map_err(PyValueError::new_err)?;
+        self.copy_from_magnetics_ids_ip(magnetics_rs).map_err(PyValueError::new_err)?;
+        self.copy_from_magnetics_ids_rogowski_coil(magnetics_rs).map_err(PyValueError::new_err)?;
+
+        Ok(())
+    }
+
     /// Calculate the Greens function with the PF coils
     /// The Greens tables are stored within self. Example data structure:
-    /// `greens/pf_active(i)/br` on the equilibrium IDS, one for each `pf_active/coil(i)`, in the same order
+    /// `greens/grid/pf_active(i)/psi` on the equilibrium IDS, one for each `pf_active/coil(i)`, in the same order
     ///
     /// # Arguments
     /// * `pf_active` - The PfActive object (a Rust implementation, initialised in Python)
@@ -582,7 +629,7 @@ impl Plasma {
         // the order `Plasma.copy_from_pf_active_ids` copies the PF coil currents in
         let pf_active_coils: &Vec<PfCoils> = &pf_active.pf_active_ids.coil;
         let n_coil: usize = pf_active_coils.len();
-        let mut greens_pf_active: Vec<EquilibriumGreensPfActive> = Vec::with_capacity(n_coil);
+        let mut greens_pf_active: Vec<EquilibriumGreensGridPfActive> = Vec::with_capacity(n_coil);
 
         for i_coil in 0..n_coil {
             // The coil's filaments
@@ -600,14 +647,10 @@ impl Plasma {
                 Array1::from_elem(n_coil_filaments, f64::NAN),
             );
 
-            // Greens function for psi, br, bz, and derivatives
+            // Greens function for psi, and derivatives
             let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = (n_z * n_r, n_coil_filaments)
             let g_d_psi_d_r_filaments: Array2<f64> = greens_calculator.d_psi_d_r(); // shape = (n_z * n_r, n_coil_filaments)
             let g_d_psi_d_z_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = (n_z * n_r, n_coil_filaments)
-            let g_br_all_filaments: Array2<f64> = greens_calculator.b_r(); // shape = (n_z * n_r, n_coil_filaments)
-            let g_bz_all_filaments: Array2<f64> = greens_calculator.b_z(); // shape = (n_z * n_r, n_coil_filaments)
-            let g_d_br_d_z_all_filaments: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = (n_z * n_r, n_coil_filaments)
-            let g_d_bz_d_z_all_filaments: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = (n_z * n_r, n_coil_filaments)
             let d2_g_d_r2_all_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = (n_z * n_r, n_coil_filaments)
             let d2_g_d_r_d_z_all_filaments: Array2<f64> = greens_calculator.d2_psi_d_r_d_z(); // shape = (n_z * n_r, n_coil_filaments)
             let d2_g_d_z2_all_filaments: Array2<f64> = greens_calculator.d2_psi_d_z2(); // shape = (n_z * n_r, n_coil_filaments)
@@ -630,26 +673,6 @@ impl Plasma {
                 .sum_axis(Axis(1))
                 .to_shape((n_z, n_r))
                 .expect("plasma.greens_with_pf_active: Failed to reshape `g_d_psi_d_z_filaments` into (n_z, n_r)")
-                .to_owned();
-            let g_br: Array2<f64> = g_br_all_filaments
-                .sum_axis(Axis(1))
-                .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `g_br_all_filaments` into (n_z, n_r)")
-                .to_owned();
-            let g_bz: Array2<f64> = g_bz_all_filaments
-                .sum_axis(Axis(1))
-                .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `g_bz_all_filaments` into (n_z, n_r)")
-                .to_owned();
-            let g_d_br_d_z: Array2<f64> = g_d_br_d_z_all_filaments
-                .sum_axis(Axis(1))
-                .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `g_d_br_d_z_all_filaments` into (n_z, n_r)")
-                .to_owned();
-            let g_d_bz_d_z: Array2<f64> = g_d_bz_d_z_all_filaments
-                .sum_axis(Axis(1))
-                .to_shape((n_z, n_r))
-                .expect("plasma.greens_with_pf_active: Failed to reshape `g_d_bz_d_z_all_filaments` into (n_z, n_r)")
                 .to_owned();
             let g_d2_psi_d_r2: Array2<f64> = d2_g_d_r2_all_filaments
                 .sum_axis(Axis(1))
@@ -683,13 +706,9 @@ impl Plasma {
                 .to_owned();
 
             // Store in the equilibrium IDS
-            greens_pf_active.push(EquilibriumGreensPfActive {
+            greens_pf_active.push(EquilibriumGreensGridPfActive {
                 name: pf_active_coils[i_coil].name.clone(),
                 psi: g_psi,
-                br: g_br,
-                bz: g_bz,
-                d_br_d_z: g_d_br_d_z,
-                d_bz_d_z: g_d_bz_d_z,
                 d_psi_d_r: g_d_psi_d_r,
                 d_psi_d_z: g_d_psi_d_z,
                 d2_psi_d_r2: g_d2_psi_d_r2,
@@ -701,12 +720,12 @@ impl Plasma {
             });
         }
 
-        self.equilibrium_ids.greens.pf_active = greens_pf_active;
+        self.equilibrium_ids.greens.grid.pf_active = greens_pf_active;
     }
 
     /// Calculate the Greens function with the passive conductors
     /// The Greens tables are stored within self. Example data structure:
-    /// `greens/pf_passive(i)/dof(j)/psi` on the equilibrium IDS
+    /// `greens/grid/pf_passive(i)/dof(j)/psi` on the equilibrium IDS
     /// Note: when adding a passive conductor to `pf_passive` we selected how to represent its degrees of freedom through
     /// `loop(i1)/current_distribution_type` (e.g. `constant_current_density` or `eig`)
     ///
@@ -725,13 +744,15 @@ impl Plasma {
         // Get variables out of self
         // `profiles_2d/r` and `/z` are the (R, Z) mesh, so iterating them row-major gives the
         // flattened grid
+        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
+        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
         let mesh_r: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].r;
         let mesh_z: &Array2<f64> = &self.equilibrium_ids.time_slice[0].profiles_2d[0].z;
         let flat_r: Array1<f64> = Array1::from_iter(mesh_r.iter().copied());
         let flat_z: Array1<f64> = Array1::from_iter(mesh_z.iter().copied());
 
         // Greens tables for the equilibrium IDS
-        let mut greens_pf_passive: Vec<EquilibriumGreensPfPassive> = Vec::with_capacity(n_loop);
+        let mut greens_pf_passive: Vec<EquilibriumGreensGridPfPassive> = Vec::with_capacity(n_loop);
 
         // Calculate Greens with each passive degree of freedom
         for i_loop in 0..n_loop {
@@ -751,12 +772,8 @@ impl Plasma {
                 passive_z.clone() * f64::NAN, // d_z=0; as there will not be any points which coincide; using NaN as safety - if we get NaN's we know we have a problem
             );
 
-            // Green's functions for `psi`, `b_r`, `b_z`, and derivatives
+            // Green's functions for `psi`, and derivatives
             let g_psi_filaments: Array2<f64> = greens_calculator.psi(); // shape = [n_r * n_z, n_filament]
-            let g_br_filaments: Array2<f64> = greens_calculator.b_r(); // shape = [n_r * n_z, n_filament]
-            let g_bz_filaments: Array2<f64> = greens_calculator.b_z(); // shape = [n_r * n_z, n_filament]
-            let d_g_br_filaments_d_z: Array2<f64> = greens_calculator.d_b_r_d_z(); // shape = [n_r * n_z, n_filament]
-            let d_g_bz_filaments_d_z: Array2<f64> = greens_calculator.d_b_z_d_z(); // shape = [n_r * n_z, n_filament]
             let g_d_psi_d_r_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_r(); // shape = [n_r * n_z, n_filament]
             let g_d_psi_d_z_coil_filaments: Array2<f64> = greens_calculator.d_psi_d_z(); // shape = [n_r * n_z, n_filament]
             let g_d2_psi_d_r2_filaments: Array2<f64> = greens_calculator.d2_psi_d_r2(); // shape = [n_r * n_z, n_filament]
@@ -776,10 +793,6 @@ impl Plasma {
 
             // Apply the current distributions and sum over the filaments; one column per degree of freedom
             let g_psi_with_dof: Array2<f64> = apply_current_distributions(&g_psi_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
-            let g_br_with_dof: Array2<f64> = apply_current_distributions(&g_br_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
-            let g_bz_with_dof: Array2<f64> = apply_current_distributions(&g_bz_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
-            let g_d_br_d_z_with_dof: Array2<f64> = apply_current_distributions(&d_g_br_filaments_d_z, &current_distributions); // shape = [n_r * n_z, n_dof]
-            let g_d_bz_d_z_with_dof: Array2<f64> = apply_current_distributions(&d_g_bz_filaments_d_z, &current_distributions); // shape = [n_r * n_z, n_dof]
             let g_d_psi_d_r_with_dof: Array2<f64> = apply_current_distributions(&g_d_psi_d_r_coil_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
             let g_d_psi_d_z_with_dof: Array2<f64> = apply_current_distributions(&g_d_psi_d_z_coil_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
             let g_d2_psi_d_r2_with_dof: Array2<f64> = apply_current_distributions(&g_d2_psi_d_r2_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
@@ -789,27 +802,60 @@ impl Plasma {
             let g_d3_psi_d_r_d_z2_with_dof: Array2<f64> = apply_current_distributions(&g_d3_psi_d_r_d_z2_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
             let g_d3_psi_d_z3_with_dof: Array2<f64> = apply_current_distributions(&g_d3_psi_d_z3_filaments, &current_distributions); // shape = [n_r * n_z, n_dof]
 
-            let mut greens_dof: Vec<EquilibriumGreensPfPassiveDof> = Vec::with_capacity(n_dof);
+            // One table over the grid, shape = (n_z, n_r), for each degree of freedom
+            let mut greens_dof: Vec<EquilibriumGreensGridPfPassiveDof> = Vec::with_capacity(n_dof);
             for i_dof in 0..n_dof {
-                greens_dof.push(EquilibriumGreensPfPassiveDof {
+                greens_dof.push(EquilibriumGreensGridPfPassiveDof {
                     name: pf_passive_loops[i_loop].dof[i_dof].name.clone(),
-                    psi: g_psi_with_dof.column(i_dof).to_owned(),
-                    br: g_br_with_dof.column(i_dof).to_owned(),
-                    bz: g_bz_with_dof.column(i_dof).to_owned(),
-                    d_br_d_z: g_d_br_d_z_with_dof.column(i_dof).to_owned(),
-                    d_bz_d_z: g_d_bz_d_z_with_dof.column(i_dof).to_owned(),
-                    d_psi_d_r: g_d_psi_d_r_with_dof.column(i_dof).to_owned(),
-                    d_psi_d_z: g_d_psi_d_z_with_dof.column(i_dof).to_owned(),
-                    d2_psi_d_r2: g_d2_psi_d_r2_with_dof.column(i_dof).to_owned(),
-                    d2_psi_d_r_d_z: g_d2_psi_d_r_d_z_with_dof.column(i_dof).to_owned(),
-                    d2_psi_d_z2: g_d2_psi_d_z2_with_dof.column(i_dof).to_owned(),
-                    d3_psi_d_r2_d_z: g_d3_psi_d_r2_d_z_with_dof.column(i_dof).to_owned(),
-                    d3_psi_d_r_d_z2: g_d3_psi_d_r_d_z2_with_dof.column(i_dof).to_owned(),
-                    d3_psi_d_z3: g_d3_psi_d_z3_with_dof.column(i_dof).to_owned(),
+                    psi: g_psi_with_dof
+                        .column(i_dof)
+                        .to_owned()
+                        .into_shape_with_order((n_z, n_r))
+                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_psi_with_dof` into (n_z, n_r)"),
+                    d_psi_d_r: g_d_psi_d_r_with_dof
+                        .column(i_dof)
+                        .to_owned()
+                        .into_shape_with_order((n_z, n_r))
+                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d_psi_d_r_with_dof` into (n_z, n_r)"),
+                    d_psi_d_z: g_d_psi_d_z_with_dof
+                        .column(i_dof)
+                        .to_owned()
+                        .into_shape_with_order((n_z, n_r))
+                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d_psi_d_z_with_dof` into (n_z, n_r)"),
+                    d2_psi_d_r2: g_d2_psi_d_r2_with_dof
+                        .column(i_dof)
+                        .to_owned()
+                        .into_shape_with_order((n_z, n_r))
+                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d2_psi_d_r2_with_dof` into (n_z, n_r)"),
+                    d2_psi_d_r_d_z: g_d2_psi_d_r_d_z_with_dof
+                        .column(i_dof)
+                        .to_owned()
+                        .into_shape_with_order((n_z, n_r))
+                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d2_psi_d_r_d_z_with_dof` into (n_z, n_r)"),
+                    d2_psi_d_z2: g_d2_psi_d_z2_with_dof
+                        .column(i_dof)
+                        .to_owned()
+                        .into_shape_with_order((n_z, n_r))
+                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d2_psi_d_z2_with_dof` into (n_z, n_r)"),
+                    d3_psi_d_r2_d_z: g_d3_psi_d_r2_d_z_with_dof
+                        .column(i_dof)
+                        .to_owned()
+                        .into_shape_with_order((n_z, n_r))
+                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d3_psi_d_r2_d_z_with_dof` into (n_z, n_r)"),
+                    d3_psi_d_r_d_z2: g_d3_psi_d_r_d_z2_with_dof
+                        .column(i_dof)
+                        .to_owned()
+                        .into_shape_with_order((n_z, n_r))
+                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d3_psi_d_r_d_z2_with_dof` into (n_z, n_r)"),
+                    d3_psi_d_z3: g_d3_psi_d_z3_with_dof
+                        .column(i_dof)
+                        .to_owned()
+                        .into_shape_with_order((n_z, n_r))
+                        .expect("plasma.greens_with_pf_passive: failed to reshape `g_d3_psi_d_z3_with_dof` into (n_z, n_r)"),
                 });
             }
 
-            greens_pf_passive.push(EquilibriumGreensPfPassive {
+            greens_pf_passive.push(EquilibriumGreensGridPfPassive {
                 name: passive_name.to_string(),
                 dof: greens_dof,
             });
@@ -817,7 +863,85 @@ impl Plasma {
 
         // Assigned rather than appended, so that calling this twice replaces the tables instead of
         // silently doubling them up
-        self.equilibrium_ids.greens.pf_passive = greens_pf_passive;
+        self.equilibrium_ids.greens.grid.pf_passive = greens_pf_passive;
+    }
+
+    /// Calculate the magnetic sensors' Greens tables: what each sensor measures, per ampere in each current source.
+    ///
+    /// Fills, for every sensor in the magnetics IDS, with the same name and in the same order, `greens/b_field_pol_probe(i1)`,
+    /// `greens/flux_loop(i1)` and `greens/rogowski_coil(i1)` on the equilibrium IDS, each with the sensor's tables with:
+    /// * `plasma` - the plasma current in each grid cell, shape = (n_z, n_r)
+    /// * `d_plasma_d_z` - the same, differentiated with respect to the sensor's height, shape = (n_z, n_r)
+    /// * `pf_active` - each PF coil, in the order of `greens/grid/pf_active`, shape = (n_coil)
+    /// * `pf_passive` - each passive degree of freedom, in the order of `greens/grid/pf_passive(:)/dof(:)`, shape = (n_dof_total)
+    ///
+    /// `greens/grid/pf_active` and `greens/grid/pf_passive` name the PF coils and the passive degrees of freedom, so
+    /// `Plasma.greens_with_pf_active` and `Plasma.greens_with_pf_passive` have to be called first, with the same `pf_active` and
+    /// `pf_passive`.
+    ///
+    /// Any sensors' Greens tables already on the IDS are replaced, so calling this twice does not repeat them.
+    ///
+    /// # Arguments
+    /// * `magnetics` - The Magnetics object, holding where the sensors are (a Rust implementation, initialised in Python)
+    /// * `pf_active` - The PfActive object, holding the PF coils' filaments (a Rust implementation, initialised in Python)
+    /// * `pf_passive` - The PfPassive object, holding the passive conductors' filaments and degrees of freedom (a Rust
+    ///   implementation, initialised in Python)
+    ///
+    /// # Errors
+    /// A `ValueError` when the PF coils, or the passive loops and their degrees of freedom, are not the ones `greens/grid/pf_active`
+    /// and `greens/grid/pf_passive` were calculated with, in the same order.
+    fn greens_with_magnetics(&mut self, magnetics: PyRef<Magnetics>, pf_active: PyRef<PfActive>, pf_passive: PyRef<PfPassive>) -> PyResult<()> {
+        // Change Python types into Rust types
+        let magnetics_rs: &Magnetics = &magnetics;
+        let pf_active_rs: &PfActive = &pf_active;
+        let pf_passive_rs: &PfPassive = &pf_passive;
+
+        // Every sensor's `pf_active` is in the order of `greens/grid/pf_active`, which names the PF coils, so the coils have to be
+        // the ones those tables were calculated with
+        let pf_active_names: Vec<String> = pf_active_rs.pf_active_ids.coil(..).name.to_vec();
+        let greens_pf_active_names: Vec<String> = self.equilibrium_ids.greens.grid.pf_active(..).name.to_vec();
+        if pf_active_names != greens_pf_active_names {
+            return Err(PyValueError::new_err(format!(
+                "`pf_active/coil(:)/name` is {pf_active_names:?}, but the Greens tables, `greens/grid/pf_active(:)/name`, are for \
+                 {greens_pf_active_names:?}; call `Plasma.greens_with_pf_active` with these PF coils first"
+            )));
+        }
+
+        // Likewise, every sensor's `pf_passive` is in the order of `greens/grid/pf_passive(:)/dof(:)`
+        let pf_passive_loops: &Vec<PfPassiveLoops> = &pf_passive_rs.pf_passive_ids.r#loop;
+        let n_loop: usize = pf_passive_loops.len();
+        let mut pf_passive_dof_names: Vec<(String, String)> = Vec::new();
+        for i_loop in 0..n_loop {
+            let n_dof: usize = pf_passive_loops[i_loop].dof.len();
+            for i_dof in 0..n_dof {
+                pf_passive_dof_names.push((pf_passive_loops[i_loop].name.clone(), pf_passive_loops[i_loop].dof[i_dof].name.clone()));
+            }
+        }
+        let n_greens_pf_passive: usize = self.equilibrium_ids.greens.grid.pf_passive.len();
+        let mut greens_pf_passive_dof_names: Vec<(String, String)> = Vec::new();
+        for i_greens_pf_passive in 0..n_greens_pf_passive {
+            let n_dof: usize = self.equilibrium_ids.greens.grid.pf_passive[i_greens_pf_passive].dof.len();
+            for i_dof in 0..n_dof {
+                greens_pf_passive_dof_names.push((
+                    self.equilibrium_ids.greens.grid.pf_passive[i_greens_pf_passive].name.clone(),
+                    self.equilibrium_ids.greens.grid.pf_passive[i_greens_pf_passive].dof[i_dof].name.clone(),
+                ));
+            }
+        }
+        if pf_passive_dof_names != greens_pf_passive_dof_names {
+            return Err(PyValueError::new_err(format!(
+                "the passive degrees of freedom, `pf_passive/loop(:)/dof(:)/name`, are {pf_passive_dof_names:?}, but the Greens tables, \
+                 `greens/grid/pf_passive(:)/dof(:)/name`, are for {greens_pf_passive_dof_names:?}; call `Plasma.greens_with_pf_passive` \
+                 with these passive loops first"
+            )));
+        }
+
+        // Each kind of sensor is calculated by its own method, in `magnetic_sensors/`
+        self.greens_with_magnetics_b_field_pol_probe(magnetics_rs, pf_active_rs, pf_passive_rs);
+        self.greens_with_magnetics_flux_loop(magnetics_rs, pf_active_rs, pf_passive_rs);
+        self.greens_with_magnetics_rogowski_coil(magnetics_rs, pf_active_rs, pf_passive_rs);
+
+        Ok(())
     }
 
     /// Print to screen, to be used within Python
@@ -915,107 +1039,6 @@ impl Plasma {
             // The psi_norm grid the source functions are defined on
             time_slice.profiles_1d.psi_norm = psi_norm.to_owned();
         }
-    }
-
-    /// Gather one Green's quantity, for every passive degree of freedom, into a matrix over the grid.
-    ///
-    /// The degrees of freedom are laid out in the order they appear in `greens/pf_passive`, which is
-    /// the order the Green's tables were built in.
-    ///
-    /// # Arguments
-    /// * `select` - picks the quantity out of one degree of freedom's Green's tables
-    ///
-    /// # Returns
-    /// * `greens_with_passives` - shape `(n_z * n_r, n_dof_total)`
-    fn greens_passive_grid(&self, select: fn(&EquilibriumGreensPfPassiveDof) -> &Array1<f64>) -> Array2<f64> {
-        // Unpack from self
-        let n_dof_total: usize = self.equilibrium_ids.greens.pf_passive.iter().map(|pf_passive| pf_passive.dof.len()).sum();
-        let n_r: usize = self.equilibrium_ids.code.grid.n_r as usize;
-        let n_z: usize = self.equilibrium_ids.code.grid.n_z as usize;
-
-        let mut greens_with_passives: Array2<f64> = Array2::from_elem((n_z * n_r, n_dof_total), f64::NAN);
-
-        let mut i_dof_total: usize = 0;
-        for pf_passive in &self.equilibrium_ids.greens.pf_passive {
-            for dof in &pf_passive.dof {
-                greens_with_passives.slice_mut(s![.., i_dof_total]).assign(select(dof));
-                i_dof_total += 1;
-            }
-        }
-
-        greens_with_passives
-    }
-
-    /// Green's table for the poloidal flux, for every passive degree of freedom
-    ///
-    /// # Returns
-    /// * shape `(n_z * n_r, n_dof_total)`
-    pub fn get_greens_passive_grid(&self) -> Array2<f64> {
-        self.greens_passive_grid(|dof| &dof.psi)
-    }
-
-    /// Green's table for the second radial derivative of the poloidal flux, for every passive degree of freedom
-    ///
-    /// # Returns
-    /// * shape `(n_z * n_r, n_dof_total)`
-    pub fn get_greens_passive_grid_d2_psi_d_r2(&self) -> Array2<f64> {
-        self.greens_passive_grid(|dof| &dof.d2_psi_d_r2)
-    }
-
-    /// Green's table for the second vertical derivative of the poloidal flux, for every passive degree of freedom
-    ///
-    /// # Returns
-    /// * shape `(n_z * n_r, n_dof_total)`
-    pub fn get_greens_passive_grid_d2_psi_d_z2(&self) -> Array2<f64> {
-        self.greens_passive_grid(|dof| &dof.d2_psi_d_z2)
-    }
-
-    /// Green's table for the third derivative of the poloidal flux, twice by R and once by Z, for every passive degree of freedom
-    ///
-    /// # Returns
-    /// * shape `(n_z * n_r, n_dof_total)`
-    pub fn get_greens_passive_grid_d3_psi_d_r2_d_z(&self) -> Array2<f64> {
-        self.greens_passive_grid(|dof| &dof.d3_psi_d_r2_d_z)
-    }
-
-    /// Green's table for the third derivative of the poloidal flux, once by R and twice by Z, for every passive degree of freedom
-    ///
-    /// # Returns
-    /// * shape `(n_z * n_r, n_dof_total)`
-    pub fn get_greens_passive_grid_d3_psi_d_r_d_z2(&self) -> Array2<f64> {
-        self.greens_passive_grid(|dof| &dof.d3_psi_d_r_d_z2)
-    }
-
-    /// Green's table for the third vertical derivative of the poloidal flux, for every passive degree of freedom
-    ///
-    /// # Returns
-    /// * shape `(n_z * n_r, n_dof_total)`
-    pub fn get_greens_passive_grid_d3_psi_d_z3(&self) -> Array2<f64> {
-        self.greens_passive_grid(|dof| &dof.d3_psi_d_z3)
-    }
-
-    /// Green's table for the radial derivative of the poloidal flux, for every passive degree of freedom
-    ///
-    /// # Returns
-    /// * shape `(n_z * n_r, n_dof_total)`
-    pub fn get_greens_passive_grid_d_psi_d_r(&self) -> Array2<f64> {
-        self.greens_passive_grid(|dof| &dof.d_psi_d_r)
-    }
-
-    /// Green's table for the vertical derivative of the poloidal flux, for every passive degree of freedom
-    ///
-    /// # Returns
-    /// * shape `(n_z * n_r, n_dof_total)`
-    pub fn get_greens_passive_grid_d_psi_d_z(&self) -> Array2<f64> {
-        self.greens_passive_grid(|dof| &dof.d_psi_d_z)
-    }
-
-    /// Green's table for the mixed second derivative of the poloidal flux, for every passive degree of freedom
-    ///
-    /// # Returns
-    /// * shape `(n_z * n_r, n_dof_total)`
-    pub fn get_greens_passive_grid_d2_psi_d_r_d_z(&self) -> Array2<f64> {
-        self.greens_passive_grid(|dof| &dof.d2_psi_d_r_d_z)
     }
 }
 

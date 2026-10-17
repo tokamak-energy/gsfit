@@ -12,42 +12,47 @@ from __future__ import annotations
 
 import typing
 from dataclasses import dataclass
+from dataclasses import field
+
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
 
 
 @dataclass(kw_only=True)
 class Workflow:
     """
-    The central list of the codes which the database reader reads from, and which run of each to read. Each IDS's file links to it, in `workflow`, e.g. pf_active/pf_active.xml
+    The central list of the MDSplus trees which the database reader reads from, and which run of each to read, one `tree` per tree. Each IDS's file links to it, in `workflow`, e.g. pf_active/pf_active.xml.
+    The st40_mdsplus_with_digital_filter reader reads:
+    * DIALOOP: the diamagnetic flux measurement, GLOBAL.PHI_DIA. Read for magnetics
+    * ELMAG: the machine's geometry: the PF coils, COILS; the passive structures and their resistivity, VESSEL; the limiter, LIMITER.LIMIT_PTS; and the gaps, GAPS. Read for pf_active, pf_passive, pulse_schedule and wall
+    * MAG: the geometry and measurements of the poloidal field probes, flux loops and Rogowski coils, and the geometry of the diamagnetic loop. Read for magnetics
+    * PPTS: the BAD_MA flag, GLOBAL:BAD_MA, which picks the good time-slices: those the pressure constraints are made at, and the good_pressure_sensors time-slices in timeslices.xml. Read for thomson_scattering
+    * PSU2COIL: the currents: the PF coils', PF.ALL, and the TF rod's, TF.I_ROD. Read for pf_active and tf
+    * TS: each channel's position, R and Z, and electron pressure, PROFILES:PE. Read for thomson_scattering
 
-    :param dialoop: The DIALOOP run holding the diamagnetic flux measurement, GLOBAL.PHI_DIA. Read for magnetics
-    :param elmag: The ELMAG run holding the machine's geometry: the PF coils, COILS; the passive structures and their resistivity, VESSEL; the limiter, LIMITER.LIMIT_PTS; and the gaps, GAPS. Read for pf_active, pf_passive, pulse_schedule and wall
-    :param mag: The MAG run holding the geometry and measurements of the poloidal field probes, flux loops and Rogowski coils, and the geometry of the diamagnetic loop. Read for magnetics
-    :param ppts: The PPTS run whose BAD_MA flag, GLOBAL:BAD_MA, picks the good time-slices: those the pressure constraints are made at, and the good_pressure_sensors time-slices in timeslices.xml. Read for thomson_scattering
-    :param psu2coil: The PSU2COIL run holding the currents: the PF coils', PF.ALL, and the TF rod's, TF.I_ROD. Read for pf_active and tf
-    :param ts: The TS run holding each channel's position, R and Z, and electron pressure, PROFILES:PE. Read for thomson_scattering
+    :param tree: One MDSplus tree, and which run of it to read. A `KeyedList`, which can be indexed by `tree_name` as well as by position, e.g. `tree[tree_name]`
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "workflow.xsd"
 
-    dialoop: WorkflowEntry | None = None
-    elmag: WorkflowEntry | None = None
-    mag: WorkflowEntry | None = None
-    ppts: WorkflowEntry | None = None
-    psu2coil: WorkflowEntry | None = None
-    ts: WorkflowEntry | None = None
+    tree: KeyedList[WorkflowTree] = field(default_factory=KeyedList)
 
 
 @dataclass(kw_only=True)
-class WorkflowEntry:
+class WorkflowTree:
     """
-    Which run of an MDSplus tree to read. The tree is named by the element holding this, e.g. `elmag` for ELMAG
+    Which run of an MDSplus tree to read, and from which pulse
 
+    :param tree_name: The MDSplus tree, e.g. "ELMAG" or "MAG", which the database reader selects it by. Must be unique
     :param pulseNo: The pulse to read the tree from; nil for the pulse being reconstructed
     :param run_name: The run of the tree to read, e.g. "BEST" or "RUN16"
-    :param usage: What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from
+    :param usage: What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree_name].USAGE), to record where the inputs came from
     """
 
+    # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique
+    KEY: typing.ClassVar[str] = "tree_name"
+
+    tree_name: str
     pulseNo: int | None
     run_name: str
     usage: str

@@ -30,23 +30,10 @@ class DatabaseReader:
     """
     The database reader the whole run uses, which builds the IDSs GSFit reads
 
-    :param method: The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml. The other readers read the element named after them from each IDS's file, which must be present where they need one
-    :param mock_st40_mdsplus: What the mock_st40_mdsplus reader needs whichever IDS it is building. Needed by the mock_st40_mdsplus reader. See tests/test_02_delta_z_shift_greater_than_d_z for an example
+    :param method: The database reader to use. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml which each IDS's file links to, e.g. wall/wall.xml
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "database_reader.xsd"
 
     method: DatabaseReaderMethod
-    mock_st40_mdsplus: MockSt40Mdsplus | None = None
-
-
-@dataclass(kw_only=True)
-class MockSt40Mdsplus:
-    """
-    What the mock_st40_mdsplus reader needs whichever IDS it is building
-
-    :param mock_dir: The directory holding the mocked trees, the `mdsplus_mock_*.npz` files
-    """
-
-    mock_dir: str

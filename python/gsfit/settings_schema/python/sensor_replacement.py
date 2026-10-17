@@ -14,19 +14,21 @@ import typing
 from dataclasses import dataclass
 from dataclasses import field
 
+from diagnostic_and_simulation_base.xml_reader_and_writer import KeyedList
+
 
 @dataclass(kw_only=True)
 class SensorReplacement:
     """
     The constraints which RTGSFit makes from other sensors, because the PCS cannot read the constraint's own sensor, one `constraint` each. Every other constraint is read by the PCS directly. Only read by the rtgsfit_mdsplus writer, which builds PRESHOT:SENS_REP_MAT from it
 
-    :param constraint: A constraint which RTGSFit makes from other sensors
+    :param constraint: A constraint which RTGSFit makes from other sensors. A `KeyedList`, which can be indexed by `name` as well as by position, e.g. `constraint[name]`
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "sensor_replacement.xsd"
 
-    constraint: list[Constraint] = field(default_factory=list)
+    constraint: KeyedList[Constraint] = field(default_factory=KeyedList)
 
 
 @dataclass(kw_only=True)
@@ -38,6 +40,9 @@ class Constraint:
     :param replacements: The PCS sensors the constraint is made from, e.g. "V_FLOOP_024 V_FLOOP_022"
     :param coefficients: The coefficient of each sensor in `replacements`, in the same order
     """
+
+    # The field holding the key, which selects an item of this class from its `KeyedList`, as the XML schema keeps it unique
+    KEY: typing.ClassVar[str] = "name"
 
     name: str
     replacements: list[str]

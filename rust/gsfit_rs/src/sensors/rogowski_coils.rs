@@ -770,6 +770,7 @@ impl RogowskiCoils {
 
         // Create the `SensorsStatic` data
         let results_static: SensorsStatic = SensorsStatic {
+            names: sensor_names.clone(),
             greens_with_grid,
             greens_with_pf,
             greens_with_passives,
@@ -836,15 +837,15 @@ impl RogowskiCoils {
     }
 
     pub fn calculate_sensor_values_rs(&mut self, plasma: &Plasma) {
-        // The passive degrees of freedom, in the order of `greens/pf_passive`, which every time-slice's `passive_dof_values` follows
+        // The passive degrees of freedom, in the order of `greens/grid/pf_passive`, which every time-slice's `passive_dof_values` follows
         let mut pf_passive_dof_names: Vec<(String, String)> = Vec::new();
-        let n_pf_passive: usize = plasma.equilibrium_ids.greens.pf_passive.len();
+        let n_pf_passive: usize = plasma.equilibrium_ids.greens.grid.pf_passive.len();
         for i_pf_passive in 0..n_pf_passive {
-            let n_dof: usize = plasma.equilibrium_ids.greens.pf_passive[i_pf_passive].dof.len();
+            let n_dof: usize = plasma.equilibrium_ids.greens.grid.pf_passive[i_pf_passive].dof.len();
             for i_dof in 0..n_dof {
                 pf_passive_dof_names.push((
-                    plasma.equilibrium_ids.greens.pf_passive[i_pf_passive].name.clone(),
-                    plasma.equilibrium_ids.greens.pf_passive[i_pf_passive].dof[i_dof].name.clone(),
+                    plasma.equilibrium_ids.greens.grid.pf_passive[i_pf_passive].name.clone(),
+                    plasma.equilibrium_ids.greens.grid.pf_passive[i_pf_passive].dof[i_dof].name.clone(),
                 ));
             }
         }

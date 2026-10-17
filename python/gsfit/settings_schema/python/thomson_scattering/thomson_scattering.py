@@ -20,42 +20,12 @@ from ..workflow import Workflow
 @dataclass(kw_only=True)
 class ThomsonScatteringSettings:
     """
-    How the database reader reads the Thomson scattering: the electron pressure which the pressure constraints are made from, and its good time-slices. The st40_mdsplus_with_digital_filter reader reads its runs from the workflow.xml linked in `workflow`; the st40_mdsplus reader reads only the element named after it
+    How the database reader reads the Thomson scattering: the electron pressure which the pressure constraints are made from, and its good time-slices. The st40_mdsplus and st40_mdsplus_with_digital_filter readers read their runs from the workflow.xml linked in `workflow`
 
-    :param workflow: A link to workflow.xml, the central list of the codes which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus_with_digital_filter reader reads the good time-slices from its `ppts`, GLOBAL:BAD_MA, and each channel's position and electron pressure from its `ts`
-    :param st40_mdsplus: Where the st40_mdsplus reader reads the Thomson scattering from
+    :param workflow: A link to workflow.xml, the central list of the MDSplus trees which the database reader reads from, and which run of each, e.g. href="../workflow.xml". The st40_mdsplus and st40_mdsplus_with_digital_filter readers read the good time-slices from its PPTS tree, GLOBAL:BAD_MA, and each channel's position and electron pressure from its TS tree
     """
 
     # The XML schema of the XML files whose root element this is, relative to `python/gsfit/settings_schema/xsd/`
     XSD_PATH: typing.ClassVar[str] = "thomson_scattering/thomson_scattering.xsd"
 
     workflow: Workflow | None = None
-    st40_mdsplus: ThomsonScatteringSt40Mdsplus | None = None
-
-
-@dataclass(kw_only=True)
-class ThomsonScatteringSt40Mdsplus:
-    """
-    Where the st40_mdsplus reader reads the Thomson scattering from
-
-    :param ppts: The PPTS run whose BAD_MA flag, GLOBAL:BAD_MA, picks the good time-slices: those the pressure constraints are made at, and the good_pressure_sensors time-slices in timeslices.xml
-    :param ts: The TS run holding each channel's position, R and Z, and electron pressure, PROFILES:PE
-    """
-
-    ppts: WorkflowEntry
-    ts: WorkflowEntry
-
-
-@dataclass(kw_only=True)
-class WorkflowEntry:
-    """
-    Which run of an MDSplus tree to read. The tree is named by the element holding this, e.g. `elmag` for ELMAG
-
-    :param pulseNo: The pulse to read the tree from; nil for the pulse being reconstructed
-    :param run_name: The run of the tree to read, e.g. "BEST" or "RUN16"
-    :param usage: What the tree's data is used for. Free text, which the Tokamak Energy writers store with the results (INPUT.WORKFLOW.[tree].USAGE), to record where the inputs came from
-    """
-
-    pulseNo: int | None
-    run_name: str
-    usage: str
